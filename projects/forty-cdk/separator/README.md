@@ -1,14 +1,16 @@
 # Separator
 
-Headless implementation of the static [WAI-ARIA Separator pattern](https://www.w3.org/WAI/ARIA/apg/patterns/separator/): a non-focusable line that splits content groups visually and semantically.
+A static, optionally semantic divider between groups of content or controls, horizontal or vertical.
 
 The focusable divider that resizes two panes is a separate primitive — [`ForPaneResizer`](../pane-resizer/README.md). Keeping them apart means a plain `<hr forSeparator>` never pulls the drag / keyboard-resize code in.
 
 ## Anatomy
 
-| Class          | Selector         | Role                                                                   |
-| -------------- | ---------------- | ---------------------------------------------------------------------- |
-| `ForSeparator` | `[forSeparator]` | Single attribute directive. Static semantic / decorative divider only. |
+```html
+<hr forSeparator />
+
+<span forSeparator orientation="vertical" decorative></span>
+```
 
 ## Examples
 
@@ -46,20 +48,18 @@ export class DemoSeparator {}
 
 ### `ForSeparator`
 
-| API           | Type                                | Default        | Description                                                   |
-| ------------- | ----------------------------------- | -------------- | ------------------------------------------------------------- |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | `'horizontal'` | Axis the separator divides along. Defaults to `'horizontal'`. |
-| `decorative`  | `input<boolean>`                    | —              | When true, the separator is purely visual (`role="none"`).    |
+| Property      | Type                                | Description                                                                  |
+| ------------- | ----------------------------------- | ---------------------------------------------------------------------------- |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Axis the separator divides along.<br>**Default:** `'horizontal'`             |
+| `decorative`  | `input<boolean>`                    | When true, the separator is purely visual (`role="none"`).<br>**Default:** — |
 
-The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks.
-
-### Data attributes
-
-| Piece            | Attribute          | Values                     |
-| ---------------- | ------------------ | -------------------------- |
-| `[forSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
 
 ## Accessibility
+
+Implements the static [WAI-ARIA Separator pattern](https://www.w3.org/WAI/ARIA/apg/patterns/separator/).
 
 - **Static is the only mode.** `[forSeparator]` keeps `role="separator"` and (for vertical) `aria-orientation="vertical"`. Horizontal omits the attribute because it is the ARIA default.
 - **Use `decorative` when redundant.** If the section split is already announced (e.g. headings on either side), set `decorative` so the separator becomes `role="none"` and AT skips it.
@@ -67,7 +67,7 @@ The host gets `data-orientation="horizontal" \| "vertical"` for CSS hooks.
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .separator {

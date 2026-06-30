@@ -1,15 +1,17 @@
 # Disclosure
 
-Headless implementation of the [WAI-ARIA Disclosure pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/).
+A single trigger that shows or hides a related region of content.
+
 A button toggles the visibility of a content region, wired with `aria-expanded` and `aria-controls`.
 
 ## Anatomy
 
-| Class                  | Selector                 | Role                                                                   |
-| ---------------------- | ------------------------ | ---------------------------------------------------------------------- |
-| `ForDisclosure`        | `[forDisclosure]`        | Root. Holds `open` / `disabled` state and provides the shared context. |
-| `ForDisclosureTrigger` | `[forDisclosureTrigger]` | Button that toggles the state.                                         |
-| `ForDisclosureContent` | `[forDisclosureContent]` | Panel revealed when open.                                              |
+```html
+<div forDisclosure [(open)]="isOpen">
+  <button type="button" forDisclosureTrigger>{{ isOpen() ? 'Hide' : 'Show' }} details</button>
+  <div forDisclosureContent>Hidden content goes here.</div>
+</div>
+```
 
 ## Examples
 
@@ -53,18 +55,26 @@ The library ships no styles. Hide animations / transitions can be driven off `da
 
 ### `ForDisclosure`
 
-| API        | Type             | Default | Description                                                                       |
-| ---------- | ---------------- | ------- | --------------------------------------------------------------------------------- |
-| `open`     | `model<boolean>` | `false` | Two-way bindable. Defaults to `false`.                                            |
-| `disabled` | `input<boolean>` | —       | When true, click on the trigger is ignored. Reflects `data-disabled` on the host. |
+| Property   | Type             | Description                                                                                         |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| `open`     | `model<boolean>` | Two-way bindable open state.<br>**Default:** `false`                                                |
+| `disabled` | `input<boolean>` | When true, click on the trigger is ignored. Reflects `data-disabled` on the host.<br>**Default:** — |
 
-The host element gets `data-state="open" \| "closed"` for CSS hooks.
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present \| absent  |
 
 ### `ForDisclosureTrigger`
 
-| API        | Type             | Default | Description                                                        |
-| ---------- | ---------------- | ------- | ------------------------------------------------------------------ |
-| `disabled` | `input<boolean>` | —       | Disables this trigger only — merged OR with the root's `disabled`. |
+| Property   | Type             | Description                                                                          |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------ |
+| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`.<br>**Default:** — |
+
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present \| absent  |
 
 Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (`disabled`, `aria-disabled`, `data-disabled`) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.
 
@@ -73,6 +83,11 @@ Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-
 Use a native `<button type="button">` so Enter / Space activation come for free. Other elements lose keyboard accessibility — that is on you.
 
 ### `ForDisclosureContent`
+
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present \| absent  |
 
 Reflects on its host: `id`, `data-state`, `data-disabled`, `aria-hidden` (when closed), `inert` (when closed).
 
@@ -83,18 +98,9 @@ The directive does **not** apply `[hidden]` or otherwise control DOM presence. T
 
 If the panel is a semantic region, add `role="region"` and `aria-labelledby="..."` pointing to the trigger.
 
-### Data attributes
-
-| Piece                    | Attribute       | Values             |
-| ------------------------ | --------------- | ------------------ |
-| `[forDisclosure]`        | `data-state`    | `open` \| `closed` |
-| `[forDisclosure]`        | `data-disabled` | present \| absent  |
-| `[forDisclosureTrigger]` | `data-state`    | `open` \| `closed` |
-| `[forDisclosureTrigger]` | `data-disabled` | present \| absent  |
-| `[forDisclosureContent]` | `data-state`    | `open` \| `closed` |
-| `[forDisclosureContent]` | `data-disabled` | present \| absent  |
-
 ## Accessibility
+
+Implements the [WAI-ARIA Disclosure pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/).
 
 - The library does not auto-add `role="button"` or keyboard handlers when the trigger is not a `<button>`. Always use a real button.
 - The directive does not apply the native `hidden` attribute to the content. Either wrap it with `@if (open())` so it unmounts when closed, or leave it mounted and rely on the `aria-hidden="true"` + `inert` reflection that keeps the closed panel out of the accessibility tree and focus order. Visual hiding (and enter/leave transitions) are still on you — drive them off `[data-state]`.
@@ -102,7 +108,7 @@ If the panel is a semantic region, add `role="region"` and `aria-labelledby="...
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .disclosure-trigger .chevron {

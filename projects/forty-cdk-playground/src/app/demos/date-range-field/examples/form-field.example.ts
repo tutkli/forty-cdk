@@ -11,8 +11,6 @@ import {
 } from 'forty-cdk/date-range-field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Booking {
   readonly stay: CalendarDateRange<CalendarDate> | null;
 }
@@ -21,7 +19,6 @@ interface Booking {
   selector: 'app-date-range-field-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     FormField,
     ForDateRangeField,
     ForDateRangeFieldStart,
@@ -31,74 +28,123 @@ interface Booking {
   ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <playground-demo
-      title="Signal Forms"
-      subtitle="ForDateRangeField implements FormValueControl<CalendarDateRange | null>, so [formField] binds the committed range into the form and pulls validation back out. The field below is required: a half-entered or out-of-order range keeps value() null, so the form stays invalid until both endpoints are filled and ordered."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/date-range-field/examples/form-field.example.ts"
-    >
-      <div demo>
-        <div class="drf-form">
-          <div
-            forDateRangeField
-            class="pg-range-field"
-            [formField]="bookingForm.stay"
-            ariaLabel="Stay dates"
-          >
-            <div forDateRangeFieldStart class="pg-range-endpoint" #start="forDateRangeFieldStart">
-              @for (seg of start.segments(); track seg.id) {
-                @if (seg.isLiteral) {
-                  <span forDateRangeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-                } @else {
-                  <span forDateRangeFieldSegment class="pg-seg" [segment]="seg.type!">{{
-                    seg.text
-                  }}</span>
-                }
-              }
-            </div>
-            <span aria-hidden="true" class="pg-range-sep">–</span>
-            <div forDateRangeFieldEnd class="pg-range-endpoint" #end="forDateRangeFieldEnd">
-              @for (seg of end.segments(); track seg.id) {
-                @if (seg.isLiteral) {
-                  <span forDateRangeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-                } @else {
-                  <span forDateRangeFieldSegment class="pg-seg" [segment]="seg.type!">{{
-                    seg.text
-                  }}</span>
-                }
-              }
-            </div>
-          </div>
-          @if (bookingForm.stay().touched() && !bookingForm.stay().valid()) {
-            <p class="drf-error">Pick both a start and an end date for your stay.</p>
+    <div class="range-form">
+      <div
+        forDateRangeField
+        class="range-field"
+        [formField]="bookingForm.stay"
+        ariaLabel="Stay dates"
+      >
+        <div forDateRangeFieldStart class="range-endpoint" #start="forDateRangeFieldStart">
+          @for (seg of start.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+            } @else {
+              <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+                seg.text
+              }}</span>
+            }
+          }
+        </div>
+        <span aria-hidden="true" class="range-sep">–</span>
+        <div forDateRangeFieldEnd class="range-endpoint" #end="forDateRangeFieldEnd">
+          @for (seg of end.segments(); track seg.id) {
+            @if (seg.isLiteral) {
+              <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+            } @else {
+              <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+                seg.text
+              }}</span>
+            }
           }
         </div>
       </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          valid: <b>{{ bookingForm.stay().valid() }}</b
-          ><br />
-          touched: <b>{{ bookingForm.stay().touched() }}</b
-          ><br />
-          start: <b>{{ bookingForm.stay().value()?.start?.toString() ?? 'null' }}</b
-          ><br />
-          end: <b>{{ bookingForm.stay().value()?.end?.toString() ?? 'null' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      @if (bookingForm.stay().touched() && !bookingForm.stay().valid()) {
+        <p class="range-error">Pick both a start and an end date for your stay.</p>
+      }
+    </div>
   `,
   styles: `
-    .drf-form {
+    :host {
+      display: contents;
+    }
+
+    .range-form {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
       align-items: flex-start;
     }
 
-    .drf-error {
+    .range-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .range-field:focus-within {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .range-field[data-range-error] {
+      border-color: #ef4444;
+    }
+
+    .range-field[data-range-error]:focus-within {
+      box-shadow: 0 0 0 1px #ef4444;
+    }
+
+    .range-endpoint {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .range-segment {
+      padding: 0.05rem 0.15rem;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .range-segment[data-placeholder] {
+      color: var(--pg-text-muted);
+    }
+
+    .range-segment[data-highlighted],
+    .range-segment:focus {
+      background: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .range-literal {
+      padding: 0 0.05rem;
+      color: var(--pg-text-muted);
+    }
+
+    .range-sep {
+      color: var(--pg-text-muted);
+    }
+
+    .range-error {
       margin: 0;
       font-size: 0.85rem;
       color: #ef4444;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .range-field {
+        transition: none;
+      }
     }
   `,
 })

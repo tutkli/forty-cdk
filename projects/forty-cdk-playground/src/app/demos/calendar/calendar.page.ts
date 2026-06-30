@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
+import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { CalendarConstraintsExample } from './examples/constraints.example';
-import { CalendarDatePickerExample } from './examples/date-picker.example';
+import { CalendarDefaultExample } from './examples/default.example';
+import { CalendarDisabledExample } from './examples/disabled.example';
 import { CalendarDropdownsExample } from './examples/dropdowns.example';
 import { CalendarRangeExample } from './examples/range.example';
+import { CalendarReadOnlyExample } from './examples/read-only.example';
 import { CalendarViewSwitchingExample } from './examples/views.example';
-import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/calendar/README.md';
 
@@ -15,7 +18,10 @@ import readmeContent from '../../../../../forty-cdk/calendar/README.md';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     PrimitivePage,
-    CalendarDatePickerExample,
+    DemoLayout,
+    CalendarDefaultExample,
+    CalendarDisabledExample,
+    CalendarReadOnlyExample,
     CalendarConstraintsExample,
     CalendarRangeExample,
     CalendarDropdownsExample,
@@ -24,11 +30,60 @@ import readmeContent from '../../../../../forty-cdk/calendar/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="calendar" [readme]="readme">
-      <app-calendar-date-picker-example />
-      <app-calendar-dropdowns-example />
-      <app-calendar-constraints-example />
-      <app-calendar-range-example />
-      <app-calendar-view-switching-example />
+      <playground-demo
+        hero
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/default.example.ts"
+      >
+        <app-calendar-default-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Disabled"
+        subtitle="<code>disabled</code> turns off focus movement and selection for the whole calendar and reflects <code>data-disabled</code> on the root for styling."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/disabled.example.ts"
+      >
+        <app-calendar-disabled-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Read-only"
+        subtitle="<code>readonly</code> keeps days focusable and the grid still pages, but clicking or pressing <kbd>Enter</kbd> no longer changes the selection. It reflects <code>data-readonly</code>."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/read-only.example.ts"
+      >
+        <app-calendar-read-only-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Constraints & week start"
+        subtitle="<code>min</code> disables past dates and <code>isDateUnavailable</code> blocks weekends — both reflect <code>aria-disabled</code> and refuse selection, while arrows still move across them so navigation is never trapped. <code>firstDayOfWeek</code> starts the week on Monday."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/constraints.example.ts"
+      >
+        <app-calendar-constraints-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Range selection"
+        subtitle='Set <code>selectionMode="range"</code> and bind <code>[(range)]</code> to a <code>CalendarDateRange</code> signal. Click a first cell to anchor the range, move the pointer to preview, click a second cell to commit. Committed cells reflect <code>data-range-start</code> / <code>data-range-end</code> / <code>data-in-range</code>; the preview band uses <code>data-range-preview</code>.'
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/range.example.ts"
+      >
+        <app-calendar-range-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Month / year dropdowns"
+        subtitle="<code>[forCalendarMonthSelect]</code> and <code>[forCalendarYearSelect]</code> wire native selects to the calendar's month/year navigation. Render the options yourself from <code>m.options()</code> and <code>y.years()</code>; months and years entirely outside <code>[min, max]</code> are disabled."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/dropdowns.example.ts"
+      >
+        <app-calendar-dropdowns-example />
+      </playground-demo>
+
+      <playground-demo
+        title="View switching (month / year picker)"
+        subtitle="Click the heading button to cycle from day → month → year view. Click a month to drill down to days; click a year to drill down to months. Prev/next pages by month, year, or block depending on the active view, and <code>min</code> / <code>max</code> disable out-of-range cells."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/views.example.ts"
+      >
+        <app-calendar-view-switching-example />
+      </playground-demo>
     </primitive-page>
   `,
 })

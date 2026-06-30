@@ -7,13 +7,10 @@ import {
   ForScrollAreaViewport,
 } from 'forty-cdk/scroll-area';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-scroll-area-geometry-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForScrollArea,
     ForScrollAreaViewport,
     ForScrollAreaContent,
@@ -21,12 +18,8 @@ import { DemoLayout } from '../../../ui/demo-layout';
     ForScrollAreaThumb,
   ],
   template: `
-    <playground-demo
-      title="Geometry signals"
-      subtitle="The root exposes its live scroll geometry as read-only signals via exportAs — scrollTop / scrollLeft, the client vs. scroll size on each axis, plus hovering and scrolling. Grab the reference with #sa='forScrollArea' and read them straight in the template; here they drive the panel and a scrolled-percentage bar without a single scroll listener of your own."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/scroll-area/examples/geometry.example.ts"
-    >
-      <div demo forScrollArea #sa="forScrollArea" type="always" class="ga">
+    <div class="ga-stage">
+      <div forScrollArea #sa="forScrollArea" type="always" class="ga">
         <div forScrollAreaViewport class="ga-viewport">
           <div forScrollAreaContent class="ga-content">
             @for (row of rows; track row) {
@@ -44,29 +37,41 @@ import { DemoLayout } from '../../../ui/demo-layout';
         </div>
       </div>
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          scrollTop: <b>{{ sa.scrollTop() }}</b
-          ><br />
-          scrollLeft: <b>{{ sa.scrollLeft() }}</b
-          ><br />
-          client: <b>{{ sa.clientWidth() }} × {{ sa.clientHeight() }}</b
-          ><br />
-          scroll: <b>{{ sa.scrollWidth() }} × {{ sa.scrollHeight() }}</b
-          ><br />
-          scrolling: <b>{{ sa.scrolling() }}</b
-          ><br />
-          hovering: <b>{{ sa.hovering() }}</b>
-        </p>
+      <div class="ga-readout">
+        <dl class="ga-stats">
+          <dt>scrollTop</dt>
+          <dd>{{ sa.scrollTop() }}</dd>
+          <dt>scrollLeft</dt>
+          <dd>{{ sa.scrollLeft() }}</dd>
+          <dt>client</dt>
+          <dd>{{ sa.clientWidth() }} × {{ sa.clientHeight() }}</dd>
+          <dt>scroll</dt>
+          <dd>{{ sa.scrollWidth() }} × {{ sa.scrollHeight() }}</dd>
+          <dt>scrolling</dt>
+          <dd>{{ sa.scrolling() }}</dd>
+          <dt>hovering</dt>
+          <dd>{{ sa.hovering() }}</dd>
+        </dl>
 
         <div class="ga-meter" aria-hidden="true">
           <span class="ga-meter-fill" [style.width.%]="verticalPercent(sa)"></span>
         </div>
-        <p class="pg-hint">scrolled {{ verticalPercent(sa) }}% down the vertical axis.</p>
+        <p class="ga-hint">scrolled {{ verticalPercent(sa) }}% down the vertical axis.</p>
       </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
+    .ga-stage {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+
     .ga {
       position: relative;
       width: min(420px, 100%);
@@ -129,6 +134,30 @@ import { DemoLayout } from '../../../ui/demo-layout';
       top: 2px;
     }
 
+    .ga-readout {
+      min-width: 200px;
+      flex: 1;
+    }
+
+    .ga-stats {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.25rem 1rem;
+      margin: 0 0 1rem;
+      font-size: 0.85rem;
+    }
+
+    .ga-stats dt {
+      color: var(--pg-text-muted);
+    }
+
+    .ga-stats dd {
+      margin: 0;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--pg-text);
+    }
+
     .ga-meter {
       width: 100%;
       height: 8px;
@@ -142,6 +171,12 @@ import { DemoLayout } from '../../../ui/demo-layout';
       height: 100%;
       border-radius: 999px;
       background: var(--pg-primary);
+    }
+
+    .ga-hint {
+      margin: 0.5rem 0 0;
+      font-size: 0.82rem;
+      color: var(--pg-text-muted);
     }
   `,
 })

@@ -1,14 +1,18 @@
 # ForButton
 
-Headless implementation of the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/).
+Turns any element — a native <button> or a custom host like <div> / <span> — into an accessible button with keyboard activation. Disabled stays focusable (aria-disabled, never the native attribute) and pressed / hovered / focus-visible are reflected as data-\* hooks.
 
-A single `[forButton]` directive turns any element into an accessible, interactive button. It works on a native `<button>` host and on any non-button host (e.g. `<div>`, `<span>`). Install from `forty-cdk`.
+A single `[forButton]` directive does all of this. On a native `<button>` host the platform owns Enter/Space activation and `type` handling; on any non-button host the directive adds `role="button"`, `tabindex="0"`, and keyboard activation so the contract matches.
 
 ## Anatomy
 
-| Class       | Selector      | Role                                                                                                                                     |
-| ----------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForButton` | `[forButton]` | Single directive. On a native `<button>`, native semantics are preserved. On any other host, `role="button"` + `tabindex="0"` are added. |
+```html
+<!-- Native button — platform owns Enter/Space and type handling -->
+<button forButton [disabled]="saving()" (activate)="save()">Save</button>
+
+<!-- Non-button host — role="button", tabindex="0", keyboard activation added -->
+<div forButton (activate)="save()">Save</div>
+```
 
 ## Examples
 
@@ -42,25 +46,25 @@ A native `<button>` without an explicit `type` attribute defaults to `type="butt
 
 ### `ForButton`
 
-| API        | Type             | Default | Description                                                                      |
-| ---------- | ---------------- | ------- | -------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | `false` | Suppresses activation and reflects `aria-disabled` + `data-disabled`.            |
-| `activate` | `output<void>`   | —       | Fires once per user activation (click, Enter, Space). Never fires when disabled. |
+| Property   | Type             | Description                                                                                        |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Suppresses activation and reflects `aria-disabled` + `data-disabled`.<br>**Default:** `false`      |
+| `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** — |
 
-### Data attributes
+The directive reflects boolean `data-*` attributes (present with an empty-string value when true, absent when false). There is no `data-state` — this primitive has no open/closed or checked/unchecked logical state.
 
-The directive reflects the following boolean `data-*` attributes (present with an empty-string value when true, absent when false). There is no `data-state` — this primitive has no open/closed or checked/unchecked logical state.
-
-| Piece         | Attribute            | Values            |
-| ------------- | -------------------- | ----------------- |
-| `[forButton]` | `data-disabled`      | present \| absent |
-| `[forButton]` | `data-pressed`       | present \| absent |
-| `[forButton]` | `data-hovered`       | present \| absent |
-| `[forButton]` | `data-focus-visible` | present \| absent |
+| Data attribute       | Values            |
+| -------------------- | ----------------- |
+| `data-disabled`      | present \| absent |
+| `data-pressed`       | present \| absent |
+| `data-hovered`       | present \| absent |
+| `data-focus-visible` | present \| absent |
 
 `data-pressed` is present while the primary pointer is held down or Enter/Space is held. `data-hovered` is present while a mouse/pen pointer is over the element. `data-focus-visible` is present when focused via keyboard (keyboard modality active).
 
 ## Accessibility
+
+Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/).
 
 - **Native `<button>` semantics are preserved.** On a native host, no extra ARIA is added; the browser's built-in button role, Enter/Space activation, and `type` handling all apply.
 - **Non-button hosts get `role="button"` and `tabindex="0"`** plus keyboard activation (Enter/Space), matching the native button contract.
@@ -68,7 +72,7 @@ The directive reflects the following boolean `data-*` attributes (present with a
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 [forButton][data-disabled] {

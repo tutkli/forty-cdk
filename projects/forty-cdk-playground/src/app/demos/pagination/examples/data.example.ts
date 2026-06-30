@@ -6,8 +6,6 @@ import {
   ForPaginationPrevious,
 } from 'forty-cdk/pagination';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Invoice {
   readonly id: string;
   readonly client: string;
@@ -25,55 +23,48 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
 @Component({
   selector: 'app-pagination-data-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForPagination, ForPaginationItem, ForPaginationPrevious, ForPaginationNext],
+  imports: [ForPagination, ForPaginationItem, ForPaginationPrevious, ForPaginationNext],
   template: `
-    <playground-demo
-      title="Driving a data list"
-      subtitle="Pagination is headless state — derive the page count from your data, then slice the visible rows from page(). Changing the page re-slices the list; the page model is the single source of truth shared by the rows and the controls."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/pagination/examples/data.example.ts"
-    >
-      <div demo class="stage">
-        <ul class="rows">
-          @for (invoice of pageRows(); track invoice.id) {
-            <li class="row">
-              <span class="row-id">{{ invoice.id }}</span>
-              <span class="row-client">{{ invoice.client }}</span>
-              <span class="row-amount">\${{ invoice.amount }}.00</span>
-            </li>
-          }
-        </ul>
+    <div class="stage">
+      <ul class="rows">
+        @for (invoice of pageRows(); track invoice.id) {
+          <li class="row">
+            <span class="row-id">{{ invoice.id }}</span>
+            <span class="row-client">{{ invoice.client }}</span>
+            <span class="row-amount">\${{ invoice.amount }}.00</span>
+          </li>
+        }
+      </ul>
 
-        <nav
-          forPagination
-          #pg="forPagination"
-          class="pgn"
-          ariaLabel="Invoice pages"
-          [(page)]="page"
-          [count]="pageCount()"
-        >
-          <button forPaginationPrevious class="pgn-btn" ariaLabel="Previous page">‹</button>
-          @for (item of pg.items(); track $index) {
-            @if (item.type === 'page') {
-              <button forPaginationItem class="pgn-btn pgn-page" [page]="item.value!">
-                {{ item.value }}
-              </button>
-            } @else {
-              <span class="pgn-gap" aria-hidden="true">…</span>
-            }
+      <nav
+        forPagination
+        #pg="forPagination"
+        class="pgn"
+        ariaLabel="Invoice pages"
+        [(page)]="page"
+        [count]="pageCount()"
+      >
+        <button forPaginationPrevious class="pgn-btn" ariaLabel="Previous page">‹</button>
+        @for (item of pg.items(); track $index) {
+          @if (item.type === 'page') {
+            <button forPaginationItem class="pgn-btn pgn-page" [page]="item.value!">
+              {{ item.value }}
+            </button>
+          } @else {
+            <span class="pgn-gap" aria-hidden="true">…</span>
           }
-          <button forPaginationNext class="pgn-btn" ariaLabel="Next page">›</button>
-        </nav>
-      </div>
+        }
+        <button forPaginationNext class="pgn-btn" ariaLabel="Next page">›</button>
+      </nav>
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          page: <b>{{ page() }}</b> / {{ pageCount() }}<br />
-          showing: <b>{{ rangeLabel() }}</b> of {{ total }}
-        </p>
-      </div>
-    </playground-demo>
+      <p class="range">{{ rangeLabel() }} of {{ total }} invoices</p>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .stage {
       width: min(440px, 100%);
       display: flex;
@@ -117,6 +108,13 @@ const INVOICES: readonly Invoice[] = Array.from({ length: 23 }, (_, i) => ({
     .row-amount {
       font-variant-numeric: tabular-nums;
       color: var(--pg-text);
+    }
+
+    .range {
+      margin: 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--pg-text-muted);
     }
 
     .pgn {

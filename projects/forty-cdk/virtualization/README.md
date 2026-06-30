@@ -1,13 +1,8 @@
 # injectVirtualizer
 
-Headless windowing core: given a reactive item count, a size estimator, and a
-scroll container, returns the slice of items currently visible (plus overscan),
-the total scroll size, and imperative scroll/measure helpers. The consumer renders
-the items with their own `@for` and applies the position transform — this primitive
-owns no DOM.
+A headless windowing core (injectVirtualizer) plus an ergonomic [forVirtualViewport] + \*forVirtualFor layer that render only the visible slice of huge lists. Fixed or measured item sizes, horizontal lists, scroll-to-index, and an infinite-scroll detector. List primitives (Select, Combobox, Listbox, Tree, Table) compose it directly.
 
-Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns
-an empty window and the estimate-based total without touching `document`/`window`.
+Given a reactive item count, a size estimator, and a scroll container, the core returns the slice of items currently visible (plus overscan), the total scroll size, and imperative scroll/measure helpers. The consumer renders the items with their own `@for` and applies the position transform — this primitive owns no DOM. Backed internally by `@tanstack/virtual-core`. SSR-safe: off-browser it returns an empty window and the estimate-based total without touching `document`/`window`.
 
 > Ships from the **`forty-cdk/virtualization`** secondary entry point — import every
 > symbol below (`injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`,
@@ -210,14 +205,14 @@ the real count:
 
 ### Options
 
-| Option          | Type                                  | Default      | Description                                                         |
-| --------------- | ------------------------------------- | ------------ | ------------------------------------------------------------------- |
-| `count`         | `Signal<number>`                      | required     | Reactive total number of items.                                     |
-| `estimateSize`  | `(index: number) => number`           | required     | Estimated pixel size along the scroll axis for the item at `index`. |
-| `scrollElement` | `Signal<HTMLElement \| null>`         | required     | Reactive scroll container.                                          |
-| `orientation`   | `'vertical' \| 'horizontal'`          | `'vertical'` | Scroll axis.                                                        |
-| `overscan`      | `number`                              | `5`          | Extra items to render beyond the visible window on each side.       |
-| `getItemKey`    | `(index: number) => string \| number` | `(i) => i`   | Stable key per item; used by `@for (track item.key)`.               |
+| Property        | Type                                  | Description                                                                                  |
+| --------------- | ------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `count`         | `Signal<number>`                      | Reactive total number of items.<br>**Default:** required                                     |
+| `estimateSize`  | `(index: number) => number`           | Estimated pixel size along the scroll axis for the item at `index`.<br>**Default:** required |
+| `scrollElement` | `Signal<HTMLElement \| null>`         | Reactive scroll container.<br>**Default:** required                                          |
+| `orientation`   | `'vertical' \| 'horizontal'`          | Scroll axis.<br>**Default:** `'vertical'`                                                    |
+| `overscan`      | `number`                              | Extra items to render beyond the visible window on each side.<br>**Default:** `5`            |
+| `getItemKey`    | `(index: number) => string \| number` | Stable key per item; used by `@for (track item.key)`.<br>**Default:** `(i) => i`             |
 
 ### Returned handle
 

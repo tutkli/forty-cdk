@@ -1,19 +1,25 @@
 # Tooltip
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+A small floating label that describes its trigger on hover or focus, without ever taking focus itself.
 
-Headless implementation of the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/) with hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom`-driven positioning.
+Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom`-driven positioning are built in.
+
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 > APG: tooltips are for **non-interactive** descriptive text. If you need a click-to-open menu / popup with focusable contents, use a Popover primitive.
 
 ## Anatomy
 
-| Class               | Selector              | Role                                                                                              |
-| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------- |
-| `ForTooltip`        | `[forTooltip]`        | Wrapper. Owns `open`, delays, side / align positioning. Provides the shared context.              |
-| `ForTooltipTrigger` | `[forTooltipTrigger]` | Apply on a `<button>` or other focusable element. Emits the hover / focus / Escape signals.       |
-| `ForTooltipContent` | `[forTooltipContent]` | The bubble. Portaled to `document.body`, positioned by floating-ui while open.                    |
-| `ForTooltipArrow`   | `[forTooltipArrow]`   | Optional. Render inside the content; floating-ui's `arrow` middleware aligns it with the trigger. |
+```html
+<span forTooltip side="top" [openDelay]="400">
+  <button forTooltipTrigger type="button" aria-label="Save">💾</button>
+  <!-- rendered only when tip.open() is true; grab the root with #tip="forTooltip" -->
+  <div forTooltipContent class="my-tooltip">
+    Save changes
+    <span forTooltipArrow class="my-tooltip-arrow"></span>
+  </div>
+</span>
+```
 
 ## Examples
 
@@ -77,34 +83,46 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForTooltip`
 
-| API                | Type                                | Default | Description                                                                                                                                                 |
-| ------------------ | ----------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`             | `model<boolean>`                    | —       | Two-way bindable visibility.                                                                                                                                |
-| `side`             | `input<FloatingSide \| undefined>`  | —       | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).                                             |
-| `align`            | `input<FloatingAlign \| undefined>` | —       | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).                                          |
-| `sideOffset`       | `input<number \| undefined>`        | —       | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).                                                  |
-| `alignOffset`      | `input<number>`                     | `0`     | Gap (px) along the cross axis. Default `0`.                                                                                                                 |
-| `collisionPadding` | `input<number \| undefined>`        | —       | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).                                      |
-| `openDelay`        | `input<number \| undefined>`        | —       | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).                                                              |
-| `closeDelay`       | `input<number \| undefined>`        | —       | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).                                          |
-| `disabled`         | `input<boolean>`                    | —       | When `true`, all interaction is ignored.                                                                                                                    |
-| `showOnOverflow`   | `input<boolean \| undefined>`       | —       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).                      |
-| `hoverableContent` | `input<boolean \| undefined>`       | —       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`false`). |
+| Property           | Type                                | Description                                                                                                                                                                   |
+| ------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`             | `model<boolean>`                    | Two-way bindable visibility.<br>**Default:** —                                                                                                                                |
+| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).<br>**Default:** —                                             |
+| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).<br>**Default:** —                                          |
+| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                                  |
+| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                            |
+| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                      |
+| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                              |
+| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).<br>**Default:** —                                          |
+| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.<br>**Default:** —                                                                                                                    |
+| `showOnOverflow`   | `input<boolean \| undefined>`       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** —                      |
+| `hoverableContent` | `input<boolean \| undefined>`       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** — |
 
-### `ForTooltipTrigger`, `ForTooltipContent`, `ForTooltipArrow`
+| Data attribute        | Values             |
+| --------------------- | ------------------ |
+| `data-state`          | `open` \| `closed` |
+| `data-disabled`       | present \| absent  |
+| `data-reduced-motion` | present \| absent  |
 
-No inputs of their own — they coordinate via the `ForTooltip` context.
+### `ForTooltipTrigger`
 
-### Data attributes
+No inputs of its own — coordinates via the `ForTooltip` context.
 
-| Piece                 | Attribute             | Values             |
-| --------------------- | --------------------- | ------------------ |
-| `[forTooltip]`        | `data-state`          | `open` \| `closed` |
-| `[forTooltip]`        | `data-disabled`       | present \| absent  |
-| `[forTooltip]`        | `data-reduced-motion` | present \| absent  |
-| `[forTooltipTrigger]` | `data-state`          | `open` \| `closed` |
-| `[forTooltipContent]` | `data-state`          | `open` \| `closed` |
-| `[forTooltipContent]` | `data-reduced-motion` | present \| absent  |
+| Data attribute | Values             |
+| -------------- | ------------------ |
+| `data-state`   | `open` \| `closed` |
+
+### `ForTooltipContent`
+
+No inputs of its own — coordinates via the `ForTooltip` context.
+
+| Data attribute        | Values             |
+| --------------------- | ------------------ |
+| `data-state`          | `open` \| `closed` |
+| `data-reduced-motion` | present \| absent  |
+
+### `ForTooltipArrow`
+
+No inputs of its own — coordinates via the `ForTooltip` context.
 
 ## Scoped defaults
 
@@ -197,6 +215,8 @@ For an **instant, unconditional** open or close that ignores the delays and both
 
 ## Accessibility
 
+Implements the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tooltip/).
+
 - The trigger receives `aria-describedby="<content-id>"` only while the tooltip is open, matching APG.
 - A consumer-set `id` on the trigger element is preserved (and used as the trigger id internally); the generated `for-tooltip-trigger-*` id is only assigned when the element has none. Anchors, `aria-labelledby` references, and `<label for>` associations keep working.
 - The content carries `role="tooltip"` and a stable id wired to the trigger.
@@ -205,7 +225,7 @@ For an **instant, unconditional** open or close that ignores the delays and both
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

@@ -1,24 +1,30 @@
 # Toast
 
-Headless toast notifications. The visible toast renders with `role="status"` (`'info'` / `'success'` / `'warning'`) or `role="alert"` (`'error'`) plus `aria-live` so screen readers announce updates without forcing focus, following the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alert/).
+Brief, auto-dismissing notifications stacked in a corner, opened programmatically through ForToastManager.
 
-Two ways to use the same primitive:
+The visible toast renders with `role="status"` (`'info'` / `'success'` / `'warning'`) or `role="alert"` (`'error'`) plus `aria-live` so screen readers announce updates without forcing focus. Two ways to use the same primitive:
 
 - **Programmatic** (the common path): inject `ForToastManager` and call `show({ title, … })` from anywhere.
 - **Declarative**: drop `<div forToast>` directly in any template, controlling mount/unmount with `@if`.
 
 ## Anatomy
 
-| Class                 | Selector                                      | Role                                                                                                                                                                                         |
-| --------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForToastManager`     | injectable                                    | Programmatic stack. `show()`, `dismiss(id)`, `dismissAll()`, reactive `toasts()` / `count()`.                                                                                                |
-| `ForToastViewport`    | `[forToastViewport]` / `<for-toast-viewport>` | Mount once per region near the app root. `role="region"`, renders the toasts of its `[region]`. The F6 hotkey is coordinated once by the manager, so it never double-fires across viewports. |
-| `ForToast`            | `[forToast]`                                  | One toast. `role="status"` / `role="alert"` per variant, timer, hover/focus pause, Escape-to-close.                                                                                          |
-| `ForToastTitle`       | `[forToastTitle]`                             | Wires `aria-labelledby`.                                                                                                                                                                     |
-| `ForToastDescription` | `[forToastDescription]`                       | Wires `aria-describedby`.                                                                                                                                                                    |
-| `ForToastAction`      | `[forToastAction]`                            | Action button — emits `(dismiss)` with reason `'action'` after invoking your `(click)` handler. Accepts `[altText]` for WCAG 2.2.1 announcements.                                            |
-| `ForToastClose`       | `[forToastClose]`                             | Close button — emits `(dismiss)` with reason `'manual'`. Carries `aria-label="Close"`.                                                                                                       |
-| `ForToastRef<R>`      | handle                                        | Per-toast: `dismiss(reason, value)`, `update(patch)`, `closed: Promise`, signals of state.                                                                                                   |
+Mount one viewport near the app root and drive it programmatically through `ForToastManager`:
+
+```html
+<for-toast-viewport [maxVisible]="5" />
+```
+
+The viewport renders each toast in this shape (the declarative path composes the same pieces by hand inside a `<div forToast>`):
+
+```html
+<div forToast variant="success" [duration]="5000">
+  <div forToastTitle>Saved</div>
+  <div forToastDescription>Your changes were saved.</div>
+  <button forToastAction altText="Undo (Cmd+Z)">Undo</button>
+  <button forToastClose>×</button>
+</div>
+```
 
 ## Mount the viewport once
 
@@ -97,18 +103,23 @@ If two viewports share the same region, only the first one mounted renders it; t
 
 ## API
 
-### Data attributes
+### `ForToast`
 
-| Piece                                         | Attribute                | Values                                                                                                      |
-| --------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `[forToast]`                                  | `data-state`             | `open` (always present while mounted; the consumer unmounts on close, so there is no `closed` state)        |
-| `[forToast]`                                  | `data-variant`           | `info` \| `success` \| `warning` \| `error`                                                                 |
-| `[forToast]`                                  | `data-paused`            | present / absent (the auto-dismiss timer is paused)                                                         |
-| `[forToast]`                                  | `data-swipe`             | `start` \| `move` \| `cancel` \| `end` (absent until a swipe gesture begins)                                |
-| `[forToast]`                                  | `data-swipe-direction`   | `left` \| `right` \| `up` \| `down` (absent until a swipe arms)                                             |
-| `[forToast]`                                  | `data-front-stack-index` | `0`-based index in the visible stack (set by the viewport on the programmatic path; `0` is the front toast) |
-| `[forToastViewport]` / `<for-toast-viewport>` | `data-region`            | the viewport's region name (default `default`)                                                              |
-| `[forToastViewport]` / `<for-toast-viewport>` | `data-toast-count`       | number of toasts currently rendered                                                                         |
+| Data attribute           | Values                                                                                                      |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `data-state`             | `open` (always present while mounted; the consumer unmounts on close, so there is no `closed` state)        |
+| `data-variant`           | `info` \| `success` \| `warning` \| `error`                                                                 |
+| `data-paused`            | present / absent (the auto-dismiss timer is paused)                                                         |
+| `data-swipe`             | `start` \| `move` \| `cancel` \| `end` (absent until a swipe gesture begins)                                |
+| `data-swipe-direction`   | `left` \| `right` \| `up` \| `down` (absent until a swipe arms)                                             |
+| `data-front-stack-index` | `0`-based index in the visible stack (set by the viewport on the programmatic path; `0` is the front toast) |
+
+### `ForToastViewport`
+
+| Data attribute     | Values                                         |
+| ------------------ | ---------------------------------------------- |
+| `data-region`      | the viewport's region name (default `default`) |
+| `data-toast-count` | number of toasts currently rendered            |
 
 ## Programmatic API
 
@@ -358,6 +369,8 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
 
 ## Accessibility
 
+Implements the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alert/).
+
 - `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces, the screen reader reads the **whole** toast rather than only the changed node. It does **not** by itself guarantee a re-announcement on a `ref.update()` text change, and it is irrelevant on the silenced (`altText`) path where `aria-live` is `off`. Re-announcement on update is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
 - `aria-labelledby` and `aria-describedby` wire automatically from `[forToastTitle]` / `[forToastDescription]`. Multiple titles / descriptions concatenate ids.
 - `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
@@ -387,7 +400,7 @@ ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly — style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exception is per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
 

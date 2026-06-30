@@ -1,10 +1,11 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  type ElementRef,
   computed,
+  type ElementRef,
   signal,
   viewChild,
+  ViewEncapsulation,
 } from '@angular/core';
 import {
   ForSelect,
@@ -16,93 +17,209 @@ import {
 } from 'forty-cdk/select';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 @Component({
   selector: 'app-select-virtualized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   imports: [
-    DemoLayout,
     ForSelect,
     ForSelectTrigger,
     ForSelectValue,
     ForSelectContent,
     ForSelectOption,
     ForSelectIndicator,
-    Icon,
   ],
   template: `
-    <playground-demo
-      title="Virtualized (5,000 options)"
-      subtitle="Setting [totalCount] switches ForSelect to the virtualized activedescendant model: [forSelectContent] becomes the single Tab stop and the active option is tracked by aria-activedescendant instead of DOM focus, so rows can recycle as the listbox scrolls. We render the window with the library's injectVirtualizer core, give each option its absolute [posInSet], and forward (scrollToIndex) so arrow / Home / End can reach options outside the window."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/select/examples/virtualized.example.ts"
+    <div
+      forSelect
+      #select="forSelect"
+      class="virt-select-field"
+      [(value)]="value"
+      [itemToLabel]="identity"
+      [totalCount]="items.length"
+      [visibleRange]="v.range()"
+      (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
+      placeholder="Pick a city"
+      ariaLabel="City"
     >
-      <div demo class="select-demo">
+      <button forSelectTrigger type="button" class="virt-select-trigger">
+        <span forSelectValue></span>
+        <svg class="virt-select-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      @if (select.open()) {
         <div
-          forSelect
-          #select="forSelect"
-          class="select-field"
-          [(value)]="value"
-          [itemToLabel]="identity"
-          [totalCount]="items.length"
-          [visibleRange]="v.range()"
-          (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
-          placeholder="Pick a city"
-          ariaLabel="City"
+          #scroll
+          forSelectContent
+          class="virt-select-content"
+          animate.enter="virt-select-pop-in"
         >
-          <button forSelectTrigger type="button" class="pg-select-trigger">
-            <span forSelectValue></span>
-            <app-icon class="pg-select-chevron" name="chevron-down" />
-          </button>
-          @if (select.open()) {
-            <div #scroll forSelectContent class="pg-select-content" animate.enter="pg-pop-in">
-              <div class="pg-select-vtrack" [style.height.px]="v.totalSize()">
-                @for (vi of v.virtualItems(); track vi.key) {
-                  <button
-                    forSelectOption
-                    type="button"
-                    class="pg-select-option pg-select-option--virtual"
-                    [value]="items[vi.index]!"
-                    [posInSet]="vi.index"
-                    [style.transform]="'translateY(' + vi.start + 'px)'"
-                  >
-                    <span forSelectIndicator class="pg-select-indicator">
-                      <app-icon name="check" />
-                    </span>
-                    {{ items[vi.index]! }}
-                  </button>
-                }
-              </div>
-            </div>
-          }
+          <div class="virt-select-track" [style.height.px]="v.totalSize()">
+            @for (vi of v.virtualItems(); track vi.key) {
+              <button
+                forSelectOption
+                type="button"
+                class="virt-select-option"
+                [value]="items[vi.index]!"
+                [posInSet]="vi.index"
+                [style.transform]="'translateY(' + vi.start + 'px)'"
+              >
+                <span forSelectIndicator class="virt-select-indicator">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      d="m4.5 12.75 6 6 9-13.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.75"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                {{ items[vi.index]! }}
+              </button>
+            }
+          </div>
         </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-hint">
-          Open and type-jump with the arrow keys — try End to leap to the last option. Only the
-          visible window is in the DOM at any time.
-        </p>
-        <p class="pg-state">
-          open: <b>{{ select.open() }}</b
-          ><br />
-          value: <b>{{ value().at(0) ?? '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      }
+    </div>
   `,
   styles: `
-    .select-demo {
+    app-select-virtualized-example {
+      display: contents;
+    }
+
+    .virt-select-field {
+      display: block;
+      width: min(260px, 100%);
+    }
+
+    .virt-select-trigger {
       display: flex;
-      justify-content: center;
-      padding: 2.5rem 0;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      width: 100%;
+      font: inherit;
+      font-size: 0.875rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .virt-select-trigger:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .virt-select-chevron {
+      flex: none;
+      width: 14px;
+      height: 14px;
+      color: var(--pg-text-muted);
+      transition: transform 0.15s ease;
+    }
+
+    .virt-select-trigger[aria-expanded='true'] .virt-select-chevron {
+      transform: rotate(180deg);
+    }
+
+    .virt-select-content {
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: var(--for-anchor-width);
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 4px;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .virt-select-track {
+      position: relative;
+      flex: none;
       width: 100%;
     }
 
-    .select-field {
-      display: block;
-      width: min(260px, 100%);
+    .virt-select-option {
+      position: absolute;
+      inset-inline: 0;
+      height: 36px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      font: inherit;
+      font-size: 0.875rem;
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .virt-select-option[data-highlighted],
+    .virt-select-option:not([data-disabled]):hover {
+      background: var(--pg-surface-2);
+    }
+
+    .virt-select-option[data-state='checked'] {
+      color: var(--pg-primary);
+      font-weight: 600;
+    }
+
+    .virt-select-indicator {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.1em;
+      height: 1.1em;
+      color: var(--pg-primary);
+    }
+
+    .virt-select-indicator[hidden] {
+      display: none;
+    }
+
+    .virt-select-indicator svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .virt-select-pop-in {
+      transform-origin: var(--for-content-transform-origin, center);
+      animation: virt-select-pop-in 0.2s var(--pg-ease-spring) both;
+    }
+
+    @keyframes virt-select-pop-in {
+      from {
+        opacity: 0;
+        scale: 0.9;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .virt-select-pop-in {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })

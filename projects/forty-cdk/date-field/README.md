@@ -1,6 +1,8 @@
 # DateField
 
-Headless, segmented, spin-editable date input — the keyboard-first counterpart to [Calendar](../calendar/README.md). There is **no single WAI-ARIA APG pattern** for a date field; it is a composition of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) inside a labelled `role="group"`. Each day / month / year part is an independent `role="spinbutton"` segment, so entry is unambiguous and locale-correct — no free-text parsing, no `03/04`-is-it-March-4th guesswork. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
+A segmented date (and optional time) input over a pluggable date adapter — each part a spinbutton with keyboard stepping, locale-driven segment order and min / max clamping.
+
+The keyboard-first counterpart to [Calendar](../calendar/README.md): each day / month / year part is an independent `role="spinbutton"` segment inside a labelled `role="group"`, so entry is unambiguous and locale-correct — no free-text parsing, no `03/04`-is-it-March-4th guesswork. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
 
 `ForDateField` implements `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until every segment is filled.
 
@@ -24,11 +26,15 @@ bootstrapApplication(App, {
 
 ## Anatomy
 
-| Class                 | Selector                | Role                                                                                               |
-| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
-| `ForDateField`        | `[forDateField]`        | Root (`role="group"`). Owns the entered parts, composes the value, and exposes `segments()`.       |
-| `ForDateFieldSegment` | `[forDateFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing. |
-| `ForDateFieldLiteral` | `[forDateFieldLiteral]` | A decorative separator (`/`, `.`, `-`). `aria-hidden`, out of the tab order.                       |
+```html
+<div forDateField [(value)]="date" ariaLabel="Date" #field="forDateField">
+  <!-- field.segments() yields the locale-ordered parts; render each one: -->
+  <!-- literal separator (/, ., -) — aria-hidden, out of the tab order -->
+  <span forDateFieldLiteral>{{ seg.text }}</span>
+  <!-- editable part — role="spinbutton", one roving tab stop -->
+  <span forDateFieldSegment [segment]="seg.type">{{ seg.text }}</span>
+</div>
+```
 
 ## Examples
 
@@ -112,17 +118,17 @@ export class DobFormField {
 
 ### `ForDateField`
 
-| API           | Type                                                  | Default | Description                                                                                                           |
-| ------------- | ----------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<D \| null>`                                    | —       | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing. Default `null`.  |
-| `minDate`     | `input<D \| null>`                                    | `null`  | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below.                  |
-| `maxDate`     | `input<D \| null>`                                    | `null`  | Maximum date (inclusive). A composed value above it is clamped down.                                                  |
-| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | `'day'` | Date-time precision. `'day'` is date-only; coarser-than-day appends time segments. See below.                         |
-| `hourCycle`   | `input<12 \| 24 \| null>`                             | `null`  | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.                              |
-| `locale`      | `input<string \| null>`                               | `null`  | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.                             |
-| `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | `{}`    | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`. |
-| `ariaLabel`   | `input<string \| null>`                               | `null`  | Accessible name for the group. Emits no `aria-label` while `null`.                                                    |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | `null`  | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.          |
+| Property      | Type                                                  | Description                                                                                                                                |
+| ------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<D \| null>`                                    | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing.<br>**Default:** `null`                |
+| `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null`                |
+| `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive). A composed value above it is clamped down.<br>**Default:** `null`                                                |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | Date-time precision. `'day'` is date-only; coarser-than-day appends time segments. See below.<br>**Default:** `'day'`                      |
+| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                            |
+| `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.<br>**Default:** `null`                           |
+| `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`.<br>**Default:** `{}` |
+| `ariaLabel`   | `input<string \| null>`                               | Accessible name for the group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                  |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`        |
 
 Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled`, `readonly`, `required`, `invalid`, `name`, `errors`, `touched` (bound automatically by `[formField]`).
 
@@ -197,6 +203,8 @@ Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 The day clamps to the current month's length (e.g. 31 → 28 in February), and a composed value is clamped into `[minDate, maxDate]`.
 
 ## Accessibility
+
+Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — there is no single APG pattern for a date field, so each segment is an independent spinbutton inside a labelled `role="group"`.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label).
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the month segment also exposes a localized `aria-valuetext` ("March"), so screen readers read the name rather than the number.

@@ -1,129 +1,189 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { type VetoableNativeEvent } from 'forty-cdk/core';
+import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
 import {
   ForDialog,
   ForDialogClose,
-  type ForDialogCloseReason,
   ForDialogDescription,
   ForDialogTitle,
   ForDialogTrigger,
 } from 'forty-cdk/dialog';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-dialog-guarded-close-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForDialog,
-    ForDialogTrigger,
-    ForDialogTitle,
-    ForDialogDescription,
-    ForDialogClose,
-    ControlSwitch,
-  ],
+  encapsulation: ViewEncapsulation.None,
+  imports: [ForDialog, ForDialogTrigger, ForDialogTitle, ForDialogDescription, ForDialogClose],
   template: `
-    <playground-demo
-      title="Guarded close"
-      subtitle="Vetoable dismissals: (escapeKeyDown) and (interactOutside) fire before (dismiss). Calling preventDefault() on the event keeps the dialog open — here, while 'block dismiss' is on. The close button always closes regardless. Modal with no backdrop, so the page behind is inert but undimmed."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/guarded-close.example.ts"
+    <button
+      forDialogTrigger
+      class="guarded-btn guarded-btn--primary"
+      [(open)]="open"
+      controls="guarded-dialog"
     >
-      <div demo class="pg-center">
-        <button
-          forDialogTrigger
-          class="pg-btn pg-btn--primary"
-          [(open)]="guardOpen"
-          controls="pg-guarded"
-        >
-          Edit note
-        </button>
-      </div>
+      Edit note
+    </button>
 
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="block dismiss"
-          hint="When on, calls preventDefault() on the (escapeKeyDown) and (interactOutside) vetoes so Escape and click-outside keep the dialog open. The close buttons still close it."
-          [(checked)]="blockDismiss"
-        />
-
-        <p class="pg-state">
-          last blocked: <b>{{ lastBlocked() ?? '—' }}</b
-          ><br />last close: <b>{{ guardReason() ?? '—' }}</b>
-        </p>
-        <p class="pg-hint">
-          With the lock on, Escape and click-outside are vetoed; Discard / Save still close.
-        </p>
-      </div>
-    </playground-demo>
-
-    @if (guardOpen()) {
+    @if (open()) {
       <div
         forDialog
-        id="pg-guarded"
-        class="pg-dialog"
-        (escapeKeyDown)="onGuardEscape($event)"
-        (interactOutside)="onGuardInteractOutside($event)"
-        (dismiss)="onGuardClose($event)"
-        animate.enter="pg-fade-in"
-        animate.leave="pg-fade-out"
+        id="guarded-dialog"
+        class="guarded-dialog"
+        (escapeKeyDown)="$event.preventDefault()"
+        (interactOutside)="$event.preventDefault()"
+        (dismiss)="open.set(false)"
+        animate.enter="guarded-fade-in"
+        animate.leave="guarded-fade-out"
       >
         <h2 forDialogTitle>Edit note</h2>
         <p forDialogDescription>Make a change, then try Escape or click outside.</p>
-        <label class="pg-field">
-          <span class="pg-label">Note</span>
-          <input class="pg-input" [value]="draft()" (input)="onDraftInput($event)" />
+        <label class="guarded-field">
+          <span class="guarded-label">Note</span>
+          <input class="guarded-input" [value]="draft()" (input)="onDraftInput($event)" />
         </label>
-        @if (blockDismiss()) {
-          <div class="pg-dialog-warn" role="status">
-            Dismiss is vetoed — use Discard or Save to close.
-          </div>
-        }
-        <div class="pg-dialog-actions">
-          <button class="pg-btn" forDialogClose>Discard</button>
-          <button class="pg-btn pg-btn--primary" type="button" (click)="save()">Save</button>
+        <div class="guarded-warn" role="status">
+          Dismiss is vetoed — use Discard or Save to close.
+        </div>
+        <div class="guarded-actions">
+          <button class="guarded-btn" forDialogClose>Discard</button>
+          <button class="guarded-btn guarded-btn--primary" type="button" (click)="open.set(false)">
+            Save
+          </button>
         </div>
       </div>
     }
   `,
   styles: `
-    .pg-center {
+    app-dialog-guarded-close-example {
+      display: contents;
+    }
+
+    .guarded-btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .guarded-btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .guarded-btn--primary,
+    .guarded-btn--primary:hover {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .guarded-btn--primary:hover {
+      background: var(--pg-primary-hover);
+      border-color: var(--pg-primary-hover);
+    }
+
+    .guarded-dialog {
+      position: fixed;
+      z-index: 51;
+      display: block;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(440px, calc(100vw - 2rem));
+      padding: 1.5rem;
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-lg);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .guarded-dialog h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.15rem;
+    }
+
+    .guarded-dialog > p {
+      margin: 0 0 1.5rem;
+      color: var(--pg-text-muted);
+    }
+
+    .guarded-field {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .guarded-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--pg-text);
+    }
+
+    .guarded-input {
+      width: 100%;
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+    }
+
+    .guarded-warn {
+      margin: 0 0 1.25rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: var(--pg-radius-sm);
+      border-left: 3px solid var(--pg-warning);
+      background: color-mix(in srgb, var(--pg-warning) 14%, var(--pg-surface));
+      font-size: 0.85rem;
+      color: var(--pg-text);
+    }
+
+    .guarded-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
+    @keyframes guarded-fade-in {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.92);
+      }
+    }
+
+    @keyframes guarded-fade-out {
+      to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.96);
+      }
+    }
+
+    .guarded-fade-in {
+      animation: guarded-fade-in 0.24s var(--pg-ease-spring) both;
+    }
+
+    .guarded-fade-out {
+      animation: guarded-fade-out 0.15s ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .guarded-fade-in,
+      .guarded-fade-out {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })
 export class DialogGuardedCloseExample {
-  protected readonly guardOpen = signal(false);
-  protected readonly blockDismiss = signal(true);
+  protected readonly open = signal(false);
   protected readonly draft = signal('');
-  protected readonly lastBlocked = signal<string | null>(null);
-  protected readonly guardReason = signal<ForDialogCloseReason | 'programmatic' | null>(null);
-
-  protected onGuardEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
-    if (this.blockDismiss()) {
-      event.preventDefault();
-      this.lastBlocked.set('escape');
-    }
-  }
-
-  protected onGuardInteractOutside(event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    if (this.blockDismiss()) {
-      event.preventDefault();
-      this.lastBlocked.set('interactOutside');
-    }
-  }
-
-  protected onGuardClose(reason: ForDialogCloseReason): void {
-    this.guardReason.set(reason);
-    this.guardOpen.set(false);
-  }
-
-  protected save(): void {
-    this.guardReason.set('programmatic');
-    this.guardOpen.set(false);
-  }
 
   protected onDraftInput(event: Event): void {
     this.draft.set((event.target as HTMLInputElement).value);

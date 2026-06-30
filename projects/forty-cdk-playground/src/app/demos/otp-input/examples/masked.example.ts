@@ -1,76 +1,114 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-input';
-
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
+import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
+import { ForOtpInput, ForOtpInputSlot } from 'forty-cdk/otp-input';
 
 @Component({
   selector: 'app-otp-masked-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ControlSelect, ControlSwitch, ForOtpInput, ForOtpInputSlot],
+  encapsulation: ViewEncapsulation.None,
+  imports: [ForOtpInput, ForOtpInputSlot],
   template: `
-    <playground-demo
-      title="Masked PIN, character class & paste"
-      subtitle="type restricts the allowed characters live — rejected keystrokes never enter the value and fire valueInvalid. mask obscures the slots while value() stays raw. A pasteTransformer strips spaces and dashes before filtering, so pasting “12 34 56” fills cleanly. Switch type to alphabetic, then try typing a digit."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/masked.example.ts"
+    <div
+      forOtpInput
+      class="masked-otp"
+      [(value)]="pin"
+      [length]="6"
+      type="numeric"
+      mask
+      [pasteTransformer]="stripSeparators"
+      ariaLabel="One-time PIN"
+      #otp="forOtpInput"
     >
-      <div demo>
-        <div
-          forOtpInput
-          class="pg-otp"
-          [(value)]="pin"
-          [length]="6"
-          [type]="type()"
-          [mask]="mask()"
-          [pasteTransformer]="stripSeparators"
-          ariaLabel="One-time PIN"
-          (valueInvalid)="onInvalid()"
-          #otp="forOtpInput"
-        >
-          @for (i of otp.slots(); track i) {
-            <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="pg-otp-slot">
-              {{ s.char() }}
-              @if (s.hasFakeCaret()) {
-                <span class="pg-otp-caret"></span>
-              }
-            </div>
+      @for (i of otp.slots(); track i) {
+        <div forOtpInputSlot [index]="i" #s="forOtpInputSlot" class="masked-otp-slot">
+          {{ s.char() }}
+          @if (s.hasFakeCaret()) {
+            <span class="masked-otp-caret"></span>
           }
         </div>
-      </div>
+      }
+    </div>
+  `,
+  styles: `
+    app-otp-masked-example {
+      display: contents;
+    }
 
-      <div controls class="pg-controls">
-        <app-control-select
-          label="type"
-          hint="The allowed character class. Anything outside it is rejected as you type."
-          [options]="typeOptions"
-          [(value)]="type"
-        />
-        <app-control-switch label="mask" [(checked)]="mask" />
-        <p class="pg-state">
-          value: <b>{{ pin() || '∅' }}</b
-          ><br />
-          rejected keystrokes: <b>{{ rejected() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    .masked-otp {
+      position: relative;
+      display: inline-flex;
+      gap: 0.5rem;
+    }
+
+    .masked-otp > input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: transparent;
+      caret-color: transparent;
+      outline: none;
+      cursor: text;
+      opacity: 0;
+    }
+
+    .masked-otp-slot {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.75rem;
+      height: 3.25rem;
+      font-size: 1.3rem;
+      font-variant-numeric: tabular-nums;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .masked-otp-slot[data-active] {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .masked-otp[data-complete] .masked-otp-slot {
+      border-color: var(--pg-primary);
+    }
+
+    .masked-otp-caret {
+      width: 2px;
+      height: 1.5rem;
+      background: var(--pg-primary);
+      border-radius: 1px;
+      animation: masked-otp-caret 1s steps(2, jump-none) infinite;
+    }
+
+    @keyframes masked-otp-caret {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .masked-otp-slot {
+        transition: none;
+      }
+
+      .masked-otp-caret {
+        animation: none;
+      }
+    }
   `,
 })
 export class OtpMaskedExample {
   protected readonly pin = signal('');
-  protected readonly type = signal<OtpInputType>('numeric');
-  protected readonly mask = signal(true);
-  protected readonly rejected = signal(0);
-
-  protected readonly typeOptions: readonly ControlOption<OtpInputType>[] = [
-    { value: 'numeric', label: 'Numeric' },
-    { value: 'alphanumeric', label: 'Alphanumeric' },
-    { value: 'alphabetic', label: 'Alphabetic' },
-  ];
 
   protected readonly stripSeparators = (pasted: string): string => pasted.replace(/[\s-]/g, '');
-
-  protected onInvalid(): void {
-    this.rejected.update((n) => n + 1);
-  }
 }

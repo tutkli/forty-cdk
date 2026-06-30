@@ -1,17 +1,29 @@
 # DropdownMenu
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+A button that opens a menu of actions, with full keyboard navigation, typeahead and submenus.
 
-Headless implementation of the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/): a button that opens a menu of actions on click, ArrowDown, or ArrowUp.
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## Anatomy
 
-| Class                    | Selector                   | Role                                                                                |
-| ------------------------ | -------------------------- | ----------------------------------------------------------------------------------- |
-| `ForDropdownMenu`        | `[forDropdownMenu]`        | Root. Owns open state, ids, item collection, navigate / typeahead / open semantics. |
-| `ForDropdownMenuTrigger` | `[forDropdownMenuTrigger]` | The button. Wires `aria-haspopup="menu"`, `aria-expanded`, `aria-controls`.         |
+```html
+<div forDropdownMenu #menu="forDropdownMenu" side="bottom" align="start">
+  <button forDropdownMenuTrigger>Options</button>
+  <!-- @if (menu.open()) { -->
+  <div forMenuContent>
+    <button forMenuItem (activate)="cut()">Cut</button>
+    <button forMenuItem (activate)="copy()">Copy</button>
+    <hr forMenuSeparator />
+    <div forMenuRadioGroup [(value)]="alignment">
+      <button forMenuRadioItem value="left">Left</button>
+      <button forMenuRadioItem value="center">Center</button>
+    </div>
+  </div>
+  <!-- } -->
+</div>
+```
 
-The actual menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder — same primitives are used by `[forContextMenu]`.
+The menu items, content surface, radio groups, separators, and groups come from the [`menu/`](../menu/README.md) folder — the same primitives are used by `[forContextMenu]`.
 
 ## Examples
 
@@ -105,25 +117,25 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForDropdownMenu`
 
-| API                  | Type                                                      | Default    | Description                                                                                                                                                                    |
-| -------------------- | --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `open`               | `model<boolean>`                                          | `false`    | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
-| `side`               | `input<string>`                                           | `'bottom'` | Anchor side of `[forMenuContent]` against the trigger.                                                                                                                         |
-| `align`              | `input<string>`                                           | `'start'`  | Alignment along `side` (`'start'` / `'center'` / `'end'`).                                                                                                                     |
-| `sideOffset`         | `input<number>`                                           | `4`        | Gap (px) between the trigger and the content along the main axis.                                                                                                              |
-| `alignOffset`        | `input<number>`                                           | `0`        | Gap (px) along the cross axis (parallel to `side`).                                                                                                                            |
-| `loop`               | `input<boolean>`                                          | `true`     | Whether arrow navigation wraps at the ends.                                                                                                                                    |
-| `dir`                | `input<string>`                                           | `'ltr'`    | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
-| `disabled`           | `input<boolean>`                                          | `false`    | When `true`, trigger interactions are ignored.                                                                                                                                 |
-| `dismissible`        | `input<boolean>`                                          | `true`     | When `false`, Escape and outside interactions don't close.                                                                                                                     |
-| `returnFocus`        | `input<boolean>`                                          | `true`     | When `true`, focus returns to the trigger on close.                                                                                                                            |
-| `ariaLabel`          | `input<string \| null>`                                   | `null`     | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                                                                              |
-| `escapeKeyDown`      | `output<VetoableNativeEvent<KeyboardEvent>>`              | —          | Output. Escape pressed while the menu is the topmost dismissable layer.                                                                                                        |
-| `pointerDownOutside` | `output<VetoableNativeEvent<PointerEvent>>`               | —          | Output. Pointer-down on a target outside content + trigger.                                                                                                                    |
-| `focusOutside`       | `output<VetoableNativeEvent<FocusEvent>>`                 | —          | Output. Focus moves outside content + trigger.                                                                                                                                 |
-| `interactOutside`    | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | —          | Output. Composite — fires alongside the two above (and shares their veto state).                                                                                               |
-| `autoFocusOnOpen`    | `output<VetoableEvent>`                                   | —          | Output. Just before focus moves to the first / last enabled item on mount.                                                                                                     |
-| `autoFocusOnClose`   | `output<VetoableEvent>`                                   | —          | Output. Just before focus returns to the trigger on unmount.                                                                                                                   |
+| Property             | Type                                                      | Description                                                                                                                                                                                            |
+| -------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`               | `model<boolean>`                                          | Two-way bindable. Whether the menu is shown.<br>**Default:** `false`                                                                                                                                   |
+| `side`               | `input<string>`                                           | Anchor side of `[forMenuContent]` against the trigger.<br>**Default:** `'bottom'`                                                                                                                      |
+| `align`              | `input<string>`                                           | Alignment along `side` (`'start'` / `'center'` / `'end'`).<br>**Default:** `'start'`                                                                                                                   |
+| `sideOffset`         | `input<number>`                                           | Gap (px) between the trigger and the content along the main axis.<br>**Default:** `4`                                                                                                                  |
+| `alignOffset`        | `input<number>`                                           | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                                                                                |
+| `loop`               | `input<boolean>`                                          | Whether arrow navigation wraps at the ends.<br>**Default:** `true`                                                                                                                                     |
+| `dir`                | `input<string>`                                           | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden.<br>**Default:** `'ltr'` |
+| `disabled`           | `input<boolean>`                                          | When `true`, trigger interactions are ignored.<br>**Default:** `false`                                                                                                                                 |
+| `dismissible`        | `input<boolean>`                                          | When `false`, Escape and outside interactions don't close.<br>**Default:** `true`                                                                                                                      |
+| `returnFocus`        | `input<boolean>`                                          | When `true`, focus returns to the trigger on close.<br>**Default:** `true`                                                                                                                             |
+| `ariaLabel`          | `input<string \| null>`                                   | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.<br>**Default:** `null`                                                                                               |
+| `escapeKeyDown`      | `output<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape pressed while the menu is the topmost dismissable layer.<br>**Default:** —                                                                                                              |
+| `pointerDownOutside` | `output<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down on a target outside content + trigger.<br>**Default:** —                                                                                                                          |
+| `focusOutside`       | `output<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside content + trigger.<br>**Default:** —                                                                                                                                       |
+| `interactOutside`    | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite — fires alongside the two above (and shares their veto state).<br>**Default:** —                                                                                                     |
+| `autoFocusOnOpen`    | `output<VetoableEvent>`                                   | Output. Just before focus moves to the first / last enabled item on mount.<br>**Default:** —                                                                                                           |
+| `autoFocusOnClose`   | `output<VetoableEvent>`                                   | Output. Just before focus returns to the trigger on unmount.<br>**Default:** —                                                                                                                         |
 
 Every output above is vetoable — each handler receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 

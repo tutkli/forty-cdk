@@ -4,56 +4,35 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  contentChildren,
   inject,
   input,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty-cdk/breadcrumbs';
 import { skip } from 'rxjs';
 
 import { DocSection } from '../doc/doc-section';
-import { parseReadme } from '../doc/markdown';
-import { DocToc } from '../doc/doc-toc';
-import { groupLabelForSlug, primitiveBySlug } from '../primitives';
+import { DocToc, type TocItem } from '../doc/doc-toc';
+import { type DocSectionData, parseReadme, stripText } from '../doc/markdown';
+import { primitiveBySlug } from '../primitives';
+import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
+
+function stripLeadingDescription(introHtml: string, description: string): string {
+  const lead = /^\s*<p>([\s\S]*?)<\/p>\s*/.exec(introHtml);
+  if (lead && stripText(lead[1]) === description.trim()) {
+    return introHtml.slice(lead[0].length);
+  }
+  return introHtml;
+}
 
 @Component({
   selector: 'primitive-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DocSection,
-    DocToc,
-    ForBreadcrumbs,
-    ForBreadcrumbItem,
-    ForBreadcrumbSeparator,
-    RouterLink,
-    Icon,
-  ],
+  imports: [DocSection, DocToc, RouterLink, Icon],
   template: `
-    <nav forBreadcrumbs class="pg-crumbs" aria-label="Breadcrumb">
-      <ol class="pg-crumbs-list">
-        <li class="pg-crumb">
-          <a forBreadcrumbItem class="pg-crumb-link" [routerLink]="['/']">Home</a>
-        </li>
-        <li forBreadcrumbSeparator class="pg-crumb-sep">
-          <app-icon name="chevron-right" />
-        </li>
-        <li class="pg-crumb">
-          <span class="pg-crumb-group">{{ group() }}</span>
-        </li>
-        <li forBreadcrumbSeparator class="pg-crumb-sep">
-          <app-icon name="chevron-right" />
-        </li>
-        <li class="pg-crumb">
-          <a forBreadcrumbItem class="pg-crumb-link" [routerLink]="['/', slug()]" [current]="true">
-            {{ meta().title }}
-          </a>
-        </li>
-      </ol>
-    </nav>
-
     <header class="head">
       <div class="head-text">
         <h1>{{ meta().title }}</h1>
@@ -68,6 +47,8 @@ import { Icon } from './icon';
 
     <div class="layout">
       <div class="main">
+        <ng-content select="[hero]" />
+
         @if (introHtml(); as intro) {
           <div class="pg-doc-prose pg-doc-intro" [innerHTML]="intro"></div>
         }
@@ -78,13 +59,15 @@ import { Icon } from './icon';
 
         <section class="pg-doc-section" [id]="examplesMeta().slug">
           <h2 class="pg-doc-h2">
+            {{ examplesMeta().title }}
             <a
               class="pg-doc-anchor"
-              [href]="'#' + examplesMeta().slug"
+              [routerLink]="[]"
+              [fragment]="examplesMeta().slug"
               [attr.aria-label]="examplesMeta().title + ' permalink'"
-              >#</a
             >
-            {{ examplesMeta().title }}
+              <app-icon name="link" />
+            </a>
           </h2>
           <div class="examples">
             <ng-content />
@@ -111,7 +94,7 @@ import { Icon } from './icon';
       align-items: flex-start;
       justify-content: space-between;
       gap: 1rem;
-      max-width: 980px;
+      max-width: 1180px;
       margin: 0 auto 2.5rem;
     }
 
@@ -200,13 +183,14 @@ export class PrimitivePage {
   readonly slug = input.required<string>();
   readonly readme = input.required<string>();
 
+  protected readonly demos = contentChildren(DemoLayout);
+
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
-  protected readonly group = computed(() => groupLabelForSlug(this.slug()));
 
   readonly #parsed = computed(() => parseReadme(this.readme()));
 
   protected readonly introHtml = computed(() => {
-    const intro = this.#parsed().intro;
+    const intro = stripLeadingDescription(this.#parsed().intro, this.meta().description);
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
 
@@ -234,12 +218,26 @@ export class PrimitivePage {
     return { title: section.title, slug: section.slug };
   });
 
-  protected readonly tocItems = computed(() =>
-    [...this.sectionsBefore(), this.examplesMeta(), ...this.sectionsAfter()].map((section) => ({
+  protected readonly tocItems = computed<readonly TocItem[]>(() => {
+    const toToc = (section: DocSectionData): TocItem => ({
       title: section.title,
       slug: section.slug,
-    })),
-  );
+      children: section.subsections.length
+        ? section.subsections.map((sub) => ({ title: sub.title, slug: sub.slug }))
+        : undefined,
+    });
+
+    const exampleChildren = this.demos()
+      .filter((demo) => !demo.hero())
+      .map((demo) => ({ title: demo.title(), slug: demo.tocSlug() }));
+
+    const examples: TocItem = {
+      ...this.examplesMeta(),
+      children: exampleChildren.length ? exampleChildren : undefined,
+    };
+
+    return [...this.sectionsBefore().map(toToc), examples, ...this.sectionsAfter().map(toToc)];
+  });
 
   constructor() {
     afterNextRender(() => {

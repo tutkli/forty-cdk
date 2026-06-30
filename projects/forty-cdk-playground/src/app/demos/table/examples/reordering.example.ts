@@ -12,14 +12,12 @@ import {
   type TableRowReorderDescriptor,
 } from 'forty-cdk/table';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import { COLUMN_LABELS, PEOPLE, type Person, type PersonColumn, personField } from './people';
 
 @Component({
   selector: 'app-table-reordering-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForTable,
     ForTableHeaderRow,
     ForTableRow,
@@ -31,89 +29,69 @@ import { COLUMN_LABELS, PEOPLE, type Person, type PersonColumn, personField } fr
     ForDragPlaceholder,
   ],
   template: `
-    <playground-demo
-      title="Column & row reordering"
-      subtitle="The companion directives [forTableColumnReorder] (on the header row) and [forTableRowReorder] (on the rowgroup) wrap the drag-drop primitive. Add [forDraggable] [dragData] to each header cell / row, then drag to reorder. aria-rowindex / aria-colindex recompute automatically. The library never mutates your data — the handlers apply moveItemInArray to local signals."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/table/examples/reordering.example.ts"
-    >
-      <div demo class="tbl-demo">
-        <div class="tbl-scroll">
-          <div forTable mode="grid" ariaLabel="Team members" class="tbl">
-            <div role="rowgroup">
+    <div class="tbl-scroll">
+      <div forTable mode="grid" ariaLabel="Team members" class="tbl">
+        <div role="rowgroup">
+          <div
+            forTableHeaderRow
+            forTableColumnReorder
+            orientation="horizontal"
+            [liveSort]="true"
+            class="tbl-row tbl-head"
+            (columnReorder)="onColumnReorder($event)"
+          >
+            @for (column of columns(); track column) {
               <div
-                forTableHeaderRow
-                forTableColumnReorder
-                orientation="horizontal"
-                [liveSort]="true"
-                class="tbl-row tbl-head"
-                (columnReorder)="onColumnReorder($event)"
+                forTableHeaderCell
+                [name]="column"
+                forDraggable
+                [dragData]="column"
+                class="tbl-cell tbl-grab"
               >
-                @for (column of columns(); track column) {
-                  <div
-                    forTableHeaderCell
-                    [name]="column"
-                    forDraggable
-                    [dragData]="column"
-                    class="tbl-cell tbl-grab"
-                  >
-                    <span class="tbl-grip" aria-hidden="true">⠿</span>
-                    {{ labels[column] }}
-                    <ng-template forDragPlaceholder>
-                      <div class="tbl-ph tbl-ph--col"></div>
-                    </ng-template>
-                  </div>
-                }
+                <span class="tbl-grip" aria-hidden="true">⠿</span>
+                {{ labels[column] }}
+                <ng-template forDragPlaceholder>
+                  <div class="tbl-ph tbl-ph--col"></div>
+                </ng-template>
               </div>
-            </div>
-            <div
-              role="rowgroup"
-              forTableRowReorder
-              [liveSort]="true"
-              (rowReorder)="onRowReorder($event)"
-            >
-              @for (person of rows(); track person.id) {
-                <div
-                  forTableRow
-                  [value]="person.id"
-                  forDraggable
-                  [dragData]="person.id"
-                  class="tbl-row tbl-grab"
-                >
-                  @for (column of columns(); track column) {
-                    <div forTableCell [name]="column" class="tbl-cell">
-                      {{ field(person, column) }}
-                    </div>
-                  }
-                  <ng-template forDragPlaceholder>
-                    <div class="tbl-ph tbl-ph--row"></div>
-                  </ng-template>
-                </div>
-              }
-            </div>
+            }
           </div>
         </div>
+        <div
+          role="rowgroup"
+          forTableRowReorder
+          [liveSort]="true"
+          (rowReorder)="onRowReorder($event)"
+        >
+          @for (person of rows(); track person.id) {
+            <div
+              forTableRow
+              [value]="person.id"
+              forDraggable
+              [dragData]="person.id"
+              class="tbl-row tbl-grab"
+            >
+              @for (column of columns(); track column) {
+                <div forTableCell [name]="column" class="tbl-cell">
+                  {{ field(person, column) }}
+                </div>
+              }
+              <ng-template forDragPlaceholder>
+                <div class="tbl-ph tbl-ph--row"></div>
+              </ng-template>
+            </div>
+          }
+        </div>
       </div>
-
-      <div controls class="pg-controls">
-        <button type="button" class="pg-btn" (click)="reset()">Reset order</button>
-        <p class="pg-hint">
-          Drag a header cell sideways to reorder columns, or drag a row up / down to reorder rows.
-          With [liveSort]="true", the [forDragPlaceholder] follows the live drop index so the
-          neighbours part to reveal where the item will land. Keyboard: focus a draggable, press
-          Space to lift, arrow keys to move, Space to drop.
-        </p>
-        <p class="pg-state">
-          columns: <b>{{ columns().join(', ') }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .tbl-demo {
-      width: min(600px, 100%);
+    :host {
+      display: contents;
     }
 
     .tbl-scroll {
+      width: min(600px, 100%);
       max-height: 320px;
       overflow: auto;
       border: 1px solid var(--pg-border);
@@ -216,11 +194,6 @@ export class TableReorderingExample {
 
   protected onRowReorder(descriptor: TableRowReorderDescriptor): void {
     this.rows.update((rows) => moveItemInArray(rows, descriptor.from, descriptor.to));
-  }
-
-  protected reset(): void {
-    this.columns.set(['name', 'role', 'dept', 'location']);
-    this.rows.set(PEOPLE.slice(0, 6));
   }
 
   protected field(person: Person, column: PersonColumn): string {

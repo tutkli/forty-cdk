@@ -1,9 +1,8 @@
 # ForTimePicker
 
-Headless, styleless slot-based time picker. Implements the
-[WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) — a
-combobox trigger opens a floating listbox of generated time slots. Value is typed as
-your adapter's date-time type `D`.
+A trigger that opens a floating listbox of generated time slots over a pluggable date adapter, with a configurable step, 12 / 24-hour labels and min / max bounds. Picking a slot preserves the date, so it composes inside a date-time picker.
+
+Headless and styleless: a combobox trigger opens a floating listbox of generated time slots. Value is typed as your adapter's date-time type `D`.
 
 Requires a time-capable adapter:
 [`provideNativeDateAdapter()`](../calendar/native-date-adapter.ts) or the
@@ -11,14 +10,26 @@ Requires a time-capable adapter:
 
 ## Anatomy
 
-| Piece                  | Selector                 | Role                                                                                                                       |
-| ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `ForTimePicker`        | `[forTimePicker]`        | Root — state, slots, context                                                                                               |
-| `ForTimePickerTrigger` | `[forTimePickerTrigger]` | Combobox button                                                                                                            |
-| `ForTimePickerValue`   | `[forTimePickerValue]`   | Display element                                                                                                            |
-| `ForTimePickerContent` | `[forTimePickerContent]` | Portaled listbox                                                                                                           |
-| `ForTimePickerOption`  | `[forTimePickerOption]`  | Option (non-button `<div>`)                                                                                                |
-| `ForTimePickerAnchor`  | `[forTimePickerAnchor]`  | Optional positioning anchor — wrap a decorated field box so the listbox aligns to the visible field instead of the trigger |
+```html
+<div
+  forTimePicker
+  [(value)]="value"
+  [(open)]="open"
+  [step]="30"
+  [hourCycle]="24"
+  #picker="forTimePicker"
+>
+  <button forTimePickerTrigger>
+    <span forTimePickerValue placeholder="Pick a time"></span>
+  </button>
+
+  <!-- rendered while open() -->
+  <div forTimePickerContent>
+    <!-- @for slot of picker.slots() -->
+    <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -66,22 +77,22 @@ Requires a time-capable adapter:
 
 ### `ForTimePicker`
 
-| Input           | Type                             | Default    | Description                      |
-| --------------- | -------------------------------- | ---------- | -------------------------------- |
-| `value`         | `D \| null`                      | `null`     | Selected time (two-way)          |
-| `open`          | `boolean`                        | `false`    | Open state (two-way)             |
-| `step`          | `number`                         | `30`       | Slot interval in minutes         |
-| `granularity`   | `'hour' \| 'minute' \| 'second'` | `'minute'` | Selection precision              |
-| `hourCycle`     | `12 \| 24 \| null`               | `null`     | Hour cycle for labels            |
-| `locale`        | `string \| null`                 | `null`     | BCP 47 locale for labels         |
-| `minTime`       | `D \| null`                      | `null`     | Earliest selectable time         |
-| `maxTime`       | `D \| null`                      | `null`     | Latest selectable time           |
-| `closeOnSelect` | `boolean`                        | `true`     | Close on slot selection          |
-| `modal`         | `boolean`                        | `false`    | Modal (focus-trapped) mode       |
-| `dismissible`   | `boolean`                        | `true`     | Escape / outside close           |
-| `returnFocus`   | `boolean`                        | `true`     | Return focus to trigger on close |
-| `placeholder`   | `string`                         | `''`       | Value display placeholder        |
-| `formatOptions` | `Intl.DateTimeFormatOptions`     | `{}`       | Override slot label format       |
+| Property        | Type                             | Description                                             |
+| --------------- | -------------------------------- | ------------------------------------------------------- |
+| `value`         | `D \| null`                      | Selected time (two-way)<br>**Default:** `null`          |
+| `open`          | `boolean`                        | Open state (two-way)<br>**Default:** `false`            |
+| `step`          | `number`                         | Slot interval in minutes<br>**Default:** `30`           |
+| `granularity`   | `'hour' \| 'minute' \| 'second'` | Selection precision<br>**Default:** `'minute'`          |
+| `hourCycle`     | `12 \| 24 \| null`               | Hour cycle for labels<br>**Default:** `null`            |
+| `locale`        | `string \| null`                 | BCP 47 locale for labels<br>**Default:** `null`         |
+| `minTime`       | `D \| null`                      | Earliest selectable time<br>**Default:** `null`         |
+| `maxTime`       | `D \| null`                      | Latest selectable time<br>**Default:** `null`           |
+| `closeOnSelect` | `boolean`                        | Close on slot selection<br>**Default:** `true`          |
+| `modal`         | `boolean`                        | Modal (focus-trapped) mode<br>**Default:** `false`      |
+| `dismissible`   | `boolean`                        | Escape / outside close<br>**Default:** `true`           |
+| `returnFocus`   | `boolean`                        | Return focus to trigger on close<br>**Default:** `true` |
+| `placeholder`   | `string`                         | Value display placeholder<br>**Default:** `''`          |
+| `formatOptions` | `Intl.DateTimeFormatOptions`     | Override slot label format<br>**Default:** `{}`         |
 
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
@@ -152,6 +163,8 @@ resolves it automatically via `contentChild` to graft time changes onto the comm
 | `Escape`                | Close without committing                  |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
 
 - **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`.
 - **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.

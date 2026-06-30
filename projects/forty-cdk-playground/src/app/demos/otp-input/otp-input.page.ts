@@ -1,21 +1,34 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { PrimitivePage } from '../../ui/primitive-page';
-import { OtpCodeExample } from './examples/code.example';
-import { OtpMaskedExample } from './examples/masked.example';
 import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { DemoLayout } from '../../ui/demo-layout';
+import { PrimitivePage } from '../../ui/primitive-page';
+import { OtpDefaultExample } from './examples/default.example';
+import { OtpMaskedExample } from './examples/masked.example';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
 
 @Component({
   selector: 'app-otp-input-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, OtpCodeExample, OtpMaskedExample],
+  imports: [PrimitivePage, DemoLayout, OtpDefaultExample, OtpMaskedExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="otp-input" [readme]="readme">
-      <app-otp-code-example />
-      <app-otp-masked-example />
+      <playground-demo
+        hero
+        sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/default.example.ts"
+      >
+        <app-otp-default-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Masked PIN with paste transform"
+        subtitle="<code>mask</code> obscures the slots while <code>value()</code> stays raw, and a <code>pasteTransformer</code> strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. <code>type</code> still rejects anything outside the numeric character class as you type."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/masked.example.ts"
+      >
+        <app-otp-masked-example />
+      </playground-demo>
     </primitive-page>
   `,
 })

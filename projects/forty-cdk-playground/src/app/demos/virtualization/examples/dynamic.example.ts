@@ -10,8 +10,6 @@ import {
 } from '@angular/core';
 import { injectVirtualizer } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 const WORDS = (
   'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor ' +
   'incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud'
@@ -26,67 +24,84 @@ interface Message {
 @Component({
   selector: 'app-virtualization-dynamic-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout],
   template: `
-    <playground-demo
-      title="Dynamic heights (measured)"
-      subtitle="When rows vary in height, drop to the headless injectVirtualizer core: it owns no DOM, so the consumer renders the spacer and the absolutely-positioned window themselves. Each rendered row carries [attr.data-index] and is fed to measureElement() in afterEveryRender, so the virtualizer refines its estimates and the scroll range stays accurate as tall and short rows scroll past."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/virtualization/examples/dynamic.example.ts"
-    >
-      <div demo class="vz-demo">
-        <div #scroll class="vz-scroll">
-          <div class="vz-track" [style.height.px]="v.totalSize()">
-            @for (item of v.virtualItems(); track item.key) {
-              <article
-                #row
-                class="vz-msg"
-                [attr.data-index]="item.index"
-                [attr.aria-setsize]="messages.length"
-                [attr.aria-posinset]="item.index + 1"
-                [style.transform]="'translateY(' + item.start + 'px)'"
-              >
-                <header class="vz-msg-head">
-                  <span class="vz-msg-author">{{ messages[item.index]!.author }}</span>
-                  <span class="vz-msg-id">#{{ item.index + 1 }}</span>
-                </header>
-                <p class="vz-msg-body">{{ messages[item.index]!.body }}</p>
-              </article>
-            }
-          </div>
-        </div>
+    <div class="demo">
+      <div class="toolbar">
+        <button type="button" class="jump-btn" (click)="v.scrollToIndex(0, { align: 'start' })">
+          Top
+        </button>
+        <button
+          type="button"
+          class="jump-btn"
+          (click)="v.scrollToIndex(messages.length - 1, { align: 'end' })"
+        >
+          Bottom
+        </button>
       </div>
 
-      <div controls class="pg-controls">
-        <div class="pg-btn-row">
-          <button type="button" class="pg-btn" (click)="v.scrollToIndex(0, { align: 'start' })">
-            Top
-          </button>
-          <button
-            type="button"
-            class="pg-btn"
-            (click)="v.scrollToIndex(messages.length - 1, { align: 'end' })"
-          >
-            Bottom
-          </button>
+      <div #scroll class="scroll">
+        <div class="track" [style.height.px]="v.totalSize()">
+          @for (item of v.virtualItems(); track item.key) {
+            <article
+              #row
+              class="msg"
+              [attr.data-index]="item.index"
+              [attr.aria-setsize]="messages.length"
+              [attr.aria-posinset]="item.index + 1"
+              [style.transform]="'translateY(' + item.start + 'px)'"
+            >
+              <header class="msg-head">
+                <span class="msg-author">{{ messages[item.index]!.author }}</span>
+                <span class="msg-id">#{{ item.index + 1 }}</span>
+              </header>
+              <p class="msg-body">{{ messages[item.index]!.body }}</p>
+            </article>
+          }
         </div>
-        <p class="pg-hint">
-          Every message has a different height. The virtualizer starts from a 64px estimate, then
-          measureElement corrects each rendered row, so jumping to the bottom lands precisely.
-        </p>
-        <p class="pg-state">
-          messages: <b>{{ messages.length.toLocaleString() }}</b
-          ><br />
-          rendered: <b>{{ v.virtualItems().length }}</b>
-        </p>
       </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .vz-demo {
+    :host {
+      display: contents;
+    }
+
+    .demo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
       width: min(460px, 100%);
     }
 
-    .vz-scroll {
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .jump-btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .jump-btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .jump-btn:active {
+      transform: scale(0.95);
+    }
+
+    .scroll {
       height: 380px;
       overflow: auto;
       border: 1px solid var(--pg-border);
@@ -94,12 +109,12 @@ interface Message {
       background: var(--pg-surface);
     }
 
-    .vz-track {
+    .track {
       position: relative;
       width: 100%;
     }
 
-    .vz-msg {
+    .msg {
       position: absolute;
       left: 0;
       width: 100%;
@@ -108,29 +123,39 @@ interface Message {
       box-sizing: border-box;
     }
 
-    .vz-msg-head {
+    .msg-head {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
       margin-bottom: 0.25rem;
     }
 
-    .vz-msg-author {
+    .msg-author {
       font-size: 0.85rem;
       font-weight: 700;
     }
 
-    .vz-msg-id {
+    .msg-id {
       font-family: var(--pg-font-mono);
       font-size: 0.72rem;
       color: var(--pg-text-muted);
     }
 
-    .vz-msg-body {
+    .msg-body {
       margin: 0;
       font-size: 0.86rem;
       line-height: 1.5;
       color: var(--pg-text-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .jump-btn {
+        transition: none;
+      }
+
+      .jump-btn:active {
+        transform: none;
+      }
     }
   `,
 })

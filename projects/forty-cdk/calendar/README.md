@@ -1,6 +1,8 @@
 # Calendar
 
-Headless single-date calendar grid following the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) — the date table at the heart of the APG [Date Picker Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) example. Roving-tabindex focus management, full grid keyboard interaction (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Shift+PageUp` / `Shift+PageDown`), focus paging across month boundaries, `aria-current="date"` on today, `min` / `max` / per-date availability, RTL arrow mirroring, and a pluggable, date-library-agnostic `DateAdapter<D>`.
+A single-date calendar grid implementing the APG Grid pattern over a pluggable date adapter: roving-tabindex day navigation, month / year paging, and min / max / per-date availability.
+
+Headless and styleless — the date table at the heart of the APG [Date Picker Dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) example. Full grid keyboard interaction (arrows / `Home` / `End` / `PageUp` / `PageDown` / `Shift+PageUp` / `Shift+PageDown`), focus paging across month boundaries, `aria-current="date"` on today, RTL arrow mirroring, and a pluggable, date-library-agnostic `DateAdapter<D>`.
 
 `ForCalendar` is the grid widget, **not a form value** — it exposes `[(value)]` as a `model<D | null>`. The form-control contract (`FormValueControl<D>`) arrives with the follow-up `ForDatePicker` / `ForDateField`.
 
@@ -26,15 +28,31 @@ bootstrapApplication(App, {
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                |
-| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------- |
-| `ForCalendar`           | `[forCalendar]`           | Root. Owns `value`, the focused date, the visible month, and the shared context.                    |
-| `ForCalendarHeading`    | `[forCalendarHeading]`    | Month/year title and the grid's `aria-labelledby` target; its text is set to the visible period.    |
-| `ForCalendarPrevButton` | `[forCalendarPrevButton]` | Pages to the previous month. Auto-disabled at the `min` bound.                                      |
-| `ForCalendarNextButton` | `[forCalendarNextButton]` | Pages to the next month. Auto-disabled at the `max` bound.                                          |
-| `ForCalendarGrid`       | `[forCalendarGrid]`       | Date table (`role="grid"`, `aria-labelledby` the heading). Exposes `weekDays()` / `weeks()`.        |
-| `ForCalendarGridHeader` | `[forCalendarGridHeader]` | Header rowgroup (`role="rowgroup"`) holding the weekday `columnheader`s. Also exposes `weekDays()`. |
-| `ForCalendarCell`       | `[forCalendarCell]`       | One day (`role="gridcell"`). Roving tab stop, ARIA state, and keyboard / click interaction.         |
+```html
+<div forCalendar [(value)]="date">
+  <header>
+    <button forCalendarPrevButton [ariaLabel]="'Previous month'">‹</button>
+    <h2 forCalendarHeading #heading="forCalendarHeading">{{ heading.label() }}</h2>
+    <button forCalendarNextButton [ariaLabel]="'Next month'">›</button>
+  </header>
+
+  <table forCalendarGrid #grid="forCalendarGrid">
+    <thead forCalendarGridHeader>
+      <tr>
+        <!-- @for (day of grid.weekDays(); track day.key) -->
+        <th scope="col" [attr.aria-label]="day.long">{{ day.short }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- @for (week of grid.weeks(); track week.key) -->
+      <tr>
+        <!-- @for (cell of week.days; track cell.key) -->
+        <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
 
 ## Examples
 
@@ -103,21 +121,21 @@ The library is styleless: style the boolean `data-*` hooks on `[forCalendarCell]
 
 ### `ForCalendar`
 
-| API                 | Type                                   | Default       | Description                                                                                                                                    |
-| ------------------- | -------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`                     | —             | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection. Default `null`. |
-| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'`    | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.                            |
-| `range`             | `model<CalendarDateRange<D> \| null>`  | —             | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits/clears. Default `null`. |
-| `minRangeLength`    | `input<number \| null>`                | `null`        | Minimum inclusive day count. A commit shorter than this is a no-op. Default `null` (no minimum).                                               |
-| `maxRangeLength`    | `input<number \| null>`                | `null`        | Maximum inclusive day count. A commit longer than this is a no-op. Default `null` (no maximum).                                                |
-| `min`               | `input<D \| null>`                     | `null`        | Minimum selectable date (inclusive). Earlier dates are unavailable. Default `null`.                                                            |
-| `max`               | `input<D \| null>`                     | `null`        | Maximum selectable date (inclusive). Later dates are unavailable. Default `null`.                                                              |
-| `isDateUnavailable` | `input<(date: D) => boolean>`          | `() => false` | Per-date predicate marking a date unavailable (present but not selectable). Default `() => false`.                                             |
-| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | —             | Formats each gridcell's `aria-label` (full accessible date). Default: localized full date, outside-month days suffixed.                        |
-| `disabled`          | `input<boolean>`                       | —             | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.                                                   |
-| `readonly`          | `input<boolean>`                       | —             | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.                                                           |
-| `firstDayOfWeek`    | `input<number \| null>`                | `null`        | First column's weekday, **0-6** (`0` = Sunday). Default `null` → the adapter's value (or `provideForCalendarDefaults`).                        |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | `null`        | Writing direction. Default `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows.                   |
+| Property            | Type                                   | Description                                                                                                                                           |
+| ------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection.<br>**Default:** `null` |
+| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.<br>**Default:** `'single'`        |
+| `range`             | `model<CalendarDateRange<D> \| null>`  | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits/clears.<br>**Default:** `null` |
+| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op.<br>**Default:** `null` (no minimum)                                               |
+| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op.<br>**Default:** `null` (no maximum)                                                |
+| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable.<br>**Default:** `null`                                                            |
+| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable.<br>**Default:** `null`                                                              |
+| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable).<br>**Default:** `() => false`                                             |
+| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days suffixed                         |
+| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.<br>**Default:** —                                        |
+| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                |
+| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                        |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows                   |
 
 ### Data attributes
 
@@ -405,6 +423,8 @@ LTR (horizontal arrows mirror under `dir="rtl"`):
 Focus that crosses a month boundary re-pages the visible grid and keeps the focused cell in view. Day-of-month is constrained when paging (e.g. Jan 31 → Feb 28). Paging (the prev / next buttons and `PageUp` / `PageDown`) also clamps the focused date into the `[min, max]` range, so it never lands on a cell outside the selectable bounds; day / week arrows still move freely across unavailable dates so keyboard navigation is never trapped.
 
 ## Accessibility
+
+Implements the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
 - **`role="grid"`** on the table, `columnheader` weekday headers, `gridcell` days — the APG Date Picker Dialog technique over a real `<table>`.
 - **`aria-labelledby`** wires the grid to the heading so it names the visible period. Paging the month is announced through a dedicated off-screen `aria-live="polite"` region (owned by `[forCalendar]`), so the period is read on navigation without the heading double-announcing as both a live region and the grid's label.

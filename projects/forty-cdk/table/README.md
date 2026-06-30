@@ -1,26 +1,35 @@
 # ForTable
 
-Headless table primitive that decorates either a native `<table>` or a `<div role>` CSS-grid structure with correct WAI-ARIA table semantics. Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
+A headless data table that decorates a native &lt;table&gt; or a &lt;div&gt; CSS grid with WAI-ARIA table / grid semantics: sticky headers, 2D keyboard navigation, row selection, sortable headers, column resizing and column / row reordering.
 
 The library sets roles, `aria-label`, writing direction, `data-column`, sticky hooks, and (in grid mode) `aria-rowcount` / `aria-colcount` / `aria-rowindex` / `aria-colindex` and roving keyboard navigation. The consumer owns all styles.
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                      |
-| ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `ForTable`              | `[forTable]`              | Root container. Sets `role="table"`, `"grid"`, or `"treegrid"` via `mode`.                                |
-| `ForTableHeaderRow`     | `[forTableHeaderRow]`     | Header row (`role="row"` inside the header `rowgroup`).                                                   |
-| `ForTableHeaderCell`    | `[forTableHeaderCell]`    | Header cell (`role="columnheader"`). Carries the column `name` and sticky state.                          |
-| `ForTableRow`           | `[forTableRow]`           | Data row (`role="row"`). Carries selection, expansion (treegrid), and virtualized-index state.            |
-| `ForTableCell`          | `[forTableCell]`          | Data cell (`role="gridcell"` in grid/treegrid; `role="cell"` in table). Roving focus target in grid mode. |
-| `ForTableRowSelector`   | `[forTableRowSelector]`   | Decorative per-row selection affordance (`aria-hidden`). Click toggles the enclosing row's selection.     |
-| `ForTableSelectAll`     | `[forTableSelectAll]`     | Interactive tri-state select-all checkbox in the header. Reflects `aria-checked`.                         |
-| `ForTableSortHeader`    | `[forTableSortHeader]`    | Companion on a `[forTableHeaderCell]` for sortable columns. Emits `aria-sort` and `sortChange`.           |
-| `ForTableColumnResizer` | `[forTableColumnResizer]` | Focusable resize handle inside a header cell. Publishes `--for-table-col-<name>-width` on the root.       |
-| `ForTableColumnLabel`   | `[forTableColumnLabel]`   | Marks the label text inside a header cell for auto-fit measurement (used with `[fitIncludesHeader]`).     |
-| `ForTableColumnReorder` | `[forTableColumnReorder]` | Opt-in companion on `[forTableHeaderRow]` that wraps `[forDropList]` for column drag reordering.          |
-| `ForTableRowReorder`    | `[forTableRowReorder]`    | Opt-in companion on the data rowgroup that wraps `[forDropList]` for row drag reordering.                 |
-| `ForTableVirtualized`   | `[forTableVirtualized]`   | Opt-in companion on `[forTable]` that activates windowed row virtualization (requires `<div>` grid mode). |
+```html
+<div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
+  <div role="rowgroup">
+    <div forTableHeaderRow>
+      <div forTableHeaderCell name="sel">
+        <span forTableSelectAll ariaLabel="Select all rows"></span>
+      </div>
+      <div forTableHeaderCell name="name" forTableSortHeader column="name">
+        Name
+        <button forTableColumnResizer column="name" aria-label="Resize Name column"></button>
+      </div>
+    </div>
+  </div>
+  <div role="rowgroup">
+    <!-- one [forTableRow] per data row -->
+    <div forTableRow [value]="row.id">
+      <div forTableCell name="sel"><span forTableRowSelector></span></div>
+      <div forTableCell name="name">{{ row.name }}</div>
+    </div>
+  </div>
+</div>
+```
+
+Opt-in companions compose on the same elements: `[forTableVirtualized]` on `[forTable]` for windowed rows, and `[forTableColumnReorder]` / `[forTableRowReorder]` on the header row / data rowgroup for drag reordering.
 
 ## Native `<table>` mode
 
@@ -778,70 +787,70 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 
 ### `ForTable`
 
-| API                 | Type                                  | Default        | Description                                                                                                           |
-| ------------------- | ------------------------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `mode`              | `'table' \| 'grid' \| 'treegrid'`     | `'table'`      | ARIA role emitted on the host.                                                                                        |
-| `ariaLabel`         | `string \| null`                      | `null`         | Reactive accessible label.                                                                                            |
-| `dir`               | `'ltr' \| 'rtl' \| null`              | `null`         | Writing direction; resolves ambient when unset.                                                                       |
-| `rowCount`          | `number`                              | rendered count | True total data-row count for `aria-rowcount`. Ignored in `table` mode.                                               |
-| `colCount`          | `number`                              | rendered count | True total column count for `aria-colcount`. Ignored in `table` mode.                                                 |
-| `selectionMode`     | `'none' \| 'single' \| 'multiple'`    | `'none'`       | Row selection mode.                                                                                                   |
-| `selectionBehavior` | `'toggle' \| 'replace'`               | `'toggle'`     | How a row click mutates selection (modifier-aware in `replace` mode).                                                 |
-| `selection`         | `model<readonly unknown[]>([])`       | `[]`           | Two-way bindable selected row values.                                                                                 |
-| `compareWith`       | `(a: unknown, b: unknown) => boolean` | `===`          | Equality comparator for row values. Override for object rows.                                                         |
-| `selectableValues`  | `readonly unknown[] \| null`          | `null`         | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows. |
-| `expanded`          | `model<readonly unknown[]>([])`       | `[]`           | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.                                |
+| Property            | Type                                  | Description                                                                                                                                  |
+| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`              | `'table' \| 'grid' \| 'treegrid'`     | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                     |
+| `ariaLabel`         | `string \| null`                      | Reactive accessible label.<br>**Default:** `null`                                                                                            |
+| `dir`               | `'ltr' \| 'rtl' \| null`              | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                       |
+| `rowCount`          | `number`                              | True total data-row count for `aria-rowcount`. Ignored in `table` mode.<br>**Default:** rendered count                                       |
+| `colCount`          | `number`                              | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count                                         |
+| `selectionMode`     | `'none' \| 'single' \| 'multiple'`    | Row selection mode.<br>**Default:** `'none'`                                                                                                 |
+| `selectionBehavior` | `'toggle' \| 'replace'`               | How a row click mutates selection (modifier-aware in `replace` mode).<br>**Default:** `'toggle'`                                             |
+| `selection`         | `model<readonly unknown[]>([])`       | Two-way bindable selected row values.<br>**Default:** `[]`                                                                                   |
+| `compareWith`       | `(a: unknown, b: unknown) => boolean` | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                          |
+| `selectableValues`  | `readonly unknown[] \| null`          | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null` |
+| `expanded`          | `model<readonly unknown[]>([])`       | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                  |
 
 ### `ForTableHeaderCell`
 
-| API      | Type                | Default | Description                                    |
-| -------- | ------------------- | ------- | ---------------------------------------------- |
-| `name`   | `string` (required) | —       | Column identifier, reflected as `data-column`. |
-| `sticky` | `boolean \| 'end'`  | `false` | Sticky edge; reflected as `data-sticky`.       |
+| Property | Type                | Description                                                      |
+| -------- | ------------------- | ---------------------------------------------------------------- |
+| `name`   | `string` (required) | Column identifier, reflected as `data-column`.<br>**Default:** — |
+| `sticky` | `boolean \| 'end'`  | Sticky edge; reflected as `data-sticky`.<br>**Default:** `false` |
 
 ### `ForTableCell`
 
-| API        | Type                | Default | Description                                                            |
-| ---------- | ------------------- | ------- | ---------------------------------------------------------------------- |
-| `name`     | `string` (required) | —       | Column identifier, reflected as `data-column`.                         |
-| `sticky`   | `boolean \| 'end'`  | `false` | Sticky edge; reflected as `data-sticky`.                               |
-| `disabled` | `boolean`           | `false` | Skipped during navigation; reflects `aria-disabled` / `data-disabled`. |
+| Property   | Type                | Description                                                                                    |
+| ---------- | ------------------- | ---------------------------------------------------------------------------------------------- |
+| `name`     | `string` (required) | Column identifier, reflected as `data-column`.<br>**Default:** —                               |
+| `sticky`   | `boolean \| 'end'`  | Sticky edge; reflected as `data-sticky`.<br>**Default:** `false`                               |
+| `disabled` | `boolean`           | Skipped during navigation; reflects `aria-disabled` / `data-disabled`.<br>**Default:** `false` |
 
 ### `ForTableRow`
 
-| API          | Type      | Default     | Description                                                                       |
-| ------------ | --------- | ----------- | --------------------------------------------------------------------------------- |
-| `value`      | `unknown` | `undefined` | Selection identity for this row. Leave unset for non-selectable rows.             |
-| `level`      | `number`  | `1`         | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes. |
-| `expandable` | `boolean` | `false`     | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.     |
+| Property     | Type      | Description                                                                                           |
+| ------------ | --------- | ----------------------------------------------------------------------------------------------------- |
+| `value`      | `unknown` | Selection identity for this row. Leave unset for non-selectable rows.<br>**Default:** `undefined`     |
+| `level`      | `number`  | 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes.<br>**Default:** `1` |
+| `expandable` | `boolean` | Marks this row as an expandable parent; emits `aria-expanded` + `data-state`.<br>**Default:** `false` |
 
 ### `ForTableSelectAll`
 
-| API         | Type             | Default | Description                                                              |
-| ----------- | ---------------- | ------- | ------------------------------------------------------------------------ |
-| `ariaLabel` | `string \| null` | `null`  | Accessible label for the select-all checkbox (e.g. `"Select all rows"`). |
+| Property    | Type             | Description                                                                                     |
+| ----------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `ariaLabel` | `string \| null` | Accessible label for the select-all checkbox (e.g. `"Select all rows"`).<br>**Default:** `null` |
 
 ### `ForTableSortHeader`
 
-| API                   | Type                                    | Default       | Description                                                                                    |
-| --------------------- | --------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------- |
-| `column`              | `string` (required)                     | —             | Column identity included in the `sortChange` payload.                                          |
-| `direction`           | `'ascending' \| 'descending' \| 'none'` | `'none'`      | Current sort direction (two-way bindable via `[(direction)]`).                                 |
-| `disableClear`        | `boolean`                               | `false`       | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.                                |
-| `firstClickDirection` | `'ascending' \| 'descending'`           | `'ascending'` | Direction a previously-unsorted column enters on its first activation (the `'none' → ?` step). |
-| `sortable`            | `boolean`                               | `true`        | When `false`, the header is fully inert (no tabindex, no aria-sort).                           |
+| Property              | Type                                    | Description                                                                                                                  |
+| --------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `column`              | `string` (required)                     | Column identity included in the `sortChange` payload.<br>**Default:** —                                                      |
+| `direction`           | `'ascending' \| 'descending' \| 'none'` | Current sort direction (two-way bindable via `[(direction)]`).<br>**Default:** `'none'`                                      |
+| `disableClear`        | `boolean`                               | Skip the `'none'` step: cycle becomes `ascending ↔ descending`.<br>**Default:** `false`                                      |
+| `firstClickDirection` | `'ascending' \| 'descending'`           | Direction a previously-unsorted column enters on its first activation (the `'none' → ?` step).<br>**Default:** `'ascending'` |
+| `sortable`            | `boolean`                               | When `false`, the header is fully inert (no tabindex, no aria-sort).<br>**Default:** `true`                                  |
 
 ### `ForTableColumnResizer`
 
-| API                 | Type                | Default    | Description                                                                                                                                                                                           |
-| ------------------- | ------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `column`            | `string` (required) | —          | Column identity; included in the `resizeCommit` payload and the CSS var name.                                                                                                                         |
-| `width`             | `model<number>()`   | —          | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.                                                                                           |
-| `min`               | `number`            | `0`        | Minimum width in pixels.                                                                                                                                                                              |
-| `max`               | `number`            | `Infinity` | Maximum width in pixels. No upper bound by default.                                                                                                                                                   |
-| `step`              | `number`            | `10`       | Pixels applied per `ArrowLeft` / `ArrowRight` press.                                                                                                                                                  |
-| `autoFit`           | `boolean`           | `false`    | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.                                                                           |
-| `fitIncludesHeader` | `boolean`           | `false`    | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present. |
+| Property            | Type                | Description                                                                                                                                                                                                                   |
+| ------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `column`            | `string` (required) | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                               |
+| `width`             | `model<number>()`   | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                 |
+| `min`               | `number`            | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                  |
+| `max`               | `number`            | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                |
+| `step`              | `number`            | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                     |
+| `autoFit`           | `boolean`           | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                           |
+| `fitIncludesHeader` | `boolean`           | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false` |
 
 ### Data attributes
 
@@ -871,6 +880,8 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 | `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                              |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).
 
 - **Label the table** via the reactive `[ariaLabel]` input or a native `aria-labelledby` pointing at a visible caption / heading.
 - **`mode="table"`** sets `role="table"` with semantic `role="columnheader"` / `role="cell"` cells. Screen readers announce row and column counts from native semantics.

@@ -1,19 +1,25 @@
 # ScrollArea
 
-Headless custom-scrollbar primitive. Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` + `thumb` + `corner` directives that the consumer styles freely.
+A scrollable region with cross-browser, stylable synthetic scrollbars.
 
-This is the **only** primitive in forty-cdk that ships CSS — a single `<style>` tag (id `for-scroll-area-hide-native`) is injected into `document.head` the first time a viewport mounts. It hides webkit / Firefox / IE native scrollbars on `[forScrollAreaViewport]` only, leaving the rest of your CSS untouched.
+Hides native scrollbars on the inner viewport and exposes synthetic `scrollbar` + `thumb` + `corner` directives that the consumer styles freely. This is the **only** primitive in forty-cdk that ships CSS — a single `<style>` tag (id `for-scroll-area-hide-native`) is injected into `document.head` the first time a viewport mounts. It hides webkit / Firefox / IE native scrollbars on `[forScrollAreaViewport]` only, leaving the rest of your CSS untouched.
 
 ## Anatomy
 
-| Class                    | Selector                   | Role                                                                                             |
-| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------------ |
-| `ForScrollArea`          | `[forScrollArea]`          | Root. Owns `type`, `scrollHideDelay`, hover / scrolling state.                                   |
-| `ForScrollAreaViewport`  | `[forScrollAreaViewport]`  | The actual scrolling element.                                                                    |
-| `ForScrollAreaContent`   | `[forScrollAreaContent]`   | Marks the content element inside the viewport so its size changes drive the synthetic scrollbar. |
-| `ForScrollAreaScrollbar` | `[forScrollAreaScrollbar]` | Synthetic track. Required `orientation`.                                                         |
-| `ForScrollAreaThumb`     | `[forScrollAreaThumb]`     | Draggable thumb sized & translated automatically.                                                |
-| `ForScrollAreaCorner`    | `[forScrollAreaCorner]`    | Only shows when both scrollbars are visible.                                                     |
+```html
+<div forScrollArea type="hover">
+  <div forScrollAreaViewport>
+    <div forScrollAreaContent>… long content …</div>
+  </div>
+  <div forScrollAreaScrollbar orientation="vertical">
+    <div forScrollAreaThumb></div>
+  </div>
+  <div forScrollAreaScrollbar orientation="horizontal">
+    <div forScrollAreaThumb></div>
+  </div>
+  <div forScrollAreaCorner></div>
+</div>
+```
 
 ## Examples
 
@@ -109,23 +115,53 @@ export class DemoScroll {}
 
 Root directive. Owns scroll type, hide-delay, hover state, and writing direction.
 
-| API               | Type                                               | Default   | Description                                                                                                                                                                               |
-| ----------------- | -------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | `'hover'` | Visibility behavior. `'always'` keeps the track painted even with no overflow; `'auto'` self-hides — see [Behavior notes](#behavior-notes) and the grid example for reserving the gutter. |
-| `scrollHideDelay` | `input<number>`                                    | `600`     | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`).                                                                                                        |
-| `dir`             | `input<WritingDirection>`                          | —         | Reflected as `dir`.                                                                                                                                                                       |
+| Property          | Type                                               | Description                                                                                                                                                                                                         |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`            | `input<'auto' \| 'always' \| 'scroll' \| 'hover'>` | Visibility behavior. `'always'` keeps the track painted even with no overflow; `'auto'` self-hides — see [Behavior notes](#behavior-notes) and the grid example for reserving the gutter.<br>**Default:** `'hover'` |
+| `scrollHideDelay` | `input<number>`                                    | ms after the most recent scroll before scrollbars fade (`'scroll'` and `'hover'`).<br>**Default:** `600`                                                                                                            |
+| `dir`             | `input<WritingDirection>`                          | Reflected as `dir`.<br>**Default:** —                                                                                                                                                                               |
 
-### Data attributes
+| Data attribute | Values                                    |
+| -------------- | ----------------------------------------- |
+| `data-type`    | `auto` \| `always` \| `scroll` \| `hover` |
 
-| Piece                      | Attribute          | Values                                    |
-| -------------------------- | ------------------ | ----------------------------------------- |
-| `[forScrollArea]`          | `data-type`        | `auto` \| `always` \| `scroll` \| `hover` |
-| `[forScrollAreaScrollbar]` | `data-orientation` | `horizontal` \| `vertical`                |
-| `[forScrollAreaScrollbar]` | `data-state`       | `visible` \| `hidden`                     |
-| `[forScrollAreaThumb]`     | `data-orientation` | `horizontal` \| `vertical`                |
-| `[forScrollAreaThumb]`     | `data-state`       | `visible` \| `hidden`                     |
+The resolved writing direction is reflected on the root via the native `dir` attribute (`ltr` / `rtl`), not a `data-*` hook — select on `[dir='rtl']` / `:dir(rtl)` to flip layout.
 
-The resolved writing direction is reflected on the root via the native `dir` attribute (`ltr` / `rtl`), not a `data-*` hook — select on `[dir='rtl']` / `:dir(rtl)` to flip layout. `[forScrollAreaViewport]`, `[forScrollAreaContent]`, and `[forScrollAreaCorner]` carry no `data-*` attributes; the scrollbar and corner additionally self-remove via the `hidden` attribute plus an inline `display: none` when their axis has no overflow (except under `type="always"`).
+### `ForScrollAreaViewport`
+
+The actual scrolling element. Hides native scrollbars and reports scroll position and geometry to the root. Carries no `data-*` attributes.
+
+### `ForScrollAreaContent`
+
+Marks the content element inside the viewport so its size changes drive the synthetic scrollbar. Carries no `data-*` attributes.
+
+### `ForScrollAreaScrollbar`
+
+Synthetic track. The thumb computes its geometry against this element's measured length.
+
+| Property      | Type                                         | Description                                      |
+| ------------- | -------------------------------------------- | ------------------------------------------------ |
+| `orientation` | `input.required<'horizontal' \| 'vertical'>` | Which axis this track scrolls.<br>**Default:** — |
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-state`       | `visible` \| `hidden`      |
+
+The track self-removes via the `hidden` attribute plus an inline `display: none` when its axis has no overflow (except under `type="always"`).
+
+### `ForScrollAreaThumb`
+
+Draggable thumb, sized and translated automatically. Mirrors its scrollbar's orientation and state.
+
+| Data attribute     | Values                     |
+| ------------------ | -------------------------- |
+| `data-orientation` | `horizontal` \| `vertical` |
+| `data-state`       | `visible` \| `hidden`      |
+
+### `ForScrollAreaCorner`
+
+Filler in the corner where horizontal and vertical scrollbars meet. Shows only when both scrollbars are visible (or always, under `type="always"`), self-removing via the `hidden` attribute plus an inline `display: none` otherwise. Carries no `data-*` attributes.
 
 ## Behavior notes
 
@@ -176,7 +212,7 @@ The synthetic scrollbars are purely visual and drag affordances — they carry n
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .scroll-area-scrollbar[data-state='hidden'] {

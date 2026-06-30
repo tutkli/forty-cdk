@@ -1,16 +1,18 @@
 # Avatar
 
-Headless avatar that tracks the load lifecycle of an `<img>` and lets the consumer choose what to show during loading or after an error.
+A user image with a graceful fallback across its loading lifecycle.
 
-There is no WAI-ARIA pattern for "avatar" — it is a presentational composition. The directive does not impose a `role`; pair the avatar with visible name text or `aria-label` on the surrounding element when identity matters.
+Headless and presentational — it tracks the load lifecycle of an `<img>` and lets you choose what to show while loading or after an error. There is no WAI-ARIA pattern for avatars, so the directive imposes no `role` of its own.
 
 ## Anatomy
 
-| Class               | Selector              | Role                                                                   |
-| ------------------- | --------------------- | ---------------------------------------------------------------------- |
-| `ForAvatar`         | `[forAvatar]`         | Root. Owns `status`, `shouldShowFallback`, and `fallbackDelayMs`.      |
-| `ForAvatarImage`    | `img[forAvatarImage]` | Observes the `<img>` and reports `idle \| loading \| loaded \| error`. |
-| `ForAvatarFallback` | `[forAvatarFallback]` | Marker for fallback content. Reflects `data-status`.                   |
+```html
+<span forAvatar #avatar="forAvatar">
+  <img forAvatarImage [src]="src" [alt]="name" />
+  <!-- rendered only when avatar.shouldShowFallback() is true -->
+  <span forAvatarFallback>{{ initials }}</span>
+</span>
+```
 
 ## Examples
 
@@ -64,25 +66,31 @@ export class DemoAvatar {
 
 ### `ForAvatar`
 
-| API                  | Type                      | Default | Description                                                                               |
-| -------------------- | ------------------------- | ------- | ----------------------------------------------------------------------------------------- |
-| `fallbackDelayMs`    | `input<number>`           | `0`     | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading. Default `0`. |
-| `status`             | `Signal<ForAvatarStatus>` | —       | Read-only current status.                                                                 |
-| `shouldShowFallback` | `Signal<boolean>`         | —       | `true` when the consumer should render the fallback. Drives `@if`.                        |
+| Property             | Type                      | Description                                                                                      |
+| -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `fallbackDelayMs`    | `input<number>`           | ms to wait before `shouldShowFallback()` flips to `true` while idle/loading.<br>**Default:** `0` |
+| `status`             | `Signal<ForAvatarStatus>` | Read-only current status.<br>**Default:** —                                                      |
+| `shouldShowFallback` | `Signal<boolean>`         | `true` when the consumer should render the fallback. Drives `@if`.<br>**Default:** —             |
+
+| Data attribute | Values                                     |
+| -------------- | ------------------------------------------ |
+| `data-status`  | `idle` \| `loading` \| `loaded` \| `error` |
 
 ### `ForAvatarImage`
 
-| API                   | Type                      | Default | Description                                       |
-| --------------------- | ------------------------- | ------- | ------------------------------------------------- |
-| `(loadStatusChanged)` | `output<ForAvatarStatus>` | —       | Output. Emits whenever the lifecycle transitions. |
+| Property              | Type                      | Description                                                         |
+| --------------------- | ------------------------- | ------------------------------------------------------------------- |
+| `(loadStatusChanged)` | `output<ForAvatarStatus>` | Output. Emits whenever the lifecycle transitions.<br>**Default:** — |
 
-### Data attributes
+| Data attribute | Values                                     |
+| -------------- | ------------------------------------------ |
+| `data-status`  | `idle` \| `loading` \| `loaded` \| `error` |
 
-| Piece                 | Attribute     | Values                                     |
-| --------------------- | ------------- | ------------------------------------------ |
-| `[forAvatar]`         | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
-| `img[forAvatarImage]` | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
-| `[forAvatarFallback]` | `data-status` | `idle` \| `loading` \| `loaded` \| `error` |
+### `ForAvatarFallback`
+
+| Data attribute | Values                                     |
+| -------------- | ------------------------------------------ |
+| `data-status`  | `idle` \| `loading` \| `loaded` \| `error` |
 
 ## Accessibility
 
@@ -90,7 +98,7 @@ The directive does not impose a `role`. Pair the avatar with visible name text o
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .avatar-image:not([data-status='loaded']) {

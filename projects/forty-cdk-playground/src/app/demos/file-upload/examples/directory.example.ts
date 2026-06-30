@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface FolderEntry {
   readonly path: string;
   readonly size: number;
@@ -11,50 +9,37 @@ interface FolderEntry {
 @Component({
   selector: 'app-file-upload-directory-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
+  imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
   template: `
-    <playground-demo
-      title="Folder selection"
-      subtitle="Set directory to switch the native picker into folder mode (mirrored as webkitdirectory on the input). The emitted FileList then contains every file inside the chosen folder, each carrying a webkitRelativePath the consumer reads to reconstruct the tree."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/file-upload/examples/directory.example.ts"
-    >
-      <div demo class="stage">
-        <div forFileUpload directory class="zone" (filesChange)="onFolder($event)">
-          <input forFileUploadInput class="sr-only" aria-label="Upload a folder" />
-          <p class="zone-text">
-            <button forFileUploadTrigger class="zone-btn">Choose a folder</button>
-          </p>
-          <p class="zone-accept">The whole folder’s contents are read, recursively.</p>
+    <div class="stage">
+      <div forFileUpload directory class="zone" (filesChange)="onFolder($event)">
+        <input forFileUploadInput class="sr-only" aria-label="Upload a folder" />
+        <p class="zone-text">
+          <button forFileUploadTrigger class="zone-btn">Choose a folder</button>
+        </p>
+        <p class="zone-accept">The whole folder’s contents are read, recursively.</p>
+      </div>
+
+      @if (entries().length) {
+        <div class="tree-head">
+          {{ entries().length }} files in <b>{{ rootFolder() }}</b>
         </div>
-
-        @if (entries().length) {
-          <div class="tree-head">
-            {{ entries().length }} files in <b>{{ rootFolder() }}</b>
-          </div>
-          <ul class="tree">
-            @for (entry of entries().slice(0, 8); track entry.path) {
-              <li class="tree-row">{{ entry.path }}</li>
-            }
-            @if (entries().length > 8) {
-              <li class="tree-more">+ {{ entries().length - 8 }} more…</li>
-            }
-          </ul>
-        }
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          files: <b>{{ entries().length }}</b
-          ><br />
-          root: <b>{{ rootFolder() || '—' }}</b>
-        </p>
-        <p class="pg-hint">
-          Directory drag-and-drop is out of scope — use the button to open the folder picker.
-        </p>
-      </div>
-    </playground-demo>
+        <ul class="tree">
+          @for (entry of entries().slice(0, 8); track entry.path) {
+            <li class="tree-row">{{ entry.path }}</li>
+          }
+          @if (entries().length > 8) {
+            <li class="tree-more">+ {{ entries().length - 8 }} more…</li>
+          }
+        </ul>
+      }
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .stage {
       width: min(420px, 100%);
       display: flex;

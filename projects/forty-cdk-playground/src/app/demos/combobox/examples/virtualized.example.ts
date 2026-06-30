@@ -5,6 +5,7 @@ import {
   type ElementRef,
   signal,
   viewChild,
+  ViewEncapsulation,
 } from '@angular/core';
 import {
   ForCombobox,
@@ -14,8 +15,6 @@ import {
   ForComboboxInput,
   ForComboboxOption,
 } from 'forty-cdk/combobox';
-
-import { DemoLayout } from '../../../ui/demo-layout';
 
 const ITEM_HEIGHT = 36;
 const VIEWPORT_HEIGHT = 280;
@@ -35,8 +34,8 @@ interface VirtualRow {
 @Component({
   selector: 'app-combobox-virtualized-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   imports: [
-    DemoLayout,
     ForCombobox,
     ForComboboxInput,
     ForComboboxContent,
@@ -45,87 +44,198 @@ interface VirtualRow {
     ForComboboxClear,
   ],
   template: `
-    <playground-demo
-      title="Virtualized (1,000 options)"
-      subtitle="The primitive never owns the scroll container, so it virtualizes with any windowing strategy — here a dependency-free one. The consumer renders only the visible window and wires three hooks: [totalCount] (drives aria-setsize), [visibleRange] (what's in the DOM), and [forComboboxOption][posInSet] (each row's absolute index). When arrow keys or Home/End target a row outside the window, the directive emits (scrollToIndex); we scroll it into view and it seeds aria-activedescendant once mounted."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/virtualized.example.ts"
+    <div
+      forCombobox
+      #combobox="forCombobox"
+      class="virt-combobox"
+      [(query)]="query"
+      [(value)]="value"
+      [totalCount]="filtered().length"
+      [visibleRange]="range()"
+      (scrollToIndex)="scrollToIndex($event)"
+      ariaLabel="Virtualized item search"
     >
-      <div demo class="combobox-demo">
-        <div
-          forCombobox
-          class="pg-combobox"
-          [(query)]="query"
-          [(value)]="value"
-          [(open)]="open"
-          [totalCount]="filtered().length"
-          [visibleRange]="range()"
-          (scrollToIndex)="scrollToIndex($event)"
-          ariaLabel="Virtualized item search"
+      <div class="virt-combobox-single">
+        <input
+          forComboboxInput
+          class="virt-combobox-input virt-combobox-input--boxed"
+          placeholder="Search 1,000 items…"
+        />
+        <button
+          forComboboxClear
+          class="virt-combobox-clear virt-combobox-clear--inset"
+          aria-label="Clear"
         >
-          <div class="pg-combobox-single">
-            <input
-              forComboboxInput
-              class="pg-combobox-input pg-combobox-input--boxed"
-              placeholder="Search 1,000 items…"
-            />
-            <button
-              forComboboxClear
-              class="pg-combobox-clear pg-combobox-clear--inset"
-              aria-label="Clear"
-            >
-              ×
-            </button>
-          </div>
+          ×
+        </button>
+      </div>
 
-          @if (open()) {
-            <div
-              #scrollEl
-              forComboboxContent
-              class="pg-combobox-content"
-              (scroll)="onScroll($event)"
-              animate.enter="pg-pop-in"
-            >
-              <div class="pg-combobox-vtrack" [style.height.px]="totalSize()">
-                @for (row of visibleRows(); track row.index) {
-                  <div
-                    forComboboxOption
-                    [value]="row.label"
-                    [label]="row.label"
-                    [posInSet]="row.index"
-                    class="pg-combobox-option pg-combobox-option--virtual"
-                    [style.transform]="'translateY(' + row.top + 'px)'"
-                  >
-                    {{ row.label }}
-                  </div>
-                }
+      @if (combobox.open()) {
+        <div
+          #scrollEl
+          forComboboxContent
+          class="virt-combobox-content"
+          (scroll)="onScroll($event)"
+          animate.enter="virt-combobox-pop-in"
+        >
+          <div class="virt-combobox-track" [style.height.px]="totalSize()">
+            @for (row of visibleRows(); track row.index) {
+              <div
+                forComboboxOption
+                [value]="row.label"
+                [label]="row.label"
+                [posInSet]="row.index"
+                class="virt-combobox-option"
+                [style.transform]="'translateY(' + row.top + 'px)'"
+              >
+                {{ row.label }}
               </div>
-              <div forComboboxEmpty class="pg-combobox-empty">No items match "{{ query() }}".</div>
-            </div>
-          }
+            }
+          </div>
+          <div forComboboxEmpty class="virt-combobox-empty">No items match "{{ query() }}".</div>
         </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          window: <b>{{ windowLabel() }}</b
-          ><br />
-          rendered nodes: <b>{{ visibleRows().length }}</b
-          ><br />
-          value: <b>{{ value().at(0) ?? '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      }
+    </div>
   `,
   styles: `
-    .combobox-demo {
-      display: flex;
-      justify-content: center;
-      padding: 2.5rem 0;
+    app-combobox-virtualized-example {
+      display: contents;
+    }
+
+    .virt-combobox {
+      display: block;
+      width: min(300px, 100%);
+    }
+
+    .virt-combobox-single {
+      position: relative;
       width: 100%;
     }
 
-    .combobox-demo .pg-combobox {
-      width: min(300px, 100%);
+    .virt-combobox-input {
+      font: inherit;
+      font-size: 0.9rem;
+      color: var(--pg-text);
+    }
+
+    .virt-combobox-input--boxed {
+      width: 100%;
+      padding: 0.55rem 2.2rem 0.55rem 0.7rem;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .virt-combobox-input--boxed:focus-visible {
+      outline: none;
+    }
+
+    .virt-combobox-single:focus-within .virt-combobox-input--boxed {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .virt-combobox-clear {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      font-size: 1.1rem;
+      line-height: 1;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text-muted);
+      cursor: pointer;
+    }
+
+    .virt-combobox-clear:hover {
+      background: var(--pg-surface-2);
+      color: var(--pg-text);
+    }
+
+    .virt-combobox-clear--inset {
+      position: absolute;
+      top: 50%;
+      inset-inline-end: 0.35rem;
+      transform: translateY(-50%);
+    }
+
+    .virt-combobox-content {
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: var(--for-anchor-width);
+      min-width: 12rem;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 4px;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .virt-combobox-track {
+      position: relative;
+      flex: none;
+      width: 100%;
+    }
+
+    .virt-combobox-option {
+      position: absolute;
+      inset-inline: 0;
+      height: 36px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: var(--pg-radius-sm);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .virt-combobox-option[data-highlighted],
+    .virt-combobox-option:not([data-disabled]):hover {
+      background: var(--pg-surface-2);
+    }
+
+    .virt-combobox-option[data-state='checked'] {
+      color: var(--pg-primary);
+      font-weight: 600;
+    }
+
+    .virt-combobox-empty {
+      padding: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--pg-text-muted);
+      text-align: center;
+    }
+
+    .virt-combobox-pop-in {
+      transform-origin: var(--for-content-transform-origin, center);
+      animation: virt-combobox-pop-in 0.2s var(--pg-ease-spring) both;
+    }
+
+    @keyframes virt-combobox-pop-in {
+      from {
+        opacity: 0;
+        scale: 0.9;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .virt-combobox-pop-in {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })
@@ -133,7 +243,6 @@ export class ComboboxVirtualizedExample {
   private readonly scrollEl = viewChild<ElementRef<HTMLElement>>('scrollEl');
 
   protected readonly query = signal('');
-  protected readonly open = signal(false);
   protected readonly value = signal<readonly string[]>([]);
   protected readonly scrollTop = signal(0);
 
@@ -167,15 +276,6 @@ export class ComboboxVirtualizedExample {
       rows.push({ label: items[i], index: i, top: i * ITEM_HEIGHT });
     }
     return rows;
-  });
-
-  protected readonly windowLabel = computed(() => {
-    const count = this.filtered().length;
-    if (count === 0) {
-      return '—';
-    }
-    const [start, end] = this.range();
-    return `rows ${start + 1}–${end} of ${count}`;
   });
 
   protected onScroll(event: Event): void {

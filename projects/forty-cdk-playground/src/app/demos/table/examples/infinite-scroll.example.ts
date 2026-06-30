@@ -8,7 +8,6 @@ import {
 } from 'forty-cdk/table';
 import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import { makePeople } from './big-people';
 import type { Person } from './people';
 
@@ -20,7 +19,6 @@ const LATENCY = 600;
   selector: 'app-table-infinite-scroll-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForTable,
     ForTableVirtualized,
     ForTableHeaderRow,
@@ -29,62 +27,55 @@ const LATENCY = 600;
     ForTableCell,
   ],
   template: `
-    <playground-demo
-      title="Infinite scroll (virtualized table)"
-      subtitle="The table doesn't ship a turnkey end-reached output, so we compose the headless injectInfiniteScroll core on top of [forTableVirtualized]: derive a [first, last+1) range from virtualRows() and feed it with the loaded count. The detector fires once per threshold crossing, suppresses re-fire while the load promise is pending (loader.pending()), and re-arms when [rowCount] grows after each appended page — up to a cap."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/table/examples/infinite-scroll.example.ts"
-    >
-      <div demo class="vtbl-demo">
-        <div
-          forTable
-          forTableVirtualized
-          #v="forTableVirtualized"
-          mode="grid"
-          ariaLabel="People feed"
-          class="vtbl"
-          [rowCount]="rows().length"
-          [estimateRowSize]="40"
-        >
-          <div forTableHeaderRow class="vtbl-row vtbl-head">
-            <div forTableHeaderCell name="name" class="vtbl-cell">Name</div>
-            <div forTableHeaderCell name="role" class="vtbl-cell">Role</div>
-            <div forTableHeaderCell name="dept" class="vtbl-cell">Department</div>
-            <div forTableHeaderCell name="location" class="vtbl-cell">Location</div>
-          </div>
-          <div role="rowgroup" class="vtbl-body" [style.height.px]="v.totalSize()">
-            @for (vrow of v.virtualRows(); track vrow.index) {
-              <div
-                forTableRow
-                class="vtbl-row vtbl-data-row"
-                [virtualIndex]="vrow.index"
-                [style.transform]="'translateY(' + vrow.start + 'px)'"
-              >
-                <div forTableCell name="name" class="vtbl-cell">{{ rows()[vrow.index]!.name }}</div>
-                <div forTableCell name="role" class="vtbl-cell">{{ rows()[vrow.index]!.role }}</div>
-                <div forTableCell name="dept" class="vtbl-cell">{{ rows()[vrow.index]!.dept }}</div>
-                <div forTableCell name="location" class="vtbl-cell">
-                  {{ rows()[vrow.index]!.location }}
-                </div>
+    <div class="vtbl-demo">
+      <div
+        forTable
+        forTableVirtualized
+        #v="forTableVirtualized"
+        mode="grid"
+        ariaLabel="People feed"
+        class="vtbl"
+        [rowCount]="rows().length"
+        [estimateRowSize]="40"
+      >
+        <div forTableHeaderRow class="vtbl-row vtbl-head">
+          <div forTableHeaderCell name="name" class="vtbl-cell">Name</div>
+          <div forTableHeaderCell name="role" class="vtbl-cell">Role</div>
+          <div forTableHeaderCell name="dept" class="vtbl-cell">Department</div>
+          <div forTableHeaderCell name="location" class="vtbl-cell">Location</div>
+        </div>
+        <div role="rowgroup" class="vtbl-body" [style.height.px]="v.totalSize()">
+          @for (vrow of v.virtualRows(); track vrow.index) {
+            <div
+              forTableRow
+              class="vtbl-row vtbl-data-row"
+              [virtualIndex]="vrow.index"
+              [style.transform]="'translateY(' + vrow.start + 'px)'"
+            >
+              <div forTableCell name="name" class="vtbl-cell">{{ rows()[vrow.index]!.name }}</div>
+              <div forTableCell name="role" class="vtbl-cell">{{ rows()[vrow.index]!.role }}</div>
+              <div forTableCell name="dept" class="vtbl-cell">{{ rows()[vrow.index]!.dept }}</div>
+              <div forTableCell name="location" class="vtbl-cell">
+                {{ rows()[vrow.index]!.location }}
               </div>
-            }
-          </div>
+            </div>
+          }
         </div>
       </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          loaded: <b>{{ rows().length }}</b> / {{ max }}<br />
-          status: <b>{{ statusLabel() }}</b>
-        </p>
-        <p class="pg-hint">
-          Scroll toward the bottom to fetch the next {{ pageSize }} rows after a simulated
-          {{ latency }}ms request. Loading stops at the {{ max }}-row cap.
-        </p>
-      </div>
-    </playground-demo>
+      <p class="vtbl-status" aria-live="polite">
+        Loaded <b>{{ rows().length }}</b> of {{ max }} — {{ statusLabel() }}
+      </p>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .vtbl-demo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
       width: min(640px, 100%);
     }
 
@@ -140,12 +131,21 @@ const LATENCY = 600;
       outline-offset: -2px;
       background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
     }
+
+    .vtbl-status {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--pg-text-muted);
+    }
+
+    .vtbl-status b {
+      color: var(--pg-text);
+      font-weight: 600;
+    }
   `,
 })
 export class TableInfiniteScrollExample {
-  protected readonly pageSize = PAGE;
   protected readonly max = MAX;
-  protected readonly latency = LATENCY;
 
   protected readonly rows = signal<readonly Person[]>(makePeople(0, PAGE));
 

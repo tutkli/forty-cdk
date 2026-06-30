@@ -1,24 +1,44 @@
 # Menu (shared pieces)
 
-Shared surface and item directives consumed by `[forDropdownMenu]` (button trigger) and `[forContextMenu]` (right-click). The folder doesn't expose its own root primitive — open the menu via one of those two flavors.
+The shared menu surface — items, checkbox / radio items, groups, separators and submenus — composed by every menu-family primitive.
 
-Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) for the surface (`role="menu"`) and for items (`menuitem` / `menuitemcheckbox` / `menuitemradio`).
+Shared surface and item directives consumed by `[forDropdownMenu]` (button trigger) and `[forContextMenu]` (right-click). The folder doesn't expose its own root primitive — open the menu via one of those two flavors.
 
 ## Anatomy
 
-| Class                  | Selector                                   | Role                                                                                                                                                                   |
-| ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForMenuContent`       | `[forMenuContent]` / `[forMenuSubContent]` | The menu surface. Portaled, positioned by floating-ui, dismissable layer attached. The `Sub` selector is an alias used inside `[forMenuSub]` for template readability. |
-| `ForMenuItem`          | `[forMenuItem]`                            | One action item. Activation closes the menu.                                                                                                                           |
-| `ForMenuCheckboxItem`  | `[forMenuCheckboxItem]`                    | `model<boolean> checked`. Activation toggles + closes.                                                                                                                 |
-| `ForMenuRadioGroup`    | `[forMenuRadioGroup]`                      | `model<string> value` shared by its radio items.                                                                                                                       |
-| `ForMenuRadioItem`     | `[forMenuRadioItem]`                       | One radio option. `value: required<string>`.                                                                                                                           |
-| `ForMenuItemIndicator` | `[forMenuItemIndicator]`                   | Optional. Used inside checkbox / radio items. Hides itself when the parent is unchecked. Mirrors the parent's `data-state`. `[forceMount]` keeps it mounted.           |
-| `ForMenuSeparator`     | `[forMenuSeparator]`                       | Decorative separator, `role="separator"`.                                                                                                                              |
-| `ForMenuGroup`         | `[forMenuGroup]`                           | Logical grouping, `role="group"` with `aria-labelledby`.                                                                                                               |
-| `ForMenuGroupLabel`    | `[forMenuGroupLabel]`                      | Label registered with the parent group.                                                                                                                                |
-| `ForMenuSub`           | `[forMenuSub]`                             | Root for a nested submenu — owns its own `open`, ids, and item collection.                                                                                             |
-| `ForMenuSubTrigger`    | `[forMenuSubTrigger]`                      | The `menuitem` in the parent menu that opens the submenu. Wires `aria-haspopup` / `aria-expanded`.                                                                     |
+```html
+<div forMenuContent class="menu">
+  <div forMenuGroup>
+    <div forMenuGroupLabel>Appearance</div>
+    <button forMenuCheckboxItem [(checked)]="bold">
+      <span forMenuItemIndicator [forceMount]="true">✓</span>
+      Bold
+    </button>
+  </div>
+
+  <hr forMenuSeparator />
+
+  <div forMenuRadioGroup [(value)]="sortBy">
+    <button forMenuRadioItem value="name">
+      <span forMenuItemIndicator [forceMount]="true">●</span>
+      Name
+    </button>
+    <button forMenuRadioItem value="date">Date modified</button>
+  </div>
+
+  <hr forMenuSeparator />
+
+  <button forMenuItem (activate)="save()">Save</button>
+
+  <div forMenuSub #sub="forMenuSub">
+    <button forMenuSubTrigger>More tools</button>
+    <!-- @if (sub.open()) -->
+    <div forMenuSubContent>
+      <button forMenuItem>Developer tools</button>
+    </div>
+  </div>
+</div>
+```
 
 For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across checkbox / radio items, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
 
@@ -141,6 +161,8 @@ Partial overrides inherit unspecified keys from the parent scope (or the library
 | `[forMenuSubTrigger]`                      | `data-disabled`    | present \| absent        |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu/) for the surface (`role="menu"`) and for items (`menuitem` / `menuitemcheckbox` / `menuitemradio`).
 
 - Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.
 - Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (per APG) — they remain focusable so screen readers can announce them, but click and keyboard activation are no-ops.

@@ -1,8 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Activity {
   readonly id: number;
   readonly who: string;
@@ -36,56 +34,62 @@ function makePage(start: number, length: number): Activity[] {
 @Component({
   selector: 'app-virtualization-infinite-scroll-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForVirtualViewport, ForVirtualFor],
+  imports: [ForVirtualViewport, ForVirtualFor],
   template: `
-    <playground-demo
-      title="Infinite scroll (endReached)"
-      subtitle="The Shape A turnkey path: bind (endReached) on [forVirtualViewport] and it builds the infinite-scroll detector internally, firing once when the rendered window comes within the overscan of the end. The consumer owns the fetch and appends the next page; the detector re-arms when the bound count grows. Scroll to the bottom to keep loading more, up to a cap."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/virtualization/examples/infinite-scroll.example.ts"
-    >
-      <div demo class="vz-demo">
-        <div
-          forVirtualViewport
-          class="vz-viewport"
-          [virtualCount]="rows().length"
-          [estimateSize]="52"
-          (endReached)="onEndReached()"
-        >
-          <div *forVirtualFor="let row of rows(); let item = virtualItem" class="vz-feed-row">
-            <span class="vz-avatar" aria-hidden="true">{{ row.who.charAt(0) }}</span>
-            <span class="vz-feed-text">
-              <b>{{ row.who }}</b> {{ row.what }}
-            </span>
-            <span class="vz-feed-id">#{{ item.index + 1 }}</span>
-          </div>
+    <div class="demo">
+      <p class="status">
+        loaded: <b>{{ rows().length }}</b> / {{ max }} — status: <b>{{ statusLabel() }}</b>
+      </p>
+
+      <div
+        forVirtualViewport
+        class="viewport"
+        [virtualCount]="rows().length"
+        [estimateSize]="52"
+        (endReached)="onEndReached()"
+      >
+        <div *forVirtualFor="let row of rows(); let item = virtualItem" class="feed-row">
+          <span class="avatar" aria-hidden="true">{{ row.who.charAt(0) }}</span>
+          <span class="feed-text">
+            <b>{{ row.who }}</b> {{ row.what }}
+          </span>
+          <span class="feed-id">#{{ item.index + 1 }}</span>
         </div>
       </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          loaded: <b>{{ rows().length }}</b> / {{ max }}<br />
-          status: <b>{{ statusLabel() }}</b>
-        </p>
-        <p class="pg-hint">
-          Each page of {{ pageSize }} loads after a simulated {{ latency }}ms request. Loading stops
-          once the cap of {{ max }} items is reached.
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .vz-demo {
+    :host {
+      display: contents;
+    }
+
+    .demo {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
       width: min(420px, 100%);
     }
 
-    .vz-viewport {
+    .status {
+      margin: 0;
+      font-family: var(--pg-font-mono);
+      font-size: 0.78rem;
+      color: var(--pg-text-muted);
+    }
+
+    .status b {
+      color: var(--pg-text);
+      font-weight: 600;
+    }
+
+    .viewport {
       height: 360px;
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius-sm);
       background: var(--pg-surface);
     }
 
-    .vz-feed-row {
+    .feed-row {
       display: flex;
       align-items: center;
       gap: 0.7rem;
@@ -96,7 +100,7 @@ function makePage(start: number, length: number): Activity[] {
       box-sizing: border-box;
     }
 
-    .vz-avatar {
+    .avatar {
       flex: none;
       display: inline-flex;
       align-items: center;
@@ -110,16 +114,16 @@ function makePage(start: number, length: number): Activity[] {
       background: var(--pg-primary);
     }
 
-    .vz-feed-text {
+    .feed-text {
       flex: 1;
       color: var(--pg-text-muted);
     }
 
-    .vz-feed-text b {
+    .feed-text b {
       color: var(--pg-text);
     }
 
-    .vz-feed-id {
+    .feed-id {
       flex: none;
       font-family: var(--pg-font-mono);
       font-size: 0.72rem;
@@ -128,9 +132,7 @@ function makePage(start: number, length: number): Activity[] {
   `,
 })
 export class VirtualizationInfiniteScrollExample {
-  protected readonly pageSize = PAGE;
   protected readonly max = MAX;
-  protected readonly latency = LATENCY;
 
   protected readonly rows = signal<readonly Activity[]>(makePage(0, PAGE));
   protected readonly loading = signal(false);

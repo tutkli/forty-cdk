@@ -1,9 +1,8 @@
 # ForStepper
 
-A headless, accessible multi-step wizard primitive. Implements the
-[WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/) in
-`mode="interactive"` (full roving tabindex, `role="tablist"`) and a progress
-list with `aria-current="step"` in `mode="progress"`.
+A multi-step wizard built on the Tabs pattern: a step list with indicators and separators, a content panel per step, Next / Previous navigation, linear gating with optional Signal Forms completion, a display-only progress mode and an optional progress bar.
+
+A headless, accessible primitive: `mode="interactive"` gives full roving tabindex and `role="tablist"`, while `mode="progress"` renders a progress list with `aria-current="step"`.
 
 See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
@@ -11,19 +10,36 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
 ## Anatomy
 
-| Directive                    | Selector                       | Role (interactive / progress)           |
-| ---------------------------- | ------------------------------ | --------------------------------------- |
-| `ForStepper`                 | `[forStepper]`                 | root                                    |
-| `ForStepperList`             | `[forStepperList]`             | `tablist` / `list`                      |
-| `ForStepperItem`             | `[forStepperItem]`             | item container (wraps trigger + panel)  |
-| `ForStepperTrigger`          | `[forStepperTrigger]`          | `tab` / static (aria-current)           |
-| `ForStepperIndicator`        | `[forStepperIndicator]`        | decorative icon (`aria-hidden`)         |
-| `ForStepperSeparator`        | `[forStepperSeparator]`        | decorative connector (`aria-hidden`)    |
-| `ForStepperContent`          | `[forStepperContent]`          | `tabpanel` / `group`                    |
-| `ForStepperNext`             | `button[forStepperNext]`       | next-step button                        |
-| `ForStepperPrevious`         | `button[forStepperPrevious]`   | previous-step button                    |
-| `ForStepperProgress`         | `[forStepperProgress]`         | `progressbar` (optional)                |
-| `ForStepperCompletedContent` | `[forStepperCompletedContent]` | `group` (terminal "all complete" panel) |
+```html
+<div forStepper [(selectedIndex)]="step" [linear]="true">
+  <ol forStepperList ariaLabel="Checkout">
+    <li forStepperItem [completed]="step() > 0">
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Shipping
+      </button>
+      <span forStepperSeparator></span>
+    </li>
+    <li forStepperItem>
+      <button forStepperTrigger>
+        <span forStepperIndicator></span>
+        Review
+      </button>
+    </li>
+  </ol>
+
+  <section forStepperContent>Shipping form</section>
+  <section forStepperContent>Order review</section>
+
+  <!-- terminal panel, shown once selectedIndex === count -->
+  <section forStepperCompletedContent>All steps complete</section>
+
+  <button forStepperPrevious>Back</button>
+  <button forStepperNext>Next</button>
+</div>
+```
+
+`[forStepperProgress]` is an optional `role="progressbar"` part you can place inside the root for a styleable fill.
 
 ---
 
@@ -207,17 +223,17 @@ Or purely via CSS:
 
 ### `ForStepper`
 
-| API              | Type                              | Default         | Description                                                                                                |
-| ---------------- | --------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------- |
-| `selectedIndex`  | `model<number>`                   | `0`             | Two-way bindable selected step index, range `0 … count` (the terminal `=== count` is the completed state). |
-| `linear`         | `input<boolean>`                  | `false`         | Gate forward navigation until preceding steps complete.                                                    |
-| `mode`           | `input<StepperMode>`              | `'interactive'` | Accessibility model.                                                                                       |
-| `orientation`    | `input<'horizontal'\|'vertical'>` | `'horizontal'`  | Layout axis; affects arrow-key semantics.                                                                  |
-| `activationMode` | `input<StepperActivationMode>`    | `'manual'`      | Whether arrow nav also selects (scope-injectable).                                                         |
-| `loop`           | `input<boolean>`                  | `true`          | Wrap arrow navigation (scope-injectable).                                                                  |
-| `disabled`       | `input<boolean>`                  | `false`         | Disables all triggers and navigation.                                                                      |
-| `dir`            | `input<'ltr'\|'rtl'\|null>`       | `null`          | Writing direction (inherits ambient when unset).                                                           |
-| `complete`       | `output()`                        | —               | Output. Fires once each time the stepper enters the completed state.                                       |
+| Property         | Type                              | Description                                                                                                                    |
+| ---------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `selectedIndex`  | `model<number>`                   | Two-way bindable selected step index, range `0 … count` (the terminal `=== count` is the completed state).<br>**Default:** `0` |
+| `linear`         | `input<boolean>`                  | Gate forward navigation until preceding steps complete.<br>**Default:** `false`                                                |
+| `mode`           | `input<StepperMode>`              | Accessibility model.<br>**Default:** `'interactive'`                                                                           |
+| `orientation`    | `input<'horizontal'\|'vertical'>` | Layout axis; affects arrow-key semantics.<br>**Default:** `'horizontal'`                                                       |
+| `activationMode` | `input<StepperActivationMode>`    | Whether arrow nav also selects (scope-injectable).<br>**Default:** `'manual'`                                                  |
+| `loop`           | `input<boolean>`                  | Wrap arrow navigation (scope-injectable).<br>**Default:** `true`                                                               |
+| `disabled`       | `input<boolean>`                  | Disables all triggers and navigation.<br>**Default:** `false`                                                                  |
+| `dir`            | `input<'ltr'\|'rtl'\|null>`       | Writing direction (inherits ambient when unset).<br>**Default:** `null`                                                        |
+| `complete`       | `output()`                        | Output. Fires once each time the stepper enters the completed state.<br>**Default:** —                                         |
 
 `ForStepper` exposes two members for the terminal completed state:
 
@@ -226,14 +242,14 @@ Or purely via CSS:
 
 ### `ForStepperItem`
 
-| API         | Type                              | Default | Description                                                                  |
-| ----------- | --------------------------------- | ------- | ---------------------------------------------------------------------------- |
-| `completed` | `input<boolean>`                  | `false` | Marks the step done (manual; wins over `field`).                             |
-| `optional`  | `input<boolean>`                  | `false` | Marks the step skippable in linear mode.                                     |
-| `disabled`  | `input<boolean>`                  | `false` | Disables only this step.                                                     |
-| `hasError`  | `input<boolean>`                  | `false` | Emits `'error'` resolved state when not current (manual; wins over `field`). |
-| `field`     | `input<FieldTree<unknown>\|null>` | `null`  | Optional Signal Forms field; drives `completed`/`hasError` from validity.    |
-| `state`     | `input<string\|null>`             | `null`  | Custom state override — wins over derived state.                             |
+| Property    | Type                              | Description                                                                                          |
+| ----------- | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `completed` | `input<boolean>`                  | Marks the step done (manual; wins over `field`).<br>**Default:** `false`                             |
+| `optional`  | `input<boolean>`                  | Marks the step skippable in linear mode.<br>**Default:** `false`                                     |
+| `disabled`  | `input<boolean>`                  | Disables only this step.<br>**Default:** `false`                                                     |
+| `hasError`  | `input<boolean>`                  | Emits `'error'` resolved state when not current (manual; wins over `field`).<br>**Default:** `false` |
+| `field`     | `input<FieldTree<unknown>\|null>` | Optional Signal Forms field; drives `completed`/`hasError` from validity.<br>**Default:** `null`     |
+| `state`     | `input<string\|null>`             | Custom state override — wins over derived state.<br>**Default:** `null`                              |
 
 ### Data attributes
 
@@ -274,6 +290,8 @@ In `activationMode="automatic"` arrow keys move focus AND select. In `activation
 In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. In `orientation="horizontal"` ArrowLeft/Right navigate; ArrowUp/Down are ignored. RTL inverts ArrowLeft and ArrowRight.
 
 ## Accessibility
+
+Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 
 - **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`).
 - **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger. No tab-stop manipulation is performed; triggers carry no `role`.

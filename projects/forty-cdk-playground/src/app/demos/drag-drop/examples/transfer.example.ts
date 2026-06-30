@@ -14,8 +14,6 @@ import {
   transferArrayItem,
 } from 'forty-cdk/drag-drop';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Card {
   readonly id: string;
   readonly label: string;
@@ -24,65 +22,51 @@ interface Card {
 @Component({
   selector: 'app-drag-drop-transfer-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForDropListGroup, ForDropList, ForDraggable],
+  imports: [ForDropListGroup, ForDropList, ForDraggable],
   template: `
-    <playground-demo
-      title="Transfer between lists"
-      subtitle="Wrap two [forDropList] columns in [forDropListGroup] and they connect automatically — items drag within a column or across to the other. The (dragDrop) event fires on the source list with previousContainer / container contexts; compare them to choose moveItemInArray (same list) or transferArrayItem (across lists). Works by pointer and keyboard alike."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/drag-drop/examples/transfer.example.ts"
-    >
-      <div demo class="dd-board" forDropListGroup>
-        <section class="dd-column">
-          <h3 class="dd-column-title">To do · {{ todo().length }}</h3>
-          <ul #todoList forDropList class="dd-stack" (dragDrop)="onDrop($event)">
-            @for (card of todo(); track card.id) {
-              <li forDraggable [dragData]="card" class="dd-card">{{ card.label }}</li>
-            } @empty {
-              <li class="dd-empty">Drop cards here</li>
-            }
-          </ul>
-        </section>
+    <div class="board" forDropListGroup>
+      <section class="column">
+        <h3 class="column-title">To do · {{ todo().length }}</h3>
+        <ul #todoList forDropList class="stack" (dragDrop)="onDrop($event)">
+          @for (card of todo(); track card.id) {
+            <li forDraggable [dragData]="card" class="card">{{ card.label }}</li>
+          } @empty {
+            <li class="empty">Drop cards here</li>
+          }
+        </ul>
+      </section>
 
-        <section class="dd-column">
-          <h3 class="dd-column-title">Done · {{ done().length }}</h3>
-          <ul #doneList forDropList class="dd-stack" (dragDrop)="onDrop($event)">
-            @for (card of done(); track card.id) {
-              <li forDraggable [dragData]="card" class="dd-card dd-card--done">{{ card.label }}</li>
-            } @empty {
-              <li class="dd-empty">Drop cards here</li>
-            }
-          </ul>
-        </section>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-hint">
-          Drag a card between columns, or use the keyboard: Space to lift, arrows to move (including
-          across the gap to the other column), Space to drop.
-        </p>
-        <p class="pg-state">
-          to do: <b>{{ todo().length }}</b
-          ><br />
-          done: <b>{{ done().length }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      <section class="column">
+        <h3 class="column-title">Done · {{ done().length }}</h3>
+        <ul #doneList forDropList class="stack" (dragDrop)="onDrop($event)">
+          @for (card of done(); track card.id) {
+            <li forDraggable [dragData]="card" class="card card--done">{{ card.label }}</li>
+          } @empty {
+            <li class="empty">Drop cards here</li>
+          }
+        </ul>
+      </section>
+    </div>
   `,
   styles: `
-    .dd-board {
+    :host {
+      display: contents;
+    }
+
+    .board {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
       width: min(520px, 100%);
     }
 
-    .dd-column {
+    .column {
       display: flex;
       flex-direction: column;
       gap: 0.6rem;
     }
 
-    .dd-column-title {
+    .column-title {
       margin: 0;
       font-size: 0.72rem;
       font-weight: 700;
@@ -91,7 +75,7 @@ interface Card {
       color: var(--pg-text-muted);
     }
 
-    .dd-stack {
+    .stack {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
@@ -104,12 +88,12 @@ interface Card {
       border-radius: var(--pg-radius-sm);
     }
 
-    .dd-stack[data-drag-over] {
+    .stack[data-drag-over] {
       border-color: var(--pg-primary);
       background: color-mix(in srgb, var(--pg-primary) 8%, var(--pg-surface-2));
     }
 
-    .dd-card {
+    .card {
       padding: 0.65rem 0.8rem;
       background: var(--pg-surface);
       border: 1px solid var(--pg-border-strong);
@@ -119,20 +103,20 @@ interface Card {
       cursor: grab;
     }
 
-    .dd-card:active {
+    .card:active {
       cursor: grabbing;
     }
 
-    .dd-card--done {
+    .card--done {
       color: var(--pg-text-muted);
       text-decoration: line-through;
     }
 
-    .dd-card[data-dragging] {
+    .card[data-dragging] {
       opacity: 0.35;
     }
 
-    .dd-empty {
+    .empty {
       padding: 0.65rem 0.8rem;
       font-size: 0.82rem;
       color: var(--pg-text-muted);

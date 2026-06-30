@@ -3,8 +3,6 @@ import { form, FormField, minLength, required } from '@angular/forms/signals';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForSearch, ForSearchClear } from 'forty-cdk/search';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Filters {
   readonly term: string;
 }
@@ -12,51 +10,34 @@ interface Filters {
 @Component({
   selector: 'app-search-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, FormField, ForField, ForLabel, ForSearch, ForSearchClear, ForFieldError],
+  imports: [FormField, ForField, ForLabel, ForSearch, ForSearchClear, ForFieldError],
   template: `
-    <playground-demo
-      title="Inside a Field with Signal Forms"
-      subtitle="forSearch implements FormValueControl<string>, so [formField] auto-wires it inside forField exactly like forInput: the label adopts the control id, validation flows into aria-errormessage, and aria-invalid / aria-required are reflected. Type one or two characters and blur to surface the error."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/search/examples/field.example.ts"
-    >
-      <div demo>
-        <div forField #field="forField" class="field">
-          <label forLabel class="field-label">
-            <span class="field-label-text">Search the docs</span>
-            <div class="search">
-              <input
-                forSearch
-                #s="forSearch"
-                class="search-input"
-                placeholder="At least 3 characters…"
-                [formField]="filtersForm.term"
-              />
-              <button [forSearchClear]="s" class="search-clear" aria-label="Clear search">×</button>
-            </div>
-          </label>
-          @if (filtersForm.term().touched() && !filtersForm.term().valid()) {
-            <p forFieldError #err="forFieldError" class="field-error">
-              {{ err.messages().join(', ') }}
-            </p>
-          }
+    <div forField class="field">
+      <label forLabel class="field-label">
+        <span class="field-label-text">Search the docs</span>
+        <div class="search">
+          <input
+            forSearch
+            #s="forSearch"
+            class="search-input"
+            placeholder="At least 3 characters…"
+            [formField]="filtersForm.term"
+          />
+          <button [forSearchClear]="s" class="search-clear" aria-label="Clear search">×</button>
         </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <button type="button" class="pg-btn" (click)="filtersForm.term().markAsTouched()">
-          Mark touched
-        </button>
-        <p class="pg-state">
-          value: <b>{{ filtersForm.term().value() || '∅' }}</b
-          ><br />
-          touched: <b>{{ field.touched() }}</b
-          ><br />
-          invalid: <b>{{ field.invalid() }}</b>
+      </label>
+      @if (filtersForm.term().touched() && !filtersForm.term().valid()) {
+        <p forFieldError #err="forFieldError" class="field-error">
+          {{ err.messages().join(', ') }}
         </p>
-      </div>
-    </playground-demo>
+      }
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .field {
       width: min(360px, 100%);
       display: flex;

@@ -1,118 +1,177 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
 import { ForMenuContent, ForMenuItem, ForMenuSeparator } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
-
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { DemoLayout } from '../../../ui/demo-layout';
 
 @Component({
   selector: 'app-menubar-vertical-rtl-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForMenubar,
-    ForMenubarTrigger,
-    ForMenuContent,
-    ForMenuItem,
-    ForMenuSeparator,
-    ControlSelect,
-  ],
+  encapsulation: ViewEncapsulation.None,
+  imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem, ForMenuSeparator],
   template: `
-    <playground-demo
-      title="Vertical & RTL"
-      subtitle="The same menubar laid out as a vertical sidebar (orientation='vertical' makes Up / Down move between triggers). Switching dir to rtl reflects dir='rtl' on the bar, swaps the cross-menu arrow keys, and floats each menu out of the opposite edge — the directive resolves the writing direction and positioning for you."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/menubar/examples/vertical-rtl.example.ts"
+    <div
+      forMenubar
+      orientation="vertical"
+      dir="rtl"
+      [(value)]="openMenu"
+      ariaLabel="Workspace"
+      class="menubar-vertical menubar-vertical--side"
     >
-      <div demo class="bar-demo">
+      <button forMenubarTrigger value="workspace" class="menubar-vertical-trigger">
+        Workspace
+      </button>
+      @if (openMenu() === 'workspace') {
         <div
-          forMenubar
-          orientation="vertical"
-          [(value)]="openMenu"
-          [dir]="dir()"
-          ariaLabel="Workspace"
-          class="pg-menubar bar-side"
+          forMenuContent
+          class="menubar-vertical-content"
+          animate.enter="menubar-vertical-pop-in"
         >
-          <button forMenubarTrigger value="workspace" class="pg-menubar-trigger">Workspace</button>
-          @if (openMenu() === 'workspace') {
-            <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('New project')">
-                New project
-              </button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Import…')">
-                Import…
-              </button>
-              <hr forMenuSeparator class="pg-menu-separator" />
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Settings')">
-                Settings
-              </button>
-            </div>
-          }
-
-          <button forMenubarTrigger value="insert" class="pg-menubar-trigger">Insert</button>
-          @if (openMenu() === 'insert') {
-            <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Image')">Image</button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Table')">Table</button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Code block')">
-                Code block
-              </button>
-            </div>
-          }
-
-          <button forMenubarTrigger value="format" class="pg-menubar-trigger">Format</button>
-          @if (openMenu() === 'format') {
-            <div forMenuContent class="pg-menu" animate.enter="pg-pop-in">
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Bold')">Bold</button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Italic')">
-                Italic
-              </button>
-              <button forMenuItem class="pg-menu-item" (activate)="onAction('Clear formatting')">
-                Clear formatting
-              </button>
-            </div>
-          }
+          <button forMenuItem class="menubar-vertical-item">New project</button>
+          <button forMenuItem class="menubar-vertical-item">Import…</button>
+          <hr forMenuSeparator class="menubar-vertical-separator" />
+          <button forMenuItem class="menubar-vertical-item">Settings</button>
         </div>
-      </div>
+      }
 
-      <div controls class="pg-controls">
-        <app-control-select
-          label="dir"
-          hint="Writing direction resolved onto the bar. In rtl the cross-menu arrow keys swap and each menu floats from the opposite edge."
-          [options]="dirOptions"
-          [(value)]="dir"
-        />
+      <button forMenubarTrigger value="insert" class="menubar-vertical-trigger">Insert</button>
+      @if (openMenu() === 'insert') {
+        <div
+          forMenuContent
+          class="menubar-vertical-content"
+          animate.enter="menubar-vertical-pop-in"
+        >
+          <button forMenuItem class="menubar-vertical-item">Image</button>
+          <button forMenuItem class="menubar-vertical-item">Table</button>
+          <button forMenuItem class="menubar-vertical-item">Code block</button>
+        </div>
+      }
 
-        <p class="pg-state">
-          open menu: <b>{{ openMenu() || 'none' }}</b
-          ><br />
-          last action: <b>{{ lastAction() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      <button forMenubarTrigger value="format" class="menubar-vertical-trigger">Format</button>
+      @if (openMenu() === 'format') {
+        <div
+          forMenuContent
+          class="menubar-vertical-content"
+          animate.enter="menubar-vertical-pop-in"
+        >
+          <button forMenuItem class="menubar-vertical-item">Bold</button>
+          <button forMenuItem class="menubar-vertical-item">Italic</button>
+          <button forMenuItem class="menubar-vertical-item">Clear formatting</button>
+        </div>
+      }
+    </div>
   `,
   styles: `
-    .bar-demo {
-      display: flex;
-      justify-content: center;
-      padding: 1.5rem 0;
+    app-menubar-vertical-rtl-example {
+      display: contents;
     }
 
-    .bar-side {
+    .menubar-vertical {
+      display: inline-flex;
+      gap: 2px;
+      padding: 4px;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .menubar-vertical[data-orientation='vertical'] {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .menubar-vertical[data-disabled] {
+      opacity: 0.6;
+    }
+
+    .menubar-vertical--side {
       min-width: 160px;
+    }
+
+    .menubar-vertical-trigger {
+      font: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-align: left;
+      padding: 0.4rem 0.75rem;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .menubar-vertical-trigger:hover,
+    .menubar-vertical-trigger[data-state='open'] {
+      background: var(--pg-surface-2);
+    }
+
+    .menubar-vertical-content {
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 200px;
+      padding: 5px;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .menubar-vertical-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      font: inherit;
+      font-size: 0.875rem;
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .menubar-vertical-item[data-highlighted],
+    .menubar-vertical-item[data-state='open'],
+    .menubar-vertical-item:not([data-disabled]):hover {
+      background: var(--pg-surface-2);
+    }
+
+    .menubar-vertical-item[data-disabled] {
+      color: var(--pg-text-muted);
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .menubar-vertical-separator {
+      height: 1px;
+      margin: 4px -1px;
+      border: 0;
+      background: var(--pg-border);
+    }
+
+    .menubar-vertical-pop-in {
+      transform-origin: var(--for-content-transform-origin, center);
+      animation: menubar-vertical-pop-in 0.2s var(--pg-ease-spring) both;
+    }
+
+    @keyframes menubar-vertical-pop-in {
+      from {
+        opacity: 0;
+        scale: 0.9;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .menubar-vertical-pop-in {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })
 export class MenubarVerticalRtlExample {
-  protected readonly dirOptions: readonly ControlOption<'ltr' | 'rtl'>[] = [
-    { value: 'ltr', label: 'ltr' },
-    { value: 'rtl', label: 'rtl' },
-  ];
-
   protected readonly openMenu = signal('');
-  protected readonly dir = signal<'ltr' | 'rtl'>('ltr');
-  protected readonly lastAction = signal('—');
-
-  protected onAction(label: string): void {
-    this.lastAction.set(label);
-  }
 }

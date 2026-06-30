@@ -1,5 +1,7 @@
 import { Marked, type Tokens } from 'marked';
 
+import { highlightCodeBlock } from './highlighter';
+
 export interface DocTableData {
   readonly columns: readonly string[];
   readonly rows: readonly (readonly DocTableCell[])[];
@@ -14,9 +16,15 @@ export type DocBlock =
   | { readonly kind: 'html'; readonly html: string }
   | { readonly kind: 'table'; readonly table: DocTableData };
 
+export interface DocSubsection {
+  readonly title: string;
+  readonly slug: string;
+}
+
 export interface DocSectionData {
   readonly title: string;
   readonly slug: string;
+  readonly subsections: readonly DocSubsection[];
   readonly blocks: readonly DocBlock[];
 }
 
@@ -49,12 +57,22 @@ class Slugger {
 
 const headingSlugger = new Slugger();
 
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 const marked = new Marked({ gfm: true });
 marked.use({
   renderer: {
     heading(token: Tokens.Heading) {
       const id = headingSlugger.unique(slugify(token.text));
       return `<h${token.depth} id="${id}">${renderInline(token.text)}</h${token.depth}>\n`;
+    },
+    code(token: Tokens.Code) {
+      const highlighted = highlightCodeBlock(token.text, token.lang);
+      return highlighted
+        ? `${highlighted}\n`
+        : `<pre><code>${escapeHtml(token.text)}</code></pre>\n`;
     },
   },
 });
@@ -68,7 +86,11 @@ function renderInline(md: string): string {
   return marked.parseInline(md, { async: false });
 }
 
-function stripText(html: string): string {
+export function renderInlineMarkdown(md: string): string {
+  return renderInline(md);
+}
+
+export function stripText(html: string): string {
   return html
     .replace(/<[^>]+>/g, '')
     .replace(/&lt;/g, '<')
@@ -149,6 +171,22 @@ function splitBlocks(body: string): DocBlock[] {
   return blocks;
 }
 
+function collectSubsections(bodyLines: readonly string[]): DocSubsection[] {
+  const subsections: DocSubsection[] = [];
+  let inFence = false;
+  for (const line of bodyLines) {
+    if (isFenceLine(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (!inFence && /^### /.test(line)) {
+      const raw = line.slice(4).trim();
+      subsections.push({ title: raw.replace(/`/g, ''), slug: slugify(raw) });
+    }
+  }
+  return subsections;
+}
+
 function stripLeadingHeading(lines: string[]): string[] {
   const result = [...lines];
   while (result.length > 0 && result[0].trim() === '') {
@@ -194,6 +232,7 @@ export function parseReadme(md: string): ParsedReadme {
   const sections = rawSections.map((section) => ({
     title: section.title,
     slug: section.slug,
+    subsections: collectSubsections(section.bodyLines),
     blocks: splitBlocks(section.bodyLines.join('\n')),
   }));
 

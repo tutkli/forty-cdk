@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   type ForDragDropEvent,
   ForDragHandle,
@@ -8,9 +8,6 @@ import {
   moveItemInArray,
 } from 'forty-cdk/drag-drop';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Task {
   readonly id: string;
   readonly label: string;
@@ -19,75 +16,42 @@ interface Task {
 @Component({
   selector: 'app-drag-drop-sortable-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DemoLayout,
-    ForDropList,
-    ForDraggable,
-    ForDragHandle,
-    ForDragPlaceholder,
-    ControlSwitch,
-  ],
+  imports: [ForDropList, ForDraggable, ForDragHandle, ForDragPlaceholder],
   template: `
-    <playground-demo
-      title="Sortable list"
-      subtitle="A vertical [forDropList] of [forDraggable] items, reorderable by pointer and keyboard. Pointer drags start from the [forDragHandle] grip; a fixed-position clone follows the pointer while the source slot dims via data-dragging. Keyboard: focus an item, Space lifts it, arrows step the drop position, Space drops, Escape cancels. liveSort makes the [forDragPlaceholder] follow the live drop index; animateReorder adds FLIP + drop-settle transitions."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/drag-drop/examples/sortable.example.ts"
+    <ul
+      forDropList
+      class="list"
+      [liveSort]="true"
+      [animateReorder]="true"
+      (dragDrop)="onDrop($event)"
     >
-      <div demo class="dd-demo">
-        <ul
-          forDropList
-          class="dd-list"
-          [liveSort]="liveSort()"
-          [animateReorder]="animateReorder()"
-          (dragDrop)="onDrop($event)"
-        >
-          @for (task of tasks(); track task.id) {
-            <li forDraggable [dragData]="task" class="dd-item">
-              <span forDragHandle class="dd-handle" aria-hidden="true">⠿</span>
-              <span class="dd-label">{{ task.label }}</span>
-              <ng-template forDragPlaceholder>
-                <div class="dd-placeholder"></div>
-              </ng-template>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="liveSort"
-          hint="Make the placeholder follow the live resolved drop index during a pointer drag, so the neighbours part to reveal where the item lands. With it off, the placeholder stays in the source slot."
-          [(checked)]="liveSort"
-        />
-        <app-control-switch
-          label="animateReorder"
-          hint="Animate committed drops: displaced items glide to their new positions (FLIP) and the floating preview settles into the final slot. Skipped under prefers-reduced-motion."
-          [(checked)]="animateReorder"
-        />
-        <p class="pg-hint">
-          Drag the ⠿ grip, or focus an item and press Space to lift, arrows to move, Space to drop.
-        </p>
-        <p class="pg-state">
-          order: <b>{{ orderLabel() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      @for (task of tasks(); track task.id) {
+        <li forDraggable [dragData]="task" class="item">
+          <span forDragHandle class="handle" aria-hidden="true">⠿</span>
+          <span class="label">{{ task.label }}</span>
+          <ng-template forDragPlaceholder>
+            <div class="placeholder"></div>
+          </ng-template>
+        </li>
+      }
+    </ul>
   `,
   styles: `
-    .dd-demo {
-      width: min(320px, 100%);
+    :host {
+      display: contents;
     }
 
-    .dd-list {
+    .list {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      width: min(320px, 100%);
       margin: 0;
       padding: 0;
       list-style: none;
     }
 
-    .dd-item {
+    .item {
       display: flex;
       align-items: center;
       gap: 0.6rem;
@@ -99,45 +63,49 @@ interface Task {
       font-size: 0.9rem;
     }
 
-    .dd-handle {
+    .handle {
       flex: none;
       color: var(--pg-text-muted);
       cursor: grab;
       line-height: 1;
     }
 
-    .dd-handle:active {
+    .handle:active {
       cursor: grabbing;
     }
 
-    .dd-label {
+    .label {
       flex: 1;
     }
 
-    .dd-item[data-dragging] {
+    .item[data-dragging] {
       opacity: 0.35;
     }
 
-    .dd-placeholder {
+    .placeholder {
       height: 2.9rem;
       border: 2px dashed var(--pg-primary);
       border-radius: var(--pg-radius-sm);
       background: color-mix(in srgb, var(--pg-primary) 10%, transparent);
     }
 
-    .dd-item[data-drag-animating] {
+    .item[data-drag-animating] {
       transition: transform 0.2s ease;
     }
 
     [data-for-drag-preview][data-settling] {
       transition: transform 0.2s ease;
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .item[data-drag-animating],
+      [data-for-drag-preview][data-settling] {
+        transition: none;
+      }
+    }
   `,
 })
 export class DragDropSortableExample {
-  protected readonly liveSort = signal(true);
-  protected readonly animateReorder = signal(true);
-
   protected readonly tasks = signal<readonly Task[]>([
     { id: 'a', label: 'Draft the release notes' },
     { id: 'b', label: 'Review open pull requests' },
@@ -145,12 +113,6 @@ export class DragDropSortableExample {
     { id: 'd', label: 'Publish the npm package' },
     { id: 'e', label: 'Announce on the forum' },
   ]);
-
-  protected readonly orderLabel = computed(() =>
-    this.tasks()
-      .map((task) => task.id)
-      .join(' → '),
-  );
 
   protected onDrop(event: ForDragDropEvent): void {
     this.tasks.update((tasks) => moveItemInArray(tasks, event.previousIndex, event.currentIndex));

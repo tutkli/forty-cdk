@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForCarousel,
   ForCarouselIndicator,
@@ -11,10 +11,6 @@ import {
   ForCarouselViewport,
 } from 'forty-cdk/carousel';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Slide {
   readonly id: number;
   readonly label: string;
@@ -24,7 +20,6 @@ interface Slide {
   selector: 'app-carousel-autoplay-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForCarousel,
     ForCarouselViewport,
     ForCarouselTrack,
@@ -34,87 +29,63 @@ interface Slide {
     ForCarouselIndicators,
     ForCarouselIndicator,
     ForCarouselRotationControl,
-    ControlSwitch,
-    ControlSelect,
   ],
   template: `
-    <playground-demo
-      title="Autoplay with pause control"
-      subtitle="The rotation control is the first focusable child (APG / WCAG 2.2.2 requirement). Rotation pauses on hover, keyboard focus inside the carousel, and while the tab is backgrounded. An explicit stop (clicking the control) is sticky — hover and focus will not restart it. Under prefers-reduced-motion, rotation does not auto-start but the user can start it manually."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/carousel/examples/autoplay.example.ts"
+    <div
+      forCarousel
+      #car="forCarousel"
+      class="acar"
+      [(activeIndex)]="activeIndex"
+      autoplay
+      [autoplayInterval]="3000"
+      loop
+      ariaLabel="Auto-rotating announcements"
     >
-      <div demo class="acar-demo">
-        <div
-          forCarousel
-          #car="forCarousel"
-          class="acar"
-          [(activeIndex)]="activeIndex"
-          [autoplay]="autoplayOn()"
-          [autoplayInterval]="autoplayInterval()"
-          loop
-          ariaLabel="Auto-rotating announcements"
-        >
-          <button
-            forCarouselRotationControl
-            class="acar-rotation-btn"
-            startLabel="Start automatic slide show"
-            stopLabel="Stop automatic slide show"
-          >
-            <span class="sr-only">Toggle autoplay</span>
-          </button>
+      <button
+        forCarouselRotationControl
+        class="acar-rotation-btn"
+        startLabel="Start automatic slide show"
+        stopLabel="Stop automatic slide show"
+      >
+        <span class="sr-only">Toggle autoplay</span>
+      </button>
 
-          <div class="acar-nav-row">
-            <button forCarouselPrevious class="acar-btn" aria-label="Previous slide">‹</button>
-            <button forCarouselNext class="acar-btn" aria-label="Next slide">›</button>
-          </div>
+      <div class="acar-nav-row">
+        <button forCarouselPrevious class="acar-btn" aria-label="Previous slide">‹</button>
+        <button forCarouselNext class="acar-btn" aria-label="Next slide">›</button>
+      </div>
 
-          <div forCarouselViewport class="acar-viewport">
-            <div forCarouselTrack class="acar-track">
-              @for (slide of slides; track slide.id; let i = $index) {
-                <div forCarouselSlide class="acar-slide" [class]="'acar-slide--' + (i + 1)">
-                  <span class="acar-slide-label">{{ slide.label }}</span>
-                </div>
-              }
+      <div forCarouselViewport class="acar-viewport">
+        <div forCarouselTrack class="acar-track">
+          @for (slide of slides; track slide.id; let i = $index) {
+            <div forCarouselSlide class="acar-slide" [class]="'acar-slide--' + (i + 1)">
+              <span class="acar-slide-label">{{ slide.label }}</span>
             </div>
-          </div>
-
-          <div forCarouselIndicators class="acar-indicators" ariaLabel="Choose slide to display">
-            @for (slide of slides; track slide.id; let i = $index) {
-              <button
-                forCarouselIndicator
-                class="acar-dot"
-                [attr.aria-label]="'Go to slide ' + (i + 1)"
-              ></button>
-            }
-          </div>
+          }
         </div>
       </div>
 
-      <div controls class="pg-controls">
-        <app-control-switch label="autoplay" [(checked)]="autoplayOn" />
-        <app-control-select
-          label="autoplayInterval"
-          hint="Milliseconds between automatic slide advances."
-          [options]="intervalOptions"
-          [(value)]="intervalValue"
-        />
-        <p class="pg-state">
-          playing: <b>{{ car.playing() }}</b
-          ><br />
-          activeIndex: <b>{{ activeIndex() }}</b>
-        </p>
+      <div forCarouselIndicators class="acar-indicators" ariaLabel="Choose slide to display">
+        @for (slide of slides; track slide.id; let i = $index) {
+          <button
+            forCarouselIndicator
+            class="acar-dot"
+            [attr.aria-label]="'Go to slide ' + (i + 1)"
+          ></button>
+        }
       </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .acar-demo {
-      width: min(400px, 100%);
+    :host {
+      display: contents;
     }
 
     .acar {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+      width: min(400px, 100%);
     }
 
     .acar-rotation-btn {
@@ -272,15 +243,5 @@ export class CarouselAutoplayExample {
     { id: 4, label: 'Slide 4' },
   ];
 
-  protected readonly intervalOptions: readonly ControlOption[] = [
-    { value: '2000', label: '2 s' },
-    { value: '3000', label: '3 s' },
-    { value: '5000', label: '5 s' },
-  ];
-
   protected readonly activeIndex = signal(0);
-  protected readonly autoplayOn = signal(true);
-
-  protected readonly intervalValue = signal('3000');
-  protected readonly autoplayInterval = computed(() => Number(this.intervalValue()));
 }

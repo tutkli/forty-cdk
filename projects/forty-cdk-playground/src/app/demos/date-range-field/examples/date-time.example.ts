@@ -1,8 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
 import { type CalendarDateRange } from 'forty-cdk/calendar';
 import {
-  type FieldGranularity,
   ForDateRangeField,
   ForDateRangeFieldEnd,
   ForDateRangeFieldLiteral,
@@ -11,17 +10,10 @@ import {
 } from 'forty-cdk/date-range-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-date-range-field-date-time-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
-    ControlSelect,
-    ControlSwitch,
     ForDateRangeField,
     ForDateRangeFieldStart,
     ForDateRangeFieldEnd,
@@ -30,65 +22,108 @@ import { DemoLayout } from '../../../ui/demo-layout';
   ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <playground-demo
-      title="Date & time range"
-      subtitle="With a time-capable adapter, granularity coarser than 'day' appends hour / minute / second segments to both endpoints — the value becomes a CalendarDateTime range. Handy for a check-in → check-out with times. A 12-hour cycle adds an AM/PM segment to each side."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/date-range-field/examples/date-time.example.ts"
+    <div
+      forDateRangeField
+      class="range-field"
+      [(value)]="value"
+      granularity="minute"
+      [hourCycle]="12"
+      ariaLabel="Stay"
     >
-      <div demo>
-        <div
-          forDateRangeField
-          class="pg-range-field"
-          [(value)]="value"
-          [granularity]="granularity()"
-          [hourCycle]="hourCycle()"
-          ariaLabel="Stay"
-        >
-          <div forDateRangeFieldStart class="pg-range-endpoint" #start="forDateRangeFieldStart">
-            @for (seg of start.segments(); track seg.id) {
-              @if (seg.isLiteral) {
-                <span forDateRangeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-              } @else {
-                <span forDateRangeFieldSegment class="pg-seg" [segment]="seg.type!">{{
-                  seg.text
-                }}</span>
-              }
-            }
-          </div>
-          <span aria-hidden="true" class="pg-range-sep">→</span>
-          <div forDateRangeFieldEnd class="pg-range-endpoint" #end="forDateRangeFieldEnd">
-            @for (seg of end.segments(); track seg.id) {
-              @if (seg.isLiteral) {
-                <span forDateRangeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-              } @else {
-                <span forDateRangeFieldSegment class="pg-seg" [segment]="seg.type!">{{
-                  seg.text
-                }}</span>
-              }
-            }
-          </div>
-        </div>
+      <div forDateRangeFieldStart class="range-endpoint" #start="forDateRangeFieldStart">
+        @for (seg of start.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+          } @else {
+            <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+              seg.text
+            }}</span>
+          }
+        }
       </div>
+      <span aria-hidden="true" class="range-sep">→</span>
+      <div forDateRangeFieldEnd class="range-endpoint" #end="forDateRangeFieldEnd">
+        @for (seg of end.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+          } @else {
+            <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+              seg.text
+            }}</span>
+          }
+        }
+      </div>
+    </div>
+  `,
+  styles: `
+    :host {
+      display: contents;
+    }
 
-      <div controls class="pg-controls">
-        <app-control-select
-          label="granularity"
-          hint="The smallest editable unit shared by both endpoints; coarser-than-day appends the matching time segments."
-          [options]="granularityOptions"
-          [(value)]="granularity"
-        />
-        <app-control-switch
-          label="24-hour clock"
-          hint="A 12-hour cycle shows an AM/PM segment on each endpoint instead."
-          [(checked)]="is24"
-        />
-        <p class="pg-state">
-          start: <b>{{ value()?.start?.toString() ?? 'null' }}</b
-          ><br />
-          end: <b>{{ value()?.end?.toString() ?? 'null' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    .range-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .range-field:focus-within {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .range-field[data-range-error] {
+      border-color: #ef4444;
+    }
+
+    .range-field[data-range-error]:focus-within {
+      box-shadow: 0 0 0 1px #ef4444;
+    }
+
+    .range-endpoint {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .range-segment {
+      padding: 0.05rem 0.15rem;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .range-segment[data-placeholder] {
+      color: var(--pg-text-muted);
+    }
+
+    .range-segment[data-highlighted],
+    .range-segment:focus {
+      background: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .range-literal {
+      padding: 0 0.05rem;
+      color: var(--pg-text-muted);
+    }
+
+    .range-sep {
+      color: var(--pg-text-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .range-field {
+        transition: none;
+      }
+    }
   `,
 })
 export class DateRangeFieldDateTimeExample {
@@ -96,15 +131,4 @@ export class DateRangeFieldDateTimeExample {
     start: new CalendarDateTime(2024, 6, 15, 15, 0),
     end: new CalendarDateTime(2024, 6, 18, 11, 0),
   });
-  protected readonly granularity = signal<FieldGranularity>('minute');
-  protected readonly is24 = signal(true);
-
-  protected readonly hourCycle = computed<12 | 24>(() => (this.is24() ? 24 : 12));
-
-  protected readonly granularityOptions: readonly ControlOption<FieldGranularity>[] = [
-    { value: 'day', label: 'day' },
-    { value: 'hour', label: 'hour' },
-    { value: 'minute', label: 'minute' },
-    { value: 'second', label: 'second' },
-  ];
 }

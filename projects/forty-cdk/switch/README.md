@@ -1,8 +1,8 @@
 # Switch
 
-Headless implementation of the [WAI-ARIA Switch pattern](https://www.w3.org/WAI/ARIA/apg/patterns/switch/) that doubles as a `FormCheckboxControl` for Angular Signal Forms.
+A binary on / off control toggled by click, Enter or Space.
 
-A switch is a binary on/off control whose state changes immediately on activation — distinct semantically from a checkbox (which represents a deferred selection).
+Headless and styleless, it doubles as a `FormCheckboxControl` for Angular Signal Forms. A switch changes state immediately on activation — distinct semantically from a checkbox (which represents a deferred selection).
 
 ## When to choose
 
@@ -13,9 +13,14 @@ Use the one that matches your semantics. `ForSwitch` and `ForCheckbox` are inten
 
 ## Anatomy
 
-| Class       | Selector      | Role                                                                 |
-| ----------- | ------------- | -------------------------------------------------------------------- |
-| `ForSwitch` | `[forSwitch]` | Single directive on a `<button>`. Wires ARIA + click + Signal Forms. |
+```html
+<button forSwitch [(checked)]="enabled">
+  <span class="thumb"></span>
+</button>
+
+<!-- With Signal Forms — [formField] wires value, validity and touched: -->
+<button forSwitch [formField]="settings.notifications"></button>
+```
 
 ## Examples
 
@@ -75,29 +80,27 @@ export class DemoSettings {
 
 ### `ForSwitch`
 
-| API        | Type                                                      | Default | Description                                                                                              |
-| ---------- | --------------------------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| `checked`  | `model<boolean>`                                          | —       | Two-way bindable on/off state. Required by `FormCheckboxControl`.                                        |
-| `disabled` | `input<boolean>`                                          | —       | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).           |
-| `readonly` | `input<boolean>`                                          | —       | Ignores click; reflects `aria-readonly="true"`. Stays focusable.                                         |
-| `required` | `input<boolean>`                                          | —       | Reflects `aria-required="true"`.                                                                         |
-| `invalid`  | `input<boolean>`                                          | —       | Reflects `aria-invalid="true"`.                                                                          |
-| `pending`  | `input<boolean>`                                          | —       | Reflects `aria-busy="true"` while async validation is in flight.                                         |
-| `name`     | `input<string \| undefined>`                              | —       | Reflects on `name`.                                                                                      |
-| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | —       | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory. |
-| `touched`  | `model<boolean>`                                          | —       | Set to `true` on blur. Two-way so the field can read it back.                                            |
+| Property   | Type                                                      | Description                                                                                                                |
+| ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`.<br>**Default:** —                                        |
+| `disabled` | `input<boolean>`                                          | Ignores click; reflects `aria-disabled="true"` and `data-disabled`. Stays focusable (per APG).<br>**Default:** —           |
+| `readonly` | `input<boolean>`                                          | Ignores click; reflects `aria-readonly="true"`. Stays focusable.<br>**Default:** —                                         |
+| `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                         |
+| `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"`.<br>**Default:** —                                                                          |
+| `pending`  | `input<boolean>`                                          | Reflects `aria-busy="true"` while async validation is in flight.<br>**Default:** —                                         |
+| `name`     | `input<string \| undefined>`                              | Reflects on `name`.<br>**Default:** —                                                                                      |
+| `errors`   | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors fed by `[formField]`. The directive does not render them — that is consumer territory.<br>**Default:** — |
+| `touched`  | `model<boolean>`                                          | Set to `true` on blur. Two-way so the field can read it back.<br>**Default:** —                                            |
 
-### Data attributes
-
-| Piece         | Attribute       | Values                   |
-| ------------- | --------------- | ------------------------ |
-| `[forSwitch]` | `data-state`    | `checked` \| `unchecked` |
-| `[forSwitch]` | `data-disabled` | present \| absent        |
-| `[forSwitch]` | `data-readonly` | present \| absent        |
-| `[forSwitch]` | `data-touched`  | present \| absent        |
-| `[forSwitch]` | `data-dirty`    | present \| absent        |
-| `[forSwitch]` | `data-pending`  | present \| absent        |
-| `[forSwitch]` | `data-invalid`  | present \| absent        |
+| Data attribute  | Values                   |
+| --------------- | ------------------------ |
+| `data-state`    | `checked` \| `unchecked` |
+| `data-disabled` | present \| absent        |
+| `data-readonly` | present \| absent        |
+| `data-touched`  | present \| absent        |
+| `data-dirty`    | present \| absent        |
+| `data-pending`  | present \| absent        |
+| `data-invalid`  | present \| absent        |
 
 ## Keyboard
 
@@ -108,6 +111,8 @@ export class DemoSettings {
 
 ## Accessibility
 
+Implements the [WAI-ARIA Switch pattern](https://www.w3.org/WAI/ARIA/apg/patterns/switch/).
+
 - **Use a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`. Enter and Space toggle the switch via native button behavior. On other elements (e.g. `<div>`), keyboard activation is on you.
 - **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
 - **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
@@ -115,7 +120,7 @@ export class DemoSettings {
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .switch .thumb {

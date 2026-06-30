@@ -1,17 +1,25 @@
 # ContextMenu
 
+A menu opened by right-click or long-press, anchored to the pointer position.
+
+Opened via the `contextmenu` event (right-click, long-press on touch) and via the keyboard activators `Shift+F10` and the dedicated `ContextMenu` key. The native browser context menu is suppressed. Pointer activations anchor the menu at the cursor; keyboard activations anchor it at the bounding rect of the focused element so screen-reader / keyboard-only users get the menu next to whatever they're working on. Floating-ui's virtual element handles either case — placement, flip, and shift middleware still apply, so the menu is repositioned to stay on-screen automatically.
+
 > New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
-
-Headless right-click menu — variant of the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) opened via the `contextmenu` event (right-click, long-press on touch) and via the keyboard activators `Shift+F10` and the dedicated `ContextMenu` key. The native browser context menu is suppressed.
-
-Pointer activations anchor the menu at the cursor; keyboard activations anchor it at the bounding rect of the focused element so screen-reader / keyboard-only users get the menu next to whatever they're working on. Floating-ui's virtual element handles either case — placement, flip, and shift middleware still apply, so the menu is repositioned to stay on-screen automatically.
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                                                                                                             |
-| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ForContextMenu`        | `[forContextMenu]`        | Root. Owns open state, the virtual anchor (pointer position), navigation, typeahead.                                                                                                             |
-| `ForContextMenuTrigger` | `[forContextMenuTrigger]` | The right-click region. Captures `contextmenu`, `Shift+F10`, and the `ContextMenu` key, prevents the native menu, and opens — anchored at the pointer (mouse) or the focused element (keyboard). |
+```html
+<div forContextMenu #menu="forContextMenu">
+  <div forContextMenuTrigger tabindex="0">Right-click anywhere here</div>
+  <!-- @if (menu.open()) { -->
+  <div forMenuContent>
+    <button forMenuItem>Rename</button>
+    <button forMenuItem>Duplicate</button>
+    <button forMenuItem>Delete</button>
+  </div>
+  <!-- } -->
+</div>
+```
 
 The menu items themselves come from the [`menu/`](../menu/README.md) folder.
 
@@ -91,25 +99,25 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForContextMenu`
 
-| API                  | Type                                                      | Default    | Description                                                                                                                                                                    |
-| -------------------- | --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `open`               | `model<boolean>`                                          | `false`    | Two-way bindable. Whether the menu is shown.                                                                                                                                   |
-| `side`               | `input<string>`                                           | `'bottom'` | Anchor side relative to the pointer.                                                                                                                                           |
-| `align`              | `input<string>`                                           | `'start'`  | Alignment along `side` (`'start'` / `'center'` / `'end'`).                                                                                                                     |
-| `sideOffset`         | `input<number>`                                           | `0`        | Gap (px) between the pointer and the menu along the main axis.                                                                                                                 |
-| `alignOffset`        | `input<number>`                                           | `0`        | Gap (px) along the cross axis (parallel to `side`).                                                                                                                            |
-| `loop`               | `input<boolean>`                                          | `true`     | Whether arrow navigation wraps.                                                                                                                                                |
-| `dir`                | `input<string>`                                           | `'ltr'`    | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden. |
-| `disabled`           | `input<boolean>`                                          | `false`    | When `true`, the contextmenu event falls through to the native browser menu.                                                                                                   |
-| `dismissible`        | `input<boolean>`                                          | `true`     | When `false`, Escape and outside interactions don't close.                                                                                                                     |
-| `returnFocus`        | `input<boolean>`                                          | `true`     | When `true`, focus returns to the trigger element on close.                                                                                                                    |
-| `ariaLabel`          | `input<string \| null>`                                   | `null`     | Manual `aria-label` on `[forMenuContent]`.                                                                                                                                     |
-| `escapeKeyDown`      | `output<VetoableNativeEvent<KeyboardEvent>>`              | —          | Output. Escape pressed while the menu is the topmost dismissable layer.                                                                                                        |
-| `pointerDownOutside` | `output<VetoableNativeEvent<PointerEvent>>`               | —          | Output. Pointer-down on a target outside content + trigger.                                                                                                                    |
-| `focusOutside`       | `output<VetoableNativeEvent<FocusEvent>>`                 | —          | Output. Focus moves outside content + trigger.                                                                                                                                 |
-| `interactOutside`    | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | —          | Output. Composite — fires alongside the two above (and shares their veto state).                                                                                               |
-| `autoFocusOnOpen`    | `output<VetoableEvent>`                                   | —          | Output. Just before the imperative focus move on mount.                                                                                                                        |
-| `autoFocusOnClose`   | `output<VetoableEvent>`                                   | —          | Output. Just before the imperative focus move on unmount.                                                                                                                      |
+| Property             | Type                                                      | Description                                                                                                                                                                                            |
+| -------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open`               | `model<boolean>`                                          | Two-way bindable. Whether the menu is shown.<br>**Default:** `false`                                                                                                                                   |
+| `side`               | `input<string>`                                           | Anchor side relative to the pointer.<br>**Default:** `'bottom'`                                                                                                                                        |
+| `align`              | `input<string>`                                           | Alignment along `side` (`'start'` / `'center'` / `'end'`).<br>**Default:** `'start'`                                                                                                                   |
+| `sideOffset`         | `input<number>`                                           | Gap (px) between the pointer and the menu along the main axis.<br>**Default:** `0`                                                                                                                     |
+| `alignOffset`        | `input<number>`                                           | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                                                                                |
+| `loop`               | `input<boolean>`                                          | Whether arrow navigation wraps.<br>**Default:** `true`                                                                                                                                                 |
+| `dir`                | `input<string>`                                           | Writing direction. In RTL, ArrowLeft opens submenus and ArrowRight closes them — the swap is automatic. Inherited by every nested `[forMenuSub]` underneath unless overridden.<br>**Default:** `'ltr'` |
+| `disabled`           | `input<boolean>`                                          | When `true`, the contextmenu event falls through to the native browser menu.<br>**Default:** `false`                                                                                                   |
+| `dismissible`        | `input<boolean>`                                          | When `false`, Escape and outside interactions don't close.<br>**Default:** `true`                                                                                                                      |
+| `returnFocus`        | `input<boolean>`                                          | When `true`, focus returns to the trigger element on close.<br>**Default:** `true`                                                                                                                     |
+| `ariaLabel`          | `input<string \| null>`                                   | Manual `aria-label` on `[forMenuContent]`.<br>**Default:** `null`                                                                                                                                      |
+| `escapeKeyDown`      | `output<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape pressed while the menu is the topmost dismissable layer.<br>**Default:** —                                                                                                              |
+| `pointerDownOutside` | `output<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down on a target outside content + trigger.<br>**Default:** —                                                                                                                          |
+| `focusOutside`       | `output<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside content + trigger.<br>**Default:** —                                                                                                                                       |
+| `interactOutside`    | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite — fires alongside the two above (and shares their veto state).<br>**Default:** —                                                                                                     |
+| `autoFocusOnOpen`    | `output<VetoableEvent>`                                   | Output. Just before the imperative focus move on mount.<br>**Default:** —                                                                                                                              |
+| `autoFocusOnClose`   | `output<VetoableEvent>`                                   | Output. Just before the imperative focus move on unmount.<br>**Default:** —                                                                                                                            |
 
 Same vetoable dismiss API as DropdownMenu. Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 

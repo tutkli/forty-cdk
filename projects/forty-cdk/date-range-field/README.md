@@ -1,6 +1,8 @@
 # DateRangeField
 
-Headless, segmented, spin-editable date **range** input — the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints (start / end), each holding a row of [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) — the same machinery as [DateField](../date-field/README.md) — nested inside one outer `role="group"`. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
+A segmented date (and optional time) range input over a pluggable date adapter: two labelled spinbutton endpoints (start / end) sharing locale, granularity and bounds. Implements FormValueControl, so the committed range auto-wires with Signal Forms — null until both endpoints are filled and ordered.
+
+Headless, segmented, spin-editable — the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as [DateField](../date-field/README.md) — nested inside one outer `role="group"`. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
 
 `ForDateRangeField` implements `FormValueControl<CalendarDateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangePicker` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
 
@@ -15,13 +17,24 @@ Pick one (required). All date math goes through the same pluggable `DateAdapter<
 
 ## Anatomy
 
-| Class                      | Selector                     | Role                                                                                                         |
-| -------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `ForDateRangeField`        | `[forDateRangeField]`        | Root (`role="group"`). Owns both endpoint engines, composes the `CalendarDateRange`, the `FormValueControl`. |
-| `ForDateRangeFieldStart`   | `[forDateRangeFieldStart]`   | Start endpoint group (`role="group"`). Its own tab stop; exposes `segments()`.                               |
-| `ForDateRangeFieldEnd`     | `[forDateRangeFieldEnd]`     | End endpoint group (`role="group"`). Its own tab stop; exposes `segments()`.                                 |
-| `ForDateRangeFieldSegment` | `[forDateRangeFieldSegment]` | One editable part (`role="spinbutton"`). Roving tab stop, ARIA value reflection, keyboard editing.           |
-| `ForDateRangeFieldLiteral` | `[forDateRangeFieldLiteral]` | A decorative separator (`/`, `.`, `-`, `:`). `aria-hidden`, out of the tab order.                            |
+```html
+<div forDateRangeField [(value)]="stay" ariaLabel="Stay">
+  <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+    @for (seg of start.segments(); track seg.id) {
+    <!-- seg.isLiteral → a decorative separator, else an editable segment -->
+    <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+    <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    }
+  </div>
+  <span aria-hidden="true">–</span>
+  <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+    @for (seg of end.segments(); track seg.id) {
+    <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+    <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    }
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -145,17 +158,17 @@ export class StayFormField {
 
 ### `ForDateRangeField`
 
-| API           | Type                                                  | Default | Description                                                                                                                   |
-| ------------- | ----------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<CalendarDateRange<D> \| null>`                 | —       | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing. Default `null`. |
-| `minDate`     | `input<D \| null>`                                    | `null`  | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` — see note below.    |
-| `maxDate`     | `input<D \| null>`                                    | `null`  | Maximum date (inclusive) for both endpoints. A composed endpoint above it is clamped down.                                    |
-| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | `'day'` | Date-time precision shared by both endpoints. `'day'` is date-only; coarser-than-day appends time segments.                   |
-| `hourCycle`   | `input<12 \| 24 \| null>`                             | `null`  | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.                                      |
-| `locale`      | `input<string \| null>`                               | `null`  | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.                                     |
-| `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | `{}`    | Per-segment placeholder while empty, applied to both endpoints.                                                               |
-| `ariaLabel`   | `input<string \| null>`                               | `null`  | Accessible name for the whole range field group. Emits no `aria-label` while `null`.                                          |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | `null`  | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.                  |
+| Property      | Type                                                  | Description                                                                                                                                       |
+| ------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<CalendarDateRange<D> \| null>`                 | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`              |
+| `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null` |
+| `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive) for both endpoints. A composed endpoint above it is clamped down.<br>**Default:** `null`                                 |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | Date-time precision shared by both endpoints. `'day'` is date-only; coarser-than-day appends time segments.<br>**Default:** `'day'`               |
+| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                                   |
+| `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.<br>**Default:** `null`                                  |
+| `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                              |
+| `ariaLabel`   | `input<string \| null>`                               | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                       |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`               |
 
 The endpoint groups (`[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]`) each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start date'` / `'End date'`).
 
@@ -220,6 +233,8 @@ Key behavior applies per segment. Each endpoint is its own tab stop, so `Tab` mo
 The day clamps to the current month's length (e.g. 31 → 28 in February), and each composed endpoint is clamped into `[minDate, maxDate]`.
 
 ## Accessibility
+
+Each segment implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/); there is no single APG pattern for a range field, so the field composes them inside nested labelled `role="group"` endpoints.
 
 - **`role="group"`** on the root carries the field's accessible name (`ariaLabel`, or point native `aria-labelledby` at a visible label); each endpoint is its own labelled `role="group"`.
 - **`role="spinbutton"`** per segment, with `aria-valuemin` / `aria-valuemax` / `aria-valuenow` reflected; the month segment also exposes a localized `aria-valuetext` ("March").

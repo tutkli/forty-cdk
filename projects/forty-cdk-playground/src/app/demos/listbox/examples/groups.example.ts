@@ -7,9 +7,6 @@ import {
   ForListboxOptionIndicator,
 } from 'forty-cdk/listbox';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 interface Section {
   readonly label: string;
   readonly options: readonly { value: string; label: string; disabled?: boolean }[];
@@ -19,61 +16,69 @@ interface Section {
   selector: 'app-listbox-groups-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForListbox,
     ForListboxGroup,
     ForListboxGroupLabel,
     ForListboxOption,
     ForListboxOptionIndicator,
-    Icon,
   ],
   template: `
-    <playground-demo
-      title="Option groups"
-      subtitle="forListboxGroup wraps a set of options in a role=group with its label wired through aria-labelledby by forListboxGroupLabel. Grouping is purely advisory: options still register flatly with the listbox, so arrow navigation, Home/End, and typeahead traverse across group boundaries in DOM order without any extra handling."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/listbox/examples/groups.example.ts"
-    >
-      <div demo class="listbox-demo">
-        <ul forListbox multiple class="pg-listbox" [(value)]="value" aria-label="Timezone">
-          @for (section of sections; track section.label) {
-            <li forListboxGroup class="group">
-              <span forListboxGroupLabel class="group-label">{{ section.label }}</span>
-              <ul class="group-options">
-                @for (opt of section.options; track opt.value) {
-                  <li>
-                    <button
-                      type="button"
-                      forListboxOption
-                      class="pg-listbox-option"
-                      [value]="opt.value"
-                      [disabled]="opt.disabled ?? false"
-                    >
-                      {{ opt.label }}
-                      <span forListboxOptionIndicator class="pg-listbox-indicator">
-                        <app-icon name="check" />
-                      </span>
-                    </button>
-                  </li>
-                }
-              </ul>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          value: <b>{{ value().join(', ') || '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    <ul forListbox multiple class="listbox" [(value)]="value" aria-label="Timezone">
+      @for (section of sections; track section.label) {
+        <li forListboxGroup class="group">
+          <span forListboxGroupLabel class="group-label">{{ section.label }}</span>
+          <ul class="group-options">
+            @for (opt of section.options; track opt.value) {
+              <li>
+                <button
+                  type="button"
+                  forListboxOption
+                  class="listbox-option"
+                  [value]="opt.value"
+                  [disabled]="opt.disabled ?? false"
+                >
+                  {{ opt.label }}
+                  <span forListboxOptionIndicator class="listbox-indicator">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="m4.5 12.75 6 6 9-13.5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.75"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        </li>
+      }
+    </ul>
   `,
   styles: `
-    .listbox-demo {
+    :host {
+      display: contents;
+    }
+
+    .listbox {
       display: flex;
-      justify-content: center;
-      padding: 1.5rem 0;
-      width: 100%;
+      flex-direction: column;
+      gap: 2px;
+      width: min(300px, 100%);
+      margin: 0;
+      padding: 5px;
+      list-style: none;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .listbox > li {
+      display: contents;
     }
 
     .group {
@@ -101,6 +106,51 @@ interface Section {
 
     .group-options > li {
       display: contents;
+    }
+
+    .listbox-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font: inherit;
+      font-size: 0.875rem;
+      text-align: left;
+      padding: 0.5rem 0.65rem;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .listbox-option[data-highlighted] {
+      background: var(--pg-surface-2);
+    }
+
+    .listbox-option[data-state='checked'] {
+      color: var(--pg-primary);
+      font-weight: 600;
+    }
+
+    .listbox-option[data-disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .listbox-indicator {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.1em;
+      height: 1.1em;
+      margin-left: auto;
+      color: var(--pg-primary);
+    }
+
+    .listbox-indicator svg {
+      width: 100%;
+      height: 100%;
     }
   `,
 })

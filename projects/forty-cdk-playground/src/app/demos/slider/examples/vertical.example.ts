@@ -1,47 +1,26 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
 
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-slider-vertical-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb, ControlSwitch],
+  imports: [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThumb],
   template: `
-    <playground-demo
-      title="Vertical orientation"
-      subtitle="orientation='vertical' reflects data-orientation='vertical' on every piece and sets aria-orientation on the thumb. The exposed fractions are unchanged — the consumer just paints along the Y axis: thumb position drives bottom, so the bottom of the track is min and the top is max. ArrowUp increases, ArrowDown decreases."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/slider/examples/vertical.example.ts"
-    >
-      <div demo class="sl-demo">
-        <div
-          forSlider
-          class="sl"
-          orientation="vertical"
-          [(value)]="value"
-          [min]="0"
-          [max]="100"
-          [disabled]="disabled()"
-        >
-          <span forSliderTrack class="sl-track">
-            <span forSliderRange class="sl-range"></span>
-            <span forSliderThumb class="sl-thumb" [index]="0" label="Volume"></span>
-          </span>
-        </div>
-        <span class="sl-value">{{ value()[0] }}</span>
+    <div class="sl-demo">
+      <div forSlider class="sl" orientation="vertical" [(value)]="value" [min]="0" [max]="100">
+        <span forSliderTrack class="sl-track">
+          <span forSliderRange class="sl-range"></span>
+          <span forSliderThumb class="sl-thumb" [index]="0" label="Volume"></span>
+        </span>
       </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch label="disabled" [(checked)]="disabled" />
-
-        <p class="pg-state">
-          value: <b>{{ value().join(', ') }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      <span class="sl-value">{{ value()[0] }}</span>
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .sl-demo {
       display: flex;
       flex-direction: column;
@@ -54,10 +33,6 @@ import { DemoLayout } from '../../../ui/demo-layout';
       display: flex;
       justify-content: center;
       height: 200px;
-    }
-
-    .sl[data-disabled] {
-      opacity: 0.5;
     }
 
     .sl-track {
@@ -111,5 +86,4 @@ import { DemoLayout } from '../../../ui/demo-layout';
 })
 export class SliderVerticalExample {
   protected readonly value = signal<readonly number[]>([40]);
-  protected readonly disabled = signal(false);
 }

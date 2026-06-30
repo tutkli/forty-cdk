@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
   ForCarousel,
   ForCarouselDrag,
@@ -11,10 +11,6 @@ import {
   ForCarouselViewport,
 } from 'forty-cdk/carousel';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 interface Slide {
   readonly id: number;
   readonly label: string;
@@ -24,7 +20,6 @@ interface Slide {
   selector: 'app-carousel-drag-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForCarousel,
     ForCarouselViewport,
     ForCarouselDrag,
@@ -34,98 +29,56 @@ interface Slide {
     ForCarouselNext,
     ForCarouselIndicators,
     ForCarouselIndicator,
-    ControlSwitch,
-    ControlSelect,
   ],
   template: `
-    <playground-demo
-      title="Drag / swipe"
-      subtitle="Add the opt-in forCarouselDrag directive to the viewport for pointer drag and touch swipe navigation. The track follows the finger 1:1 via the --for-carousel-drag CSS var, then snaps to the nearest slide on release — a fast flick biases toward the flick direction. touch-action is set automatically so the cross axis still scrolls the page."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/carousel/examples/drag.example.ts"
+    <div
+      forCarousel
+      class="dcar"
+      [(activeIndex)]="activeIndex"
+      orientation="horizontal"
+      ariaLabel="Draggable gallery"
     >
-      <div demo class="dcar-demo">
-        <div
-          forCarousel
-          class="dcar"
-          [(activeIndex)]="activeIndex"
-          [loop]="loop()"
-          [orientation]="orientation()"
-          ariaLabel="Draggable gallery"
-          [class.dcar--vertical]="orientation() === 'vertical'"
-        >
-          <div class="dcar-controls-row">
-            <button forCarouselPrevious class="dcar-btn" aria-label="Previous slide">‹</button>
-            <button forCarouselNext class="dcar-btn" aria-label="Next slide">›</button>
-          </div>
+      <div class="dcar-controls-row">
+        <button forCarouselPrevious class="dcar-btn" aria-label="Previous slide">‹</button>
+        <button forCarouselNext class="dcar-btn" aria-label="Next slide">›</button>
+      </div>
 
-          <div
-            forCarouselViewport
-            forCarouselDrag
-            [disabled]="dragDisabled()"
-            class="dcar-viewport"
-          >
-            <div forCarouselTrack class="dcar-track">
-              @for (slide of slides; track slide.id; let i = $index) {
-                <div forCarouselSlide class="dcar-slide" [class]="'dcar-slide--' + (i + 1)">
-                  <span class="dcar-slide-label">{{ slide.label }}</span>
-                </div>
-              }
+      <div forCarouselViewport forCarouselDrag class="dcar-viewport">
+        <div forCarouselTrack class="dcar-track">
+          @for (slide of slides; track slide.id; let i = $index) {
+            <div forCarouselSlide class="dcar-slide" [class]="'dcar-slide--' + (i + 1)">
+              <span class="dcar-slide-label">{{ slide.label }}</span>
             </div>
-          </div>
-
-          <div forCarouselIndicators class="dcar-indicators" ariaLabel="Choose slide to display">
-            @for (slide of slides; track slide.id; let i = $index) {
-              <button
-                forCarouselIndicator
-                class="dcar-dot"
-                [attr.aria-label]="'Go to slide ' + (i + 1)"
-              ></button>
-            }
-          </div>
+          }
         </div>
       </div>
 
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="drag disabled"
-          hint="Toggle [disabled] on forCarouselDrag without removing the directive."
-          [(checked)]="dragDisabled"
-        />
-        <app-control-switch label="loop" [(checked)]="loop" />
-        <app-control-select
-          label="orientation"
-          [options]="orientationOptions"
-          [(value)]="orientationValue"
-        />
-        <p class="pg-state">
-          activeIndex: <b>{{ activeIndex() }}</b>
-        </p>
+      <div forCarouselIndicators class="dcar-indicators" ariaLabel="Choose slide to display">
+        @for (slide of slides; track slide.id; let i = $index) {
+          <button
+            forCarouselIndicator
+            class="dcar-dot"
+            [attr.aria-label]="'Go to slide ' + (i + 1)"
+          ></button>
+        }
       </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .dcar-demo {
-      width: min(400px, 100%);
+    :host {
+      display: contents;
     }
 
     .dcar {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-    }
-
-    .dcar--vertical {
-      flex-direction: row;
-      align-items: flex-start;
+      width: min(400px, 100%);
     }
 
     .dcar-controls-row {
       display: flex;
       gap: 0.5rem;
-    }
-
-    .dcar--vertical .dcar-controls-row {
-      flex-direction: column;
     }
 
     .dcar-btn {
@@ -164,19 +117,10 @@ interface Slide {
       user-select: none;
     }
 
-    .dcar--vertical .dcar-viewport {
-      height: 180px;
-    }
-
     .dcar-track {
       display: flex;
       transform: translateX(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
       transition: transform 300ms ease;
-    }
-
-    .dcar[data-orientation='vertical'] .dcar-track {
-      flex-direction: column;
-      transform: translateY(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
     }
 
     .dcar-viewport[data-dragging] .dcar-track {
@@ -196,10 +140,6 @@ interface Slide {
       align-items: center;
       justify-content: center;
       border-radius: var(--pg-radius);
-    }
-
-    .dcar--vertical .dcar-slide {
-      min-height: 180px;
     }
 
     .dcar-slide--1 {
@@ -265,17 +205,5 @@ export class CarouselDragExample {
     { id: 5, label: 'Slide 5' },
   ];
 
-  protected readonly orientationOptions: readonly ControlOption<'horizontal' | 'vertical'>[] = [
-    { value: 'horizontal', label: 'horizontal' },
-    { value: 'vertical', label: 'vertical' },
-  ];
-
   protected readonly activeIndex = signal(0);
-  protected readonly loop = signal(false);
-  protected readonly dragDisabled = signal(false);
-
-  protected readonly orientationValue = signal<string>('horizontal');
-  protected readonly orientation = computed(
-    () => this.orientationValue() as 'horizontal' | 'vertical',
-  );
 }

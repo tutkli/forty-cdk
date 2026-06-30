@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -13,6 +14,7 @@ import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/
 import { ForToastManager } from 'forty-cdk/toast';
 
 import { EXAMPLE_SOURCES } from '../doc/example-source';
+import { renderInlineMarkdown, slugify } from '../doc/markdown';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 
@@ -20,19 +22,22 @@ import { Icon } from './icon';
   selector: 'playground-demo',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [Icon, ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
+  host: { '[id]': 'hostId()', '[class.is-hero]': 'hero()' },
   template: `
-    <header class="head">
-      <div class="head-text">
-        <h2>{{ title() }}</h2>
-        @if (subtitle()) {
-          <p>{{ subtitle() }}</p>
-        }
-      </div>
-      <a class="source" [href]="sourceUrl()" target="_blank" rel="noreferrer noopener">
-        <app-icon name="github" />
-        Source
-      </a>
-    </header>
+    @if (!hero()) {
+      <header class="head">
+        <div class="head-text">
+          <h2>{{ title() }}</h2>
+          @if (subtitleHtml(); as subtitle) {
+            <p class="pg-doc-subtitle" [innerHTML]="subtitle"></p>
+          }
+        </div>
+        <a class="source" [href]="sourceUrl()" target="_blank" rel="noreferrer noopener">
+          <app-icon name="github" />
+          Source
+        </a>
+      </header>
+    }
 
     <div forTabs class="demo-tabs" [value]="tab()" (valueChange)="setTab($event)">
       <div forTabsList class="demo-tablist" aria-label="Example view">
@@ -41,15 +46,9 @@ import { Icon } from './icon';
       </div>
 
       <div forTabsContent value="preview" class="demo-panel">
-        <div class="body">
-          <section class="preview" aria-label="Preview">
-            <ng-content select="[demo]" />
-          </section>
-          <aside class="panel" aria-label="Controls">
-            <h3>Controls</h3>
-            <ng-content select="[controls]" />
-          </aside>
-        </div>
+        <section class="preview" aria-label="Preview">
+          <ng-content />
+        </section>
       </div>
 
       <div forTabsContent value="code" class="demo-panel">
@@ -72,6 +71,11 @@ import { Icon } from './icon';
   styles: `
     :host {
       display: block;
+      scroll-margin-top: 4.5rem;
+    }
+
+    :host(.is-hero) {
+      margin-bottom: 2.75rem;
     }
 
     .head {
@@ -155,38 +159,15 @@ import { Icon } from './icon';
       display: none;
     }
 
-    .body {
-      display: grid;
-      grid-template-columns: 1fr 260px;
-      gap: 1.5rem;
-      align-items: start;
-    }
-
     .preview {
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 320px;
       padding: 2rem;
-      background: var(--pg-surface);
+      background: var(--pg-bg);
       border: 1px solid var(--pg-border);
       border-radius: var(--pg-radius);
-    }
-
-    .panel {
-      padding: 1.1rem 1.2rem;
-      background: var(--pg-surface);
-      border: 1px solid var(--pg-border);
-      border-radius: var(--pg-radius);
-    }
-
-    .panel h3 {
-      margin: 0 0 1rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--pg-text-muted);
     }
 
     .code {
@@ -236,11 +217,6 @@ import { Icon } from './icon';
         font-size: 1.05rem;
       }
 
-      .body {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-      }
-
       .preview {
         min-height: 220px;
         padding: 1.25rem;
@@ -255,12 +231,18 @@ export class DemoLayout {
   readonly #document = inject(DOCUMENT);
   readonly #destroyRef = inject(DestroyRef);
 
-  readonly title = input.required<string>();
+  readonly title = input<string>('');
   readonly subtitle = input<string>('');
   readonly sourcePath = input.required<string>();
+  readonly hero = input(false, { transform: booleanAttribute });
 
   protected readonly tab = signal<string>('preview');
   protected readonly copied = signal(false);
+
+  readonly tocSlug = computed(() => `example-${slugify(this.title())}`);
+  protected readonly hostId = computed(() =>
+    this.hero() || !this.title() ? null : this.tocSlug(),
+  );
 
   protected readonly sourceUrl = computed(() => GITHUB_BLOB_BASE + this.sourcePath());
 
@@ -269,6 +251,13 @@ export class DemoLayout {
   protected readonly highlighted = computed<SafeHtml | null>(() => {
     const source = this.#source();
     return source ? this.#sanitizer.bypassSecurityTrustHtml(source.highlighted) : null;
+  });
+
+  protected readonly subtitleHtml = computed<SafeHtml | null>(() => {
+    const subtitle = this.subtitle();
+    return subtitle
+      ? this.#sanitizer.bypassSecurityTrustHtml(renderInlineMarkdown(subtitle))
+      : null;
   });
 
   protected readonly copyLabel = computed(() =>

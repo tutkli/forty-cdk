@@ -2,9 +2,6 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, requiredError, validate } from '@angular/forms/signals';
 import { ForCheckbox } from 'forty-cdk/checkbox';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 interface Signup {
   readonly terms: boolean;
 }
@@ -12,44 +9,30 @@ interface Signup {
 @Component({
   selector: 'app-checkbox-form-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, FormField, ForCheckbox, Icon],
+  imports: [FormField, ForCheckbox],
   template: `
-    <playground-demo
-      title="Signal Forms"
-      subtitle="forCheckbox implements FormCheckboxControl, so [formField] binds its binary checked value into the form and pulls validation back out — indeterminate stays a UI-only flag and never reaches the field. The box below is required; after you blur it unchecked it reflects data-invalid / data-touched and the error appears."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/checkbox/examples/form-field.example.ts"
-    >
-      <div demo class="cb-form">
-        <button
-          forCheckbox
-          class="cb-row"
-          [formField]="signupForm.terms"
-          aria-label="Accept the terms of service"
-        >
-          <span class="cb">
-            <app-icon class="cb-icon cb-check" name="check" [strokeWidth]="2.5" />
-          </span>
-          I accept the terms of service
-        </button>
-        @if (signupForm.terms().touched() && !signupForm.terms().valid()) {
-          <p class="cb-error">You must accept the terms to create an account.</p>
-        }
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          checked: <b>{{ signupForm.terms().value() }}</b
-          ><br />
-          valid: <b>{{ signupForm.terms().valid() }}</b
-          ><br />
-          touched: <b>{{ signupForm.terms().touched() }}</b
-          ><br />
-          errors: <b>{{ errorKinds() || '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    <div class="cb-form">
+      <button
+        forCheckbox
+        class="cb-row"
+        [formField]="signupForm.terms"
+        aria-label="Accept the terms of service"
+      >
+        <span class="cb">
+          <span class="cb-check" aria-hidden="true"></span>
+        </span>
+        I accept the terms of service
+      </button>
+      @if (signupForm.terms().touched() && !signupForm.terms().valid()) {
+        <p class="cb-error">You must accept the terms to create an account.</p>
+      }
+    </div>
   `,
   styles: `
+    :host {
+      display: contents;
+    }
+
     .cb-form {
       display: flex;
       flex-direction: column;
@@ -78,7 +61,6 @@ interface Signup {
       border: 2px solid var(--pg-border-strong);
       border-radius: 6px;
       background: var(--pg-surface);
-      color: var(--pg-primary-contrast);
       transition:
         background 0.15s ease,
         border-color 0.15s ease;
@@ -93,20 +75,29 @@ interface Signup {
       border-color: #ef4444;
     }
 
-    .cb .cb-icon {
+    .cb-check {
       display: none;
+      width: 12px;
+      height: 12px;
+      border: solid var(--pg-primary-contrast);
+      border-width: 0 2.5px 2.5px 0;
+      transform: rotate(45deg) translate(-1px, -1px);
     }
 
     .cb-row[data-state='checked'] .cb-check {
       display: block;
-      width: 14px;
-      height: 14px;
     }
 
     .cb-error {
       margin: 0;
       font-size: 0.85rem;
       color: #ef4444;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cb {
+        transition: none;
+      }
     }
   `,
 })
@@ -117,12 +108,4 @@ export class CheckboxFormFieldExample {
       ctx.value() ? undefined : requiredError({ message: 'Accept the terms' }),
     );
   });
-
-  protected errorKinds(): string {
-    return this.signupForm
-      .terms()
-      .errors()
-      .map((error) => error.kind)
-      .join(', ');
-  }
 }

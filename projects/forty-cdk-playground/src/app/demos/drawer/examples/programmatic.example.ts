@@ -1,42 +1,70 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ForDrawerManager } from 'forty-cdk/drawer';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import { ConfirmDrawer, type ConfirmResult } from './confirm-drawer';
 
 @Component({
   selector: 'app-drawer-programmatic-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout],
   template: `
-    <playground-demo
-      title="Programmatic (ForDrawerManager)"
-      subtitle="Open an arbitrary component imperatively and await its result. The manager mounts the component under the same [forDrawer] engine, so every piece and input works identically; [forDrawerClose] [closeWith] propagates straight through to ForDrawerRef.close(value). The config accepts animateEnter / animateLeave / backdropAnimateLeave — this example plays the same slide-in/out sheet plus a backdrop fade as the declarative drawer examples."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/drawer/examples/programmatic.example.ts"
-    >
-      <div demo class="pg-center">
-        <button class="pg-btn pg-btn--danger" type="button" (click)="askConfirm()">
-          Delete account…
-        </button>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          last result: <b>{{ confirmResult() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+    <button class="prog-trigger" type="button" (click)="askConfirm()">Delete account…</button>
+    <p class="prog-result">
+      last result: <b>{{ result() }}</b>
+    </p>
   `,
   styles: `
-    .pg-center {
-      display: flex;
-      justify-content: center;
+    :host {
+      display: contents;
+    }
+
+    .prog-trigger {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-danger);
+      background: var(--pg-danger);
+      color: var(--pg-danger-contrast);
+      cursor: pointer;
+      transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        transform 0.18s var(--pg-ease-spring);
+    }
+
+    .prog-trigger:active {
+      transform: scale(0.95);
+    }
+
+    .prog-result {
+      margin: 0.75rem 0 0;
+      font-family: var(--pg-font-mono);
+      font-size: 0.78rem;
+      color: var(--pg-text-muted);
+    }
+
+    .prog-result b {
+      color: var(--pg-text);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .prog-trigger {
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease;
+      }
+
+      .prog-trigger:active {
+        transform: none;
+      }
     }
   `,
 })
 export class DrawerProgrammaticExample {
   readonly #drawers = inject(ForDrawerManager);
-  protected readonly confirmResult = signal('—');
+  protected readonly result = signal('—');
 
   protected async askConfirm(): Promise<void> {
     const ref = this.#drawers.open<ConfirmDrawer, ConfirmResult>(ConfirmDrawer, {
@@ -46,12 +74,12 @@ export class DrawerProgrammaticExample {
       },
       side: 'bottom',
       ariaLabel: 'Delete account',
-      class: 'pg-drawer',
-      animateEnter: 'pg-drawer-in-bottom',
-      animateLeave: 'pg-drawer-out-bottom',
-      backdropAnimateLeave: 'pg-backdrop-out',
+      class: 'prog-drawer',
+      animateEnter: 'prog-drawer-in',
+      animateLeave: 'prog-drawer-out',
+      backdropAnimateLeave: 'prog-backdrop-out',
     });
-    const result = await ref.closed;
-    this.confirmResult.set(result ?? 'dismissed');
+    const closed = await ref.closed;
+    this.result.set(closed ?? 'dismissed');
   }
 }

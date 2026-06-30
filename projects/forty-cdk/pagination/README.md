@@ -1,15 +1,21 @@
 # Pagination
 
-Headless pagination control implementing a [WAI-ARIA `navigation` landmark](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html) with [`aria-current="page"`](https://www.w3.org/TR/wai-aria-1.2/#aria-current) on the active page. Derives the visible page list (with ellipsis gaps) from `page`, `count`, `siblingCount`, and `boundaryCount`. Ships no styles — apply your own.
+A navigation landmark that derives a visible page list with ellipsis gaps from page, count, siblingCount and boundaryCount, with previous / next buttons and aria-current='page' on the active page.
 
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                    |
-| ----------------------- | ------------------------- | ----------------------------------------------------------------------- |
-| `ForPagination`         | `[forPagination]`         | Root. `role="navigation"`. Owns the page model and computed items list. |
-| `ForPaginationItem`     | `[forPaginationItem]`     | Page number button. `aria-current="page"` when current.                 |
-| `ForPaginationPrevious` | `[forPaginationPrevious]` | Previous-page button. Native `disabled` at the first page.              |
-| `ForPaginationNext`     | `[forPaginationNext]`     | Next-page button. Native `disabled` at the last page.                   |
+```html
+<nav forPagination [(page)]="page" [count]="20" ariaLabel="Pagination" #pg="forPagination">
+  <button forPaginationPrevious ariaLabel="Previous page">‹</button>
+
+  <!-- one item per entry in pg.items() — a page button per 'page' entry -->
+  <button forPaginationItem [page]="item.value!">{{ item.value }}</button>
+  <!-- an aria-hidden gap per 'ellipsis' entry -->
+  <span aria-hidden="true">…</span>
+
+  <button forPaginationNext ariaLabel="Next page">›</button>
+</nav>
+```
 
 ## Examples
 
@@ -48,33 +54,39 @@ export class DemoPagination {
 
 ### `ForPagination`
 
-| API             | Type            | Default | Description                                                             |
-| --------------- | --------------- | ------- | ----------------------------------------------------------------------- |
-| `page`          | `model<number>` | —       | Two-way bindable. The currently active page number.                     |
-| `count`         | `input<number>` | —       | Total number of pages.                                                  |
-| `siblingCount`  | `input<number>` | —       | Number of page buttons to show on each side of the current page.        |
-| `boundaryCount` | `input<number>` | —       | Number of page buttons to always show at the start and end of the list. |
-| `ariaLabel`     | `input<string>` | —       | Accessible label for the `navigation` landmark.                         |
+| Property        | Type            | Description                                                                               |
+| --------------- | --------------- | ----------------------------------------------------------------------------------------- |
+| `page`          | `model<number>` | Two-way bindable. The currently active page number.<br>**Default:** —                     |
+| `count`         | `input<number>` | Total number of pages.<br>**Default:** —                                                  |
+| `siblingCount`  | `input<number>` | Number of page buttons to show on each side of the current page.<br>**Default:** —        |
+| `boundaryCount` | `input<number>` | Number of page buttons to always show at the start and end of the list.<br>**Default:** — |
+| `ariaLabel`     | `input<string>` | Accessible label for the `navigation` landmark.<br>**Default:** —                         |
+
+| Data attribute  | Values                                    |
+| --------------- | ----------------------------------------- |
+| `data-disabled` | present (no value) when `disabled` is set |
 
 ### `ForPaginationItem`
 
-| API    | Type            | Default | Description                             |
-| ------ | --------------- | ------- | --------------------------------------- |
-| `page` | `input<number>` | —       | The page number this button represents. |
+| Property | Type            | Description                                               |
+| -------- | --------------- | --------------------------------------------------------- |
+| `page`   | `input<number>` | The page number this button represents.<br>**Default:** — |
 
 ### `ForPaginationPrevious`
 
-| API         | Type            | Default | Description                                    |
-| ----------- | --------------- | ------- | ---------------------------------------------- |
-| `ariaLabel` | `input<string>` | —       | Accessible label for the previous-page button. |
+| Property    | Type            | Description                                                      |
+| ----------- | --------------- | ---------------------------------------------------------------- |
+| `ariaLabel` | `input<string>` | Accessible label for the previous-page button.<br>**Default:** — |
 
 ### `ForPaginationNext`
 
-| API         | Type            | Default | Description                                |
-| ----------- | --------------- | ------- | ------------------------------------------ |
-| `ariaLabel` | `input<string>` | —       | Accessible label for the next-page button. |
+| Property    | Type            | Description                                                  |
+| ----------- | --------------- | ------------------------------------------------------------ |
+| `ariaLabel` | `input<string>` | Accessible label for the next-page button.<br>**Default:** — |
 
 ## Accessibility
+
+Implements the [WAI-ARIA navigation landmark pattern](https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html).
 
 - **Navigation landmark.** `[forPagination]` applies `role="navigation"`. Set `ariaLabel` (e.g. `"Pagination"`) so the landmark is distinguishable from other navigation regions on the page.
 - **Current page.** `[forPaginationItem]` reflects `aria-current="page"` on the active page button so screen-reader users know which page they are on.

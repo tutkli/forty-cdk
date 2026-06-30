@@ -8,14 +8,12 @@ import {
   ForTableRow,
 } from 'forty-cdk/table';
 
-import { DemoLayout } from '../../../ui/demo-layout';
 import { PEOPLE } from './people';
 
 @Component({
   selector: 'app-table-resizing-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForTable,
     ForTableHeaderRow,
     ForTableRow,
@@ -24,85 +22,69 @@ import { PEOPLE } from './people';
     ForTableColumnResizer,
   ],
   template: `
-    <playground-demo
-      title="Column resizing"
-      subtitle="[forTableColumnResizer] turns a focusable element inside a header cell into a resize handle. It publishes the resolved width as --for-table-col-<name>-width on the table root; the consumer wires that variable into grid-template-columns. Drag the handle, or focus it and press ArrowLeft / ArrowRight to step by 10px."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/table/examples/resizing.example.ts"
-    >
-      <div demo class="tbl-demo">
-        <div class="tbl-scroll">
-          <div forTable mode="grid" ariaLabel="Team members" class="tbl">
-            <div role="rowgroup">
-              <div forTableHeaderRow class="tbl-row tbl-head">
-                <div forTableHeaderCell name="name" class="tbl-cell">
-                  Name
-                  <button
-                    forTableColumnResizer
-                    column="name"
-                    [(width)]="nameWidth"
-                    [min]="110"
-                    [max]="320"
-                    aria-label="Resize Name column"
-                    class="tbl-resizer"
-                  ></button>
-                </div>
-                <div forTableHeaderCell name="role" class="tbl-cell">
-                  Role
-                  <button
-                    forTableColumnResizer
-                    column="role"
-                    [(width)]="roleWidth"
-                    [min]="90"
-                    [max]="280"
-                    aria-label="Resize Role column"
-                    class="tbl-resizer"
-                  ></button>
-                </div>
-                <div forTableHeaderCell name="dept" class="tbl-cell">
-                  Department
-                  <button
-                    forTableColumnResizer
-                    column="dept"
-                    [(width)]="deptWidth"
-                    [min]="110"
-                    [max]="280"
-                    aria-label="Resize Department column"
-                    class="tbl-resizer"
-                  ></button>
-                </div>
-                <div forTableHeaderCell name="location" class="tbl-cell">Location</div>
-              </div>
+    <div class="tbl-scroll">
+      <div forTable mode="grid" ariaLabel="Team members" class="tbl">
+        <div role="rowgroup">
+          <div forTableHeaderRow class="tbl-row tbl-head">
+            <div forTableHeaderCell name="name" class="tbl-cell">
+              Name
+              <button
+                forTableColumnResizer
+                column="name"
+                [(width)]="nameWidth"
+                [min]="110"
+                [max]="320"
+                aria-label="Resize Name column"
+                class="tbl-resizer"
+              ></button>
             </div>
-            <div role="rowgroup">
-              @for (person of people; track person.id) {
-                <div forTableRow class="tbl-row">
-                  <div forTableCell name="name" class="tbl-cell">{{ person.name }}</div>
-                  <div forTableCell name="role" class="tbl-cell">{{ person.role }}</div>
-                  <div forTableCell name="dept" class="tbl-cell">{{ person.dept }}</div>
-                  <div forTableCell name="location" class="tbl-cell">{{ person.location }}</div>
-                </div>
-              }
+            <div forTableHeaderCell name="role" class="tbl-cell">
+              Role
+              <button
+                forTableColumnResizer
+                column="role"
+                [(width)]="roleWidth"
+                [min]="90"
+                [max]="280"
+                aria-label="Resize Role column"
+                class="tbl-resizer"
+              ></button>
             </div>
+            <div forTableHeaderCell name="dept" class="tbl-cell">
+              Department
+              <button
+                forTableColumnResizer
+                column="dept"
+                [(width)]="deptWidth"
+                [min]="110"
+                [max]="280"
+                aria-label="Resize Department column"
+                class="tbl-resizer"
+              ></button>
+            </div>
+            <div forTableHeaderCell name="location" class="tbl-cell">Location</div>
           </div>
         </div>
+        <div role="rowgroup">
+          @for (person of people; track person.id) {
+            <div forTableRow class="tbl-row">
+              <div forTableCell name="name" class="tbl-cell">{{ person.name }}</div>
+              <div forTableCell name="role" class="tbl-cell">{{ person.role }}</div>
+              <div forTableCell name="dept" class="tbl-cell">{{ person.dept }}</div>
+              <div forTableCell name="location" class="tbl-cell">{{ person.location }}</div>
+            </div>
+          }
+        </div>
       </div>
-
-      <div controls class="pg-controls">
-        <button type="button" class="pg-btn" (click)="reset()">Reset widths</button>
-        <p class="pg-state">
-          name: <b>{{ nameWidth() }}px</b><br />
-          role: <b>{{ roleWidth() }}px</b><br />
-          dept: <b>{{ deptWidth() }}px</b>
-        </p>
-      </div>
-    </playground-demo>
+    </div>
   `,
   styles: `
-    .tbl-demo {
-      width: min(640px, 100%);
+    :host {
+      display: contents;
     }
 
     .tbl-scroll {
+      width: min(640px, 100%);
       max-height: 300px;
       overflow: auto;
       border: 1px solid var(--pg-border);
@@ -195,10 +177,4 @@ export class TableResizingExample {
   protected readonly nameWidth = signal(180);
   protected readonly roleWidth = signal(130);
   protected readonly deptWidth = signal(160);
-
-  protected reset(): void {
-    this.nameWidth.set(180);
-    this.roleWidth.set(130);
-    this.deptWidth.set(160);
-  }
 }

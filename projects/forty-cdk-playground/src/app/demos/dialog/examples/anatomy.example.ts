@@ -1,142 +1,194 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, ViewEncapsulation } from '@angular/core';
 import {
   ForDialog,
   ForDialogBackdrop,
   ForDialogClose,
-  type ForDialogCloseReason,
   ForDialogDescription,
   ForDialogTitle,
   ForDialogTrigger,
 } from 'forty-cdk/dialog';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { ControlSwitch } from '../../../ui/control-switch';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-dialog-anatomy-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   imports: [
-    DemoLayout,
     ForDialog,
     ForDialogTrigger,
     ForDialogTitle,
     ForDialogDescription,
     ForDialogClose,
     ForDialogBackdrop,
-    ControlSwitch,
-    ControlSelect,
   ],
   template: `
-    <playground-demo
-      title="Anatomy & options"
-      subtitle="Trigger, title, description, backdrop and close button. Toggle modal, dismissible, alert, returnFocus and initialFocus to watch the role, focus trap, scroll lock and dismiss behavior change. Content portals to <body>, so its styles live in styles.css (global)."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/dialog/examples/anatomy.example.ts"
+    <button
+      forDialogTrigger
+      class="anatomy-btn anatomy-btn--primary"
+      [(open)]="open"
+      controls="anatomy-dialog"
     >
-      <div demo class="pg-center">
-        <button
-          forDialogTrigger
-          class="pg-btn pg-btn--primary"
-          [(open)]="open"
-          controls="pg-anatomy"
-        >
-          Open dialog
-        </button>
-      </div>
-
-      <div controls class="pg-controls">
-        <app-control-switch
-          label="modal"
-          hint="When on, sets aria-modal=true, locks body scroll, traps focus inside the dialog, and makes sibling content inert. When off, the page stays interactive."
-          [(checked)]="modal"
-        />
-        <app-control-switch
-          label="dismissible"
-          hint="When on, Escape, backdrop click, and pointer-down outside emit (dismiss). Turn off for critical confirm flows that must be answered via a close button."
-          [(checked)]="dismissible"
-        />
-        <app-control-switch
-          label="alert"
-          hint="Switches the role to alertdialog, which interrupts assistive tech for time-sensitive or destructive confirmations instead of the plain dialog role."
-          [(checked)]="alert"
-        />
-        <app-control-switch
-          label="returnFocus"
-          hint="When on, focus returns to the element that was focused before the dialog opened once it closes."
-          [(checked)]="returnFocus"
-        />
-        <app-control-select
-          label="initialFocus"
-          hint="Where focus lands on open: 'first' focuses the first focusable descendant; 'container' focuses the dialog box itself, for when nothing inside is focusable."
-          [options]="initialFocusOptions"
-          [(value)]="initialFocus"
-        />
-
-        <p class="pg-state">
-          role: <b>{{ role() }}</b
-          ><br />last close: <b>{{ lastReason() ?? '—' }}</b>
-        </p>
-      </div>
-    </playground-demo>
+      Open dialog
+    </button>
 
     @if (open()) {
       <div
         forDialog
-        id="pg-anatomy"
-        class="pg-dialog"
-        [modal]="modal()"
-        [dismissible]="dismissible()"
-        [alert]="alert()"
-        [returnFocus]="returnFocus()"
-        [initialFocus]="initialFocus()"
-        (dismiss)="onClose($event)"
-        animate.enter="pg-fade-in"
-        animate.leave="pg-fade-out"
+        id="anatomy-dialog"
+        class="anatomy-dialog"
+        (dismiss)="open.set(false)"
+        animate.enter="anatomy-fade-in"
+        animate.leave="anatomy-fade-out"
       >
         <div
           forDialogBackdrop
-          class="pg-backdrop"
-          animate.enter="pg-backdrop-in"
-          animate.leave="pg-backdrop-out"
+          class="anatomy-backdrop"
+          animate.enter="anatomy-backdrop-in"
+          animate.leave="anatomy-backdrop-out"
         ></div>
         <h2 forDialogTitle>Delete account?</h2>
         <p forDialogDescription>This action is permanent and cannot be undone.</p>
-        <div class="pg-dialog-actions">
-          <button class="pg-btn" forDialogClose>Cancel</button>
-          <button class="pg-btn pg-btn--primary" type="button" (click)="confirm()">Delete</button>
+        <div class="anatomy-actions">
+          <button class="anatomy-btn" forDialogClose>Cancel</button>
+          <button class="anatomy-btn anatomy-btn--danger" type="button" (click)="open.set(false)">
+            Delete
+          </button>
         </div>
       </div>
     }
   `,
   styles: `
-    .pg-center {
+    app-dialog-anatomy-example {
+      display: contents;
+    }
+
+    .anatomy-btn {
+      appearance: none;
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.9rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .anatomy-btn:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .anatomy-btn--primary,
+    .anatomy-btn--primary:hover {
+      background: var(--pg-primary);
+      border-color: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .anatomy-btn--primary:hover {
+      background: var(--pg-primary-hover);
+      border-color: var(--pg-primary-hover);
+    }
+
+    .anatomy-btn--danger,
+    .anatomy-btn--danger:hover {
+      background: var(--pg-danger);
+      border-color: var(--pg-danger);
+      color: var(--pg-danger-contrast);
+    }
+
+    .anatomy-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      background: rgba(10, 12, 16, 0.5);
+      backdrop-filter: blur(2px);
+    }
+
+    .anatomy-dialog {
+      position: fixed;
+      z-index: 51;
+      display: block;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(440px, calc(100vw - 2rem));
+      padding: 1.5rem;
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-lg);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .anatomy-dialog h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.15rem;
+    }
+
+    .anatomy-dialog p {
+      margin: 0 0 1.5rem;
+      color: var(--pg-text-muted);
+    }
+
+    .anatomy-actions {
       display: flex;
-      justify-content: center;
+      justify-content: flex-end;
+      gap: 0.6rem;
+    }
+
+    @keyframes anatomy-fade-in {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.92);
+      }
+    }
+
+    @keyframes anatomy-fade-out {
+      to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.96);
+      }
+    }
+
+    @keyframes anatomy-backdrop-in {
+      from {
+        opacity: 0;
+      }
+    }
+
+    @keyframes anatomy-backdrop-out {
+      to {
+        opacity: 0;
+      }
+    }
+
+    .anatomy-fade-in {
+      animation: anatomy-fade-in 0.24s var(--pg-ease-spring) both;
+    }
+
+    .anatomy-fade-out {
+      animation: anatomy-fade-out 0.15s ease both;
+    }
+
+    .anatomy-backdrop-in {
+      animation: anatomy-backdrop-in 0.18s ease both;
+    }
+
+    .anatomy-backdrop-out {
+      animation: anatomy-backdrop-out 0.15s ease both;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .anatomy-fade-in,
+      .anatomy-fade-out,
+      .anatomy-backdrop-in,
+      .anatomy-backdrop-out {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })
 export class DialogAnatomyExample {
-  protected readonly initialFocusOptions: readonly ControlOption<'first' | 'container'>[] = [
-    { value: 'first', label: 'first' },
-    { value: 'container', label: 'container' },
-  ];
-
   protected readonly open = signal(false);
-  protected readonly modal = signal(true);
-  protected readonly dismissible = signal(true);
-  protected readonly alert = signal(false);
-  protected readonly returnFocus = signal(true);
-  protected readonly initialFocus = signal<'first' | 'container'>('first');
-  protected readonly lastReason = signal<ForDialogCloseReason | 'programmatic' | null>(null);
-  protected readonly role = computed(() => (this.alert() ? 'alertdialog' : 'dialog'));
-
-  protected onClose(reason: ForDialogCloseReason): void {
-    this.lastReason.set(reason);
-    this.open.set(false);
-  }
-
-  protected confirm(): void {
-    this.lastReason.set('programmatic');
-    this.open.set(false);
-  }
 }

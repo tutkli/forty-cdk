@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
 import {
   ForTimePicker,
@@ -9,15 +9,11 @@ import {
 } from 'forty-cdk/time-picker';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-import { Icon } from '../../../ui/icon';
-
 @Component({
   selector: 'app-time-picker-bounds-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
   imports: [
-    DemoLayout,
-    Icon,
     ForTimePicker,
     ForTimePickerTrigger,
     ForTimePickerValue,
@@ -26,67 +22,159 @@ import { Icon } from '../../../ui/icon';
   ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <playground-demo
-      title="Bounded slots"
-      subtitle="minTime and maxTime fence the selectable time-of-day. Slots outside the window are not removed — they stay in the listbox as disabled options (data-disabled), skipped by keyboard navigation, so the full timeline stays visible. Open the listbox and scroll past 17:00 to see the late slots dimmed out."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/time-picker/examples/bounds.example.ts"
+    <div
+      forTimePicker
+      #picker="forTimePicker"
+      class="time-picker-bounds-field"
+      [(value)]="value"
+      [minTime]="minTime"
+      [maxTime]="maxTime"
+      [step]="30"
+      [hourCycle]="24"
+      [ariaLabel]="'Appointment time'"
     >
-      <div demo class="time-picker-demo">
-        <div
-          forTimePicker
-          #picker="forTimePicker"
-          class="time-picker-field"
-          [(value)]="value"
-          [minTime]="minTime"
-          [maxTime]="maxTime"
-          [step]="30"
-          [hourCycle]="24"
-          [ariaLabel]="'Appointment time'"
-        >
-          <button forTimePickerTrigger type="button" class="pg-select-trigger">
-            <span forTimePickerValue placeholder="Pick a slot"></span>
-            <app-icon class="pg-select-chevron" name="chevron-down" />
-          </button>
+      <button forTimePickerTrigger type="button" class="time-picker-bounds-trigger">
+        <span forTimePickerValue placeholder="Pick a slot"></span>
+        <svg class="time-picker-bounds-chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="m19.5 8.25-7.5 7.5-7.5-7.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
 
-          @if (picker.open()) {
-            <div forTimePickerContent class="pg-select-content" animate.enter="pg-pop-in">
-              @for (slot of picker.slots(); track slot.id) {
-                <div
-                  forTimePickerOption
-                  class="pg-select-option"
-                  [value]="slot.value"
-                  [disabled]="slot.disabled"
-                >
-                  {{ slot.label }}
-                </div>
-              }
+      @if (picker.open()) {
+        <div
+          forTimePickerContent
+          class="time-picker-bounds-content"
+          animate.enter="time-picker-bounds-pop-in"
+        >
+          @for (slot of picker.slots(); track slot.id) {
+            <div
+              forTimePickerOption
+              class="time-picker-bounds-option"
+              [value]="slot.value"
+              [disabled]="slot.disabled"
+            >
+              {{ slot.label }}
             </div>
           }
         </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          value: <b>{{ value()?.toString() ?? 'null' }}</b
-          ><br />
-          minTime: <b>09:00</b><br />
-          maxTime: <b>17:00</b>
-        </p>
-        <p class="pg-hint">Office hours — only 09:00 – 17:00 slots can be picked.</p>
-      </div>
-    </playground-demo>
+      }
+    </div>
   `,
   styles: `
-    .time-picker-demo {
-      display: flex;
-      justify-content: center;
-      padding: 2.5rem 0;
-      width: 100%;
+    app-time-picker-bounds-example {
+      display: contents;
     }
 
-    .time-picker-field {
+    .time-picker-bounds-field {
       display: block;
       width: min(240px, 100%);
+    }
+
+    .time-picker-bounds-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      width: 100%;
+      font: inherit;
+      font-size: 0.875rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: var(--pg-radius-sm);
+      border: 1px solid var(--pg-border-strong);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .time-picker-bounds-trigger:hover {
+      background: var(--pg-surface-2);
+    }
+
+    .time-picker-bounds-chevron {
+      flex: none;
+      width: 14px;
+      height: 14px;
+      color: var(--pg-text-muted);
+      transition: transform 0.15s ease;
+    }
+
+    .time-picker-bounds-trigger[aria-expanded='true'] .time-picker-bounds-chevron {
+      transform: rotate(180deg);
+    }
+
+    .time-picker-bounds-content {
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      width: var(--for-anchor-width);
+      max-height: 260px;
+      overflow-y: auto;
+      padding: 4px;
+      background: var(--pg-surface);
+      border: 1px solid var(--pg-border);
+      border-radius: var(--pg-radius-sm);
+      box-shadow: var(--pg-shadow);
+    }
+
+    .time-picker-bounds-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      font: inherit;
+      font-size: 0.875rem;
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      border: 0;
+      border-radius: var(--pg-radius-sm);
+      background: transparent;
+      color: var(--pg-text);
+      cursor: pointer;
+    }
+
+    .time-picker-bounds-option[data-highlighted],
+    .time-picker-bounds-option:not([data-disabled]):hover {
+      background: var(--pg-surface-2);
+    }
+
+    .time-picker-bounds-option[data-state='checked'] {
+      color: var(--pg-primary);
+      font-weight: 600;
+    }
+
+    .time-picker-bounds-option[data-disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .time-picker-bounds-pop-in {
+      transform-origin: var(--for-content-transform-origin, center);
+      animation: time-picker-bounds-pop-in 0.2s var(--pg-ease-spring) both;
+    }
+
+    @keyframes time-picker-bounds-pop-in {
+      from {
+        opacity: 0;
+        scale: 0.9;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .time-picker-bounds-chevron {
+        transition: none;
+      }
+
+      .time-picker-bounds-pop-in {
+        animation-duration: 0.01ms;
+      }
     }
   `,
 })

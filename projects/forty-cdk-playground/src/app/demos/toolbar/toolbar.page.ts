@@ -1,19 +1,25 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { PrimitivePage } from '../../ui/primitive-page';
-import { ToolbarExample } from './examples/toolbar.example';
 import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { DemoLayout } from '../../ui/demo-layout';
+import { PrimitivePage } from '../../ui/primitive-page';
+import { ToolbarDefaultExample } from './examples/default.example';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/toolbar/README.md';
 
 @Component({
   selector: 'app-toolbar-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, ToolbarExample],
+  imports: [PrimitivePage, DemoLayout, ToolbarDefaultExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="toolbar" [readme]="readme">
-      <app-toolbar-example />
+      <playground-demo
+        hero
+        sourcePath="projects/forty-cdk-playground/src/app/demos/toolbar/examples/default.example.ts"
+      >
+        <app-toolbar-default-example />
+      </playground-demo>
     </primitive-page>
   `,
 })

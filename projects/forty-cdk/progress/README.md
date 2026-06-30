@@ -1,15 +1,16 @@
 # Progress
 
-Headless [WAI-ARIA `progressbar`](https://www.w3.org/TR/wai-aria-1.2/#progressbar) for tasks whose completion you can communicate visually.
+A bar that reflects the completion progress of a task.
 
 Pass a numeric `value` for a determinate bar, or `null` for indeterminate ("loading…"). The directive owns ARIA + state; the visual fill is yours via `[forProgressIndicator]`.
 
 ## Anatomy
 
-| Class                  | Selector                 | Role                                                                |
-| ---------------------- | ------------------------ | ------------------------------------------------------------------- |
-| `ForProgress`          | `[forProgress]`          | Root. Owns `value` / `max`, reflects `role="progressbar"` and ARIA. |
-| `ForProgressIndicator` | `[forProgressIndicator]` | Visual fill. Reflects `data-state` and `data-percentage`.           |
+```html
+<div forProgress [value]="uploaded()" [max]="100" announceCompletion>
+  <div forProgressIndicator></div>
+</div>
+```
 
 ## Examples
 
@@ -70,30 +71,35 @@ export class DemoUpload {
 
 ### `ForProgress`
 
-| API                  | Type                                      | Default | Description                                                                                                                              |
-| -------------------- | ----------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `model<number \| null>`                   | —       | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.                                                                |
-| `max`                | `input<number>`                           | `100`   | Upper bound. Defaults to `100`. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`). |
-| `getValueLabel`      | `input<((value, max) => string) \| null>` | —       | Override for `aria-valuetext` (e.g. "Step 3 of 5").                                                                                      |
-| `announceCompletion` | `input<boolean>`                          | —       | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.                                              |
+| Property             | Type                                      | Description                                                                                                                                 |
+| -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`              | `model<number \| null>`                   | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.<br>**Default:** —                                                 |
+| `max`                | `input<number>`                           | Upper bound. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100` |
+| `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                       |
+| `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.<br>**Default:** —                               |
 
-The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-value`, `data-min`, `data-max`, and `data-percentage` (absent while indeterminate), matching the meter root so the root can be styled from `data-percentage` directly. The indicator reflects the same `data-percentage` plus the CSS custom property `--for-progress-percentage` (e.g. `25%`) that you can use directly in `transform` / `width`.
+| Data attribute    | Values                                     |
+| ----------------- | ------------------------------------------ |
+| `data-state`      | `indeterminate` \| `loading` \| `complete` |
+| `data-value`      | clamped value (absent while indeterminate) |
+| `data-min`        | `0`                                        |
+| `data-max`        | the `max` value                            |
+| `data-percentage` | `0`–`100` (absent while indeterminate)     |
 
-### Data attributes
+### `ForProgressIndicator`
 
-| Piece                    | Attribute         | Values                                     |
-| ------------------------ | ----------------- | ------------------------------------------ |
-| `[forProgress]`          | `data-state`      | `indeterminate` \| `loading` \| `complete` |
-| `[forProgress]`          | `data-value`      | clamped value (absent while indeterminate) |
-| `[forProgress]`          | `data-min`        | `0`                                        |
-| `[forProgress]`          | `data-max`        | the `max` value                            |
-| `[forProgress]`          | `data-percentage` | `0`–`100` (absent while indeterminate)     |
-| `[forProgressIndicator]` | `data-state`      | `indeterminate` \| `loading` \| `complete` |
-| `[forProgressIndicator]` | `data-value`      | clamped value (absent while indeterminate) |
-| `[forProgressIndicator]` | `data-max`        | the `max` value                            |
-| `[forProgressIndicator]` | `data-percentage` | `0`–`100` (absent while indeterminate)     |
+Visual fill paired with `[forProgress]`. Reflects the same state so width / transform can be driven from CSS, plus the `--for-progress-percentage` custom property (e.g. `25%`) for use directly in `transform` / `width`.
+
+| Data attribute    | Values                                     |
+| ----------------- | ------------------------------------------ |
+| `data-state`      | `indeterminate` \| `loading` \| `complete` |
+| `data-value`      | clamped value (absent while indeterminate) |
+| `data-max`        | the `max` value                            |
+| `data-percentage` | `0`–`100` (absent while indeterminate)     |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/), using the [`progressbar` role](https://www.w3.org/TR/wai-aria-1.2/#progressbar).
 
 - **`role="progressbar"`** is announced as "progressbar" with the current value as a percentage (or your `aria-valuetext` if `getValueLabel` is set).
 - **Indeterminate omits `aria-valuenow`.** Per spec, the absence of `aria-valuenow` is what tells AT the bar is indeterminate. The directive enforces this; `data-state="indeterminate"` is the CSS hook.
@@ -102,7 +108,7 @@ The host carries `data-state="indeterminate" \| "loading" \| "complete"`, `data-
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

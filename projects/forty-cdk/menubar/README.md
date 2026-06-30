@@ -1,13 +1,31 @@
 # Menubar
 
-Headless implementation of the [WAI-ARIA Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/): a horizontal (or vertical) bar of triggers, each opening a dropdown menu, with cross-menu ArrowLeft / ArrowRight navigation, hover-after-first-open, and roving tabindex among triggers.
+A horizontal bar of menus, as in a desktop application, with roving tabindex across the triggers.
+
+A bar of triggers — horizontal or vertical — each opening a dropdown menu, with cross-menu ArrowLeft / ArrowRight navigation and hover-after-first-open.
 
 ## Anatomy
 
-| Class               | Selector              | Role                                                                                                                                                                |
-| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForMenubar`        | `[forMenubar]`        | Root. Owns `value` (the open trigger), orientation, dir, loop, disabled. Provides the `ForMenubarContext` and a multiplexed `ForMenuContext` to `[forMenuContent]`. |
-| `ForMenubarTrigger` | `[forMenubarTrigger]` | A trigger button. `role="menuitem"` with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`. Participates in roving tabindex and trigger-row keyboard.      |
+```html
+<div forMenubar [(value)]="openMenu" ariaLabel="Application">
+  <button forMenubarTrigger value="file">File</button>
+  <!-- mounted when openMenu() === 'file' -->
+  <div forMenuContent>
+    <button forMenuItem>New file</button>
+    <hr forMenuSeparator />
+    <button forMenuItem>Quit</button>
+  </div>
+
+  <button forMenubarTrigger value="edit">Edit</button>
+  <!-- mounted when openMenu() === 'edit' -->
+  <div forMenuContent>
+    <button forMenuItem>Undo</button>
+    <button forMenuItem>Redo</button>
+  </div>
+</div>
+```
+
+`ForMenubar` (`[forMenubar]`) is the root: it owns `value` (the open trigger), orientation, dir, loop and disabled, and provides a multiplexed `ForMenuContext` to the active `[forMenuContent]`. Each `ForMenubarTrigger` (`[forMenubarTrigger]`) is a `role="menuitem"` button with `aria-haspopup="menu"` / `aria-expanded` / `aria-controls`, participating in roving tabindex and trigger-row keyboard.
 
 The menu surface, items, separators, groups, and submenus come from the [`menu/`](../menu/README.md) folder — same primitives as `[forDropdownMenu]` and `[forContextMenu]`. The bar simply pumps a different `ForMenuContext` whose anchor / side / ids reflect the active trigger.
 
@@ -61,25 +79,25 @@ export class DemoMenubar {
 
 ### `ForMenubar`
 
-| API           | Type                    | Default        | Description                                                                                                                                                                                         |
-| ------------- | ----------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<string>`         | `''`           | Two-way bindable. The open trigger's `value`, or `''` when none.                                                                                                                                    |
-| `orientation` | `input<string>`         | `'horizontal'` | `'horizontal' \| 'vertical'`. Drives the trigger-row arrow keys (Left/Right horizontal, Up/Down vertical).                                                                                          |
-| `dir`         | `input<string>`         | `'ltr'`        | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.                                                                                                  |
-| `loop`        | `input<boolean>`        | `true`         | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.                                                                                                                            |
-| `disabled`    | `input<boolean>`        | `false`        | When `true`, every trigger interaction is a no-op.                                                                                                                                                  |
-| `dismissible` | `input<boolean>`        | `true`         | When `false`, the open menu ignores Escape, outside interaction, and pointer-leave — it stays pinned open until `value` is flipped (consumer write, trigger / item interaction, or cross-menu nav). |
-| `closeDelay`  | `input<number>`         | `150`          | ms before the open menu closes after the pointer leaves the bar (and any open menu). Defaults from `provideForMenubarDefaults`.                                                                     |
-| `ariaLabel`   | `input<string \| null>` | `null`         | Accessible name for the menubar (`<div forMenubar aria-label="Main">` works too).                                                                                                                   |
+| Property      | Type                    | Description                                                                                                                                                                                                                |
+| ------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<string>`         | Two-way bindable. The open trigger's `value`, or `''` when none.<br>**Default:** `''`                                                                                                                                      |
+| `orientation` | `input<string>`         | `'horizontal' \| 'vertical'`. Drives the trigger-row arrow keys (Left/Right horizontal, Up/Down vertical).<br>**Default:** `'horizontal'`                                                                                  |
+| `dir`         | `input<string>`         | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.<br>**Default:** `'ltr'`                                                                                                 |
+| `loop`        | `input<boolean>`        | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.<br>**Default:** `true`                                                                                                                            |
+| `disabled`    | `input<boolean>`        | When `true`, every trigger interaction is a no-op.<br>**Default:** `false`                                                                                                                                                 |
+| `dismissible` | `input<boolean>`        | When `false`, the open menu ignores Escape, outside interaction, and pointer-leave — it stays pinned open until `value` is flipped (consumer write, trigger / item interaction, or cross-menu nav).<br>**Default:** `true` |
+| `closeDelay`  | `input<number>`         | ms before the open menu closes after the pointer leaves the bar (and any open menu). Defaults from `provideForMenubarDefaults`.<br>**Default:** `150`                                                                      |
+| `ariaLabel`   | `input<string \| null>` | Accessible name for the menubar (`<div forMenubar aria-label="Main">` works too).<br>**Default:** `null`                                                                                                                   |
 
 ### `ForMenubarTrigger`
 
-| API                                                                                                                                       | Type                     | Default                | Description                                                                                                                    |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `value`                                                                                                                                   | `input.required<string>` | —                      | Identifier for the trigger. The menubar's `value` model holds this when the menu is open.                                      |
-| `disabled`                                                                                                                                | `input<boolean>`         | `false`                | Per-trigger disabled, in addition to the menubar's `disabled`.                                                                 |
-| `side` / `align` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` / `arrowPadding` / `sticky` / `hideWhenDetached` | `input<...>`             | (floating-ui defaults) | Forwarded to the multiplexed `[forMenuContent]` when this trigger's menu is the one open. Same surface as `[forDropdownMenu]`. |
-| `ariaLabel`                                                                                                                               | `input<string \| null>`  | `null`                 | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.                                              |
+| Property                                                                                                                                  | Type                     | Description                                                                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                                                                                                   | `input.required<string>` | Identifier for the trigger. The menubar's `value` model holds this when the menu is open.<br>**Default:** —                                                           |
+| `disabled`                                                                                                                                | `input<boolean>`         | Per-trigger disabled, in addition to the menubar's `disabled`.<br>**Default:** `false`                                                                                |
+| `side` / `align` / `sideOffset` / `alignOffset` / `avoidCollisions` / `collisionPadding` / `arrowPadding` / `sticky` / `hideWhenDetached` | `input<...>`             | Forwarded to the multiplexed `[forMenuContent]` when this trigger's menu is the one open. Same surface as `[forDropdownMenu]`.<br>**Default:** (floating-ui defaults) |
+| `ariaLabel`                                                                                                                               | `input<string \| null>`  | Manual `aria-label` on `[forMenuContent]` if the trigger isn't a meaningful name.<br>**Default:** `null`                                                              |
 
 ### Data attributes
 

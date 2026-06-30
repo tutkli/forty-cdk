@@ -1,21 +1,34 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-import { PrimitivePage } from '../../ui/primitive-page';
-import { SearchBasicExample } from './examples/basic.example';
-import { SearchFieldExample } from './examples/field.example';
 import { EXAMPLE_SOURCES } from '../../doc/example-source';
+import { DemoLayout } from '../../ui/demo-layout';
+import { PrimitivePage } from '../../ui/primitive-page';
+import { SearchDefaultExample } from './examples/default.example';
+import { SearchFieldExample } from './examples/field.example';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/search/README.md';
 
 @Component({
   selector: 'app-search-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PrimitivePage, SearchBasicExample, SearchFieldExample],
+  imports: [PrimitivePage, DemoLayout, SearchDefaultExample, SearchFieldExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="search" [readme]="readme">
-      <app-search-basic-example />
-      <app-search-field-example />
+      <playground-demo
+        hero
+        sourcePath="projects/forty-cdk-playground/src/app/demos/search/examples/default.example.ts"
+      >
+        <app-search-default-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Inside a Field with Signal Forms"
+        subtitle="<code>forSearch</code> implements <code>FormValueControl&lt;string&gt;</code>, so <code>[formField]</code> auto-wires it inside <code>forField</code> exactly like <code>forInput</code>: the label adopts the control id, validation flows into <code>aria-errormessage</code>, and <code>aria-invalid</code> / <code>aria-required</code> are reflected. Type one or two characters and blur to surface the error."
+        sourcePath="projects/forty-cdk-playground/src/app/demos/search/examples/field.example.ts"
+      >
+        <app-search-field-example />
+      </playground-demo>
     </primitive-page>
   `,
 })

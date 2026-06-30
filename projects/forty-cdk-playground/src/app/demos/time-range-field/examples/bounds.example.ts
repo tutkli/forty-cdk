@@ -10,13 +10,10 @@ import {
   ForTimeRangeFieldStart,
 } from 'forty-cdk/time-range-field';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-time-range-field-bounds-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
     ForTimeRangeField,
     ForTimeRangeFieldStart,
     ForTimeRangeFieldEnd,
@@ -25,58 +22,108 @@ import { DemoLayout } from '../../../ui/demo-layout';
   ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <playground-demo
-      title="Bounded range"
-      subtitle="minTime and maxTime fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 clamps back in. A booking slot that must fall inside business hours, with the order invariant (start ≤ end) still enforced on top."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/time-range-field/examples/bounds.example.ts"
+    <div
+      forTimeRangeField
+      class="range-field"
+      [(value)]="value"
+      [minTime]="minTime"
+      [maxTime]="maxTime"
+      ariaLabel="Booking slot"
     >
-      <div demo>
-        <div
-          forTimeRangeField
-          class="pg-range-field"
-          [(value)]="value"
-          [minTime]="minTime"
-          [maxTime]="maxTime"
-          ariaLabel="Booking slot"
-        >
-          <div forTimeRangeFieldStart class="pg-range-endpoint" #start="forTimeRangeFieldStart">
-            @for (seg of start.segments(); track seg.id) {
-              @if (seg.isLiteral) {
-                <span forTimeRangeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-              } @else {
-                <span forTimeRangeFieldSegment class="pg-seg" [segment]="seg.type!">{{
-                  seg.text
-                }}</span>
-              }
-            }
-          </div>
-          <span aria-hidden="true" class="pg-range-sep">–</span>
-          <div forTimeRangeFieldEnd class="pg-range-endpoint" #end="forTimeRangeFieldEnd">
-            @for (seg of end.segments(); track seg.id) {
-              @if (seg.isLiteral) {
-                <span forTimeRangeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-              } @else {
-                <span forTimeRangeFieldSegment class="pg-seg" [segment]="seg.type!">{{
-                  seg.text
-                }}</span>
-              }
-            }
-          </div>
-        </div>
+      <div forTimeRangeFieldStart class="range-endpoint" #start="forTimeRangeFieldStart">
+        @for (seg of start.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forTimeRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+          } @else {
+            <span forTimeRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+              seg.text
+            }}</span>
+          }
+        }
       </div>
+      <span aria-hidden="true" class="range-sep">–</span>
+      <div forTimeRangeFieldEnd class="range-endpoint" #end="forTimeRangeFieldEnd">
+        @for (seg of end.segments(); track seg.id) {
+          @if (seg.isLiteral) {
+            <span forTimeRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+          } @else {
+            <span forTimeRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+              seg.text
+            }}</span>
+          }
+        }
+      </div>
+    </div>
+  `,
+  styles: `
+    :host {
+      display: contents;
+    }
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          start: <b>{{ value()?.start?.toString() ?? 'null' }}</b
-          ><br />
-          end: <b>{{ value()?.end?.toString() ?? 'null' }}</b
-          ><br />
-          minTime: <b>08:00</b><br />
-          maxTime: <b>18:00</b>
-        </p>
-        <p class="pg-hint">Both endpoints are clamped into 08:00 – 18:00.</p>
-      </div>
-    </playground-demo>
+    .range-field {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .range-field:focus-within {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .range-field[data-range-error] {
+      border-color: #ef4444;
+    }
+
+    .range-field[data-range-error]:focus-within {
+      box-shadow: 0 0 0 1px #ef4444;
+    }
+
+    .range-endpoint {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .range-segment {
+      padding: 0.05rem 0.15rem;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .range-segment[data-placeholder] {
+      color: var(--pg-text-muted);
+    }
+
+    .range-segment[data-highlighted],
+    .range-segment:focus {
+      background: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .range-literal {
+      padding: 0 0.05rem;
+      color: var(--pg-text-muted);
+    }
+
+    .range-sep {
+      color: var(--pg-text-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .range-field {
+        transition: none;
+      }
+    }
   `,
 })
 export class TimeRangeFieldBoundsExample {

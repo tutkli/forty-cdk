@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import {
   ForCalendar,
@@ -16,15 +16,10 @@ import {
 } from 'forty-cdk/calendar';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
-import { type ControlOption, ControlSelect } from '../../../ui/control-select';
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-calendar-view-switching-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DemoLayout,
-    ControlSelect,
     ForCalendar,
     ForCalendarHeading,
     ForCalendarPrevButton,
@@ -40,130 +35,102 @@ import { DemoLayout } from '../../../ui/demo-layout';
   ],
   providers: [...provideInternationalizedDateAdapter()],
   template: `
-    <playground-demo
-      title="View switching (month / year picker)"
-      subtitle="Click the heading button to cycle from day → month → year view. Click a month to drill down to days; click a year to drill down to months. Prev/next pages by month, year, or block depending on the active view. min/max disable out-of-range months and years and stop the arrows at the bounds, and yearBlockSize sets how many years fill the year grid."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/calendar/examples/views.example.ts"
+    <div
+      forCalendar
+      class="calendar"
+      [(value)]="value"
+      [min]="min"
+      [max]="max"
+      [yearBlockSize]="12"
+      #cal="forCalendar"
     >
-      <div demo>
-        <div
-          forCalendar
-          class="pg-cal"
-          [(value)]="value"
-          [min]="min"
-          [max]="max"
-          [yearBlockSize]="yearBlockSize()"
-          #cal="forCalendar"
+      <header class="calendar-header">
+        <button forCalendarPrevButton class="calendar-nav" [ariaLabel]="'Previous'">‹</button>
+        <button
+          forCalendarViewTrigger
+          #vt="forCalendarViewTrigger"
+          class="calendar-title calendar-view-btn"
         >
-          <header class="pg-cal-header">
-            <button forCalendarPrevButton class="pg-cal-nav" [ariaLabel]="'Previous'">‹</button>
-            <button
-              forCalendarViewTrigger
-              #vt="forCalendarViewTrigger"
-              class="pg-cal-title pg-cal-view-btn"
-            >
-              {{ vt.label() }}
-            </button>
-            <button forCalendarNextButton class="pg-cal-nav" [ariaLabel]="'Next'">›</button>
-            <h2 forCalendarHeading #heading="forCalendarHeading" class="pg-sr-only">
-              {{ heading.label() }}
-            </h2>
-          </header>
+          {{ vt.label() }}
+        </button>
+        <button forCalendarNextButton class="calendar-nav" [ariaLabel]="'Next'">›</button>
+        <h2 forCalendarHeading #heading="forCalendarHeading" class="calendar-sr-only">
+          {{ heading.label() }}
+        </h2>
+      </header>
 
-          @switch (cal.view()) {
-            @case ('day') {
-              <table forCalendarGrid #grid="forCalendarGrid" class="pg-cal-grid">
-                <thead forCalendarGridHeader>
-                  <tr>
-                    @for (day of grid.weekDays(); track day.key) {
-                      <th scope="col" class="pg-cal-weekday" [attr.aria-label]="day.long">
-                        {{ day.narrow }}
-                      </th>
-                    }
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (week of grid.weeks(); track week.key) {
-                    <tr>
-                      @for (cell of week.days; track cell.key) {
-                        <td forCalendarCell class="pg-cal-cell" [date]="cell.date">
-                          {{ cell.label }}
-                        </td>
-                      }
-                    </tr>
+      @switch (cal.view()) {
+        @case ('day') {
+          <table forCalendarGrid #grid="forCalendarGrid" class="calendar-grid">
+            <thead forCalendarGridHeader>
+              <tr>
+                @for (day of grid.weekDays(); track day.key) {
+                  <th scope="col" class="calendar-weekday" [attr.aria-label]="day.long">
+                    {{ day.narrow }}
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (week of grid.weeks(); track week.key) {
+                <tr>
+                  @for (cell of week.days; track cell.key) {
+                    <td forCalendarCell class="calendar-cell" [date]="cell.date">
+                      {{ cell.label }}
+                    </td>
                   }
-                </tbody>
-              </table>
-            }
-            @case ('month') {
-              <table
-                forCalendarMonthGrid
-                #mg="forCalendarMonthGrid"
-                class="pg-cal-grid pg-cal-grid--3col"
-              >
-                <tbody>
-                  @for (row of mg.rows(); track row.key) {
-                    <tr>
-                      @for (m of row.months; track m.value) {
-                        <td
-                          forCalendarMonthCell
-                          [month]="m.value"
-                          class="pg-cal-cell pg-cal-cell--pick"
-                        >
-                          {{ m.label }}
-                        </td>
-                      }
-                    </tr>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @case ('month') {
+          <table forCalendarMonthGrid #mg="forCalendarMonthGrid" class="calendar-grid">
+            <tbody>
+              @for (row of mg.rows(); track row.key) {
+                <tr>
+                  @for (m of row.months; track m.value) {
+                    <td
+                      forCalendarMonthCell
+                      [month]="m.value"
+                      class="calendar-cell calendar-cell--pick"
+                    >
+                      {{ m.label }}
+                    </td>
                   }
-                </tbody>
-              </table>
-            }
-            @case ('year') {
-              <table
-                forCalendarYearGrid
-                #yg="forCalendarYearGrid"
-                class="pg-cal-grid pg-cal-grid--3col"
-              >
-                <tbody>
-                  @for (row of yg.rows(); track row.key) {
-                    <tr>
-                      @for (y of row.years; track y.value) {
-                        <td
-                          forCalendarYearCell
-                          [year]="y.value"
-                          class="pg-cal-cell pg-cal-cell--pick"
-                        >
-                          {{ y.value }}
-                        </td>
-                      }
-                    </tr>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @case ('year') {
+          <table forCalendarYearGrid #yg="forCalendarYearGrid" class="calendar-grid">
+            <tbody>
+              @for (row of yg.rows(); track row.key) {
+                <tr>
+                  @for (y of row.years; track y.value) {
+                    <td
+                      forCalendarYearCell
+                      [year]="y.value"
+                      class="calendar-cell calendar-cell--pick"
+                    >
+                      {{ y.value }}
+                    </td>
                   }
-                </tbody>
-              </table>
-            }
-          }
-        </div>
-      </div>
-
-      <div controls class="pg-controls">
-        <app-control-select
-          label="yearBlockSize"
-          hint="How many years the year grid shows at once. Blocks align to multiples of the size."
-          [options]="blockSizeOptions"
-          [(value)]="blockSize"
-        />
-        <p class="pg-hint">
-          min = Apr 1 last year · max = Sep 30 next year. Switch to month or year view to see
-          out-of-range cells disabled, and the prev/next arrows stop at the bounds.
-        </p>
-        <p class="pg-state">
-          selected: <b>{{ selectedLabel() }}</b>
-        </p>
-      </div>
-    </playground-demo>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    </div>
   `,
   styles: `
-    .pg-cal {
+    :host {
+      display: contents;
+    }
+
+    .calendar {
       width: 280px;
       padding: 1rem;
       background: var(--pg-surface);
@@ -171,7 +138,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
       border-radius: var(--pg-radius);
     }
 
-    .pg-cal-header {
+    .calendar-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -179,7 +146,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
       margin-bottom: 0.75rem;
     }
 
-    .pg-cal-view-btn {
+    .calendar-view-btn {
       flex: 1 1 auto;
       min-width: 0;
       font-size: 0.95rem;
@@ -196,12 +163,12 @@ import { DemoLayout } from '../../../ui/demo-layout';
         border-color 0.15s ease;
     }
 
-    .pg-cal-view-btn:hover {
+    .calendar-view-btn:hover {
       background: var(--pg-surface-2);
       border-color: var(--pg-border);
     }
 
-    .pg-cal-nav {
+    .calendar-nav {
       appearance: none;
       flex: none;
       width: 32px;
@@ -219,16 +186,16 @@ import { DemoLayout } from '../../../ui/demo-layout';
       transition: background 0.15s ease;
     }
 
-    .pg-cal-nav:hover:not([disabled]) {
+    .calendar-nav:hover:not([disabled]) {
       background: var(--pg-surface-2);
     }
 
-    .pg-cal-nav[disabled] {
+    .calendar-nav[disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }
 
-    .pg-sr-only {
+    .calendar-sr-only {
       position: absolute;
       width: 1px;
       height: 1px;
@@ -240,17 +207,13 @@ import { DemoLayout } from '../../../ui/demo-layout';
       border-width: 0;
     }
 
-    .pg-cal-grid {
+    .calendar-grid {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
     }
 
-    .pg-cal-grid--3col {
-      table-layout: fixed;
-    }
-
-    .pg-cal-weekday {
+    .calendar-weekday {
       padding: 0.35rem 0;
       font-size: 0.68rem;
       font-weight: 600;
@@ -259,7 +222,7 @@ import { DemoLayout } from '../../../ui/demo-layout';
       color: var(--pg-text-muted);
     }
 
-    .pg-cal-cell {
+    .calendar-cell {
       height: 36px;
       text-align: center;
       vertical-align: middle;
@@ -270,37 +233,37 @@ import { DemoLayout } from '../../../ui/demo-layout';
       transition: background 0.12s ease;
     }
 
-    .pg-cal-cell--pick {
+    .calendar-cell--pick {
       height: 52px;
       font-size: 0.9rem;
     }
 
-    .pg-cal-cell:hover:not([aria-disabled]) {
+    .calendar-cell:hover:not([aria-disabled]) {
       background: var(--pg-surface-2);
     }
 
-    .pg-cal-cell[data-today] {
+    .calendar-cell[data-today] {
       box-shadow: inset 0 0 0 1px var(--pg-border-strong);
     }
 
-    .pg-cal-cell[data-selected] {
+    .calendar-cell[data-selected] {
       background: var(--pg-primary);
       color: var(--pg-primary-contrast);
       font-weight: 600;
     }
 
-    .pg-cal-cell[data-outside-month] {
+    .calendar-cell[data-outside-month] {
       color: var(--pg-text-muted);
       opacity: 0.5;
     }
 
-    .pg-cal-grid:focus-within .pg-cal-cell[data-highlighted],
-    .pg-cal-cell:focus-visible {
+    .calendar-grid:focus-within .calendar-cell[data-highlighted],
+    .calendar-cell:focus-visible {
       outline: 2px solid var(--pg-primary);
       outline-offset: -2px;
     }
 
-    .pg-cal-cell[aria-disabled] {
+    .calendar-cell[aria-disabled] {
       color: var(--pg-text-muted);
       opacity: 0.4;
       cursor: not-allowed;
@@ -308,9 +271,9 @@ import { DemoLayout } from '../../../ui/demo-layout';
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .pg-cal-nav,
-      .pg-cal-view-btn,
-      .pg-cal-cell {
+      .calendar-nav,
+      .calendar-view-btn,
+      .calendar-cell {
         transition: none;
       }
     }
@@ -321,14 +284,4 @@ export class CalendarViewSwitchingExample {
   protected readonly value = signal<CalendarDate | null>(this.#todayDate);
   protected readonly min = new CalendarDate(this.#todayDate.year - 1, 4, 1);
   protected readonly max = new CalendarDate(this.#todayDate.year + 1, 9, 30);
-
-  protected readonly blockSizeOptions: readonly ControlOption<'12' | '15' | '24'>[] = [
-    { value: '12', label: '12 years' },
-    { value: '15', label: '15 years' },
-    { value: '24', label: '24 years' },
-  ];
-  protected readonly blockSize = signal<'12' | '15' | '24'>('12');
-  protected readonly yearBlockSize = computed(() => Number(this.blockSize()));
-
-  protected readonly selectedLabel = computed(() => this.value()?.toString() ?? '—');
 }

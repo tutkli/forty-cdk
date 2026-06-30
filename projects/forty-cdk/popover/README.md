@@ -1,23 +1,26 @@
 # Popover
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
-
-Headless implementation of the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/), positioned against an internal trigger via [`@floating-ui/dom`](https://floating-ui.com/).
+A non-modal floating panel anchored to its trigger by floating-ui, dismissed on Escape, pointer-down outside or focus outside.
 
 A popover is a non-modal dialog: focus moves into the surface on open and returns to the trigger on close, but Tab is allowed to leave (no focus trap). For a modal version, use `[forDialog]`. For a non-interactive label that follows the cursor / focus, use `[forTooltip]`.
 
+> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+
 ## Anatomy
 
-| Class                   | Selector                  | Role                                                                                                                                                                                                                                                        |
-| ----------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ForPopover`            | `[forPopover]`            | Root. Owns `open`, side / align positioning, dismissible, returnFocus, initialFocus.                                                                                                                                                                        |
-| `ForPopoverTrigger`     | `[forPopoverTrigger]`     | Toggles `open` on click. Wires `aria-haspopup` / `aria-expanded` / `aria-controls`. Used as the floating-ui anchor unless a `[forPopoverAnchor]` is registered.                                                                                             |
-| `ForPopoverAnchor`      | `[forPopoverAnchor]`      | Optional. When present, the popover is positioned against this element instead of the trigger — useful when "what opens it" and "where it appears" differ (cursor follower, contextual help anchored to a row, popover anchored to a text-selection range). |
-| `ForPopoverContent`     | `[forPopoverContent]`     | The popover surface. `role="dialog"`, portaled to body, positioned, dismissable.                                                                                                                                                                            |
-| `ForPopoverTitle`       | `[forPopoverTitle]`       | Generates an id and registers it as `aria-labelledby`.                                                                                                                                                                                                      |
-| `ForPopoverDescription` | `[forPopoverDescription]` | Same, for `aria-describedby`.                                                                                                                                                                                                                               |
-| `ForPopoverClose`       | `[forPopoverClose]`       | Button that sets `open` to `false`. Bypasses `dismissible`.                                                                                                                                                                                                 |
-| `ForPopoverArrow`       | `[forPopoverArrow]`       | Optional decorative arrow positioned by floating-ui.                                                                                                                                                                                                        |
+```html
+<div forPopover #popover="forPopover" side="bottom" align="center">
+  <button forPopoverTrigger>Settings</button>
+
+  <!-- rendered only when popover.open() is true -->
+  <div forPopoverContent>
+    <h3 forPopoverTitle>Display</h3>
+    <p forPopoverDescription>Adjust theme and density.</p>
+    <button forPopoverClose>Done</button>
+    <span forPopoverArrow></span>
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -101,26 +104,32 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForPopover`
 
-| API                  | Type                                                                | Default    | Description                                                                                                      |
-| -------------------- | ------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| `open`               | `model<boolean>`                                                    | —          | Two-way bindable visibility.                                                                                     |
-| `side`               | `input<string>`                                                     | `'bottom'` | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForPopoverDefaults`.            |
-| `align`              | `input<string>`                                                     | `'center'` | Alignment along the chosen side (`'start'` / `'center'` / `'end'`). Falls back to `provideForPopoverDefaults`.   |
-| `sideOffset`         | `input<number>`                                                     | `8`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForPopoverDefaults`.             |
-| `alignOffset`        | `input<number>`                                                     | `0`        | Gap (px) along the cross axis (parallel to `side`).                                                              |
-| `collisionPadding`   | `input<number>`                                                     | `8`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForPopoverDefaults`. |
-| `disabled`           | `input<boolean>`                                                    | `false`    | When `true`, trigger does not toggle.                                                                            |
-| `dismissible`        | `input<boolean>`                                                    | `true`     | When `false`, Escape / outside-pointer / outside-focus do not close.                                             |
-| `returnFocus`        | `input<boolean>`                                                    | `true`     | Focus returns to the trigger on close.                                                                           |
-| `initialFocus`       | `input<string>`                                                     | `'first'`  | `'first'` (first focusable inside content) or `'container'` (the content host).                                  |
-| `ariaLabel`          | `input<string \| null>`                                             | `null`     | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.                                      |
-| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | —          | Output. Fires on Escape while this popover is the topmost dismissable layer.                                     |
-| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | —          | Output. Fires on pointer-down outside the content (and outside the trigger).                                     |
-| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | —          | Output. Fires when focus moves outside the content (and outside the trigger).                                    |
-| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | —          | Output. Composite: fires alongside both `pointerDownOutside` and `focusOutside` (and shares their veto state).   |
-| `autoFocusOnOpen`    | `OutputEmitterRef<VetoableEvent>`                                   | —          | Output. Fires just before focus moves into the popover on mount. `preventDefault()` skips the move.              |
-| `autoFocusOnClose`   | `OutputEmitterRef<VetoableEvent>`                                   | —          | Output. Fires just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.    |
-| `openChange`         | `OutputEmitterRef<boolean>`                                         | —          | Output. Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`.      |
+| Property             | Type                                                                | Description                                                                                                                               |
+| -------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`               | `model<boolean>`                                                    | Two-way bindable visibility.<br>**Default:** —                                                                                            |
+| `side`               | `input<string>`                                                     | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForPopoverDefaults`.<br>**Default:** `'bottom'`          |
+| `align`              | `input<string>`                                                     | Alignment along the chosen side (`'start'` / `'center'` / `'end'`). Falls back to `provideForPopoverDefaults`.<br>**Default:** `'center'` |
+| `sideOffset`         | `input<number>`                                                     | Gap (px) between trigger and content along the main axis. Falls back to `provideForPopoverDefaults`.<br>**Default:** `8`                  |
+| `alignOffset`        | `input<number>`                                                     | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                   |
+| `collisionPadding`   | `input<number>`                                                     | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForPopoverDefaults`.<br>**Default:** `8`      |
+| `disabled`           | `input<boolean>`                                                    | When `true`, trigger does not toggle.<br>**Default:** `false`                                                                             |
+| `dismissible`        | `input<boolean>`                                                    | When `false`, Escape / outside-pointer / outside-focus do not close.<br>**Default:** `true`                                               |
+| `returnFocus`        | `input<boolean>`                                                    | Focus returns to the trigger on close.<br>**Default:** `true`                                                                             |
+| `initialFocus`       | `input<string>`                                                     | `'first'` (first focusable inside content) or `'container'` (the content host).<br>**Default:** `'first'`                                 |
+| `ariaLabel`          | `input<string \| null>`                                             | Manual `aria-label` on the content when no `[forPopoverTitle]` is rendered.<br>**Default:** `null`                                        |
+| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Fires on Escape while this popover is the topmost dismissable layer.<br>**Default:** —                                            |
+| `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. Fires on pointer-down outside the content (and outside the trigger).<br>**Default:** —                                            |
+| `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Fires when focus moves outside the content (and outside the trigger).<br>**Default:** —                                           |
+| `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both `pointerDownOutside` and `focusOutside` (and shares their veto state).<br>**Default:** —          |
+| `autoFocusOnOpen`    | `OutputEmitterRef<VetoableEvent>`                                   | Output. Fires just before focus moves into the popover on mount. `preventDefault()` skips the move.<br>**Default:** —                     |
+| `autoFocusOnClose`   | `OutputEmitterRef<VetoableEvent>`                                   | Output. Fires just before focus returns to the trigger on unmount. `preventDefault()` skips the return-focus.<br>**Default:** —           |
+| `openChange`         | `OutputEmitterRef<boolean>`                                         | Output. Implicit from `model()`. Emits only on internal transitions, not on consumer writes via `[(open)]`.<br>**Default:** —             |
+
+| Data attribute        | Values             |
+| --------------------- | ------------------ |
+| `data-state`          | `open` \| `closed` |
+| `data-disabled`       | present \| absent  |
+| `data-reduced-motion` | present \| absent  |
 
 The dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the automatic close / focus move; the original DOM event, when present, is on `.event`.
 
@@ -149,22 +158,27 @@ The popover opens / closes alongside the input but never steals focus from it �
 
 ### `ForPopoverTrigger`
 
-| API        | Type             | Default | Description                                                                                                                                                       |
-| ---------- | ---------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | `false` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard. |
+| Property   | Type             | Description                                                                                                                                                                               |
+| ---------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard.<br>**Default:** `false` |
 
-### Data attributes
+| Data attribute  | Values             |
+| --------------- | ------------------ |
+| `data-state`    | `open` \| `closed` |
+| `data-disabled` | present \| absent  |
 
-| Piece                 | Attribute             | Values             |
-| --------------------- | --------------------- | ------------------ |
-| `[forPopover]`        | `data-state`          | `open` \| `closed` |
-| `[forPopover]`        | `data-disabled`       | present \| absent  |
-| `[forPopover]`        | `data-reduced-motion` | present \| absent  |
-| `[forPopoverTrigger]` | `data-state`          | `open` \| `closed` |
-| `[forPopoverTrigger]` | `data-disabled`       | present \| absent  |
-| `[forPopoverContent]` | `data-state`          | `open` \| `closed` |
-| `[forPopoverContent]` | `data-reduced-motion` | present \| absent  |
-| `[forPopoverArrow]`   | `data-popover-arrow`  | present            |
+### `ForPopoverContent`
+
+| Data attribute        | Values             |
+| --------------------- | ------------------ |
+| `data-state`          | `open` \| `closed` |
+| `data-reduced-motion` | present \| absent  |
+
+### `ForPopoverArrow`
+
+| Data attribute       | Values  |
+| -------------------- | ------- |
+| `data-popover-arrow` | present |
 
 ## Scoped defaults
 
@@ -203,6 +217,8 @@ class Toolbar {}
 
 ## Accessibility
 
+Implements the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
+
 - Always provide an accessible name: render a `[forPopoverTitle]` or pass `ariaLabel`.
 - `[forPopoverDescription]` is optional — use it for explanatory copy beyond the title.
 - `aria-haspopup="dialog"` advertises the popover as a dialog (matches `role="dialog"` on the content). For menus or listboxes, build a different primitive.
@@ -210,7 +226,7 @@ class Toolbar {}
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 

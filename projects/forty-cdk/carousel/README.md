@@ -1,24 +1,30 @@
 # ForCarousel
 
-Headless, styleless carousel primitive implementing the
-[WAI-ARIA APG Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/).
-It ships slide tracking, keyboard navigation, focus management, and ARIA; you
-supply the markup and CSS.
+A slideshow of content panels with previous / next controls, an indicator group, optional looping and multi-slide views, and an accessible autoplay mode with a pause control.
+
+Headless and styleless: it ships slide tracking, keyboard navigation, focus management, and ARIA; you supply the markup and CSS.
 
 ## Anatomy
 
-| Class                        | Selector                       | Role                                                                   |
-| ---------------------------- | ------------------------------ | ---------------------------------------------------------------------- |
-| `ForCarousel`                | `[forCarousel]`                | Root. Owns `activeIndex`, orientation, loop, autoplay.                 |
-| `ForCarouselViewport`        | `[forCarouselViewport]`        | Clipping window. Carries `aria-live`.                                  |
-| `ForCarouselTrack`           | `[forCarouselTrack]`           | Scrolling container. Receives the CSS offset custom property.          |
-| `ForCarouselSlide`           | `[forCarouselSlide]`           | One slide. `role="group"`, `aria-roledescription="slide"`.             |
-| `ForCarouselPrevious`        | `[forCarouselPrevious]`        | Previous-slide button.                                                 |
-| `ForCarouselNext`            | `[forCarouselNext]`            | Next-slide button.                                                     |
-| `ForCarouselIndicators`      | `[forCarouselIndicators]`      | Indicator group. Owns roving tabindex across indicators.               |
-| `ForCarouselIndicator`       | `[forCarouselIndicator]`       | One indicator button. Maps 1:1 to a slide by DOM index.                |
-| `ForCarouselRotationControl` | `[forCarouselRotationControl]` | Play/pause button. Required when `autoplay` is enabled.                |
-| `ForCarouselDrag`            | `[forCarouselDrag]`            | Opt-in pointer drag / touch swipe. Applied to `[forCarouselViewport]`. |
+```html
+<div forCarousel [(activeIndex)]="index" loop ariaLabel="Featured products">
+  <button forCarouselPrevious aria-label="Previous slide">‹</button>
+
+  <div forCarouselViewport>
+    <div forCarouselTrack>
+      <!-- one [forCarouselSlide] per item -->
+      <div forCarouselSlide>Slide content</div>
+    </div>
+  </div>
+
+  <button forCarouselNext aria-label="Next slide">›</button>
+
+  <div forCarouselIndicators ariaLabel="Choose slide to display">
+    <!-- one [forCarouselIndicator] per slide, same order -->
+    <button forCarouselIndicator></button>
+  </div>
+</div>
+```
 
 ## Examples
 
@@ -208,23 +214,32 @@ rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
 
 All inputs are on `[forCarousel]` unless noted.
 
-| Input                                            | Type                           | Default                        | Description                                                                                                                        |
-| ------------------------------------------------ | ------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `activeIndex`                                    | `model<number>`                | `0`                            | Two-way bindable current slide index.                                                                                              |
-| `orientation`                                    | `'horizontal' \| 'vertical'`   | `'horizontal'`                 | Scroll axis.                                                                                                                       |
-| `loop`                                           | `boolean`                      | `false`                        | Wrap-around at the boundaries.                                                                                                     |
-| `align`                                          | `'start' \| 'center' \| 'end'` | `'start'`                      | Alignment of the active slide.                                                                                                     |
-| `slidesPerView`                                  | `number`                       | `1`                            | Visible slides at once.                                                                                                            |
-| `containScroll`                                  | `boolean`                      | `false`                        | Clamp the track offset so trailing slides sit flush at the viewport edge (no overscroll) when `slidesPerView > 1` and not looping. |
-| `autoplay`                                       | `boolean`                      | `false`                        | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`).                                                             |
-| `autoplayInterval`                               | `number`                       | `5000`                         | Ms between automatic slide advances. `<= 0` disables the timer.                                                                    |
-| `ariaLabel`                                      | `string \| null`               | `null`                         | Accessible label for the carousel root.                                                                                            |
-| `dir`                                            | `'ltr' \| 'rtl' \| null`       | `null` (inherits)              | Writing direction.                                                                                                                 |
-| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | `null`                         | Label for the picker group.                                                                                                        |
-| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | `null`                         | Override the positional "N of M" label.                                                                                            |
-| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | `false`                        | Disable this indicator.                                                                                                            |
-| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | `'Start automatic slide show'` | Accessible name while rotation is stopped.                                                                                         |
-| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | `'Stop automatic slide show'`  | Accessible name while rotation is playing.                                                                                         |
+| Property                                         | Type                           | Description                                                                                                                                                |
+| ------------------------------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activeIndex`                                    | `model<number>`                | Two-way bindable current slide index.<br>**Default:** `0`                                                                                                  |
+| `orientation`                                    | `'horizontal' \| 'vertical'`   | Scroll axis.<br>**Default:** `'horizontal'`                                                                                                                |
+| `loop`                                           | `boolean`                      | Wrap-around at the boundaries.<br>**Default:** `false`                                                                                                     |
+| `align`                                          | `'start' \| 'center' \| 'end'` | Alignment of the active slide.<br>**Default:** `'start'`                                                                                                   |
+| `slidesPerView`                                  | `number`                       | Visible slides at once.<br>**Default:** `1`                                                                                                                |
+| `containScroll`                                  | `boolean`                      | Clamp the track offset so trailing slides sit flush at the viewport edge (no overscroll) when `slidesPerView > 1` and not looping.<br>**Default:** `false` |
+| `autoplay`                                       | `boolean`                      | Enable auto-rotation (suppressed by `prefers-reduced-motion: reduce`).<br>**Default:** `false`                                                             |
+| `autoplayInterval`                               | `number`                       | Ms between automatic slide advances. `<= 0` disables the timer.<br>**Default:** `5000`                                                                     |
+| `ariaLabel`                                      | `string \| null`               | Accessible label for the carousel root.<br>**Default:** `null`                                                                                             |
+| `dir`                                            | `'ltr' \| 'rtl' \| null`       | Writing direction.<br>**Default:** `null` (inherits)                                                                                                       |
+| `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | Label for the picker group.<br>**Default:** `null`                                                                                                         |
+| `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | Override the positional "N of M" label.<br>**Default:** `null`                                                                                             |
+| `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | Disable this indicator.<br>**Default:** `false`                                                                                                            |
+| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | Accessible name while rotation is stopped.<br>**Default:** `'Start automatic slide show'`                                                                  |
+| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | Accessible name while rotation is playing.<br>**Default:** `'Stop automatic slide show'`                                                                   |
+
+Reflected on the `[forCarousel]` host:
+
+| Data attribute     | Values                            |
+| ------------------ | --------------------------------- |
+| `data-orientation` | `horizontal` \| `vertical`        |
+| `data-align`       | `start` \| `center` \| `end`      |
+| `data-autoplay`    | present when `autoplay` is `true` |
+| `data-rotating`    | present while actively rotating   |
 
 ### Contain scroll
 
@@ -245,9 +260,15 @@ when `loop` is enabled (the entire range is valid when wrapping) or when
 
 ### `ForCarouselDrag` inputs
 
-| Input      | Type      | Default | Description                                                                  |
-| ---------- | --------- | ------- | ---------------------------------------------------------------------------- |
-| `disabled` | `boolean` | `false` | Disable pointer drag without removing the directive. Removes `touch-action`. |
+| Property   | Type      | Description                                                                                          |
+| ---------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `disabled` | `boolean` | Disable pointer drag without removing the directive. Removes `touch-action`.<br>**Default:** `false` |
+
+Reflected on the `[forCarouselViewport]` host this directive is applied to:
+
+| Data attribute  | Values                                |
+| --------------- | ------------------------------------- |
+| `data-dragging` | present while a drag gesture is armed |
 
 ## Keyboard
 
@@ -264,6 +285,8 @@ automatically.
 | `Enter` / `Space`          | Activate the focused indicator (via native button).                   |
 
 ## Accessibility
+
+Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/).
 
 - The root carries `role="group"` and `aria-roledescription="carousel"`. The `ariaLabel` input
   should describe the carousel's purpose without using the word "carousel" (APG guidance).

@@ -3,49 +3,83 @@ import { CalendarDateTime } from '@internationalized/date';
 import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 
-import { DemoLayout } from '../../../ui/demo-layout';
-
 @Component({
   selector: 'app-time-field-bounds-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DemoLayout, ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+  imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <playground-demo
-      title="Bounded time"
-      subtitle="minTime and maxTime fence the time-of-day. Only the time component is compared, so stepping past 17:00 or before 09:00 clamps back into the window. Try arrowing the hour up from 17 — it stops at the maximum."
-      sourcePath="projects/forty-cdk-playground/src/app/demos/time-field/examples/bounds.example.ts"
+    <div
+      forTimeField
+      class="time-field"
+      [(value)]="value"
+      [minTime]="minTime"
+      [maxTime]="maxTime"
+      ariaLabel="Appointment time"
+      #field="forTimeField"
     >
-      <div demo>
-        <div
-          forTimeField
-          class="pg-seg-field"
-          [(value)]="value"
-          [minTime]="minTime"
-          [maxTime]="maxTime"
-          ariaLabel="Appointment time"
-          #field="forTimeField"
-        >
-          @for (seg of field.segments(); track seg.id) {
-            @if (seg.isLiteral) {
-              <span forTimeFieldLiteral class="pg-seg-literal">{{ seg.text }}</span>
-            } @else {
-              <span forTimeFieldSegment class="pg-seg" [segment]="seg.type!">{{ seg.text }}</span>
-            }
-          }
-        </div>
-      </div>
+      @for (seg of field.segments(); track seg.id) {
+        @if (seg.isLiteral) {
+          <span forTimeFieldLiteral class="time-field-literal">{{ seg.text }}</span>
+        } @else {
+          <span forTimeFieldSegment class="time-field-segment" [segment]="seg.type!">{{
+            seg.text
+          }}</span>
+        }
+      }
+    </div>
+  `,
+  styles: `
+    :host {
+      display: contents;
+    }
 
-      <div controls class="pg-controls">
-        <p class="pg-state">
-          value: <b>{{ value()?.toString() ?? 'null' }}</b
-          ><br />
-          minTime: <b>09:00</b><br />
-          maxTime: <b>17:00</b>
-        </p>
-        <p class="pg-hint">Office hours — selections are clamped to 09:00 – 17:00.</p>
-      </div>
-    </playground-demo>
+    .time-field {
+      display: inline-flex;
+      align-items: center;
+      font-size: 1rem;
+      font-variant-numeric: tabular-nums;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid var(--pg-border-strong);
+      border-radius: var(--pg-radius-sm);
+      background: var(--pg-surface);
+      color: var(--pg-text);
+      transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+    }
+
+    .time-field:focus-within {
+      border-color: var(--pg-primary);
+      box-shadow: 0 0 0 1px var(--pg-primary);
+    }
+
+    .time-field-segment {
+      padding: 0.05rem 0.15rem;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .time-field-segment[data-placeholder] {
+      color: var(--pg-text-muted);
+    }
+
+    .time-field-segment[data-highlighted],
+    .time-field-segment:focus {
+      background: var(--pg-primary);
+      color: var(--pg-primary-contrast);
+    }
+
+    .time-field-literal {
+      padding: 0 0.05rem;
+      color: var(--pg-text-muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .time-field {
+        transition: none;
+      }
+    }
   `,
 })
 export class TimeFieldBoundsExample {
