@@ -57,7 +57,6 @@ jobs:
       - run: pnpm test
 
   e2e:
-    if: false
     name: E2E (Playwright)
     runs-on: ubuntu-latest
     timeout-minutes: 15

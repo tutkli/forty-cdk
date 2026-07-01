@@ -2,10 +2,8 @@ name: Deploy docs to GitHub Pages
 
 on:
   workflow_dispatch:
-  # Automatic deploy on push to main is intentionally disabled for now — the
-  # first deploy is run manually from the Actions tab. Uncomment to enable.
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
