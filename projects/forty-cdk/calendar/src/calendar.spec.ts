@@ -498,6 +498,14 @@ const focusedCell = (r: RenderResult<unknown>) => tabbableCells(r)[0]!;
 const JUN_15 = new Date(2026, 5, 15);
 
 describe('ForCalendar', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 5, 15));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('structure & ARIA', () => {
     it('renders grid / columnheader roles and labels the grid by the heading', () => {
       const r = renderHost(CalendarHost);
