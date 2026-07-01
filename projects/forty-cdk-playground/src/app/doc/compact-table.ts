@@ -1,13 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import {
-  ForPopover,
-  ForPopoverArrow,
-  ForPopoverContent,
-  ForPopoverTrigger,
-} from 'forty-cdk/popover';
 
-import { Icon } from '../ui/icon';
+import { DocTablePopover } from './doc-table-popover';
 import type { DocTableData } from './markdown';
 
 interface DetailCell {
@@ -24,7 +18,7 @@ interface CompactRow {
 @Component({
   selector: 'compact-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForPopover, ForPopoverTrigger, ForPopoverContent, ForPopoverArrow, Icon],
+  imports: [DocTablePopover],
   template: `
     <div class="pg-doc-table-scroll">
       <table class="pg-doc-table compact-table">
@@ -44,38 +38,22 @@ interface CompactRow {
                 <td class="ct-detail" [innerHTML]="detail.value"></td>
               }
               <td class="ct-info-col">
-                <div
-                  forPopover
-                  #pop="forPopover"
-                  side="bottom"
-                  align="end"
-                  initialFocus="container"
-                  class="ct-info"
+                <doc-table-popover
+                  hostClass="ct-info"
                   [ariaLabel]="row.labelText"
+                  [triggerLabel]="'Show details for ' + row.labelText"
                 >
-                  <button
-                    forPopoverTrigger
-                    type="button"
-                    class="api-info"
-                    [attr.aria-label]="'Show details for ' + row.labelText"
-                  >
-                    <app-icon name="information-circle" />
-                  </button>
-
-                  @if (pop.open()) {
-                    <div forPopoverContent class="api-pop" animate.enter="api-pop-enter">
-                      @for (detail of row.details; track $index) {
-                        <div class="ct-pop-row">
-                          @if (showHeaders()) {
-                            <span class="ct-pop-header" [innerHTML]="detail.header"></span>
-                          }
-                          <div class="ct-pop-value" [innerHTML]="detail.value"></div>
-                        </div>
-                      }
-                      <span forPopoverArrow class="api-pop-arrow"></span>
-                    </div>
-                  }
-                </div>
+                  <ng-container ngProjectAs="[popoverPanel]">
+                    @for (detail of row.details; track $index) {
+                      <div class="ct-pop-row">
+                        @if (showHeaders()) {
+                          <span class="ct-pop-header" [innerHTML]="detail.header"></span>
+                        }
+                        <div class="ct-pop-value" [innerHTML]="detail.value"></div>
+                      </div>
+                    }
+                  </ng-container>
+                </doc-table-popover>
               </td>
             </tr>
           }

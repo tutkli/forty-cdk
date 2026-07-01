@@ -1,13 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
-import {
-  ForPopover,
-  ForPopoverArrow,
-  ForPopoverContent,
-  ForPopoverTrigger,
-} from 'forty-cdk/popover';
 
-import { Icon } from '../ui/icon';
+import { DocTablePopover } from './doc-table-popover';
 import type { DocTableData } from './markdown';
 
 interface ApiRow {
@@ -22,15 +16,15 @@ interface ApiRow {
 @Component({
   selector: 'api-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForPopover, ForPopoverTrigger, ForPopoverContent, ForPopoverArrow, Icon],
+  imports: [DocTablePopover],
   template: `
     <div class="pg-doc-table-scroll">
       <table class="pg-doc-table api-table">
         <thead>
           <tr>
-            <th class="api-col-prop">Property</th>
-            <th class="api-col-type">Type</th>
-            <th class="api-col-desc">Description</th>
+            <th class="api-col-prop">{{ columns()[0] }}</th>
+            <th class="api-col-type">{{ columns()[1] }}</th>
+            <th class="api-col-desc">{{ columns()[2] }}</th>
           </tr>
         </thead>
         <tbody>
@@ -38,34 +32,18 @@ interface ApiRow {
             <tr>
               <td class="api-col-prop" [innerHTML]="row.property"></td>
               <td class="api-col-type">
-                <div
-                  forPopover
-                  #pop="forPopover"
-                  side="bottom"
-                  align="end"
-                  initialFocus="container"
-                  class="api-type"
+                <doc-table-popover
+                  hostClass="api-type"
                   [ariaLabel]="'Type of ' + row.propText"
+                  [detail]="row.hasDetail"
+                  [triggerLabel]="'Show full type and description for ' + row.propText"
                 >
-                  <code class="api-type-kind">{{ row.typeKind }}</code>
-                  <button
-                    forPopoverTrigger
-                    type="button"
-                    class="api-info"
-                    [attr.data-detail]="row.hasDetail"
-                    [attr.aria-label]="'Show full type and description for ' + row.propText"
-                  >
-                    <app-icon name="information-circle" />
-                  </button>
-
-                  @if (pop.open()) {
-                    <div forPopoverContent class="api-pop" animate.enter="api-pop-enter">
-                      <code class="api-pop-type">{{ row.typeFull }}</code>
-                      <div class="api-pop-desc" [innerHTML]="row.description"></div>
-                      <span forPopoverArrow class="api-pop-arrow"></span>
-                    </div>
-                  }
-                </div>
+                  <code popoverTriggerContent class="api-type-kind">{{ row.typeKind }}</code>
+                  <ng-container ngProjectAs="[popoverPanel]">
+                    <code class="api-pop-type">{{ row.typeFull }}</code>
+                    <div class="api-pop-desc" [innerHTML]="row.description"></div>
+                  </ng-container>
+                </doc-table-popover>
               </td>
               <td class="api-col-desc" [innerHTML]="row.description"></td>
             </tr>
@@ -79,6 +57,8 @@ export class ApiTable {
   readonly #sanitizer = inject(DomSanitizer);
 
   readonly table = input.required<DocTableData>();
+
+  protected readonly columns = computed(() => this.table().columns);
 
   protected readonly rows = computed<readonly ApiRow[]>(() =>
     this.table().rows.map((cells) => {

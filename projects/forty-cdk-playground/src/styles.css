@@ -361,10 +361,6 @@ a.pg-nav-link.active {
   transition: none;
 }
 
-.pg-region .pg-drawer-backdrop {
-  position: absolute;
-}
-
 @keyframes pg-drawer-in-bottom {
   from {
     transform: translateY(100%);
@@ -590,57 +586,6 @@ a.pg-nav-link.active {
 }
 
 [forToastClose]:hover {
-  background: var(--pg-surface-2);
-  color: var(--pg-text);
-}
-
-.pg-toast-custom__title {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.pg-toast-custom__body {
-  font-size: 0.82rem;
-  color: var(--pg-text-muted);
-}
-
-.pg-toast-custom__action {
-  align-self: flex-start;
-  margin-top: 0.45rem;
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--pg-border-strong);
-  border-radius: var(--pg-radius-sm);
-  background: var(--pg-surface);
-  color: var(--pg-primary);
-  cursor: pointer;
-}
-
-.pg-toast-custom__action:hover {
-  background: var(--pg-surface-2);
-}
-
-.pg-toast-custom__close {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  font-size: 1.05rem;
-  line-height: 1;
-  border: 0;
-  border-radius: var(--pg-radius-sm);
-  background: transparent;
-  color: var(--pg-text-muted);
-  cursor: pointer;
-}
-
-.pg-toast-custom__close:hover {
   background: var(--pg-surface-2);
   color: var(--pg-text);
 }
