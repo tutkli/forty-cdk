@@ -7,7 +7,7 @@ test.describe('TimeField', () => {
     page,
   }) => {
     await gotoFixture(page, 'time-field');
-    expect(await page.locator('[role="spinbutton"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="spinbutton"][tabindex="0"]')).toHaveCount(1);
 
     await el(page, 'before').focus();
     await page.keyboard.press('Tab');

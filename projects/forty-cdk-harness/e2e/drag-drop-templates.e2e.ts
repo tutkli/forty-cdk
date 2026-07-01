@@ -118,18 +118,29 @@ test.describe('drag-drop live-sort placeholder', () => {
     const startY = box0.y + box0.height / 2;
     const targetY = box1.y + box1.height - 4;
 
+    const readOrder = () =>
+      page
+        .locator('[data-testid="list"] > *')
+        .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+    const placeholderPastItem1 = async () => {
+      const order = await readOrder();
+      return order.indexOf('custom-placeholder') > order.indexOf('item-1');
+    };
+
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
-    await page.mouse.move(startX, targetY);
 
-    const order = await page
-      .locator('[data-testid="list"] > *')
-      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
-    const phIndex = order.indexOf('custom-placeholder');
-    const item1Index = order.indexOf('item-1');
-    expect(phIndex).toBeGreaterThan(item1Index);
-    expect(order).toContain('item-0');
+    let crossed = false;
+    for (let y = startY + 12; y <= targetY && !crossed; y += 5) {
+      await page.mouse.move(startX, y);
+      for (let attempt = 0; attempt < 4 && !crossed; attempt++) {
+        crossed = await placeholderPastItem1();
+        if (!crossed) await page.waitForTimeout(25);
+      }
+    }
+    expect(crossed).toBe(true);
+    expect(await readOrder()).toContain('item-0');
 
     await page.mouse.up();
 
@@ -156,12 +167,18 @@ test.describe('drag-drop live-sort placeholder', () => {
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(startX, targetY);
 
-    const order = await page
-      .locator('[data-testid="list"] > *')
-      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
-    const phIndex = order.indexOf('custom-placeholder');
-    const item1Index = order.indexOf('item-1');
-    expect(phIndex).toBeLessThan(item1Index);
+    const readOrder = () =>
+      page
+        .locator('[data-testid="list"] > *')
+        .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+
+    await expect
+      .poll(async () => {
+        const order = await readOrder();
+        const phIndex = order.indexOf('custom-placeholder');
+        return phIndex >= 0 && phIndex < order.indexOf('item-1');
+      })
+      .toBe(true);
 
     await page.mouse.up();
   });

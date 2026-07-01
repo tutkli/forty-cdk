@@ -277,9 +277,9 @@ test.describe('Table (column resizing)', () => {
     await page.mouse.move(cx + 80, cy);
     await page.mouse.up();
 
-    const afterBox = await headerName.boundingBox();
-    expect(afterBox).not.toBeNull();
-    expect(afterBox!.width).toBeGreaterThan(beforeBox!.width);
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeGreaterThan(beforeBox!.width);
 
     const root = el(page, 'root');
     const varValue = await root.evaluate((el) =>
@@ -305,15 +305,16 @@ test.describe('Table (column resizing)', () => {
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowRight');
 
-    const afterRightBox = await headerName.boundingBox();
-    expect(afterRightBox).not.toBeNull();
-    expect(afterRightBox!.width).toBeGreaterThan(beforeBox!.width);
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeGreaterThan(beforeBox!.width);
+    const widenedWidth = (await headerName.boundingBox())!.width;
 
     await page.keyboard.press('ArrowLeft');
 
-    const afterLeftBox = await headerName.boundingBox();
-    expect(afterLeftBox).not.toBeNull();
-    expect(afterLeftBox!.width).toBeLessThan(afterRightBox!.width);
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeLessThan(widenedWidth);
   });
 
   test('dragging the handle does not trigger a sort', async ({ page }) => {
@@ -372,10 +373,11 @@ test.describe('Table (column resizing)', () => {
 
     await resizer.dblclick();
 
-    const afterBox = await headerName.boundingBox();
-    expect(afterBox).not.toBeNull();
-    expect(afterBox!.width).toBeLessThan(beforeBox!.width);
-    expect(afterBox!.width).toBeGreaterThan(0);
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeLessThan(beforeBox!.width);
+    const fittedWidth = (await headerName.boundingBox())!.width;
+    expect(fittedWidth).toBeGreaterThan(0);
 
     const root = el(page, 'root');
     const varValue = await root.evaluate((el) =>
@@ -397,9 +399,9 @@ test.describe('Table (column resizing)', () => {
 
     await resizer.dblclick();
 
-    const afterBox = await headerName.boundingBox();
-    expect(afterBox).not.toBeNull();
-    expect(afterBox!.width).toBeLessThanOrEqual(51);
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeLessThanOrEqual(51);
   });
 
   test('autoFit unset: dblclick on the handle does not resize the column', async ({ page }) => {
@@ -440,8 +442,9 @@ test.describe('Table (column resizing)', () => {
 
     await resizer.dblclick();
 
-    const overflowAfter = await headerName.evaluate((e) => e.scrollWidth - e.clientWidth);
-    expect(overflowAfter).toBeLessThanOrEqual(2);
+    await expect
+      .poll(() => headerName.evaluate((e) => e.scrollWidth - e.clientWidth))
+      .toBeLessThanOrEqual(2);
   });
 
   test('fitIncludesHeader unset: data-only auto-fit leaves a long header label truncated', async ({

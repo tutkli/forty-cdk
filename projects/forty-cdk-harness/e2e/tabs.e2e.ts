@@ -110,7 +110,7 @@ test.describe('Tabs (roving self-heal)', () => {
     await el(page, 'trigger-a').focus();
     await el(page, 'remove-active').click();
 
-    expect(await page.locator('[role="tab"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
     // Re-entry from the control lands on the first surviving enabled trigger.
     await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');
@@ -122,7 +122,7 @@ test.describe('Tabs (roving self-heal)', () => {
     await el(page, 'trigger-a').focus();
     await el(page, 'disable-active').click();
 
-    expect(await page.locator('[role="tab"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'trigger-a')).toHaveAttribute('tabindex', '-1');
     await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');

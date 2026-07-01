@@ -63,7 +63,7 @@ test.describe('Listbox', () => {
 
     // Exactly one option remains tabbable, and Tab from the control re-enters
     // the listbox at the next enabled option (banana is disabled → cherry).
-    expect(await page.locator('[role="option"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="option"][tabindex="0"]')).toHaveCount(1);
     await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');
     await expect(el(page, 'opt-cherry')).toBeFocused();
@@ -76,7 +76,7 @@ test.describe('Listbox', () => {
     await el(page, 'opt-apple').focus();
     await el(page, 'disable-active').click();
 
-    expect(await page.locator('[role="option"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="option"][tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'opt-apple')).toHaveAttribute('tabindex', '-1');
     await el(page, 'disable-active').focus();
     await page.keyboard.press('Tab');

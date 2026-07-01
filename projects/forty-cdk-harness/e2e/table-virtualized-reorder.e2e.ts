@@ -149,10 +149,12 @@ test.describe('Table virtualized row reorder', () => {
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
-    // Hold near the bottom edge so the drop list auto-scrolls the window forward.
-    for (let i = 0; i < 12; i++) {
-      await page.mouse.move(startX, edgeY);
-      await page.waitForTimeout(60);
+    let maxRendered = from;
+    for (let i = 0; i < 80 && maxRendered <= from + 30; i++) {
+      await page.mouse.move(startX, i % 2 ? edgeY : edgeY - 1);
+      await page.waitForTimeout(50);
+      const idx = await renderedIndices(page);
+      maxRendered = idx[idx.length - 1] ?? maxRendered;
     }
     await page.mouse.up();
 

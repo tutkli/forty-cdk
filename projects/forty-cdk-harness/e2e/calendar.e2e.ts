@@ -7,7 +7,7 @@ test.describe('Calendar', () => {
     page,
   }) => {
     await gotoFixture(page, 'calendar');
-    expect(await page.locator('[role="gridcell"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="gridcell"][tabindex="0"]')).toHaveCount(1);
 
     await el(page, 'next').focus();
     await page.keyboard.press('Tab');
@@ -34,7 +34,7 @@ test.describe('Calendar', () => {
     await page.keyboard.press('ArrowLeft');
     await expectFocused(el(page, 'cell-2026-6-15'));
 
-    expect(await page.locator('[role="gridcell"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="gridcell"][tabindex="0"]')).toHaveCount(1);
   });
 
   test('Home / End move to the bounds of the focused week', async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe('Calendar', () => {
     await page.keyboard.press('PageDown');
     await expectFocused(el(page, 'cell-2026-7-15'));
     await expect(el(page, 'cell-2026-7-15')).toBeVisible();
-    expect(await page.locator('[role="gridcell"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="gridcell"][tabindex="0"]')).toHaveCount(1);
 
     await page.keyboard.press('PageUp');
     await expectFocused(el(page, 'cell-2026-6-15'));
