@@ -109,6 +109,14 @@ async function open(r: R): Promise<void> {
 }
 
 describe('ForDateRangePicker', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 5, 15));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   afterEachOverlayCleanup();
 
   describe('structure & ARIA', () => {
