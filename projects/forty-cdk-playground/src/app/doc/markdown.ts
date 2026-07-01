@@ -78,7 +78,6 @@ marked.use({
 });
 
 function renderMarkdown(md: string): string {
-  headingSlugger.reset();
   return marked.parse(md, { async: false });
 }
 
@@ -171,17 +170,16 @@ function splitBlocks(body: string): DocBlock[] {
   return blocks;
 }
 
-function collectSubsections(bodyLines: readonly string[]): DocSubsection[] {
+const SUBSECTION_RE = /<h3 id="([^"]+)">([\s\S]*?)<\/h3>/g;
+
+function collectSubsections(blocks: readonly DocBlock[]): DocSubsection[] {
   const subsections: DocSubsection[] = [];
-  let inFence = false;
-  for (const line of bodyLines) {
-    if (isFenceLine(line)) {
-      inFence = !inFence;
+  for (const block of blocks) {
+    if (block.kind !== 'html') {
       continue;
     }
-    if (!inFence && /^### /.test(line)) {
-      const raw = line.slice(4).trim();
-      subsections.push({ title: raw.replace(/`/g, ''), slug: slugify(raw) });
+    for (const match of block.html.matchAll(SUBSECTION_RE)) {
+      subsections.push({ title: stripText(match[2]), slug: match[1] });
     }
   }
   return subsections;
@@ -228,13 +226,17 @@ export function parseReadme(md: string): ParsedReadme {
     }
   }
 
+  headingSlugger.reset();
   const intro = renderMarkdown(stripLeadingHeading(introLines).join('\n'));
-  const sections = rawSections.map((section) => ({
-    title: section.title,
-    slug: section.slug,
-    subsections: collectSubsections(section.bodyLines),
-    blocks: splitBlocks(section.bodyLines.join('\n')),
-  }));
+  const sections = rawSections.map((section) => {
+    const blocks = splitBlocks(section.bodyLines.join('\n'));
+    return {
+      title: section.title,
+      slug: section.slug,
+      subsections: collectSubsections(blocks),
+      blocks,
+    };
+  });
 
   return { intro, sections };
 }
