@@ -22,17 +22,14 @@ import readmeContent from '../../../../../forty-cdk/time-range-field/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="time-range-field" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/time-range-field/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="time-range-field/examples/default.example.ts">
         <app-time-range-field-default-example />
       </playground-demo>
 
       <playground-demo
         title="Bounded range"
         subtitle="<code>minTime</code> and <code>maxTime</code> fence both endpoints to a window. Only the time component is compared, so stepping a segment past 18:00 or before 08:00 clamps back in — a booking slot inside business hours, with the <code>start &lt;= end</code> invariant still enforced on top."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/time-range-field/examples/bounds.example.ts"
+        sourcePath="time-range-field/examples/bounds.example.ts"
       >
         <app-time-range-field-bounds-example />
       </playground-demo>
@@ -40,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/time-range-field/README.md';
       <playground-demo
         title="Signal Forms"
         subtitle="<code>ForTimeRangeField</code> implements <code>FormValueControl&lt;CalendarDateRange | null&gt;</code>, so <code>[formField]</code> binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps <code>value()</code> null, so a <code>required</code> field stays invalid until both endpoints are filled and ordered."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/time-range-field/examples/form-field.example.ts"
+        sourcePath="time-range-field/examples/form-field.example.ts"
       >
         <app-time-range-field-form-field-example />
       </playground-demo>

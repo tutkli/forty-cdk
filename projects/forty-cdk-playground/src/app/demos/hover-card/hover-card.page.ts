@@ -14,10 +14,7 @@ import readmeContent from '../../../../../forty-cdk/hover-card/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="hover-card" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/hover-card/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="hover-card/examples/default.example.ts">
         <app-hover-card-default-example />
       </playground-demo>
     </primitive-page>

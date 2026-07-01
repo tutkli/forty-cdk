@@ -1,13 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const REPO = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const PRIMITIVES = join(REPO, 'projects', 'forty-cdk-playground', 'src', 'app', 'primitives.ts');
-const BROWSER = join(REPO, 'dist', 'forty-cdk-playground', 'browser');
+import { repoRoot } from './lib/repo-path.mjs';
+import { escapeHtml } from './lib/html.mjs';
 
-function escapeHtml(value) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+const PRIMITIVES = join(
+  repoRoot,
+  'projects',
+  'forty-cdk-playground',
+  'src',
+  'app',
+  'primitives.ts',
+);
+const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
 
 function readPrimitives() {
   const source = readFileSync(PRIMITIVES, 'utf8');
@@ -27,7 +32,7 @@ function fail(message) {
 
 if (!existsSync(BROWSER)) {
   fail(
-    `prerender output not found at ${relative(REPO, BROWSER).split(sep).join('/')} — run the static build first`,
+    `prerender output not found at ${relative(repoRoot, BROWSER).split(sep).join('/')} — run the static build first`,
   );
 }
 

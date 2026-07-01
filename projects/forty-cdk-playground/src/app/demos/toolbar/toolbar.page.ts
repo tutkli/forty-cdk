@@ -14,10 +14,7 @@ import readmeContent from '../../../../../forty-cdk/toolbar/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="toolbar" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/toolbar/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="toolbar/examples/default.example.ts">
         <app-toolbar-default-example />
       </playground-demo>
     </primitive-page>

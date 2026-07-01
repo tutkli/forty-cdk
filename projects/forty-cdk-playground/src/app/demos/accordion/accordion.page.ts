@@ -24,17 +24,14 @@ import readmeContent from '../../../../../forty-cdk/accordion/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="accordion" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="accordion/examples/default.example.ts">
         <app-accordion-default-example />
       </playground-demo>
 
       <playground-demo
         title="Multiple"
         subtitle="<code>multiple</code> lets several sections stay open at once, so <code>value</code> holds an array of every open item."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/multiple.example.ts"
+        sourcePath="accordion/examples/multiple.example.ts"
       >
         <app-accordion-multiple-example />
       </playground-demo>
@@ -42,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/accordion/README.md';
       <playground-demo
         title="Horizontal"
         subtitle="<code>orientation='horizontal'</code> lays the sections out in a row and switches roving navigation to <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd>. It is reflected as <code>data-orientation</code> for styling."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/horizontal.example.ts"
+        sourcePath="accordion/examples/horizontal.example.ts"
       >
         <app-accordion-horizontal-example />
       </playground-demo>
@@ -50,7 +47,7 @@ import readmeContent from '../../../../../forty-cdk/accordion/README.md';
       <playground-demo
         title="Disabled item"
         subtitle="A disabled item cannot be toggled and is skipped by the arrow keys, while staying in the DOM for screen readers."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/accordion/examples/disabled-item.example.ts"
+        sourcePath="accordion/examples/disabled-item.example.ts"
       >
         <app-accordion-disabled-item-example />
       </playground-demo>

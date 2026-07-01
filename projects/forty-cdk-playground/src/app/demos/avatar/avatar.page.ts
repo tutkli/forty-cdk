@@ -15,17 +15,14 @@ import readmeContent from '../../../../../forty-cdk/avatar/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="avatar" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/avatar/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="avatar/examples/default.example.ts">
         <app-avatar-default-example />
       </playground-demo>
 
       <playground-demo
         title="Failed load"
         subtitle="When the image errors, the directive flips <code>shouldShowFallback()</code> and the initials render in its place — an error shows the fallback at once, skipping the <code>fallbackDelayMs</code> wait."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/avatar/examples/fallback.example.ts"
+        sourcePath="avatar/examples/fallback.example.ts"
       >
         <app-avatar-fallback-example />
       </playground-demo>

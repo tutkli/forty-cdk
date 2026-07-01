@@ -1,10 +1,12 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const REPO = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const LIB = join(REPO, 'projects', 'forty-cdk');
+import { repoRoot } from './lib/repo-path.mjs';
+import { slugify, isFenceLine, Slugger } from './lib/readme-slug.mjs';
+
+const LIB = join(repoRoot, 'projects', 'forty-cdk');
 const OUT = join(
-  REPO,
+  repoRoot,
   'projects',
   'forty-cdk-playground',
   'src',
@@ -13,30 +15,9 @@ const OUT = join(
   'search-index.generated.ts',
 );
 
-function slugify(text) {
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s/g, '-');
-}
-
-function uniqueSlugger() {
-  const seen = new Map();
-  return (base) => {
-    const count = seen.get(base) ?? 0;
-    seen.set(base, count + 1);
-    return count === 0 ? base : `${base}-${count}`;
-  };
-}
-
-function isFenceLine(line) {
-  return /^\s*(```|~~~)/.test(line);
-}
-
 function sectionsOf(md) {
   const lines = md.split('\n');
-  const slug = uniqueSlugger();
+  const slugger = new Slugger();
   const sections = [];
   let inFence = false;
   for (const line of lines) {
@@ -45,7 +26,7 @@ function sectionsOf(md) {
     }
     if (!inFence && /^## /.test(line)) {
       const title = line.slice(3).trim();
-      sections.push({ title, anchor: slug(slugify(title)) });
+      sections.push({ title, anchor: slugger.unique(slugify(title)) });
     }
   }
   return sections;
@@ -86,6 +67,6 @@ const out =
 writeFileSync(OUT, out, 'utf8');
 
 console.log(
-  `[gen-search-index] wrote ${relative(REPO, OUT).split(sep).join('/')} — ` +
+  `[gen-search-index] wrote ${relative(repoRoot, OUT).split(sep).join('/')} — ` +
     `${Object.keys(index).length} primitives, ${totalSections} sections`,
 );

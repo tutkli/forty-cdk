@@ -24,17 +24,14 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="switch" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="switch/examples/default.example.ts">
         <app-switch-default-example />
       </playground-demo>
 
       <playground-demo
         title="Disabled"
         subtitle="<code>disabled</code> ignores clicks and keyboard activation but keeps the switch focusable (per APG); it reflects <code>aria-disabled</code> and <code>data-disabled</code>."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/disabled.example.ts"
+        sourcePath="switch/examples/disabled.example.ts"
       >
         <app-switch-disabled-example />
       </playground-demo>
@@ -42,7 +39,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
       <playground-demo
         title="Read-only"
         subtitle="<code>readonly</code> keeps the switch focusable and announced but blocks toggling; it reflects <code>aria-readonly</code> and <code>data-readonly</code>."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/read-only.example.ts"
+        sourcePath="switch/examples/read-only.example.ts"
       >
         <app-switch-read-only-example />
       </playground-demo>
@@ -50,7 +47,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
       <playground-demo
         title="Signal Forms"
         subtitle="<code>forSwitch</code> implements <code>FormCheckboxControl</code>, so a single <code>[formField]</code> binding wires checked state, validity and touched both ways — no <code>ControlValueAccessor</code>."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/switch/examples/form-field.example.ts"
+        sourcePath="switch/examples/form-field.example.ts"
       >
         <app-switch-form-field-example />
       </playground-demo>

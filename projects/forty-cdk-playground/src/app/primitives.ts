@@ -10,7 +10,7 @@ export interface PlaygroundGroup {
   readonly primitives: readonly PlaygroundPrimitive[];
 }
 
-const OVERLAY_PRIMITIVES: readonly PlaygroundPrimitive[] = [
+const PRIMITIVES: readonly PlaygroundPrimitive[] = [
   {
     slug: 'dialog',
     title: 'Dialog',
@@ -100,9 +100,6 @@ const OVERLAY_PRIMITIVES: readonly PlaygroundPrimitive[] = [
       'Brief, auto-dismissing notifications stacked in a corner, opened programmatically through ForToastManager.',
     apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/alert/',
   },
-];
-
-const FORM_PRIMITIVES: readonly PlaygroundPrimitive[] = [
   {
     slug: 'button',
     title: 'Button',
@@ -247,9 +244,6 @@ const FORM_PRIMITIVES: readonly PlaygroundPrimitive[] = [
       'A trigger that opens a floating calendar to pick a date, composing ForCalendar inside a dismissable popover with min / max bounds and per-date availability.',
     apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/',
   },
-];
-
-const LAYOUT_PRIMITIVES: readonly PlaygroundPrimitive[] = [
   {
     slug: 'accordion',
     title: 'Accordion',
@@ -333,6 +327,24 @@ const LAYOUT_PRIMITIVES: readonly PlaygroundPrimitive[] = [
     title: 'Aspect Ratio',
     description: 'A container that keeps its content at a fixed width-to-height ratio.',
   },
+  {
+    slug: 'avatar',
+    title: 'Avatar',
+    description: 'A user image with a graceful fallback across its loading lifecycle.',
+  },
+  {
+    slug: 'progress',
+    title: 'Progress',
+    description: 'A bar that reflects the completion progress of a task.',
+    apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/meter/',
+  },
+  {
+    slug: 'meter',
+    title: 'Meter',
+    description:
+      'A gauge that shows a scalar value within a known range, bucketed into quality bands.',
+    apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/meter/',
+  },
 ];
 
 const UTILITY_PRIMITIVES: readonly PlaygroundPrimitive[] = [
@@ -356,39 +368,13 @@ const UTILITY_PRIMITIVES: readonly PlaygroundPrimitive[] = [
   },
 ];
 
-const DISPLAY_PRIMITIVES: readonly PlaygroundPrimitive[] = [
-  {
-    slug: 'avatar',
-    title: 'Avatar',
-    description: 'A user image with a graceful fallback across its loading lifecycle.',
-  },
-  {
-    slug: 'progress',
-    title: 'Progress',
-    description: 'A bar that reflects the completion progress of a task.',
-    apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/meter/',
-  },
-  {
-    slug: 'meter',
-    title: 'Meter',
-    description:
-      'A gauge that shows a scalar value within a known range, bucketed into quality bands.',
-    apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/meter/',
-  },
-];
-
 const byTitle = (a: PlaygroundPrimitive, b: PlaygroundPrimitive): number =>
   a.title.localeCompare(b.title);
 
 export const PLAYGROUND_GROUPS: readonly PlaygroundGroup[] = [
   {
     label: 'Primitives',
-    primitives: [
-      ...OVERLAY_PRIMITIVES,
-      ...FORM_PRIMITIVES,
-      ...LAYOUT_PRIMITIVES,
-      ...DISPLAY_PRIMITIVES,
-    ].sort(byTitle),
+    primitives: [...PRIMITIVES].sort(byTitle),
   },
   {
     label: 'Utilities',
@@ -401,15 +387,6 @@ export function primitiveBySlug(slug: string): PlaygroundPrimitive {
     const found = group.primitives.find((primitive) => primitive.slug === slug);
     if (found) {
       return found;
-    }
-  }
-  throw new Error(`[playground] unknown primitive slug: ${slug}`);
-}
-
-export function groupLabelForSlug(slug: string): string {
-  for (const group of PLAYGROUND_GROUPS) {
-    if (group.primitives.some((primitive) => primitive.slug === slug)) {
-      return group.label;
     }
   }
   throw new Error(`[playground] unknown primitive slug: ${slug}`);

@@ -22,17 +22,14 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="field" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="field/examples/default.example.ts">
         <app-field-default-example />
       </playground-demo>
 
       <playground-demo
         title="Disabled"
         subtitle="A disabled native control reflects <code>data-disabled</code> on the <code>[forField]</code> host, so the whole block can dim in one rule. The control stays announced as disabled to assistive tech."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/disabled.example.ts"
+        sourcePath="field/examples/disabled.example.ts"
       >
         <app-field-disabled-example />
       </playground-demo>
@@ -40,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/field/README.md';
       <playground-demo
         title="Validation with Signal Forms"
         subtitle="<code>[forFieldError]</code> reads the control's Signal Forms errors automatically — you render <code>err.messages()</code>, the field wires <code>aria-errormessage</code> and folds the id into <code>aria-describedby</code> while invalid. The <code>[forCheckbox]</code> auto-associates because it extends the shared form base. Tick then untick to surface the required error."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/field/examples/validation.example.ts"
+        sourcePath="field/examples/validation.example.ts"
       >
         <app-field-validation-example />
       </playground-demo>

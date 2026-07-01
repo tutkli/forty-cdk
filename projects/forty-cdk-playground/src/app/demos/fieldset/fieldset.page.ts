@@ -22,17 +22,14 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="fieldset" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/fieldset/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="fieldset/examples/default.example.ts">
         <app-fieldset-default-example />
       </playground-demo>
 
       <playground-demo
         title="Disable a group"
         subtitle="<code>disabled</code> emits the native <code>disabled</code> attribute, which disables every control inside in one move. The <code>data-disabled</code> hook flows to the fieldset and to each <code>forField</code> so the whole block can dim together."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/fieldset/examples/disabled.example.ts"
+        sourcePath="fieldset/examples/disabled.example.ts"
       >
         <app-fieldset-disabled-example />
       </playground-demo>
@@ -40,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
       <playground-demo
         title="Group on any element"
         subtitle='On non-fieldset markup <code>forFieldset</code> synthesizes the grouping: it emits <code>role="group"</code> and points <code>aria-labelledby</code> at the <code>[forFieldsetLegend]</code>&apos;s generated id, so a plain <code>&lt;div&gt;</code> + <code>&lt;span&gt;</code> reads to assistive tech exactly like a native fieldset / legend.'
-        sourcePath="projects/forty-cdk-playground/src/app/demos/fieldset/examples/role-group.example.ts"
+        sourcePath="fieldset/examples/role-group.example.ts"
       >
         <app-fieldset-role-group-example />
       </playground-demo>
