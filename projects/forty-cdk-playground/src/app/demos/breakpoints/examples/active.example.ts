@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { breakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
 
 type TailwindName = keyof typeof breakpointsTailwind;
@@ -152,11 +159,15 @@ export class BreakpointsActiveExample {
     only: this.bp.only(name),
   }));
 
-  protected readonly width = signal(globalThis.innerWidth);
+  protected readonly width = signal(0);
 
   constructor() {
-    const onResize = (): void => this.width.set(globalThis.innerWidth);
-    globalThis.addEventListener('resize', onResize, { passive: true });
-    inject(DestroyRef).onDestroy(() => globalThis.removeEventListener('resize', onResize));
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const onResize = (): void => this.width.set(globalThis.innerWidth);
+      onResize();
+      globalThis.addEventListener('resize', onResize, { passive: true });
+      destroyRef.onDestroy(() => globalThis.removeEventListener('resize', onResize));
+    });
   }
 }

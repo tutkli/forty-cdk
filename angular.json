@@ -224,6 +224,9 @@
           },
           "configurations": {
             "production": {
+              "outputMode": "static",
+              "server": "projects/forty-cdk-playground/src/main.server.ts",
+              "baseHref": "/forty-cdk/",
               "budgets": [
                 {
                   "type": "initial",
