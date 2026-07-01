@@ -140,6 +140,7 @@ test.describe('Toolbar', () => {
     await expect(page.locator('[data-testid="toolbar"] [tabindex="0"]')).toHaveCount(1);
     // Re-entry from the control lands on the next enabled item (toggle).
     await el(page, 'disable-active').focus();
+    await expectFocused(el(page, 'disable-active'));
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'toggle'));
   });
@@ -154,6 +155,7 @@ test.describe('Toolbar', () => {
     await expect(page.locator('[data-testid="toolbar"] [tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'btn-1')).toHaveAttribute('tabindex', '-1');
     await el(page, 'disable-active').focus();
+    await expectFocused(el(page, 'disable-active'));
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'toggle'));
   });
