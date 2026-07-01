@@ -1,4 +1,4 @@
-import { DOCUMENT } from '@angular/common';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -6,6 +6,7 @@ import {
   effect,
   type ElementRef,
   inject,
+  PLATFORM_ID,
   signal,
   viewChild,
 } from '@angular/core';
@@ -314,6 +315,7 @@ function readInitialTheme(): Theme {
 export class App {
   readonly #document = inject(DOCUMENT);
   readonly #router = inject(Router);
+  readonly #platformId = inject(PLATFORM_ID);
 
   protected readonly shell = viewChild<ElementRef<HTMLElement>>('shell');
 
@@ -340,7 +342,7 @@ export class App {
         takeUntilDestroyed(),
       )
       .subscribe((event) => {
-        if (!event.urlAfterRedirects.includes('#')) {
+        if (isPlatformBrowser(this.#platformId) && !event.urlAfterRedirects.includes('#')) {
           this.shell()?.nativeElement.scrollTo({ top: 0, left: 0 });
         }
       });
