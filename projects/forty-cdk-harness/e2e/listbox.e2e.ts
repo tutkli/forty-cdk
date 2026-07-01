@@ -65,6 +65,7 @@ test.describe('Listbox', () => {
     // the listbox at the next enabled option (banana is disabled → cherry).
     await expect(page.locator('[role="option"][tabindex="0"]')).toHaveCount(1);
     await el(page, 'disable-active').focus();
+    await expect(el(page, 'disable-active')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
@@ -79,6 +80,7 @@ test.describe('Listbox', () => {
     await expect(page.locator('[role="option"][tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'opt-apple')).toHaveAttribute('tabindex', '-1');
     await el(page, 'disable-active').focus();
+    await expect(el(page, 'disable-active')).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
