@@ -22,17 +22,14 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="tabs" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="tabs/examples/default.example.ts">
         <app-tabs-default-example />
       </playground-demo>
 
       <playground-demo
         title="Manual activation"
         subtitle="<code>activationMode='manual'</code> lets the arrow keys move focus without selecting; the user presses <kbd>Space</kbd> or <kbd>Enter</kbd> to activate — better when panel content is expensive."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/manual-activation.example.ts"
+        sourcePath="tabs/examples/manual-activation.example.ts"
       >
         <app-tabs-manual-activation-example />
       </playground-demo>
@@ -40,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/tabs/README.md';
       <playground-demo
         title="Vertical"
         subtitle="<code>orientation='vertical'</code> stacks the tablist beside the panel and switches roving navigation to <kbd>ArrowUp</kbd> / <kbd>ArrowDown</kbd>. It is reflected as <code>data-orientation</code> for styling."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/tabs/examples/vertical.example.ts"
+        sourcePath="tabs/examples/vertical.example.ts"
       >
         <app-tabs-vertical-example />
       </playground-demo>

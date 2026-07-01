@@ -15,17 +15,14 @@ import readmeContent from '../../../../../forty-cdk/pagination/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="pagination" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/pagination/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="pagination/examples/default.example.ts">
         <app-pagination-default-example />
       </playground-demo>
 
       <playground-demo
         title="Driving a data list"
         subtitle="Pagination is headless state — derive <code>count</code> from your data, then slice the visible rows from <code>page()</code>. Changing the page re-slices the list; the <code>page</code> model is the single source of truth shared by the rows and the controls."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/pagination/examples/data.example.ts"
+        sourcePath="pagination/examples/data.example.ts"
       >
         <app-pagination-data-example />
       </playground-demo>

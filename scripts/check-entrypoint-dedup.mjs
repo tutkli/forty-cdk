@@ -1,8 +1,9 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const REPO = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const FESM = join(REPO, 'dist', 'forty-cdk', 'fesm2022');
+import { repoRoot } from './lib/repo-path.mjs';
+
+const FESM = join(repoRoot, 'dist', 'forty-cdk', 'fesm2022');
 
 if (!existsSync(FESM)) {
   console.error(`[check-entrypoint-dedup] ${FESM} not found — run \`pnpm build\` first.`);

@@ -15,17 +15,14 @@ import readmeContent from '../../../../../forty-cdk/disclosure/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="disclosure" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/disclosure/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="disclosure/examples/default.example.ts">
         <app-disclosure-default-example />
       </playground-demo>
 
       <playground-demo
         title="Disabled"
         subtitle="<code>disabled</code> drops the trigger from the tab order and blocks toggling, so the panel stays in its current state."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/disclosure/examples/disabled.example.ts"
+        sourcePath="disclosure/examples/disabled.example.ts"
       >
         <app-disclosure-disabled-example />
       </playground-demo>

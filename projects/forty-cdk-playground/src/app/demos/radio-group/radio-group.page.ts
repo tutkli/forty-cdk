@@ -22,17 +22,14 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="radio-group" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="radio-group/examples/default.example.ts">
         <app-radio-group-default-example />
       </playground-demo>
 
       <playground-demo
         title="Horizontal orientation"
         subtitle="<code>orientation='horizontal'</code> reflects <code>data-orientation</code> and switches arrow navigation to <kbd>ArrowLeft</kbd> / <kbd>ArrowRight</kbd> (swapped in RTL)."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/horizontal.example.ts"
+        sourcePath="radio-group/examples/horizontal.example.ts"
       >
         <app-radio-group-horizontal-example />
       </playground-demo>
@@ -40,7 +37,7 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
       <playground-demo
         title="Signal Forms"
         subtitle="<code>forRadioGroup</code> implements <code>FormValueControl&lt;string&gt;</code>, so <code>[formField]</code> binds the selected value into the form and surfaces validity back. This field is required: <kbd>Tab</kbd> through without choosing and the group reflects <code>data-invalid</code> / <code>data-touched</code> once focus leaves it."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/radio-group/examples/form-field.example.ts"
+        sourcePath="radio-group/examples/form-field.example.ts"
       >
         <app-radio-group-form-field-example />
       </playground-demo>

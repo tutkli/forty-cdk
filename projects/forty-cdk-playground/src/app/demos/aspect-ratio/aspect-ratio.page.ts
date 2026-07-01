@@ -15,17 +15,14 @@ import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="aspect-ratio" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/aspect-ratio/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="aspect-ratio/examples/default.example.ts">
         <app-aspect-ratio-default-example />
       </playground-demo>
 
       <playground-demo
         title="Square (1 / 1)"
         subtitle="Set <code>ratio</code> to <code>1</code> to keep a box perfectly square at any width — handy for avatars, thumbnails, or uniform grid cards."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/aspect-ratio/examples/square.example.ts"
+        sourcePath="aspect-ratio/examples/square.example.ts"
       >
         <app-aspect-ratio-square-example />
       </playground-demo>

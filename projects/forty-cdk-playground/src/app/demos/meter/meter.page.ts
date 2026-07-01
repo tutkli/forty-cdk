@@ -15,17 +15,14 @@ import readmeContent from '../../../../../forty-cdk/meter/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="meter" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/meter/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="meter/examples/default.example.ts">
         <app-meter-default-example />
       </playground-demo>
 
       <playground-demo
         title="Custom value label"
         subtitle="<code>getValueLabel</code> receives the clamped value, <code>min</code> and <code>max</code> and returns <code>aria-valuetext</code>, so AT announces 'Disk: 200 GB used · 312 GB free' instead of the bare number."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/meter/examples/value-label.example.ts"
+        sourcePath="meter/examples/value-label.example.ts"
       >
         <app-meter-value-label-example />
       </playground-demo>

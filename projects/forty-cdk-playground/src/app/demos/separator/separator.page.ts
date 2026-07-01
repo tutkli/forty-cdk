@@ -14,10 +14,7 @@ import readmeContent from '../../../../../forty-cdk/separator/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="separator" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/separator/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="separator/examples/default.example.ts">
         <app-separator-default-example />
       </playground-demo>
     </primitive-page>

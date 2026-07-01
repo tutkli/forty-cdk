@@ -28,17 +28,14 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="combobox" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="combobox/examples/default.example.ts">
         <app-combobox-default-example />
       </playground-demo>
 
       <playground-demo
         title="Multi-select with chips"
         subtitle="Pass <code>multiple</code> and render the committed values as chips inside <code>[forComboboxChips]</code>. Each chip has a remove button; <kbd>Backspace</kbd> from the empty input jumps to the last chip, and <kbd>←</kbd> / <kbd>→</kbd> navigate between them."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/multi-chips.example.ts"
+        sourcePath="combobox/examples/multi-chips.example.ts"
       >
         <app-combobox-multi-chips-example />
       </playground-demo>
@@ -46,7 +43,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
       <playground-demo
         title="Inline autocomplete"
         subtitle="<code>autocompleteMode='both'</code> mirrors <code>aria-autocomplete</code>: the listbox shows filtered options and the rest of the first match is completed inline into the input as selected text, so the next keystroke replaces it. <kbd>Backspace</kbd> deletes the selection without re-completing."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/autocomplete.example.ts"
+        sourcePath="combobox/examples/autocomplete.example.ts"
       >
         <app-combobox-autocomplete-example />
       </playground-demo>
@@ -54,7 +51,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
       <playground-demo
         title="Picker (trigger + in-panel search)"
         subtitle="The other anatomy: a button shows the committed selection while the search input lives inside the panel. <code>[forComboboxTrigger]</code> opens the panel, becomes the positioning anchor and takes focus back on close; <code>[forComboboxList]</code> carries <code>role=listbox</code> so the input can sit beside it."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/picker.example.ts"
+        sourcePath="combobox/examples/picker.example.ts"
       >
         <app-combobox-picker-example />
       </playground-demo>
@@ -62,7 +59,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
       <playground-demo
         title="Object values"
         subtitle="<code>forCombobox</code> is generic over <code>T</code>: bind the whole object to <code>[forComboboxOption][value]</code> and configure three hooks — <code>[isItemEqualToValue]</code> to match by a stable key, <code>[itemToStringLabel]</code> for the visible label, and <code>[itemToFormValue]</code> to serialize what a native form submits. <code>value()</code> holds the full object."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/object-values.example.ts"
+        sourcePath="combobox/examples/object-values.example.ts"
       >
         <app-combobox-object-values-example />
       </playground-demo>
@@ -70,7 +67,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
       <playground-demo
         title="Virtualized (1,000 options)"
         subtitle="The primitive never owns the scroll container, so it virtualizes with any windowing strategy — here a dependency-free one. The consumer renders only the visible window and wires <code>[totalCount]</code>, <code>[visibleRange]</code> and <code>[forComboboxOption][posInSet]</code>; <code>(scrollToIndex)</code> fires when navigation targets a row outside the window."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/combobox/examples/virtualized.example.ts"
+        sourcePath="combobox/examples/virtualized.example.ts"
       >
         <app-combobox-virtualized-example />
       </playground-demo>

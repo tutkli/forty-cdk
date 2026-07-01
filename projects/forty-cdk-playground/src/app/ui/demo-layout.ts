@@ -5,8 +5,10 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   inject,
   input,
+  isDevMode,
   signal,
 } from '@angular/core';
 import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
@@ -17,6 +19,8 @@ import { EXAMPLE_SOURCES } from '../doc/example-source';
 import { renderInlineMarkdown, slugify } from '../doc/markdown';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
+
+const DEMOS_SOURCE_PREFIX = 'projects/forty-cdk-playground/src/app/demos/';
 
 @Component({
   selector: 'playground-demo',
@@ -244,9 +248,11 @@ export class DemoLayout {
     this.hero() || !this.title() ? null : this.tocSlug(),
   );
 
-  protected readonly sourceUrl = computed(() => GITHUB_BLOB_BASE + this.sourcePath());
+  protected readonly fullSourcePath = computed(() => DEMOS_SOURCE_PREFIX + this.sourcePath());
 
-  readonly #source = computed(() => this.#sources?.[this.sourcePath()] ?? null);
+  protected readonly sourceUrl = computed(() => GITHUB_BLOB_BASE + this.fullSourcePath());
+
+  readonly #source = computed(() => this.#sources?.[this.fullSourcePath()] ?? null);
 
   protected readonly highlighted = computed<SafeHtml | null>(() => {
     const source = this.#source();
@@ -272,6 +278,14 @@ export class DemoLayout {
         clearTimeout(this.#resetTimer);
       }
     });
+
+    if (isDevMode()) {
+      effect(() => {
+        if (this.#sources && this.#source() === null) {
+          console.warn(`[playground-demo] Unresolved example source: ${this.fullSourcePath()}`);
+        }
+      });
+    }
   }
 
   protected setTab(value: string | null): void {

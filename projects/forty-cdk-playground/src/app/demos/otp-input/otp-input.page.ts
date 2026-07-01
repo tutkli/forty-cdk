@@ -15,17 +15,14 @@ import readmeContent from '../../../../../forty-cdk/otp-input/README.md';
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
     <primitive-page slug="otp-input" [readme]="readme">
-      <playground-demo
-        hero
-        sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/default.example.ts"
-      >
+      <playground-demo hero sourcePath="otp-input/examples/default.example.ts">
         <app-otp-default-example />
       </playground-demo>
 
       <playground-demo
         title="Masked PIN with paste transform"
         subtitle="<code>mask</code> obscures the slots while <code>value()</code> stays raw, and a <code>pasteTransformer</code> strips spaces and dashes before filtering — so pasting “12 34 56” fills cleanly. <code>type</code> still rejects anything outside the numeric character class as you type."
-        sourcePath="projects/forty-cdk-playground/src/app/demos/otp-input/examples/masked.example.ts"
+        sourcePath="otp-input/examples/masked.example.ts"
       >
         <app-otp-masked-example />
       </playground-demo>

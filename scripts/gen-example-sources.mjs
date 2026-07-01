@@ -2,8 +2,9 @@ import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { createHighlighter } from 'shiki';
 
-const REPO = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const DEMOS = join(REPO, 'projects', 'forty-cdk-playground', 'src', 'app', 'demos');
+import { repoRoot } from './lib/repo-path.mjs';
+
+const DEMOS = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'app', 'demos');
 
 function walk(dir, out) {
   for (const entry of readdirSync(dir)) {
@@ -39,7 +40,7 @@ let total = 0;
 for (const [primitive, primitiveFiles] of [...byPrimitive].sort()) {
   const entries = primitiveFiles.map((file) => {
     const code = readFileSync(file, 'utf8');
-    const key = relative(REPO, file).split(sep).join('/');
+    const key = relative(repoRoot, file).split(sep).join('/');
     const highlighted = highlighter.codeToHtml(code, {
       lang: 'angular-ts',
       themes: { light: 'github-light', dark: 'github-dark' },

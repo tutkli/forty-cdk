@@ -1,6 +1,10 @@
 import { Marked, type Tokens } from 'marked';
 
+import { escapeHtml } from '../../../../../scripts/lib/html.mjs';
+import { isFenceLine, slugify, Slugger } from '../../../../../scripts/lib/readme-slug.mjs';
 import { highlightCodeBlock } from './highlighter';
+
+export { slugify };
 
 export interface DocTableData {
   readonly columns: readonly string[];
@@ -33,33 +37,7 @@ export interface ParsedReadme {
   readonly sections: readonly DocSectionData[];
 }
 
-export function slugify(text: string): string {
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s/g, '-');
-}
-
-class Slugger {
-  readonly #seen = new Map<string, number>();
-
-  reset(): void {
-    this.#seen.clear();
-  }
-
-  unique(base: string): string {
-    const count = this.#seen.get(base) ?? 0;
-    this.#seen.set(base, count + 1);
-    return count === 0 ? base : `${base}-${count}`;
-  }
-}
-
 const headingSlugger = new Slugger();
-
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
 
 const marked = new Marked({ gfm: true });
 marked.use({
@@ -98,10 +76,6 @@ export function stripText(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .trim();
-}
-
-function isFenceLine(line: string): boolean {
-  return /^\s*(```|~~~)/.test(line);
 }
 
 function isTableDelimiter(line: string | undefined): boolean {
