@@ -5,7 +5,7 @@ import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
 test.describe('Tree', () => {
   test('roving entry: exactly one treeitem is tabbable and Tab lands on it', async ({ page }) => {
     await gotoFixture(page, 'tree');
-    expect(await page.locator('[role="treeitem"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
 
     await el(page, 'before').focus();
     await rovingFirst(page, 'item-documents');
@@ -157,7 +157,7 @@ test.describe('Tree', () => {
 
     // The tab stop is the still-visible collapsed parent, and there is
     // exactly one tabbable treeitem — the tree stays keyboard-reachable.
-    expect(await page.locator('[role="treeitem"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
     await expect(el(page, 'item-documents')).toHaveAttribute('tabindex', '0');
 
     await el(page, 'before').focus();
@@ -176,7 +176,7 @@ test.describe('Tree', () => {
     await expect(el(page, 'item-notes')).toHaveAttribute('aria-disabled', 'true');
     // The tab stop is handed back to a visible enabled node; exactly one
     // treeitem remains tabbable and Tab re-enters the tree.
-    expect(await page.locator('[role="treeitem"][tabindex="0"]').count()).toBe(1);
+    await expect(page.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
     await el(page, 'before').focus();
     await page.keyboard.press('Tab');
     await expect(el(page, 'item-notes')).not.toBeFocused();

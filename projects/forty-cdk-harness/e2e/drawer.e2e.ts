@@ -123,10 +123,9 @@ test.describe('Drawer', () => {
     await expect
       .poll(() => shell.evaluate((el) => (el as HTMLElement).style.transform))
       .toMatch(/scale\(/);
-    const scaledWidth = await shell.evaluate(
-      (el) => (el as HTMLElement).getBoundingClientRect().width,
-    );
-    expect(scaledWidth).toBeLessThan(baseline);
+    await expect
+      .poll(() => shell.evaluate((el) => (el as HTMLElement).getBoundingClientRect().width))
+      .toBeLessThan(baseline);
 
     const drawer = el(page, 'drawer');
     await expect(drawer).toHaveAttribute('data-scale-background', '');
@@ -141,10 +140,14 @@ test.describe('Drawer', () => {
     await expect
       .poll(() => shell.evaluate((el) => (el as HTMLElement).style.transform))
       .not.toMatch(/scale\(/);
-    const restoredWidth = await shell.evaluate(
-      (el) => (el as HTMLElement).getBoundingClientRect().width,
-    );
-    expect(Math.abs(restoredWidth - baseline)).toBeLessThan(1);
+    await expect
+      .poll(() =>
+        shell.evaluate(
+          (el, base) => Math.abs((el as HTMLElement).getBoundingClientRect().width - base),
+          baseline,
+        ),
+      )
+      .toBeLessThan(1);
   });
 
   test('nested: child registers data-depth="1" and parent reflects data-state-nested', async ({

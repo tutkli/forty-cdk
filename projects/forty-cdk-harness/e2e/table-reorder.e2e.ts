@@ -167,13 +167,18 @@ test.describe('table reorder live-sort placeholder', () => {
     await page.mouse.move(startX + 5, startY);
     await page.mouse.move(targetX, targetY);
 
-    const order = await page
-      .locator('[data-testid="header-row"] > *')
-      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
-    const phIndex = order.indexOf('col-placeholder');
-    const roleIndex = order.indexOf('header-role');
-    expect(phIndex).toBeGreaterThan(roleIndex);
-    expect(order).toContain('header-name');
+    const readOrder = () =>
+      page
+        .locator('[data-testid="header-row"] > *')
+        .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+
+    await expect
+      .poll(async () => {
+        const order = await readOrder();
+        return order.indexOf('col-placeholder') - order.indexOf('header-role');
+      })
+      .toBeGreaterThan(0);
+    expect(await readOrder()).toContain('header-name');
 
     await page.mouse.up();
   });
@@ -197,13 +202,18 @@ test.describe('table reorder live-sort placeholder', () => {
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(startX, targetY);
 
-    const order = await page
-      .locator('[data-testid="rowgroup"] > *')
-      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
-    const phIndex = order.indexOf('row-placeholder');
-    const row1Index = order.indexOf('row-1');
-    expect(phIndex).toBeGreaterThan(row1Index);
-    expect(order).toContain('row-0');
+    const readOrder = () =>
+      page
+        .locator('[data-testid="rowgroup"] > *')
+        .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+
+    await expect
+      .poll(async () => {
+        const order = await readOrder();
+        return order.indexOf('row-placeholder') - order.indexOf('row-1');
+      })
+      .toBeGreaterThan(0);
+    expect(await readOrder()).toContain('row-0');
 
     await page.mouse.up();
   });
@@ -230,13 +240,17 @@ test.describe('table reorder live-sort placeholder fence (dragDisabled)', () => 
     await page.mouse.move(startX - 5, startY);
     await page.mouse.move(targetX, targetY);
 
-    const order = await page
-      .locator('[data-testid="header-row"] > *')
-      .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
-    const nameIndex = order.indexOf('header-name');
-    const phIndex = order.indexOf('col-placeholder');
-    expect(nameIndex).toBe(0);
-    expect(phIndex).toBeGreaterThan(nameIndex);
+    const readOrder = () =>
+      page
+        .locator('[data-testid="header-row"] > *')
+        .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+
+    await expect
+      .poll(async () => {
+        const order = await readOrder();
+        return order.indexOf('header-name') === 0 && order.indexOf('col-placeholder') > 0;
+      })
+      .toBe(true);
 
     await page.mouse.up();
   });
