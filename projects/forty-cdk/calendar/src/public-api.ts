@@ -15,7 +15,6 @@ export { ForCalendarYearSelect } from './calendar-year-select';
 export {
   FOR_CALENDAR_CONTEXT,
   type CalendarDateLabelFormatter,
-  type CalendarDateRange,
   type ForCalendarContext,
   type ForCalendarCellHandle,
   type CalendarMonthOption,
@@ -37,8 +36,10 @@ export {
 export {
   assertTimeCapable,
   type DateAdapter,
+  type DateRange,
   FOR_DATE_ADAPTER,
   injectDateAdapter,
   type TimeCapableDateAdapter,
+  type WritingDirection,
 } from 'forty-cdk/core';
 export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';

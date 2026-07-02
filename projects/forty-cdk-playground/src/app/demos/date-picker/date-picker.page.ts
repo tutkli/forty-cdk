@@ -56,7 +56,7 @@ import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
 
       <playground-demo
         title="Range as a form value"
-        subtitle='<code>ForDateRangePicker</code> is the form-capable sibling of <code>ForDatePicker[selectionMode="range"]</code>: it is the root AND the form value, implementing <code>FormValueControl&lt;CalendarDateRange | null&gt;</code>, so <code>[formField]</code> wires the committed range into the form directly. The two-click anchor → commit flow keeps <code>value()</code> null until both endpoints are chosen, so a required range stays invalid until a full range is committed.'
+        subtitle='<code>ForDateRangePicker</code> is the form-capable sibling of <code>ForDatePicker[selectionMode="range"]</code>: it is the root AND the form value, implementing <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> wires the committed range into the form directly. The two-click anchor → commit flow keeps <code>value()</code> null until both endpoints are chosen, so a required range stays invalid until a full range is committed.'
         sourcePath="date-picker/examples/range-form.example.ts"
       >
         <app-date-picker-range-form-example />

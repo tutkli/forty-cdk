@@ -11,9 +11,9 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { type CalendarDateRange } from 'forty-cdk/calendar';
 import {
   assertTimeCapable,
+  type DateRange,
   type FieldSegment,
   FormUiControlBase,
   injectDateAdapter,
@@ -36,7 +36,7 @@ import {
 import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
 
 interface CommittedRange<D> {
-  range: CalendarDateRange<D> | null;
+  range: DateRange<D> | null;
   generation: number;
 }
 
@@ -50,7 +50,7 @@ interface CommittedRange<D> {
  *
  * `ForTimeRangeField` is the root: it owns the two time engines (one per
  * endpoint), composes each endpoint's parts into the adapter's date-time type,
- * and assembles the committed `CalendarDateRange` — exposing the rendered
+ * and assembles the committed `DateRange` — exposing the rendered
  * segments, the per-endpoint coordination surfaces, and the shared configuration
  * to its `[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]` children through
  * {@link FOR_TIME_RANGE_FIELD_CONTEXT}. The spin-button engine lives in the
@@ -60,11 +60,11 @@ interface CommittedRange<D> {
  * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`;
  * the day-only `provideInternationalizedDateAdapter()` throws).
  *
- * It implements `FormValueControl<CalendarDateRange<D> | null>` from
+ * It implements `FormValueControl<DateRange<D> | null>` from
  * `@angular/forms/signals` — the same contract as `ForDateRangeField` — so the
  * committed range auto-wires with `[formField]`. The `value` stays `null` until
  * **both** endpoints are fully entered: a half-entered range never reaches the
- * form, and the `CalendarDateRange` `end >= start` invariant always holds (a
+ * form, and the `DateRange` `end >= start` invariant always holds (a
  * complete-but-out-of-order entry keeps the typed segments but leaves `value`
  * `null`, reflecting `aria-invalid="true"` + `data-range-error` so the disorder
  * is perceivable; restoring order emits the range).
@@ -130,7 +130,7 @@ interface CommittedRange<D> {
 })
 export class ForTimeRangeField<D>
   extends FormUiControlBase
-  implements FormValueControl<CalendarDateRange<D> | null>, ForTimeRangeFieldContext
+  implements FormValueControl<DateRange<D> | null>, ForTimeRangeFieldContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_TIME_RANGE_FIELD_DEFAULTS);
@@ -147,12 +147,12 @@ export class ForTimeRangeField<D>
   /**
    * Two-way bindable committed time range, or `null` while either endpoint is
    * incomplete or the two are out of order. Required by
-   * `FormValueControl<CalendarDateRange<D> | null>` — this **is** the form
+   * `FormValueControl<DateRange<D> | null>` — this **is** the form
    * value, so it auto-wires with `[formField]`. The `model()` change emitter
    * (`(valueChange)`) fires only when the field itself composes or clears a
    * range, never on consumer writes via `[(value)]`.
    */
-  readonly value = model<CalendarDateRange<D> | null>(null);
+  readonly value = model<DateRange<D> | null>(null);
 
   /**
    * Earliest selectable time-of-day (inclusive) for both endpoints. A composed
@@ -345,7 +345,7 @@ export class ForTimeRangeField<D>
 
   /**
    * Re-assembles the committed range from both endpoints' composed values.
-   * Emits a `CalendarDateRange` only when both are complete and ordered
+   * Emits a `DateRange` only when both are complete and ordered
    * (`start <= end`); otherwise clears `value` to `null` while preserving each
    * endpoint's typed segments (their parts survive an internal `null` value).
    * Every write bumps {@link #commitGeneration} so the endpoint sources can mark

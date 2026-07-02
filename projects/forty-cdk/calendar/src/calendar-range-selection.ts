@@ -1,7 +1,6 @@
 import { computed, signal, type Signal, type WritableSignal } from '@angular/core';
 
-import { compareDateOf, type DateAdapter } from 'forty-cdk/core';
-import type { CalendarDateRange } from './calendar-context';
+import { compareDateOf, type DateAdapter, type DateRange } from 'forty-cdk/core';
 
 /**
  * The reactive surface a `ForCalendar` root supplies to its
@@ -18,7 +17,7 @@ export interface CalendarRangeHost<D> {
   /** The roving focused date, used as the preview cursor on keyboard navigation. */
   readonly focusedDate: () => D;
   /** The committed range model (read for idle state, written on commit / clear). */
-  readonly range: WritableSignal<CalendarDateRange<D> | null>;
+  readonly range: WritableSignal<DateRange<D> | null>;
   /** Whether range selection is active (`selectionMode === 'range'`). */
   readonly active: Signal<boolean>;
   /** Minimum inclusive day count for a committed range, or `null` for no minimum. */

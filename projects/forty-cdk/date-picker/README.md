@@ -267,12 +267,12 @@ The value display (`[forDatePickerValue]`) automatically appends the time to its
 
 ## Range selection
 
-Set `selectionMode="range"` on both the picker root and the projected calendar and bind `[(range)]` to a `CalendarDateRange<D> | null` signal.
+Set `selectionMode="range"` on both the picker root and the projected calendar and bind `[(range)]` to a `DateRange<D> | null` signal.
 
 ```ts
-import { type CalendarDateRange } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/date-picker';
 
-readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
+readonly dateRange = signal<DateRange<CalendarDate> | null>(null);
 ```
 
 ```html
@@ -303,25 +303,24 @@ readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>(null);
 
 **v1 scope.** Range mode is day-granular only (`granularity` / time is not supported in v1). The `[(range)]` model is not a `FormValueControl` target — it does not integrate with `[formField]` in v1. `minRangeLength` / `maxRangeLength` are configured on the projected `[forCalendar]` directly.
 
-| New input / model | Type                                  | Description                                                                                     |
-| ----------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `selectionMode`   | `input<'single' \| 'range'>`          | `'single'` keeps the existing `value` flow. `'range'` switches to range mode.                   |
-| `range`           | `model<CalendarDateRange<D> \| null>` | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`. |
-| `rangeSeparator`  | `input<string>`                       | String placed between start and end in the formatted display. Default `' – '`.                  |
+| New input / model | Type                          | Description                                                                                     |
+| ----------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `selectionMode`   | `input<'single' \| 'range'>`  | `'single'` keeps the existing `value` flow. `'range'` switches to range mode.                   |
+| `range`           | `model<DateRange<D> \| null>` | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`. |
+| `rangeSeparator`  | `input<string>`               | String placed between start and end in the formatted display. Default `' – '`.                  |
 
 ## Range as a Signal Forms value — `ForDateRangePicker`
 
-`ForDatePicker[selectionMode="range"]` exposes the range through a plain two-way `[(range)]` model with **no** form contract — so a range inside a form has to be hand-wired. `ForDateRangePicker` (selector `[forDateRangePicker]`) is the form-capable sibling: it is the root **and** the form value, implementing `FormValueControl<CalendarDateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
+`ForDatePicker[selectionMode="range"]` exposes the range through a plain two-way `[(range)]` model with **no** form contract — so a range inside a form has to be hand-wired. `ForDateRangePicker` (selector `[forDateRangePicker]`) is the form-capable sibling: it is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
 
 It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular in v1 (no time composition).
 
 ```ts
-import { type CalendarDateRange } from 'forty-cdk/calendar';
-import { ForDateRangePicker } from 'forty-cdk/date-picker';
+import { type DateRange, ForDateRangePicker } from 'forty-cdk/date-picker';
 import { form } from '@angular/forms/signals';
 
 interface Booking {
-  stay: CalendarDateRange<CalendarDate> | null;
+  stay: DateRange<CalendarDate> | null;
 }
 readonly model = signal<Booking>({ stay: null });
 readonly booking = form(this.model, (p) => required(p.stay));
@@ -355,7 +354,7 @@ readonly booking = form(this.model, (p) => required(p.stay));
 </div>
 ```
 
-- **Form value.** The committed `CalendarDateRange<D> | null` is the `value` model. `null` is the empty state — pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
+- **Form value.** The committed `DateRange<D> | null` is the `value` model. `null` is the empty state — pair it with `required(p.stay)` so `invalid()` flips when the form demands a range and none is committed. `touched` fires on commit and on close, exactly like the single-date picker.
 - **Validity.** `start <= end` is guaranteed by construction and is never an error. Forward `minDate` / `maxDate` to the calendar's `[min]` / `[max]`, and `minRangeLength` / `maxRangeLength` to the calendar's `[minRangeLength]` / `[maxRangeLength]` (a too-short / too-long range is rejected as a no-op by the calendar's two-click flow).
 - **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
 - **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker` — and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.

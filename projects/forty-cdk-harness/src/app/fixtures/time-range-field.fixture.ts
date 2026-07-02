@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { type CalendarDateRange, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { type DateRange, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
   ForTimeRangeField,
   ForTimeRangeFieldEnd,
@@ -72,7 +72,7 @@ import { queryFlag } from './_query-flag';
 })
 export class TimeRangeFieldFixture {
   protected readonly hourCycle: 12 | 24 = queryFlag('h12') ? 12 : 24;
-  protected readonly value = signal<CalendarDateRange<Date> | null>(
+  protected readonly value = signal<DateRange<Date> | null>(
     queryFlag('preset')
       ? { start: new Date(2000, 0, 1, 9, 15), end: new Date(2000, 0, 1, 17, 30) }
       : null,

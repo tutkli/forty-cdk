@@ -4,7 +4,7 @@ A segmented time-of-day range input over a time-capable date adapter: two labell
 
 Headless, segmented, spin-editable — the keyboard-first, form-capable time analog of [DateRangeField](../date-range-field/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints, each holding a row of spinbuttons — the same machinery as [TimeField](../time-field/README.md) — nested inside one outer `role="group"`. Segment **order**, the separators between them, and whether an AM/PM segment is shown follow the runtime locale and the resolved hour cycle.
 
-`ForTimeRangeField` implements `FormValueControl<CalendarDateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangeField` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
+`ForTimeRangeField` implements `FormValueControl<DateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangeField` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
 
 ## Date adapter
 
@@ -46,8 +46,8 @@ Each endpoint anchors its wall-clock time on a fixed, DST-stable sentinel date (
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
-import { CalendarDateRange } from 'forty-cdk/calendar';
 import {
+  type DateRange,
   ForTimeRangeField,
   ForTimeRangeFieldEnd,
   ForTimeRangeFieldLiteral,
@@ -94,7 +94,7 @@ import {
   `,
 })
 export class OpeningHoursField {
-  readonly hours = signal<CalendarDateRange<CalendarDateTime> | null>(null);
+  readonly hours = signal<DateRange<CalendarDateTime> | null>(null);
 }
 ```
 
@@ -104,8 +104,8 @@ export class OpeningHoursField {
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { CalendarDateTime } from '@internationalized/date';
-import { CalendarDateRange } from 'forty-cdk/calendar';
 import {
+  type DateRange,
   ForTimeRangeField,
   ForTimeRangeFieldEnd,
   ForTimeRangeFieldLiteral,
@@ -157,7 +157,7 @@ import {
   `,
 })
 export class OpeningHoursFormField {
-  readonly model = signal({ hours: null as CalendarDateRange<CalendarDateTime> | null });
+  readonly model = signal({ hours: null as DateRange<CalendarDateTime> | null });
   readonly schedule = form(this.model);
 }
 ```
@@ -168,7 +168,7 @@ export class OpeningHoursFormField {
 
 | Property      | Type                                              | Description                                                                                                                          |
 | ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<CalendarDateRange<D> \| null>`             | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null` |
+| `value`       | `model<DateRange<D> \| null>`                     | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null` |
 | `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** —    |
 | `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.<br>**Default:** `null`                 |
 | `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                          |
@@ -201,7 +201,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 
 ## Ordering
 
-The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `CalendarDateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
+The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
 
 ## Scope defaults
 

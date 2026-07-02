@@ -12,3 +12,4 @@ export {
   type ForTooltipContext,
   type TooltipScheduleReason,
 } from './tooltip-context';
+export type { FloatingAlign, FloatingSide } from 'forty-cdk/core';

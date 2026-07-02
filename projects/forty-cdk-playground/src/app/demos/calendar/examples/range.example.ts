@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { type CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import {
-  type CalendarDateRange,
+  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -198,7 +198,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
   `,
 })
 export class CalendarRangeExample {
-  protected readonly dateRange = signal<CalendarDateRange<CalendarDate> | null>({
+  protected readonly dateRange = signal<DateRange<CalendarDate> | null>({
     start: today(getLocalTimeZone()).subtract({ days: 3 }),
     end: today(getLocalTimeZone()).add({ days: 4 }),
   });

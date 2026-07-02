@@ -11,7 +11,7 @@ import type { ForDatePickerContext } from './date-picker-context';
  * want to resolve the range root unambiguously.
  *
  * Unlike the single-date root, the range root's `formattedValue` renders
- * `start – end` and its form value is the committed `CalendarDateRange<D>`.
+ * `start – end` and its form value is the committed `DateRange<D>`.
  */
 export type ForDateRangePickerContext = ForDatePickerContext;
 

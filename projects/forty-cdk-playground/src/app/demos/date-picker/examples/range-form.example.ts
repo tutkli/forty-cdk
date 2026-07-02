@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDate } from '@internationalized/date';
 import {
-  type CalendarDateRange,
+  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -20,7 +20,7 @@ import {
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 interface Booking {
-  readonly stay: CalendarDateRange<CalendarDate> | null;
+  readonly stay: DateRange<CalendarDate> | null;
 }
 
 @Component({

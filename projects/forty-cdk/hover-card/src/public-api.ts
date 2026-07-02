@@ -12,3 +12,4 @@ export {
   provideForHoverCardDefaults,
   type ForHoverCardDefaults,
 } from './hover-card-defaults';
+export type { FloatingAlign, FloatingSide, VetoableNativeEvent } from 'forty-cdk/core';

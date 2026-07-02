@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDateTime } from '@internationalized/date';
-import { type CalendarDateRange } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/time-range-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 import {
   ForTimeRangeField,
@@ -12,7 +12,7 @@ import {
 } from 'forty-cdk/time-range-field';
 
 interface Schedule {
-  readonly hours: CalendarDateRange<CalendarDateTime> | null;
+  readonly hours: DateRange<CalendarDateTime> | null;
 }
 
 @Component({

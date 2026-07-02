@@ -6,3 +6,10 @@ export {
   provideForContextMenuDefaults,
   type ForContextMenuDefaults,
 } from './context-menu-defaults';
+export type {
+  FloatingAlign,
+  FloatingSide,
+  VetoableEvent,
+  VetoableNativeEvent,
+  WritingDirection,
+} from 'forty-cdk/core';

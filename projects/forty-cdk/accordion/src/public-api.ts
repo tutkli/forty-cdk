@@ -13,3 +13,4 @@ export {
   provideForAccordionDefaults,
   type ForAccordionDefaults,
 } from './accordion-defaults';
+export type { WritingDirection } from 'forty-cdk/core';
