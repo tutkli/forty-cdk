@@ -100,6 +100,30 @@ class RestoreOnCloseHost {
   }
 }
 
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  template: `
+    <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" [openOnQuery]="false">
+      <input forComboboxInput />
+      @if (open()) {
+        <div forComboboxContent>
+          @for (it of FRUITS; track it.id) {
+            <div [attr.data-test-id]="it.id" forComboboxOption [value]="it.id" [label]="it.label">
+              {{ it.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class ComboboxImeHost {
+  readonly query = signal('');
+  readonly value = signal<readonly string[]>([]);
+  readonly open = signal(false);
+  readonly FRUITS = FRUITS;
+}
+
 function getInput(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
 }
@@ -236,6 +260,52 @@ describe('ForComboboxInput', () => {
 
       expect(input.value).toBe('ap');
       expect(r.instance.query()).toBe('apricot');
+    });
+  });
+
+  describe('ignores keydown during IME composition (issue #1135)', () => {
+    it('confirm-Enter while composing neither activates the active option nor closes the listbox', async () => {
+      const r = renderHost(ComboboxImeHost);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+
+      pressKey(input, 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe(true);
+      expect(input.getAttribute('aria-activedescendant')).not.toBeNull();
+
+      const ev = pressKey(input, 'Enter', { isComposing: true });
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(false);
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.value()).toEqual([]);
+      expect(input.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('arrow keydowns while composing do not move the active option', async () => {
+      const r = renderHost(ComboboxImeHost);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+
+      pressKey(input, 'ArrowDown');
+      await flush(r.fixture);
+      const active = input.getAttribute('aria-activedescendant');
+      expect(active).not.toBeNull();
+
+      const down = pressKey(input, 'ArrowDown', { isComposing: true });
+      await flush(r.fixture);
+      expect(down.defaultPrevented).toBe(false);
+      expect(input.getAttribute('aria-activedescendant')).toBe(active);
+
+      const up = pressKey(input, 'ArrowUp', { isComposing: true });
+      await flush(r.fixture);
+      expect(up.defaultPrevented).toBe(false);
+      expect(input.getAttribute('aria-activedescendant')).toBe(active);
     });
   });
 });
