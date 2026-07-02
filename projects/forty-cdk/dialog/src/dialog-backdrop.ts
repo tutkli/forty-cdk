@@ -1,4 +1,4 @@
-import { Directive, inject } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
 import { injectPortal } from 'forty-cdk/core';
 import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
@@ -29,6 +29,7 @@ import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 })
 export class ForDialogBackdrop {
   protected readonly ctx = injectDialogContext('ForDialogBackdrop');
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
    * Per-instance dialog id when opened through `ForDialogManager` (reflected
@@ -40,6 +41,8 @@ export class ForDialogBackdrop {
 
   constructor() {
     injectPortal({ target: this.ctx.container });
+    this.ctx.registerBackdrop(this.#host.nativeElement);
+    inject(DestroyRef).onDestroy(() => this.ctx.registerBackdrop(null));
   }
 
   protected onClick(event: MouseEvent): void {
