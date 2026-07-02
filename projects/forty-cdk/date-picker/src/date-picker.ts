@@ -228,9 +228,10 @@ export class ForDatePicker<D>
 
   /**
    * The projected `ForTimeField`, present only in a date-time picker
-   * (`granularity > 'day'`). Like the calendar, it mounts with the surface; its
-   * `valueChange` (a composed date-time, anchored on the picker's current
-   * value) is mirrored straight into the picker's value.
+   * (`granularity > 'day'`). Like the calendar, it mounts with the surface. The
+   * bridge ignores its transient `null` commits (an incomplete time mid-clear)
+   * so the committed day survives, and grafts a non-null commit's time-of-day
+   * onto the picker's current day — never the time field's internal sentinel.
    *
    * Invariant: the projected time field MUST resolve the same `DateAdapter` as
    * this picker (see {@link DatePickerBase.calendar}). The bridge casts its
@@ -333,9 +334,11 @@ export class ForDatePicker<D>
     });
 
     // Time-source bridge (date-time pickers only). The projected time source
-    // (ForTimeField or ForTimePicker) is bound one-way to the picker's value,
-    // so its composed `valueChange` already carries the correct day plus the
-    // new time — mirror it straight in.
+    // (ForTimeField or ForTimePicker) is bound one-way to the picker's value. A
+    // `null` commit (an incomplete time while a segment is cleared) is ignored
+    // so the committed day survives, and a non-null commit grafts only its
+    // time-of-day onto the picker's current day (or today when unset) — so the
+    // time field's internal 2000-01-01 sentinel can never cross into the value.
     effect((onCleanup) => {
       const timeSource = this.timeSource();
       if (!timeSource) {
@@ -351,8 +354,17 @@ export class ForDatePicker<D>
           return;
         }
         const next = value as D | null;
+        if (next === null) {
+          return;
+        }
+        const day = this.value() ?? this.adapter.today();
         this.value.set(
-          next === null ? null : clampToBounds(this.adapter, next, this.minDate(), this.maxDate()),
+          clampToBounds(
+            this.adapter,
+            composeWithTime(this.#time(), day, next),
+            this.minDate(),
+            this.maxDate(),
+          ),
         );
         this.markTouched();
       });
