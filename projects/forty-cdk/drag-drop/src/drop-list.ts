@@ -225,6 +225,8 @@ export class ForDropList implements ForDropListContext {
           this.#document.defaultView?.cancelAnimationFrame(this.#resolveRaf);
           this.#resolveRaf = null;
         }
+        this.#previewController?.destroy();
+        this.#previewController = null;
       });
     }
   }
