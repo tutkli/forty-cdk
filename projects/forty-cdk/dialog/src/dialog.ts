@@ -164,6 +164,7 @@ export class ForDialog implements ForDialogContext {
 
   readonly #labelIds = signal<readonly string[]>([]);
   readonly #describedByIds = signal<readonly string[]>([]);
+  readonly #backdropEl = signal<HTMLElement | null>(null);
   // Captures the `value` argument from the most recent `requestClose(reason, value)`
   // call. Read by `ForDialogManager` to bridge `[forDialogClose] [closeWith]`
   // into `ForDialogRef.close(value)`. Plain in declarative usage (no consumer
@@ -200,6 +201,10 @@ export class ForDialog implements ForDialogContext {
         emitPointerDownOutside: (veto) => this.pointerDownOutside.emit(veto),
         emitFocusOutside: (veto) => this.focusOutside.emit(veto),
         emitInteractOutside: (veto) => this.interactOutside.emit(veto),
+        exemptElements: () => {
+          const backdrop = this.#backdropEl();
+          return backdrop ? [backdrop] : [];
+        },
       },
     });
   }
@@ -215,6 +220,15 @@ export class ForDialog implements ForDialogContext {
   }
   unregisterDescription(id: string): void {
     this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
+  }
+  registerBackdrop(el: HTMLElement | null): void {
+    const current = this.#backdropEl();
+    if (el !== null && current !== null && current !== el) {
+      throw new Error(
+        '[forty-cdk/dialog] Multiple [forDialogBackdrop] inside the same [forDialog]; only one is allowed.',
+      );
+    }
+    this.#backdropEl.set(el);
   }
 
   requestClose(reason: ForDialogCloseReason, value?: unknown): void {

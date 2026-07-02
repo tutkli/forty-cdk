@@ -39,6 +39,20 @@ export interface ForDialogContext {
   unregisterDescription(id: string): void;
 
   /**
+   * Register the backdrop element so the dismissable layer treats it as
+   * part of the dialog surface (`exemptElements`) — without this, a
+   * `pointerdown` on the portaled backdrop (a body sibling of the dialog
+   * host, outside `host.contains()`) fires `pointerDownOutside` and closes
+   * with reason `'pointerDownOutside'`, then the backdrop's own `click`
+   * emits a second `(dismiss)` with reason `'backdrop'` — a double dismiss
+   * with the wrong first reason, and a veto on either channel fails to stop
+   * the other. Exempting the backdrop routes the interaction solely through
+   * the backdrop's `click` → `requestClose('backdrop')`. Pass `null` to
+   * unregister.
+   */
+  registerBackdrop(el: HTMLElement | null): void;
+
+  /**
    * Request that the dialog close. Reasons:
    * - `'escape'` / `'backdrop'` / `'pointerDownOutside'` / `'focusOutside'`:
    *   honored only when `dismissible()` is true.

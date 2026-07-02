@@ -135,6 +135,44 @@ class DismissableContractHost {
   }
 }
 
+@Component({
+  imports: [ForDialog, ForDialogBackdrop],
+  template: `
+    @if (open()) {
+      <div
+        forDialog
+        [dismissible]="dismissible()"
+        (dismiss)="open.set(false); reasons.push($event)"
+        (pointerDownOutside)="pCount = pCount + 1"
+        (interactOutside)="iCount = iCount + 1"
+        ariaLabel="t"
+      >
+        <div forDialogBackdrop></div>
+        <button id="inside" type="button">In</button>
+      </div>
+    }
+  `,
+})
+class BackdropExemptionHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  readonly reasons: ForDialogCloseReason[] = [];
+  pCount = 0;
+  iCount = 0;
+}
+
+function dispatchRealBackdropInteraction(backdrop: HTMLElement): void {
+  const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+  Object.defineProperty(down, 'target', { value: backdrop, configurable: true });
+  Object.defineProperty(down, 'composedPath', { value: () => [backdrop], configurable: true });
+  backdrop.dispatchEvent(down);
+
+  const click = new MouseEvent('click', { bubbles: true });
+  Object.defineProperty(click, 'target', { value: backdrop, configurable: true });
+  Object.defineProperty(click, 'composedPath', { value: () => [backdrop], configurable: true });
+  backdrop.dispatchEvent(click);
+}
+
 describe('ForDialog (declarative)', () => {
   afterEachOverlayCleanup();
 
@@ -415,6 +453,57 @@ describe('ForDialog (declarative)', () => {
 
       const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
       expect(backdrop.parentElement).toBe(document.body);
+    });
+  });
+
+  describe('backdrop exemption from the dismissable layer (issue #1133)', () => {
+    it('emits exactly one (dismiss) with reason "backdrop" on a real pointerdown+click', async () => {
+      const r = renderHost(BackdropExemptionHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      dispatchRealBackdropInteraction(backdrop);
+      await flush(r.fixture);
+
+      expect(r.instance.reasons).toEqual(['backdrop']);
+      expect(r.instance.pCount).toBe(0);
+      expect(r.instance.iCount).toBe(0);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('stays open and never fires pointerDownOutside for a backdrop interaction when dismissible=false', async () => {
+      const r = renderHost(BackdropExemptionHost);
+      r.instance.dismissible.set(false);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const backdrop = document.querySelector<HTMLElement>('[data-for-dialog-backdrop]')!;
+      dispatchRealBackdropInteraction(backdrop);
+      await flush(r.fixture);
+
+      expect(r.instance.reasons).toEqual([]);
+      expect(r.instance.pCount).toBe(0);
+      expect(r.instance.iCount).toBe(0);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('throws when a second [forDialogBackdrop] is added to the same dialog', () => {
+      @Component({
+        imports: [ForDialog, ForDialogBackdrop],
+        template: `
+          <div forDialog ariaLabel="t">
+            <div forDialogBackdrop></div>
+            <div forDialogBackdrop></div>
+          </div>
+        `,
+      })
+      class DoubleBackdropHost {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      expect(() => TestBed.createComponent(DoubleBackdropHost)).toThrow(
+        /\[forty-cdk\/dialog\] Multiple \[forDialogBackdrop\]/,
+      );
     });
   });
 
