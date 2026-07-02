@@ -114,6 +114,11 @@ export class ForNumberInput
    * `Intl.NumberFormat` options for the displayed text and `aria-valuetext`.
    * When `null` (default) the raw number is shown and no `aria-valuetext` is
    * emitted (the numeric `aria-valuenow` already conveys the value).
+   *
+   * With `style: 'percent'` the model value stays the fraction Intl formats
+   * from (`0.5` displays as `"50%"`); parsing divides typed input back by 100 so
+   * the round-trip is loss-free (editing `"50%"` to `"51%"` yields `0.51`, not
+   * `51`). `min` / `max` are therefore also expressed in that fractional scale.
    */
   readonly formatOptions = input<Intl.NumberFormatOptions | null>(null);
 
@@ -252,7 +257,7 @@ export class ForNumberInput
     // Ignore unparseable input: keep the last valid value, leave the user's
     // in-progress text untouched; commit() reformats from the value on blur.
     if (parsed !== null) {
-      this.value.set(parsed);
+      this.value.set(this.#toModelValue(parsed));
     }
   }
 
@@ -324,6 +329,10 @@ export class ForNumberInput
     if (el.value !== text) {
       el.value = text;
     }
+  }
+
+  #toModelValue(parsed: number): number {
+    return this.#formatter()?.resolvedOptions().style === 'percent' ? parsed / 100 : parsed;
   }
 
   #baseline(): number {
