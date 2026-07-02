@@ -197,13 +197,33 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   }
 
   /**
-   * Registers a fully-built entry, ensures the outlet exists, and
-   * ticks so the `@for` renders it.
+   * Registers a fully-built entry, ensures the outlet exists, and requests a
+   * render so the `@for` mounts it.
+   *
+   * The render is attempted synchronously via `ApplicationRef.tick()` so the
+   * overlay DOM is available the moment `open()` returns — the common case.
+   * When `open()` is itself called from within change detection (an `effect`,
+   * `ngOnInit`, or an `afterNextRender` callback) a tick is already in flight
+   * and a nested `tick()` is illegal (NG0101); the synchronous attempt is then
+   * skipped and the `#entries` signal write drives the mount on the next
+   * scheduled render instead. The entry is registered immediately either way,
+   * so the returned overlay ref is usable straight away.
    */
   protected register(entry: TEntry): void {
     this.#ensureOutlet();
     this.#entries.update((arr) => [...arr, entry]);
-    this.#appRef.tick();
+    this.#renderNow();
+  }
+
+  #renderNow(): void {
+    try {
+      this.#appRef.tick();
+    } catch (error: unknown) {
+      if (isRecursiveTickError(error)) {
+        return;
+      }
+      throw error;
+    }
   }
 
   #closeAllForDestroy(): void {
@@ -225,4 +245,18 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     });
     this.#outletRef = outletRef;
   }
+}
+
+/**
+ * True when `error` is Angular's recursive-`ApplicationRef.tick()` runtime
+ * error (`NG0101`), thrown when a change-detection tick is already in flight.
+ * Matched by the stable numeric `RuntimeError.code` with a message-prefix
+ * fallback so it survives production builds where the message text is stripped.
+ */
+function isRecursiveTickError(error: unknown): boolean {
+  if (error === null || typeof error !== 'object') {
+    return false;
+  }
+  const { code, message } = error as { code?: unknown; message?: unknown };
+  return code === 101 || (typeof message === 'string' && message.startsWith('NG0101'));
 }

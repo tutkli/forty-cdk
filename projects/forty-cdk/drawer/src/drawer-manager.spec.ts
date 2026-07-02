@@ -1,4 +1,4 @@
-import { Component, inject, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
@@ -823,6 +823,34 @@ describe('ForDrawerManager (programmatic)', () => {
       } finally {
         boxEl.remove();
       }
+    });
+  });
+
+  describe('open() from within change detection (NG0101 — #1138)', () => {
+    @Component({ template: `` })
+    class EffectDrawerOpener {
+      readonly #drawers = inject(ForDrawerManager);
+      readonly openNow = signal(false);
+      constructor() {
+        effect(() => {
+          if (this.openNow()) {
+            this.#drawers.open(SheetDrawer, { data: { message: 'from effect' } });
+          }
+        });
+      }
+    }
+
+    it('mounts a drawer opened from inside effect() on the next render', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(EffectDrawerOpener);
+      fixture.detectChanges();
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+
+      fixture.componentInstance.openNow.set(true);
+      await flush(fixture);
+
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(document.querySelector('#message')?.textContent).toBe('from effect');
     });
   });
 });

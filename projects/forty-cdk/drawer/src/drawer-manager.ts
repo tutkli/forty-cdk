@@ -256,6 +256,14 @@ interface InternalDrawerEntry extends ForDrawerEntry {
  *
  * Inject `ForDrawerRef` to drive close imperatively and `FOR_DRAWER_DATA` (or
  * `injectDrawerData<T>()`) for the payload.
+ *
+ * **When the overlay DOM is available.** In the common case the drawer mounts
+ * synchronously, so a `document.querySelector('[role="dialog"]')` right after
+ * `open()` finds it. When `open()` is called from within change detection — an
+ * `effect`, `ngOnInit`, or an `afterNextRender` callback — the synchronous
+ * mount is deferred to the next render (a nested change-detection tick is
+ * illegal), so query the DOM after the next render. The returned
+ * `ForDrawerRef` is usable immediately in both cases.
  */
 @Injectable({ providedIn: 'root' })
 export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
