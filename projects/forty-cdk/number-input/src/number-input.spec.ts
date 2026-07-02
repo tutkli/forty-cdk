@@ -523,6 +523,76 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(1000);
       expect(input.value).toBe('1,000');
     });
+
+    it('round-trips a percent value without ×100 corruption on edit (#1137)', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      fixture.componentInstance.formatOptions.set({ style: 'percent' });
+      fixture.componentInstance.qty.set(0.5);
+      flush();
+      const input = inputOf(el);
+      expect(input.value).toBe('50%');
+
+      input.focus();
+      typeInto(input, '51%');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(0.51);
+      expect(input.getAttribute('aria-valuetext')).toBe('51%');
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(0.51);
+      expect(input.value).toBe('51%');
+    });
+
+    it('clamps a percent value against its fractional min / max on commit', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      fixture.componentInstance.formatOptions.set({ style: 'percent' });
+      fixture.componentInstance.max.set(1);
+      flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '150%');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(1.5);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(1);
+      expect(input.value).toBe('100%');
+    });
+
+    it('round-trips a currency value unscaled on edit', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
+      fixture.componentInstance.qty.set(1234.5);
+      flush();
+      const input = inputOf(el);
+      expect(input.value).toBe('$1,234.50');
+
+      input.focus();
+      typeInto(input, '$1,235.50');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(1235.5);
+    });
+
+    it('round-trips a unit value unscaled on edit', () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('en-US');
+      fixture.componentInstance.formatOptions.set({ style: 'unit', unit: 'kilometer' });
+      fixture.componentInstance.qty.set(5);
+      flush();
+      const input = inputOf(el);
+      expect(input.value).toBe('5 km');
+
+      input.focus();
+      typeInto(input, '6 km');
+      flush();
+      expect(fixture.componentInstance.qty()).toBe(6);
+    });
   });
 
   describe('disabled / readonly block interaction', () => {
