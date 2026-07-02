@@ -233,6 +233,22 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   readonly #firstEnabledRoot = computed(() => firstEnabledHost(this.#items.items()));
 
+  readonly #firstSelectedHost = computed<HTMLElement | null>(() => {
+    const selected = this.value();
+    if (selected.length === 0) {
+      return null;
+    }
+    for (const handle of this.#visibleHandles()) {
+      if (handle.disabled()) {
+        continue;
+      }
+      if (selected.includes(handle.value())) {
+        return handle.host;
+      }
+    }
+    return null;
+  });
+
   readonly #virtualized = computed(() => this.totalCount() !== undefined);
 
   readonly #activeId = signal<string | null>(null);
@@ -457,6 +473,10 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   }
 
   isFirstFocusableItem(el: HTMLElement): boolean {
+    const firstSelected = this.#firstSelectedHost();
+    if (firstSelected) {
+      return firstSelected === el;
+    }
     return this.#firstEnabledRoot() === el;
   }
 

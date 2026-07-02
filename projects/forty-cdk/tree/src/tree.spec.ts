@@ -581,6 +581,31 @@ describe('ForTree', () => {
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
     });
+
+    it('keeps a tab stop on the first visible item when the selection points to an unmounted node', async () => {
+      const { el } = await setup((i) => i.picked.set(['report']));
+
+      expect(el.querySelector('[data-test-id="report"]')).toBeNull();
+      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+        (node) => node.getAttribute('tabindex') === '0',
+      );
+      expect(tabbable).toHaveLength(1);
+      expect(tabbable[0]).toBe(itemOf(el, 'documents'));
+    });
+
+    it('falls back to the first enabled item when the only selected node is disabled', async () => {
+      const { el } = await setup((i) => {
+        i.picked.set(['documents']);
+        i.disabledIds.set(['documents']);
+      });
+
+      expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('-1');
+      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
+        (node) => node.getAttribute('tabindex') === '0',
+      );
+      expect(tabbable).toHaveLength(1);
+      expect(tabbable[0]).toBe(itemOf(el, 'downloads'));
+    });
   });
 
   describe('zoneless reactivity', () => {

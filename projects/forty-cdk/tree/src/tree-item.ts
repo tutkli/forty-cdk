@@ -176,12 +176,6 @@ export class ForTreeItem implements ForTreeItemContext {
     if (this.#tree.roving.hasActive()) {
       return this.#tree.roving.tabindexFor(this.#host.nativeElement);
     }
-    if (this.selected()) {
-      return 0;
-    }
-    if (this.#tree.value().length > 0) {
-      return -1;
-    }
     return this.#tree.isFirstFocusableItem(this.#host.nativeElement) ? 0 : -1;
   });
 
