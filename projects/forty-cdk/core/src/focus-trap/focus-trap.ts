@@ -22,27 +22,48 @@ export const FOCUSABLE_SELECTOR = [
 
 /**
  * Returns the first tabbable descendant of `container`, or `null` if none
- * exists. Mirrors the filter used by `FocusTrap` (excludes `[hidden]` and
- * descendants of `[inert]` ancestors below the container).
+ * exists. Mirrors the filter used by `FocusTrap`: excludes `[hidden]`,
+ * elements carrying or nested under an `[inert]` ancestor below the
+ * container, and elements hidden via CSS (`display: none` /
+ * `visibility: hidden`), which cannot receive focus.
  */
 export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
   const candidates = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
   for (const el of candidates) {
-    if (el.hasAttribute('hidden')) {
-      continue;
+    if (isFocusableCandidate(el, container)) {
+      return el;
     }
-    if (hasInertAncestor(el, container)) {
-      continue;
-    }
-    return el;
   }
   return null;
 }
 
+function isFocusableCandidate(el: HTMLElement, root: HTMLElement): boolean {
+  return !el.hasAttribute('hidden') && !hasInertAncestor(el, root) && !isCssHidden(el, root);
+}
+
 function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
-  let cur: HTMLElement | null = el.parentElement;
+  let cur: HTMLElement | null = el;
   while (cur && cur !== root) {
     if (cur.hasAttribute('inert')) {
+      return true;
+    }
+    cur = cur.parentElement;
+  }
+  return false;
+}
+
+function isCssHidden(el: HTMLElement, root: HTMLElement): boolean {
+  const win = el.ownerDocument.defaultView;
+  if (!win || typeof win.getComputedStyle !== 'function') {
+    return false;
+  }
+  let cur: HTMLElement | null = el;
+  while (cur && cur !== root) {
+    const style = win.getComputedStyle(cur);
+    if (style.display === 'none') {
+      return true;
+    }
+    if (cur === el && (style.visibility === 'hidden' || style.visibility === 'collapse')) {
       return true;
     }
     cur = cur.parentElement;
@@ -197,7 +218,16 @@ export class FocusTrap {
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['disabled', 'hidden', 'inert', 'tabindex', 'type', 'contenteditable'],
+        attributeFilter: [
+          'disabled',
+          'hidden',
+          'inert',
+          'tabindex',
+          'type',
+          'contenteditable',
+          'style',
+          'class',
+        ],
       });
     }
 
@@ -295,21 +325,8 @@ export class FocusTrap {
       return this.#focusablesCache;
     }
     const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-    this.#focusablesCache = all.filter(
-      (el) => !el.hasAttribute('hidden') && !this.#hasInertAncestor(el),
-    );
+    this.#focusablesCache = all.filter((el) => isFocusableCandidate(el, this.#container));
     return this.#focusablesCache;
-  }
-
-  #hasInertAncestor(el: HTMLElement): boolean {
-    let cur: HTMLElement | null = el;
-    while (cur && cur !== this.#container) {
-      if (cur.hasAttribute('inert')) {
-        return true;
-      }
-      cur = cur.parentElement;
-    }
-    return false;
   }
 }
 
