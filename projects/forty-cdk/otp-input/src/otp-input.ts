@@ -232,6 +232,9 @@ export class ForOtpInput
       });
       el.addEventListener('blur', () => {
         this.#focused.set(false);
+        if (el.value !== this.#clampedValue()) {
+          el.value = this.#clampedValue();
+        }
         this.markTouched();
       });
       el.addEventListener('click', () => this.#syncSelection());

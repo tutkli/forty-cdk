@@ -508,6 +508,36 @@ describe('ForOtpInput', () => {
     });
   });
 
+  describe('external write while focused', () => {
+    it('reconciles the input on blur after an external reset while focused, so Backspace cannot resurrect the old code', async () => {
+      const { el, input, instance, flush } = await mountOtp();
+      document.body.appendChild(el);
+      try {
+        input.focus();
+        typeInto(input, '123456');
+        await flush();
+        expect(instance.code()).toBe('123456');
+        expect(document.activeElement).toBe(input);
+
+        instance.code.set('');
+        await flush();
+        expect(input.value).toBe('123456');
+
+        input.blur();
+        await flush();
+        expect(input.value).toBe('');
+        expect(instance.code()).toBe('');
+
+        input.focus();
+        typeInto(input, '');
+        await flush();
+        expect(instance.code()).toBe('');
+      } finally {
+        el.remove();
+      }
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [ForOtpInput, ForOtpInputSlot],
