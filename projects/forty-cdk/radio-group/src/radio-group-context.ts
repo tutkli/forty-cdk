@@ -30,7 +30,7 @@ export interface ForRadioGroupContext {
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
 
-  /** True when some registered radio's value matches the group's current value. */
+  /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio: Signal<boolean>;
 
   isSelected(value: string): boolean;

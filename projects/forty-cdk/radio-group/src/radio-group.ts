@@ -95,10 +95,10 @@ export class ForRadioGroup
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
 
-  /** True when some registered radio's value matches the group's current value. */
+  /** True when some registered, enabled radio's value matches the group's current value. */
   readonly hasSelectedRadio = computed(() => {
     const v = this.value();
-    return this.#items.items().some((item) => item.value() === v);
+    return this.#items.items().some((item) => !item.disabled() && item.value() === v);
   });
 
   constructor() {

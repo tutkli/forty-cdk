@@ -78,9 +78,10 @@ export class ForRadio {
   }
 
   /**
-   * Tabindex per APG: 0 if this radio is selected; if no registered radio
-   * matches the group's value (none selected, or a stale value matching no
-   * radio), 0 if this is the first enabled radio in DOM order; -1 otherwise.
+   * Tabindex per APG: 0 if this radio is selected; if no registered enabled
+   * radio matches the group's value (none selected, a stale value matching no
+   * radio, or the sole match is disabled), 0 if this is the first enabled radio
+   * in DOM order; -1 otherwise.
    *
    * Disabled radios are always -1.
    */
