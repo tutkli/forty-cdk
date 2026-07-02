@@ -169,8 +169,8 @@ export class MenubarMenuContext implements ForMenuContext {
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
+      this.#host.detachContentPointer();
     }
-    this.#host.detachContentPointer();
   }
 
   registerItem(handle: ForMenuItemHandle): void {

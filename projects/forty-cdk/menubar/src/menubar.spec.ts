@@ -677,6 +677,30 @@ describe('ForMenubar', () => {
       flush();
       expect(instance.open()).toBe('view');
     });
+
+    it('hover-switch to a template-earlier sibling keeps its content keepalive alive so entering it cancels the pending close', () => {
+      const { instance, query, queryAll, flush } = renderHost(MenubarHost);
+      instance.open.set('view');
+      flush();
+
+      const file = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      file.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      expect(instance.open()).toBe('file');
+
+      const bar = query<HTMLElement>('[forMenubar]')!;
+      bar.dispatchEvent(pointerEvent('pointerleave'));
+      flush();
+      vi.advanceTimersByTime(100);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      flush();
+      vi.advanceTimersByTime(500);
+      flush();
+
+      expect(instance.open()).toBe('file');
+    });
   });
 
   describe('item selection', () => {
