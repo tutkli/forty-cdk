@@ -66,7 +66,7 @@ export class ApiTable {
       const type = cells[1] ?? { html: '', text: '' };
       const description = cells[2] ?? { html: '', text: '' };
       const typeFull = type.text.trim();
-      const typeKind = typeFull.split('<')[0].trim() || typeFull;
+      const typeKind = typeFull.split('<')[0]!.trim() || typeFull;
       return {
         property: this.#sanitizer.bypassSecurityTrustHtml(property.html),
         propText: property.text,

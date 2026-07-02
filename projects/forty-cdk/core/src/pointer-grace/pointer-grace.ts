@@ -83,8 +83,8 @@ const GRACE_BLEED_PX = 5;
 export function isPointInPolygon(point: Point, polygon: Polygon): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const vi = polygon[i];
-    const vj = polygon[j];
+    const vi = polygon[i]!;
+    const vj = polygon[j]!;
     const intersects =
       vi.y > point.y !== vj.y > point.y &&
       point.x < ((vj.x - vi.x) * (point.y - vi.y)) / (vj.y - vi.y) + vi.x;

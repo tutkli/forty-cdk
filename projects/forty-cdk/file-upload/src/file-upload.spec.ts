@@ -172,7 +172,7 @@ describe('ForFileUpload', () => {
       const captured = instance.capturedFiles();
       expect(captured).not.toBeNull();
       expect(captured!.length).toBe(1);
-      expect(captured![0].name).toBe('a.txt');
+      expect(captured![0]!.name).toBe('a.txt');
     });
   });
 
@@ -211,7 +211,7 @@ describe('ForFileUpload', () => {
 
       const captured = instance.capturedFiles();
       expect(captured).not.toBeNull();
-      expect(captured![0].name).toBe('c.txt');
+      expect(captured![0]!.name).toBe('c.txt');
     });
   });
 

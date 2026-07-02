@@ -70,11 +70,12 @@ export class ForVirtualFor<T> {
     const seen = new Set<string | number>();
     items.forEach((item, position) => {
       seen.add(item.key);
+      const value = data[item.index]!;
       let view = this.#views.get(item.key);
       if (!view) {
         view = this.#viewContainer.createEmbeddedView(
           this.#template,
-          { $implicit: data[item.index], virtualItem: item, index: item.index, count },
+          { $implicit: value, virtualItem: item, index: item.index, count },
           position,
         );
         this.#views.set(item.key, view);
@@ -82,7 +83,7 @@ export class ForVirtualFor<T> {
         if (this.#viewContainer.indexOf(view) !== position) {
           this.#viewContainer.move(view, position);
         }
-        view.context.$implicit = data[item.index];
+        view.context.$implicit = value;
         view.context.virtualItem = item;
         view.context.index = item.index;
         view.context.count = count;

@@ -393,7 +393,7 @@ describe('per-primitive defaults providers', () => {
       it('merges a per-key override over the fallback, leaving other keys intact', () => {
         const fallback = c.fallback as Record<string, unknown>;
         const override = c.override as Record<string, unknown>;
-        const overrideKey = Object.keys(override)[0];
+        const overrideKey = Object.keys(override)[0]!;
         expect(fallback[overrideKey]).not.toEqual(override[overrideKey]);
 
         TestBed.configureTestingModule({ providers: [c.provide(c.override)] });

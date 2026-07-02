@@ -96,7 +96,7 @@ export interface ForBreakpoints<K extends string = BreakpointName> {
 export function injectBreakpoints(): ForBreakpoints {
   const injector = inject(Injector);
   const map = inject(FOR_BREAKPOINTS).breakpoints;
-  const names = Object.keys(map).sort((a, b) => map[a] - map[b]);
+  const names = Object.keys(map).sort((a, b) => map[a]! - map[b]!);
   const cache = new Map<string, Signal<boolean>>();
 
   const observe = (query: string): Signal<boolean> => {
@@ -131,7 +131,7 @@ export function injectBreakpoints(): ForBreakpoints {
   const only = (name: string): Signal<boolean> => {
     const lower = thresholdOf(name);
     const index = names.indexOf(name);
-    const next = index < names.length - 1 ? thresholdOf(names[index + 1]) : null;
+    const next = index < names.length - 1 ? thresholdOf(names[index + 1]!) : null;
     return next === null
       ? observe(`(min-width: ${lower}px)`)
       : observe(`(min-width: ${lower}px) and (max-width: ${next - 0.02}px)`);

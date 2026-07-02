@@ -84,7 +84,7 @@ describe('injectFieldWiring — foreign labelledElement cleanup', () => {
     document.body.appendChild(foreign);
 
     const fixture = TestBed.createComponent(HostComp);
-    const probe = fixture.debugElement.children[0].injector.get(ProbeControl);
+    const probe = fixture.debugElement.children[0]!.injector.get(ProbeControl);
     probe.labelled.set(foreign);
     await flush(fixture);
 
@@ -107,7 +107,7 @@ describe('injectFieldWiring — foreign labelledElement cleanup', () => {
     document.body.appendChild(foreign);
 
     const fixture = TestBed.createComponent(HostComp);
-    const probe = fixture.debugElement.children[0].injector.get(ProbeControl);
+    const probe = fixture.debugElement.children[0]!.injector.get(ProbeControl);
     probe.labelled.set(foreign);
     await flush(fixture);
 

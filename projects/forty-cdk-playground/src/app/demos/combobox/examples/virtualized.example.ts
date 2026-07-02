@@ -273,7 +273,7 @@ export class ComboboxVirtualizedExample {
     const [start, end] = this.range();
     const rows: VirtualRow[] = [];
     for (let i = start; i < end; i++) {
-      rows.push({ label: items[i], index: i, top: i * ITEM_HEIGHT });
+      rows.push({ label: items[i]!, index: i, top: i * ITEM_HEIGHT });
     }
     return rows;
   });
