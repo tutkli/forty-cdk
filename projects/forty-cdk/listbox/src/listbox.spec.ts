@@ -93,10 +93,10 @@ describe('ForListbox', () => {
       }
     });
 
-    it('exposes aria-multiselectable=true when multiple is set', () => {
+    it('exposes aria-multiselectable=true when multiple is set', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('aria-multiselectable')).toBe('true');
     });
   });
@@ -115,10 +115,10 @@ describe('ForListbox', () => {
       readonly label = signal<string | null>(null);
     }
 
-    it('emits aria-label when the input is set', () => {
+    it('emits aria-label when the input is set', async () => {
       const { el, fixture, flush } = renderHost(LabelHost);
       fixture.componentInstance.label.set('Fruit');
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('aria-label')).toBe('Fruit');
     });
 
@@ -127,10 +127,10 @@ describe('ForListbox', () => {
       expect(listboxOf(el).hasAttribute('aria-label')).toBe(false);
     });
 
-    it('emits no aria-label attribute for an empty string', () => {
+    it('emits no aria-label attribute for an empty string', async () => {
       const { el, fixture, flush } = renderHost(LabelHost);
       fixture.componentInstance.label.set('');
-      flush();
+      await flush();
       expect(listboxOf(el).hasAttribute('aria-label')).toBe(false);
     });
   });
@@ -142,31 +142,31 @@ describe('ForListbox', () => {
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('selected option has tabindex=0 when there is a selection', () => {
+    it('selected option has tabindex=0 when there is a selection', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.picked.set(['banana']);
-      flush();
+      await flush();
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
     });
 
-    it('skips disabled when picking the first-enabled tab entry', () => {
+    it('skips disabled when picking the first-enabled tab entry', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: true },
         { value: 'banana', label: 'Banana', disabled: false },
         { value: 'cherry', label: 'Cherry', disabled: false },
       ]);
-      flush();
+      await flush();
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
     });
 
-    it('multi-select with ≥2 preselected options exposes exactly one tabindex=0', () => {
+    it('multi-select with ≥2 preselected options exposes exactly one tabindex=0', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
       fixture.componentInstance.picked.set(['banana', 'cherry']);
-      flush();
+      await flush();
 
       const zeros = ['apple', 'apricot', 'banana', 'blueberry', 'cherry'].filter(
         (v) => optOf(el, v).getAttribute('tabindex') === '0',
@@ -174,7 +174,7 @@ describe('ForListbox', () => {
       expect(zeros).toEqual(['banana']);
     });
 
-    it('multi-select tab entry is the first selected enabled option in DOM order', () => {
+    it('multi-select tab entry is the first selected enabled option in DOM order', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
       fixture.componentInstance.options.set([
@@ -183,21 +183,21 @@ describe('ForListbox', () => {
         { value: 'cherry', label: 'Cherry', disabled: false },
       ]);
       fixture.componentInstance.picked.set(['banana', 'cherry']);
-      flush();
+      await flush();
 
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
       expect(optOf(el, 'cherry').getAttribute('tabindex')).toBe('0');
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('roving takes over after an option is focused (multi + preselection)', () => {
+    it('roving takes over after an option is focused (multi + preselection)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
       fixture.componentInstance.picked.set(['banana', 'cherry']);
-      flush();
+      await flush();
 
       optOf(el, 'apple').focus();
-      flush();
+      await flush();
 
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('0');
       const zeros = ['apple', 'apricot', 'banana', 'blueberry', 'cherry'].filter(
@@ -209,7 +209,7 @@ describe('ForListbox', () => {
     it('removing the focused option re-engages the first-enabled fallback', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
-      flush();
+      await flush();
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.options.set([
@@ -227,7 +227,7 @@ describe('ForListbox', () => {
     it('disabling the focused option re-engages the first-enabled fallback', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
-      flush();
+      await flush();
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.options.set([
@@ -305,98 +305,98 @@ describe('ForListbox', () => {
       expect(listboxOf(el).hasAttribute('tabindex')).toBe(false);
     });
 
-    it('host becomes tabindex=0 when every option is disabled', () => {
+    it('host becomes tabindex=0 when every option is disabled', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: true },
         { value: 'banana', label: 'Banana', disabled: true },
       ]);
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
       expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('host becomes tabindex=0 when there are no options', () => {
+    it('host becomes tabindex=0 when there are no options', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([]);
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
     });
 
-    it('a disabled listbox is never tabbable, even with all options disabled', () => {
+    it('a disabled listbox is never tabbable, even with all options disabled', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.rootDisabled.set(true);
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: true },
         { value: 'banana', label: 'Banana', disabled: true },
       ]);
-      flush();
+      await flush();
       expect(listboxOf(el).hasAttribute('tabindex')).toBe(false);
     });
 
-    it('host drops its fallback tabindex once an enabled option appears', () => {
+    it('host drops its fallback tabindex once an enabled option appears', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([{ value: 'apple', label: 'Apple', disabled: true }]);
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: true },
         { value: 'banana', label: 'Banana', disabled: false },
       ]);
-      flush();
+      await flush();
       expect(listboxOf(el).hasAttribute('tabindex')).toBe(false);
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
     });
   });
 
   describe('single-mode click semantics', () => {
-    it('selects on click and replaces previous selection', () => {
+    it('selects on click and replaces previous selection', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['apple']);
 
       optOf(el, 'cherry').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['cherry']);
     });
 
-    it('clicking the selected option does NOT deselect (idempotent)', () => {
+    it('clicking the selected option does NOT deselect (idempotent)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').click();
-      flush();
+      await flush();
       optOf(el, 'apple').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['apple']);
     });
   });
 
   describe('multi-mode click semantics', () => {
-    it('toggles each option independently', () => {
+    it('toggles each option independently', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
-      flush();
+      await flush();
 
       optOf(el, 'apple').click();
       optOf(el, 'cherry').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['apple', 'cherry']);
 
       optOf(el, 'apple').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['cherry']);
     });
   });
 
   describe('arrow navigation (no selection-on-focus by default)', () => {
-    it('moves focus only — value stays put', () => {
+    it('moves focus only — value stays put', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
 
       pressKey(optOf(el, 'apple'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
@@ -408,10 +408,10 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'cherry'));
     });
 
-    it('stops at the ends when loop=false', () => {
+    it('stops at the ends when loop=false', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.loop.set(false);
-      flush();
+      await flush();
 
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowUp');
@@ -440,14 +440,14 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
-    it('skips disabled options', () => {
+    it('skips disabled options', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: false },
         { value: 'apricot', label: 'Apricot', disabled: true },
         { value: 'banana', label: 'Banana', disabled: false },
       ]);
-      flush();
+      await flush();
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'banana'));
@@ -455,97 +455,97 @@ describe('ForListbox', () => {
   });
 
   describe('selectionFollowsFocus (single mode opt-in)', () => {
-    it('arrow nav also selects when enabled', () => {
+    it('arrow nav also selects when enabled', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.follow.set(true);
-      flush();
+      await flush();
 
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['apricot']);
     });
 
-    it('does NOT auto-select in multi mode even when flag is set', () => {
+    it('does NOT auto-select in multi mode even when flag is set', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
       fixture.componentInstance.follow.set(true);
-      flush();
+      await flush();
 
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
   });
 
   describe('typeahead', () => {
-    it('focuses the first option matching the typed prefix', () => {
+    it('focuses the first option matching the typed prefix', async () => {
       const { el, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'b');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'banana'));
     });
 
-    it('extends the prefix on consecutive keystrokes', () => {
+    it('extends the prefix on consecutive keystrokes', async () => {
       const { el, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'b');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'banana'));
       pressKey(optOf(el, 'banana'), 'l');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'blueberry'));
     });
 
-    it('skips disabled matches on a multi-character prefix', () => {
+    it('skips disabled matches on a multi-character prefix', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
         { value: 'banana', label: 'Banana', disabled: false },
         { value: 'avocet', label: 'Avocet', disabled: true },
         { value: 'avocado', label: 'Avocado', disabled: false },
       ]);
-      flush();
+      await flush();
 
       // 'av' matches avocet first but it is disabled, so focus lands on avocado.
       optOf(el, 'banana').focus();
       pressKey(optOf(el, 'banana'), 'a');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'avocado'));
       pressKey(optOf(el, 'avocado'), 'v');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'avocado'));
     });
 
-    it('ignores Space (reserved for activation)', () => {
+    it('ignores Space (reserved for activation)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), ' ');
-      flush();
+      await flush();
       // Space is not a typeahead character; focus stays on apple.
       expect(document.activeElement).toBe(optOf(el, 'apple'));
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
 
-    it('cycles through same-initial options on repeated key with wrap', () => {
+    it('cycles through same-initial options on repeated key with wrap', async () => {
       const { el, flush } = renderHost(ListboxHost);
 
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'a');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
 
       pressKey(optOf(el, 'apricot'), 'a');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'apple'));
 
       pressKey(optOf(el, 'apple'), 'a');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
 
-    it('skips disabled options while cycling on repeated key', () => {
+    it('skips disabled options while cycling on repeated key', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: false },
@@ -553,95 +553,95 @@ describe('ForListbox', () => {
         { value: 'avocado', label: 'Avocado', disabled: false },
         { value: 'banana', label: 'Banana', disabled: false },
       ]);
-      flush();
+      await flush();
 
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'a');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'avocado'));
 
       pressKey(optOf(el, 'avocado'), 'a');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
   });
 
   describe('multi-select APG keyboard model', () => {
-    const setupMulti = (initial: string[] = []) => {
+    const setupMulti = async (initial: string[] = []) => {
       const result = renderHost(ListboxHost);
       result.fixture.componentInstance.isMulti.set(true);
       result.fixture.componentInstance.picked.set(initial);
-      result.flush();
+      await result.flush();
       return result;
     };
 
     describe('Shift+ArrowDown / Shift+ArrowUp', () => {
-      it('moves focus to the next option AND toggles it on', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('moves focus to the next option AND toggles it on', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'apricot'));
         expect(fixture.componentInstance.picked()).toEqual(['apricot']);
       });
 
-      it('toggles already-selected options off on Shift+Arrow', () => {
-        const { el, fixture, flush } = setupMulti(['apricot']);
+      it('toggles already-selected options off on Shift+Arrow', async () => {
+        const { el, fixture, flush } = await setupMulti(['apricot']);
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'apricot'));
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
 
-      it('Shift+ArrowUp toggles the previous option', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('Shift+ArrowUp toggles the previous option', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), 'ArrowUp', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'apple'));
         expect(fixture.componentInstance.picked()).toEqual(['apple']);
       });
 
-      it('skips disabled options', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('skips disabled options', async () => {
+        const { el, fixture, flush } = await setupMulti();
         fixture.componentInstance.options.set([
           { value: 'apple', label: 'Apple', disabled: false },
           { value: 'apricot', label: 'Apricot', disabled: true },
           { value: 'banana', label: 'Banana', disabled: false },
         ]);
-        flush();
+        await flush();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'banana'));
         expect(fixture.componentInstance.picked()).toEqual(['banana']);
       });
 
-      it('does NOT toggle in single mode (just moves focus)', () => {
+      it('does NOT toggle in single mode (just moves focus)', async () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'apricot'));
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
 
-      it('does not change the anchor (so a later Shift+Space spans from the click)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('does not change the anchor (so a later Shift+Space spans from the click)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').click();
-        flush();
+        await flush();
         // Shift+Arrow should NOT move the anchor.
         pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
         pressKey(optOf(el, 'apricot'), 'ArrowDown', { shiftKey: true });
-        flush();
+        await flush();
         // Now focus is on banana. Shift+Space should select [apple..banana].
         pressKey(optOf(el, 'banana'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['apple', 'apricot', 'banana']);
       });
 
-      it('respects readonly (no toggle, focus still moves)', () => {
+      it('respects readonly (no toggle, focus still moves)', async () => {
         @Component({
           imports: [...LISTBOX_IMPORTS],
           template: `
@@ -658,40 +658,40 @@ describe('ForListbox', () => {
         const r = renderHost(Host);
         optOf(r.el, 'a').focus();
         pressKey(optOf(r.el, 'a'), 'ArrowDown', { shiftKey: true });
-        r.flush();
+        await r.flush();
         expect(document.activeElement).toBe(optOf(r.el, 'b'));
         expect(r.fixture.componentInstance.picked()).toEqual([]);
       });
 
-      it('Shift+ArrowDown on the last option is a no-op (no wrap, no opposite-end toggle)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('Shift+ArrowDown on the last option is a no-op (no wrap, no opposite-end toggle)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'cherry').focus();
         pressKey(optOf(el, 'cherry'), 'ArrowDown', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'cherry'));
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
 
-      it('Shift+ArrowUp on the first option is a no-op (no wrap, no opposite-end toggle)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('Shift+ArrowUp on the first option is a no-op (no wrap, no opposite-end toggle)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'ArrowUp', { shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'apple'));
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
     });
 
     describe('Shift+Space (range from anchor)', () => {
-      it('selects contiguous from anchor to focused option (forward)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('selects contiguous from anchor to focused option (forward)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         // Click sets the anchor.
         optOf(el, 'apple').click();
-        flush();
+        await flush();
         // Move focus a few steps without modifying anchor.
         optOf(el, 'cherry').focus();
         pressKey(optOf(el, 'cherry'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'apple',
           'apricot',
@@ -701,13 +701,13 @@ describe('ForListbox', () => {
         ]);
       });
 
-      it('selects contiguous from anchor to focused option (backward)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('selects contiguous from anchor to focused option (backward)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'cherry').click();
-        flush();
+        await flush();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'cherry',
           'apple',
@@ -717,48 +717,48 @@ describe('ForListbox', () => {
         ]);
       });
 
-      it('preserves selection outside the range', () => {
-        const { el, fixture, flush } = setupMulti(['cherry']);
+      it('preserves selection outside the range', async () => {
+        const { el, fixture, flush } = await setupMulti(['cherry']);
         optOf(el, 'apple').click(); // Anchor = apple, picks now = [cherry, apple].
-        flush();
+        await flush();
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['cherry', 'apple', 'apricot']);
       });
 
-      it('skips disabled options in the range', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('skips disabled options in the range', async () => {
+        const { el, fixture, flush } = await setupMulti();
         fixture.componentInstance.options.set([
           { value: 'a', label: 'A', disabled: false },
           { value: 'b', label: 'B', disabled: true },
           { value: 'c', label: 'C', disabled: false },
         ]);
-        flush();
+        await flush();
         optOf(el, 'a').click();
-        flush();
+        await flush();
         optOf(el, 'c').focus();
         pressKey(optOf(el, 'c'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['a', 'c']);
       });
 
-      it('falls back to selecting the focused option when no anchor exists', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('falls back to selecting the focused option when no anchor exists', async () => {
+        const { el, fixture, flush } = await setupMulti();
         // No prior click → anchor is null. Shift+Space at apricot picks just apricot.
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['apricot']);
       });
     });
 
     describe('Ctrl/Cmd+A', () => {
-      it('selects every enabled option', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('selects every enabled option', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'apple',
           'apricot',
@@ -768,24 +768,24 @@ describe('ForListbox', () => {
         ]);
       });
 
-      it('also accepts uppercase A', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('also accepts uppercase A', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'A', { ctrlKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toHaveLength(5);
       });
 
-      it('also accepts metaKey (mac Cmd+A)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('also accepts metaKey (mac Cmd+A)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'a', { metaKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toHaveLength(5);
       });
 
-      it('clears the selection when every enabled option is already selected (toggle)', () => {
-        const { el, fixture, flush } = setupMulti([
+      it('clears the selection when every enabled option is already selected (toggle)', async () => {
+        const { el, fixture, flush } = await setupMulti([
           'apple',
           'apricot',
           'banana',
@@ -794,105 +794,105 @@ describe('ForListbox', () => {
         ]);
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
 
-      it('skips disabled options', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('skips disabled options', async () => {
+        const { el, fixture, flush } = await setupMulti();
         fixture.componentInstance.options.set([
           { value: 'a', label: 'A', disabled: false },
           { value: 'b', label: 'B', disabled: true },
           { value: 'c', label: 'C', disabled: false },
         ]);
-        flush();
+        await flush();
         optOf(el, 'a').focus();
         pressKey(optOf(el, 'a'), 'a', { ctrlKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['a', 'c']);
       });
 
-      it('no-op in single mode', () => {
+      it('no-op in single mode', async () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'apple').focus();
         pressKey(optOf(el, 'apple'), 'a', { ctrlKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
     });
 
     describe('Ctrl+Shift+Home / Ctrl+Shift+End', () => {
-      it('Ctrl+Shift+End selects from current to the last enabled option and focuses it', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('Ctrl+Shift+End selects from current to the last enabled option and focuses it', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'banana').focus();
         pressKey(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'cherry'));
         expect(fixture.componentInstance.picked()).toEqual(['banana', 'blueberry', 'cherry']);
       });
 
-      it('Ctrl+Shift+Home selects from current to the first enabled option and focuses it', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('Ctrl+Shift+Home selects from current to the first enabled option and focuses it', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'banana').focus();
         pressKey(optOf(el, 'banana'), 'Home', { ctrlKey: true, shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'apple'));
         expect(fixture.componentInstance.picked()).toEqual(['apple', 'apricot', 'banana']);
       });
 
-      it('preserves selection outside the range', () => {
-        const { el, fixture, flush } = setupMulti(['cherry']);
+      it('preserves selection outside the range', async () => {
+        const { el, fixture, flush } = await setupMulti(['cherry']);
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), 'Home', { ctrlKey: true, shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['cherry', 'apple', 'apricot']);
       });
 
-      it('skips disabled options when picking the focus edge', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('skips disabled options when picking the focus edge', async () => {
+        const { el, fixture, flush } = await setupMulti();
         fixture.componentInstance.options.set([
           { value: 'a', label: 'A', disabled: true },
           { value: 'b', label: 'B', disabled: false },
           { value: 'c', label: 'C', disabled: false },
         ]);
-        flush();
+        await flush();
         optOf(el, 'c').focus();
         pressKey(optOf(el, 'c'), 'Home', { ctrlKey: true, shiftKey: true });
-        flush();
+        await flush();
         expect(document.activeElement).toBe(optOf(el, 'b'));
         expect(fixture.componentInstance.picked()).toEqual(['b', 'c']);
       });
 
-      it('no-op in single mode', () => {
+      it('no-op in single mode', async () => {
         const { el, fixture, flush } = renderHost(ListboxHost);
         optOf(el, 'banana').focus();
         pressKey(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([]);
       });
     });
 
     describe('anchor lifecycle', () => {
-      it('is set on click activation', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('is set on click activation', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'banana').click();
-        flush();
+        await flush();
         // Now Shift+Space at apricot should span apricot..banana.
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['banana', 'apricot']);
       });
 
-      it('moves to the most recent click', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('moves to the most recent click', async () => {
+        const { el, fixture, flush } = await setupMulti();
         optOf(el, 'apple').click(); // anchor = apple
         optOf(el, 'cherry').click(); // anchor moves to cherry
-        flush();
+        await flush();
         // Shift+Space at apricot should span apricot..cherry.
         optOf(el, 'apricot').focus();
         pressKey(optOf(el, 'apricot'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual([
           'apple',
           'cherry',
@@ -902,65 +902,65 @@ describe('ForListbox', () => {
         ]);
       });
 
-      it('survives a reorder/insert of preceding options (#590 F4 — identity anchor)', () => {
-        const { el, fixture, flush } = setupMulti();
+      it('survives a reorder/insert of preceding options (#590 F4 — identity anchor)', async () => {
+        const { el, fixture, flush } = await setupMulti();
         // Click banana → anchor = banana (DOM index 2 at this point).
         optOf(el, 'banana').click();
-        flush();
+        await flush();
 
         // Insert a new option before everything: banana's DOM index shifts to 3.
         fixture.componentInstance.options.update((opts) => [
           { value: 'almond', label: 'Almond', disabled: false },
           ...opts,
         ]);
-        flush();
+        await flush();
 
         // Shift+Space at cherry must still span banana..cherry by identity
         // (banana, blueberry, cherry are contiguous). The stale-index span
         // would instead start at index 2 (now blueberry) and miss banana.
         optOf(el, 'cherry').focus();
         pressKey(optOf(el, 'cherry'), ' ', { shiftKey: true });
-        flush();
+        await flush();
         expect(fixture.componentInstance.picked()).toEqual(['banana', 'blueberry', 'cherry']);
       });
     });
   });
 
   describe('horizontal & RTL', () => {
-    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+    it('reflects dir to the native dir attribute for both ltr and rtl', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       const lb = el.querySelector('[forListbox]')!;
 
       expect(lb.getAttribute('dir')).toBe('ltr');
 
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       expect(lb.getAttribute('dir')).toBe('rtl');
     });
 
-    it('uses ArrowLeft / ArrowRight in horizontal', () => {
+    it('uses ArrowLeft / ArrowRight in horizontal', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.orientation.set('horizontal');
-      flush();
+      await flush();
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowRight');
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
 
-    it('RTL swaps ArrowLeft / ArrowRight in horizontal', () => {
+    it('RTL swaps ArrowLeft / ArrowRight in horizontal', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.orientation.set('horizontal');
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowLeft');
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
     });
 
-    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl" (dir does not flip vertical)', () => {
+    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl" (dir does not flip vertical)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'apricot'));
@@ -969,10 +969,10 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'apple'));
     });
 
-    it('ignores cross-axis arrows in horizontal mode (ArrowDown/ArrowUp no-op)', () => {
+    it('ignores cross-axis arrows in horizontal mode (ArrowDown/ArrowUp no-op)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.orientation.set('horizontal');
-      flush();
+      await flush();
       optOf(el, 'apple').focus();
       pressKey(optOf(el, 'apple'), 'ArrowDown');
       expect(document.activeElement).toBe(optOf(el, 'apple'));
@@ -1036,7 +1036,7 @@ describe('ForListbox', () => {
   });
 
   describe('readonly', () => {
-    it('exposes aria-readonly and blocks click selection while keeping options focusable', () => {
+    it('exposes aria-readonly and blocks click selection while keeping options focusable', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1058,7 +1058,7 @@ describe('ForListbox', () => {
       expect(listboxOf(el).getAttribute('aria-readonly')).toBe('true');
 
       optOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
 
       // Arrow nav still works — readonly only blocks selection, not focus.
@@ -1067,7 +1067,7 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'b'));
     });
 
-    it('does not auto-select on focus nav when readonly even with selectionFollowsFocus', () => {
+    it('does not auto-select on focus nav when readonly even with selectionFollowsFocus', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1088,34 +1088,34 @@ describe('ForListbox', () => {
       const { el, fixture, flush } = renderHost(Host);
       optOf(el, 'a').focus();
       pressKey(optOf(el, 'a'), 'ArrowDown');
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
   });
 
   describe('disabled', () => {
-    it('disabled option ignores click', () => {
+    it('disabled option ignores click', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.options.set([
         { value: 'apple', label: 'Apple', disabled: true },
         { value: 'banana', label: 'Banana', disabled: false },
       ]);
-      flush();
+      await flush();
 
       optOf(el, 'apple').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
     });
 
-    it('root disabled cascades and blocks selection', () => {
+    it('root disabled cascades and blocks selection', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.rootDisabled.set(true);
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('aria-disabled')).toBe('true');
 
       optOf(el, 'apple').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
       expect(optOf(el, 'apple').hasAttribute('disabled')).toBe(false);
       expect(optOf(el, 'apple').getAttribute('aria-disabled')).toBe('true');
@@ -1140,7 +1140,7 @@ describe('ForListbox', () => {
   });
 
   describe('(valueChange) output', () => {
-    it('emits the new selection when an option is clicked', () => {
+    it('emits the new selection when an option is clicked', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1160,14 +1160,14 @@ describe('ForListbox', () => {
 
       const { fixture, el, flush } = renderHost(Host);
       optOf(el, 'a').click();
-      flush();
+      await flush();
       optOf(el, 'b').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([['a'], ['a', 'b']]);
     });
 
-    it('does not emit when the consumer drives `value` externally via [(value)]', () => {
+    it('does not emit when the consumer drives `value` externally via [(value)]', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1183,7 +1183,7 @@ describe('ForListbox', () => {
 
       const { fixture, flush } = renderHost(Host);
       fixture.componentInstance.picked.set(['a']);
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([]);
     });
@@ -1231,14 +1231,14 @@ describe('ForListbox', () => {
       expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it('keeps options registered with the listbox across groups, in DOM order', () => {
+    it('keeps options registered with the listbox across groups, in DOM order', async () => {
       const { el, fixture, flush } = renderHost(GroupHost);
       const a = el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!;
       const c = el.querySelector<HTMLButtonElement>('[data-test-id="c"]')!;
 
       a.focus();
       pressKey(a, 'End');
-      flush();
+      await flush();
 
       // End jumps to the last enabled option, even when it lives in another
       // group — proving the listbox sees options from both groups in DOM order.
@@ -1288,10 +1288,10 @@ describe('ForListbox', () => {
       expect(Array.from(inds).every((n) => n.hasAttribute('hidden'))).toBe(true);
     });
 
-    it('reflects per-option selection (independent of siblings) in multi mode', () => {
+    it('reflects per-option selection (independent of siblings) in multi mode', async () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.picked.set(['a']);
-      flush();
+      await flush();
 
       const a = el.querySelector<HTMLElement>('[data-ind="a"]')!;
       const b = el.querySelector<HTMLElement>('[data-ind="b"]')!;
@@ -1300,7 +1300,7 @@ describe('ForListbox', () => {
       expect(b.hasAttribute('hidden')).toBe(true);
     });
 
-    it('enforces inline display:none while unselected so a consumer display class cannot leak through', () => {
+    it('enforces inline display:none while unselected so a consumer display class cannot leak through', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS, ForListboxOptionIndicator],
         template: `
@@ -1322,7 +1322,7 @@ describe('ForListbox', () => {
       expect(a.style.display).toBe('none');
 
       fixture.componentInstance.picked.set(['a']);
-      flush();
+      await flush();
       expect(a.style.display).toBe('');
     });
 
@@ -1391,7 +1391,7 @@ describe('ForListbox', () => {
       readonly invalid = signal(false);
     }
 
-    it('reflects each form-state flag as a boolean data-* attribute on the listbox', () => {
+    it('reflects each form-state flag as a boolean data-* attribute on the listbox', async () => {
       const { el, fixture, flush } = renderHost(FlagsHost);
       const lb = el.querySelector<HTMLElement>('[forListbox]')!;
 
@@ -1399,7 +1399,7 @@ describe('ForListbox', () => {
       fixture.componentInstance.dirty.set(true);
       fixture.componentInstance.pending.set(true);
       fixture.componentInstance.invalid.set(true);
-      flush();
+      await flush();
 
       expect(lb.getAttribute('data-touched')).toBe('');
       expect(lb.getAttribute('data-dirty')).toBe('');
@@ -1426,11 +1426,11 @@ describe('ForListbox', () => {
       readonly fieldName = signal<string>('');
     }
 
-    it('submits one entry per selected value with the same name (multi mode)', () => {
+    it('submits one entry per selected value with the same name (multi mode)', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('tags');
       fixture.componentInstance.picked.set(['a', 'c']);
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([
@@ -1439,10 +1439,10 @@ describe('ForListbox', () => {
       ]);
     });
 
-    it('omits the value when nothing is selected', () => {
+    it('omits the value when nothing is selected', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('tags');
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([]);
@@ -1473,25 +1473,25 @@ describe('ForListbox', () => {
       expect(selectedText(el)).toBe('none');
     });
 
-    it('exposes the sole selected value in single mode', () => {
+    it('exposes the sole selected value in single mode', async () => {
       const { el, fixture, flush } = renderHost(SelectedHost);
       fixture.componentInstance.picked.set(['b']);
-      flush();
+      await flush();
       expect(selectedText(el)).toBe('b');
     });
 
-    it('tracks single-mode click activation', () => {
+    it('tracks single-mode click activation', async () => {
       const { el, flush } = renderHost(SelectedHost);
       el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!.click();
-      flush();
+      await flush();
       expect(selectedText(el)).toBe('a');
     });
 
-    it('is null when more than one value is selected (multi mode)', () => {
+    it('is null when more than one value is selected (multi mode)', async () => {
       const { el, fixture, flush } = renderHost(SelectedHost);
       fixture.componentInstance.isMulti.set(true);
       fixture.componentInstance.picked.set(['a', 'b']);
-      flush();
+      await flush();
       expect(selectedText(el)).toBe('none');
     });
   });
@@ -1539,54 +1539,54 @@ describe('ForListbox', () => {
     const selectedText = (host: HTMLElement) =>
       host.querySelector('[data-testid="selected"]')!.textContent;
 
-    it('selects an object value on click and exposes it via the selected accessor', () => {
+    it('selects an object value on click and exposes it via the selected accessor', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
 
       optOf(el, 'Berlin').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.picked()).toEqual([BERLIN]);
       expect(selectedText(el)).toBe('Berlin');
     });
 
-    it('matches selection by custom equality even when the bound value is a different reference', () => {
+    it('matches selection by custom equality even when the bound value is a different reference', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
       // A distinct object equal-by-id to BERLIN — `aria-selected` must resolve
       // through `isItemEqualToValue`, not reference identity.
       fixture.componentInstance.picked.set([{ id: 2, name: 'Berlin' }]);
-      flush();
+      await flush();
 
       expect(optOf(el, 'Berlin').getAttribute('aria-selected')).toBe('true');
       expect(optOf(el, 'Berlin').getAttribute('data-state')).toBe('checked');
       expect(optOf(el, 'Paris').getAttribute('aria-selected')).toBe('false');
     });
 
-    it('toggles object values in/out by id in multi mode', () => {
+    it('toggles object values in/out by id in multi mode', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
       fixture.componentInstance.isMulti.set(true);
-      flush();
+      await flush();
 
       optOf(el, 'Paris').click();
       optOf(el, 'Tokyo').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([PARIS, TOKYO]);
 
       optOf(el, 'Paris').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([TOKYO]);
     });
 
-    it('dedupes object values by id under Ctrl+A select-all', () => {
+    it('dedupes object values by id under Ctrl+A select-all', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
       fixture.componentInstance.isMulti.set(true);
       // Seed with an equal-by-id duplicate of PARIS that is a distinct
       // reference — select-all must not add a second Paris entry.
       fixture.componentInstance.picked.set([{ id: 1, name: 'Paris' }]);
-      flush();
+      await flush();
 
       optOf(el, 'Berlin').focus();
       pressKey(optOf(el, 'Berlin'), 'a', { ctrlKey: true });
-      flush();
+      await flush();
 
       const ids = fixture.componentInstance.picked().map((c) => c.id);
       expect(ids).toEqual([1, 2, 3]);
@@ -1627,34 +1627,34 @@ describe('ForListbox', () => {
       ]);
     });
 
-    it('keeps object selection reactive without Zone.js', () => {
+    it('keeps object selection reactive without Zone.js', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
 
       fixture.componentInstance.picked.set([PARIS]);
-      flush();
+      await flush();
       expect(optOf(el, 'Paris').getAttribute('aria-selected')).toBe('true');
       expect(selectedText(el)).toBe('Paris');
 
       fixture.componentInstance.picked.set([TOKYO]);
-      flush();
+      await flush();
       expect(optOf(el, 'Paris').getAttribute('aria-selected')).toBe('false');
       expect(optOf(el, 'Tokyo').getAttribute('aria-selected')).toBe('true');
     });
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', () => {
+    it('reflects external value writes without Zone.js', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.picked.set(['cherry']);
-      flush();
+      await flush();
       expect(optOf(el, 'cherry').getAttribute('aria-selected')).toBe('true');
 
       fixture.componentInstance.picked.set([]);
-      flush();
+      await flush();
       expect(optOf(el, 'cherry').getAttribute('aria-selected')).toBe('false');
     });
 
-    it('reflects aria-label changes without Zone.js', () => {
+    it('reflects aria-label changes without Zone.js', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1672,11 +1672,11 @@ describe('ForListbox', () => {
       expect(listboxOf(el).hasAttribute('aria-label')).toBe(false);
 
       fixture.componentInstance.label.set('Fruit');
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('aria-label')).toBe('Fruit');
     });
 
-    it('exposes the single-select accessor without Zone.js', () => {
+    it('exposes the single-select accessor without Zone.js', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1694,7 +1694,7 @@ describe('ForListbox', () => {
       expect(el.querySelector('[data-testid="selected"]')!.textContent).toBe('none');
 
       fixture.componentInstance.picked.set(['x']);
-      flush();
+      await flush();
       expect(el.querySelector('[data-testid="selected"]')!.textContent).toBe('x');
     });
   });
@@ -1723,31 +1723,31 @@ describe('ForListbox', () => {
       readonly prefs = form(this.model, (s) => required(s.priorities));
     }
 
-    it('two-way binds the array with the field value', () => {
+    it('two-way binds the array with the field value', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const speed = optOf(el, 'speed');
       const quality = optOf(el, 'quality');
 
       speed.click();
       quality.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().priorities).toEqual(['speed', 'quality']);
 
       fixture.componentInstance.model.set({ priorities: ['cost'] });
-      flush();
+      await flush();
       expect(optOf(el, 'cost').getAttribute('aria-selected')).toBe('true');
       expect(speed.getAttribute('aria-selected')).toBe('false');
     });
 
-    it('flows schema `required` into aria-required on the listbox', () => {
+    it('flows schema `required` into aria-required on the listbox', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(listboxOf(el).getAttribute('aria-required')).toBe('true');
     });
 
-    it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', () => {
+    it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', async () => {
       const { fixture, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(fixture.componentInstance.prefs.priorities().valid()).toBe(true);
     });
 
@@ -1775,13 +1775,13 @@ describe('ForListbox', () => {
       );
     }
 
-    it('invalidates an empty array-backed control with the documented non-empty `validate` rule', () => {
+    it('invalidates an empty array-backed control with the documented non-empty `validate` rule', async () => {
       const { el, fixture, flush } = renderHost(NonEmptyRequiredHost);
-      flush();
+      await flush();
       expect(fixture.componentInstance.prefs.priorities().valid()).toBe(false);
 
       optOf(el, 'speed').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.prefs.priorities().valid()).toBe(true);
     });
   });
@@ -1833,9 +1833,9 @@ describe('ForListbox', () => {
     const voptOf = (el: HTMLElement, idx: number) =>
       el.querySelector<HTMLButtonElement>(`[data-test-id="opt-${idx}"]`)!;
 
-    it('focus model switch — virtualized host has tabindex=0, all options have tabindex=-1', () => {
+    it('focus model switch — virtualized host has tabindex=0, all options have tabindex=-1', async () => {
       const { el, flush } = renderHost(VirtualHost);
-      flush();
+      await flush();
       const lb = lbOf(el);
       expect(lb.getAttribute('tabindex')).toBe('0');
       for (const i of [0, 1, 2, 3, 4]) {
@@ -1887,26 +1887,26 @@ describe('ForListbox', () => {
       expect(opt.hasAttribute('aria-posinset')).toBe(false);
     });
 
-    it('focusin seeds aria-activedescendant to the first enabled option', () => {
+    it('focusin seeds aria-activedescendant to the first enabled option', async () => {
       const { el, flush } = renderHost(VirtualHost);
-      flush();
+      await flush();
       const lb = lbOf(el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      flush();
+      await flush();
       const activeId = lb.getAttribute('aria-activedescendant');
       expect(activeId).toBeTruthy();
       expect(activeId).toBe(voptOf(el, 0).getAttribute('id'));
       expect(voptOf(el, 0).getAttribute('data-highlighted')).toBe('');
     });
 
-    it('ArrowDown moves aria-activedescendant to the next rendered option', () => {
+    it('ArrowDown moves aria-activedescendant to the next rendered option', async () => {
       const { el, flush } = renderHost(VirtualHost);
-      flush();
+      await flush();
       const lb = lbOf(el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      flush();
+      await flush();
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      flush();
+      await flush();
       const activeId = lb.getAttribute('aria-activedescendant');
       expect(activeId).toBe(voptOf(el, 1).getAttribute('id'));
       expect(voptOf(el, 1).getAttribute('data-highlighted')).toBe('');
@@ -1914,10 +1914,10 @@ describe('ForListbox', () => {
 
     it('End to an off-window index emits scrollToIndex, pending resolves when option mounts', async () => {
       const result = renderHost(VirtualHost);
-      result.flush();
+      await result.flush();
       const lb = lbOf(result.el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      result.flush();
+      await result.flush();
 
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
       await flush(result.fixture);
@@ -1932,10 +1932,10 @@ describe('ForListbox', () => {
 
     it('PageDown jumps to the last index like End; PageUp returns to the first', async () => {
       const result = renderHost(VirtualHost);
-      result.flush();
+      await result.flush();
       const lb = lbOf(result.el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      result.flush();
+      await result.flush();
 
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true }));
       await flush(result.fixture);
@@ -1953,17 +1953,17 @@ describe('ForListbox', () => {
       );
     });
 
-    it('Enter activates the active descendant in single mode', () => {
+    it('Enter activates the active descendant in single mode', async () => {
       const { el, fixture, flush } = renderHost(VirtualHost);
-      flush();
+      await flush();
       const lb = lbOf(el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      flush();
+      await flush();
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      flush();
+      await flush();
 
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual(['item-1']);
       expect(voptOf(el, 1).getAttribute('aria-selected')).toBe('true');
     });
@@ -1971,17 +1971,17 @@ describe('ForListbox', () => {
     it('multi-select survives window recycling — selection is value-keyed', async () => {
       const result = renderHost(VirtualHost);
       result.fixture.componentInstance.isMulti.set(true);
-      result.flush();
+      await result.flush();
       const lb = lbOf(result.el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      result.flush();
+      await result.flush();
 
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      result.flush();
+      await result.flush();
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      result.flush();
+      await result.flush();
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      result.flush();
+      await result.flush();
       expect(result.fixture.componentInstance.picked()).toContain('item-2');
 
       result.fixture.componentInstance.range.set([20, 30]);
@@ -1997,12 +1997,12 @@ describe('ForListbox', () => {
 
     it('unmounting the active option clears aria-activedescendant', async () => {
       const result = renderHost(VirtualHost);
-      result.flush();
+      await result.flush();
       const lb = lbOf(result.el);
       lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      result.flush();
+      await result.flush();
       lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-      result.flush();
+      await result.flush();
       expect(lb.getAttribute('aria-activedescendant')).toBe(
         voptOf(result.el, 1).getAttribute('id'),
       );

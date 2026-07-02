@@ -714,30 +714,30 @@ describe('ForTable', () => {
       expect(cellEl(el).getAttribute('role')).toBe('cell');
     });
 
-    it('flips root to role=grid and data cell to role=gridcell when mode="grid"', () => {
+    it('flips root to role=grid and data cell to role=gridcell when mode="grid"', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.mode.set('grid');
-      flush();
+      await flush();
       expect(rootEl(el).getAttribute('role')).toBe('grid');
       expect(cellEl(el).getAttribute('role')).toBe('gridcell');
     });
 
-    it('flips root to role=treegrid and data cell to role=gridcell when mode="treegrid"', () => {
+    it('flips root to role=treegrid and data cell to role=gridcell when mode="treegrid"', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.mode.set('treegrid');
-      flush();
+      await flush();
       expect(rootEl(el).getAttribute('role')).toBe('treegrid');
       expect(cellEl(el).getAttribute('role')).toBe('gridcell');
     });
 
-    it('reverts data cell back to role=cell when mode changes back to table', () => {
+    it('reverts data cell back to role=cell when mode changes back to table', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.mode.set('grid');
-      flush();
+      await flush();
       expect(cellEl(el).getAttribute('role')).toBe('gridcell');
 
       instance.mode.set('table');
-      flush();
+      await flush();
       expect(cellEl(el).getAttribute('role')).toBe('cell');
     });
   });
@@ -748,28 +748,28 @@ describe('ForTable', () => {
       expect(rootEl(el).hasAttribute('aria-label')).toBe(false);
     });
 
-    it('is present when ariaLabel is set', () => {
+    it('is present when ariaLabel is set', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.ariaLabel.set('People');
-      flush();
+      await flush();
       expect(rootEl(el).getAttribute('aria-label')).toBe('People');
     });
 
-    it('is removed when ariaLabel is cleared', () => {
+    it('is removed when ariaLabel is cleared', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.ariaLabel.set('People');
-      flush();
+      await flush();
       instance.ariaLabel.set(null);
-      flush();
+      await flush();
       expect(rootEl(el).hasAttribute('aria-label')).toBe(false);
     });
   });
 
   describe('dir', () => {
-    it('reflects an explicit [dir]="rtl"', () => {
+    it('reflects an explicit [dir]="rtl"', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.dir.set('rtl');
-      flush();
+      await flush();
       expect(rootEl(el).getAttribute('dir')).toBe('rtl');
     });
 
@@ -790,27 +790,27 @@ describe('ForTable', () => {
       expect(cellEl(el).getAttribute('data-column')).toBe('name');
     });
 
-    it('updates data-column when the name signal changes', () => {
+    it('updates data-column when the name signal changes', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.colName.set('email');
-      flush();
+      await flush();
       expect(headerCellEl(el).getAttribute('data-column')).toBe('email');
       expect(cellEl(el).getAttribute('data-column')).toBe('email');
     });
   });
 
   describe('data-sticky', () => {
-    it('emits data-sticky="" for sticky=true on the header cell', () => {
+    it('emits data-sticky="" for sticky=true on the header cell', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.sticky.set(true);
-      flush();
+      await flush();
       expect(headerCellEl(el).getAttribute('data-sticky')).toBe('');
     });
 
-    it('emits data-sticky="end" for sticky="end" on the header cell', () => {
+    it('emits data-sticky="end" for sticky="end" on the header cell', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.sticky.set('end');
-      flush();
+      await flush();
       expect(headerCellEl(el).getAttribute('data-sticky')).toBe('end');
     });
 
@@ -819,17 +819,17 @@ describe('ForTable', () => {
       expect(headerCellEl(el).hasAttribute('data-sticky')).toBe(false);
     });
 
-    it('emits data-sticky="" for sticky=true on the data cell', () => {
+    it('emits data-sticky="" for sticky=true on the data cell', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.stickyCell.set(true);
-      flush();
+      await flush();
       expect(cellEl(el).getAttribute('data-sticky')).toBe('');
     });
 
-    it('emits data-sticky="end" for sticky="end" on the data cell', () => {
+    it('emits data-sticky="end" for sticky="end" on the data cell', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       instance.stickyCell.set('end');
-      flush();
+      await flush();
       expect(cellEl(el).getAttribute('data-sticky')).toBe('end');
     });
 
@@ -933,11 +933,11 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('3');
     });
 
-    it('aria-rowcount / aria-colcount respect overrides', () => {
+    it('aria-rowcount / aria-colcount respect overrides', async () => {
       const { el, instance, flush } = renderHost(GridTableHost);
       instance.rowCount.set(100);
       instance.colCount.set(5);
-      flush();
+      await flush();
       expect(rootEl(el).getAttribute('aria-rowcount')).toBe('100');
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('5');
     });
@@ -966,105 +966,105 @@ describe('ForTable', () => {
       expect(rowEl(el).hasAttribute('aria-rowindex')).toBe(false);
     });
 
-    it('ArrowRight moves focus to next cell, ArrowLeft moves back', () => {
+    it('ArrowRight moves focus to next cell, ArrowLeft moves back', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       const ev = press(allCells[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(ev.defaultPrevented).toBe(true);
       expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
       expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
       expect(allCells[0]!.getAttribute('tabindex')).toBe('-1');
 
       press(allCells[1]!, 'ArrowLeft');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
       expect(allCells[0]!.getAttribute('tabindex')).toBe('0');
     });
 
-    it('ArrowDown moves one row down, ArrowUp moves back', () => {
+    it('ArrowDown moves one row down, ArrowUp moves back', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       press(allCells[0]!, 'ArrowDown');
-      flush();
+      await flush();
       expect(allCells[3]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[3]!, 'ArrowUp');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('End moves to last cell in row, Home moves back to first', () => {
+    it('End moves to last cell in row, Home moves back to first', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       press(allCells[0]!, 'End');
-      flush();
+      await flush();
       expect(allCells[2]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[2]!, 'Home');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('Ctrl+End moves to last cell of grid, Ctrl+Home moves to first', () => {
+    it('Ctrl+End moves to last cell of grid, Ctrl+Home moves to first', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       press(allCells[0]!, 'End', { ctrlKey: true });
-      flush();
+      await flush();
       expect(allCells[8]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[8]!, 'Home', { ctrlKey: true });
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('PageDown moves to last cell, PageUp moves to first', () => {
+    it('PageDown moves to last cell, PageUp moves to first', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       press(allCells[0]!, 'PageDown');
-      flush();
+      await flush();
       expect(allCells[8]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[8]!, 'PageUp');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('edge does not wrap: ArrowUp from first cell does not move when roving is active', () => {
+    it('edge does not wrap: ArrowUp from first cell does not move when roving is active', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       press(allCells[0]!, 'ArrowDown');
-      flush();
+      await flush();
       expect(allCells[3]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[3]!, 'ArrowUp');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[0]!, 'ArrowUp');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('RTL mirrors horizontal arrows', () => {
+    it('RTL mirrors horizontal arrows', async () => {
       const { el, instance, flush } = renderHost(GridTableHost);
       instance.dir.set('rtl');
-      flush();
+      await flush();
       const allCells = cells(el);
       press(allCells[0]!, 'ArrowLeft');
-      flush();
+      await flush();
       expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
 
       press(allCells[1]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('disabled cell is skipped during navigation and reflects aria-disabled/data-disabled', () => {
+    it('disabled cell is skipped during navigation and reflects aria-disabled/data-disabled', async () => {
       const { el, instance, flush } = renderHost(GridTableHost);
       instance.disabledRow.set(1);
       instance.disabledCol.set('b');
-      flush();
+      await flush();
       const allCells = cells(el);
       const disabledCell = allCells[4]!;
       expect(disabledCell.getAttribute('aria-disabled')).toBe('true');
@@ -1072,16 +1072,16 @@ describe('ForTable', () => {
       expect(disabledCell.getAttribute('tabindex')).toBe('-1');
 
       press(allCells[1]!, 'ArrowDown');
-      flush();
+      await flush();
       expect(allCells[7]!.getAttribute('data-highlighted')).toBe('');
     });
   });
 
   describe('selection', () => {
-    it('selectionMode="none": root has no aria-multiselectable, rows have no aria-selected, no data-selected', () => {
+    it('selectionMode="none": root has no aria-multiselectable, rows have no aria-selected, no data-selected', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.selectionMode.set('none');
-      flush();
+      await flush();
       expect(rootEl(el).hasAttribute('aria-multiselectable')).toBe(false);
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
       for (const row of allRows) {
@@ -1095,10 +1095,10 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
     });
 
-    it('selectionMode="single": root has no aria-multiselectable; rows render aria-selected="false" initially', () => {
+    it('selectionMode="single": root has no aria-multiselectable; rows render aria-selected="false" initially', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.selectionMode.set('single');
-      flush();
+      await flush();
       expect(rootEl(el).hasAttribute('aria-multiselectable')).toBe(false);
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
       for (const row of allRows) {
@@ -1106,7 +1106,7 @@ describe('ForTable', () => {
       }
     });
 
-    it('clicking a [forTableRowSelector] toggles its row: aria-selected, data-selected, and selector data-state update correctly; click again reverts', () => {
+    it('clicking a [forTableRowSelector] toggles its row: aria-selected, data-selected, and selector data-state update correctly; click again reverts', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
@@ -1116,24 +1116,24 @@ describe('ForTable', () => {
       expect(selector1.getAttribute('data-state')).toBe('unchecked');
 
       selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row1.getAttribute('data-selected')).toBe('');
       expect(selector1.getAttribute('data-state')).toBe('checked');
 
       selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(row1.getAttribute('aria-selected')).toBe('false');
       expect(row1.hasAttribute('data-selected')).toBe(false);
       expect(selector1.getAttribute('data-state')).toBe('unchecked');
     });
 
-    it('single mode: selecting row 2 after row 1 leaves only row 2 selected', () => {
+    it('single mode: selecting row 2 after row 1 leaves only row 2 selected', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.selectionMode.set('single');
-      flush();
+      await flush();
 
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
@@ -1141,16 +1141,16 @@ describe('ForTable', () => {
       const selector2 = el.querySelector<HTMLElement>('[data-testid="selector-2"]')!;
 
       selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('true');
 
       selector2.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('false');
       expect(row2.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('multiple mode: selecting row 1 then row 2 leaves both aria-selected="true"', () => {
+    it('multiple mode: selecting row 1 then row 2 leaves both aria-selected="true"', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
@@ -1158,18 +1158,18 @@ describe('ForTable', () => {
       const selector2 = el.querySelector<HTMLElement>('[data-testid="selector-2"]')!;
 
       selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       selector2.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row2.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('selectionBehavior="replace" + row click replaces the selection; second click moves selection', () => {
+    it('selectionBehavior="replace" + row click replaces the selection; second click moves selection', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.behavior.set('replace');
-      flush();
+      await flush();
 
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
@@ -1177,19 +1177,19 @@ describe('ForTable', () => {
       const cell2 = el.querySelector<HTMLElement>('[data-testid="cell-name-2"]')!;
 
       cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('true');
 
       cell2.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('false');
       expect(row2.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('selectionBehavior="replace" + Ctrl-click toggles a row without clearing others', () => {
+    it('selectionBehavior="replace" + Ctrl-click toggles a row without clearing others', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.behavior.set('replace');
-      flush();
+      await flush();
 
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
@@ -1197,38 +1197,38 @@ describe('ForTable', () => {
       const cell2 = el.querySelector<HTMLElement>('[data-testid="cell-name-2"]')!;
 
       cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('true');
 
       cell2.dispatchEvent(
         new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }),
       );
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row2.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('selectionBehavior="toggle" + row cell click toggles (adds then removes)', () => {
+    it('selectionBehavior="toggle" + row cell click toggles (adds then removes)', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
 
       cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('true');
 
       cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('false');
     });
 
-    it('select-all: clicking selects all rows and sets aria-checked="true"; clicking again clears all', () => {
+    it('select-all: clicking selects all rows and sets aria-checked="true"; clicking again clears all', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
       const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
 
       selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       for (const row of allRows) {
         expect(row.getAttribute('aria-selected')).toBe('true');
@@ -1237,7 +1237,7 @@ describe('ForTable', () => {
       expect(selectAll.getAttribute('data-state')).toBe('checked');
 
       selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       for (const row of allRows) {
         expect(row.getAttribute('aria-selected')).toBe('false');
@@ -1246,41 +1246,41 @@ describe('ForTable', () => {
       expect(selectAll.getAttribute('data-state')).toBe('unchecked');
     });
 
-    it('select-all tri-state: selecting one row via its selector shows aria-checked="mixed" on select-all', () => {
+    it('select-all tri-state: selecting one row via its selector shows aria-checked="mixed" on select-all', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
       const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
 
       selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(selectAll.getAttribute('aria-checked')).toBe('mixed');
       expect(selectAll.getAttribute('data-state')).toBe('indeterminate');
     });
 
-    it('select-all is no-op in single mode', () => {
+    it('select-all is no-op in single mode', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       instance.selectionMode.set('single');
-      flush();
+      await flush();
 
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
       const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
 
       selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       for (const row of allRows) {
         expect(row.getAttribute('aria-selected')).toBe('false');
       }
     });
 
-    it('Space on a focused cell toggles its row and prevents default; Space from an inner element does not toggle', () => {
+    it('Space on a focused cell toggles its row and prevents default; Space from an inner element does not toggle', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
 
       const spaceOnCell = press(cell1, ' ');
-      flush();
+      await flush();
       expect(spaceOnCell.defaultPrevented).toBe(true);
       expect(row1.getAttribute('aria-selected')).toBe('true');
 
@@ -1289,16 +1289,16 @@ describe('ForTable', () => {
       innerEl.dispatchEvent(
         new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(row1.getAttribute('aria-selected')).toBe('true');
     });
 
-    it('consumer write to the selection signal reflects on the DOM after flush', () => {
+    it('consumer write to the selection signal reflects on the DOM after flush', async () => {
       const { el, instance, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
 
       instance.selection.set([1]);
-      flush();
+      await flush();
 
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row1.getAttribute('data-selected')).toBe('');
@@ -1310,12 +1310,12 @@ describe('ForTable', () => {
       el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
     const sortedNums = (xs: readonly unknown[]) => [...xs].map(Number).sort((a, b) => a - b);
 
-    it('toggleSelectAll selects every supplied value, not just the rendered window', () => {
+    it('toggleSelectAll selects every supplied value, not just the rendered window', async () => {
       const { el, instance, flush } = renderHost(TotalSelectionTableHost);
       const selectAll = selectAllEl(el);
 
       selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(sortedNums(instance.selection())).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
       expect(selectAll.getAttribute('aria-checked')).toBe('true');
@@ -1326,60 +1326,60 @@ describe('ForTable', () => {
       }
     });
 
-    it('select-all tri-state is "mixed" when all rendered rows are selected but the dataset has more', () => {
+    it('select-all tri-state is "mixed" when all rendered rows are selected but the dataset has more', async () => {
       const { el, flush } = renderHost(TotalSelectionTableHost);
       for (const id of [0, 5, 9]) {
         el.querySelector<HTMLElement>(`[data-testid="selector-${id}"]`)!.dispatchEvent(
           new MouseEvent('click', { bubbles: true, cancelable: true }),
         );
       }
-      flush();
+      await flush();
 
       const selectAll = selectAllEl(el);
       expect(selectAll.getAttribute('aria-checked')).toBe('mixed');
       expect(selectAll.getAttribute('data-state')).toBe('indeterminate');
     });
 
-    it('toggleSelectAll clears the selection when every supplied value is already selected', () => {
+    it('toggleSelectAll clears the selection when every supplied value is already selected', async () => {
       const { el, instance, flush } = renderHost(TotalSelectionTableHost);
       instance.selection.set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-      flush();
+      await flush();
       const selectAll = selectAllEl(el);
       expect(selectAll.getAttribute('aria-checked')).toBe('true');
 
       selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(instance.selection()).toEqual([]);
       expect(selectAll.getAttribute('aria-checked')).toBe('false');
     });
 
-    it('Shift-click range spans rows that are not currently mounted', () => {
+    it('Shift-click range spans rows that are not currently mounted', async () => {
       const { el, instance, flush } = renderHost(TotalSelectionTableHost);
       const cell0 = el.querySelector<HTMLElement>('[data-testid="cell-name-0"]')!;
       const cell9 = el.querySelector<HTMLElement>('[data-testid="cell-name-9"]')!;
 
       cell0.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       cell9.dispatchEvent(
         new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true }),
       );
-      flush();
+      await flush();
 
       expect(sortedNums(instance.selection())).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     });
 
-    it('unset selectableValues falls back to the registered rows (windowed behaviour preserved)', () => {
+    it('unset selectableValues falls back to the registered rows (windowed behaviour preserved)', async () => {
       const { el, instance, flush } = renderHost(TotalSelectionTableHost);
       instance.totalValues.set(null);
-      flush();
+      await flush();
 
       for (const id of [0, 5, 9]) {
         el.querySelector<HTMLElement>(`[data-testid="selector-${id}"]`)!.dispatchEvent(
           new MouseEvent('click', { bubbles: true, cancelable: true }),
         );
       }
-      flush();
+      await flush();
 
       const selectAll = selectAllEl(el);
       expect(selectAll.getAttribute('aria-checked')).toBe('true');
@@ -1403,139 +1403,139 @@ describe('ForTable', () => {
       expect(sortHeader(el).getAttribute('tabindex')).toBe('0');
     });
 
-    it('click cycles aria-sort: absent → ascending → descending → absent', () => {
+    it('click cycles aria-sort: absent → ascending → descending → absent', async () => {
       const { el, flush } = renderHost(SortTableHost);
       const h = sortHeader(el);
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('descending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.hasAttribute('aria-sort')).toBe(false);
     });
 
-    it('sortChange fires with correct payload and data-sorted mirrors direction', () => {
+    it('sortChange fires with correct payload and data-sorted mirrors direction', async () => {
       const { el, instance, flush } = renderHost(SortTableHost);
       const h = sortHeader(el);
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
       expect(h.getAttribute('data-sorted')).toBe('ascending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
       expect(h.getAttribute('data-sorted')).toBe('descending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'none' });
       expect(h.hasAttribute('data-sorted')).toBe(false);
     });
 
-    it('disableClear=true: third click yields ascending again, never none', () => {
+    it('disableClear=true: third click yields ascending again, never none', async () => {
       const { el, instance, flush } = renderHost(SortTableHost);
       instance.disableClear.set(true);
-      flush();
+      await flush();
       const h = sortHeader(el);
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('descending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
     });
 
-    it('firstClickDirection=descending: fresh column cycles descending → ascending → none', () => {
+    it('firstClickDirection=descending: fresh column cycles descending → ascending → none', async () => {
       const { el, instance, flush } = renderHost(SortTableHost);
       instance.firstClickDirection.set('descending');
-      flush();
+      await flush();
       const h = sortHeader(el);
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('descending');
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.hasAttribute('aria-sort')).toBe(false);
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'none' });
     });
 
-    it('firstClickDirection=descending + disableClear: cycles descending ↔ ascending, never none', () => {
+    it('firstClickDirection=descending + disableClear: cycles descending ↔ ascending, never none', async () => {
       const { el, instance, flush } = renderHost(SortTableHost);
       instance.firstClickDirection.set('descending');
       instance.disableClear.set(true);
-      flush();
+      await flush();
       const h = sortHeader(el);
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('descending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('descending');
     });
 
-    it('Enter activates the sort header', () => {
+    it('Enter activates the sort header', async () => {
       const { el, flush } = renderHost(SortTableHost);
       const h = sortHeader(el);
       press(h, 'Enter');
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
     });
 
-    it('Space activates and prevents default', () => {
+    it('Space activates and prevents default', async () => {
       const { el, flush } = renderHost(SortTableHost);
       const h = sortHeader(el);
       const e = press(h, ' ');
-      flush();
+      await flush();
       expect(e.defaultPrevented).toBe(true);
       expect(h.getAttribute('aria-sort')).toBe('ascending');
     });
 
-    it('sortable=false: no tabindex, no aria-sort even when direction is ascending, click is no-op', () => {
+    it('sortable=false: no tabindex, no aria-sort even when direction is ascending, click is no-op', async () => {
       const { el, instance, flush } = renderHost(SortTableHost);
       instance.sortable.set(false);
       instance.direction.set('ascending');
-      flush();
+      await flush();
       const h = sortHeader(el);
       expect(h.hasAttribute('tabindex')).toBe(false);
       expect(h.hasAttribute('aria-sort')).toBe(false);
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.lastSort).toBeNull();
     });
 
-    it('controlled initial value: setting direction to descending reflects aria-sort without emitting sortChange', () => {
+    it('controlled initial value: setting direction to descending reflects aria-sort without emitting sortChange', async () => {
       const { el, instance, flush } = renderHost(SortTableHost);
       instance.direction.set('descending');
-      flush();
+      await flush();
       expect(sortHeader(el).getAttribute('aria-sort')).toBe('descending');
       expect(instance.lastSort).toBeNull();
     });
@@ -1551,18 +1551,18 @@ describe('ForTable', () => {
       expect(headerCell(el, 'role').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('keeps aria-sort / data-sorted on the cell and still cycles the sort on click', () => {
+    it('keeps aria-sort / data-sorted on the cell and still cycles the sort on click', async () => {
       const { el, instance, flush } = renderHost(SortReorderTableHost);
       const h = headerCell(el, 'name');
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
       expect(h.getAttribute('data-sorted')).toBe('ascending');
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
 
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('descending');
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
     });
@@ -1597,61 +1597,61 @@ describe('ForTable', () => {
       expect(resizerEl(el).hasAttribute('aria-valuemax')).toBe(false);
     });
 
-    it('aria-valuemax reflects a finite [max] input', () => {
+    it('aria-valuemax reflects a finite [max] input', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       instance.max.set(400);
-      flush();
+      await flush();
       expect(resizerEl(el).getAttribute('aria-valuemax')).toBe('400');
     });
 
-    it('ArrowRight increases width by step and emits resizeCommit; root publishes the CSS var', () => {
+    it('ArrowRight increases width by step and emits resizeCommit; root publishes the CSS var', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(110);
       expect(instance.lastResize).toEqual({ column: 'name', width: 110 });
       expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('110px');
     });
 
-    it('ArrowLeft decreases width by step; clamps at min', () => {
+    it('ArrowLeft decreases width by step; clamps at min', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       instance.min.set(90);
-      flush();
+      await flush();
       const r = resizerEl(el);
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(90);
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(90);
     });
 
-    it('RTL: ArrowLeft increases width, ArrowRight decreases', () => {
+    it('RTL: ArrowLeft increases width, ArrowRight decreases', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       instance.dir.set('rtl');
-      flush();
+      await flush();
       const r = resizerEl(el);
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(110);
 
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(100);
     });
 
-    it('pointer drag: widens the column and emits resizeCommit on pointerup; data-resizing is present during and absent after', () => {
+    it('pointer drag: widens the column and emits resizeCommit on pointerup; data-resizing is present during and absent after', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
       r.setPointerCapture = () => {};
@@ -1660,17 +1660,17 @@ describe('ForTable', () => {
 
       r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
       r.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
-      flush();
+      await flush();
       expect(instance.width()).toBe(150);
       expect(r.getAttribute('data-resizing')).toBe('');
 
       r.dispatchEvent(pointerEvent('pointerup', { clientX: 250 }));
-      flush();
+      await flush();
       expect(r.hasAttribute('data-resizing')).toBe(false);
       expect(instance.lastResize).toEqual({ column: 'name', width: 150 });
     });
 
-    it('no-op click (dead-zone): 1px move does not change width, no resizeCommit, no data-resizing', () => {
+    it('no-op click (dead-zone): 1px move does not change width, no resizeCommit, no data-resizing', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
       r.setPointerCapture = () => {};
@@ -1680,19 +1680,19 @@ describe('ForTable', () => {
       r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
       r.dispatchEvent(pointerEvent('pointermove', { clientX: 201 }));
       r.dispatchEvent(pointerEvent('pointerup', { clientX: 201 }));
-      flush();
+      await flush();
       expect(instance.width()).toBe(100);
       expect(instance.lastResize).toBeNull();
       expect(r.hasAttribute('data-resizing')).toBe(false);
     });
 
-    it('aria-valuenow updates after a resize', () => {
+    it('aria-valuenow updates after a resize', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(110);
       expect(r.getAttribute('aria-valuenow')).toBe('110');
     });
@@ -1727,7 +1727,7 @@ describe('ForTable', () => {
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(110);
       expect(instance.lastResize).toEqual({ column: 'name', width: 110 });
       expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('110px');
@@ -1736,57 +1736,57 @@ describe('ForTable', () => {
     const dblclick = (r: HTMLElement) =>
       r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
 
-    it('autoFit unset: dblclick on the handle is a no-op (no width change, no resizeCommit)', () => {
+    it('autoFit unset: dblclick on the handle is a no-op (no width change, no resizeCommit)', async () => {
       const { el, instance, flush } = renderHost(AutoFitTableHost);
       dblclick(resizerEl(el));
-      flush();
+      await flush();
       expect(instance.width()).toBe(100);
       expect(instance.lastResize).toBeNull();
     });
 
-    it('autoFit set: dblclick fits the column to content width, clamped to [min,max], and emits resizeCommit', () => {
+    it('autoFit set: dblclick fits the column to content width, clamped to [min,max], and emits resizeCommit', async () => {
       const { el, instance, flush } = renderHost(AutoFitTableHost);
       instance.autoFit.set(true);
       instance.min.set(120);
-      flush();
+      await flush();
       dblclick(resizerEl(el));
-      flush();
+      await flush();
       expect(instance.width()).toBe(120);
       expect(instance.lastResize).toEqual({ column: 'name', width: 120 });
       expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('120px');
     });
 
-    it('fitToContent() is callable imperatively (independent of autoFit) and returns the applied width', () => {
+    it('fitToContent() is callable imperatively (independent of autoFit) and returns the applied width', async () => {
       const { instance, flush } = renderHost(AutoFitTableHost);
       instance.min.set(140);
-      flush();
+      await flush();
       const applied = instance.resizer().fitToContent();
-      flush();
+      await flush();
       expect(applied).toBe(140);
       expect(instance.width()).toBe(140);
       expect(instance.lastResize).toEqual({ column: 'name', width: 140 });
     });
 
-    it('fitIncludesHeader with a [forTableColumnLabel] present still clamps to [min] and emits (header-wins geometry is Playwright-only)', () => {
+    it('fitIncludesHeader with a [forTableColumnLabel] present still clamps to [min] and emits (header-wins geometry is Playwright-only)', async () => {
       const { instance, flush } = renderHost(HeaderAutoFitTableHost);
       instance.fitIncludesHeader.set(true);
       instance.min.set(150);
-      flush();
+      await flush();
       const applied = instance.resizer().fitToContent();
-      flush();
+      await flush();
       expect(applied).toBe(150);
       expect(instance.width()).toBe(150);
       expect(instance.lastResize).toEqual({ column: 'name', width: 150 });
     });
 
-    it('fitIncludesHeader with no [forTableColumnLabel] marker degrades to data-cells-only without throwing', () => {
+    it('fitIncludesHeader with no [forTableColumnLabel] marker degrades to data-cells-only without throwing', async () => {
       const { instance, flush } = renderHost(HeaderAutoFitTableHost);
       instance.withLabel.set(false);
       instance.fitIncludesHeader.set(true);
       instance.min.set(160);
-      flush();
+      await flush();
       const applied = instance.resizer().fitToContent();
-      flush();
+      await flush();
       expect(applied).toBe(160);
       expect(instance.lastResize).toEqual({ column: 'name', width: 160 });
     });
@@ -2045,36 +2045,36 @@ describe('ForTable', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects a mode change on the cell role without Zone.js', () => {
+    it('reflects a mode change on the cell role without Zone.js', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       expect(cellEl(el).getAttribute('role')).toBe('cell');
 
       instance.mode.set('grid');
-      flush();
+      await flush();
 
       expect(cellEl(el).getAttribute('role')).toBe('gridcell');
     });
 
-    it('reflects an ariaLabel change without Zone.js', () => {
+    it('reflects an ariaLabel change without Zone.js', async () => {
       const { el, instance, flush } = renderHost(TableHost);
       expect(rootEl(el).hasAttribute('aria-label')).toBe(false);
 
       instance.ariaLabel.set('My Table');
-      flush();
+      await flush();
 
       expect(rootEl(el).getAttribute('aria-label')).toBe('My Table');
     });
 
-    it('grid navigation reacts without Zone.js', () => {
+    it('grid navigation reacts without Zone.js', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
       press(allCells[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
       expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
     });
 
-    it('toggling a row selector reflects aria-selected and data-selected without Zone.js', () => {
+    it('toggling a row selector reflects aria-selected and data-selected without Zone.js', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
       const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
@@ -2083,39 +2083,39 @@ describe('ForTable', () => {
       expect(row1.hasAttribute('data-selected')).toBe(false);
 
       selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row1.getAttribute('data-selected')).toBe('');
       expect(selector1.getAttribute('data-state')).toBe('checked');
     });
 
-    it('total-aware select-all selects the full supplied set without Zone.js', () => {
+    it('total-aware select-all selects the full supplied set without Zone.js', async () => {
       const { el, instance, flush } = renderHost(TotalSelectionTableHost);
       const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
 
       selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
 
       expect(instance.selection().length).toBe(10);
       expect(selectAll.getAttribute('aria-checked')).toBe('true');
     });
 
-    it('clicking the sort header reflects aria-sort without Zone.js', () => {
+    it('clicking the sort header reflects aria-sort without Zone.js', async () => {
       const { el, flush } = renderHost(SortTableHost);
       const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
       h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(h.getAttribute('aria-sort')).toBe('ascending');
     });
 
-    it('column resizer ArrowRight updates aria-valuenow and publishes CSS var without Zone.js', () => {
+    it('column resizer ArrowRight updates aria-valuenow and publishes CSS var without Zone.js', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(110);
       expect(r.getAttribute('aria-valuenow')).toBe('110');
       expect(
@@ -2125,13 +2125,13 @@ describe('ForTable', () => {
       ).toBe('110px');
     });
 
-    it('column resizer reacts under hostDirectives composition without Zone.js', () => {
+    it('column resizer reacts under hostDirectives composition without Zone.js', async () => {
       const { el, instance, flush } = renderHost(WrappedResizeTableHost);
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(instance.width()).toBe(110);
       expect(r.getAttribute('aria-valuenow')).toBe('110');
       expect(
@@ -2141,14 +2141,14 @@ describe('ForTable', () => {
       ).toBe('110px');
     });
 
-    it('autoFit dblclick fits the column and publishes the CSS var without Zone.js', () => {
+    it('autoFit dblclick fits the column and publishes the CSS var without Zone.js', async () => {
       const { el, instance, flush } = renderHost(AutoFitTableHost);
       instance.autoFit.set(true);
       instance.min.set(130);
-      flush();
+      await flush();
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.width()).toBe(130);
       expect(instance.lastResize).toEqual({ column: 'name', width: 130 });
       expect(r.getAttribute('aria-valuenow')).toBe('130');
@@ -2159,15 +2159,15 @@ describe('ForTable', () => {
       ).toBe('130px');
     });
 
-    it('fitIncludesHeader dblclick (with [forTableColumnLabel]) fits and publishes the CSS var without Zone.js', () => {
+    it('fitIncludesHeader dblclick (with [forTableColumnLabel]) fits and publishes the CSS var without Zone.js', async () => {
       const { el, instance, flush } = renderHost(HeaderAutoFitTableHost);
       instance.autoFit.set(true);
       instance.fitIncludesHeader.set(true);
       instance.min.set(135);
-      flush();
+      await flush();
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.width()).toBe(135);
       expect(instance.lastResize).toEqual({ column: 'name', width: 135 });
       expect(r.getAttribute('aria-valuenow')).toBe('135');
@@ -2178,24 +2178,24 @@ describe('ForTable', () => {
       ).toBe('135px');
     });
 
-    it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state without Zone.js', () => {
+    it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state without Zone.js', async () => {
       const { el, flush } = renderHost(TreegridTableHost);
       const parentRow = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
       const parentCell = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       expect(parentRow.getAttribute('aria-expanded')).toBe('false');
       expect(parentRow.getAttribute('data-state')).toBe('closed');
       const e = press(parentCell, 'ArrowRight');
-      flush();
+      await flush();
       expect(e.defaultPrevented).toBe(true);
       expect(parentRow.getAttribute('aria-expanded')).toBe('true');
       expect(parentRow.getAttribute('data-state')).toBe('open');
       expect(el.querySelector<HTMLElement>('[data-testid="row-a1"]')).not.toBeNull();
     });
 
-    it('virtualIndex change reflects aria-rowindex without Zone.js', () => {
+    it('virtualIndex change reflects aria-rowindex without Zone.js', async () => {
       const { el, instance, flush } = renderHost(VirtualizedTableHost);
       instance.windowIndices.set([100, 101, 102]);
-      flush();
+      await flush();
       const row100 = el.querySelector<HTMLElement>('[data-testid="row-100"]')!;
       expect(row100.getAttribute('aria-rowindex')).toBe('101');
     });
@@ -2239,10 +2239,10 @@ describe('ForTable', () => {
       }
     });
 
-    it('after expanding parent a: child rows appear, parent a emits aria-expanded="true" + data-state="open"', () => {
+    it('after expanding parent a: child rows appear, parent a emits aria-expanded="true" + data-state="open"', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       instance.expanded.set(['a']);
-      flush();
+      await flush();
       const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
       expect(rowA.getAttribute('aria-expanded')).toBe('true');
       expect(rowA.getAttribute('data-state')).toBe('open');
@@ -2250,10 +2250,10 @@ describe('ForTable', () => {
       expect(el.querySelector('[data-testid="row-a2"]')).not.toBeNull();
     });
 
-    it('aria-posinset / aria-setsize correct in expanded tree and recompute after collapse', () => {
+    it('aria-posinset / aria-setsize correct in expanded tree and recompute after collapse', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       instance.expanded.set(['a']);
-      flush();
+      await flush();
       const rowA = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
       const rowA1 = el.querySelector<HTMLElement>('[data-testid="row-a1"]')!;
       const rowA2 = el.querySelector<HTMLElement>('[data-testid="row-a2"]')!;
@@ -2268,83 +2268,83 @@ describe('ForTable', () => {
       expect(rowB.getAttribute('aria-setsize')).toBe('2');
 
       instance.expanded.set([]);
-      flush();
+      await flush();
       const rowBAfter = el.querySelector<HTMLElement>('[data-testid="row-b"]')!;
       expect(rowBAfter.getAttribute('aria-posinset')).toBe('2');
       expect(rowBAfter.getAttribute('aria-setsize')).toBe('2');
       expect(el.querySelector('[data-testid="row-a1"]')).toBeNull();
     });
 
-    it('ArrowRight on collapsed parent expands it (no cell move); ArrowRight again moves to next cell', () => {
+    it('ArrowRight on collapsed parent expands it (no cell move); ArrowRight again moves to next cell', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       const e = press(cellA, 'ArrowRight');
-      flush();
+      await flush();
       expect(e.defaultPrevented).toBe(true);
       expect(instance.expanded()).toContain('a');
       const expandedCellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       const e2 = press(expandedCellA, 'ArrowRight');
-      flush();
+      await flush();
       expect(e2.defaultPrevented).toBe(true);
       expect(expandedCellA.getAttribute('data-highlighted')).toBe(null);
     });
 
-    it('ArrowLeft on expanded parent collapses it; ArrowLeft on collapsed/leaf navigates', () => {
+    it('ArrowLeft on expanded parent collapses it; ArrowLeft on collapsed/leaf navigates', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       instance.expanded.set(['a']);
-      flush();
+      await flush();
       const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       const e = press(cellA, 'ArrowLeft');
-      flush();
+      await flush();
       expect(e.defaultPrevented).toBe(true);
       expect(instance.expanded()).not.toContain('a');
     });
 
-    it('ArrowRight preventDefault is called when it expands', () => {
+    it('ArrowRight preventDefault is called when it expands', async () => {
       const { el, flush } = renderHost(TreegridTableHost);
       const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       const e = press(cellA, 'ArrowRight');
-      flush();
+      await flush();
       expect(e.defaultPrevented).toBe(true);
     });
 
-    it('RTL: ArrowLeft expands, ArrowRight collapses', () => {
+    it('RTL: ArrowLeft expands, ArrowRight collapses', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       instance.dir.set('rtl');
-      flush();
+      await flush();
       const cellA = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       const e = press(cellA, 'ArrowLeft');
-      flush();
+      await flush();
       expect(e.defaultPrevented).toBe(true);
       expect(instance.expanded()).toContain('a');
 
       instance.expanded.set(['a']);
-      flush();
+      await flush();
       const cellAExp = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
       const e2 = press(cellAExp, 'ArrowRight');
-      flush();
+      await flush();
       expect(e2.defaultPrevented).toBe(true);
       expect(instance.expanded()).not.toContain('a');
     });
 
-    it('non-expandable (leaf) rows emit no aria-expanded and no data-state', () => {
+    it('non-expandable (leaf) rows emit no aria-expanded and no data-state', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       instance.expanded.set(['a']);
-      flush();
+      await flush();
       const rowA1 = el.querySelector<HTMLElement>('[data-testid="row-a1"]')!;
       expect(rowA1.hasAttribute('aria-expanded')).toBe(false);
       expect(rowA1.hasAttribute('data-state')).toBe(false);
     });
 
-    it('pointer: clicking the toggle button expands/collapses the expanded model', () => {
+    it('pointer: clicking the toggle button expands/collapses the expanded model', async () => {
       const { el, instance, flush } = renderHost(TreegridTableHost);
       const toggleA = el.querySelector<HTMLElement>('[data-testid="toggle-a"]')!;
       toggleA.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.expanded()).toContain('a');
 
       toggleA.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      flush();
+      await flush();
       expect(instance.expanded()).not.toContain('a');
     });
   });

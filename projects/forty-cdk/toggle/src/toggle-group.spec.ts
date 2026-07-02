@@ -69,30 +69,30 @@ describe('ForToggleGroup', () => {
       }
     });
 
-    it('reflects orientation changes', () => {
+    it('reflects orientation changes', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.orientation.set('vertical');
-      r.flush();
+      await r.flush();
 
       const group = groupOf(r.el);
       expect(group.getAttribute('aria-orientation')).toBeNull();
       expect(group.getAttribute('data-orientation')).toBe('vertical');
     });
 
-    it('propagates data-orientation to each item', () => {
+    it('propagates data-orientation to each item', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.orientation.set('vertical');
-      r.flush();
+      await r.flush();
 
       for (const v of ['left', 'center', 'right']) {
         expect(itemOf(r.el, v).getAttribute('data-orientation')).toBe('vertical');
       }
     });
 
-    it('reflects group-level disabled', () => {
+    it('reflects group-level disabled', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.groupDisabled.set(true);
-      r.flush();
+      await r.flush();
 
       const group = groupOf(r.el);
       expect(group.getAttribute('aria-disabled')).toBe('true');
@@ -115,23 +115,23 @@ describe('ForToggleGroup', () => {
       expect(itemOf(el, 'right').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('skips a disabled first item when picking the entry point', () => {
+    it('skips a disabled first item when picking the entry point', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.items.set([
         { value: 'left', label: 'Left', disabled: true },
         { value: 'center', label: 'Center', disabled: false },
         { value: 'right', label: 'Right', disabled: false },
       ]);
-      r.flush();
+      await r.flush();
 
       expect(itemOf(r.el, 'left').getAttribute('tabindex')).toBe('-1');
       expect(itemOf(r.el, 'center').getAttribute('tabindex')).toBe('0');
     });
 
-    it('puts tabindex=0 on the first selected item when there is a selection', () => {
+    it('puts tabindex=0 on the first selected item when there is a selection', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.value.set(['center']);
-      r.flush();
+      await r.flush();
 
       expect(itemOf(r.el, 'left').getAttribute('tabindex')).toBe('-1');
       expect(itemOf(r.el, 'center').getAttribute('tabindex')).toBe('0');
@@ -140,14 +140,14 @@ describe('ForToggleGroup', () => {
   });
 
   describe('roving tab stop follows focus', () => {
-    it('moves tabindex=0 to the focused item so re-entry restores it', () => {
+    it('moves tabindex=0 to the focused item so re-entry restores it', async () => {
       const { el, flush } = renderHost(ToggleGroupHost);
       const left = itemOf(el, 'left');
       const center = itemOf(el, 'center');
 
       left.focus();
       pressKey(left, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(center);
 
       expect(left.getAttribute('tabindex')).toBe('-1');
@@ -155,18 +155,18 @@ describe('ForToggleGroup', () => {
       expect(itemOf(el, 'right').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('keeps the active tab stop after the focus leaves the group', () => {
+    it('keeps the active tab stop after the focus leaves the group', async () => {
       const { el, flush } = renderHost(ToggleGroupHost);
       const left = itemOf(el, 'left');
       const right = itemOf(el, 'right');
 
       left.focus();
       pressKey(left, 'End');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(right);
 
       right.blur();
-      flush();
+      await flush();
 
       expect(left.getAttribute('tabindex')).toBe('-1');
       expect(right.getAttribute('tabindex')).toBe('0');
@@ -174,35 +174,35 @@ describe('ForToggleGroup', () => {
   });
 
   describe('single mode (default)', () => {
-    it('replaces the current selection on click', () => {
+    it('replaces the current selection on click', async () => {
       const r = renderHost(ToggleGroupHost);
 
       itemOf(r.el, 'left').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual(['left']);
 
       itemOf(r.el, 'right').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual(['right']);
     });
 
-    it('clears the selection when clicking the pressed item', () => {
+    it('clears the selection when clicking the pressed item', async () => {
       const r = renderHost(ToggleGroupHost);
 
       itemOf(r.el, 'left').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual(['left']);
 
       itemOf(r.el, 'left').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual([]);
     });
 
-    it('reflects aria-pressed and data-state per item', () => {
+    it('reflects aria-pressed and data-state per item', async () => {
       const r = renderHost(ToggleGroupHost);
 
       itemOf(r.el, 'center').click();
-      r.flush();
+      await r.flush();
 
       expect(itemOf(r.el, 'left').getAttribute('aria-pressed')).toBe('false');
       expect(itemOf(r.el, 'center').getAttribute('aria-pressed')).toBe('true');
@@ -212,47 +212,47 @@ describe('ForToggleGroup', () => {
   });
 
   describe('multiple mode', () => {
-    it('toggles items independently', () => {
+    it('toggles items independently', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.multiple.set(true);
-      r.flush();
+      await r.flush();
 
       itemOf(r.el, 'left').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual(['left']);
 
       itemOf(r.el, 'right').click();
-      r.flush();
+      await r.flush();
       expect(new Set(r.instance.value())).toEqual(new Set(['left', 'right']));
 
       itemOf(r.el, 'left').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual(['right']);
     });
   });
 
   describe('disabled', () => {
-    it('blocks click on a per-item disabled item', () => {
+    it('blocks click on a per-item disabled item', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.items.set([
         { value: 'left', label: 'Left', disabled: false },
         { value: 'center', label: 'Center', disabled: true },
         { value: 'right', label: 'Right', disabled: false },
       ]);
-      r.flush();
+      await r.flush();
 
       itemOf(r.el, 'center').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual([]);
     });
 
-    it('blocks click on every item when group is disabled', () => {
+    it('blocks click on every item when group is disabled', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.groupDisabled.set(true);
-      r.flush();
+      await r.flush();
 
       itemOf(r.el, 'left').click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual([]);
     });
   });
@@ -288,14 +288,14 @@ describe('ForToggleGroup', () => {
       expect(document.activeElement).toBe(itemOf(el, 'right'));
     });
 
-    it('skips disabled items during arrow navigation', () => {
+    it('skips disabled items during arrow navigation', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.items.set([
         { value: 'left', label: 'Left', disabled: false },
         { value: 'center', label: 'Center', disabled: true },
         { value: 'right', label: 'Right', disabled: false },
       ]);
-      r.flush();
+      await r.flush();
 
       const left = itemOf(r.el, 'left');
       left.focus();
@@ -313,10 +313,10 @@ describe('ForToggleGroup', () => {
       expect(document.activeElement).toBe(itemOf(el, 'left'));
     });
 
-    it('does NOT wrap with loop=false', () => {
+    it('does NOT wrap with loop=false', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.loop.set(false);
-      r.flush();
+      await r.flush();
 
       const right = itemOf(r.el, 'right');
       right.focus();
@@ -356,12 +356,12 @@ describe('ForToggleGroup', () => {
       expect(document.activeElement).toBe(left);
     });
 
-    it('does NOT change selection while navigating (no selection-on-focus)', () => {
+    it('does NOT change selection while navigating (no selection-on-focus)', async () => {
       const r = renderHost(ToggleGroupHost);
       const left = itemOf(r.el, 'left');
       left.focus();
       pressKey(left, 'ArrowRight');
-      r.flush();
+      await r.flush();
 
       expect(r.instance.value()).toEqual([]);
       expect(document.activeElement).toBe(itemOf(r.el, 'center'));
@@ -369,10 +369,10 @@ describe('ForToggleGroup', () => {
   });
 
   describe('keyboard navigation (vertical)', () => {
-    it('ArrowDown / ArrowUp drive vertical orientation', () => {
+    it('ArrowDown / ArrowUp drive vertical orientation', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.orientation.set('vertical');
-      r.flush();
+      await r.flush();
 
       const left = itemOf(r.el, 'left');
       left.focus();
@@ -383,10 +383,10 @@ describe('ForToggleGroup', () => {
       expect(document.activeElement).toBe(left);
     });
 
-    it('ignores horizontal arrows in vertical mode', () => {
+    it('ignores horizontal arrows in vertical mode', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.orientation.set('vertical');
-      r.flush();
+      await r.flush();
 
       const left = itemOf(r.el, 'left');
       left.focus();
@@ -396,10 +396,10 @@ describe('ForToggleGroup', () => {
   });
 
   describe('RTL', () => {
-    it('swaps ArrowLeft/ArrowRight in horizontal RTL mode', () => {
+    it('swaps ArrowLeft/ArrowRight in horizontal RTL mode', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.dir.set('rtl');
-      r.flush();
+      await r.flush();
 
       const left = itemOf(r.el, 'left');
       left.focus();
@@ -407,11 +407,11 @@ describe('ForToggleGroup', () => {
       expect(document.activeElement).toBe(itemOf(r.el, 'center'));
     });
 
-    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl" (dir does not flip vertical)', () => {
+    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl" (dir does not flip vertical)', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.orientation.set('vertical');
       r.instance.dir.set('rtl');
-      r.flush();
+      await r.flush();
 
       const left = itemOf(r.el, 'left');
       left.focus();
@@ -424,7 +424,7 @@ describe('ForToggleGroup', () => {
   });
 
   describe('two-way binding', () => {
-    it('honors consumer writes via [(value)] without re-emitting (valueChange)', () => {
+    it('honors consumer writes via [(value)] without re-emitting (valueChange)', async () => {
       let internalEmits = 0;
 
       @Component({
@@ -447,12 +447,12 @@ describe('ForToggleGroup', () => {
 
       // Consumer write — must NOT fire.
       r.instance.value.set(['a']);
-      r.flush();
+      await r.flush();
       expect(internalEmits).toBe(0);
 
       // User click — internal transition.
       itemOf(r.el, 'b').click();
-      r.flush();
+      await r.flush();
       expect(internalEmits).toBe(1);
     });
   });
@@ -473,31 +473,31 @@ describe('ForToggleGroup', () => {
       readonly prefs = form(this.model, (s) => required(s.tags));
     }
 
-    it('two-way binds the array with the field value', () => {
+    it('two-way binds the array with the field value', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const bold = itemOf(el, 'bold');
       const italic = itemOf(el, 'italic');
 
       bold.click();
       italic.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().tags).toEqual(['bold', 'italic']);
 
       fixture.componentInstance.model.set({ tags: ['underline'] });
-      flush();
+      await flush();
       expect(itemOf(el, 'underline').getAttribute('aria-pressed')).toBe('true');
       expect(bold.getAttribute('aria-pressed')).toBe('false');
     });
 
-    it('flows schema `required` into aria-required on the group', () => {
+    it('flows schema `required` into aria-required on the group', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(groupOf(el).getAttribute('aria-required')).toBe('true');
     });
 
-    it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', () => {
+    it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', async () => {
       const { fixture, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(fixture.componentInstance.prefs.tags().valid()).toBe(true);
     });
 
@@ -519,17 +519,17 @@ describe('ForToggleGroup', () => {
       );
     }
 
-    it('invalidates an empty array-backed control with the documented non-empty `validate` rule', () => {
+    it('invalidates an empty array-backed control with the documented non-empty `validate` rule', async () => {
       const { el, fixture, flush } = renderHost(NonEmptyRequiredHost);
-      flush();
+      await flush();
       expect(fixture.componentInstance.prefs.tags().valid()).toBe(false);
 
       itemOf(el, 'bold').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.prefs.tags().valid()).toBe(true);
     });
 
-    it('mirrors values into hidden inputs when [name] is set', () => {
+    it('mirrors values into hidden inputs when [name] is set', async () => {
       @Component({
         imports: [ForToggleGroup, ForToggleGroupItem],
         template: `
@@ -547,7 +547,7 @@ describe('ForToggleGroup', () => {
 
       const r = renderHost(FormHost);
       r.instance.value.set(['bold', 'italic']);
-      r.flush();
+      await r.flush();
 
       const hiddens = r.el.querySelectorAll<HTMLInputElement>(
         'input[type="hidden"][name="formats"]',
@@ -556,7 +556,7 @@ describe('ForToggleGroup', () => {
       expect(Array.from(hiddens, (h) => h.value)).toEqual(['bold', 'italic']);
     });
 
-    it('reflects touched as data-touched on focusout outside the group', () => {
+    it('reflects touched as data-touched on focusout outside the group', async () => {
       const r = renderHost(ToggleGroupHost);
       const left = itemOf(r.el, 'left');
       left.focus();
@@ -564,11 +564,11 @@ describe('ForToggleGroup', () => {
       left.dispatchEvent(
         new FocusEvent('focusout', { relatedTarget: document.body, bubbles: true }),
       );
-      r.flush();
+      await r.flush();
       expect(groupOf(r.el).hasAttribute('data-touched')).toBe(true);
     });
 
-    it('blocks click when readonly is set', () => {
+    it('blocks click when readonly is set', async () => {
       @Component({
         imports: [ForToggleGroup, ForToggleGroupItem],
         template: `
@@ -583,7 +583,7 @@ describe('ForToggleGroup', () => {
 
       const r = renderHost(ReadonlyHost);
       r.el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!.click();
-      r.flush();
+      await r.flush();
       expect(r.instance.value()).toEqual([]);
       expect(r.el.querySelector('[forToggleGroup]')!.getAttribute('aria-readonly')).toBe('true');
     });

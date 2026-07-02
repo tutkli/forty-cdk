@@ -334,20 +334,20 @@ describe('ForMenuSub', () => {
   });
 
   describe('hover-follows-pointer (#662)', () => {
-    it('pointermove over the SubTrigger clears the parent item highlight without moving focus', () => {
+    it('pointermove over the SubTrigger clears the parent item highlight without moving focus', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
 
       const cut = document.querySelector<HTMLElement>('#cut')!;
       cut.dispatchEvent(pointerEvent('pointermove'));
-      flush();
+      await flush();
       expect(cut.getAttribute('data-highlighted')).toBe('');
       expect(document.activeElement?.id).toBe('cut');
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointermove'));
-      flush();
+      await flush();
 
       // The sub-trigger reflects no highlight and does not take focus
       // (hover-open never moves focus, #332); #cut just stops being highlighted.
@@ -355,16 +355,16 @@ describe('ForMenuSub', () => {
       expect(document.activeElement?.id).toBe('cut');
     });
 
-    it('pointermove over a submenu item highlights it', () => {
+    it('pointermove over a submenu item highlights it', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
       instance.subOpen.set(true);
-      flush();
+      await flush();
 
       const advanced = document.querySelector<HTMLElement>('#advanced')!;
       advanced.dispatchEvent(pointerEvent('pointermove'));
-      flush();
+      await flush();
 
       expect(document.activeElement?.id).toBe('advanced');
       expect(advanced.getAttribute('data-highlighted')).toBe('');
@@ -377,58 +377,58 @@ describe('ForMenuSub', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    it('hovering the SubTrigger opens the submenu after subMenuOpenDelay (default 100ms)', () => {
+    it('hovering the SubTrigger opens the submenu after subMenuOpenDelay (default 100ms)', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(99);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(false);
 
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(true);
       expect(document.querySelector('[forMenuSubContent]')).not.toBeNull();
     });
 
-    it('leaving the SubTrigger before the open delay cancels the hover-open', () => {
+    it('leaving the SubTrigger before the open delay cancels the hover-open', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(50);
 
       more.dispatchEvent(pointerEvent('pointerleave', { clientX: 10, clientY: 10 }));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.subOpen()).toBe(false);
     });
 
-    it('ignores non-mouse pointer enter (touch opens via tap, not hover)', () => {
+    it('ignores non-mouse pointer enter (touch opens via tap, not hover)', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointerenter', { pointerType: 'touch' }));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.subOpen()).toBe(false);
     });
 
-    it('hovering a disabled SubTrigger never opens', () => {
+    it('hovering a disabled SubTrigger never opens', async () => {
       @Component({
         imports: IMPORTS,
         template: `
@@ -453,93 +453,93 @@ describe('ForMenuSub', () => {
       }
 
       const { instance, flush } = renderHost(Host);
-      flush();
+      await flush();
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.subOpen()).toBe(false);
     });
 
-    it('leaving the submenu content closes it after subMenuCloseDelay (default 100ms)', () => {
+    it('leaving the submenu content closes it after subMenuCloseDelay (default 100ms)', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
       instance.subOpen.set(true);
-      flush();
+      await flush();
 
       const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
       subContent.dispatchEvent(pointerEvent('pointerleave', { clientX: 999, clientY: 999 }));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(99);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(true);
 
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(false);
     });
 
-    it('re-entering the submenu content cancels a pending close', () => {
+    it('re-entering the submenu content cancels a pending close', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
       instance.subOpen.set(true);
-      flush();
+      await flush();
 
       const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
       subContent.dispatchEvent(pointerEvent('pointerleave', { clientX: 999, clientY: 999 }));
-      flush();
+      await flush();
       subContent.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(true);
     });
 
-    it('leaving the SubTrigger arms a grace hold before closing (does not close immediately)', () => {
+    it('leaving the SubTrigger arms a grace hold before closing (does not close immediately)', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
       instance.subOpen.set(true);
-      flush();
+      await flush();
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointerleave', { clientX: 10, clientY: 10 }));
-      flush();
+      await flush();
       // Still open right after leaving — the pointer-grace window holds it.
       expect(instance.subOpen()).toBe(true);
 
       // Grace window (300ms) lapses, then the close delay (100ms) elapses.
       vi.advanceTimersByTime(300);
-      flush();
+      await flush();
       vi.advanceTimersByTime(100);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(false);
     });
 
-    it('a keyboard open (ArrowRight) supersedes a pending hover-open timer', () => {
+    it('a keyboard open (ArrowRight) supersedes a pending hover-open timer', async () => {
       const { instance, flush } = renderHost(SubMenuHost);
       instance.open.set(true);
-      flush();
+      await flush();
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       more.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       // Open immediately by keyboard before the hover delay fires.
       more.focus();
       pressKey(more, 'ArrowRight');
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(true);
 
       // The stale hover-open timer firing must not disturb the open submenu.
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
       expect(instance.subOpen()).toBe(true);
     });
 
@@ -568,20 +568,20 @@ describe('ForMenuSub', () => {
         readonly subOpen = signal(false);
       }
 
-      it('honours an overridden subMenuOpenDelay', () => {
+      it('honours an overridden subMenuOpenDelay', async () => {
         const { instance, flush } = renderHost(ConfiguredHost);
-        flush();
+        await flush();
 
         const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
         more.dispatchEvent(pointerEvent('pointerenter'));
-        flush();
+        await flush();
 
         vi.advanceTimersByTime(249);
-        flush();
+        await flush();
         expect(instance.subOpen()).toBe(false);
 
         vi.advanceTimersByTime(1);
-        flush();
+        await flush();
         expect(instance.subOpen()).toBe(true);
       });
     });

@@ -55,7 +55,7 @@ const collectFocusables = (host: HTMLElement): HTMLElement[] =>
 
 describe('ForToolbar', () => {
   describe('roles + reflection', () => {
-    it('exposes role="toolbar" and reflects orientation', () => {
+    it('exposes role="toolbar" and reflects orientation', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       const root = query<HTMLElement>('[forToolbar]')!;
 
@@ -64,36 +64,36 @@ describe('ForToolbar', () => {
       expect(root.getAttribute('data-orientation')).toBe('horizontal');
 
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
       expect(root.getAttribute('aria-orientation')).toBe('vertical');
     });
 
-    it('reflects ariaLabel truthy-only as aria-label', () => {
+    it('reflects ariaLabel truthy-only as aria-label', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       const root = query<HTMLElement>('[forToolbar]')!;
 
       expect(root.hasAttribute('aria-label')).toBe(false);
 
       fixture.componentInstance.ariaLabel.set('Formatting');
-      flush();
+      await flush();
       expect(root.getAttribute('aria-label')).toBe('Formatting');
 
       fixture.componentInstance.ariaLabel.set('');
-      flush();
+      await flush();
       expect(root.hasAttribute('aria-label')).toBe(false);
     });
 
-    it('reflects dir="rtl" on the host when set', () => {
+    it('reflects dir="rtl" on the host when set', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       expect(query<HTMLElement>('[forToolbar]')!.getAttribute('dir')).toBe('rtl');
     });
 
-    it('propagates data-orientation to button and link', () => {
+    it('propagates data-orientation to button and link', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
 
       const button = query<HTMLButtonElement>('[forToolbarButton]')!;
       const link = query<HTMLAnchorElement>('[forToolbarLink]')!;
@@ -103,15 +103,15 @@ describe('ForToolbar', () => {
   });
 
   assertRovingTabindexContract({
-    mount: () => {
+    mount: async () => {
       const r = renderHost(ToolbarHost);
-      r.flush();
+      await r.flush();
       return { items: collectFocusables(r.el), flush: r.flush };
     },
-    mountWithDisabledMiddle: () => {
+    mountWithDisabledMiddle: async () => {
       const r = renderHost(ToolbarHost);
       r.fixture.componentInstance.middleDisabled.set(true);
-      r.flush();
+      await r.flush();
       // [One, Two(disabled), Three]
       return {
         items: collectFocusables(r.el),
@@ -119,7 +119,7 @@ describe('ForToolbar', () => {
         flush: r.flush,
       };
     },
-    mountWithDisabledFirst: () => {
+    mountWithDisabledFirst: async () => {
       @Component({
         imports: [ForToolbar, ForToolbarButton],
         template: `
@@ -131,70 +131,70 @@ describe('ForToolbar', () => {
       })
       class Host {}
       const r = renderHost(Host);
-      r.flush();
+      await r.flush();
       return {
         items: collectFocusables(r.el),
         enabledIndices: [1],
         flush: r.flush,
       };
     },
-    mountRtl: () => {
+    mountRtl: async () => {
       const r = renderHost(ToolbarHost);
       r.fixture.componentInstance.dir.set('rtl');
-      r.flush();
+      await r.flush();
       return { items: collectFocusables(r.el), flush: r.flush };
     },
   });
 
   describe('arrow-key navigation (toolbar-specific)', () => {
-    it('moves focus right with ArrowRight to the link past the separator', () => {
+    it('moves focus right with ArrowRight to the link past the separator', async () => {
       const { queryAll, flush } = renderHost(ToolbarHost);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
       const link = document.querySelector<HTMLAnchorElement>('a')!;
 
       buttons[0]!.focus();
       pressKey(buttons[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[1]);
 
       pressKey(buttons[1]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(link);
     });
 
-    it('ArrowDown / ArrowUp stay axis-positive in vertical orientation under dir="rtl"', () => {
+    it('ArrowDown / ArrowUp stay axis-positive in vertical orientation under dir="rtl"', async () => {
       const { fixture, queryAll, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.orientation.set('vertical');
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
 
       buttons[0]!.focus();
       pressKey(buttons[0]!, 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[1]);
 
       pressKey(buttons[1]!, 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[0]);
     });
   });
 
   describe('roving tab stop follows focus', () => {
-    it('moves tabindex=0 to the focused item so re-entry restores it', () => {
+    it('moves tabindex=0 to the focused item so re-entry restores it', async () => {
       const { queryAll, flush } = renderHost(ToolbarHost);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
       const link = document.querySelector<HTMLAnchorElement>('a')!;
 
       buttons[0]!.focus();
       pressKey(buttons[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[1]);
 
       pressKey(buttons[1]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(link);
 
       expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
@@ -202,31 +202,31 @@ describe('ForToolbar', () => {
       expect(link.getAttribute('tabindex')).toBe('0');
     });
 
-    it('keeps the active tab stop after focus leaves the toolbar', () => {
+    it('keeps the active tab stop after focus leaves the toolbar', async () => {
       const { queryAll, flush } = renderHost(ToolbarHost);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
 
       buttons[0]!.focus();
       pressKey(buttons[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[1]);
 
       buttons[1]!.blur();
-      flush();
+      await flush();
 
       expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
       expect(buttons[1]!.getAttribute('tabindex')).toBe('0');
     });
 
-    it('follows focus across nested toggle-group items sharing the toolbar roving', () => {
+    it('follows focus across nested toggle-group items sharing the toolbar roving', async () => {
       const { queryAll, flush } = renderHost(ToolbarWithGroupHost);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
       // [Undo, B, I, Redo]
       buttons[0]!.focus();
       pressKey(buttons[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[1]);
 
       expect(buttons[0]!.getAttribute('tabindex')).toBe('-1');
@@ -267,7 +267,7 @@ describe('ForToolbar', () => {
     it('removing the focused item re-engages the first-enabled fallback', async () => {
       const { el, fixture, flush } = renderHost(DynamicToolbarHost);
       btn(el, 'one').focus();
-      flush();
+      await flush();
       expect(btn(el, 'one').getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.items.set([
@@ -282,7 +282,7 @@ describe('ForToolbar', () => {
     it('disabling the focused item re-engages the first-enabled fallback', async () => {
       const { el, fixture, flush } = renderHost(DynamicToolbarHost);
       btn(el, 'one').focus();
-      flush();
+      await flush();
       expect(btn(el, 'one').getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.items.set([
@@ -298,9 +298,9 @@ describe('ForToolbar', () => {
   });
 
   describe('toggle-group composition', () => {
-    it('toggle items participate in the toolbar roving', () => {
+    it('toggle items participate in the toolbar roving', async () => {
       const { queryAll, flush } = renderHost(ToolbarWithGroupHost);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
       // [Undo, B, I, Redo]
       expect(buttons[0]!.getAttribute('tabindex')).toBe('0');
@@ -310,26 +310,26 @@ describe('ForToolbar', () => {
 
       buttons[0]!.focus();
       pressKey(buttons[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[1]);
       pressKey(buttons[1]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[2]);
       pressKey(buttons[2]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(buttons[3]);
     });
 
-    it('toggle items keep their selection semantics inside a toolbar', () => {
+    it('toggle items keep their selection semantics inside a toolbar', async () => {
       const { queryAll, flush } = renderHost(ToolbarWithGroupHost);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
 
       buttons[1]!.click(); // bold
-      flush();
+      await flush();
       expect(buttons[1]!.getAttribute('aria-pressed')).toBe('true');
       buttons[2]!.click(); // italic
-      flush();
+      await flush();
       expect(buttons[2]!.getAttribute('aria-pressed')).toBe('true');
       // multiple — both still pressed
       expect(buttons[1]!.getAttribute('aria-pressed')).toBe('true');
@@ -337,28 +337,28 @@ describe('ForToolbar', () => {
   });
 
   describe('disabled toolbar', () => {
-    it('disables every item when the toolbar is disabled', () => {
+    it('disables every item when the toolbar is disabled', async () => {
       const { fixture, queryAll, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
       expect(buttons[0]!.hasAttribute('disabled')).toBe(true);
       expect(buttons[1]!.hasAttribute('disabled')).toBe(true);
     });
 
-    it('disabled button emits native disabled without aria-disabled', () => {
+    it('disabled button emits native disabled without aria-disabled', async () => {
       const { fixture, queryAll, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.middleDisabled.set(true);
-      flush();
+      await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
       expect(buttons[1]!.hasAttribute('disabled')).toBe(true);
       expect(buttons[1]!.hasAttribute('aria-disabled')).toBe(false);
     });
 
-    it('disabled link keeps aria-disabled (no native disabled on <a>)', () => {
+    it('disabled link keeps aria-disabled (no native disabled on <a>)', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.linkDisabled.set(true);
-      flush();
+      await flush();
       const link = query<HTMLAnchorElement>('a')!;
       expect(link.getAttribute('aria-disabled')).toBe('true');
       expect(link.hasAttribute('disabled')).toBe(false);
@@ -366,9 +366,9 @@ describe('ForToolbar', () => {
   });
 
   describe('separator', () => {
-    it('inherits cross-axis orientation by default', () => {
+    it('inherits cross-axis orientation by default', async () => {
       const { fixture, query, flush } = renderHost(ToolbarHost);
-      flush();
+      await flush();
 
       const sep = query<HTMLElement>('[forToolbarSeparator]')!;
       // Horizontal toolbar → vertical separator (cross-axis).
@@ -379,7 +379,7 @@ describe('ForToolbar', () => {
       // Vertical toolbar → horizontal separator (cross-axis). aria-orientation
       // is only emitted for 'vertical' (horizontal is the ARIA default).
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
       expect(sep.getAttribute('role')).toBe('separator');
       expect(sep.getAttribute('data-orientation')).toBe('horizontal');
       expect(sep.getAttribute('aria-orientation')).toBeNull();

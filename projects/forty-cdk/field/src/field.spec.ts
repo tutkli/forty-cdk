@@ -69,7 +69,7 @@ describe('ForField', () => {
       readonly showDesc = signal(true);
     }
 
-    it('drops aria-labelledby / aria-describedby once the single label / description slot unmounts', () => {
+    it('drops aria-labelledby / aria-describedby once the single label / description slot unmounts', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const control = q(el, 'control');
       expect(control.hasAttribute('aria-labelledby')).toBe(true);
@@ -77,7 +77,7 @@ describe('ForField', () => {
 
       fixture.componentInstance.showLabel.set(false);
       fixture.componentInstance.showDesc.set(false);
-      flush();
+      await flush();
 
       expect(control.hasAttribute('aria-labelledby')).toBe(false);
       expect(control.hasAttribute('aria-describedby')).toBe(false);
@@ -110,7 +110,7 @@ describe('ForField', () => {
       readonly touched = signal(false);
     }
 
-    it('reflects the control booleans as data-* on the field host', () => {
+    it('reflects the control booleans as data-* on the field host', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const field = q(el, 'field');
       expect(field.hasAttribute('data-invalid')).toBe(false);
@@ -119,7 +119,7 @@ describe('ForField', () => {
       fixture.componentInstance.disabled.set(true);
       fixture.componentInstance.required.set(true);
       fixture.componentInstance.touched.set(true);
-      flush();
+      await flush();
 
       expect(field.hasAttribute('data-invalid')).toBe(true);
       expect(field.hasAttribute('data-disabled')).toBe(true);
@@ -127,7 +127,7 @@ describe('ForField', () => {
       expect(field.hasAttribute('data-touched')).toBe(true);
     });
 
-    it('points aria-errormessage at the error only while invalid', () => {
+    it('points aria-errormessage at the error only while invalid', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const control = q(el, 'control');
       const error = q(el, 'error');
@@ -135,13 +135,13 @@ describe('ForField', () => {
       expect(control.hasAttribute('aria-errormessage')).toBe(false);
 
       fixture.componentInstance.invalid.set(true);
-      flush();
+      await flush();
       expect(control.getAttribute('aria-errormessage')).toBe(error.id);
       // The error id is also folded into aria-describedby for robustness.
       expect(control.getAttribute('aria-describedby')).toContain(error.id);
 
       fixture.componentInstance.invalid.set(false);
-      flush();
+      await flush();
       expect(control.hasAttribute('aria-errormessage')).toBe(false);
     });
   });
@@ -169,9 +169,9 @@ describe('ForField', () => {
       readonly showError = computed(() => this.f.terms().invalid());
     }
 
-    it('renders the control errors without manual plumbing and wires aria-errormessage', () => {
+    it('renders the control errors without manual plumbing and wires aria-errormessage', async () => {
       const { el, flush } = renderHost(Host);
-      flush();
+      await flush();
 
       const control = q(el, 'control');
       const error = q(el, 'error');
@@ -195,7 +195,7 @@ describe('ForField', () => {
       readonly invalid = signal(false);
     }
 
-    it('associates a native input and reflects aria-invalid', () => {
+    it('associates a native input and reflects aria-invalid', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const control = q(el, 'control');
       const label = q(el, 'label');
@@ -203,7 +203,7 @@ describe('ForField', () => {
       expect(control.getAttribute('aria-labelledby')).toBe(label.id);
 
       fixture.componentInstance.invalid.set(true);
-      flush();
+      await flush();
       expect(control.getAttribute('aria-invalid')).toBe('true');
       expect(q(el, 'field').hasAttribute('data-invalid')).toBe(true);
     });

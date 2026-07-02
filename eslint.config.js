@@ -60,9 +60,9 @@ const fortyCdkPlugin = {
     // ====================================================================
     // @forty-cdk-test-isolation-rules
     //
-    // The five rules below codify the test-isolation invariants documented
+    // The six rules below codify the test-isolation invariants documented
     // in `CLAUDE.md` → "Testing notes" → "Test isolation — non-negotiables"
-    // (the eleven numbered items immediately under that heading). Without
+    // (the twelve numbered items immediately under that heading). Without
     // mechanical enforcement those invariants decay back into PR-review
     // knowledge — the audit that surfaced them (May 11, 2026) already had
     // to remove regressions from each category.
@@ -77,7 +77,7 @@ const fortyCdkPlugin = {
     // lint policy. Fixtures that intentionally violate each rule live at
     // `projects/forty-cdk/eslint-rules-fixtures/<rule>.fixture.ts`.
     //
-    // Refs: tutkli/forty-cdk#230
+    // Refs: tutkli/forty-cdk#230, tutkli/forty-cdk#1154
     // ====================================================================
 
     // Rule 1 — `forty-cdk/no-bare-whenstable`.
@@ -633,6 +633,83 @@ const fortyCdkPlugin = {
                 messageId: 'forbidden',
                 data: { token, accessor },
               });
+            }
+          },
+        };
+      },
+    },
+
+    // Rule 6 — `forty-cdk/no-floating-flush`.
+    //
+    // Forbids a *floating* (un-awaited) call to one of the async render
+    // waiters — `flush(fixture)`, `flushPositioning(fixture)`, or
+    // `nextMacrotask()` — whether the free function imported from
+    // `test-utils/flush.ts` or the `flush` method destructured from
+    // `renderHost()`. All three are `() => Promise<void>`: a bare `flush();`
+    // statement runs only the initial synchronous `detectChanges()` and lets
+    // the async drain (`whenStable` → macrotask → second `detectChanges`, plus
+    // `afterNextRender` / floating-ui positioning side effects) escape the test
+    // boundary, so assertions can pass against stale DOM. Every call must be
+    // `await`ed (or otherwise consumed — returned, `void`-ed, chained,
+    // assigned).
+    //
+    // "Floating" is detected structurally: the call is the whole expression of
+    // an `ExpressionStatement`. `await flush()` (parent `AwaitExpression`),
+    // `return flush()`, `const p = flush()`, `void flush()`, and
+    // `flush().then(...)` are all consumed and never flagged. Scoped to
+    // `*.spec.ts` (plus this rule's own fixture) — in specs the flush family is
+    // unambiguously the async render waiter.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 12
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Refs: tutkli/forty-cdk#1154
+    'no-floating-flush': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid floating (un-awaited) `flush()` / `flushPositioning()` / `nextMacrotask()` calls in specs — the returned Promise must be awaited.',
+        },
+        schema: [],
+        messages: {
+          floating:
+            'Un-awaited `{{ name }}(…)`. It returns `Promise<void>`; a bare call runs only the initial synchronous `detectChanges()` and lets the async drain (`whenStable` → macrotask → second `detectChanges`, `afterNextRender`, positioning) escape the test — assertions may pass against stale DOM. Prefix it with `await` (and mark the enclosing callback `async`). (CLAUDE.md § "Test isolation — non-negotiables" rule 12.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        // In specs the flush family is unambiguously the async render waiter.
+        // The rule's own fixture (a `.fixture.ts`, linted via
+        // `pnpm lint:rule-fixtures`) is included so the rule is proven to fire.
+        const isSpec = filename.endsWith('.spec.ts');
+        const isOwnFixture = filename.endsWith(
+          '/eslint-rules-fixtures/no-floating-flush.fixture.ts',
+        );
+        if (!isSpec && !isOwnFixture) {
+          return {};
+        }
+        const WAITERS = new Set(['flush', 'flushPositioning', 'nextMacrotask']);
+        function calleeName(callee) {
+          if (callee.type === 'Identifier') {
+            return callee.name;
+          }
+          if (
+            callee.type === 'MemberExpression' &&
+            !callee.computed &&
+            callee.property.type === 'Identifier'
+          ) {
+            return callee.property.name;
+          }
+          return null;
+        }
+        return {
+          CallExpression(node) {
+            const name = calleeName(node.callee);
+            if (!name || !WAITERS.has(name)) {
+              return;
+            }
+            if (node.parent && node.parent.type === 'ExpressionStatement') {
+              context.report({ node, messageId: 'floating', data: { name } });
             }
           },
         };
@@ -1345,6 +1422,7 @@ module.exports = tseslint.config(
       'forty-cdk/observer-polyfill-must-restore': 'error',
       'forty-cdk/scoped-fake-timers': 'warn',
       'forty-cdk/no-directive-internal-signal-read': 'error',
+      'forty-cdk/no-floating-flush': 'error',
 
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the

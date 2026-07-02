@@ -39,19 +39,19 @@ describe('ForBreadcrumbs', () => {
       expect(nav.getAttribute('aria-label')).toBe('Breadcrumb');
     });
 
-    it('lets the consumer override the accessible label', () => {
+    it('lets the consumer override the accessible label', async () => {
       const { fixture, query, flush } = renderHost(BreadcrumbsHost);
       fixture.componentInstance.ariaLabel.set('Migas');
-      flush();
+      await flush();
 
       const nav = query<HTMLElement>('[forBreadcrumbs]')!;
       expect(nav.getAttribute('aria-label')).toBe('Migas');
     });
 
-    it('falls back to the default label when the override is cleared to empty', () => {
+    it('falls back to the default label when the override is cleared to empty', async () => {
       const { fixture, query, flush } = renderHost(BreadcrumbsHost);
       fixture.componentInstance.ariaLabel.set('');
-      flush();
+      await flush();
 
       const nav = query<HTMLElement>('[forBreadcrumbs]')!;
       expect(nav.getAttribute('aria-label')).toBe('Breadcrumb');
@@ -71,7 +71,7 @@ describe('ForBreadcrumbs', () => {
       expect(items[2]!.getAttribute('aria-current')).toBe('page');
     });
 
-    it('drops aria-current when the current flag flips off', () => {
+    it('drops aria-current when the current flag flips off', async () => {
       const { fixture, flush } = renderHost(BreadcrumbsHost);
       const current = fixture.nativeElement.querySelectorAll(
         '[forBreadcrumbItem]',
@@ -80,7 +80,7 @@ describe('ForBreadcrumbs', () => {
       expect(current.getAttribute('aria-current')).toBe('page');
 
       fixture.componentInstance.dataCurrent.set(false);
-      flush();
+      await flush();
 
       expect(current.hasAttribute('aria-current')).toBe(false);
     });

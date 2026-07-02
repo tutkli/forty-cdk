@@ -232,21 +232,21 @@ describe('ForCarousel', () => {
   });
 
   describe('prev/next navigation', () => {
-    it('clicking next advances the active slide', () => {
+    it('clicking next advances the active slide', async () => {
       const { el, flush } = renderHost(CarouselHost);
       next(el).click();
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('inactive');
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
       expect(root(el).style.getPropertyValue('--for-carousel-active-index')).toBe('1');
     });
 
-    it('clicking prev moves back', () => {
+    it('clicking prev moves back', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.active.set(2);
       fixture.detectChanges();
       prev(el).click();
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
 
@@ -272,13 +272,13 @@ describe('ForCarousel', () => {
       expect(next(el).hasAttribute('disabled')).toBe(false);
     });
 
-    it('with loop, next past the last slide wraps to slide 0', () => {
+    it('with loop, next past the last slide wraps to slide 0', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.loop.set(true);
       instance.active.set(2);
       fixture.detectChanges();
       next(el).click();
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
   });
@@ -383,10 +383,10 @@ describe('ForCarousel', () => {
   });
 
   describe('indicator activation', () => {
-    it('clicking indicator i sets data-state=active on slide i and aria-current on indicator i', () => {
+    it('clicking indicator i sets data-state=active on slide i and aria-current on indicator i', async () => {
       const { el, flush } = renderHost(CarouselHost);
       indicator(el, 2).click();
-      flush();
+      await flush();
       expect(slide(el, 2).getAttribute('data-state')).toBe('active');
       expect(indicator(el, 2).getAttribute('aria-current')).toBe('true');
       expect(indicator(el, 0).hasAttribute('aria-current')).toBe(false);
@@ -400,66 +400,66 @@ describe('ForCarousel', () => {
   });
 
   describe('keyboard navigation (wiring — real focus in E2E)', () => {
-    it('ArrowRight on an indicator advances the active index', () => {
+    it('ArrowRight on an indicator advances the active index', async () => {
       const { el, flush } = renderHost(CarouselHost);
       indicator(el, 0).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
       expect(root(el).style.getPropertyValue('--for-carousel-active-index')).toBe('1');
     });
 
-    it('ArrowLeft on an indicator moves back', () => {
+    it('ArrowLeft on an indicator moves back', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.active.set(2);
       fixture.detectChanges();
       indicator(el, 2).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 2), 'ArrowLeft');
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
 
-    it('End jumps to the last slide', () => {
+    it('End jumps to the last slide', async () => {
       const { el, flush } = renderHost(CarouselHost);
       indicator(el, 0).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 0), 'End');
-      flush();
+      await flush();
       expect(slide(el, 2).getAttribute('data-state')).toBe('active');
     });
 
-    it('Home jumps to the first slide', () => {
+    it('Home jumps to the first slide', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.active.set(2);
       fixture.detectChanges();
       indicator(el, 2).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 2), 'Home');
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
 
-    it('RTL: ArrowLeft advances (direction swap)', () => {
+    it('RTL: ArrowLeft advances (direction swap)', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.dir.set('rtl');
       fixture.detectChanges();
       indicator(el, 0).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 0), 'ArrowLeft');
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
 
-    it('vertical: ArrowDown advances', () => {
+    it('vertical: ArrowDown advances', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.orientation.set('vertical');
       fixture.detectChanges();
       indicator(el, 0).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 0), 'ArrowDown');
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
   });
@@ -513,10 +513,10 @@ describe('ForCarousel', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('clicking next advances data-state without Zone.js', () => {
+    it('clicking next advances data-state without Zone.js', async () => {
       const { el, flush } = renderHost(CarouselHost);
       next(el).click();
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
       expect(slide(el, 0).getAttribute('data-state')).toBe('inactive');
     });
@@ -593,12 +593,12 @@ describe('ForCarousel', () => {
       expect(indicator(el, 2).getAttribute('tabindex')).toBe('-1');
     });
 
-    it('after navigating to slide 1, indicator 1 gets tabindex=0', () => {
+    it('after navigating to slide 1, indicator 1 gets tabindex=0', async () => {
       const { el, flush } = renderHost(CarouselHost);
       indicator(el, 0).focus();
-      flush();
+      await flush();
       pressKey(indicator(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       const all = indicators(el);
       expect(all[1]!.getAttribute('tabindex')).toBe('0');
     });
@@ -677,28 +677,28 @@ describe('ForCarousel', () => {
       expect(rotation(el).hasAttribute('aria-pressed')).toBe(false);
     });
 
-    it('clicking the control sets playing, label becomes "Stop automatic slide show", root gets data-rotating', () => {
+    it('clicking the control sets playing, label becomes "Stop automatic slide show", root gets data-rotating', async () => {
       const { el, flush } = renderHost(CarouselHost);
       rotation(el).click();
-      flush();
+      await flush();
       expect(rotation(el).getAttribute('aria-label')).toBe('Stop automatic slide show');
       expect(rotation(el).getAttribute('data-playing')).toBe('');
       expect(root(el).getAttribute('data-rotating')).toBe('');
       expect(root(el).hasAttribute('data-autoplay')).toBe(false);
     });
 
-    it('clicking again stops playing', () => {
+    it('clicking again stops playing', async () => {
       const { el, flush } = renderHost(CarouselHost);
       rotation(el).click();
-      flush();
+      await flush();
       rotation(el).click();
-      flush();
+      await flush();
       expect(rotation(el).getAttribute('aria-label')).toBe('Start automatic slide show');
       expect(rotation(el).hasAttribute('data-playing')).toBe(false);
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
     });
 
-    it('startLabel / stopLabel inputs override defaults', () => {
+    it('startLabel / stopLabel inputs override defaults', async () => {
       @Component({
         imports: [
           ForCarousel,
@@ -724,7 +724,7 @@ describe('ForCarousel', () => {
       const btn = el.querySelector<HTMLButtonElement>('[forCarouselRotationControl]')!;
       expect(btn.getAttribute('aria-label')).toBe('Play');
       btn.click();
-      flush();
+      await flush();
       expect(btn.getAttribute('aria-label')).toBe('Stop');
     });
   });
@@ -734,66 +734,66 @@ describe('ForCarousel', () => {
       vi.useRealTimers();
     });
 
-    it('autoplay=true: root has data-rotating, control has data-playing, label is "Stop automatic slide show"', () => {
+    it('autoplay=true: root has data-rotating, control has data-playing, label is "Stop automatic slide show"', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(3000);
       fixture.detectChanges();
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-rotating')).toBe('');
       expect(root(el).getAttribute('data-autoplay')).toBe('');
       expect(rotation(el).getAttribute('data-playing')).toBe('');
       expect(rotation(el).getAttribute('aria-label')).toBe('Stop automatic slide show');
     });
 
-    it('does not advance before the interval elapses', () => {
+    it('does not advance before the interval elapses', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(3000);
       fixture.detectChanges();
-      flush();
+      await flush();
       vi.advanceTimersByTime(2999);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
 
-    it('advances to slide 1 after one full interval', () => {
+    it('advances to slide 1 after one full interval', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(3000);
       fixture.detectChanges();
-      flush();
+      await flush();
       vi.advanceTimersByTime(3000);
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
       expect(root(el).style.getPropertyValue('--for-carousel-active-index')).toBe('1');
     });
 
-    it('wrap without loop: at last slide, advancing wraps to slide 0 (loop=false)', () => {
+    it('wrap without loop: at last slide, advancing wraps to slide 0 (loop=false)', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       instance.active.set(2);
       fixture.detectChanges();
-      flush();
+      await flush();
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
 
-    it('autoplayInterval=0 never advances', () => {
+    it('autoplayInterval=0 never advances', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(0);
       fixture.detectChanges();
-      flush();
+      await flush();
       vi.advanceTimersByTime(60000);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
   });
@@ -809,32 +809,32 @@ describe('ForCarousel', () => {
       vi.useRealTimers();
     });
 
-    it('autoplay=true under reduced motion: no data-rotating, label is "Start automatic slide show"', () => {
+    it('autoplay=true under reduced motion: no data-rotating, label is "Start automatic slide show"', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
       expect(rotation(el).getAttribute('aria-label')).toBe('Start automatic slide show');
       vi.advanceTimersByTime(5000);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
 
-    it('explicit click under reduced motion does start rotation', () => {
+    it('explicit click under reduced motion does start rotation', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       rotation(el).click();
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-rotating')).toBe('');
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
   });
@@ -844,80 +844,80 @@ describe('ForCarousel', () => {
       vi.useRealTimers();
     });
 
-    it('pointerenter on root pauses; root loses data-rotating; viewport aria-live becomes polite', () => {
+    it('pointerenter on root pauses; root loses data-rotating; viewport aria-live becomes polite', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       root(el).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
       expect(viewport(el).getAttribute('aria-live')).toBe('polite');
       vi.advanceTimersByTime(3000);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
 
-    it('pointerleave on root resumes; data-rotating restored; viewport aria-live becomes off', () => {
+    it('pointerleave on root resumes; data-rotating restored; viewport aria-live becomes off', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       root(el).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      flush();
+      await flush();
       root(el).dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-rotating')).toBe('');
       expect(viewport(el).getAttribute('aria-live')).toBe('off');
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
 
-    it('focusin on root pauses', () => {
+    it('focusin on root pauses', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       root(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
     });
 
-    it('focusout with relatedTarget inside root keeps it paused', () => {
+    it('focusout with relatedTarget inside root keeps it paused', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       root(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      flush();
+      await flush();
       const inner = rotation(el);
       root(el).dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: inner }));
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
     });
 
-    it('focusout with relatedTarget outside root resumes', () => {
+    it('focusout with relatedTarget outside root resumes', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       root(el).dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      flush();
+      await flush();
       const outside = document.createElement('button');
       document.body.appendChild(outside);
       root(el).dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-rotating')).toBe('');
       outside.remove();
     });
@@ -928,39 +928,39 @@ describe('ForCarousel', () => {
       vi.useRealTimers();
     });
 
-    it('after explicit stop, hover/focus do not restart rotation', () => {
+    it('after explicit stop, hover/focus do not restart rotation', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       rotation(el).click();
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
       root(el).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
       root(el).dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
       vi.advanceTimersByTime(3000);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
     });
 
-    it('clicking the control again after sticky stop restarts rotation', () => {
+    it('clicking the control again after sticky stop restarts rotation', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       rotation(el).click();
-      flush();
+      await flush();
       rotation(el).click();
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-rotating')).toBe('');
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
   });
@@ -971,21 +971,21 @@ describe('ForCarousel', () => {
       expect(viewport(el).getAttribute('aria-live')).toBe('polite');
     });
 
-    it('playing (autoplay=true, not paused): viewport aria-live=off', () => {
+    it('playing (autoplay=true, not paused): viewport aria-live=off', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       fixture.detectChanges();
-      flush();
+      await flush();
       expect(viewport(el).getAttribute('aria-live')).toBe('off');
     });
 
-    it('playing but hover-paused: viewport aria-live=polite', () => {
+    it('playing but hover-paused: viewport aria-live=polite', async () => {
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       fixture.detectChanges();
-      flush();
+      await flush();
       root(el).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      flush();
+      await flush();
       expect(viewport(el).getAttribute('aria-live')).toBe('polite');
     });
   });
@@ -1007,24 +1007,24 @@ describe('ForCarousel', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     }
 
-    it('page hidden pauses the carousel; page visible resumes it', () => {
+    it('page hidden pauses the carousel; page visible resumes it', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(1000);
       fixture.detectChanges();
-      flush();
+      await flush();
       setVisibility('hidden');
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-rotating')).toBe(false);
       vi.advanceTimersByTime(5000);
-      flush();
+      await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
       setVisibility('visible');
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-rotating')).toBe('');
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
   });
@@ -1034,15 +1034,15 @@ describe('ForCarousel', () => {
       vi.useRealTimers();
     });
 
-    it('setInterval tick advances the slide without Zone.js', () => {
+    it('setInterval tick advances the slide without Zone.js', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);
       instance.autoplayInterval.set(500);
       fixture.detectChanges();
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
   });

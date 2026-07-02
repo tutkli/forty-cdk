@@ -53,19 +53,19 @@ class FormDisclosureHost {
 
 describe('ForDisclosure', () => {
   describe('render & wiring', () => {
-    it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', () => {
+    it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', async () => {
       const { fixture, query, flush } = renderHost(FormDisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
 
       expect(trigger.getAttribute('type')).toBe('button');
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.submitted).toBe(false);
     });
 
-    it('links the trigger to the content via aria-controls once open', () => {
+    it('links the trigger to the content via aria-controls once open', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
 
       const trigger = query<HTMLButtonElement>('button')!;
@@ -74,23 +74,23 @@ describe('ForDisclosure', () => {
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
 
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
 
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 
-    it('gates aria-controls to the open state, mirroring the overlay triggers', () => {
+    it('gates aria-controls to the open state, mirroring the overlay triggers', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
 
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
 
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
       expect(trigger.hasAttribute('aria-controls')).toBe(true);
 
       fixture.componentInstance.isOpen.set(false);
-      flush();
+      await flush();
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
 
@@ -121,20 +121,20 @@ describe('ForDisclosure', () => {
   });
 
   describe('toggle via click', () => {
-    it('opens on click and closes on a second click', () => {
+    it('opens on click and closes on a second click', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       expect(content.getAttribute('data-state')).toBe('open');
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
       expect(content.getAttribute('data-state')).toBe('closed');
@@ -143,34 +143,34 @@ describe('ForDisclosure', () => {
   });
 
   describe('two-way binding [(open)]', () => {
-    it('reflects external open writes into the DOM', () => {
+    it('reflects external open writes into the DOM', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
 
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       expect(content.getAttribute('data-state')).toBe('open');
     });
 
-    it('writes back to the host signal when the trigger is clicked', () => {
+    it('writes back to the host signal when the trigger is clicked', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
   });
 
   describe('disabled', () => {
-    it('ignores click and reflects the disabled attribute on the trigger', () => {
+    it('ignores click and reflects the disabled attribute on the trigger', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
 
       const trigger = query<HTMLButtonElement>('button')!;
       const root = query<HTMLElement>('[forDisclosure]')!;
@@ -180,16 +180,16 @@ describe('ForDisclosure', () => {
       expect(root.getAttribute('data-disabled')).toBe('');
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('propagates data-disabled to trigger and content', () => {
+    it('propagates data-disabled to trigger and content', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
 
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
@@ -200,7 +200,7 @@ describe('ForDisclosure', () => {
       expect(content.getAttribute('data-disabled')).toBe('');
 
       fixture.componentInstance.isDisabled.set(false);
-      flush();
+      await flush();
 
       expect(root.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
@@ -226,10 +226,10 @@ describe('ForDisclosure', () => {
       readonly triggerDisabled = signal(false);
     }
 
-    it('ignores click when only the trigger is disabled and reflects the effective state', () => {
+    it('ignores click when only the trigger is disabled and reflects the effective state', async () => {
       const { fixture, query, flush } = renderHost(TriggerDisabledHost);
       fixture.componentInstance.triggerDisabled.set(true);
-      flush();
+      await flush();
 
       const trigger = query<HTMLButtonElement>('button')!;
       const root = query<HTMLElement>('[forDisclosure]')!;
@@ -240,16 +240,16 @@ describe('ForDisclosure', () => {
       expect(trigger.getAttribute('disabled')).toBe('');
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('reflects root-only disabling on the trigger via the effective state', () => {
+    it('reflects root-only disabling on the trigger via the effective state', async () => {
       const { fixture, query, flush } = renderHost(TriggerDisabledHost);
       fixture.componentInstance.rootDisabled.set(true);
-      flush();
+      await flush();
 
       const trigger = query<HTMLButtonElement>('button')!;
 
@@ -258,35 +258,35 @@ describe('ForDisclosure', () => {
       expect(trigger.getAttribute('disabled')).toBe('');
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('stays disabled while either source is set and re-enables once both clear', () => {
+    it('stays disabled while either source is set and re-enables once both clear', async () => {
       const { fixture, query, flush } = renderHost(TriggerDisabledHost);
       fixture.componentInstance.rootDisabled.set(true);
       fixture.componentInstance.triggerDisabled.set(true);
-      flush();
+      await flush();
 
       const trigger = query<HTMLButtonElement>('button')!;
       expect(trigger.getAttribute('disabled')).toBe('');
 
       fixture.componentInstance.rootDisabled.set(false);
-      flush();
+      await flush();
       expect(trigger.getAttribute('disabled')).toBe('');
       trigger.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
 
       fixture.componentInstance.triggerDisabled.set(false);
-      flush();
+      await flush();
       expect(trigger.hasAttribute('disabled')).toBe(false);
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
 
       trigger.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
   });
@@ -326,7 +326,7 @@ describe('ForDisclosure', () => {
   });
 
   describe('(openChange) output', () => {
-    it('emits the new state when the trigger toggles open/closed', () => {
+    it('emits the new state when the trigger toggles open/closed', async () => {
       @Component({
         imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
         template: `
@@ -344,14 +344,14 @@ describe('ForDisclosure', () => {
       const trigger = query<HTMLButtonElement>('button')!;
 
       trigger.click();
-      flush();
+      await flush();
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([true, false]);
     });
 
-    it('does not emit when the consumer drives `open` externally via [(open)]', () => {
+    it('does not emit when the consumer drives `open` externally via [(open)]', async () => {
       @Component({
         imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
         template: `
@@ -368,23 +368,23 @@ describe('ForDisclosure', () => {
 
       const { fixture, flush } = renderHost(Host);
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
       fixture.componentInstance.isOpen.set(false);
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([]);
     });
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', () => {
+    it('reflects state changes after detectChanges without Zone.js', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
 
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
 
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
     });
@@ -399,19 +399,19 @@ describe('ForDisclosure', () => {
       restore();
     });
 
-    it('toggle still flips data-state and aria-expanded under reduced-motion', () => {
+    it('toggle still flips data-state and aria-expanded under reduced-motion', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
       const content = query<HTMLElement>('section')!;
 
       trigger.click();
-      flush();
+      await flush();
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       expect(content.getAttribute('data-state')).toBe('open');
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.click();
-      flush();
+      await flush();
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
       expect(content.getAttribute('data-state')).toBe('closed');
       expect(fixture.componentInstance.isOpen()).toBe(false);
@@ -419,7 +419,7 @@ describe('ForDisclosure', () => {
   });
 
   describe('mounted-but-closed a11y', () => {
-    it('marks the closed panel aria-hidden + inert and clears both when opened', () => {
+    it('marks the closed panel aria-hidden + inert and clears both when opened', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const content = query<HTMLElement>('section')!;
 
@@ -427,13 +427,13 @@ describe('ForDisclosure', () => {
       expect(content.hasAttribute('inert')).toBe(true);
 
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
 
       expect(content.hasAttribute('aria-hidden')).toBe(false);
       expect(content.hasAttribute('inert')).toBe(false);
 
       fixture.componentInstance.isOpen.set(false);
-      flush();
+      await flush();
 
       expect(content.getAttribute('aria-hidden')).toBe('true');
       expect(content.hasAttribute('inert')).toBe(true);
@@ -445,7 +445,7 @@ describe('ForDisclosure', () => {
       expect(content.hasAttribute('hidden')).toBe(false);
     });
 
-    it('with @if-driven mounting, the panel unmounts on close (no host attrs to assert)', () => {
+    it('with @if-driven mounting, the panel unmounts on close (no host attrs to assert)', async () => {
       @Component({
         imports: [ForDisclosure, ForDisclosureTrigger, ForDisclosureContent],
         template: `
@@ -465,7 +465,7 @@ describe('ForDisclosure', () => {
       expect(query<HTMLElement>('section')).toBeNull();
 
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
 
       const content = query<HTMLElement>('section')!;
       expect(content).not.toBeNull();
@@ -473,7 +473,7 @@ describe('ForDisclosure', () => {
       expect(content.hasAttribute('inert')).toBe(false);
 
       fixture.componentInstance.isOpen.set(false);
-      flush();
+      await flush();
 
       expect(query<HTMLElement>('section')).toBeNull();
     });

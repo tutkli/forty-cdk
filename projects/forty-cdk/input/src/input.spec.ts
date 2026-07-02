@@ -137,49 +137,49 @@ describe('ForInput', () => {
   });
 
   describe('value binding', () => {
-    it('updates the model from the native input event and toggles data-empty', () => {
+    it('updates the model from the native input event and toggles data-empty', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
       const input = inputOf(el);
 
       typeInto(input, 'hello');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('hello');
       expect(input.hasAttribute('data-empty')).toBe(false);
 
       typeInto(input, '');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
     });
 
-    it('mirrors external [(value)] writes back into the native element', () => {
+    it('mirrors external [(value)] writes back into the native element', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
       const input = inputOf(el);
 
       fixture.componentInstance.text.set('world');
-      flush();
+      await flush();
       expect(input.value).toBe('world');
       expect(input.hasAttribute('data-empty')).toBe(false);
 
       fixture.componentInstance.text.set('');
-      flush();
+      await flush();
       expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
     });
   });
 
   describe('touched on blur', () => {
-    it('flips touched=true via blur (reflected as data-touched)', () => {
+    it('flips touched=true via blur (reflected as data-touched)', async () => {
       const { el, flush } = renderHost(InputHost);
       const input = inputOf(el);
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       expect(input.getAttribute('data-touched')).toBe('');
     });
   });
 
   describe('IME composition', () => {
-    it('does not emit an intermediate value while composing', () => {
+    it('does not emit an intermediate value while composing', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
       const input = inputOf(el);
 
@@ -188,13 +188,13 @@ describe('ForInput', () => {
       input.dispatchEvent(
         new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
       );
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.text()).toBe('');
       expect(input.value).toBe('り');
     });
 
-    it('flushes the final composed value once on compositionend', () => {
+    it('flushes the final composed value once on compositionend', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
       const input = inputOf(el);
 
@@ -203,43 +203,43 @@ describe('ForInput', () => {
       input.dispatchEvent(
         new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
       );
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('');
 
       input.dispatchEvent(
         new CompositionEvent('compositionend', { bubbles: true, data: 'りんご' }),
       );
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('りんご');
     });
 
-    it('resumes propagating plain input after composition ends', () => {
+    it('resumes propagating plain input after composition ends', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
       const input = inputOf(el);
 
       input.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
       input.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '' }));
-      flush();
+      await flush();
 
       typeInto(input, 'abc');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('abc');
     });
   });
 
   describe('blur re-syncs the DOM value', () => {
-    it('reconciles a stale element value to the model on blur', () => {
+    it('reconciles a stale element value to the model on blur', async () => {
       const { el, fixture, flush } = renderHost(InputHost);
       const input = inputOf(el);
 
       input.focus();
       typeInto(input, 'typed');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('typed');
 
       input.value = 'stale-during-focus';
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
 
       expect(input.value).toBe('typed');
     });
@@ -265,11 +265,11 @@ describe('ForInput', () => {
       expect(Array.from(new FormData(form).entries())).toEqual([]);
     });
 
-    it('submits the native value exactly once (no duplicate hidden input)', () => {
+    it('submits the native value exactly once (no duplicate hidden input)', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('email');
       fixture.componentInstance.text.set('ada@x.dev');
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([['email', 'ada@x.dev']]);
@@ -332,22 +332,22 @@ describe('ForInput', () => {
     const byId = (host: HTMLElement, id: string) =>
       host.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-test-id="${id}"]`)!;
 
-    it('two-way binds the value with the field', () => {
+    it('two-way binds the value with the field', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const name = byId(el, 'name');
 
       typeInto(name, 'Ada');
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().name).toBe('Ada');
 
       fixture.componentInstance.model.update((m) => ({ ...m, name: 'Lin' }));
-      flush();
+      await flush();
       expect(name.value).toBe('Lin');
     });
 
-    it('flows schema-driven required into aria-required', () => {
+    it('flows schema-driven required into aria-required', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(byId(el, 'name').getAttribute('aria-required')).toBe('true');
     });
   });
@@ -386,28 +386,28 @@ describe('ForTextarea', () => {
   });
 
   describe('value binding parity', () => {
-    it('updates the model from the native input event', () => {
+    it('updates the model from the native input event', async () => {
       const { el, fixture, flush } = renderHost(TextareaHost);
       const textarea = textareaOf(el);
 
       typeInto(textarea, 'multi\nline');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('multi\nline');
       expect(textarea.hasAttribute('data-empty')).toBe(false);
     });
 
-    it('mirrors external writes back into the native element', () => {
+    it('mirrors external writes back into the native element', async () => {
       const { el, fixture, flush } = renderHost(TextareaHost);
       const textarea = textareaOf(el);
 
       fixture.componentInstance.text.set('about me');
-      flush();
+      await flush();
       expect(textarea.value).toBe('about me');
     });
   });
 
   describe('IME composition parity', () => {
-    it('suppresses intermediate text and flushes on compositionend', () => {
+    it('suppresses intermediate text and flushes on compositionend', async () => {
       const { el, fixture, flush } = renderHost(TextareaHost);
       const textarea = textareaOf(el);
 
@@ -416,29 +416,29 @@ describe('ForTextarea', () => {
       textarea.dispatchEvent(
         new InputEvent('input', { inputType: 'insertCompositionText', isComposing: true }),
       );
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('');
 
       textarea.dispatchEvent(
         new CompositionEvent('compositionend', { bubbles: true, data: 'かな' }),
       );
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('かな');
     });
   });
 
   describe('blur re-syncs the DOM value', () => {
-    it('reconciles a stale element value to the model on blur', () => {
+    it('reconciles a stale element value to the model on blur', async () => {
       const { el, fixture, flush } = renderHost(TextareaHost);
       const textarea = textareaOf(el);
 
       textarea.focus();
       typeInto(textarea, 'note');
-      flush();
+      await flush();
 
       textarea.value = 'stale';
       textarea.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
 
       expect(textarea.value).toBe('note');
     });
@@ -451,17 +451,17 @@ describe('ForTextarea', () => {
     });
     afterAll(() => restoreObservers());
 
-    it('reflects data-autosize only while enabled', () => {
+    it('reflects data-autosize only while enabled', async () => {
       const { el, fixture, flush } = renderHost(AutosizeTextareaHost);
       const textarea = textareaOf(el);
       expect(textarea.hasAttribute('data-autosize')).toBe(false);
 
       fixture.componentInstance.autosize.set(true);
-      flush();
+      await flush();
       expect(textarea.getAttribute('data-autosize')).toBe('');
 
       fixture.componentInstance.autosize.set(false);
-      flush();
+      await flush();
       expect(textarea.hasAttribute('data-autosize')).toBe(false);
     });
 

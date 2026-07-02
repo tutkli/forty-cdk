@@ -66,14 +66,14 @@ const contentOf = (host: HTMLElement, id: string) =>
 
 describe('ForAccordion', () => {
   describe('render & wiring', () => {
-    it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', () => {
+    it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', async () => {
       const { el, fixture, flush } = renderHost(FormAccordionHost);
       const trigger = triggerOf(el, 'a');
 
       expect(trigger.getAttribute('type')).toBe('button');
 
       trigger.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.submitted).toBe(false);
     });
@@ -101,7 +101,7 @@ describe('ForAccordion', () => {
       }
     });
 
-    it('gates aria-controls to the expanded panel, mirroring the overlay triggers', () => {
+    it('gates aria-controls to the expanded panel, mirroring the overlay triggers', async () => {
       const { el, flush } = renderHost(AccordionHost);
 
       const trigger = triggerOf(el, 'a');
@@ -110,98 +110,98 @@ describe('ForAccordion', () => {
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
 
       trigger.click();
-      flush();
+      await flush();
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
 
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
     });
   });
 
   describe('single mode (default)', () => {
-    it('opens one item and closes the previously open one on the next click', () => {
+    it('opens one item and closes the previously open one on the next click', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toEqual(['a']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
       expect(contentOf(el, 'a')!.getAttribute('data-state')).toBe('open');
 
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toEqual(['b']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('false');
       expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('does NOT collapse the open item by default (collapsible=false)', () => {
+    it('does NOT collapse the open item by default (collapsible=false)', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toEqual(['a']);
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toEqual(['a']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('marks the open trigger aria-disabled when collapse is disallowed', () => {
+    it('marks the open trigger aria-disabled when collapse is disallowed', async () => {
       const { el, flush } = renderHost(AccordionHost);
 
       expect(triggerOf(el, 'a').hasAttribute('aria-disabled')).toBe(false);
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
 
       expect(triggerOf(el, 'a').getAttribute('aria-disabled')).toBe('true');
       expect(triggerOf(el, 'b').hasAttribute('aria-disabled')).toBe(false);
     });
 
-    it('collapses the open item when collapsible=true', () => {
+    it('collapses the open item when collapsible=true', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
       fixture.componentInstance.collapsible.set(true);
-      flush();
+      await flush();
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toEqual(['a']);
       expect(triggerOf(el, 'a').hasAttribute('aria-disabled')).toBe(false);
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toEqual([]);
     });
   });
 
   describe('multiple mode', () => {
-    it('keeps multiple items open simultaneously', () => {
+    it('keeps multiple items open simultaneously', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
       fixture.componentInstance.multiple.set(true);
-      flush();
+      await flush();
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.value()).toEqual(['a', 'b']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
       expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('toggles each item independently and never marks aria-disabled', () => {
+    it('toggles each item independently and never marks aria-disabled', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
       fixture.componentInstance.multiple.set(true);
-      flush();
+      await flush();
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.value()).toEqual([]);
       expect(triggerOf(el, 'a').hasAttribute('aria-disabled')).toBe(false);
@@ -209,16 +209,16 @@ describe('ForAccordion', () => {
   });
 
   describe('disabled item', () => {
-    it('ignores click and reflects the native disabled attribute', () => {
+    it('ignores click and reflects the native disabled attribute', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
       fixture.componentInstance.disabledItem.set('b');
-      flush();
+      await flush();
 
       const triggerB = triggerOf(el, 'b');
       expect(triggerB.hasAttribute('disabled')).toBe(true);
 
       triggerB.click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.value()).toEqual([]);
       expect(triggerB.getAttribute('aria-expanded')).toBe('false');
@@ -226,11 +226,11 @@ describe('ForAccordion', () => {
   });
 
   describe('two-way binding [(value)]', () => {
-    it('reflects external value writes into the DOM', () => {
+    it('reflects external value writes into the DOM', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       fixture.componentInstance.value.set(['c']);
-      flush();
+      await flush();
 
       expect(triggerOf(el, 'c').getAttribute('aria-expanded')).toBe('true');
       expect(contentOf(el, 'c')!.getAttribute('data-state')).toBe('open');
@@ -270,10 +270,10 @@ describe('ForAccordion', () => {
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
 
-    it('skips disabled triggers', () => {
+    it('skips disabled triggers', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
       fixture.componentInstance.disabledItem.set('b');
-      flush();
+      await flush();
 
       triggerOf(el, 'a').focus();
       pressKey(triggerOf(el, 'a'), 'ArrowDown');
@@ -385,14 +385,14 @@ describe('ForAccordion', () => {
       expect(root.getAttribute('data-orientation')).toBe('horizontal');
     });
 
-    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+    it('reflects dir to the native dir attribute for both ltr and rtl', async () => {
       const { el, fixture, flush } = renderHost(HorizontalHost);
       const root = el.querySelector('[forAccordion]')!;
 
       expect(root.getAttribute('dir')).toBe('ltr');
 
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       expect(root.getAttribute('dir')).toBe('rtl');
     });
 
@@ -422,10 +422,10 @@ describe('ForAccordion', () => {
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
 
-    it('swaps horizontal arrows in RTL', () => {
+    it('swaps horizontal arrows in RTL', async () => {
       const { el, fixture, flush } = renderHost(HorizontalHost);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       triggerOf(el, 'a').focus();
 
       pressKey(triggerOf(el, 'a'), 'ArrowLeft');
@@ -569,7 +569,7 @@ describe('ForAccordion', () => {
   });
 
   describe('(valueChange) output', () => {
-    it('emits the new value when a trigger toggles via click', () => {
+    it('emits the new value when a trigger toggles via click', async () => {
       @Component({
         imports: [...ACCORDION_IMPORTS],
         template: `
@@ -595,14 +595,14 @@ describe('ForAccordion', () => {
 
       const { fixture, el, flush } = renderHost(Host);
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([['a'], ['a', 'b']]);
     });
 
-    it('does not emit when the consumer drives `value` externally via [(value)]', () => {
+    it('does not emit when the consumer drives `value` externally via [(value)]', async () => {
       @Component({
         imports: [...ACCORDION_IMPORTS],
         template: `
@@ -623,24 +623,24 @@ describe('ForAccordion', () => {
 
       const { fixture, flush } = renderHost(Host);
       fixture.componentInstance.value.set(['a']);
-      flush();
+      await flush();
       fixture.componentInstance.value.set([]);
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([]);
     });
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', () => {
+    it('reflects state changes after detectChanges without Zone.js', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       fixture.componentInstance.value.set(['b']);
-      flush();
+      await flush();
       expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('true');
 
       fixture.componentInstance.value.set([]);
-      flush();
+      await flush();
       expect(triggerOf(el, 'b').getAttribute('aria-expanded')).toBe('false');
     });
   });
@@ -654,18 +654,18 @@ describe('ForAccordion', () => {
       restoreReducedMotion();
     });
 
-    it('clicking a trigger still flips aria-expanded and data-state under reduced-motion', () => {
+    it('clicking a trigger still flips aria-expanded and data-state under reduced-motion', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.value()).toEqual(['a']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
       expect(contentOf(el, 'a')!.getAttribute('data-state')).toBe('open');
 
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.value()).toEqual(['b']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('false');
@@ -676,7 +676,7 @@ describe('ForAccordion', () => {
   });
 
   describe('mounted-but-closed a11y', () => {
-    it('marks closed panels aria-hidden + inert and clears both when opened', () => {
+    it('marks closed panels aria-hidden + inert and clears both when opened', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       const panelA = contentOf(el, 'a')!;
@@ -684,13 +684,13 @@ describe('ForAccordion', () => {
       expect(panelA.hasAttribute('inert')).toBe(true);
 
       fixture.componentInstance.value.set(['a']);
-      flush();
+      await flush();
 
       expect(panelA.hasAttribute('aria-hidden')).toBe(false);
       expect(panelA.hasAttribute('inert')).toBe(false);
 
       fixture.componentInstance.value.set([]);
-      flush();
+      await flush();
 
       expect(panelA.getAttribute('aria-hidden')).toBe('true');
       expect(panelA.hasAttribute('inert')).toBe(true);
@@ -703,7 +703,7 @@ describe('ForAccordion', () => {
       }
     });
 
-    it('with @if-driven mounting, panels unmount on close (no host attrs to assert)', () => {
+    it('with @if-driven mounting, panels unmount on close (no host attrs to assert)', async () => {
       @Component({
         imports: [...ACCORDION_IMPORTS],
         template: `
@@ -728,14 +728,14 @@ describe('ForAccordion', () => {
       expect(el.querySelector('[data-test-content="a"]')).toBeNull();
 
       fixture.componentInstance.value.set(['a']);
-      flush();
+      await flush();
 
       const mounted = el.querySelector<HTMLElement>('[data-test-content="a"]')!;
       expect(mounted.hasAttribute('aria-hidden')).toBe(false);
       expect(mounted.hasAttribute('inert')).toBe(false);
 
       fixture.componentInstance.value.set([]);
-      flush();
+      await flush();
 
       expect(el.querySelector('[data-test-content="a"]')).toBeNull();
     });

@@ -562,14 +562,14 @@ describe('ForSelect', () => {
       readonly dir = signal<'ltr' | 'rtl'>('rtl');
     }
 
-    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+    it('reflects dir to the native dir attribute for both ltr and rtl', async () => {
       const r = renderHost(RtlSelectHost);
       const root = r.query<HTMLElement>('[forSelect]')!;
 
       expect(root.getAttribute('dir')).toBe('rtl');
 
       r.instance.dir.set('ltr');
-      r.flush();
+      await r.flush();
       expect(root.getAttribute('dir')).toBe('ltr');
     });
 

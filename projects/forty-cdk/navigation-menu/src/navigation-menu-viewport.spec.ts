@@ -219,41 +219,41 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('re-parenting', () => {
-    it('moves the active [forNavigationMenuContent] into the viewport on mount', () => {
+    it('moves the active [forNavigationMenuContent] into the viewport on mount', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
       // Nothing open yet, viewport is empty.
       expect(viewport.children.length).toBe(0);
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const products = query<HTMLElement>('[data-id="products"]')!;
       expect(products.parentElement).toBe(viewport);
     });
 
-    it('releases the content from the viewport when @if unmounts it', () => {
+    it('releases the content from the viewport when @if unmounts it', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
       expect(viewport.children.length).toBe(1);
 
       fixture.componentInstance.open.set('');
-      flush();
+      await flush();
 
       // @if unmount destroys the embedded view; viewport ends up empty.
       expect(viewport.children.length).toBe(0);
       expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
     });
 
-    it('does not move content when no viewport is registered', () => {
+    it('does not move content when no viewport is registered', async () => {
       const { fixture, query, flush } = renderHost(NoViewportHost);
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const products = query<HTMLElement>('[data-id="products"]')!;
       // Without a viewport, the content stays under its [forNavigationMenuItem] parent.
@@ -265,16 +265,16 @@ describe('ForNavigationMenuViewport', () => {
     const panelIds = (viewport: HTMLElement): string[] =>
       (Array.from(viewport.children) as HTMLElement[]).map((c) => c.getAttribute('data-id') ?? '');
 
-    it('orders co-existing panels by trigger document order, not by mount order', () => {
+    it('orders co-existing panels by trigger document order, not by mount order', async () => {
       const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
 
       // 'company' (last trigger) enters first.
       host.open.set('company');
       host.mountCompany.set(true);
-      flush();
+      await flush();
       expect(panelIds(viewport)).toEqual(['company']);
 
       // 'products' (first trigger) enters while 'company' is still mounted
@@ -282,28 +282,28 @@ describe('ForNavigationMenuViewport', () => {
       // because its trigger comes first in the DOM.
       host.open.set('products');
       host.mountProducts.set(true);
-      flush();
+      await flush();
       expect(panelIds(viewport)).toEqual(['products', 'company']);
     });
 
-    it('inserts a middle panel between earlier and later siblings deterministically', () => {
+    it('inserts a middle panel between earlier and later siblings deterministically', async () => {
       const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
 
       // Mount the outer two first, in reverse trigger order.
       host.open.set('company');
       host.mountCompany.set(true);
-      flush();
+      await flush();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       expect(panelIds(viewport)).toEqual(['products', 'company']);
 
       // 'solutions' (middle trigger) enters last but must slot between them.
       host.open.set('solutions');
       host.mountSolutions.set(true);
-      flush();
+      await flush();
       expect(panelIds(viewport)).toEqual(['products', 'solutions', 'company']);
     });
 
@@ -312,16 +312,16 @@ describe('ForNavigationMenuViewport', () => {
     // insertion logic against a different existing-children set every time
     // rather than collapsing into one template-order construction batch.
     // Both sequences must converge on the same trigger-order result.
-    it('converges on trigger order when panels mount in forward sequence', () => {
+    it('converges on trigger order when panels mount in forward sequence', async () => {
       const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       host.mountSolutions.set(true);
-      flush();
+      await flush();
       host.mountCompany.set(true);
-      flush();
+      await flush();
       expect(panelIds(query<HTMLElement>('[data-id="viewport"]')!)).toEqual([
         'products',
         'solutions',
@@ -329,16 +329,16 @@ describe('ForNavigationMenuViewport', () => {
       ]);
     });
 
-    it('converges on trigger order when panels mount in reverse sequence', () => {
+    it('converges on trigger order when panels mount in reverse sequence', async () => {
       const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       host.mountCompany.set(true);
-      flush();
+      await flush();
       host.mountSolutions.set(true);
-      flush();
+      await flush();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       expect(panelIds(query<HTMLElement>('[data-id="viewport"]')!)).toEqual([
         'products',
         'solutions',
@@ -408,42 +408,42 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('data-state on viewport', () => {
-    it('reflects "closed" when nothing is open and "open" otherwise', () => {
+    it('reflects "closed" when nothing is open and "open" otherwise', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
       expect(viewport.getAttribute('data-state')).toBe('closed');
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
       expect(viewport.getAttribute('data-state')).toBe('open');
 
       fixture.componentInstance.open.set('');
-      flush();
+      await flush();
       expect(viewport.getAttribute('data-state')).toBe('closed');
     });
   });
 
   describe('data-motion on content', () => {
-    it('is absent on first open (no previous active item to compare against)', () => {
+    it('is absent on first open (no previous active item to compare against)', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
       const products = query<HTMLElement>('[data-id="products"]')!;
       expect(products.hasAttribute('data-motion')).toBe(false);
     });
 
-    it('reflects from-end on the entering and to-start on the leaving when moving rightward', () => {
+    it('reflects from-end on the entering and to-start on the leaving when moving rightward', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
       fixture.componentInstance.open.set('company');
-      flush();
+      await flush();
 
       // 'company' (index 2) is entering with 'products' (index 0) as the previous active.
       const company = query<HTMLElement>('[data-id="company"]')!;
@@ -455,38 +455,38 @@ describe('ForNavigationMenuViewport', () => {
       // direction here and assert the leftward entering case below.
     });
 
-    it('reflects from-start on the entering content when moving leftward', () => {
+    it('reflects from-start on the entering content when moving leftward', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('company');
-      flush();
+      await flush();
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       // 'products' (index 0) is entering with 'company' (index 2) as the previous active.
       const products = query<HTMLElement>('[data-id="products"]')!;
       expect(products.getAttribute('data-motion')).toBe('from-start');
     });
 
-    it('clears data-motion when the menu closes back to no selection', () => {
+    it('clears data-motion when the menu closes back to no selection', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
       fixture.componentInstance.open.set('solutions');
-      flush();
+      await flush();
       const solutions = query<HTMLElement>('[data-id="solutions"]')!;
       expect(solutions.getAttribute('data-motion')).toBe('from-end');
 
       fixture.componentInstance.open.set('');
-      flush();
+      await flush();
       // Solutions has been destroyed; nothing to assert on the leaving side
       // because @if removes it. The currently-open value is '', so any
       // remounted content would have no motion.
       fixture.componentInstance.open.set('solutions');
-      flush();
+      await flush();
       const reopened = query<HTMLElement>('[data-id="solutions"]')!;
       // Previous active was '', so no comparison applies.
       expect(reopened.hasAttribute('data-motion')).toBe(false);
@@ -494,9 +494,9 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('orientation reflection', () => {
-    it('reflects [data-orientation] on the viewport host', () => {
+    it('reflects [data-orientation] on the viewport host', async () => {
       const { query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
       // Default orientation is horizontal.
@@ -514,12 +514,12 @@ describe('ForNavigationMenuViewport', () => {
     // cross-platform fragility behind a fake input — see CLAUDE.md
     // "Testing notes" / "E2E (Playwright)" for the rule.
 
-    it('observes the active content panel via ResizeObserver', () => {
+    it('observes the active content panel via ResizeObserver', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const productsPanel = query<HTMLElement>('[data-id="products"]')!;
       const observingPanel = FakeResizeObserver.instances.find((ro) =>
@@ -530,12 +530,12 @@ describe('ForNavigationMenuViewport', () => {
       expect(observingPanel?.observed).toContain(productsPanel);
     });
 
-    it('switches the observed element when the active content changes', () => {
+    it('switches the observed element when the active content changes', async () => {
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const products = query<HTMLElement>('[data-id="products"]')!;
       const observingProducts = FakeResizeObserver.instances.some((ro) =>
@@ -544,7 +544,7 @@ describe('ForNavigationMenuViewport', () => {
       expect(observingProducts).toBe(true);
 
       fixture.componentInstance.open.set('solutions');
-      flush();
+      await flush();
 
       // The previous active panel is no longer observed.
       expect(FakeResizeObserver.instances.some((ro) => ro.observed.includes(products))).toBe(false);
@@ -556,15 +556,15 @@ describe('ForNavigationMenuViewport', () => {
       expect(observingSolutions).toBe(true);
     });
 
-    it('keeps observing the active panel across an A→B→C sequence, never a leaving one', () => {
+    it('keeps observing the active panel across an A→B→C sequence, never a leaving one', async () => {
       const { fixture, query, flush } = renderHost(OverlappingMegaMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
 
       // A enters and becomes active.
       host.open.set('products');
       host.mountProducts.set(true);
-      flush();
+      await flush();
       const products = query<HTMLElement>('[data-id="products"]')!;
       const observed = (): Element[] => FakeResizeObserver.instances.flatMap((ro) => ro.observed);
       expect(observed()).toContain(products);
@@ -573,27 +573,27 @@ describe('ForNavigationMenuViewport', () => {
       // panel (B) must be measured — the leaving A must be unobserved.
       host.open.set('solutions');
       host.mountSolutions.set(true);
-      flush();
+      await flush();
       const solutions = query<HTMLElement>('[data-id="solutions"]')!;
       expect(observed()).toContain(solutions);
       expect(observed()).not.toContain(products);
 
       // A finishes leaving (unmounts). B stays the only measured panel.
       host.mountProducts.set(false);
-      flush();
+      await flush();
       expect(observed()).toContain(solutions);
       expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
 
       // C enters; B kept mounted. Active C measured, leaving B not.
       host.open.set('company');
       host.mountCompany.set(true);
-      flush();
+      await flush();
       const company = query<HTMLElement>('[data-id="company"]')!;
       expect(observed()).toContain(company);
       expect(observed()).not.toContain(solutions);
     });
 
-    it('renders without crashing when ResizeObserver is unavailable', () => {
+    it('renders without crashing when ResizeObserver is unavailable', async () => {
       // Simulate SSR / very old runtime: no global RO. The directive must
       // skip `new ResizeObserver(...)` entirely and still produce a valid
       // DOM tree (re-parenting, data-state, orientation). The actual size
@@ -602,10 +602,10 @@ describe('ForNavigationMenuViewport', () => {
       (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
         undefined as unknown as typeof ResizeObserver;
       const { fixture, query, flush } = renderHost(MegaMenuHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
       // Viewport still renders and re-parents the active content.

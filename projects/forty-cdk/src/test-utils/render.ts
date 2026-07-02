@@ -12,7 +12,9 @@ export interface RenderResult<T> {
    * The canonical {@link flush} waiter bound to this fixture. `await` it to
    * drain Angular's render pipeline (including `afterNextRender` callbacks),
    * exactly like `await flush(fixture)`. It is the same async implementation —
-   * not a synchronous `detectChanges()` shadow.
+   * not a synchronous `detectChanges()` shadow. A bare `flush();` leaves the
+   * async drain un-awaited (assertions run against stale DOM); the
+   * `forty-cdk/no-floating-flush` lint rule rejects it.
    */
   flush: () => Promise<void>;
 }

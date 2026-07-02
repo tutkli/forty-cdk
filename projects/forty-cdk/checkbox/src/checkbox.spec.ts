@@ -96,73 +96,73 @@ describe('ForCheckbox', () => {
   );
 
   describe('click', () => {
-    it('toggles aria-checked between true/false', () => {
+    it('toggles aria-checked between true/false', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       const cb = checkboxOf(el);
 
       cb.click();
-      flush();
+      await flush();
       expect(cb.getAttribute('aria-checked')).toBe('true');
       expect(cb.getAttribute('data-state')).toBe('checked');
       expect(fixture.componentInstance.agreed()).toBe(true);
 
       cb.click();
-      flush();
+      await flush();
       expect(cb.getAttribute('aria-checked')).toBe('false');
       expect(fixture.componentInstance.agreed()).toBe(false);
     });
   });
 
   describe('two-way [(checked)]', () => {
-    it('reflects external writes', () => {
+    it('reflects external writes', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.agreed.set(true);
-      flush();
+      await flush();
       expect(checkboxOf(el).getAttribute('aria-checked')).toBe('true');
     });
   });
 
   describe('indeterminate (tri-state)', () => {
-    it('renders aria-checked="mixed" and data-state="indeterminate" when set', () => {
+    it('renders aria-checked="mixed" and data-state="indeterminate" when set', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.indeterminate.set(true);
-      flush();
+      await flush();
 
       const cb = checkboxOf(el);
       expect(cb.getAttribute('aria-checked')).toBe('mixed');
       expect(cb.getAttribute('data-state')).toBe('indeterminate');
     });
 
-    it('beats `checked` when both are true', () => {
+    it('beats `checked` when both are true', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.agreed.set(true);
       fixture.componentInstance.indeterminate.set(true);
-      flush();
+      await flush();
       expect(checkboxOf(el).getAttribute('aria-checked')).toBe('mixed');
     });
 
-    it('clears indeterminate and toggles checked on activation (from unchecked)', () => {
+    it('clears indeterminate and toggles checked on activation (from unchecked)', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.indeterminate.set(true);
       fixture.componentInstance.agreed.set(false);
-      flush();
+      await flush();
 
       checkboxOf(el).click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.indeterminate()).toBe(false);
       expect(fixture.componentInstance.agreed()).toBe(true);
       expect(checkboxOf(el).getAttribute('aria-checked')).toBe('true');
     });
 
-    it('clears indeterminate and toggles checked on activation (from checked)', () => {
+    it('clears indeterminate and toggles checked on activation (from checked)', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.indeterminate.set(true);
       fixture.componentInstance.agreed.set(true);
-      flush();
+      await flush();
 
       checkboxOf(el).click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.indeterminate()).toBe(false);
       expect(fixture.componentInstance.agreed()).toBe(false);
@@ -171,23 +171,23 @@ describe('ForCheckbox', () => {
   });
 
   describe('disabled / readonly block activation', () => {
-    it('blocks click while disabled', () => {
+    it('blocks click while disabled', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
       checkboxOf(el).click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.agreed()).toBe(false);
     });
 
-    it('blocks click while readonly without disabling the host', () => {
+    it('blocks click while readonly without disabling the host', async () => {
       const { el, fixture, flush } = renderHost(CheckboxHost);
       fixture.componentInstance.isReadonly.set(true);
-      flush();
+      await flush();
       const cb = checkboxOf(el);
       expect(cb.hasAttribute('disabled')).toBe(false);
       cb.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.agreed()).toBe(false);
     });
   });
@@ -213,20 +213,20 @@ describe('ForCheckbox', () => {
       expect(ind.getAttribute('data-state')).toBe('unchecked');
     });
 
-    it('reflects data-state checked without a hidden attribute while checked', () => {
+    it('reflects data-state checked without a hidden attribute while checked', async () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.agreed.set(true);
-      flush();
+      await flush();
 
       const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
       expect(ind.hasAttribute('hidden')).toBe(false);
       expect(ind.getAttribute('data-state')).toBe('checked');
     });
 
-    it('reflects data-state indeterminate without a hidden attribute while indeterminate', () => {
+    it('reflects data-state indeterminate without a hidden attribute while indeterminate', async () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.indeterminate.set(true);
-      flush();
+      await flush();
 
       const ind = el.querySelector<HTMLElement>('[data-test-id="ind"]')!;
       expect(ind.hasAttribute('hidden')).toBe(false);
@@ -290,21 +290,21 @@ describe('ForCheckbox', () => {
       readonly fieldName = signal<string>('');
     }
 
-    it('submits name=on while checked', () => {
+    it('submits name=on while checked', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('terms');
       fixture.componentInstance.agreed.set(true);
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([['terms', 'on']]);
     });
 
-    it('omits the value while unchecked, including in indeterminate state', () => {
+    it('omits the value while unchecked, including in indeterminate state', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('terms');
       fixture.componentInstance.indeterminate.set(true);
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([]);
@@ -339,25 +339,25 @@ describe('ForCheckbox', () => {
       readonly checkout = form(this.model, (s) => required(s.acceptTerms));
     }
 
-    it('two-way binds checked with the field value', () => {
+    it('two-way binds checked with the field value', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const cb = checkboxOf(el);
 
       // Click flows to model:
       cb.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().acceptTerms).toBe(true);
       expect(cb.getAttribute('aria-checked')).toBe('true');
 
       // External model write flows to DOM:
       fixture.componentInstance.model.set({ acceptTerms: false });
-      flush();
+      await flush();
       expect(cb.getAttribute('aria-checked')).toBe('false');
     });
 
-    it('flows schema `required` into aria-required', () => {
+    it('flows schema `required` into aria-required', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(checkboxOf(el).getAttribute('aria-required')).toBe('true');
     });
   });

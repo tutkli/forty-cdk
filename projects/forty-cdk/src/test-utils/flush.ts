@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { type ComponentFixture } from '@angular/core/testing';
 
 /**
@@ -13,6 +14,17 @@ import { type ComponentFixture } from '@angular/core/testing';
  * complete (notably how `afterNextRender` re-enters), and the second
  * `detectChanges` picks up state that those callbacks wrote.
  *
+ * Returns a `Promise<void>` you **must** `await`. A bare `flush(fixture);`
+ * statement runs only the first synchronous `detectChanges()` and lets the rest
+ * of the drain escape the test boundary, so assertions can pass against stale
+ * DOM. Awaiting is enforced in specs by the `forty-cdk/no-floating-flush` lint
+ * rule.
+ *
+ * Works under Vitest fake timers too: the macrotask hop advances the faked
+ * clock by 0ms (firing any queued zero-delay timers) rather than awaiting a
+ * real `setTimeout`, which never fires while timers are faked and would hang
+ * the `await`. See {@link macrotask}.
+ *
  * Internal to the test suite — never re-exported from `public-api.ts`.
  */
 export async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
@@ -20,7 +32,7 @@ export async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
   await fixture.whenStable();
   // One macrotask hop. afterNextRender + Promise-chained side effects
   // (floating-ui, autoUpdate, MutationObserver callbacks) settle here.
-  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  await macrotask();
   fixture.detectChanges();
 }
 
@@ -35,10 +47,13 @@ export async function flush<T>(fixture: ComponentFixture<T>): Promise<void> {
  * shape, use `flush(fixture)` instead — `nextMacrotask()` is deliberately
  * minimal and does *not* run `detectChanges` / `whenStable`.
  *
+ * Returns a `Promise<void>` you **must** `await`; bare calls are rejected by
+ * the `forty-cdk/no-floating-flush` lint rule.
+ *
  * Internal to the test suite — never re-exported from `public-api.ts`.
  */
 export function nextMacrotask(): Promise<void> {
-  return new Promise<void>((resolve) => setTimeout(resolve, 0));
+  return macrotask();
 }
 
 /**
@@ -81,6 +96,9 @@ function hasResolvedPosition(): boolean {
  *
  * Use this for any spec that asserts on inline `translate` / `--for-*` styles,
  * transforms, or `data-side` reflection on portaled overlays.
+ *
+ * Like {@link flush}, this returns a `Promise<void>` you **must** `await`;
+ * bare calls are rejected by the `forty-cdk/no-floating-flush` lint rule.
  */
 export async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise<void> {
   await flush(fixture);
@@ -88,8 +106,27 @@ export async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise
     if (hasResolvedPosition()) {
       break;
     }
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    await macrotask();
     fixture.detectChanges();
     await fixture.whenStable();
   }
+}
+
+/**
+ * A single macrotask boundary, aware of Vitest fake timers.
+ *
+ * Under real timers this awaits a `setTimeout(0)`. Under `vi.useFakeTimers()`
+ * a real `setTimeout` never fires on its own, so awaiting one would hang until
+ * the test times out; instead we advance the faked clock by 0ms, which runs
+ * any queued zero-delay timers (the render-drain hop, `afterNextRender`
+ * continuations) and flushes microtasks without moving the clock past a
+ * pending real delay. This is what lets every `flush(fixture)` be `await`ed
+ * uniformly, in fake- and real-timer specs alike.
+ */
+async function macrotask(): Promise<void> {
+  if (vi.isFakeTimers()) {
+    await vi.advanceTimersByTimeAsync(0);
+    return;
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
 }

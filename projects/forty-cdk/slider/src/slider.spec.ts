@@ -128,10 +128,10 @@ describe('ForSlider', () => {
       expect(thumb(el, 0).hasAttribute('aria-valuetext')).toBe(false);
     });
 
-    it('reflects [valueText] as aria-valuetext when set', () => {
+    it('reflects [valueText] as aria-valuetext when set', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueText.set('$50');
-      flush();
+      await flush();
       expect(thumb(el, 0).getAttribute('aria-valuetext')).toBe('$50');
     });
 
@@ -140,29 +140,29 @@ describe('ForSlider', () => {
       expect(thumb(el, 0).getAttribute('aria-label')).toBe('Volume');
     });
 
-    it('mirrors data-orientation on every piece', () => {
+    it('mirrors data-orientation on every piece', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
       expect(root(el).getAttribute('data-orientation')).toBe('vertical');
       expect(track(el).getAttribute('data-orientation')).toBe('vertical');
       expect(range(el).getAttribute('data-orientation')).toBe('vertical');
       expect(thumb(el, 0).getAttribute('data-orientation')).toBe('vertical');
     });
 
-    it('reflects data-disabled and dir=rtl on the root', () => {
+    it('reflects data-disabled and dir=rtl on the root', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.disabled.set(true);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       expect(root(el).hasAttribute('data-disabled')).toBe(true);
       expect(root(el).getAttribute('dir')).toBe('rtl');
     });
 
-    it('disabled thumb has tabindex=-1 and aria-disabled=true', () => {
+    it('disabled thumb has tabindex=-1 and aria-disabled=true', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       expect(thumb(el, 0).getAttribute('tabindex')).toBe('-1');
       expect(thumb(el, 0).getAttribute('aria-disabled')).toBe('true');
     });
@@ -174,96 +174,96 @@ describe('ForSlider', () => {
   });
 
   describe('keyboard (single thumb, horizontal LTR)', () => {
-    it('ArrowRight increases by step', () => {
+    it('ArrowRight increases by step', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([51]);
     });
 
-    it('ArrowLeft decreases by step', () => {
+    it('ArrowLeft decreases by step', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       keyDown(thumb(el, 0), 'ArrowLeft');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
 
-    it('ArrowUp increases, ArrowDown decreases', () => {
+    it('ArrowUp increases, ArrowDown decreases', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       keyDown(thumb(el, 0), 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([51]);
       keyDown(thumb(el, 0), 'ArrowDown');
       keyDown(thumb(el, 0), 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
 
-    it('PageUp / PageDown use largeStep', () => {
+    it('PageUp / PageDown use largeStep', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       keyDown(thumb(el, 0), 'PageUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([60]);
       keyDown(thumb(el, 0), 'PageDown');
       keyDown(thumb(el, 0), 'PageDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([40]);
     });
 
-    it('Home / End jump to min / max', () => {
+    it('Home / End jump to min / max', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       keyDown(thumb(el, 0), 'Home');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([0]);
       keyDown(thumb(el, 0), 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([100]);
     });
 
-    it('clamps below min and above max', () => {
+    it('clamps below min and above max', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([0]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowLeft');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([0]);
       fixture.componentInstance.picked.set([100]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([100]);
     });
 
-    it('respects custom step', () => {
+    it('respects custom step', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.step.set(5);
       fixture.componentInstance.picked.set([20]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([25]);
     });
 
-    it('snaps off-step values onto the step grid', () => {
+    it('snaps off-step values onto the step grid', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.step.set(10);
       fixture.componentInstance.picked.set([23]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       // 23 + 10 = 33 → snap to 30
       expect(fixture.componentInstance.picked()).toEqual([30]);
     });
 
-    it('rounds a fractional step to clean values without float noise (#590 F5)', () => {
+    it('rounds a fractional step to clean values without float noise (#590 F5)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.step.set(0.1);
       fixture.componentInstance.picked.set([0]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
       keyDown(thumb(el, 0), 'ArrowRight');
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       // 0 + 0.1 * 3 would be 0.30000000000000004 without precision rounding.
       expect(fixture.componentInstance.picked()).toEqual([0.3]);
       expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('0.3');
@@ -271,79 +271,79 @@ describe('ForSlider', () => {
   });
 
   describe('keyboard (RTL)', () => {
-    it('ArrowLeft increases and ArrowRight decreases under dir=rtl', () => {
+    it('ArrowLeft increases and ArrowRight decreases under dir=rtl', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowLeft');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([51]);
       keyDown(thumb(el, 0), 'ArrowRight');
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
 
-    it('vertical: ArrowUp / ArrowDown stay axis-positive under dir=rtl (dir does not flip vertical)', () => {
+    it('vertical: ArrowUp / ArrowDown stay axis-positive under dir=rtl (dir does not flip vertical)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.orientation.set('vertical');
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([51]);
       keyDown(thumb(el, 0), 'ArrowDown');
       keyDown(thumb(el, 0), 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
   });
 
   describe('keyboard (inverted)', () => {
-    it('ArrowRight decreases when inverted', () => {
+    it('ArrowRight decreases when inverted', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.inverted.set(true);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
   });
 
   describe('disabled / readonly', () => {
-    it('disabled blocks keyboard', () => {
+    it('disabled blocks keyboard', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([50]);
     });
 
-    it('readonly blocks keyboard but keeps thumb focusable', () => {
+    it('readonly blocks keyboard but keeps thumb focusable', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.readonly.set(true);
-      flush();
+      await flush();
       expect(thumb(el, 0).getAttribute('tabindex')).toBe('0');
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([50]);
     });
   });
 
   describe('range / multi-thumb', () => {
-    it('renders one thumb per value entry', () => {
+    it('renders one thumb per value entry', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([20, 80]);
-      flush();
+      await flush();
       expect(thumb(el, 0)).not.toBeNull();
       expect(thumb(el, 1)).not.toBeNull();
     });
 
-    it('thumb aria-valuemin / aria-valuemax constrain to neighbors (non-passing)', () => {
+    it('thumb aria-valuemin / aria-valuemax constrain to neighbors (non-passing)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([20, 80]);
-      flush();
+      await flush();
       const lo = thumb(el, 0);
       const hi = thumb(el, 1);
       expect(lo.getAttribute('aria-valuemin')).toBe('0');
@@ -352,39 +352,39 @@ describe('ForSlider', () => {
       expect(hi.getAttribute('aria-valuemax')).toBe('100');
     });
 
-    it('lower thumb cannot move past upper thumb', () => {
+    it('lower thumb cannot move past upper thumb', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([78, 80]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([79, 80]);
       keyDown(thumb(el, 0), 'ArrowRight');
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       // 79 → 80 (clamped to upper neighbor), can't go to 81.
       expect(fixture.componentInstance.picked()).toEqual([80, 80]);
     });
 
-    it('minStepsBetweenThumbs forces a gap', () => {
+    it('minStepsBetweenThumbs forces a gap', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.gap.set(5);
       fixture.componentInstance.picked.set([78, 90]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([85, 90]);
     });
 
-    it('Home / End on a multi-thumb clamps to neighbor, not absolute extreme', () => {
+    it('Home / End on a multi-thumb clamps to neighbor, not absolute extreme', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([20, 80]);
-      flush();
+      await flush();
       keyDown(thumb(el, 0), 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([80, 80]);
       keyDown(thumb(el, 1), 'Home');
-      flush();
+      await flush();
       expect(fixture.componentInstance.picked()).toEqual([80, 80]);
     });
   });
@@ -396,48 +396,48 @@ describe('ForSlider', () => {
   // tautologically check the math against the stub.
 
   describe('CSS variable exposure', () => {
-    it('thumb exposes --for-slider-thumb-position as a fraction', () => {
+    it('thumb exposes --for-slider-thumb-position as a fraction', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([25]);
-      flush();
+      await flush();
       const t = thumb(el, 0);
       expect(t.style.getPropertyValue('--for-slider-thumb-position')).toBe('0.25');
     });
 
-    it('range exposes start / end / size as fractions', () => {
+    it('range exposes start / end / size as fractions', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([20, 80]);
-      flush();
+      await flush();
       const r = range(el);
       expect(r.style.getPropertyValue('--for-slider-range-start')).toBe('0.2');
       expect(r.style.getPropertyValue('--for-slider-range-end')).toBe('0.8');
       expect(parseFloat(r.style.getPropertyValue('--for-slider-range-size'))).toBeCloseTo(0.6, 5);
     });
 
-    it('inverted flips the thumb position', () => {
+    it('inverted flips the thumb position', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([25]);
       fixture.componentInstance.inverted.set(true);
-      flush();
+      await flush();
       const t = thumb(el, 0);
       expect(t.style.getPropertyValue('--for-slider-thumb-position')).toBe('0.75');
     });
   });
 
   describe('valueChange contract', () => {
-    it('does not fire on consumer writes via [(value)]', () => {
+    it('does not fire on consumer writes via [(value)]', async () => {
       const { fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueChanges.length = 0;
       fixture.componentInstance.picked.set([42]);
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueChanges.length).toBe(0);
     });
 
-    it('fires only when the directive itself updates the model', () => {
+    it('fires only when the directive itself updates the model', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueChanges.length = 0;
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueChanges).toEqual([[51]]);
     });
   });
@@ -449,103 +449,103 @@ describe('ForSlider', () => {
     // clientX/Y back to a value. The keyboard-driven contract below stays
     // in Vitest because no geometry is involved.
 
-    it('fires once on keyup after a navigation key', () => {
+    it('fires once on keyup after a navigation key', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueCommits.length = 0;
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
       keyUp(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([[51]]);
     });
 
-    it('fires once with the final value after a held arrow key (multiple keydowns, one keyup)', () => {
+    it('fires once with the final value after a held arrow key (multiple keydowns, one keyup)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueCommits.length = 0;
       keyDown(thumb(el, 0), 'ArrowRight');
       keyDown(thumb(el, 0), 'ArrowRight');
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
       keyUp(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([[53]]);
     });
 
-    it('does not fire on keyup of a non-navigation key', () => {
+    it('does not fire on keyup of a non-navigation key', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueCommits.length = 0;
       keyUp(thumb(el, 0), 'Tab');
       keyUp(thumb(el, 0), 'a');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
     });
 
-    it('does not fire when keyboard interaction yields no change (clamped at extreme)', () => {
+    it('does not fire when keyboard interaction yields no change (clamped at extreme)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([100]);
-      flush();
+      await flush();
       fixture.componentInstance.valueCommits.length = 0;
       keyDown(thumb(el, 0), 'ArrowRight');
       keyUp(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
     });
 
-    it('does not fire on consumer writes via [(value)]', () => {
+    it('does not fire on consumer writes via [(value)]', async () => {
       const { fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.valueCommits.length = 0;
       fixture.componentInstance.picked.set([42]);
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
     });
 
-    it('does not let a keyup on a different thumb steal another thumb pending commit (#590 F4)', () => {
+    it('does not let a keyup on a different thumb steal another thumb pending commit (#590 F4)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([30, 70]);
-      flush();
+      await flush();
       fixture.componentInstance.valueCommits.length = 0;
 
       // Thumb 0 arms a pending commit (keydown moved it) but is not released.
       keyDown(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
 
       // A navigation keyup on thumb 1 (which did not arm anything) must not
       // commit thumb 0's pending change.
       keyUp(thumb(el, 1), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([]);
 
       // Thumb 0's own keyup commits exactly once with the final value.
       keyUp(thumb(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.valueCommits).toEqual([[31, 70]]);
     });
   });
 
   describe('touched contract', () => {
-    it('marks touched when focus leaves the slider region', () => {
+    it('marks touched when focus leaves the slider region', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       const t = thumb(el, 0);
       const outside = document.createElement('button');
       document.body.appendChild(outside);
       t.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.touchedChanges).toContain(true);
       outside.remove();
     });
 
-    it('does not mark touched when focus stays inside the slider', () => {
+    it('does not mark touched when focus stays inside the slider', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.picked.set([20, 80]);
-      flush();
+      await flush();
       const a = thumb(el, 0);
       const b = thumb(el, 1);
       fixture.componentInstance.touchedChanges.length = 0;
       a.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: b }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.touchedChanges).toEqual([]);
     });
 
@@ -578,18 +578,18 @@ describe('ForSlider', () => {
       expect(document.activeElement).toBe(thumb(el, 0));
     });
 
-    it('focuses the first thumb in a multi-thumb slider', () => {
+    it('focuses the first thumb in a multi-thumb slider', async () => {
       const { el, instance, flush } = renderHost(FocusHost);
       instance.picked.set([20, 80]);
-      flush();
+      await flush();
       instance.slider().focus();
       expect(document.activeElement).toBe(thumb(el, 0));
     });
 
-    it('is a no-op when the slider is disabled', () => {
+    it('is a no-op when the slider is disabled', async () => {
       const { instance, flush } = renderHost(FocusHost);
       instance.disabled.set(true);
-      flush();
+      await flush();
       const before = document.activeElement;
       instance.slider().focus();
       expect(document.activeElement).toBe(before);
@@ -613,9 +613,9 @@ describe('ForSlider', () => {
         readonly settings = form(this.model);
       }
 
-      it('moves focus onto a thumb, not the group host', () => {
+      it('moves focus onto a thumb, not the group host', async () => {
         const { el, fixture, flush } = renderHost(SignalFormsHost);
-        flush();
+        await flush();
         fixture.componentInstance.settings.volume().focusBoundControl();
         expect(document.activeElement).toBe(thumb(el, 0));
       });
@@ -651,31 +651,31 @@ describe('ForSlider', () => {
       expect(hidden(el).length).toBe(0);
     });
 
-    it('emits one hidden input per value once name is set', () => {
+    it('emits one hidden input per value once name is set', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.name.set('volume');
-      flush();
+      await flush();
       const inputs = hidden(el);
       expect(inputs.length).toBe(1);
       expect(inputs[0]!.name).toBe('volume');
       expect(inputs[0]!.value).toBe('42');
     });
 
-    it('emits N hidden inputs for multi-value', () => {
+    it('emits N hidden inputs for multi-value', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.name.set('range');
       fixture.componentInstance.picked.set([10, 20, 30]);
-      flush();
+      await flush();
       const inputs = hidden(el);
       expect(inputs.length).toBe(3);
       expect(inputs.map((i) => i.value)).toEqual(['10', '20', '30']);
     });
 
-    it('disabled sets the disabled attribute on hidden inputs', () => {
+    it('disabled sets the disabled attribute on hidden inputs', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.name.set('volume');
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       expect(hidden(el)[0]!.hasAttribute('disabled')).toBe(true);
     });
   });

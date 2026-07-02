@@ -106,32 +106,32 @@ describe('ForSearch', () => {
   });
 
   describe('value binding', () => {
-    it('updates the model from the native input event and toggles data-empty', () => {
+    it('updates the model from the native input event and toggles data-empty', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
 
       typeInto(input, 'angular');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('angular');
       expect(input.hasAttribute('data-empty')).toBe(false);
 
       typeInto(input, '');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
     });
 
-    it('mirrors external [(value)] writes back into the native element', () => {
+    it('mirrors external [(value)] writes back into the native element', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
 
       fixture.componentInstance.text.set('search term');
-      flush();
+      await flush();
       expect(input.value).toBe('search term');
       expect(input.hasAttribute('data-empty')).toBe(false);
 
       fixture.componentInstance.text.set('');
-      flush();
+      await flush();
       expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
     });
@@ -145,66 +145,66 @@ describe('ForSearch', () => {
       expect(clear.style.display).toBe('none');
     });
 
-    it('becomes visible once value is non-empty', () => {
+    it('becomes visible once value is non-empty', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
       const clear = clearOf(el);
 
       typeInto(input, 'hello');
-      flush();
+      await flush();
       expect(clear.hasAttribute('hidden')).toBe(false);
       expect(clear.style.display).not.toBe('none');
     });
   });
 
   describe('clear button behaviour', () => {
-    it('resets the value to empty and refocuses the input on click', () => {
+    it('resets the value to empty and refocuses the input on click', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
       const clear = clearOf(el);
 
       typeInto(input, 'query');
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('query');
 
       clear.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('');
       expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
       expect(document.activeElement).toBe(input);
     });
 
-    it('does not clear or refocus when the search is disabled', () => {
+    it('does not clear or refocus when the search is disabled', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
       const clear = clearOf(el);
 
       typeInto(input, 'query');
-      flush();
+      await flush();
 
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
 
       clear.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('query');
       expect(document.activeElement).not.toBe(input);
     });
 
-    it('does not clear or refocus when the search is readonly', () => {
+    it('does not clear or refocus when the search is readonly', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
       const clear = clearOf(el);
 
       typeInto(input, 'query');
-      flush();
+      await flush();
 
       fixture.componentInstance.isReadonly.set(true);
-      flush();
+      await flush();
 
       clear.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.text()).toBe('query');
       expect(document.activeElement).not.toBe(input);
     });
@@ -229,22 +229,22 @@ describe('ForSearch', () => {
     const byId = (host: HTMLElement, id: string) =>
       host.querySelector<HTMLInputElement>(`[data-test-id="${id}"]`)!;
 
-    it('two-way binds the value with the field', () => {
+    it('two-way binds the value with the field', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const search = byId(el, 'search');
 
       typeInto(search, 'cats');
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().query).toBe('cats');
 
       fixture.componentInstance.model.update((m) => ({ ...m, query: 'dogs' }));
-      flush();
+      await flush();
       expect(search.value).toBe('dogs');
     });
 
-    it('flows schema-driven required into aria-required', () => {
+    it('flows schema-driven required into aria-required', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(byId(el, 'search').getAttribute('aria-required')).toBe('true');
     });
   });

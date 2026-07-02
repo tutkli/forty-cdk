@@ -269,10 +269,10 @@ describe('ForStepper', () => {
   });
 
   describe('selection', () => {
-    it('clicking a trigger selects it and updates selectedIndex', () => {
+    it('clicking a trigger selects it and updates selectedIndex', async () => {
       const { el, instance, flush } = renderHost(StepperHost);
       triggerAt(el, 1).click();
-      flush();
+      await flush();
       expect(instance.selectedIndex()).toBe(1);
       expect(triggerAt(el, 1).getAttribute('aria-selected')).toBe('true');
       expect(contentAt(el, 1).hasAttribute('inert')).toBe(false);
@@ -441,63 +441,63 @@ describe('ForStepper', () => {
   });
 
   describe('keyboard navigation', () => {
-    it('ArrowRight moves focus in horizontal mode', () => {
+    it('ArrowRight moves focus in horizontal mode', async () => {
       const { el, flush } = renderHost(StepperHost);
       triggerAt(el, 0).focus();
-      flush();
+      await flush();
       pressKey(triggerAt(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerAt(el, 1));
     });
 
-    it('ArrowUp/Down navigate in vertical mode, ArrowLeft/Right are ignored', () => {
+    it('ArrowUp/Down navigate in vertical mode, ArrowLeft/Right are ignored', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
       instance.orientation.set('vertical');
       fixture.detectChanges();
       triggerAt(el, 0).focus();
-      flush();
+      await flush();
 
       pressKey(triggerAt(el, 0), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerAt(el, 1));
 
       pressKey(triggerAt(el, 1), 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerAt(el, 0));
 
       pressKey(triggerAt(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerAt(el, 0));
     });
 
-    it('automatic mode selects on arrow move', () => {
+    it('automatic mode selects on arrow move', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
       instance.activationMode.set('automatic');
       fixture.detectChanges();
       triggerAt(el, 0).focus();
-      flush();
+      await flush();
       pressKey(triggerAt(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(instance.selectedIndex()).toBe(1);
     });
 
-    it('manual mode does not select on arrow move', () => {
+    it('manual mode does not select on arrow move', async () => {
       const { el, instance, flush } = renderHost(StepperHost);
       triggerAt(el, 0).focus();
-      flush();
+      await flush();
       pressKey(triggerAt(el, 0), 'ArrowRight');
-      flush();
+      await flush();
       expect(instance.selectedIndex()).toBe(0);
     });
 
-    it('loop=false stops at the last trigger', () => {
+    it('loop=false stops at the last trigger', async () => {
       const { el, instance, fixture, flush } = renderHost(StepperHost);
       instance.loop.set(false);
       fixture.detectChanges();
       triggerAt(el, 2).focus();
-      flush();
+      await flush();
       pressKey(triggerAt(el, 2), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerAt(el, 2));
     });
   });
@@ -675,7 +675,7 @@ describe('ForStepper', () => {
   });
 
   describe('defaults — provideForStepperDefaults', () => {
-    it('overrides activationMode for a nested scope', () => {
+    it('overrides activationMode for a nested scope', async () => {
       @Component({
         imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
         providers: [provideForStepperDefaults({ activationMode: 'automatic' })],
@@ -699,16 +699,16 @@ describe('ForStepper', () => {
       }
 
       const { el, instance, flush } = renderHost(AutomaticHost);
-      flush();
+      await flush();
       const t0 = el.querySelector<HTMLElement>('[data-trigger="0"]')!;
       t0.focus();
-      flush();
+      await flush();
       pressKey(t0, 'ArrowRight');
-      flush();
+      await flush();
       expect(instance.idx()).toBe(1);
     });
 
-    it('overrides loop=false for a nested scope', () => {
+    it('overrides loop=false for a nested scope', async () => {
       @Component({
         imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
         providers: [provideForStepperDefaults({ loop: false })],
@@ -732,12 +732,12 @@ describe('ForStepper', () => {
       }
 
       const { el, flush } = renderHost(NoLoopHost);
-      flush();
+      await flush();
       const t1 = el.querySelector<HTMLElement>('[data-trigger="1"]')!;
       t1.focus();
-      flush();
+      await flush();
       pressKey(t1, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(t1);
     });
   });
