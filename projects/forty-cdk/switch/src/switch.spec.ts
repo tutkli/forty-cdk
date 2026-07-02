@@ -106,63 +106,63 @@ describe('ForSwitch', () => {
   );
 
   describe('click', () => {
-    it('toggles aria-checked / data-state and emits the model', () => {
+    it('toggles aria-checked / data-state and emits the model', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       const sw = switchOf(el);
 
       sw.click();
-      flush();
+      await flush();
       expect(sw.getAttribute('aria-checked')).toBe('true');
       expect(sw.getAttribute('data-state')).toBe('checked');
       expect(fixture.componentInstance.enabled()).toBe(true);
 
       sw.click();
-      flush();
+      await flush();
       expect(sw.getAttribute('aria-checked')).toBe('false');
       expect(fixture.componentInstance.enabled()).toBe(false);
     });
   });
 
   describe('two-way [(checked)]', () => {
-    it('reflects external writes', () => {
+    it('reflects external writes', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.enabled.set(true);
-      flush();
+      await flush();
       expect(switchOf(el).getAttribute('aria-checked')).toBe('true');
     });
   });
 
   describe('disabled / readonly block activation', () => {
-    it('blocks click while disabled', () => {
+    it('blocks click while disabled', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
       switchOf(el).click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.enabled()).toBe(false);
     });
 
-    it('blocks click while readonly without disabling the host', () => {
+    it('blocks click while readonly without disabling the host', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.isReadonly.set(true);
-      flush();
+      await flush();
       const sw = switchOf(el);
       expect(sw.hasAttribute('disabled')).toBe(false);
       sw.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.enabled()).toBe(false);
     });
   });
 
   describe('touched on blur', () => {
-    it('flips touched=true via blur and stays interactive afterwards', () => {
+    it('flips touched=true via blur and stays interactive afterwards', async () => {
       const { el, flush } = renderHost(SwitchHost);
       const sw = switchOf(el);
       sw.focus();
       sw.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       sw.click();
-      flush();
+      await flush();
       expect(sw.getAttribute('aria-checked')).toBe('true');
     });
   });
@@ -187,20 +187,20 @@ describe('ForSwitch', () => {
       expect(Array.from(new FormData(form).entries())).toEqual([]);
     });
 
-    it('submits name=on while checked', () => {
+    it('submits name=on while checked', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('notify');
       fixture.componentInstance.enabled.set(true);
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([['notify', 'on']]);
     });
 
-    it('omits the value when unchecked', () => {
+    it('omits the value when unchecked', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('notify');
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([]);
@@ -208,14 +208,14 @@ describe('ForSwitch', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects external set without Zone.js', () => {
+    it('reflects external set without Zone.js', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.enabled.set(true);
-      flush();
+      await flush();
       expect(switchOf(el).getAttribute('aria-checked')).toBe('true');
 
       fixture.componentInstance.enabled.set(false);
-      flush();
+      await flush();
       expect(switchOf(el).getAttribute('aria-checked')).toBe('false');
     });
   });
@@ -248,7 +248,7 @@ describe('ForSwitch', () => {
     const swById = (host: HTMLElement, id: string) =>
       host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
-    it('two-way binds checked with the field value', () => {
+    it('two-way binds checked with the field value', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const notif = swById(el, 'notifications');
 
@@ -256,32 +256,32 @@ describe('ForSwitch', () => {
       // First, accept the terms so notifications becomes interactive.
       const terms = swById(el, 'terms');
       terms.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().terms).toBe(true);
       expect(terms.getAttribute('aria-checked')).toBe('true');
 
       // Now toggle notifications via the switch UI:
       notif.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().notifications).toBe(true);
       expect(notif.getAttribute('aria-checked')).toBe('true');
 
       // External change to the model also flows back into the DOM:
       fixture.componentInstance.model.update((m) => ({ ...m, notifications: false }));
-      flush();
+      await flush();
       expect(notif.getAttribute('aria-checked')).toBe('false');
     });
 
-    it('flows `required` from the schema into aria-required', () => {
+    it('flows `required` from the schema into aria-required', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       const terms = swById(el, 'terms');
       expect(terms.getAttribute('aria-required')).toBe('true');
     });
 
-    it('flows schema-driven readonly into aria-readonly', () => {
+    it('flows schema-driven readonly into aria-readonly', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       const notif = swById(el, 'notifications');
 
       // Terms unchecked → notifications is schema-readonly.
@@ -290,7 +290,7 @@ describe('ForSwitch', () => {
       // Once terms is checked, notifications should not be readonly anymore.
       const terms = swById(el, 'terms');
       terms.click();
-      flush();
+      await flush();
       expect(notif.getAttribute('aria-readonly')).toBe(null);
     });
   });

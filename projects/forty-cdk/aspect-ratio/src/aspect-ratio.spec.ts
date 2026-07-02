@@ -58,16 +58,16 @@ describe('ForAspectRatio', () => {
     expect(boundAspectRatio(el)).toBe(String(16 / 9));
   });
 
-  it('updates the aspect-ratio reactively when the input changes', () => {
+  it('updates the aspect-ratio reactively when the input changes', async () => {
     const { fixture, query, flush } = renderHost(AspectRatioHost);
     const el = query<HTMLElement>('[forAspectRatio]')!;
 
     fixture.componentInstance.ratio.set(2);
-    flush();
+    await flush();
     expect(boundAspectRatio(el)).toBe('2');
 
     fixture.componentInstance.ratio.set(4 / 3);
-    flush();
+    await flush();
     expect(boundAspectRatio(el)).toBe(String(4 / 3));
   });
 
@@ -98,32 +98,32 @@ describe('ForAspectRatio', () => {
   });
 
   describe('guards non-positive and non-finite ratios', () => {
-    it('falls back to 1 when ratio is 0', () => {
+    it('falls back to 1 when ratio is 0', async () => {
       const { fixture, query, flush } = renderHost(AspectRatioHost);
       const el = query<HTMLElement>('[forAspectRatio]')!;
 
       fixture.componentInstance.ratio.set(0);
-      flush();
+      await flush();
 
       expect(boundAspectRatio(el)).toBe('1');
     });
 
-    it('falls back to 1 when ratio is negative', () => {
+    it('falls back to 1 when ratio is negative', async () => {
       const { fixture, query, flush } = renderHost(AspectRatioHost);
       const el = query<HTMLElement>('[forAspectRatio]')!;
 
       fixture.componentInstance.ratio.set(-2);
-      flush();
+      await flush();
 
       expect(boundAspectRatio(el)).toBe('1');
     });
 
-    it('falls back to 1 when ratio is NaN', () => {
+    it('falls back to 1 when ratio is NaN', async () => {
       const { fixture, query, flush } = renderHost(AspectRatioHost);
       const el = query<HTMLElement>('[forAspectRatio]')!;
 
       fixture.componentInstance.ratio.set(NaN);
-      flush();
+      await flush();
 
       expect(boundAspectRatio(el)).toBe('1');
     });

@@ -73,44 +73,44 @@ describe('ForNumberInput', () => {
       expect(input.hasAttribute('aria-valuenow')).toBe(false);
     });
 
-    it('reflects min / max as aria-valuemin / aria-valuemax', () => {
+    it('reflects min / max as aria-valuemin / aria-valuemax', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(0);
       fixture.componentInstance.max.set(10);
-      flush();
+      await flush();
       const input = inputOf(el);
       expect(input.getAttribute('aria-valuemin')).toBe('0');
       expect(input.getAttribute('aria-valuemax')).toBe('10');
     });
 
-    it('uses decimal inputmode when fractional values are possible', () => {
+    it('uses decimal inputmode when fractional values are possible', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.step.set(0.1);
-      flush();
+      await flush();
       expect(inputOf(el).getAttribute('inputmode')).toBe('decimal');
     });
 
-    it('uses decimal inputmode for currency formats that imply fraction digits', () => {
+    it('uses decimal inputmode for currency formats that imply fraction digits', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
-      flush();
+      await flush();
       expect(inputOf(el).getAttribute('inputmode')).toBe('decimal');
     });
 
-    it('uses decimal inputmode for percent formats with resolved fraction digits', () => {
+    it('uses decimal inputmode for percent formats with resolved fraction digits', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.formatOptions.set({ style: 'percent', maximumFractionDigits: 2 });
-      flush();
+      await flush();
       expect(inputOf(el).getAttribute('inputmode')).toBe('decimal');
     });
 
-    it('keeps numeric inputmode for a whole-number currency format', () => {
+    it('keeps numeric inputmode for a whole-number currency format', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.formatOptions.set({
         style: 'currency',
         currency: 'JPY',
       });
-      flush();
+      await flush();
       expect(inputOf(el).getAttribute('inputmode')).toBe('numeric');
     });
   });
@@ -156,241 +156,241 @@ describe('ForNumberInput', () => {
   );
 
   describe('parsing live input', () => {
-    it('updates the model and toggles data-empty / aria-valuenow', () => {
+    it('updates the model and toggles data-empty / aria-valuenow', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '42');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(42);
       expect(input.hasAttribute('data-empty')).toBe(false);
       expect(input.getAttribute('aria-valuenow')).toBe('42');
 
       typeInto(input, '');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBeNull();
       expect(input.getAttribute('data-empty')).toBe('');
       expect(input.hasAttribute('aria-valuenow')).toBe(false);
     });
 
-    it('ignores non-numeric input, keeping the last valid value', () => {
+    it('ignores non-numeric input, keeping the last valid value', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '7');
-      flush();
+      await flush();
       typeInto(input, 'abc');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(7);
     });
 
-    it('rejects exponent notation rather than silently parsing it', () => {
+    it('rejects exponent notation rather than silently parsing it', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '5');
-      flush();
+      await flush();
       typeInto(input, '2e3');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(5);
 
       typeInto(input, '1e5');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(5);
     });
 
-    it('rejects multi-sign and multi-decimal malformed input', () => {
+    it('rejects multi-sign and multi-decimal malformed input', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '8');
-      flush();
+      await flush();
       typeInto(input, '+-5');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(8);
 
       typeInto(input, '1.2.3');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(8);
     });
 
-    it('parses a plain decimal in a comma-decimal locale', () => {
+    it('parses a plain decimal in a comma-decimal locale', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('de-DE');
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '1.234,5');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1234.5);
     });
 
-    it('parses a correctly grouped integer', () => {
+    it('parses a correctly grouped integer', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '1,234,567');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1234567);
     });
 
-    it('rejects a misgrouped integer instead of collapsing it', () => {
+    it('rejects a misgrouped integer instead of collapsing it', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '9');
-      flush();
+      await flush();
       // "1,2,3" is not valid grouping; it must NOT silently parse to 123.
       typeInto(input, '1,2,3');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(9);
     });
 
-    it('parses a space-grouped integer typed with ASCII spaces in an NBSP-grouping locale (#590 F5)', () => {
+    it('parses a space-grouped integer typed with ASCII spaces in an NBSP-grouping locale (#590 F5)', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       // fr-FR groups with a narrow no-break space (U+202F); a user typing plain
       // ASCII spaces must still parse against it.
       fixture.componentInstance.locale.set('fr-FR');
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '1 234 567');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1234567);
     });
 
-    it('does not clamp while typing (clamps on commit)', () => {
+    it('does not clamp while typing (clamps on commit)', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(10);
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '5');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(5);
 
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(10);
     });
   });
 
   describe('keyboard stepping', () => {
-    it('ArrowUp / ArrowDown step by `step`', () => {
+    it('ArrowUp / ArrowDown step by `step`', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.qty.set(5);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       pressKey(input, 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(6);
       expect(input.getAttribute('aria-valuenow')).toBe('6');
 
       pressKey(input, 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(5);
     });
 
-    it('PageUp / PageDown step by step × stepMultiplier', () => {
+    it('PageUp / PageDown step by step × stepMultiplier', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.qty.set(50);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       pressKey(input, 'PageUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(60);
 
       pressKey(input, 'PageDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(50);
     });
 
-    it('Home / End jump to min / max', () => {
+    it('Home / End jump to min / max', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(0);
       fixture.componentInstance.max.set(100);
       fixture.componentInstance.qty.set(50);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       pressKey(input, 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(100);
 
       pressKey(input, 'Home');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(0);
     });
 
-    it('prevents default on handled keys', () => {
+    it('prevents default on handled keys', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.qty.set(1);
-      flush();
+      await flush();
       const event = pressKey(inputOf(el), 'ArrowUp');
       expect(event.defaultPrevented).toBe(true);
     });
 
-    it('steps from empty to the clamped baseline (min ?? 0)', () => {
+    it('steps from empty to the clamped baseline (min ?? 0)', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(3);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       pressKey(input, 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(3);
     });
 
-    it('rounds a fractional 0.1 step to a clean value without float noise', () => {
+    it('rounds a fractional 0.1 step to a clean value without float noise', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.step.set(0.1);
       fixture.componentInstance.qty.set(0.2);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       pressKey(input, 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(0.3);
       expect(input.getAttribute('aria-valuenow')).toBe('0.3');
     });
   });
 
   describe('clamping', () => {
-    it('clamps stepping at min and max', () => {
+    it('clamps stepping at min and max', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(0);
       fixture.componentInstance.max.set(2);
       fixture.componentInstance.qty.set(2);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       pressKey(input, 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(2);
 
       fixture.componentInstance.qty.set(0);
-      flush();
+      await flush();
       pressKey(input, 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(0);
     });
   });
@@ -430,30 +430,30 @@ describe('ForNumberInput', () => {
       expect(inc.getAttribute('aria-label')).toBe('Increase');
     });
 
-    it('steps the value on click', () => {
+    it('steps the value on click', async () => {
       const { el, fixture, flush } = renderHost(ButtonsHost);
       incOf(el).click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(6);
 
       decOf(el).click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(5);
     });
 
-    it('disables the increment button at max and the decrement button at min', () => {
+    it('disables the increment button at max and the decrement button at min', async () => {
       const { el, fixture, flush } = renderHost(ButtonsHost);
       const inc = incOf(el);
       const dec = decOf(el);
 
       fixture.componentInstance.qty.set(10);
-      flush();
+      await flush();
       expect(inc.hasAttribute('disabled')).toBe(true);
       expect(inc.getAttribute('data-disabled')).toBe('');
       expect(dec.hasAttribute('disabled')).toBe(false);
 
       fixture.componentInstance.qty.set(0);
-      flush();
+      await flush();
       expect(dec.hasAttribute('disabled')).toBe(true);
       expect(dec.getAttribute('data-disabled')).toBe('');
       expect(inc.hasAttribute('disabled')).toBe(false);
@@ -488,12 +488,12 @@ describe('ForNumberInput', () => {
   });
 
   describe('Intl formatting', () => {
-    it('drives aria-valuetext and the displayed text from formatOptions', () => {
+    it('drives aria-valuetext and the displayed text from formatOptions', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
       fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
       fixture.componentInstance.qty.set(1234.5);
-      flush();
+      await flush();
       const input = inputOf(el);
 
       expect(input.getAttribute('aria-valuenow')).toBe('1234.5');
@@ -501,130 +501,130 @@ describe('ForNumberInput', () => {
       expect(input.value).toBe('$1,234.50');
     });
 
-    it('emits no aria-valuetext without formatOptions', () => {
+    it('emits no aria-valuetext without formatOptions', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.qty.set(42);
-      flush();
+      await flush();
       expect(inputOf(el).hasAttribute('aria-valuetext')).toBe(false);
     });
 
-    it('reformats the displayed text on blur', () => {
+    it('reformats the displayed text on blur', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
       fixture.componentInstance.formatOptions.set({ maximumFractionDigits: 0 });
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '1000');
-      flush();
+      await flush();
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1000);
       expect(input.value).toBe('1,000');
     });
 
-    it('round-trips a percent value without ×100 corruption on edit (#1137)', () => {
+    it('round-trips a percent value without ×100 corruption on edit (#1137)', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
       fixture.componentInstance.formatOptions.set({ style: 'percent' });
       fixture.componentInstance.qty.set(0.5);
-      flush();
+      await flush();
       const input = inputOf(el);
       expect(input.value).toBe('50%');
 
       input.focus();
       typeInto(input, '51%');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(0.51);
       expect(input.getAttribute('aria-valuetext')).toBe('51%');
 
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(0.51);
       expect(input.value).toBe('51%');
     });
 
-    it('clamps a percent value against its fractional min / max on commit', () => {
+    it('clamps a percent value against its fractional min / max on commit', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
       fixture.componentInstance.formatOptions.set({ style: 'percent' });
       fixture.componentInstance.max.set(1);
-      flush();
+      await flush();
       const input = inputOf(el);
       input.focus();
 
       typeInto(input, '150%');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1.5);
 
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1);
       expect(input.value).toBe('100%');
     });
 
-    it('round-trips a currency value unscaled on edit', () => {
+    it('round-trips a currency value unscaled on edit', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
       fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
       fixture.componentInstance.qty.set(1234.5);
-      flush();
+      await flush();
       const input = inputOf(el);
       expect(input.value).toBe('$1,234.50');
 
       input.focus();
       typeInto(input, '$1,235.50');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1235.5);
     });
 
-    it('round-trips a unit value unscaled on edit', () => {
+    it('round-trips a unit value unscaled on edit', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.locale.set('en-US');
       fixture.componentInstance.formatOptions.set({ style: 'unit', unit: 'kilometer' });
       fixture.componentInstance.qty.set(5);
-      flush();
+      await flush();
       const input = inputOf(el);
       expect(input.value).toBe('5 km');
 
       input.focus();
       typeInto(input, '6 km');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(6);
     });
   });
 
   describe('disabled / readonly block interaction', () => {
-    it('blocks stepping while disabled', () => {
+    it('blocks stepping while disabled', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.qty.set(1);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
       pressKey(inputOf(el), 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1);
     });
 
-    it('blocks stepping while readonly without disabling the host', () => {
+    it('blocks stepping while readonly without disabling the host', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.qty.set(1);
       fixture.componentInstance.isReadonly.set(true);
-      flush();
+      await flush();
       const input = inputOf(el);
       expect(input.hasAttribute('disabled')).toBe(false);
       pressKey(input, 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.qty()).toBe(1);
     });
   });
 
   describe('touched on blur', () => {
-    it('flips touched=true on blur (reflected as data-touched)', () => {
+    it('flips touched=true on blur (reflected as data-touched)', async () => {
       const { el, flush } = renderHost(NumberHost);
       const input = inputOf(el);
       input.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       expect(input.getAttribute('data-touched')).toBe('');
     });
   });
@@ -656,28 +656,28 @@ describe('ForNumberInput', () => {
       expect(Array.from(new FormData(formEl).entries())).toEqual([]);
     });
 
-    it('does not put the name on the visible spinbutton', () => {
+    it('does not put the name on the visible spinbutton', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('qty');
-      flush();
+      await flush();
       expect(inputOf(el).hasAttribute('name')).toBe(false);
     });
 
-    it('submits the raw number (not the formatted display)', () => {
+    it('submits the raw number (not the formatted display)', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('qty');
       fixture.componentInstance.formatOptions.set({ style: 'currency', currency: 'USD' });
       fixture.componentInstance.qty.set(1234.5);
-      flush();
+      await flush();
 
       const formEl = el.querySelector('form')!;
       expect(Array.from(new FormData(formEl).entries())).toEqual([['qty', '1234.5']]);
     });
 
-    it('omits the value while empty', () => {
+    it('omits the value while empty', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('qty');
-      flush();
+      await flush();
       const formEl = el.querySelector('form')!;
       expect(Array.from(new FormData(formEl).entries())).toEqual([]);
     });
@@ -766,22 +766,22 @@ describe('ForNumberInput', () => {
     const byId = (host: HTMLElement, id: string) =>
       host.querySelector<HTMLInputElement>(`[data-test-id="${id}"]`)!;
 
-    it('two-way binds the value with the field', () => {
+    it('two-way binds the value with the field', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       const input = byId(el, 'qty');
 
       typeInto(input, '4');
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().qty).toBe(4);
 
       fixture.componentInstance.model.update((m) => ({ ...m, qty: 9 }));
-      flush();
+      await flush();
       expect(input.value).toBe('9');
     });
 
-    it('flows schema-driven required into aria-required', () => {
+    it('flows schema-driven required into aria-required', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(byId(el, 'qty').getAttribute('aria-required')).toBe('true');
     });
   });

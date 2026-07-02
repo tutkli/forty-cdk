@@ -109,9 +109,9 @@ function pointer(type: 'pointerenter' | 'pointerleave' | 'pointerdown'): Pointer
 
 describe('ForNavigationMenu', () => {
   describe('basic rendering', () => {
-    it('reflects aria-label, data-orientation, and trigger ↔ content ids', () => {
+    it('reflects aria-label, data-orientation, and trigger ↔ content ids', async () => {
       const { query, queryAll, fixture, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
 
       const root = query<HTMLElement>('[forNavigationMenu]')!;
       expect(root.getAttribute('aria-label')).toBe('Main');
@@ -125,7 +125,7 @@ describe('ForNavigationMenu', () => {
 
       // Open one item to assert id wiring on the trigger.
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
       const trigger = triggers[0]!;
       const content = query<HTMLElement>('[forNavigationMenuContent]')!;
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
@@ -133,7 +133,7 @@ describe('ForNavigationMenu', () => {
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
 
-    it('emits no aria-label when ariaLabel is unset (default null)', () => {
+    it('emits no aria-label when ariaLabel is unset (default null)', async () => {
       @Component({
         imports: [
           ForNavigationMenu,
@@ -154,38 +154,38 @@ describe('ForNavigationMenu', () => {
       class NoLabelHost {}
 
       const { query, flush } = renderHost(NoLabelHost);
-      flush();
+      await flush();
       const root = query<HTMLElement>('[forNavigationMenu]')!;
       expect(root.hasAttribute('aria-label')).toBe(false);
     });
   });
 
   describe('click toggle', () => {
-    it('opens on click and closes on a second click', () => {
+    it('opens on click and closes on a second click', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
 
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
 
-    it('switching items closes the previous and opens the next', () => {
+    it('switching items closes the previous and opens the next', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
 
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       triggers[1]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
     });
   });
@@ -198,67 +198,67 @@ describe('ForNavigationMenu', () => {
       vi.useRealTimers();
     });
 
-    it('opens after delayDuration on pointerenter', () => {
+    it('opens after delayDuration on pointerenter', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
 
       trigger.dispatchEvent(pointer('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(199);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
     });
 
-    it('closes after closeDelay on pointerleave', () => {
+    it('closes after closeDelay on pointerleave', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
 
       trigger.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       trigger.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(149);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
 
-    it('keeps the menu open when the pointer moves from trigger into content', () => {
+    it('keeps the menu open when the pointer moves from trigger into content', async () => {
       const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
 
       trigger.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       trigger.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
 
       const content = query<HTMLElement>('[forNavigationMenuContent]')!;
       content.dispatchEvent(pointer('pointerenter'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       content.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(149);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
   });
@@ -271,91 +271,91 @@ describe('ForNavigationMenu', () => {
       vi.useRealTimers();
     });
 
-    it('enter-B-then-leave-A: the pending open for B is not clobbered by leaving A', () => {
+    it('enter-B-then-leave-A: the pending open for B is not clobbered by leaving A', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       // A (products) is open.
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       // Browser fires pointerenter on B before pointerleave on A.
       triggers[1]!.dispatchEvent(pointer('pointerenter'));
-      flush();
+      await flush();
       triggers[0]!.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
 
       // The pending open for B must survive and switch the menu, not close it.
       vi.advanceTimersByTime(200);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
 
       // No stray close fires afterwards.
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
     });
 
-    it('leave-A-then-enter-B: entering B cancels A’s pending close and opens B', () => {
+    it('leave-A-then-enter-B: entering B cancels A’s pending close and opens B', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       // A (products) is open.
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       // Browser fires pointerleave on A before pointerenter on B.
       triggers[0]!.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
       triggers[1]!.dispatchEvent(pointer('pointerenter'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(200);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
 
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
     });
 
-    it('leaving the whole nav (no sibling enter) still closes the open item', () => {
+    it('leaving the whole nav (no sibling enter) still closes the open item', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       triggers[0]!.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(150);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
 
-    it('cancels a pending hover-open when the pointer leaves the same closed trigger (#590 F5)', () => {
+    it('cancels a pending hover-open when the pointer leaves the same closed trigger (#590 F5)', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       // Hover a closed trigger (schedules an open) then leave it before the
       // delay elapses, without entering a sibling.
       triggers[0]!.dispatchEvent(pointer('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(100);
-      flush();
+      await flush();
       triggers[0]!.dispatchEvent(pointer('pointerleave'));
-      flush();
+      await flush();
 
       // The pending open is cancelled — the menu must not open after the pointer left.
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
   });
@@ -365,57 +365,57 @@ describe('ForNavigationMenu', () => {
       vi.useRealTimers();
     });
 
-    it('Enter / Space toggle the open state', () => {
+    it('Enter / Space toggle the open state', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
 
       pressKey(trigger, 'Enter');
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
       pressKey(trigger, ' ');
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
 
-    it('ArrowDown opens the disclosure (horizontal orientation)', () => {
+    it('ArrowDown opens the disclosure (horizontal orientation)', async () => {
       vi.useFakeTimers();
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[1]!;
 
       pressKey(trigger, 'ArrowDown');
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
     });
 
-    it('ArrowRight / ArrowLeft navigate between triggers (horizontal)', () => {
+    it('ArrowRight / ArrowLeft navigate between triggers (horizontal)', async () => {
       const { queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggers[1]);
 
       pressKey(triggers[1]!, 'ArrowLeft');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggers[0]);
     });
 
-    it('Escape closes and returns focus to the trigger', () => {
+    it('Escape closes and returns focus to the trigger', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
 
       trigger.click();
-      flush();
+      await flush();
       trigger.focus();
       pressKey(trigger, 'Escape');
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.open()).toBe('');
       expect(document.activeElement).toBe(trigger);
@@ -450,46 +450,46 @@ describe('ForNavigationMenu', () => {
       readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
     }
 
-    it('horizontal: ArrowLeft becomes the forward direction across triggers under dir="rtl"', () => {
+    it('horizontal: ArrowLeft becomes the forward direction across triggers under dir="rtl"', async () => {
       const { queryAll, flush } = renderHost(RtlNavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowLeft');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggers[1]);
 
       pressKey(triggers[1]!, 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggers[0]);
     });
 
-    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl"', () => {
+    it('vertical: ArrowDown / ArrowUp stay axis-positive under dir="rtl"', async () => {
       const { fixture, queryAll, flush } = renderHost(RtlNavMenuHost);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggers[1]);
 
       pressKey(triggers[1]!, 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggers[0]);
     });
   });
 
   describe('outside dismiss', () => {
-    it('closes when the user pointerdowns outside the menu', () => {
+    it('closes when the user pointerdowns outside the menu', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
 
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
       trigger.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       // Outside element: a sibling appended to body for the test.
@@ -497,7 +497,7 @@ describe('ForNavigationMenu', () => {
       document.body.appendChild(stranger);
       try {
         stranger.dispatchEvent(pointer('pointerdown'));
-        flush();
+        await flush();
         expect(fixture.componentInstance.open()).toBe('');
       } finally {
         stranger.remove();
@@ -506,30 +506,30 @@ describe('ForNavigationMenu', () => {
   });
 
   describe('root data-state', () => {
-    it('reflects "closed" initially and flips to "open" when an item opens', () => {
+    it('reflects "closed" initially and flips to "open" when an item opens', async () => {
       const { fixture, query, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
 
       const root = query<HTMLElement>('[forNavigationMenu]')!;
       expect(root.getAttribute('data-state')).toBe('closed');
 
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
       expect(root.getAttribute('data-state')).toBe('open');
 
       fixture.componentInstance.open.set('');
-      flush();
+      await flush();
       expect(root.getAttribute('data-state')).toBe('closed');
     });
   });
 
   describe('focusout (Tab out closes per APG)', () => {
-    it('closes when focus moves to an element outside the nav', () => {
+    it('closes when focus moves to an element outside the nav', async () => {
       const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
       trigger.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
 
       const outside = document.createElement('button');
@@ -540,7 +540,7 @@ describe('ForNavigationMenu', () => {
         // works. We use a link inside the open content as the source.
         const link = root.querySelector<HTMLElement>('a[forNavigationMenuLink]')!;
         link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
-        flush();
+        await flush();
         expect(fixture.componentInstance.open()).toBe('');
         expect(root.getAttribute('data-state')).toBe('closed');
       } finally {
@@ -548,49 +548,49 @@ describe('ForNavigationMenu', () => {
       }
     });
 
-    it('does not close when focus stays inside the nav (e.g. trigger → link)', () => {
+    it('does not close when focus stays inside the nav (e.g. trigger → link)', async () => {
       const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
       trigger.click();
-      flush();
+      await flush();
 
       const link = query<HTMLAnchorElement>('a[forNavigationMenuLink]')!;
       trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link }));
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.open()).toBe('products');
     });
 
-    it('does not close when focus moves between two triggers in the nav', () => {
+    it('does not close when focus moves between two triggers in the nav', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
       triggers[0]!.click();
-      flush();
+      await flush();
 
       triggers[0]!.dispatchEvent(
         new FocusEvent('focusout', { bubbles: true, relatedTarget: triggers[1]! }),
       );
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('products');
     });
 
-    it('treats null relatedTarget (focus leaving the document) as outside and closes', () => {
+    it('treats null relatedTarget (focus leaving the document) as outside and closes', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
       trigger.click();
-      flush();
+      await flush();
 
       trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
 
-    it('is a no-op when nothing is open (avoids extra work for every Tab)', () => {
+    it('is a no-op when nothing is open (avoids extra work for every Tab)', async () => {
       const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
-      flush();
+      await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
       const root = query<HTMLElement>('[forNavigationMenu]')!;
 
@@ -600,7 +600,7 @@ describe('ForNavigationMenu', () => {
         trigger.dispatchEvent(
           new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
         );
-        flush();
+        await flush();
         // Open stays at '' (nothing was open) and data-state stays "closed".
         expect(fixture.componentInstance.open()).toBe('');
         expect(root.getAttribute('data-state')).toBe('closed');
@@ -611,10 +611,10 @@ describe('ForNavigationMenu', () => {
   });
 
   describe('link reflects active state', () => {
-    it('sets aria-current="page" and data-active on active links', () => {
+    it('sets aria-current="page" and data-active on active links', async () => {
       const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
       fixture.componentInstance.open.set('products');
-      flush();
+      await flush();
 
       const links = queryAll<HTMLAnchorElement>('[forNavigationMenuLink]');
       // First link is not active, second link has [active].
@@ -638,10 +638,10 @@ describe('ForNavigationMenu', () => {
       return el;
     };
 
-    it('keeps each leaving panel’s frozen direction through A→C→B rapid switching', () => {
+    it('keeps each leaving panel’s frozen direction through A→C→B rapid switching', async () => {
       const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       const q = query as (s: string) => HTMLElement | null;
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
       // 0 = products (A), 1 = solutions (B), 2 = about (C).
@@ -649,14 +649,14 @@ describe('ForNavigationMenu', () => {
       // A opens. First open: no previous, no motion.
       triggers[0]!.click();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       expect(panel(q, 'products').hasAttribute('data-motion')).toBe(false);
 
       // A→C: C (index 2) enters from-end; A (index 0) leaves to-start. A stays
       // mounted (animate.leave shape).
       triggers[2]!.click();
       host.mountAbout.set(true);
-      flush();
+      await flush();
       expect(panel(q, 'about').getAttribute('data-motion')).toBe('from-end');
       expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
 
@@ -666,55 +666,55 @@ describe('ForNavigationMenu', () => {
       // to-start must survive instead of dropping to null.
       triggers[1]!.click();
       host.mountSolutions.set(true);
-      flush();
+      await flush();
       expect(panel(q, 'solutions').getAttribute('data-motion')).toBe('from-start');
       expect(panel(q, 'about').getAttribute('data-motion')).toBe('to-end');
       expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
     });
 
-    it('clears a panel’s frozen motion when it unmounts', () => {
+    it('clears a panel’s frozen motion when it unmounts', async () => {
       const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       const q = query as (s: string) => HTMLElement | null;
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.click();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       triggers[2]!.click();
       host.mountAbout.set(true);
-      flush();
+      await flush();
       expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
 
       // The leaving A finishes its exit and unmounts. Re-mounting it later
       // (without a transition) must not resurrect the stale to-start.
       host.mountProducts.set(false);
-      flush();
+      await flush();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       expect(panel(q, 'products').hasAttribute('data-motion')).toBe(false);
     });
 
-    it('clears a panel’s frozen motion when it re-enters as the current value', () => {
+    it('clears a panel’s frozen motion when it re-enters as the current value', async () => {
       const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       const q = query as (s: string) => HTMLElement | null;
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.click();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       triggers[2]!.click();
       host.mountAbout.set(true);
-      flush();
+      await flush();
       expect(panel(q, 'products').getAttribute('data-motion')).toBe('to-start');
 
       // A re-enters from C while still mounted. As the current entering panel
       // it must reflect a from-* direction, never its stale leaving to-start.
       triggers[0]!.click();
-      flush();
+      await flush();
       expect(panel(q, 'products').getAttribute('data-motion')).toBe('from-start');
       // C is now the leaving panel and freezes its own to-* direction.
       expect(panel(q, 'about').getAttribute('data-motion')).toBe('to-end');
@@ -737,22 +737,22 @@ describe('ForNavigationMenu', () => {
       expect(triggers[0]!.getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('records per-panel data-motion under overlapping transitions without Zone.js', () => {
+    it('records per-panel data-motion under overlapping transitions without Zone.js', async () => {
       const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
       const host = fixture.componentInstance;
-      flush();
+      await flush();
       const q = query as (s: string) => HTMLElement | null;
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
 
       triggers[0]!.click();
       host.mountProducts.set(true);
-      flush();
+      await flush();
       triggers[2]!.click();
       host.mountAbout.set(true);
-      flush();
+      await flush();
       triggers[1]!.click();
       host.mountSolutions.set(true);
-      flush();
+      await flush();
 
       const products = q('[data-id="products"]')!;
       expect(products.getAttribute('data-motion')).toBe('to-start');

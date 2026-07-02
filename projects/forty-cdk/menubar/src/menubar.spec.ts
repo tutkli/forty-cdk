@@ -557,19 +557,19 @@ describe('ForMenubar', () => {
       expect(r.instance.open()).toBe('');
     });
 
-    it('[dismissible]="false" keeps the menu open when the pointer leaves the bar', () => {
+    it('[dismissible]="false" keeps the menu open when the pointer leaves the bar', async () => {
       vi.useFakeTimers();
       try {
         const { instance, query, flush } = renderHost(MenubarHost);
         instance.dismissible.set(false);
         instance.open.set('file');
-        flush();
+        await flush();
 
         const bar = query<HTMLElement>('[forMenubar]')!;
         bar.dispatchEvent(pointerEvent('pointerleave'));
-        flush();
+        await flush();
         vi.advanceTimersByTime(500);
-        flush();
+        await flush();
 
         expect(instance.open()).toBe('file');
       } finally {
@@ -582,122 +582,122 @@ describe('ForMenubar', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    it('closes the open menu after closeDelay when the pointer leaves the bar', () => {
+    it('closes the open menu after closeDelay when the pointer leaves the bar', async () => {
       const { instance, query, flush } = renderHost(MenubarHost);
       instance.open.set('file');
-      flush();
+      await flush();
 
       const bar = query<HTMLElement>('[forMenubar]')!;
       bar.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(149);
-      flush();
+      await flush();
       expect(instance.open()).toBe('file');
 
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(instance.open()).toBe('');
     });
 
-    it('re-entering the bar before closeDelay cancels the pending close', () => {
+    it('re-entering the bar before closeDelay cancels the pending close', async () => {
       const { instance, query, flush } = renderHost(MenubarHost);
       instance.open.set('file');
-      flush();
+      await flush();
 
       const bar = query<HTMLElement>('[forMenubar]')!;
       bar.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(100);
 
       bar.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.open()).toBe('file');
     });
 
-    it('entering the portaled menu content cancels the pending close', () => {
+    it('entering the portaled menu content cancels the pending close', async () => {
       const { instance, query, flush } = renderHost(MenubarHost);
       instance.open.set('file');
-      flush();
+      await flush();
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
       const bar = query<HTMLElement>('[forMenubar]')!;
       bar.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(100);
 
       content.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.open()).toBe('file');
     });
 
-    it('leaving the portaled menu content schedules a close', () => {
+    it('leaving the portaled menu content schedules a close', async () => {
       const { instance, flush } = renderHost(MenubarHost);
       instance.open.set('file');
-      flush();
+      await flush();
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
       content.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(150);
-      flush();
+      await flush();
       expect(instance.open()).toBe('');
     });
 
-    it('ignores a non-mouse pointer leave (touch dismisses by tap, not hover)', () => {
+    it('ignores a non-mouse pointer leave (touch dismisses by tap, not hover)', async () => {
       const { instance, query, flush } = renderHost(MenubarHost);
       instance.open.set('file');
-      flush();
+      await flush();
 
       const bar = query<HTMLElement>('[forMenubar]')!;
       bar.dispatchEvent(pointerEvent('pointerleave', { pointerType: 'touch' }));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.open()).toBe('file');
     });
 
-    it('hover-switch between open siblings stays instant (no close delay in between)', () => {
+    it('hover-switch between open siblings stays instant (no close delay in between)', async () => {
       const { instance, queryAll, flush } = renderHost(MenubarHost);
       instance.open.set('file');
-      flush();
+      await flush();
 
       // Moving directly onto a sibling trigger (without leaving the bar) opens
       // it immediately — the hover-bridge keeps the menu chain alive.
       const view = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[2]!;
       view.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(instance.open()).toBe('view');
     });
 
-    it('hover-switch to a template-earlier sibling keeps its content keepalive alive so entering it cancels the pending close', () => {
+    it('hover-switch to a template-earlier sibling keeps its content keepalive alive so entering it cancels the pending close', async () => {
       const { instance, query, queryAll, flush } = renderHost(MenubarHost);
       instance.open.set('view');
-      flush();
+      await flush();
 
       const file = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       file.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(instance.open()).toBe('file');
 
       const bar = query<HTMLElement>('[forMenubar]')!;
       bar.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(100);
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
       content.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
 
       expect(instance.open()).toBe('file');
     });

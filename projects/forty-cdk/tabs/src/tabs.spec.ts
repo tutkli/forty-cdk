@@ -319,44 +319,44 @@ describe('ForTabs', () => {
   });
 
   assertRovingTabindexContract({
-    mount: () => {
+    mount: async () => {
       const r = renderHost(TabsHost);
-      r.flush();
+      await r.flush();
       return { items: triggers(r.el), flush: r.flush };
     },
-    mountWithDisabledFirst: () => {
+    mountWithDisabledFirst: async () => {
       const r = renderHost(TabsHost);
       r.fixture.componentInstance.tabs.set([
         { value: 'a', label: 'A', disabled: true },
         { value: 'b', label: 'B', disabled: false },
         { value: 'c', label: 'C', disabled: false },
       ]);
-      r.flush();
+      await r.flush();
       return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
     },
-    mountWithDisabledMiddle: () => {
+    mountWithDisabledMiddle: async () => {
       const r = renderHost(TabsHost);
       r.fixture.componentInstance.tabs.set([
         { value: 'a', label: 'A', disabled: false },
         { value: 'b', label: 'B', disabled: true },
         { value: 'c', label: 'C', disabled: false },
       ]);
-      r.flush();
+      await r.flush();
       return { items: triggers(r.el), enabledIndices: [0, 2], flush: r.flush };
     },
-    mountRtl: () => {
+    mountRtl: async () => {
       const r = renderHost(TabsHost);
       r.fixture.componentInstance.dir.set('rtl');
-      r.flush();
+      await r.flush();
       return { items: triggers(r.el), flush: r.flush };
     },
   });
 
   describe('initial tabindex (selection-driven)', () => {
-    it('selected trigger has tabindex=0 when there is a selection', () => {
+    it('selected trigger has tabindex=0 when there is a selection', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('b');
-      flush();
+      await flush();
       expect(triggerOf(el, 'a').getAttribute('tabindex')).toBe('-1');
       expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('0');
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
@@ -372,10 +372,10 @@ describe('ForTabs', () => {
     it('removing the focused trigger re-engages the first-enabled fallback', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('b');
-      flush();
+      await flush();
 
       triggerOf(el, 'b').focus();
-      flush();
+      await flush();
       expect(tabindexOf(el, 'b')).toBe('0');
 
       fixture.componentInstance.tabs.set([
@@ -392,10 +392,10 @@ describe('ForTabs', () => {
     it('disabling the focused trigger re-engages the first-enabled fallback', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       triggerOf(el, 'a').focus();
-      flush();
+      await flush();
       expect(tabindexOf(el, 'a')).toBe('0');
 
       fixture.componentInstance.tabs.set([
@@ -412,10 +412,10 @@ describe('ForTabs', () => {
   });
 
   describe('click activation', () => {
-    it('selects the clicked trigger and reveals its panel', () => {
+    it('selects the clicked trigger and reveals its panel', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.active()).toBe('b');
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
@@ -426,10 +426,10 @@ describe('ForTabs', () => {
       expect(contentOf(el, 'a').hasAttribute('inert')).toBe(true);
     });
 
-    it('two-way [(value)] reflects external writes', () => {
+    it('two-way [(value)] reflects external writes', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('c');
-      flush();
+      await flush();
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('true');
       expect(contentOf(el, 'c').hasAttribute('aria-hidden')).toBe(false);
       expect(contentOf(el, 'c').hasAttribute('inert')).toBe(false);
@@ -437,50 +437,50 @@ describe('ForTabs', () => {
   });
 
   describe('automatic activation mode (default)', () => {
-    it('arrow nav moves focus AND selects', () => {
+    it('arrow nav moves focus AND selects', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       triggerOf(el, 'a').focus();
-      flush();
+      await flush();
 
       pressKey(triggerOf(el, 'a'), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
       expect(fixture.componentInstance.active()).toBe('b');
 
       pressKey(triggerOf(el, 'b'), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
       expect(fixture.componentInstance.active()).toBe('c');
 
       pressKey(triggerOf(el, 'c'), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
       expect(fixture.componentInstance.active()).toBe('a');
     });
 
-    it('Home / End jump and select', () => {
+    it('Home / End jump and select', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       triggerOf(el, 'b').focus();
       pressKey(triggerOf(el, 'b'), 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.active()).toBe('c');
 
       pressKey(triggerOf(el, 'c'), 'Home');
-      flush();
+      await flush();
       expect(fixture.componentInstance.active()).toBe('a');
     });
 
-    it('does not wrap past the last enabled trigger when loop=false', () => {
+    it('does not wrap past the last enabled trigger when loop=false', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.loop.set(false);
-      flush();
+      await flush();
 
       triggerOf(el, 'c').focus();
       fixture.componentInstance.active.set('c');
-      flush();
+      await flush();
 
       pressKey(triggerOf(el, 'c'), 'ArrowRight');
-      flush();
+      await flush();
       // Stays on c — no wrap.
       expect(document.activeElement).toBe(triggerOf(el, 'c'));
       expect(fixture.componentInstance.active()).toBe('c');
@@ -488,104 +488,104 @@ describe('ForTabs', () => {
   });
 
   describe('manual activation mode', () => {
-    it('arrow nav moves focus only; value stays put', () => {
+    it('arrow nav moves focus only; value stays put', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.mode.set('manual');
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       triggerOf(el, 'a').focus();
       pressKey(triggerOf(el, 'a'), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
       expect(fixture.componentInstance.active()).toBe('a');
       expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('true');
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('false');
     });
 
-    it('Space / Enter activate via the underlying button click', () => {
+    it('Space / Enter activate via the underlying button click', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.mode.set('manual');
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       triggerOf(el, 'a').focus();
       pressKey(triggerOf(el, 'a'), 'ArrowRight');
-      flush();
+      await flush();
       // Now focus is on b, value still a.
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.active()).toBe('b');
     });
 
-    it('focused trigger gets tabindex=0 even when not selected', () => {
+    it('focused trigger gets tabindex=0 even when not selected', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.mode.set('manual');
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       triggerOf(el, 'a').focus();
       pressKey(triggerOf(el, 'a'), 'ArrowRight');
-      flush();
+      await flush();
       expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('0');
       expect(triggerOf(el, 'a').getAttribute('tabindex')).toBe('-1');
     });
   });
 
   describe('vertical orientation', () => {
-    it('uses ArrowDown / ArrowUp and ignores left/right', () => {
+    it('uses ArrowDown / ArrowUp and ignores left/right', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
 
       const list = tablistOf(el);
       expect(list.getAttribute('aria-orientation')).toBe('vertical');
 
       triggerOf(el, 'a').focus();
       pressKey(triggerOf(el, 'a'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
 
       pressKey(triggerOf(el, 'b'), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
     });
 
-    it('propagates data-orientation to trigger and content', () => {
+    it('propagates data-orientation to trigger and content', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
 
       expect(triggerOf(el, 'a').getAttribute('data-orientation')).toBe('vertical');
       expect(contentOf(el, 'a').getAttribute('data-orientation')).toBe('vertical');
     });
 
-    it('ArrowUp / ArrowDown stay axis-positive under dir="rtl" (dir does not flip vertical)', () => {
+    it('ArrowUp / ArrowDown stay axis-positive under dir="rtl" (dir does not flip vertical)', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.orientation.set('vertical');
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
 
       triggerOf(el, 'a').focus();
       pressKey(triggerOf(el, 'a'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'b'));
 
       pressKey(triggerOf(el, 'b'), 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(triggerOf(el, 'a'));
     });
   });
 
   describe('disabled', () => {
-    it('disabled trigger ignores click', () => {
+    it('disabled trigger ignores click', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.tabs.set([
         { value: 'a', label: 'A', disabled: false },
         { value: 'b', label: 'B', disabled: true },
         { value: 'c', label: 'C', disabled: false },
       ]);
-      flush();
+      await flush();
 
       const b = triggerOf(el, 'b');
       expect(b.hasAttribute('disabled')).toBe(false);
@@ -593,19 +593,19 @@ describe('ForTabs', () => {
       expect(b.getAttribute('data-disabled')).toBe('');
 
       b.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.active()).toBeNull();
     });
 
-    it('root disabled cascades to all triggers and blocks selection', () => {
+    it('root disabled cascades to all triggers and blocks selection', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.rootDisabled.set(true);
-      flush();
+      await flush();
 
       expect(triggerOf(el, 'a').hasAttribute('disabled')).toBe(false);
       expect(triggerOf(el, 'a').getAttribute('aria-disabled')).toBe('true');
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.active()).toBeNull();
     });
   });
@@ -649,7 +649,7 @@ describe('ForTabs', () => {
   });
 
   describe('(valueChange) output', () => {
-    it('emits the new value when a trigger is clicked', () => {
+    it('emits the new value when a trigger is clicked', async () => {
       @Component({
         imports: [...TABS_IMPORTS],
         template: `
@@ -669,14 +669,14 @@ describe('ForTabs', () => {
 
       const { fixture, el, flush } = renderHost(Host);
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
       triggerOf(el, 'a').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual(['b', 'a']);
     });
 
-    it('does not emit when the consumer drives `value` externally via [(value)]', () => {
+    it('does not emit when the consumer drives `value` externally via [(value)]', async () => {
       @Component({
         imports: [...TABS_IMPORTS],
         template: `
@@ -695,21 +695,21 @@ describe('ForTabs', () => {
 
       const { fixture, flush } = renderHost(Host);
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.emitted).toEqual([]);
     });
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', () => {
+    it('reflects external value writes without Zone.js', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('c');
-      flush();
+      await flush();
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('true');
 
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
       expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('true');
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('false');
     });
@@ -724,13 +724,13 @@ describe('ForTabs', () => {
       restoreReducedMotion();
     });
 
-    it('clicking a tab still switches aria-selected and aria-hidden under reduced-motion', () => {
+    it('clicking a tab still switches aria-selected and aria-hidden under reduced-motion', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       triggerOf(el, 'b').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.active()).toBe('b');
       expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('false');
@@ -741,11 +741,11 @@ describe('ForTabs', () => {
   });
 
   describe('mounted-but-inactive a11y', () => {
-    it('marks inactive panels aria-hidden + inert and clears both when activated', () => {
+    it('marks inactive panels aria-hidden + inert and clears both when activated', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
 
       fixture.componentInstance.active.set('b');
-      flush();
+      await flush();
 
       expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
       expect(contentOf(el, 'b').hasAttribute('inert')).toBe(false);
@@ -755,17 +755,17 @@ describe('ForTabs', () => {
       expect(contentOf(el, 'c').hasAttribute('inert')).toBe(true);
     });
 
-    it('does not apply the native [hidden] attribute', () => {
+    it('does not apply the native [hidden] attribute', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('a');
-      flush();
+      await flush();
 
       for (const v of ['a', 'b', 'c']) {
         expect(contentOf(el, v).hasAttribute('hidden')).toBe(false);
       }
     });
 
-    it('with @if-driven mounting, panels unmount on inactive (no host attrs to assert)', () => {
+    it('with @if-driven mounting, panels unmount on inactive (no host attrs to assert)', async () => {
       @Component({
         imports: [...TABS_IMPORTS],
         template: `
@@ -795,7 +795,7 @@ describe('ForTabs', () => {
       expect(el.querySelector('[data-test-content="b"]')).toBeNull();
 
       fixture.componentInstance.active.set('b');
-      flush();
+      await flush();
 
       expect(el.querySelector('[data-test-content="a"]')).toBeNull();
       const bPanel = el.querySelector<HTMLElement>('[data-test-content="b"]')!;

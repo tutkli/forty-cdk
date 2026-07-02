@@ -66,40 +66,40 @@ describe('ForPaneResizer', () => {
       expect(el.getAttribute('aria-valuemax')).toBe('100');
     });
 
-    it('reflects aria-orientation="horizontal" explicitly', () => {
+    it('reflects aria-orientation="horizontal" explicitly', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.orientation.set('horizontal');
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
       expect(el.getAttribute('aria-orientation')).toBe('horizontal');
     });
 
-    it('reflects aria-valuetext and aria-controls when set', () => {
+    it('reflects aria-valuetext and aria-controls when set', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.valueText.set('30 percent of viewport');
       fixture.componentInstance.controls.set('pane-a pane-b');
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       expect(el.getAttribute('aria-valuetext')).toBe('30 percent of viewport');
       expect(el.getAttribute('aria-controls')).toBe('pane-a pane-b');
     });
 
-    it('emits no aria-valuetext attribute for null or an empty string', () => {
+    it('emits no aria-valuetext attribute for null or an empty string', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       expect(el.hasAttribute('aria-valuetext')).toBe(false);
 
       fixture.componentInstance.valueText.set('');
-      flush();
+      await flush();
       expect(el.hasAttribute('aria-valuetext')).toBe(false);
     });
 
-    it('reflects disabled via tabindex/aria-disabled/data-disabled', () => {
+    it('reflects disabled via tabindex/aria-disabled/data-disabled', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       expect(el.hasAttribute('tabindex')).toBe(false);
@@ -107,91 +107,91 @@ describe('ForPaneResizer', () => {
       expect(el.getAttribute('data-disabled')).toBe('');
     });
 
-    it('reflects dir to the native dir attribute for both ltr and rtl', () => {
+    it('reflects dir to the native dir attribute for both ltr and rtl', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
       expect(el.getAttribute('dir')).toBe('ltr');
 
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       expect(el.getAttribute('dir')).toBe('rtl');
     });
   });
 
   describe('keyboard (vertical separator, LTR)', () => {
-    it('ArrowRight increments by step, ArrowLeft decrements', () => {
+    it('ArrowRight increments by step, ArrowLeft decrements', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(51);
 
       press(el, 'ArrowLeft');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
     });
 
-    it('ArrowUp/ArrowDown are no-ops on a vertical separator', () => {
+    it('ArrowUp/ArrowDown are no-ops on a vertical separator', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'ArrowUp');
       press(el, 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
     });
 
-    it('rounds a fractional step to clean values without float noise (#590 F5)', () => {
+    it('rounds a fractional step to clean values without float noise (#590 F5)', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.value.set(0);
       fixture.componentInstance.step.set(0.1);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'ArrowRight');
       press(el, 'ArrowRight');
       press(el, 'ArrowRight');
-      flush();
+      await flush();
       // 0 + 0.1 * 3 would be 0.30000000000000004 without precision rounding.
       expect(fixture.componentInstance.value()).toBe(0.3);
     });
 
-    it('PageUp/PageDown apply largeStep', () => {
+    it('PageUp/PageDown apply largeStep', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'PageDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(60);
 
       press(el, 'PageUp');
       press(el, 'PageUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(40);
     });
 
-    it('Home/End snap to min/max', () => {
+    it('Home/End snap to min/max', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'Home');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(0);
 
       press(el, 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(100);
     });
 
-    it('clamps to [min, max]', () => {
+    it('clamps to [min, max]', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.value.set(99);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forPaneResizer]')!;
       press(el, 'PageDown'); // would land on 109
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(100);
     });
 
@@ -203,14 +203,14 @@ describe('ForPaneResizer', () => {
       expect(ev.defaultPrevented).toBe(true);
     });
 
-    it('emits (resizing) on every step and (resizeCommit) on keyup', () => {
+    it('emits (resizing) on every step and (resizeCommit) on keyup', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
       const inst = fixture.componentInstance;
 
       press(el, 'ArrowRight');
       press(el, 'ArrowRight');
-      flush();
+      await flush();
 
       expect(inst.resizeEvents).toEqual([51, 52]);
       expect(inst.commitEvents).toEqual([51, 52]); // one commit per keyup
@@ -218,95 +218,95 @@ describe('ForPaneResizer', () => {
   });
 
   describe('keyboard (vertical separator, RTL)', () => {
-    it('ArrowLeft increments and ArrowRight decrements when dir="rtl"', () => {
+    it('ArrowLeft increments and ArrowRight decrements when dir="rtl"', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'ArrowLeft');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(51);
 
       press(el, 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
     });
   });
 
   describe('keyboard (horizontal separator)', () => {
-    it('ArrowDown/ArrowUp resize, ArrowLeft/Right are no-ops', () => {
+    it('ArrowDown/ArrowUp resize, ArrowLeft/Right are no-ops', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.orientation.set('horizontal');
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'ArrowDown');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(51);
 
       press(el, 'ArrowUp');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
 
       press(el, 'ArrowLeft');
       press(el, 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
     });
   });
 
   describe('collapsible', () => {
-    it('Enter toggles between min and the previous value when collapsible', () => {
+    it('Enter toggles between min and the previous value when collapsible', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.collapsible.set(true);
       fixture.componentInstance.value.set(70);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'Enter');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(0);
 
       press(el, 'Enter');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(70);
     });
 
-    it('Enter is a no-op when collapsible=false', () => {
+    it('Enter is a no-op when collapsible=false', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.value.set(70);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'Enter');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(70);
     });
 
-    it('Enter at min restores to max when no prior non-min value exists', () => {
+    it('Enter at min restores to max when no prior non-min value exists', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.collapsible.set(true);
       fixture.componentInstance.value.set(0);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'Enter');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(100);
     });
   });
 
   describe('disabled', () => {
-    it('blocks keyboard mutations', () => {
+    it('blocks keyboard mutations', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       press(el, 'ArrowRight');
       press(el, 'End');
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
       expect(fixture.componentInstance.commitEvents).toEqual([]);
@@ -326,31 +326,31 @@ describe('ForPaneResizer', () => {
       return ev;
     }
 
-    it('does not start a drag when disabled', () => {
+    it('does not start a drag when disabled', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
       el.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
     });
 
-    it('ignores non-primary mouse buttons', () => {
+    it('ignores non-primary mouse buttons', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100, button: 2 }));
       el.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
     });
 
-    it('does not mutate the value on a stray sub-dead-zone pointermove (#590 F6)', () => {
+    it('does not mutate the value on a stray sub-dead-zone pointermove (#590 F6)', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
       // Pointer capture is mis-modeled in jsdom; stub the wiring (this is not a
@@ -362,13 +362,13 @@ describe('ForPaneResizer', () => {
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
       // 2px move — under the 3px dead-zone — must not arm the drag.
       el.dispatchEvent(pointerEvent('pointermove', { clientX: 102 }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
       expect(fixture.componentInstance.value()).toBe(50);
 
       // A move past the dead-zone arms and applies the delta.
       el.dispatchEvent(pointerEvent('pointermove', { clientX: 110 }));
-      flush();
+      await flush();
       expect(fixture.componentInstance.resizeEvents.length).toBeGreaterThan(0);
     });
   });

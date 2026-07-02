@@ -80,14 +80,14 @@ describe('ForFieldset', () => {
       readonly disabled = signal(false);
     }
 
-    it('reflects data-disabled and aria-disabled on a non-<fieldset> host', () => {
+    it('reflects data-disabled and aria-disabled on a non-<fieldset> host', async () => {
       const { el, fixture, flush } = renderHost(Host);
       const group = q(el, 'group');
       expect(group.hasAttribute('data-disabled')).toBe(false);
       expect(group.hasAttribute('aria-disabled')).toBe(false);
 
       fixture.componentInstance.disabled.set(true);
-      flush();
+      await flush();
 
       expect(group.hasAttribute('data-disabled')).toBe(true);
       expect(group.getAttribute('aria-disabled')).toBe('true');

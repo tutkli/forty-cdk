@@ -103,14 +103,14 @@ describe('ForScrollArea', () => {
     expect(query('[data-testid="corner"]')).not.toBeNull();
   });
 
-  it('wires the viewport scroll listener without throwing', () => {
+  it('wires the viewport scroll listener without throwing', async () => {
     const { query, flush } = renderHost(ScrollAreaHost);
-    flush();
+    await flush();
 
     const viewport = query<HTMLElement>('[forScrollAreaViewport]')!;
-    expect(() => {
+    expect(async () => {
       viewport.dispatchEvent(new Event('scroll'));
-      flush();
+      await flush();
     }).not.toThrow();
   });
 
@@ -122,15 +122,15 @@ describe('ForScrollArea', () => {
     expect(() => renderHost(ScrollAreaHostNoContent)).not.toThrow();
   });
 
-  it('zoneless reactivity: changing [type] does not throw', () => {
+  it('zoneless reactivity: changing [type] does not throw', async () => {
     const { fixture, flush } = renderHost(ScrollAreaHost);
-    flush();
+    await flush();
 
-    expect(() => {
+    expect(async () => {
       fixture.componentInstance.type.set('hover');
-      flush();
+      await flush();
       fixture.componentInstance.type.set('scroll');
-      flush();
+      await flush();
     }).not.toThrow();
   });
 
@@ -141,9 +141,9 @@ describe('ForScrollArea', () => {
   // short-circuit, no measurement) is assertable in Vitest while thumb sizing
   // stays in `scroll-area.e2e.ts`. See testing.md rule #8.
   describe('type="always" keeps the scrollbar visible without overflow', () => {
-    it('paints the scrollbar (data-state="visible", not removed) with no overflow under "always"', () => {
+    it('paints the scrollbar (data-state="visible", not removed) with no overflow under "always"', async () => {
       const { query, flush } = renderHost(ScrollAreaHost);
-      flush();
+      await flush();
 
       const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
       expect(vbar.getAttribute('data-state')).toBe('visible');
@@ -155,12 +155,12 @@ describe('ForScrollArea', () => {
       expect(corner.style.display).not.toBe('none');
     });
 
-    it('self-hides the scrollbar (data-state="hidden", removed) with no overflow under "hover"', () => {
+    it('self-hides the scrollbar (data-state="hidden", removed) with no overflow under "hover"', async () => {
       const { fixture, query, flush } = renderHost(ScrollAreaHost);
-      flush();
+      await flush();
 
       fixture.componentInstance.type.set('hover');
-      flush();
+      await flush();
 
       const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
       expect(vbar.getAttribute('data-state')).toBe('hidden');

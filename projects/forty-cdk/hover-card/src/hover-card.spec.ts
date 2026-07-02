@@ -78,76 +78,76 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('opens after the open delay on pointerenter and closes after the close delay on pointerleave', () => {
+    it('opens after the open delay on pointerenter and closes after the close delay on pointerleave', async () => {
       vi.useFakeTimers();
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.openDelay.set(700);
       fixture.componentInstance.closeDelay.set(300);
-      flush();
+      await flush();
 
       const trigger = query<HTMLAnchorElement>('a')!;
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       vi.advanceTimersByTime(699);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(299);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('is forced closed when disabled flips to true', () => {
+    it('is forced closed when disabled flips to true', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       // Flipping disabled true must force-close the card AND propagate
       // through (openChange) so consumer's [(open)] binding stays in sync.
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('ignores reopen attempts while disabled', () => {
+    it('ignores reopen attempts while disabled', async () => {
       vi.useFakeTimers();
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(1000);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('honors a consumer programmatic [(open)] write while disabled', () => {
+    it('honors a consumer programmatic [(open)] write while disabled', async () => {
       const { fixture, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.isDisabled.set(true);
-      flush();
+      await flush();
 
       // `open` is a stock `model()` (like Popover) — the consumer owns it.
       // `disabled` gates the directive's own hover/focus interaction and
       // force-closes only when it flips to true, but it never fights an
       // explicit consumer write through [(open)].
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
   });
@@ -160,78 +160,78 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('cancels pending close when the cursor enters the content', () => {
+    it('cancels pending close when the cursor enters the content', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.closeDelay.set(300);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
 
       // Content is portaled to document.body.
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
       content.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('stays open with closeDelay:0 when the pointer leaves the trigger into overlapping content', () => {
+    it('stays open with closeDelay:0 when the pointer leaves the trigger into overlapping content', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
       // Overlapping content: the browser fires pointerleave on the covered
       // trigger with relatedTarget = the content element.
       trigger.dispatchEvent(pointerEvent('pointerleave', content));
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('still closes with closeDelay:0 when the pointer leaves the trigger to an unrelated element', () => {
+    it('still closes with closeDelay:0 when the pointer leaves the trigger to an unrelated element', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('closes after delay when the cursor leaves the content', () => {
+    it('closes after delay when the cursor leaves the content', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.closeDelay.set(150);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
       content.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       content.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
 
       vi.advanceTimersByTime(150);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
@@ -244,139 +244,139 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('opens on focus of the trigger', () => {
+    it('opens on focus of the trigger', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.focus();
       trigger.dispatchEvent(new FocusEvent('focus'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('closes on blur of the trigger', () => {
+    it('closes on blur of the trigger', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.focus();
       trigger.dispatchEvent(new FocusEvent('focus'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('does not close on pointerleave while the trigger is still focused', () => {
+    it('does not close on pointerleave while the trigger is still focused', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(new FocusEvent('focus'));
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('does not close on blur while the pointer is still over the trigger', () => {
+    it('does not close on blur while the pointer is still over the trigger', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
       trigger.dispatchEvent(new FocusEvent('focus'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(new FocusEvent('blur'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
 
   describe('escape', () => {
-    it('closes immediately on Escape, ignoring closeDelay', () => {
+    it('closes immediately on Escape, ignoring closeDelay', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.closeDelay.set(1000);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       pressKey(trigger, 'Escape');
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('closes when Escape is pressed inside the portaled content', () => {
+    it('closes when Escape is pressed inside the portaled content', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
       pressKey(content, 'Escape');
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('closes when Escape is pressed while focus is on an unrelated element', () => {
+    it('closes when Escape is pressed while focus is on an unrelated element', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       // The card was hover-opened; focus never entered the trigger or the
       // content. Escape dispatched on an unrelated element still routes
       // through the document-level dismissable layer and closes the card.
       pressKey(document, 'Escape');
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('dismisses only once (no double-close) when Escape is pressed inside the content', () => {
+    it('dismisses only once (no double-close) when Escape is pressed inside the content', async () => {
       const transitions: boolean[] = [];
 
       @Component({
@@ -405,17 +405,17 @@ describe('ForHoverCard', () => {
       }
 
       const { fixture, query, flush } = renderHost(Host);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
       expect(transitions).toEqual([true]);
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
       pressKey(content, 'Escape');
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       // Exactly one close transition — the content's host listener was
@@ -423,7 +423,7 @@ describe('ForHoverCard', () => {
       expect(transitions).toEqual([true, false]);
     });
 
-    it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', () => {
+    it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', async () => {
       const captured: VetoableNativeEvent<KeyboardEvent>[] = [];
 
       @Component({
@@ -453,17 +453,17 @@ describe('ForHoverCard', () => {
       }
 
       const { fixture, query, flush } = renderHost(Host);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(captured.length).toBe(1);
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
@@ -471,7 +471,7 @@ describe('ForHoverCard', () => {
       content.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
       );
-      flush();
+      await flush();
       expect(captured.length).toBe(2);
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
@@ -485,7 +485,7 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('emits both true AND false in the uncontrolled (observe-only) case', () => {
+    it('emits both true AND false in the uncontrolled (observe-only) case', async () => {
       const emitted: boolean[] = [];
 
       @Component({
@@ -510,17 +510,17 @@ describe('ForHoverCard', () => {
       }
 
       const { query, flush } = renderHost(Host);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
 
       // Without any [(open)] binding the closing transition must still emit —
       // the bug was that the hand-rolled bridge dropped the false emit here.
@@ -529,13 +529,13 @@ describe('ForHoverCard', () => {
   });
 
   describe('arrow', () => {
-    it('is hidden from the a11y tree and exposes the data-hover-card-arrow hook', () => {
+    it('is hidden from the a11y tree and exposes the data-hover-card-arrow hook', async () => {
       const { fixture, query, flush } = renderHost(HoverCardWithArrowHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       const arrow = document.body.querySelector<HTMLElement>('[data-hover-card-arrow]')!;
@@ -580,7 +580,7 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('opens instantly during the skip-delay window after a peer card closed', () => {
+    it('opens instantly during the skip-delay window after a peer card closed', async () => {
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
         providers: [provideForHoverCardDefaults({ openDelay: 500, skipDelayDuration: 500 })],
@@ -602,30 +602,30 @@ describe('ForHoverCard', () => {
       class TwoCards {}
 
       const { queryAll, flush } = renderHost(TwoCards);
-      flush();
+      await flush();
       const links = queryAll<HTMLAnchorElement>('a');
 
       // Open A
       links[0]!.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(500);
-      flush();
+      await flush();
       // Close A (closeDelay default 300)
       links[0]!.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(300);
-      flush();
+      await flush();
 
       // Open B should now be instant (within skip-delay window).
       links[1]!.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
 
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
     });
 
-    it('is callable with no arguments to establish a fresh coordinator scope', () => {
+    it('is callable with no arguments to establish a fresh coordinator scope', async () => {
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
         providers: [provideForHoverCardDefaults()],
@@ -641,13 +641,13 @@ describe('ForHoverCard', () => {
       class NoArgsHost {}
 
       const { query, flush } = renderHost(NoArgsHost);
-      flush();
+      await flush();
 
       const trigger = query<HTMLAnchorElement>('a')!;
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
 
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
     });
@@ -661,93 +661,93 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('closes an open card when an ancestor scrolls', () => {
+    it('closes an open card when an ancestor scrolls', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(1);
 
       document.dispatchEvent(new Event('scroll'));
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       expect(document.body.querySelectorAll('[forHoverCardContent]').length).toBe(0);
     });
 
-    it('suppresses a hover open while an ancestor is scrolling, even with openDelay 0', () => {
+    it('suppresses a hover open while an ancestor is scrolling, even with openDelay 0', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       document.dispatchEvent(new Event('scroll'));
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
 
       vi.advanceTimersByTime(200);
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('suppresses the instant re-open during scroll within the skip-delay window', () => {
+    it('suppresses the instant re-open during scroll within the skip-delay window', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
 
       document.dispatchEvent(new Event('scroll'));
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
-    it('does not suppress a focus open while an ancestor is scrolling', () => {
+    it('does not suppress a focus open while an ancestor is scrolling', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       document.dispatchEvent(new Event('scroll'));
       trigger.dispatchEvent(new FocusEvent('focus'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('reflects the scroll close through data-state without Zone.js', () => {
+    it('reflects the scroll close through data-state without Zone.js', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.isOpen.set(true);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
       expect(trigger.getAttribute('data-state')).toBe('open');
 
       document.dispatchEvent(new Event('scroll'));
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       expect(trigger.getAttribute('data-state')).toBe('closed');
@@ -765,31 +765,31 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('still respects openDelay / closeDelay cadence under reduced-motion', () => {
+    it('still respects openDelay / closeDelay cadence under reduced-motion', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.openDelay.set(700);
       fixture.componentInstance.closeDelay.set(300);
-      flush();
+      await flush();
 
       const trigger = query<HTMLAnchorElement>('a')!;
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.isOpen()).toBe(false);
       vi.advanceTimersByTime(699);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(299);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
       vi.advanceTimersByTime(1);
-      flush();
+      await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
@@ -982,17 +982,17 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('reflects open state changes after detectChanges without Zone.js', () => {
+    it('reflects open state changes after detectChanges without Zone.js', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
-      flush();
+      await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
       expect(trigger.getAttribute('data-state')).toBe('closed');
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      flush();
+      await flush();
       vi.advanceTimersByTime(0);
-      flush();
+      await flush();
 
       expect(trigger.getAttribute('data-state')).toBe('open');
     });
@@ -1044,15 +1044,15 @@ describe('ForHoverCard', () => {
         vi.useRealTimers();
       });
 
-      it('opens on pointerenter when the root is passed explicitly', () => {
+      it('opens on pointerenter when the root is passed explicitly', async () => {
         const { fixture, query, flush } = renderHost(StampedHost);
-        flush();
+        await flush();
         const trigger = query<HTMLAnchorElement>('#trigger')!;
 
         trigger.dispatchEvent(pointerEvent('pointerenter'));
-        flush();
+        await flush();
         vi.advanceTimersByTime(0);
-        flush();
+        await flush();
 
         expect(fixture.componentInstance.open()).toBe(true);
         expect(trigger.getAttribute('data-state')).toBe('open');

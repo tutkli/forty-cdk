@@ -114,19 +114,19 @@ describe('ForRadioGroup', () => {
       expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('puts tabindex=0 on the selected radio when there is a selection', () => {
+    it('puts tabindex=0 on the selected radio when there is a selection', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('green');
-      flush();
+      await flush();
       expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
       expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
       expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('falls back to the first enabled radio when value matches no registered radio', () => {
+    it('falls back to the first enabled radio when value matches no registered radio', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('magenta');
-      flush();
+      await flush();
 
       const tabindexes = ['red', 'green', 'blue'].map((v) =>
         radioOf(el, v).getAttribute('tabindex'),
@@ -135,7 +135,7 @@ describe('ForRadioGroup', () => {
       expect(tabindexes.filter((t) => t === '0')).toHaveLength(1);
     });
 
-    it('skips disabled radios in the fallback when value matches no registered radio', () => {
+    it('skips disabled radios in the fallback when value matches no registered radio', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.options.set([
         { value: 'red', label: 'Red', disabled: true },
@@ -143,42 +143,42 @@ describe('ForRadioGroup', () => {
         { value: 'blue', label: 'Blue', disabled: false },
       ]);
       fixture.componentInstance.color.set('magenta');
-      flush();
+      await flush();
 
       expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
       expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
       expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('recovers the fallback when a previously selected value goes stale', () => {
+    it('recovers the fallback when a previously selected value goes stale', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('green');
-      flush();
+      await flush();
       expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
 
       fixture.componentInstance.options.set([
         { value: 'red', label: 'Red', disabled: false },
         { value: 'blue', label: 'Blue', disabled: false },
       ]);
-      flush();
+      await flush();
 
       expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('0');
       expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('skips disabled when picking the first-enabled tab entry', () => {
+    it('skips disabled when picking the first-enabled tab entry', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.options.set([
         { value: 'red', label: 'Red', disabled: true },
         { value: 'green', label: 'Green', disabled: false },
         { value: 'blue', label: 'Blue', disabled: false },
       ]);
-      flush();
+      await flush();
       expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
       expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
     });
 
-    it('falls back to the first enabled radio when the selected radio is disabled', () => {
+    it('falls back to the first enabled radio when the selected radio is disabled', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.options.set([
         { value: 'red', label: 'Red', disabled: true },
@@ -186,7 +186,7 @@ describe('ForRadioGroup', () => {
         { value: 'blue', label: 'Blue', disabled: false },
       ]);
       fixture.componentInstance.color.set('red');
-      flush();
+      await flush();
 
       const tabindexes = ['red', 'green', 'blue'].map((v) =>
         radioOf(el, v).getAttribute('tabindex'),
@@ -197,10 +197,10 @@ describe('ForRadioGroup', () => {
   });
 
   describe('click selection', () => {
-    it('selects the clicked radio and updates aria-checked + tabindex', () => {
+    it('selects the clicked radio and updates aria-checked + tabindex', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'green').click();
-      flush();
+      await flush();
 
       expect(fixture.componentInstance.color()).toBe('green');
       expect(radioOf(el, 'green').getAttribute('aria-checked')).toBe('true');
@@ -208,55 +208,55 @@ describe('ForRadioGroup', () => {
       expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
     });
 
-    it('two-way [(value)] reflects external writes', () => {
+    it('two-way [(value)] reflects external writes', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('blue');
-      flush();
+      await flush();
       expect(radioOf(el, 'blue').getAttribute('aria-checked')).toBe('true');
     });
   });
 
   describe('vertical arrow navigation (default)', () => {
-    it('ArrowDown moves focus AND selects, wrapping at the end', () => {
+    it('ArrowDown moves focus AND selects, wrapping at the end', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
 
       pressKey(radioOf(el, 'red'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
       expect(fixture.componentInstance.color()).toBe('green');
 
       pressKey(radioOf(el, 'green'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
 
       pressKey(radioOf(el, 'blue'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
       expect(fixture.componentInstance.color()).toBe('red');
     });
 
-    it('ArrowUp wraps at the beginning', () => {
+    it('ArrowUp wraps at the beginning', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
       pressKey(radioOf(el, 'red'), 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
     });
 
-    it('does not wrap when loop=false', () => {
+    it('does not wrap when loop=false', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.loop.set(false);
-      flush();
+      await flush();
 
       radioOf(el, 'blue').focus();
       fixture.componentInstance.color.set('blue');
-      flush();
+      await flush();
 
       pressKey(radioOf(el, 'blue'), 'ArrowDown');
-      flush();
+      await flush();
       // Stays on blue — no wrap.
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
@@ -264,116 +264,116 @@ describe('ForRadioGroup', () => {
       // ArrowUp at the start also doesn't wrap.
       radioOf(el, 'red').focus();
       fixture.componentInstance.color.set('red');
-      flush();
+      await flush();
       pressKey(radioOf(el, 'red'), 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
       expect(fixture.componentInstance.color()).toBe('red');
     });
 
-    it('ArrowLeft / ArrowRight are ignored in vertical orientation', () => {
+    it('ArrowLeft / ArrowRight are ignored in vertical orientation', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
       pressKey(radioOf(el, 'red'), 'ArrowRight');
-      flush();
+      await flush();
       expect(fixture.componentInstance.color()).toBe('');
       expect(document.activeElement).toBe(radioOf(el, 'red'));
     });
 
-    it('Home / End jump to first / last and select', () => {
+    it('Home / End jump to first / last and select', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'green').focus();
 
       pressKey(radioOf(el, 'green'), 'End');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
 
       pressKey(radioOf(el, 'blue'), 'Home');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
       expect(fixture.componentInstance.color()).toBe('red');
     });
 
-    it('skips disabled radios in arrow navigation', () => {
+    it('skips disabled radios in arrow navigation', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.options.set([
         { value: 'red', label: 'Red', disabled: false },
         { value: 'green', label: 'Green', disabled: true },
         { value: 'blue', label: 'Blue', disabled: false },
       ]);
-      flush();
+      await flush();
 
       radioOf(el, 'red').focus();
       pressKey(radioOf(el, 'red'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'blue'));
       expect(fixture.componentInstance.color()).toBe('blue');
     });
   });
 
   describe('horizontal orientation', () => {
-    it('uses ArrowLeft / ArrowRight and ignores ArrowUp / ArrowDown', () => {
+    it('uses ArrowLeft / ArrowRight and ignores ArrowUp / ArrowDown', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.orientation.set('horizontal');
-      flush();
+      await flush();
 
       const group = groupOf(el);
       expect(group.getAttribute('aria-orientation')).toBe('horizontal');
 
       radioOf(el, 'red').focus();
       pressKey(radioOf(el, 'red'), 'ArrowRight');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
 
       pressKey(radioOf(el, 'green'), 'ArrowLeft');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
 
       pressKey(radioOf(el, 'red'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
     });
 
-    it('RTL swaps ArrowLeft / ArrowRight', () => {
+    it('RTL swaps ArrowLeft / ArrowRight', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.orientation.set('horizontal');
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
 
       radioOf(el, 'red').focus();
       pressKey(radioOf(el, 'red'), 'ArrowLeft');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
     });
   });
 
   describe('vertical orientation under dir="rtl"', () => {
-    it('ArrowDown / ArrowUp stay axis-positive (dir does not flip vertical)', () => {
+    it('ArrowDown / ArrowUp stay axis-positive (dir does not flip vertical)', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.dir.set('rtl');
-      flush();
+      await flush();
 
       radioOf(el, 'red').focus();
       pressKey(radioOf(el, 'red'), 'ArrowDown');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'green'));
 
       pressKey(radioOf(el, 'green'), 'ArrowUp');
-      flush();
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
     });
   });
 
   describe('disabled / readonly', () => {
-    it('disabled radio cannot be selected by click and is skipped on nav', () => {
+    it('disabled radio cannot be selected by click and is skipped on nav', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.options.set([
         { value: 'red', label: 'Red', disabled: false },
         { value: 'green', label: 'Green', disabled: true },
         { value: 'blue', label: 'Blue', disabled: false },
       ]);
-      flush();
+      await flush();
 
       const greenRadio = radioOf(el, 'green');
       expect(greenRadio.hasAttribute('disabled')).toBe(false);
@@ -381,20 +381,20 @@ describe('ForRadioGroup', () => {
       expect(greenRadio.getAttribute('data-disabled')).toBe('');
 
       greenRadio.click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.color()).toBe('');
     });
 
-    it('group disabled blocks all selection (click + nav)', () => {
+    it('group disabled blocks all selection (click + nav)', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.groupDisabled.set(true);
-      flush();
+      await flush();
 
       const group = groupOf(el);
       expect(group.getAttribute('aria-disabled')).toBe('true');
 
       radioOf(el, 'red').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.color()).toBe('');
 
       // Each radio inherits effectiveDisabled and reflects aria-disabled /
@@ -403,27 +403,27 @@ describe('ForRadioGroup', () => {
       expect(radioOf(el, 'red').getAttribute('aria-disabled')).toBe('true');
     });
 
-    it('group readonly blocks selection but radios stay enabled / focusable', () => {
+    it('group readonly blocks selection but radios stay enabled / focusable', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.groupReadonly.set(true);
-      flush();
+      await flush();
 
       const group = groupOf(el);
       expect(group.getAttribute('aria-readonly')).toBe('true');
 
       radioOf(el, 'red').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.color()).toBe('');
       expect(radioOf(el, 'red').hasAttribute('disabled')).toBe(false);
     });
   });
 
   describe('required / invalid reflected on the group', () => {
-    it('aria-required and aria-invalid follow the inputs', () => {
+    it('aria-required and aria-invalid follow the inputs', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.groupRequired.set(true);
       fixture.componentInstance.groupInvalid.set(true);
-      flush();
+      await flush();
 
       const group = groupOf(el);
       expect(group.getAttribute('aria-required')).toBe('true');
@@ -515,10 +515,10 @@ describe('ForRadioGroup', () => {
       );
     });
 
-    it("reflects data-state on the selected radio's indicator without a hidden attribute", () => {
+    it("reflects data-state on the selected radio's indicator without a hidden attribute", async () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
       fixture.componentInstance.color.set('blue');
-      flush();
+      await flush();
 
       const red = el.querySelector<HTMLElement>('[data-ind="red"]')!;
       const blue = el.querySelector<HTMLElement>('[data-ind="blue"]')!;
@@ -591,7 +591,7 @@ describe('ForRadioGroup', () => {
       readonly invalid = signal(false);
     }
 
-    it('reflects each form-state flag as a boolean data-* attribute on the group', () => {
+    it('reflects each form-state flag as a boolean data-* attribute on the group', async () => {
       const { el, fixture, flush } = renderHost(FlagsHost);
       const group = el.querySelector<HTMLElement>('[forRadioGroup]')!;
 
@@ -599,7 +599,7 @@ describe('ForRadioGroup', () => {
       fixture.componentInstance.dirty.set(true);
       fixture.componentInstance.pending.set(true);
       fixture.componentInstance.invalid.set(true);
-      flush();
+      await flush();
 
       expect(group.getAttribute('data-touched')).toBe('');
       expect(group.getAttribute('data-dirty')).toBe('');
@@ -625,20 +625,20 @@ describe('ForRadioGroup', () => {
       readonly fieldName = signal<string>('');
     }
 
-    it('submits name=value for the selected radio', () => {
+    it('submits name=value for the selected radio', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('color');
       fixture.componentInstance.color.set('green');
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([['color', 'green']]);
     });
 
-    it('omits the value when nothing is selected', () => {
+    it('omits the value when nothing is selected', async () => {
       const { el, fixture, flush } = renderHost(FormHost);
       fixture.componentInstance.fieldName.set('color');
-      flush();
+      await flush();
 
       const form = el.querySelector('form')!;
       expect(Array.from(new FormData(form).entries())).toEqual([]);
@@ -646,14 +646,14 @@ describe('ForRadioGroup', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', () => {
+    it('reflects external value writes without Zone.js', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('blue');
-      flush();
+      await flush();
       expect(radioOf(el, 'blue').getAttribute('aria-checked')).toBe('true');
 
       fixture.componentInstance.color.set('');
-      flush();
+      await flush();
       expect(radioOf(el, 'blue').getAttribute('aria-checked')).toBe('false');
     });
   });
@@ -674,37 +674,37 @@ describe('ForRadioGroup', () => {
       readonly checkout = form(this.model, (s) => required(s.shipping));
     }
 
-    it('two-way binds value with the field', () => {
+    it('two-way binds value with the field', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
 
       radioOf(el, 'express').click();
-      flush();
+      await flush();
       expect(fixture.componentInstance.model().shipping).toBe('express');
       expect(radioOf(el, 'express').getAttribute('aria-checked')).toBe('true');
 
       fixture.componentInstance.model.set({ shipping: 'overnight' });
-      flush();
+      await flush();
       expect(radioOf(el, 'overnight').getAttribute('aria-checked')).toBe('true');
       expect(radioOf(el, 'express').getAttribute('aria-checked')).toBe('false');
     });
 
-    it('flows schema `required` into the group aria-required', () => {
+    it('flows schema `required` into the group aria-required', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       expect(groupOf(el).getAttribute('aria-required')).toBe('true');
     });
 
-    it('focus-on-error moves focus onto a radio, not the group host', () => {
+    it('focus-on-error moves focus onto a radio, not the group host', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
-      flush();
+      await flush();
       fixture.componentInstance.checkout.shipping().focusBoundControl();
       expect(document.activeElement).toBe(radioOf(el, 'standard'));
     });
 
-    it('focus-on-error targets the selected radio when one is checked', () => {
+    it('focus-on-error targets the selected radio when one is checked', async () => {
       const { el, fixture, flush } = renderHost(SignalFormsHost);
       fixture.componentInstance.model.set({ shipping: 'express' });
-      flush();
+      await flush();
       fixture.componentInstance.checkout.shipping().focusBoundControl();
       expect(document.activeElement).toBe(radioOf(el, 'express'));
     });

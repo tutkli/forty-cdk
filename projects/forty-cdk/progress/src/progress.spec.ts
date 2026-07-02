@@ -34,10 +34,10 @@ class ProgressHost {
 
 describe('ForProgress', () => {
   describe('determinate', () => {
-    it('exposes role="progressbar" with valuemin / valuemax / valuenow', () => {
+    it('exposes role="progressbar" with valuemin / valuemax / valuenow', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(40);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('role')).toBe('progressbar');
@@ -47,26 +47,26 @@ describe('ForProgress', () => {
       expect(el.getAttribute('data-state')).toBe('loading');
     });
 
-    it('clamps values outside [0, max] in the reflected aria-valuenow', () => {
+    it('clamps values outside [0, max] in the reflected aria-valuenow', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(150);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('aria-valuenow')).toBe('100');
       expect(el.getAttribute('data-state')).toBe('complete');
 
       fixture.componentInstance.value.set(-5);
-      flush();
+      await flush();
       expect(el.getAttribute('aria-valuenow')).toBe('0');
       expect(el.getAttribute('data-state')).toBe('loading');
     });
 
-    it('clamps a non-positive max to a positive aria-valuemax so the ARIA range stays valid', () => {
+    it('clamps a non-positive max to a positive aria-valuemax so the ARIA range stays valid', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(0);
       fixture.componentInstance.max.set(0);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('aria-valuemin')).toBe('0');
@@ -74,14 +74,14 @@ describe('ForProgress', () => {
       expect(el.getAttribute('data-max')).toBe('1');
 
       fixture.componentInstance.max.set(-10);
-      flush();
+      await flush();
       expect(el.getAttribute('aria-valuemax')).toBe('1');
     });
 
-    it('reflects data-percentage / data-min / data-max on the root, matching meter', () => {
+    it('reflects data-percentage / data-min / data-max on the root, matching meter', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(25);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('data-min')).toBe('0');
@@ -89,20 +89,20 @@ describe('ForProgress', () => {
       expect(el.getAttribute('data-percentage')).toBe('25');
     });
 
-    it('omits data-percentage on the root when indeterminate', () => {
+    it('omits data-percentage on the root when indeterminate', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(null);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.hasAttribute('data-percentage')).toBe(false);
       expect(el.getAttribute('data-min')).toBe('0');
     });
 
-    it('reflects state="complete" when value === max', () => {
+    it('reflects state="complete" when value === max', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(100);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('data-state')).toBe('complete');
@@ -110,10 +110,10 @@ describe('ForProgress', () => {
   });
 
   describe('indeterminate', () => {
-    it('omits aria-valuenow and reports state="indeterminate"', () => {
+    it('omits aria-valuenow and reports state="indeterminate"', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(null);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.hasAttribute('aria-valuenow')).toBe(false);
@@ -122,12 +122,12 @@ describe('ForProgress', () => {
   });
 
   describe('getValueLabel', () => {
-    it('feeds aria-valuetext with the consumer label', () => {
+    it('feeds aria-valuetext with the consumer label', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.getLabel.set((v, m) => `${v} of ${m} MB`);
       fixture.componentInstance.value.set(42);
       fixture.componentInstance.max.set(200);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('aria-valuetext')).toBe('42 of 200 MB');
@@ -135,20 +135,20 @@ describe('ForProgress', () => {
   });
 
   describe('indicator', () => {
-    it('reflects data-percentage and a CSS custom property on the indicator', () => {
+    it('reflects data-percentage and a CSS custom property on the indicator', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(25);
-      flush();
+      await flush();
 
       const indicator = query<HTMLElement>('[forProgressIndicator]')!;
       expect(indicator.getAttribute('data-percentage')).toBe('25');
       expect(indicator.getAttribute('data-state')).toBe('loading');
     });
 
-    it('emits the clamped data-value, matching the root, for out-of-range input', () => {
+    it('emits the clamped data-value, matching the root, for out-of-range input', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(150);
-      flush();
+      await flush();
 
       const root = query<HTMLElement>('[forProgress]')!;
       const indicator = query<HTMLElement>('[forProgressIndicator]')!;
@@ -156,15 +156,15 @@ describe('ForProgress', () => {
       expect(indicator.getAttribute('data-value')).toBe('100');
 
       fixture.componentInstance.value.set(-5);
-      flush();
+      await flush();
       expect(root.getAttribute('data-value')).toBe('0');
       expect(indicator.getAttribute('data-value')).toBe('0');
     });
 
-    it('reports null percentage when indeterminate', () => {
+    it('reports null percentage when indeterminate', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(null);
-      flush();
+      await flush();
 
       const indicator = query<HTMLElement>('[forProgressIndicator]')!;
       expect(indicator.hasAttribute('data-percentage')).toBe(false);
@@ -197,7 +197,7 @@ describe('ForProgress', () => {
       const { fixture, flush } = renderHost(ProgressHost);
       fixture.componentInstance.announce.set(true);
       fixture.componentInstance.value.set(50);
-      flush();
+      await flush();
       await nextMacrotask();
 
       // Initial transition (null → loading) should not announce.
@@ -205,7 +205,7 @@ describe('ForProgress', () => {
       expect(region?.textContent ?? '').toBe('');
 
       fixture.componentInstance.value.set(100);
-      flush();
+      await flush();
       await nextMacrotask();
 
       region = document.querySelector<HTMLElement>('[aria-live="polite"]');
@@ -217,11 +217,11 @@ describe('ForProgress', () => {
       fixture.componentInstance.announce.set(true);
       fixture.componentInstance.getLabel.set((v, m) => `Done: ${v}/${m}`);
       fixture.componentInstance.value.set(50);
-      flush();
+      await flush();
       await nextMacrotask();
 
       fixture.componentInstance.value.set(100);
-      flush();
+      await flush();
       await nextMacrotask();
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
@@ -231,9 +231,9 @@ describe('ForProgress', () => {
     it('does nothing when announceCompletion is false', async () => {
       const { fixture, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(50);
-      flush();
+      await flush();
       fixture.componentInstance.value.set(100);
-      flush();
+      await flush();
       await nextMacrotask();
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
@@ -242,20 +242,20 @@ describe('ForProgress', () => {
   });
 
   describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', () => {
+    it('reflects state changes after detectChanges without Zone.js', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(10);
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('data-state')).toBe('loading');
 
       fixture.componentInstance.value.set(100);
-      flush();
+      await flush();
       expect(el.getAttribute('data-state')).toBe('complete');
 
       fixture.componentInstance.value.set(null);
-      flush();
+      await flush();
       expect(el.getAttribute('data-state')).toBe('indeterminate');
     });
   });

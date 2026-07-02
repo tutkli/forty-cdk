@@ -24,10 +24,10 @@ describe('ForSeparator', () => {
       expect(el.getAttribute('data-orientation')).toBe('horizontal');
     });
 
-    it('exposes aria-orientation="vertical" when orientation is vertical', () => {
+    it('exposes aria-orientation="vertical" when orientation is vertical', async () => {
       const { fixture, query, flush } = renderHost(SeparatorHost);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forSeparator]')!;
 
@@ -48,11 +48,11 @@ describe('ForSeparator', () => {
   });
 
   describe('decorative mode', () => {
-    it('uses role="none" and drops aria-orientation regardless of orientation', () => {
+    it('uses role="none" and drops aria-orientation regardless of orientation', async () => {
       const { fixture, query, flush } = renderHost(SeparatorHost);
       fixture.componentInstance.decorative.set(true);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
 
       const el = query<HTMLElement>('[forSeparator]')!;
 
@@ -63,19 +63,19 @@ describe('ForSeparator', () => {
   });
 
   describe('reactivity', () => {
-    it('flips role and aria-orientation when inputs change', () => {
+    it('flips role and aria-orientation when inputs change', async () => {
       const { fixture, query, flush } = renderHost(SeparatorHost);
       const el = query<HTMLElement>('[forSeparator]')!;
 
       expect(el.getAttribute('role')).toBe('separator');
 
       fixture.componentInstance.decorative.set(true);
-      flush();
+      await flush();
       expect(el.getAttribute('role')).toBe('none');
 
       fixture.componentInstance.decorative.set(false);
       fixture.componentInstance.orientation.set('vertical');
-      flush();
+      await flush();
       expect(el.getAttribute('role')).toBe('separator');
       expect(el.getAttribute('aria-orientation')).toBe('vertical');
     });

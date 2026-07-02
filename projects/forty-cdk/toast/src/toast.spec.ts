@@ -231,10 +231,10 @@ describe('ForToast (declarative)', () => {
       expect(t.getAttribute('aria-atomic')).toBe('true');
     });
 
-    it('error variant becomes role=alert + aria-live=assertive', () => {
+    it('error variant becomes role=alert + aria-live=assertive', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.variant.set('error');
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       expect(t.getAttribute('role')).toBe('alert');
       expect(t.getAttribute('aria-live')).toBe('assertive');
@@ -249,10 +249,10 @@ describe('ForToast (declarative)', () => {
       expect(t.getAttribute('aria-describedby')).toBe(descId);
     });
 
-    it('reflects data-variant', () => {
+    it('reflects data-variant', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.variant.set('warning');
-      r.flush();
+      await r.flush();
       expect($(r.el, 'declarative')!.getAttribute('data-variant')).toBe('warning');
     });
 
@@ -267,39 +267,39 @@ describe('ForToast (declarative)', () => {
       vi.useRealTimers();
     });
 
-    it('emits (dismiss) with reason "auto" after duration', () => {
+    it('emits (dismiss) with reason "auto" after duration', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       vi.advanceTimersByTime(4_999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
 
-    it('duration=0 stays sticky', () => {
+    it('duration=0 stays sticky', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       r.instance.duration.set(0);
-      r.flush();
+      await r.flush();
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('changing duration mid-flight resets the timer', () => {
+    it('changing duration mid-flight resets the timer', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       vi.advanceTimersByTime(2_000);
-      r.flush();
+      await r.flush();
       r.instance.duration.set(1_000);
-      r.flush();
+      await r.flush();
       vi.advanceTimersByTime(999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
   });
@@ -309,66 +309,66 @@ describe('ForToast (declarative)', () => {
       vi.useRealTimers();
     });
 
-    it('pointerenter pauses, pointerleave resumes', () => {
+    it('pointerenter pauses, pointerleave resumes', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
       vi.advanceTimersByTime(2_000);
-      r.flush();
+      await r.flush();
       t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-paused')).toBe(false);
       vi.advanceTimersByTime(2_999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
 
-    it('focus inside pauses; focus leaving resumes', () => {
+    it('focus inside pauses; focus leaving resumes', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       r.instance.showAction.set(true);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       const action = $(r.el, 'action')!;
       action.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       const outside = document.createElement('button');
       document.body.appendChild(outside);
       action.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-paused')).toBe(false);
       outside.remove();
     });
 
-    it('focus moving between elements within the toast keeps it paused', () => {
+    it('focus moving between elements within the toast keeps it paused', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       r.instance.showAction.set(true);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       const action = $(r.el, 'action')!;
       const close = $(r.el, 'close')!;
       action.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
       action.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: close }));
       close.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
     });
 
-    it('a re-render while paused does not reset the captured remaining time', () => {
+    it('a re-render while paused does not reset the captured remaining time', async () => {
       // F3: the duration effect must not clobber #remainingMs while paused.
       // Pause at 2_000ms in (3_000ms remaining), then trigger an unrelated
       // effect re-run by changing `duration` while still paused; on resume the
@@ -378,24 +378,24 @@ describe('ForToast (declarative)', () => {
       const t = $(r.el, 'declarative')!;
 
       vi.advanceTimersByTime(2_000);
-      r.flush();
+      await r.flush();
       t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
 
       // Re-render the toast (change an input that re-runs the duration effect)
       // while paused. The captured 3_000ms must survive.
       r.instance.duration.set(10_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
 
       t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
-      r.flush();
+      await r.flush();
       vi.advanceTimersByTime(2_999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
   });
@@ -417,75 +417,75 @@ describe('ForToast (declarative)', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     }
 
-    it('pauses the auto-dismiss timer when the page becomes hidden', () => {
+    it('pauses the auto-dismiss timer when the page becomes hidden', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
 
       vi.advanceTimersByTime(2_000);
-      r.flush();
+      await r.flush();
 
       setVisibility('hidden');
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
 
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('resumes with the remaining time when the page becomes visible again', () => {
+    it('resumes with the remaining time when the page becomes visible again', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
 
       vi.advanceTimersByTime(2_000);
-      r.flush();
+      await r.flush();
 
       setVisibility('hidden');
-      r.flush();
+      await r.flush();
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
 
       setVisibility('visible');
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-paused')).toBe(false);
 
       vi.advanceTimersByTime(2_999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
 
-    it('keeps paused while hover is also active and only resumes once both clear', () => {
+    it('keeps paused while hover is also active and only resumes once both clear', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
 
       t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
       setVisibility('hidden');
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
 
       // Visibility returns first; hover pause keeps the timer down.
       setVisibility('visible');
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
 
       // Releasing hover too clears the pause.
       t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-paused')).toBe(false);
     });
 
-    it('removes its document listener when the toast unmounts', () => {
+    it('removes its document listener when the toast unmounts', async () => {
       const r = renderHost(DeclarativeHost);
-      r.flush();
+      await r.flush();
       r.instance.open.set(false);
-      r.flush();
+      await r.flush();
 
       // Smoke-check: dispatching a visibilitychange after destroy must not throw
       // and the toast (now unmounted) must not be in the DOM.
@@ -513,26 +513,26 @@ describe('ForToast (declarative)', () => {
       });
     });
 
-    it('does not count down until the tab becomes visible', () => {
+    it('does not count down until the tab becomes visible', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
       expect(t.getAttribute('data-paused')).toBe('');
 
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
 
       visibility = 'visible';
       document.dispatchEvent(new Event('visibilitychange'));
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-paused')).toBe(false);
 
       vi.advanceTimersByTime(4_999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
   });
@@ -562,91 +562,91 @@ describe('ForToast (declarative)', () => {
       expect(spy).toHaveBeenCalledWith(expect.any(Function), 5000);
     });
 
-    it('closable=false does not emit (dismiss) after the duration elapses', () => {
+    it('closable=false does not emit (dismiss) after the duration elapses', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       r.instance.closable.set(false);
-      r.flush();
+      await r.flush();
       vi.advanceTimersByTime(60_000);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
     });
   });
 
   describe('manual close paths', () => {
-    it('Escape closes when closable', () => {
+    it('Escape closes when closable', async () => {
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
       t.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
       );
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['escape']);
     });
 
-    it('Escape is a no-op when closable=false', () => {
+    it('Escape is a no-op when closable=false', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.closable.set(false);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       t.dispatchEvent(
         new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
       );
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('close button click → reason "manual"', () => {
+    it('close button click → reason "manual"', async () => {
       const r = renderHost(DeclarativeHost);
       const close = $(r.el, 'close')!;
       close.click();
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['manual']);
     });
 
-    it('action button click → consumer handler runs, then reason "action"', () => {
+    it('action button click → consumer handler runs, then reason "action"', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.showAction.set(true);
-      r.flush();
+      await r.flush();
       const action = $(r.el, 'action')!;
       action.click();
-      r.flush();
+      await r.flush();
       expect(r.instance.actionsClicked()).toBe(1);
       expect(r.instance.closes).toEqual(['action']);
     });
 
-    it('action close fires even when closable=false', () => {
+    it('action close fires even when closable=false', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.closable.set(false);
       r.instance.showAction.set(true);
-      r.flush();
+      await r.flush();
       $(r.el, 'action')!.click();
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['action']);
     });
   });
 
   describe('swipe-to-dismiss', () => {
-    it('does not arm a swipe when [swipeDirection] is null (default)', () => {
+    it('does not arm a swipe when [swipeDirection] is null (default)', async () => {
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 80, clientY: 0 });
       pointer(t, 'pointerup', { clientX: 80, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-swipe')).toBe(false);
       expect(r.instance.swipeStarts).toEqual([]);
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('reflects data-swipe="start"|"move" and CSS movement vars during a swipe', () => {
+    it('reflects data-swipe="start"|"move" and CSS movement vars during a swipe', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 20, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-swipe')).toBe('move');
       expect(t.getAttribute('data-swipe-direction')).toBe('right');
       expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('20px');
@@ -655,100 +655,100 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.swipeMoves.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('crosses the threshold → swipeEnd, data-swipe="end", and (dismiss) with reason "swipe"', () => {
+    it('crosses the threshold → swipeEnd, data-swipe="end", and (dismiss) with reason "swipe"', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(50);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 60, clientY: 0 });
       pointer(t, 'pointerup', { clientX: 60, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(r.instance.swipeEnds).toHaveLength(1);
       expect(r.instance.swipeCancels).toEqual([]);
       expect(r.instance.closes).toEqual(['swipe']);
     });
 
-    it('releases under threshold → swipeCancel, data-swipe="cancel", no (dismiss)', () => {
+    it('releases under threshold → swipeCancel, data-swipe="cancel", no (dismiss)', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(80);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 30, clientY: 0 });
       pointer(t, 'pointerup', { clientX: 30, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(r.instance.swipeCancels).toHaveLength(1);
       expect(r.instance.swipeEnds).toEqual([]);
       expect(t.getAttribute('data-swipe')).toBe('cancel');
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('clears the parked data-swipe="cancel" and movement vars on the next pointerdown', () => {
+    it('clears the parked data-swipe="cancel" and movement vars on the next pointerdown', async () => {
       // F10: after a cancel the host keeps data-swipe="cancel" + the released
       // movement vars (for the consumer's CSS spring-back), but the next
       // pointerdown is the terminal reset so a stale cancel never lingers.
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       r.instance.swipeThreshold.set(80);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 30, clientY: 0 });
       pointer(t, 'pointerup', { clientX: 30, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(t.getAttribute('data-swipe')).toBe('cancel');
       expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('30px');
 
       // Next pointer interaction neutralizes the parked cancel state.
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(t.hasAttribute('data-swipe')).toBe(false);
       expect(t.getAttribute('data-swipe-direction')).toBeNull();
       expect(t.style.getPropertyValue('--for-toast-swipe-movement-x')).toBe('0px');
       expect(t.style.getPropertyValue('--for-toast-swipe-movement-y')).toBe('0px');
     });
 
-    it('accepts an array of allowed directions', () => {
+    it('accepts an array of allowed directions', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set(['right', 'down']);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 0, clientY: 60 });
       pointer(t, 'pointerup', { clientX: 0, clientY: 60 });
-      r.flush();
+      await r.flush();
       expect(r.instance.swipeEnds).toHaveLength(1);
       expect(r.instance.swipeEnds[0]!.direction).toBe('down');
       expect(r.instance.closes).toEqual(['swipe']);
     });
 
-    it('disallowed dominant direction is dropped silently', () => {
+    it('disallowed dominant direction is dropped silently', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 5, clientY: 80 });
       pointer(t, 'pointerup', { clientX: 5, clientY: 80 });
-      r.flush();
+      await r.flush();
       expect(r.instance.swipeStarts).toEqual([]);
       expect(r.instance.swipeEnds).toEqual([]);
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('closable=false disables swipe entirely (no events, no close)', () => {
+    it('closable=false disables swipe entirely (no events, no close)', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
       r.instance.closable.set(false);
-      r.flush();
+      await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
       pointer(t, 'pointermove', { clientX: 200, clientY: 0 });
       pointer(t, 'pointerup', { clientX: 200, clientY: 0 });
-      r.flush();
+      await r.flush();
       expect(r.instance.swipeStarts).toEqual([]);
       expect(r.instance.closes).toEqual([]);
     });
@@ -878,14 +878,14 @@ describe('ForToast (declarative)', () => {
       vi.useRealTimers();
     });
 
-    it('still auto-dismisses after [duration] under reduced-motion', () => {
+    it('still auto-dismisses after [duration] under reduced-motion', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       vi.advanceTimersByTime(4_999);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual([]);
       vi.advanceTimersByTime(1);
-      r.flush();
+      await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
     });
   });
@@ -902,11 +902,11 @@ describe('ForToastManager (programmatic)', () => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
   });
 
-  it('show() pushes a toast and renders it through the viewport', () => {
+  it('show() pushes a toast and renders it through the viewport', async () => {
     const r = renderHost(ProgrammaticHost);
     expect(r.el.querySelectorAll('[forToast]').length).toBe(0);
     r.instance.toasts.show({ title: 'Saved' });
-    r.flush();
+    await r.flush();
     const rendered = r.el.querySelectorAll('[forToast]');
     expect(rendered.length).toBe(1);
     expect(rendered[0]!.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
@@ -918,80 +918,80 @@ describe('ForToastManager (programmatic)', () => {
     expect(viewport.hasAttribute('data-for-modal-exempt')).toBe(true);
   });
 
-  it('description and close button render by default', () => {
+  it('description and close button render by default', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'Saved', description: 'Your changes are live.' });
-    r.flush();
+    await r.flush();
     const t = r.el.querySelector('[forToast]')!;
     expect(t.querySelector('[forToastDescription]')?.textContent).toContain('Your changes');
     expect(t.querySelector('[forToastClose]')).not.toBeNull();
   });
 
-  it('action button invokes handler and dismisses the toast', () => {
+  it('action button invokes handler and dismisses the toast', async () => {
     const r = renderHost(ProgrammaticHost);
     let clicked = 0;
     const ref = r.instance.toasts.show({
       title: 'Item deleted',
       action: { label: 'Undo', onClick: () => clicked++ },
     });
-    r.flush();
+    await r.flush();
     const action = r.el.querySelector<HTMLElement>('[forToastAction]')!;
     action.click();
-    r.flush();
+    await r.flush();
     expect(clicked).toBe(1);
     expect(ref.isClosed()).toBe(true);
   });
 
-  it('close button click removes the toast from the manager', () => {
+  it('close button click removes the toast from the manager', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'A' });
     r.instance.toasts.show({ title: 'B' });
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(2);
     r.el.querySelectorAll<HTMLElement>('[forToastClose]')[0]!.click();
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(1);
   });
 
-  it('ref.dismiss() closes programmatically', () => {
+  it('ref.dismiss() closes programmatically', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ title: 'Saved' });
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(1);
     ref.dismiss();
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
     expect(ref.isClosed()).toBe(true);
   });
 
-  it('ref.update() patches config in place', () => {
+  it('ref.update() patches config in place', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ title: 'Saving…', duration: 0 });
-    r.flush();
+    await r.flush();
     ref.update({ title: 'Saved', variant: 'success' });
-    r.flush();
+    await r.flush();
     const t = r.el.querySelector('[forToast]')!;
     expect(t.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
     expect(t.getAttribute('data-variant')).toBe('success');
   });
 
-  it('ref.update() ignores id and region (immutable after show) (F5)', () => {
+  it('ref.update() ignores id and region (immutable after show) (F5)', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ id: 'job', title: 'Saving…' });
-    r.flush();
+    await r.flush();
     // Attempt to mutate the identity / routing fields — both must be ignored.
     ref.update({
       id: 'other',
       region: 'somewhere-else',
       title: 'Saved',
     } as Parameters<typeof ref.update>[0]);
-    r.flush();
+    await r.flush();
     expect(ref.config().id).toBe('job');
     expect(ref.config().region).toBe('default');
     expect(ref.config().title).toBe('Saved');
     // Still dismissable by its original id (the map never drifted).
     r.instance.toasts.dismiss('job');
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
   });
 
@@ -1011,62 +1011,62 @@ describe('ForToastManager (programmatic)', () => {
     expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Hang tight. Undo (Cmd+Z)');
   });
 
-  it('show() with same id updates the existing toast', () => {
+  it('show() with same id updates the existing toast', async () => {
     const r = renderHost(ProgrammaticHost);
     const a = r.instance.toasts.show({ id: 'job', title: 'Saving…' });
     const b = r.instance.toasts.show({ id: 'job', title: 'Saved' });
-    r.flush();
+    await r.flush();
     expect(a).toBe(b);
     expect(r.instance.toasts.count()).toBe(1);
     expect(r.el.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
   });
 
-  it('two synchronous show({id}) calls before any flush yield exactly one entry and one ref', () => {
+  it('two synchronous show({id}) calls before any flush yield exactly one entry and one ref', async () => {
     const r = renderHost(ProgrammaticHost);
     // Back-to-back inside the same synchronous tick — no `flush` between
     // calls. The id-keyed lookup must catch the duplicate before the second
     // call pushes a parallel entry.
     const a = r.instance.toasts.show({ id: 'save', title: 'Saving…' });
     const b = r.instance.toasts.show({ id: 'save', title: 'Saving…' });
-    r.flush();
+    await r.flush();
     expect(a).toBe(b);
     expect(r.instance.toasts.count()).toBe(1);
     // Single dismiss by that id must remove the entry entirely (regression
     // guard against the map drifting out of sync with the entries array).
     r.instance.toasts.dismiss('save');
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
   });
 
-  it('auto-generated ids stay unique across rapid show() calls', () => {
+  it('auto-generated ids stay unique across rapid show() calls', async () => {
     const r = renderHost(ProgrammaticHost);
     const refs = [
       r.instance.toasts.show({ title: 'A' }),
       r.instance.toasts.show({ title: 'B' }),
       r.instance.toasts.show({ title: 'C' }),
     ];
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(3);
     // Each ref is distinct — no aliasing through the id-keyed lookup.
     expect(new Set(refs).size).toBe(3);
   });
 
-  it('dismissAll() closes every live toast', () => {
+  it('dismissAll() closes every live toast', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'A' });
     r.instance.toasts.show({ title: 'B' });
     r.instance.toasts.show({ title: 'C' });
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(3);
     r.instance.toasts.dismissAll();
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
   });
 
   it('ref.closed promise resolves with reason and result', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show<string>({ title: 'A' });
-    r.flush();
+    await r.flush();
     const closed = ref.closed;
     ref.dismiss('action', 'undo');
     await closed.then((v) => {
@@ -1078,10 +1078,10 @@ describe('ForToastManager (programmatic)', () => {
     vi.useFakeTimers();
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ title: 'A', duration: 1_000 });
-    r.flush();
+    await r.flush();
     const closed = ref.closed;
     vi.advanceTimersByTime(1_000);
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
     await expect(closed).resolves.toEqual({ reason: 'auto', result: undefined });
   });
@@ -1089,77 +1089,77 @@ describe('ForToastManager (programmatic)', () => {
   it('ref.closed resolves with reason "escape" through the viewport path', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ title: 'A' });
-    r.flush();
+    await r.flush();
     const closed = ref.closed;
     const t = r.el.querySelector<HTMLElement>('[forToast]')!;
     t.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
     );
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
     await expect(closed).resolves.toEqual({ reason: 'escape', result: undefined });
   });
 
-  it('error variant gets role=alert', () => {
+  it('error variant gets role=alert', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'Boom', variant: 'error' });
-    r.flush();
+    await r.flush();
     const t = r.el.querySelector('[forToast]')!;
     expect(t.getAttribute('role')).toBe('alert');
   });
 
-  it('respects custom template via show({ template, data })', () => {
+  it('respects custom template via show({ template, data })', async () => {
     const r = renderHost(ProgrammaticHost);
     const tpl = r.instance.tpl();
     r.instance.toasts.show({ template: tpl, data: { label: 'Custom!' } });
-    r.flush();
+    await r.flush();
     const titles = r.el.querySelectorAll<HTMLElement>('[data-test-id="custom-title"]');
     expect(titles.length).toBe(1);
     expect(titles[0]!.textContent).toContain('Custom!');
   });
 
-  it('custom template can dismiss via the $implicit toast handle', () => {
+  it('custom template can dismiss via the $implicit toast handle', async () => {
     const r = renderHost(ProgrammaticHost);
     const tpl = r.instance.tpl();
     r.instance.toasts.show({ template: tpl, data: { label: 'X' } });
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(1);
     r.el.querySelector<HTMLElement>('[data-test-id="custom-dismiss"]')!.click();
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
   });
 
   describe('consumer class (show({ class }) / classList)', () => {
-    it('applies a single class to the rendered toast root', () => {
+    it('applies a single class to the rendered toast root', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({ title: 'Saved', class: 'ds-toast' });
-      r.flush();
+      await r.flush();
       const t = r.el.querySelector<HTMLElement>('[forToast]')!;
       expect(t.classList.contains('ds-toast')).toBe(true);
     });
 
-    it('applies a space-separated class string', () => {
+    it('applies a space-separated class string', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({ title: 'Saved', class: 'ds-toast ds-toast--compact' });
-      r.flush();
+      await r.flush();
       const t = r.el.querySelector<HTMLElement>('[forToast]')!;
       expect(t.classList.contains('ds-toast')).toBe(true);
       expect(t.classList.contains('ds-toast--compact')).toBe(true);
     });
 
-    it('applies an array via classList', () => {
+    it('applies an array via classList', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({ title: 'Saved', classList: ['ds-toast', 'ds-toast--error'] });
-      r.flush();
+      await r.flush();
       const t = r.el.querySelector<HTMLElement>('[forToast]')!;
       expect(t.classList.contains('ds-toast')).toBe(true);
       expect(t.classList.contains('ds-toast--error')).toBe(true);
     });
 
-    it('does not clobber the directive-owned host attributes', () => {
+    it('does not clobber the directive-owned host attributes', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({ title: 'Saved', variant: 'success', class: 'ds-toast' });
-      r.flush();
+      await r.flush();
       const t = r.el.querySelector<HTMLElement>('[forToast]')!;
       // Consumer class lands alongside the directive's own reflected state.
       expect(t.classList.contains('ds-toast')).toBe(true);
@@ -1170,13 +1170,13 @@ describe('ForToastManager (programmatic)', () => {
   });
 
   describe('helper directives inside a custom template', () => {
-    it('wires aria-labelledby / aria-describedby from [forToastTitle] / [forToastDescription]', () => {
+    it('wires aria-labelledby / aria-describedby from [forToastTitle] / [forToastDescription]', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({
         template: r.instance.wiredTpl(),
         data: { label: 'Archived', desc: 'Moved to trash', altText: 'Undo (Cmd+Z)' },
       });
-      r.flush();
+      await r.flush();
       const t = r.el.querySelector<HTMLElement>('[forToast]')!;
       const titleId = $(t, 'wired-title')!.id;
       const descId = $(t, 'wired-desc')!.id;
@@ -1186,29 +1186,29 @@ describe('ForToastManager (programmatic)', () => {
       expect(t.getAttribute('aria-describedby')).toBe(descId);
     });
 
-    it('[forToastClose] inside a custom template dismisses the toast', () => {
+    it('[forToastClose] inside a custom template dismisses the toast', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({
         template: r.instance.wiredTpl(),
         data: { label: 'Archived', desc: 'Moved to trash', altText: '' },
       });
-      r.flush();
+      await r.flush();
       expect(r.instance.toasts.count()).toBe(1);
       $(r.el, 'wired-close')!.click();
-      r.flush();
+      await r.flush();
       expect(r.instance.toasts.count()).toBe(0);
     });
 
-    it('[forToastAction] inside a custom template dismisses the toast', () => {
+    it('[forToastAction] inside a custom template dismisses the toast', async () => {
       const r = renderHost(ProgrammaticHost);
       r.instance.toasts.show({
         template: r.instance.wiredTpl(),
         data: { label: 'Archived', desc: 'Moved to trash', altText: 'Undo (Cmd+Z)' },
       });
-      r.flush();
+      await r.flush();
       expect(r.instance.toasts.count()).toBe(1);
       $(r.el, 'wired-action')!.click();
-      r.flush();
+      await r.flush();
       expect(r.instance.toasts.count()).toBe(0);
     });
 
@@ -1230,10 +1230,10 @@ describe('ForToastManager (programmatic)', () => {
     });
   });
 
-  it('default variant info → role=status', () => {
+  it('default variant info → role=status', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'Hello' });
-    r.flush();
+    await r.flush();
     expect(r.el.querySelector('[forToast]')!.getAttribute('role')).toBe('status');
   });
 
@@ -1253,23 +1253,23 @@ describe('ForToastViewport', () => {
     expect(v.getAttribute('aria-label')).toBe('Notifications');
   });
 
-  it('exposes data-toast-count reflecting visible toasts', () => {
+  it('exposes data-toast-count reflecting visible toasts', async () => {
     const r = renderHost(ProgrammaticHost);
     const v = r.el.querySelector<HTMLElement>('for-toast-viewport, [forToastViewport]')!;
     r.instance.toasts.show({ title: 'A' });
     r.instance.toasts.show({ title: 'B' });
-    r.flush();
+    await r.flush();
     expect(v.getAttribute('data-toast-count')).toBe('2');
   });
 
-  it('maxVisible caps the rendered window to the newest entries', () => {
+  it('maxVisible caps the rendered window to the newest entries', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.maxVisible.set(2);
-    r.flush();
+    await r.flush();
     r.instance.toasts.show({ title: 'A' });
     r.instance.toasts.show({ title: 'B' });
     r.instance.toasts.show({ title: 'C' });
-    r.flush();
+    await r.flush();
     const titles = Array.from(r.el.querySelectorAll<HTMLElement>('[forToastTitle]')).map((e) =>
       e.textContent?.trim(),
     );
@@ -1277,38 +1277,38 @@ describe('ForToastViewport', () => {
     expect(r.instance.toasts.count()).toBe(3);
   });
 
-  it('F6 hotkey focuses the first rendered toast', () => {
+  it('F6 hotkey focuses the first rendered toast', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'A' });
-    r.flush();
+    await r.flush();
     const opener = $(r.el, 'opener')!;
     opener.focus();
     expect(document.activeElement).toBe(opener);
     document.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true }),
     );
-    r.flush();
+    await r.flush();
     const first = r.el.querySelector<HTMLElement>('[forToast]')!;
     expect(document.activeElement).toBe(first);
   });
 
-  it('per-viewport [hotkey] override takes precedence', () => {
+  it('per-viewport [hotkey] override takes precedence', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.hotkey.set('F8');
-    r.flush();
+    await r.flush();
     r.instance.toasts.show({ title: 'A' });
-    r.flush();
+    await r.flush();
     const opener = $(r.el, 'opener')!;
     opener.focus();
     document.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true }),
     );
-    r.flush();
+    await r.flush();
     expect(document.activeElement).toBe(opener);
     document.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'F8', bubbles: true, cancelable: true }),
     );
-    r.flush();
+    await r.flush();
     expect(document.activeElement).toBe(r.el.querySelector('[forToast]'));
   });
 });
@@ -1316,24 +1316,24 @@ describe('ForToastViewport', () => {
 describe('ForToastViewport regions (multi-viewport)', () => {
   afterEachOverlayCleanup();
 
-  it('reflects the resolved region on data-region (default when unset)', () => {
+  it('reflects the resolved region on data-region (default when unset)', async () => {
     const r = renderHost(MultiViewportHost);
     r.instance.regionA.set('alerts');
-    r.flush();
+    await r.flush();
     expect($(r.el, 'vp-a')!.getAttribute('data-region')).toBe('alerts');
     // vp-b keeps the default region.
     expect($(r.el, 'vp-b')!.getAttribute('data-region')).toBe('default');
   });
 
-  it('routes each toast to the viewport whose region matches', () => {
+  it('routes each toast to the viewport whose region matches', async () => {
     const r = renderHost(MultiViewportHost);
     r.instance.regionA.set('alerts');
     r.instance.regionB.set('confirms');
-    r.flush();
+    await r.flush();
 
     r.instance.toasts.show({ region: 'alerts', title: 'Alert' });
     r.instance.toasts.show({ region: 'confirms', title: 'Confirm' });
-    r.flush();
+    await r.flush();
 
     const a = toastsIn(r.el, 'vp-a');
     const b = toastsIn(r.el, 'vp-b');
@@ -1345,24 +1345,24 @@ describe('ForToastViewport regions (multi-viewport)', () => {
     expect(r.el.querySelectorAll('[forToast]').length).toBe(2);
   });
 
-  it('a region-less show() lands in the default-region viewport only', () => {
+  it('a region-less show() lands in the default-region viewport only', async () => {
     const r = renderHost(MultiViewportHost);
     r.instance.regionB.set('confirms');
-    r.flush();
+    await r.flush();
 
     r.instance.toasts.show({ title: 'Default' });
-    r.flush();
+    await r.flush();
 
     expect(toastsIn(r.el, 'vp-a').length).toBe(1);
     expect(toastsIn(r.el, 'vp-b').length).toBe(0);
   });
 
-  it('two viewports sharing a region render the toast once (first one wins)', () => {
+  it('two viewports sharing a region render the toast once (first one wins)', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const r = renderHost(MultiViewportHost);
     // Both keep the default region.
     r.instance.toasts.show({ title: 'Once' });
-    r.flush();
+    await r.flush();
 
     // Exactly one node total — the second viewport stays dormant.
     expect(r.el.querySelectorAll('[forToast]').length).toBe(1);
@@ -1372,38 +1372,38 @@ describe('ForToastViewport regions (multi-viewport)', () => {
     expect(warn).toHaveBeenCalled();
   });
 
-  it('promotes the dormant viewport when the active one unmounts', () => {
+  it('promotes the dormant viewport when the active one unmounts', async () => {
     const r = renderHost(MultiViewportHost);
     r.instance.toasts.show({ title: 'Survivor' });
-    r.flush();
+    await r.flush();
     expect(toastsIn(r.el, 'vp-a').length).toBe(1);
     expect(toastsIn(r.el, 'vp-b').length).toBe(0);
 
     // The active viewport leaves; the surviving one takes over its region.
     r.instance.showA.set(false);
-    r.flush();
+    await r.flush();
 
     expect($(r.el, 'vp-a')).toBeNull();
     expect(toastsIn(r.el, 'vp-b').length).toBe(1);
     expect(r.el.querySelectorAll('[forToast]').length).toBe(1);
   });
 
-  it('F6 does not double-fire across viewports — the first viewport wins', () => {
+  it('F6 does not double-fire across viewports — the first viewport wins', async () => {
     const r = renderHost(MultiViewportHost);
     r.instance.regionA.set('alerts');
     r.instance.regionB.set('confirms');
-    r.flush();
+    await r.flush();
 
     r.instance.toasts.show({ region: 'alerts', title: 'A' });
     r.instance.toasts.show({ region: 'confirms', title: 'B' });
-    r.flush();
+    await r.flush();
 
     const opener = $(r.el, 'opener')!;
     opener.focus();
     document.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'F6', bubbles: true, cancelable: true }),
     );
-    r.flush();
+    await r.flush();
 
     // A single centralized handler focuses the first viewport's toast and
     // stops. With per-viewport listeners the later one would steal focus.
@@ -1552,49 +1552,49 @@ describe('exit / enter animation cascade (config → viewport)', () => {
       .componentInstance as unknown as AnimateResolver;
   }
 
-  it('per-toast animateLeave wins over the viewport [animateLeave]; viewport applies when omitted', () => {
+  it('per-toast animateLeave wins over the viewport [animateLeave]; viewport applies when omitted', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.vpAnimateLeave.set('vp-leave');
-    r.flush();
+    await r.flush();
     r.instance.toasts.show({ title: 'own', animateLeave: 'own-leave' });
     r.instance.toasts.show({ title: 'fallback' });
-    r.flush();
+    await r.flush();
     const res = resolver(r.fixture);
     const [own, fallback] = r.instance.toasts.toasts();
     expect(res.toastAnimateLeave(own!)).toBe('own-leave');
     expect(res.toastAnimateLeave(fallback!)).toBe('vp-leave');
   });
 
-  it('animateEnter cascades the same way (per-toast wins, viewport is the fallback)', () => {
+  it('animateEnter cascades the same way (per-toast wins, viewport is the fallback)', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.vpAnimateEnter.set('vp-enter');
-    r.flush();
+    await r.flush();
     r.instance.toasts.show({ title: 'own', animateEnter: 'own-enter' });
     r.instance.toasts.show({ title: 'fallback' });
-    r.flush();
+    await r.flush();
     const res = resolver(r.fixture);
     const [own, fallback] = r.instance.toasts.toasts();
     expect(res.toastAnimateEnter(own!)).toBe('own-enter');
     expect(res.toastAnimateEnter(fallback!)).toBe('vp-enter');
   });
 
-  it('resolves to empty when neither per-toast nor viewport set a class (synchronous unmount preserved)', () => {
+  it('resolves to empty when neither per-toast nor viewport set a class (synchronous unmount preserved)', async () => {
     const r = renderHost(ProgrammaticHost);
     r.instance.toasts.show({ title: 'plain' });
-    r.flush();
+    await r.flush();
     const res = resolver(r.fixture);
     const [plain] = r.instance.toasts.toasts();
     expect(res.toastAnimateLeave(plain!)).toBe('');
     expect(res.toastAnimateEnter(plain!)).toBe('');
   });
 
-  it('a toast shown with animateLeave still dismisses through the close path (no regression)', () => {
+  it('a toast shown with animateLeave still dismisses through the close path (no regression)', async () => {
     const r = renderHost(ProgrammaticHost);
     const ref = r.instance.toasts.show({ title: 'A', animateLeave: 'toast-out' });
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(1);
     ref.dismiss();
-    r.flush();
+    await r.flush();
     expect(r.instance.toasts.count()).toBe(0);
   });
 
