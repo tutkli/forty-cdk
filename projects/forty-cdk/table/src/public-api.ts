@@ -30,3 +30,4 @@ export {
   provideForTableDefaults,
   type ForTableDefaults,
 } from './table-defaults';
+export type { WritingDirection } from 'forty-cdk/core';

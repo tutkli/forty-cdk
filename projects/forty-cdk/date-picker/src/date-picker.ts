@@ -15,6 +15,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   assertTimeCapable,
   type DateAdapter,
+  type DateRange,
   injectDateAdapter,
   injectHiddenInput,
   clampToBounds,
@@ -22,7 +23,7 @@ import {
   serializeISODate,
   FOR_TIME_VALUE_SOURCE,
 } from 'forty-cdk/core';
-import { type ForCalendar, type CalendarDateRange } from 'forty-cdk/calendar';
+import { type ForCalendar } from 'forty-cdk/calendar';
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
@@ -63,7 +64,7 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
  *
  * Range selection here is the non-form, two-way-bound `[(range)]` variant
  * (`selectionMode="range"`). For a range that is a Signal Forms value
- * (`FormValueControl<CalendarDateRange<D> | null>`, auto-wiring with
+ * (`FormValueControl<DateRange<D> | null>`, auto-wiring with
  * `[formField]`), use the dedicated `ForDateRangePicker` root instead.
  *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
@@ -179,7 +180,7 @@ export class ForDatePicker<D>
    * fires only when the picker internally commits or clears a range, never on
    * consumer writes via `[(range)]`.
    */
-  readonly range = model<CalendarDateRange<D> | null>(null);
+  readonly range = model<DateRange<D> | null>(null);
 
   /**
    * `formatOptions` augmented with time fields when `granularity > 'day'` and
@@ -284,7 +285,7 @@ export class ForDatePicker<D>
           if (this.readonly() || this.effectiveDisabled()) {
             return;
           }
-          this.range.set(next as CalendarDateRange<D> | null);
+          this.range.set(next as DateRange<D> | null);
           this.markTouched();
           if (next !== null && this.closeOnSelect()) {
             this.close();

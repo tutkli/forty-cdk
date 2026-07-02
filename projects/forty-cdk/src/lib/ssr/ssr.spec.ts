@@ -58,7 +58,7 @@ import {
   ForToolbarSeparator,
 } from 'forty-cdk/toolbar';
 import {
-  type CalendarDateRange,
+  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -1165,7 +1165,7 @@ class TimeFieldFixture {
   `,
 })
 class DateRangeFieldFixture {
-  readonly value = signal<CalendarDateRange<Date> | null>(null);
+  readonly value = signal<DateRange<Date> | null>(null);
 }
 
 @Component({
@@ -1202,7 +1202,7 @@ class DateRangeFieldFixture {
   `,
 })
 class TimeRangeFieldFixture {
-  readonly value = signal<CalendarDateRange<Date> | null>(null);
+  readonly value = signal<DateRange<Date> | null>(null);
 }
 
 @Component({
@@ -1255,7 +1255,7 @@ class DatePickerFixture {
   `,
 })
 class DateRangePickerOpenFixture {
-  readonly value = signal<CalendarDateRange<Date> | null>(null);
+  readonly value = signal<DateRange<Date> | null>(null);
 }
 
 @Component({

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
-  type CalendarDateRange,
+  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -252,7 +252,7 @@ import { queryFlag } from './_query-flag';
 })
 export class CalendarFixture {
   protected readonly value = signal<Date | null>(new Date(2026, 5, 15));
-  protected readonly range = signal<CalendarDateRange<Date> | null>({
+  protected readonly range = signal<DateRange<Date> | null>({
     start: new Date(2026, 5, 10),
     end: new Date(2026, 5, 15),
   });

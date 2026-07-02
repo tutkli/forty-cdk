@@ -36,7 +36,7 @@ import readmeContent from '../../../../../forty-cdk/date-range-field/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="<code>ForDateRangeField</code> implements <code>FormValueControl&lt;CalendarDateRange | null&gt;</code>, so <code>[formField]</code> binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps <code>value()</code> null, so a <code>required</code> field stays invalid until both endpoints are filled and ordered."
+        subtitle="<code>ForDateRangeField</code> implements <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps <code>value()</code> null, so a <code>required</code> field stays invalid until both endpoints are filled and ordered."
         sourcePath="date-range-field/examples/form-field.example.ts"
       >
         <app-date-range-field-form-field-example />

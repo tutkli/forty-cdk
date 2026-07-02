@@ -5,19 +5,6 @@ import { type DateAdapter, type WritingDirection } from 'forty-cdk/core';
 /** The active display mode of a `ForCalendar`. */
 export type CalendarView = 'day' | 'month' | 'year';
 
-/**
- * An inclusive date range where `start <= end` (day-granular). Used by
- * `ForCalendar` and `ForDatePicker` in `selectionMode="range"`.
- *
- * @typeParam D The adapter's date type.
- */
-export interface CalendarDateRange<D> {
-  /** Inclusive start of the range. */
-  readonly start: D;
-  /** Inclusive end of the range (`>= start`). */
-  readonly end: D;
-}
-
 /** A selectable year in the year picker grid. */
 export interface CalendarYearOption {
   /** The full year (e.g. `2026`). */

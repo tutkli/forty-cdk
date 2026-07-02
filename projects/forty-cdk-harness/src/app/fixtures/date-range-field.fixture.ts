@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { type CalendarDateRange, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { type DateRange, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
   ForDateRangeField,
   ForDateRangeFieldEnd,
@@ -73,7 +73,7 @@ import { queryFlag } from './_query-flag';
 })
 export class DateRangeFieldFixture {
   protected readonly granularity: 'day' | 'minute' = queryFlag('datetime') ? 'minute' : 'day';
-  protected readonly value = signal<CalendarDateRange<Date> | null>(
+  protected readonly value = signal<DateRange<Date> | null>(
     queryFlag('preset')
       ? this.granularity === 'minute'
         ? { start: new Date(2026, 5, 10, 9, 0), end: new Date(2026, 5, 10, 17, 30) }

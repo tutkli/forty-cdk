@@ -12,3 +12,9 @@ export {
   provideForPopoverDefaults,
   type ForPopoverDefaults,
 } from './popover-defaults';
+export type {
+  FloatingAlign,
+  FloatingSide,
+  VetoableEvent,
+  VetoableNativeEvent,
+} from 'forty-cdk/core';

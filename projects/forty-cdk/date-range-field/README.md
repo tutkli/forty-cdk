@@ -4,7 +4,7 @@ A segmented date (and optional time) range input over a pluggable date adapter: 
 
 Headless, segmented, spin-editable — the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md). There is **no single WAI-ARIA APG pattern** for a range field; it is a composition of two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as [DateField](../date-field/README.md) — nested inside one outer `role="group"`. Segment **order** and separators follow the runtime locale (`MM/DD/YYYY` vs `DD.MM.YYYY` vs `YYYY/MM/DD`).
 
-`ForDateRangeField` implements `FormValueControl<CalendarDateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangePicker` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
+`ForDateRangeField` implements `FormValueControl<DateRange<D> | null>` from `@angular/forms/signals` — the **same** contract as `ForDateRangePicker` — so the committed range auto-wires with `[formField]` and auto-associates inside a `[forField]` (label / description / error) with no extra markup. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`); a half-entered or out-of-order range never reaches the form.
 
 ## Date adapter
 
@@ -43,8 +43,8 @@ Pick one (required). All date math goes through the same pluggable `DateAdapter<
 ```ts
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDate } from '@internationalized/date';
-import { CalendarDateRange } from 'forty-cdk/calendar';
 import {
+  type DateRange,
   ForDateRangeField,
   ForDateRangeFieldEnd,
   ForDateRangeFieldLiteral,
@@ -91,7 +91,7 @@ import {
   `,
 })
 export class StayField {
-  readonly stay = signal<CalendarDateRange<CalendarDate> | null>(null);
+  readonly stay = signal<DateRange<CalendarDate> | null>(null);
 }
 ```
 
@@ -101,8 +101,8 @@ export class StayField {
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form } from '@angular/forms/signals';
 import { CalendarDate } from '@internationalized/date';
-import { CalendarDateRange } from 'forty-cdk/calendar';
 import {
+  type DateRange,
   ForDateRangeField,
   ForDateRangeFieldEnd,
   ForDateRangeFieldLiteral,
@@ -149,7 +149,7 @@ import {
   `,
 })
 export class StayFormField {
-  readonly model = signal({ stay: null as CalendarDateRange<CalendarDate> | null });
+  readonly model = signal({ stay: null as DateRange<CalendarDate> | null });
   readonly booking = form(this.model);
 }
 ```
@@ -160,7 +160,7 @@ export class StayFormField {
 
 | Property      | Type                                                  | Description                                                                                                                                       |
 | ------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`       | `model<CalendarDateRange<D> \| null>`                 | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`              |
+| `value`       | `model<DateRange<D> \| null>`                         | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`              |
 | `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null` |
 | `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive) for both endpoints. A composed endpoint above it is clamped down.<br>**Default:** `null`                                 |
 | `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | Date-time precision shared by both endpoints. `'day'` is date-only; coarser-than-day appends time segments.<br>**Default:** `'day'`               |
@@ -193,7 +193,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 
 ## Ordering
 
-The two endpoints are typed independently, so order is not guaranteed by construction the way the picker's two-click flow guarantees it. The field preserves the `CalendarDateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
+The two endpoints are typed independently, so order is not guaranteed by construction the way the picker's two-click flow guarantees it. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
 
 ## Date-time range
 

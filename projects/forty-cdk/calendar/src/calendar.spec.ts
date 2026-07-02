@@ -2,7 +2,7 @@ import { Component, model, provideZonelessChangeDetection, signal, viewChild } f
 import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
-import { compareDateOf, type DateAdapter } from 'forty-cdk/core';
+import { compareDateOf, type DateAdapter, type DateRange } from 'forty-cdk/core';
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';
@@ -12,11 +12,7 @@ import { ForCalendarGridHeader } from './calendar-grid-header';
 import { ForCalendarHeading } from './calendar-heading';
 import { ForCalendarNextButton } from './calendar-next-button';
 import { ForCalendarPrevButton } from './calendar-prev-button';
-import type {
-  CalendarDateLabelFormatter,
-  CalendarDateRange,
-  CalendarView,
-} from './calendar-context';
+import type { CalendarDateLabelFormatter, CalendarView } from './calendar-context';
 import { ForCalendarMonthCell } from './calendar-month-cell';
 import { ForCalendarMonthGrid } from './calendar-month-grid';
 import { ForCalendarMonthSelect } from './calendar-month-select';
@@ -230,7 +226,7 @@ class DayOnlyCalendarHost {
   `,
 })
 class CalendarRangeHost {
-  readonly range = signal<CalendarDateRange<Date> | null>(null);
+  readonly range = signal<DateRange<Date> | null>(null);
   readonly minRangeLength = signal<number | null>(null);
   readonly maxRangeLength = signal<number | null>(null);
   readonly min = signal<Date | null>(null);

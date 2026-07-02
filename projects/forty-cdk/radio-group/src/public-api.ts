@@ -11,3 +11,4 @@ export {
   FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS,
 } from './radio-group-host-directive';
+export type { WritingDirection } from 'forty-cdk/core';

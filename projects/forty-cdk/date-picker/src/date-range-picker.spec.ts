@@ -8,7 +8,7 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import {
-  type CalendarDateRange,
+  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -83,7 +83,7 @@ const CALENDAR_PIECES = [ForCalendar, ForCalendarGrid, ForCalendarCell];
   `,
 })
 class Host {
-  readonly value = signal<CalendarDateRange<Date> | null>(null);
+  readonly value = signal<DateRange<Date> | null>(null);
   readonly open = signal(false);
   readonly minDate = signal<Date | null>(null);
   readonly maxDate = signal<Date | null>(null);
@@ -251,7 +251,7 @@ describe('ForDateRangePicker', () => {
       `,
     })
     class GuardHost {
-      readonly value = signal<CalendarDateRange<Date> | null>(null);
+      readonly value = signal<DateRange<Date> | null>(null);
       readonly open = signal(false);
       readonly disabled = signal(false);
       readonly readonly = signal(false);
@@ -352,7 +352,7 @@ describe('ForDateRangePicker', () => {
 
   describe('Signal Forms via [formField]', () => {
     interface Booking {
-      stay: CalendarDateRange<Date> | null;
+      stay: DateRange<Date> | null;
     }
 
     @Component({

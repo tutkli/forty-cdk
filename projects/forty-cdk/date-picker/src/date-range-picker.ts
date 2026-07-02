@@ -13,11 +13,12 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   type DateAdapter,
+  type DateRange,
   injectDateAdapter,
   injectHiddenInput,
   serializeISODate,
 } from 'forty-cdk/core';
-import { type ForCalendar, type CalendarDateRange } from 'forty-cdk/calendar';
+import { type ForCalendar } from 'forty-cdk/calendar';
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT } from './date-picker-context';
 import {
@@ -36,7 +37,7 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from './date-range-picker-defaults';
  * Where `ForDatePicker[selectionMode="range"]` exposes the range through a
  * plain two-way `[(range)]` model (no form contract), `ForDateRangePicker` is
  * the root **and** the form value: it implements
- * `FormValueControl<CalendarDateRange<D> | null>`, so the committed range
+ * `FormValueControl<DateRange<D> | null>`, so the committed range
  * auto-wires with `[formField]` exactly like any other control. The committed
  * range is the `value` model — the two-click anchor → commit flow keeps `value`
  * `null` until both endpoints are chosen, so the form never sees a half-entered
@@ -89,7 +90,7 @@ import { FOR_DATE_RANGE_PICKER_DEFAULTS } from './date-range-picker-defaults';
 })
 export class ForDateRangePicker<D>
   extends DatePickerBase<D>
-  implements FormValueControl<CalendarDateRange<D> | null>, ForDateRangePickerContext
+  implements FormValueControl<DateRange<D> | null>, ForDateRangePickerContext
 {
   readonly #defaults = inject(FOR_DATE_RANGE_PICKER_DEFAULTS);
 
@@ -101,12 +102,12 @@ export class ForDateRangePicker<D>
 
   /**
    * Two-way bindable committed date range, or `null`. Required by
-   * `FormValueControl<CalendarDateRange<D> | null>` — this **is** the form
+   * `FormValueControl<DateRange<D> | null>` — this **is** the form
    * value, so it auto-wires with `[formField]`. The `model()` change emitter
    * (`(valueChange)`) fires only when the picker itself commits or clears a
    * range, never on consumer writes via `[(value)]`.
    */
-  readonly value = model<CalendarDateRange<D> | null>(null);
+  readonly value = model<DateRange<D> | null>(null);
 
   /** Gap (px) between trigger and surface along the main axis. Default from `provideForDateRangePickerDefaults`. */
   readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
@@ -190,7 +191,7 @@ export class ForDateRangePicker<D>
         if (this.readonly() || this.effectiveDisabled()) {
           return;
         }
-        this.value.set(next as CalendarDateRange<D> | null);
+        this.value.set(next as DateRange<D> | null);
         this.markTouched();
         if (next !== null && this.closeOnSelect()) {
           this.close();

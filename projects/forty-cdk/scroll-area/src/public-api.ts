@@ -15,3 +15,4 @@ export {
   provideForScrollAreaDefaults,
   type ForScrollAreaDefaults,
 } from './scroll-area-defaults';
+export type { WritingDirection } from 'forty-cdk/core';

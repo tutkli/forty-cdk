@@ -3,11 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
-import {
-  type CalendarDateRange,
-  NativeDateAdapter,
-  provideNativeDateAdapter,
-} from 'forty-cdk/calendar';
+import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { ForDateRangeField } from './date-range-field';
 import { ForDateRangeFieldEnd, ForDateRangeFieldStart } from './date-range-field-endpoint';
@@ -77,7 +73,7 @@ type Part = 'day' | 'month' | 'year';
   `,
 })
 class Host {
-  readonly value = signal<CalendarDateRange<Date> | null>(null);
+  readonly value = signal<DateRange<Date> | null>(null);
   readonly minDate = signal<Date | null>(null);
   readonly maxDate = signal<Date | null>(null);
   readonly disabled = signal(false);
@@ -413,7 +409,7 @@ describe('ForDateRangeField', () => {
 
   describe('Signal Forms via [formField]', () => {
     interface Booking {
-      stay: CalendarDateRange<Date> | null;
+      stay: DateRange<Date> | null;
     }
 
     @Component({
@@ -527,7 +523,7 @@ describe('ForDateRangeField', () => {
       `,
     })
     class DateTimeHost {
-      readonly value = signal<CalendarDateRange<Date> | null>(null);
+      readonly value = signal<DateRange<Date> | null>(null);
     }
 
     it('appends the time segments to each endpoint', () => {

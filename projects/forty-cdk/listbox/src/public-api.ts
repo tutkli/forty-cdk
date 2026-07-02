@@ -18,3 +18,4 @@ export {
   FOR_LISTBOX_HOST_DIRECTIVE_INPUTS,
   FOR_LISTBOX_HOST_DIRECTIVE_OUTPUTS,
 } from './listbox-host-directive';
+export type { WritingDirection } from 'forty-cdk/core';

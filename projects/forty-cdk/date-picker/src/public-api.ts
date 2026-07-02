@@ -28,3 +28,12 @@ export {
   FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS,
 } from './date-range-picker-host-directive';
+export type {
+  DateAdapter,
+  DateRange,
+  FloatingAlign,
+  FloatingSide,
+  VetoableEvent,
+  VetoableNativeEvent,
+  WritingDirection,
+} from 'forty-cdk/core';

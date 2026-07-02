@@ -15,6 +15,7 @@ import {
 
 import {
   type DateAdapter,
+  type DateRange,
   injectDateAdapter,
   adoptHostId,
   IdGenerator,
@@ -25,7 +26,6 @@ import {
 import { CalendarBounds } from './calendar-bounds';
 import {
   type CalendarDateLabelFormatter,
-  type CalendarDateRange,
   type CalendarMonthOption,
   type CalendarMonthRow,
   type CalendarView,
@@ -71,7 +71,7 @@ import { CalendarYearNavigator } from './calendar-year-navigator';
  *
  * `ForCalendar` is the grid widget, not a form value — it exposes `[(value)]`
  * as a `model<D | null>` in `selectionMode="single"` (default), and
- * `[(range)]` as a `model<CalendarDateRange<D> | null>` in
+ * `[(range)]` as a `model<DateRange<D> | null>` in
  * `selectionMode="range"`. The `FormValueControl<D>` contract arrives with the
  * follow-up `ForDatePicker` / `ForDateField`. See the primitive's README for a
  * complete styleless usage example.
@@ -168,7 +168,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * fires only when the calendar internally commits or clears a range, never
    * on consumer writes via `[(range)]`.
    */
-  readonly range = model<CalendarDateRange<D> | null>(null);
+  readonly range = model<DateRange<D> | null>(null);
 
   /**
    * Minimum inclusive day count for a range selection. A click that would

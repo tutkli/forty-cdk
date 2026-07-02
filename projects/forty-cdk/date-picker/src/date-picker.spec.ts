@@ -12,7 +12,7 @@ import {
 } from '../../src/test-utils';
 import { assertTimeCapable, type DateAdapter, FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
 import {
-  type CalendarDateRange,
+  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -1217,7 +1217,7 @@ describe('ForDatePicker', () => {
       `,
     })
     class RangePickerHost {
-      readonly range = signal<CalendarDateRange<Date> | null>(null);
+      readonly range = signal<DateRange<Date> | null>(null);
       readonly open = signal(false);
       readonly separator = signal(' – ');
     }

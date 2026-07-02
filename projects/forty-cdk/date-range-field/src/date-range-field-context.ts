@@ -20,7 +20,7 @@ export type DateRangeFieldSegment = FieldSegment;
  * Coordination surface `[forDateRangeField]` (the root) exposes to its two
  * endpoint groups (`[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]`). The
  * root owns the start / end segment engines and the composed
- * `CalendarDateRange` value; each endpoint reads its rendered segments, its
+ * `DateRange` value; each endpoint reads its rendered segments, its
  * accessible group label, and the {@link SegmentEditorContext} it provides to
  * its own segment / literal children.
  */

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { type CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
-import { type CalendarDateRange } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/date-range-field';
 import {
   ForDateRangeField,
   ForDateRangeFieldEnd,
@@ -128,7 +128,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
   `,
 })
 export class DateRangeFieldDefaultExample {
-  protected readonly value = signal<CalendarDateRange<CalendarDate> | null>({
+  protected readonly value = signal<DateRange<CalendarDate> | null>({
     start: today(getLocalTimeZone()),
     end: today(getLocalTimeZone()).add({ days: 5 }),
   });

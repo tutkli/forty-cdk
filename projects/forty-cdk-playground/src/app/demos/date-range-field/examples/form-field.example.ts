@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDate } from '@internationalized/date';
-import { type CalendarDateRange } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/date-range-field';
 import {
   ForDateRangeField,
   ForDateRangeFieldEnd,
@@ -12,7 +12,7 @@ import {
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 interface Booking {
-  readonly stay: CalendarDateRange<CalendarDate> | null;
+  readonly stay: DateRange<CalendarDate> | null;
 }
 
 @Component({

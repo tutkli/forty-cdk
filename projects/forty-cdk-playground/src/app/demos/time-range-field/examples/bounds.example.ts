@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
-import { type CalendarDateRange } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/time-range-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 import {
   ForTimeRangeField,
@@ -127,7 +127,7 @@ import {
   `,
 })
 export class TimeRangeFieldBoundsExample {
-  protected readonly value = signal<CalendarDateRange<CalendarDateTime> | null>({
+  protected readonly value = signal<DateRange<CalendarDateTime> | null>({
     start: new CalendarDateTime(2024, 6, 15, 10, 0),
     end: new CalendarDateTime(2024, 6, 15, 12, 30),
   });

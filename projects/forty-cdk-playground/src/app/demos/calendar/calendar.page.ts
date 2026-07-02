@@ -60,7 +60,7 @@ import readmeContent from '../../../../../forty-cdk/calendar/README.md';
 
       <playground-demo
         title="Range selection"
-        subtitle='Set <code>selectionMode="range"</code> and bind <code>[(range)]</code> to a <code>CalendarDateRange</code> signal. Click a first cell to anchor the range, move the pointer to preview, click a second cell to commit. Committed cells reflect <code>data-range-start</code> / <code>data-range-end</code> / <code>data-in-range</code>; the preview band uses <code>data-range-preview</code>.'
+        subtitle='Set <code>selectionMode="range"</code> and bind <code>[(range)]</code> to a <code>DateRange</code> signal. Click a first cell to anchor the range, move the pointer to preview, click a second cell to commit. Committed cells reflect <code>data-range-start</code> / <code>data-range-end</code> / <code>data-in-range</code>; the preview band uses <code>data-range-preview</code>.'
         sourcePath="calendar/examples/range.example.ts"
       >
         <app-calendar-range-example />

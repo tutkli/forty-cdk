@@ -19,3 +19,4 @@ export {
   FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
 } from './time-field-host-directive';
+export type { SegmentType, TimeCapableDateAdapter, WritingDirection } from 'forty-cdk/core';

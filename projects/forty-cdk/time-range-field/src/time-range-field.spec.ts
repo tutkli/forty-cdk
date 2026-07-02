@@ -3,11 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
-import {
-  type CalendarDateRange,
-  NativeDateAdapter,
-  provideNativeDateAdapter,
-} from 'forty-cdk/calendar';
+import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { ForTimeRangeField } from './time-range-field';
 import { ForTimeRangeFieldEnd, ForTimeRangeFieldStart } from './time-range-field-endpoint';
@@ -79,7 +75,7 @@ type Part = 'hour' | 'minute' | 'second' | 'dayPeriod';
   `,
 })
 class Host {
-  readonly value = signal<CalendarDateRange<Date> | null>(null);
+  readonly value = signal<DateRange<Date> | null>(null);
   readonly minTime = signal<Date | null>(null);
   readonly maxTime = signal<Date | null>(null);
   readonly hourCycle = signal<12 | 24 | null>(24);
@@ -429,7 +425,7 @@ describe('ForTimeRangeField', () => {
 
   describe('Signal Forms via [formField]', () => {
     interface Schedule {
-      hours: CalendarDateRange<Date> | null;
+      hours: DateRange<Date> | null;
     }
 
     @Component({
