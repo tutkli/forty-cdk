@@ -26,6 +26,9 @@ import { injectComboboxContext } from './combobox-context';
  * - **Tab** (when open) — close and let Tab flow to the next focusable.
  * - Printable keys: update `query` and (if `autocompleteMode` includes `'inline'`)
  *   complete the rest of the first match in the input as selected text.
+ * - During IME composition (`event.isComposing`) every keydown is ignored, so
+ *   the composition-confirm Enter and candidate-navigation arrows reach the IME
+ *   instead of activating an option or moving the activedescendant.
  */
 @Directive({
   selector: '[forComboboxInput]',
@@ -184,6 +187,10 @@ export class ForComboboxInput {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
+    if (event.isComposing) {
+      return;
+    }
+
     if (this.ctx.effectiveDisabled()) {
       return;
     }
