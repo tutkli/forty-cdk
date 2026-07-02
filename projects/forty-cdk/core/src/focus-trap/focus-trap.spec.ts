@@ -452,4 +452,81 @@ describe('FocusTrap', () => {
       expect(document.activeElement?.id).toBe('b2');
     });
   });
+
+  describe('CSS-hidden candidates', () => {
+    it('skips a display:none focusable on activate', () => {
+      container.innerHTML = `
+        <button id="b1" style="display:none">hidden</button>
+        <button id="b2">two</button>
+        <button id="b3">three</button>
+      `;
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(document.activeElement?.id).toBe('b2');
+    });
+
+    it('skips a visibility:hidden focusable on activate', () => {
+      container.innerHTML = `
+        <button id="b1" style="visibility:hidden">hidden</button>
+        <button id="b2">two</button>
+      `;
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(document.activeElement?.id).toBe('b2');
+    });
+
+    it('skips a focusable nested inside a display:none ancestor', () => {
+      container.innerHTML = `
+        <div style="display:none"><button id="b1">hidden</button></div>
+        <button id="b2">two</button>
+      `;
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(document.activeElement?.id).toBe('b2');
+    });
+
+    it('cycles Tab between the visible focusables when the first and last are CSS-hidden', () => {
+      container.innerHTML = `
+        <button id="b1" style="display:none">hidden first</button>
+        <button id="b2">two</button>
+        <button id="b3">three</button>
+        <button id="b4" style="display:none">hidden last</button>
+      `;
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      expect(document.activeElement?.id).toBe('b2');
+
+      const b3 = container.querySelector<HTMLElement>('#b3')!;
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b2');
+
+      const b2 = container.querySelector<HTMLElement>('#b2')!;
+      b2.focus();
+      document.dispatchEvent(tab(true));
+      expect(document.activeElement?.id).toBe('b3');
+    });
+
+    it('excludes a focusable hidden via CSS after activation once the observer fires', async () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const b1 = container.querySelector<HTMLElement>('#b1')!;
+      const b3 = container.querySelector<HTMLElement>('#b3')!;
+
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+
+      b1.style.display = 'none';
+      await flushMutationObserver();
+
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b2');
+    });
+  });
 });
