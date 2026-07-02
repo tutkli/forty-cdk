@@ -53,7 +53,7 @@ class MultiHost {
 
 function render() {
   const fixture = TestBed.createComponent(Host);
-  const probe = fixture.debugElement.children[0].children[0].injector.get(DirProbe);
+  const probe = fixture.debugElement.children[0]!.children[0]!.injector.get(DirProbe);
   const host = fixture.nativeElement.querySelector('[probeDir]') as HTMLElement;
   return { fixture, probe, host };
 }

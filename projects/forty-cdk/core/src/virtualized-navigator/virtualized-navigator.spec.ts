@@ -336,7 +336,7 @@ describe('VirtualizedNavigator', () => {
       h.navigator.prime();
 
       h.navigator.seedActive(2);
-      expect(items[2].host.scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(items[2]!.host.scrollIntoView).toHaveBeenCalledWith({ block: 'nearest' });
     });
 
     it('uses the injected scrollIntoView override instead of the host call', () => {
@@ -350,8 +350,8 @@ describe('VirtualizedNavigator', () => {
       h.navigator.prime();
 
       h.navigator.seedActive(2);
-      expect(override).toHaveBeenCalledWith(items[2].host);
-      expect(items[2].host.scrollIntoView).not.toHaveBeenCalled();
+      expect(override).toHaveBeenCalledWith(items[2]!.host);
+      expect(items[2]!.host.scrollIntoView).not.toHaveBeenCalled();
     });
   });
 });

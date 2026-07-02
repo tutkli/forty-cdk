@@ -2641,7 +2641,7 @@ describe('ForCombobox static option (issue #674)', () => {
         }
       </div>
       <output data-testid="sel">{{
-        cb.selected().length ? cb.selected()[0].label : 'none'
+        cb.selected().length ? cb.selected()[0]!.label : 'none'
       }}</output>
     `,
   })

@@ -2020,9 +2020,9 @@ describe('SSR smoke tests', () => {
     const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
     expect(root.getAttribute('role')).toBe('treegrid');
     const rows = Array.from(f.nativeElement.querySelectorAll('[forTableRow]')) as HTMLElement[];
-    const parentRow = rows[0];
-    const childRow = rows[1];
-    const leafRow = rows[2];
+    const parentRow = rows[0]!;
+    const childRow = rows[1]!;
+    const leafRow = rows[2]!;
     expect(parentRow.getAttribute('aria-expanded')).toBe('true');
     expect(parentRow.getAttribute('data-state')).toBe('open');
     expect(parentRow.getAttribute('aria-level')).toBe('1');

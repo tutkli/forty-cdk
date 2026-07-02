@@ -87,6 +87,7 @@
               "../core/src/**/*.spec.ts",
               "../button/src/**/*.spec.ts",
               "../dialog/src/**/*.spec.ts",
+              "../internationalized-date/src/**/*.spec.ts",
               "../virtualization/src/**/*.spec.ts"
             ]
           }

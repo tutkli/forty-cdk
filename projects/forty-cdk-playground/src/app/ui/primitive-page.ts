@@ -22,7 +22,7 @@ import { Icon } from './icon';
 
 function stripLeadingDescription(introHtml: string, description: string): string {
   const lead = /^\s*<p>([\s\S]*?)<\/p>\s*/.exec(introHtml);
-  if (lead && stripText(lead[1]) === description.trim()) {
+  if (lead && stripText(lead[1]!) === description.trim()) {
     return introHtml.slice(lead[0].length);
   }
   return introHtml;
@@ -214,7 +214,7 @@ export class PrimitivePage {
     if (index < 0) {
       return { title: 'Examples', slug: 'examples' };
     }
-    const section = this.#sections()[index];
+    const section = this.#sections()[index]!;
     return { title: section.title, slug: section.slug };
   });
 

@@ -125,6 +125,7 @@
     "button/src/**/*.spec.ts",
     "core/src/**/*.spec.ts",
     "dialog/src/**/*.spec.ts",
+    "internationalized-date/src/**/*.spec.ts",
     "virtualization/src/**/*.spec.ts"
   ]
 }

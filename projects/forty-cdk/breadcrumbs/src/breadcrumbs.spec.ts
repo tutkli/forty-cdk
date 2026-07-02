@@ -66,9 +66,9 @@ describe('ForBreadcrumbs', () => {
       ) as NodeListOf<HTMLElement>;
 
       expect(items.length).toBe(3);
-      expect(items[0].hasAttribute('aria-current')).toBe(false);
-      expect(items[1].hasAttribute('aria-current')).toBe(false);
-      expect(items[2].getAttribute('aria-current')).toBe('page');
+      expect(items[0]!.hasAttribute('aria-current')).toBe(false);
+      expect(items[1]!.hasAttribute('aria-current')).toBe(false);
+      expect(items[2]!.getAttribute('aria-current')).toBe('page');
     });
 
     it('drops aria-current when the current flag flips off', () => {

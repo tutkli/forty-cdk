@@ -91,7 +91,7 @@ function splitCells(row: string): string[] {
 }
 
 function parseTable(lines: readonly string[]): DocTableData {
-  const columns = splitCells(lines[0]).map((cell) => renderInline(cell));
+  const columns = splitCells(lines[0]!).map((cell) => renderInline(cell));
   const rows = lines.slice(2).map((line) =>
     splitCells(line).map((cell) => {
       const html = renderInline(cell);
@@ -116,7 +116,7 @@ function splitBlocks(body: string): DocBlock[] {
 
   let i = 0;
   while (i < lines.length) {
-    const line = lines[i];
+    const line = lines[i]!;
 
     if (isFenceLine(line)) {
       inFence = !inFence;
@@ -128,8 +128,8 @@ function splitBlocks(body: string): DocBlock[] {
     if (!inFence && line.includes('|') && line.trim() !== '' && isTableDelimiter(lines[i + 1])) {
       flushProse();
       const tableLines: string[] = [];
-      while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') {
-        tableLines.push(lines[i]);
+      while (i < lines.length && lines[i]!.includes('|') && lines[i]!.trim() !== '') {
+        tableLines.push(lines[i]!);
         i += 1;
       }
       blocks.push({ kind: 'table', table: parseTable(tableLines) });
@@ -153,7 +153,7 @@ function collectSubsections(blocks: readonly DocBlock[]): DocSubsection[] {
       continue;
     }
     for (const match of block.html.matchAll(SUBSECTION_RE)) {
-      subsections.push({ title: stripText(match[2]), slug: match[1] });
+      subsections.push({ title: stripText(match[2]!), slug: match[1]! });
     }
   }
   return subsections;
@@ -161,13 +161,13 @@ function collectSubsections(blocks: readonly DocBlock[]): DocSubsection[] {
 
 function stripLeadingHeading(lines: string[]): string[] {
   const result = [...lines];
-  while (result.length > 0 && result[0].trim() === '') {
+  while (result.length > 0 && result[0]!.trim() === '') {
     result.shift();
   }
-  if (result.length > 0 && /^#\s/.test(result[0])) {
+  if (result.length > 0 && /^#\s/.test(result[0]!)) {
     result.shift();
   }
-  while (result.length > 0 && result[0].trim() === '') {
+  while (result.length > 0 && result[0]!.trim() === '') {
     result.shift();
   }
   return result;

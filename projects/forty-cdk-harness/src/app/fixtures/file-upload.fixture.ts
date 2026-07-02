@@ -34,7 +34,7 @@ export class FileUploadFixture {
   protected onFiles(files: FileList): void {
     const names: string[] = [];
     for (let i = 0; i < files.length; i++) {
-      names.push(files[i].name);
+      names.push(files[i]!.name);
     }
     this.fileNames.set(names.join(','));
     this.fileCount.set(String(files.length));

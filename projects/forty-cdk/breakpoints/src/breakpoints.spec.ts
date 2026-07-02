@@ -79,8 +79,8 @@ class FakeMediaEnv {
   private evaluate(query: string): boolean {
     const min = /min-width:\s*([\d.]+)px/.exec(query);
     const max = /max-width:\s*([\d.]+)px/.exec(query);
-    const minOk = !min || this.width >= Number.parseFloat(min[1]);
-    const maxOk = !max || this.width <= Number.parseFloat(max[1]);
+    const minOk = !min || this.width >= Number.parseFloat(min[1]!);
+    const maxOk = !max || this.width <= Number.parseFloat(max[1]!);
     return minOk && maxOk;
   }
 }

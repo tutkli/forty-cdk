@@ -918,7 +918,7 @@ describe('ForTable', () => {
       expect(zeros.length).toBe(1);
       expect(zeros[0]).toBe(allCells[0]);
       for (let i = 1; i < allCells.length; i++) {
-        expect(allCells[i].getAttribute('tabindex')).toBe('-1');
+        expect(allCells[i]!.getAttribute('tabindex')).toBe('-1');
       }
     });
 
@@ -945,17 +945,17 @@ describe('ForTable', () => {
     it('aria-rowindex on data rows is 1-based', () => {
       const { el } = renderHost(GridTableHost);
       const rows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
-      expect(rows[0].getAttribute('aria-rowindex')).toBe('1');
-      expect(rows[1].getAttribute('aria-rowindex')).toBe('2');
-      expect(rows[2].getAttribute('aria-rowindex')).toBe('3');
+      expect(rows[0]!.getAttribute('aria-rowindex')).toBe('1');
+      expect(rows[1]!.getAttribute('aria-rowindex')).toBe('2');
+      expect(rows[2]!.getAttribute('aria-rowindex')).toBe('3');
     });
 
     it('aria-colindex on data cells of first row is 1-based', () => {
       const { el } = renderHost(GridTableHost);
       const firstRowCells = cells(el).slice(0, 3);
-      expect(firstRowCells[0].getAttribute('aria-colindex')).toBe('1');
-      expect(firstRowCells[1].getAttribute('aria-colindex')).toBe('2');
-      expect(firstRowCells[2].getAttribute('aria-colindex')).toBe('3');
+      expect(firstRowCells[0]!.getAttribute('aria-colindex')).toBe('1');
+      expect(firstRowCells[1]!.getAttribute('aria-colindex')).toBe('2');
+      expect(firstRowCells[2]!.getAttribute('aria-colindex')).toBe('3');
     });
 
     it('no index attrs in table mode', () => {
@@ -969,81 +969,81 @@ describe('ForTable', () => {
     it('ArrowRight moves focus to next cell, ArrowLeft moves back', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      const ev = press(allCells[0], 'ArrowRight');
+      const ev = press(allCells[0]!, 'ArrowRight');
       flush();
       expect(ev.defaultPrevented).toBe(true);
-      expect(allCells[1].getAttribute('data-highlighted')).toBe('');
-      expect(allCells[1].getAttribute('tabindex')).toBe('0');
-      expect(allCells[0].getAttribute('tabindex')).toBe('-1');
+      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
+      expect(allCells[0]!.getAttribute('tabindex')).toBe('-1');
 
-      press(allCells[1], 'ArrowLeft');
+      press(allCells[1]!, 'ArrowLeft');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
-      expect(allCells[0].getAttribute('tabindex')).toBe('0');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('tabindex')).toBe('0');
     });
 
     it('ArrowDown moves one row down, ArrowUp moves back', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0], 'ArrowDown');
+      press(allCells[0]!, 'ArrowDown');
       flush();
-      expect(allCells[3].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[3]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[3], 'ArrowUp');
+      press(allCells[3]!, 'ArrowUp');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('End moves to last cell in row, Home moves back to first', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0], 'End');
+      press(allCells[0]!, 'End');
       flush();
-      expect(allCells[2].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[2]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[2], 'Home');
+      press(allCells[2]!, 'Home');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('Ctrl+End moves to last cell of grid, Ctrl+Home moves to first', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0], 'End', { ctrlKey: true });
+      press(allCells[0]!, 'End', { ctrlKey: true });
       flush();
-      expect(allCells[8].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[8]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[8], 'Home', { ctrlKey: true });
+      press(allCells[8]!, 'Home', { ctrlKey: true });
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('PageDown moves to last cell, PageUp moves to first', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0], 'PageDown');
+      press(allCells[0]!, 'PageDown');
       flush();
-      expect(allCells[8].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[8]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[8], 'PageUp');
+      press(allCells[8]!, 'PageUp');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('edge does not wrap: ArrowUp from first cell does not move when roving is active', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0], 'ArrowDown');
+      press(allCells[0]!, 'ArrowDown');
       flush();
-      expect(allCells[3].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[3]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[3], 'ArrowUp');
+      press(allCells[3]!, 'ArrowUp');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[0], 'ArrowUp');
+      press(allCells[0]!, 'ArrowUp');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('RTL mirrors horizontal arrows', () => {
@@ -1051,13 +1051,13 @@ describe('ForTable', () => {
       instance.dir.set('rtl');
       flush();
       const allCells = cells(el);
-      press(allCells[0], 'ArrowLeft');
+      press(allCells[0]!, 'ArrowLeft');
       flush();
-      expect(allCells[1].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[1], 'ArrowRight');
+      press(allCells[1]!, 'ArrowRight');
       flush();
-      expect(allCells[0].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('disabled cell is skipped during navigation and reflects aria-disabled/data-disabled', () => {
@@ -1066,14 +1066,14 @@ describe('ForTable', () => {
       instance.disabledCol.set('b');
       flush();
       const allCells = cells(el);
-      const disabledCell = allCells[4];
+      const disabledCell = allCells[4]!;
       expect(disabledCell.getAttribute('aria-disabled')).toBe('true');
       expect(disabledCell.getAttribute('data-disabled')).toBe('');
       expect(disabledCell.getAttribute('tabindex')).toBe('-1');
 
-      press(allCells[1], 'ArrowDown');
+      press(allCells[1]!, 'ArrowDown');
       flush();
-      expect(allCells[7].getAttribute('data-highlighted')).toBe('');
+      expect(allCells[7]!.getAttribute('data-highlighted')).toBe('');
     });
   });
 
@@ -1837,9 +1837,9 @@ describe('ForTable', () => {
       );
       await flush();
       const headerCellsAfter = Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]'));
-      expect(headerCellsAfter[0].getAttribute('data-column')).toBe('role');
-      expect(headerCellsAfter[1].getAttribute('data-column')).toBe('name');
-      expect(headerCellsAfter[2].getAttribute('data-column')).toBe('dept');
+      expect(headerCellsAfter[0]!.getAttribute('data-column')).toBe('role');
+      expect(headerCellsAfter[1]!.getAttribute('data-column')).toBe('name');
+      expect(headerCellsAfter[2]!.getAttribute('data-column')).toBe('dept');
       const nameCell = el.querySelector<HTMLElement>('[forTableCell][data-column="name"]')!;
       expect(nameCell.getAttribute('aria-colindex')).toBe('2');
     });
@@ -1883,9 +1883,9 @@ describe('ForTable', () => {
       await flush();
       expect(instance.lastRow).toEqual({ from: 0, to: 1 });
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
-      expect(allRows[0].getAttribute('data-testid')).toBe('row-1');
-      expect(allRows[1].getAttribute('data-testid')).toBe('row-0');
-      expect(allRows[1].getAttribute('aria-rowindex')).toBe('2');
+      expect(allRows[0]!.getAttribute('data-testid')).toBe('row-1');
+      expect(allRows[1]!.getAttribute('data-testid')).toBe('row-0');
+      expect(allRows[1]!.getAttribute('aria-rowindex')).toBe('2');
     });
   });
 
@@ -2068,10 +2068,10 @@ describe('ForTable', () => {
     it('grid navigation reacts without Zone.js', () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0], 'ArrowRight');
+      press(allCells[0]!, 'ArrowRight');
       flush();
-      expect(allCells[1].getAttribute('data-highlighted')).toBe('');
-      expect(allCells[1].getAttribute('tabindex')).toBe('0');
+      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
     });
 
     it('toggling a row selector reflects aria-selected and data-selected without Zone.js', () => {
