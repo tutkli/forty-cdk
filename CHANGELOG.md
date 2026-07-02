@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-02
+
+### Added
+
+- **Table** — opt-in double-click auto-fit on the column resizer sizes a column to its widest data cell. `fitIncludesHeader` (paired with `[forTableColumnLabel]`) makes the fit also account for the header label width, and `fitToContent()` is exposed via `exportAs` for programmatic use.
+- **Toast** — toast viewports now coexist with an open modal dialog / drawer instead of being trapped behind it. `ForToastDefaults.overModal` (`'peer'` | `'inert'`) chooses, per scope, whether toasts stay interactive above the modal or become inert while it is open.
+- **Tooltip** — dismisses on pointer press (a new `'press'` close reason for instant teardown) and now opens on focus only for keyboard focus, not pointer focus.
+- **Virtualization** — `ForVirtualReorder` brings keyboard- and pointer-driven windowed drag-reorder to plain `*forVirtualFor` lists.
+- **Drag & Drop** — a single drag gesture can scrub-reorder onto far, not-yet-rendered virtualized rows by holding Shift near the viewport edge to window through the list.
+
+### Fixed
+
+- **Listbox** — a listbox rendered with a pre-seeded selection no longer triggers an `NG0950` error on first render.
+
 ## [0.5.0] - 2026-06-25
 
 ### Added
@@ -210,7 +224,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/tutkli/forty-cdk/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/tutkli/forty-cdk/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/tutkli/forty-cdk/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/tutkli/forty-cdk/compare/v0.2.0...v0.3.0
