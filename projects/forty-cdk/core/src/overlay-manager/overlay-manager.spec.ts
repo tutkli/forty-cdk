@@ -1,18 +1,23 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   createComponent,
   DestroyRef,
+  effect,
+  ErrorHandler,
   inject,
   Injectable,
   InjectionToken,
   Injector,
+  type OnInit,
   type Provider,
   provideZonelessChangeDetection,
   type Type,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { flush } from '../../../src/test-utils';
 import {
   OverlayManagerCore,
   type OverlayManagerEntry,
@@ -145,6 +150,88 @@ describe('OverlayManagerCore', () => {
     expect(a.isClosed()).toBe(true);
     expect(b.isClosed()).toBe(true);
     expect(manager.openCount()).toBe(0);
+  });
+
+  describe('open() from within change detection (NG0101 — #1138)', () => {
+    class CapturingErrorHandler implements ErrorHandler {
+      readonly errors: unknown[] = [];
+      handleError(error: unknown): void {
+        this.errors.push(error);
+      }
+    }
+
+    async function openIn(host: Type<unknown>): Promise<{
+      handler: CapturingErrorHandler;
+      manager: TestManager;
+    }> {
+      const handler = new CapturingErrorHandler();
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection(), { provide: ErrorHandler, useValue: handler }],
+      });
+      const manager = TestBed.inject(TestManager);
+      const fixture = TestBed.createComponent(host);
+      fixture.detectChanges();
+      await flush(fixture);
+      return { handler, manager };
+    }
+
+    @Component({
+      selector: 'effect-opener',
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: ``,
+    })
+    class EffectOpener {
+      constructor() {
+        const manager = inject(TestManager);
+        effect(() => {
+          manager.open();
+        });
+      }
+    }
+
+    @Component({
+      selector: 'oninit-opener',
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: ``,
+    })
+    class OnInitOpener implements OnInit {
+      readonly #manager = inject(TestManager);
+      ngOnInit(): void {
+        this.#manager.open();
+      }
+    }
+
+    @Component({
+      selector: 'after-render-opener',
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: ``,
+    })
+    class AfterRenderOpener {
+      constructor() {
+        const manager = inject(TestManager);
+        afterNextRender(() => {
+          manager.open();
+        });
+      }
+    }
+
+    it('does not throw NG0101 when open() runs inside effect()', async () => {
+      const { handler, manager } = await openIn(EffectOpener);
+      expect(handler.errors).toEqual([]);
+      expect(manager.openCount()).toBe(1);
+    });
+
+    it('does not throw NG0101 when open() runs inside ngOnInit', async () => {
+      const { handler, manager } = await openIn(OnInitOpener);
+      expect(handler.errors).toEqual([]);
+      expect(manager.openCount()).toBe(1);
+    });
+
+    it('does not throw NG0101 when open() runs inside afterNextRender', async () => {
+      const { handler, manager } = await openIn(AfterRenderOpener);
+      expect(handler.errors).toEqual([]);
+      expect(manager.openCount()).toBe(1);
+    });
   });
 
   describe('createInjectorFactory', () => {

@@ -1,7 +1,7 @@
-import { Component, inject, provideZonelessChangeDetection } from '@angular/core';
+import { Component, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, pressKey } from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, pressKey } from '../../src/test-utils';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
 import { ForDialogDescription } from './dialog-description';
@@ -859,6 +859,34 @@ describe('ForDialogManager (programmatic)', () => {
       } finally {
         boxEl.remove();
       }
+    });
+  });
+
+  describe('open() from within change detection (NG0101 — #1138)', () => {
+    @Component({ template: `` })
+    class EffectDialogOpener {
+      readonly #dialogs = inject(ForDialogManager);
+      readonly openNow = signal(false);
+      constructor() {
+        effect(() => {
+          if (this.openNow()) {
+            this.#dialogs.open(ConfirmDialog, { data: { message: 'from effect' } });
+          }
+        });
+      }
+    }
+
+    it('mounts a dialog opened from inside effect() on the next render', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(EffectDialogOpener);
+      fixture.detectChanges();
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+
+      fixture.componentInstance.openNow.set(true);
+      await flush(fixture);
+
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(document.querySelector('#message')?.textContent).toBe('from effect');
     });
   });
 });
