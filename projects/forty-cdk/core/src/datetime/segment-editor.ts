@@ -107,8 +107,18 @@ export interface SegmentEditorHost<P extends SegmentParts> {
    * or `null` to fall back to the default numeric reading.
    */
   valueText(type: SegmentType): string | null;
-  /** Composes the next parts into the field value (compose + clamp + write). */
-  commit(next: P): void;
+  /**
+   * Composes the next parts into the field value and writes it.
+   *
+   * `transient` is `true` for a mid-typing digit whose segment buffer has not
+   * yet settled (a non-final keystroke). A transient commit must compose the
+   * value **without** clamping it to the field bounds, so an intermediate
+   * out-of-range composition (e.g. a partially typed year) never snaps the
+   * value and rehydrates — and corrupts — the other already-typed segments. A
+   * settled commit (`false`: a completed digit / auto-advance, a step, a
+   * Home/End jump, a day-period toggle, or a clear) clamps to the bounds.
+   */
+  commit(next: P, transient: boolean): void;
 }
 
 /**
@@ -257,9 +267,9 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     }
     const num = Number(buffer);
     const valid = num >= min && num <= max;
-    this.#typing.set({ type, buffer });
-    this.#host.commit(this.#withPart(type, valid ? this.#toInternal(type, num) : null));
     const full = valid && (buffer.length >= spec.digits || num * 10 > max);
+    this.#typing.set({ type, buffer });
+    this.#host.commit(this.#withPart(type, valid ? this.#toInternal(type, num) : null), !full);
     if (full) {
       this.#typing.set(null);
       this.focusSibling(type, 1);
@@ -278,7 +288,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     const parts = this.#host.parts();
     const current = parts[type];
     if (current == null) {
-      this.#host.commit(this.#withPart(type, this.#host.seed(type)));
+      this.#host.commit(this.#withPart(type, this.#host.seed(type)), false);
       return;
     }
     let next: number;
@@ -296,7 +306,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       const range = this.#host.segmentMax(type) - min + 1;
       next = min + ((((current - min + delta) % range) + range) % range);
     }
-    this.#host.commit(this.#withPart(type, next));
+    this.#host.commit(this.#withPart(type, next), false);
   }
 
   goToBound(type: SegmentType, bound: 'min' | 'max'): void {
@@ -309,7 +319,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       return;
     }
     const display = bound === 'min' ? this.#host.segmentMin(type) : this.#host.segmentMax(type);
-    this.#host.commit(this.#withPart(type, this.#toInternal(type, display)));
+    this.#host.commit(this.#withPart(type, this.#toInternal(type, display)), false);
   }
 
   setDayPeriod(period: 'am' | 'pm'): void {
@@ -320,7 +330,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     const hour = this.#host.parts().hour ?? null;
     const pm = period === 'pm';
     const next = hour === null ? (pm ? 12 : 0) : pm ? (hour % 12) + 12 : hour % 12;
-    this.#host.commit(this.#withPart('hour', next));
+    this.#host.commit(this.#withPart('hour', next), false);
   }
 
   clear(type: SegmentType): void {
@@ -328,7 +338,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       return;
     }
     this.#typing.set(null);
-    this.#host.commit(this.#withPart(type, null));
+    this.#host.commit(this.#withPart(type, null), false);
   }
 
   focusSibling(type: SegmentType, step: -1 | 1): void {

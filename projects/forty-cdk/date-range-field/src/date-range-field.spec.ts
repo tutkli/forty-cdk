@@ -241,6 +241,21 @@ describe('ForDateRangeField', () => {
       expect(range.start.getTime()).toBe(new Date(2026, 5, 15).getTime());
       expect(range.end.getTime()).toBe(new Date(2026, 5, 20).getTime());
     });
+
+    it('keeps a committed endpoint day and month while retyping its year below minDate (#1129)', async () => {
+      const r = renderHost(Host);
+      r.instance.minDate.set(new Date(1900, 0, 1));
+      r.instance.value.set({ start: new Date(1980, 5, 15), end: new Date(1990, 5, 20) });
+      await flush(r.fixture);
+
+      await type(r, 'start', 'year', '1975');
+
+      const range = r.instance.value()!;
+      expect(range.start.getTime()).toBe(new Date(1975, 5, 15).getTime());
+      expect(range.end.getTime()).toBe(new Date(1990, 5, 20).getTime());
+      expect(seg(r, 'start', 'day').textContent?.trim()).toBe('15');
+      expect(seg(r, 'start', 'month').textContent?.trim()).toBe('06');
+    });
   });
 
   describe('ordering', () => {

@@ -1,4 +1,4 @@
-import { computed, linkedSignal, type Signal } from '@angular/core';
+import { computed, linkedSignal, signal, type Signal } from '@angular/core';
 
 import {
   assertTimeCapable,
@@ -156,6 +156,15 @@ export class DateFieldEngine<D> {
   readonly #editor: SegmentEditor<DateTimeParts>;
 
   /**
+   * Whether {@link composed} clamps to the bounds. `false` only during a
+   * mid-typing (transient) keystroke, so an intermediate out-of-range
+   * composition round-trips through `source` without snapping the value and
+   * rehydrating — and corrupting — the other typed segments. Settled edits
+   * restore it to `true`.
+   */
+  readonly #clampComposed = signal(true);
+
+  /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
    * entry carries the text to display: the formatted value when filled, the
    * placeholder while empty, or the literal separator.
@@ -163,7 +172,9 @@ export class DateFieldEngine<D> {
   readonly segments: Signal<readonly FieldSegment[]>;
 
   /** The composed value of the entered parts, or `null` while any segment is empty. */
-  readonly composed = computed<D | null>(() => this.#composeFrom(this.#parts()));
+  readonly composed = computed<D | null>(() =>
+    this.#composeFrom(this.#parts(), this.#clampComposed()),
+  );
 
   constructor(config: DateFieldEngineConfig<D>) {
     this.#config = config;
@@ -181,7 +192,7 @@ export class DateFieldEngine<D> {
       seed: (type) => this.#seed(type),
       placeholderFor: (type) => this.#placeholderFor(type),
       valueText: (type) => this.#valueText(type),
-      commit: (next) => this.#commitParts(next),
+      commit: (next, transient) => this.#commitParts(next, transient),
     });
     this.segments = this.#editor.segments;
   }
@@ -384,8 +395,13 @@ export class DateFieldEngine<D> {
     return { ...parts, day: maxDay };
   }
 
-  /** Composes a parts record into the value, clamped to the bounds, or `null` while incomplete. */
-  #composeFrom(parts: DateTimeParts): D | null {
+  /**
+   * Composes a parts record into the value, or `null` while incomplete. Clamps
+   * to the bounds only when `clamp` is `true` — a transient (mid-typing)
+   * composition stays unclamped so it round-trips through `source` losslessly
+   * and never rehydrates the other typed segments.
+   */
+  #composeFrom(parts: DateTimeParts, clamp: boolean): D | null {
     const granularity = this.#config.granularity();
     const needHour = granularity !== 'day';
     const needMinute = granularity === 'minute' || granularity === 'second';
@@ -409,6 +425,9 @@ export class DateFieldEngine<D> {
         needSecond ? parts.second! : 0,
       );
     }
+    if (!clamp) {
+      return created;
+    }
     return clampToBounds(
       this.#config.adapter,
       created,
@@ -417,9 +436,10 @@ export class DateFieldEngine<D> {
     );
   }
 
-  #commitParts(rawNext: DateTimeParts): void {
+  #commitParts(rawNext: DateTimeParts, transient: boolean): void {
     const next = this.#clampDay(rawNext);
+    this.#clampComposed.set(!transient);
     this.#parts.set(next);
-    this.#config.onCommit(this.#composeFrom(next));
+    this.#config.onCommit(this.#composeFrom(next, !transient));
   }
 }

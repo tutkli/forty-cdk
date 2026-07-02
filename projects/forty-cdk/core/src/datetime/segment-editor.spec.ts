@@ -64,6 +64,7 @@ class MockHost implements SegmentEditorHost<Parts> {
   readonly periodNames = signal({ am: 'AM', pm: 'PM' });
   readonly #parts = signal<Parts>({});
   readonly committed: Parts[] = [];
+  readonly transientFlags: boolean[] = [];
 
   parts(): Parts {
     return this.#parts();
@@ -93,8 +94,9 @@ class MockHost implements SegmentEditorHost<Parts> {
     return null;
   }
 
-  commit(next: Parts): void {
+  commit(next: Parts, transient: boolean): void {
     this.committed.push(next);
+    this.transientFlags.push(transient);
     this.#parts.set(next);
   }
 }
@@ -173,6 +175,19 @@ describe('SegmentEditor.typeDigit', () => {
     expect(host.committed).toEqual([]);
   });
 
+  it('commits a non-final digit as transient and a completing digit as settled', () => {
+    const { host, editor } = setup();
+    editor.typeDigit('day', 1);
+    editor.typeDigit('day', 5);
+    expect(host.transientFlags).toEqual([true, false]);
+  });
+
+  it('commits an auto-advancing single digit as settled', () => {
+    const { host, editor } = setup();
+    editor.typeDigit('month', 5);
+    expect(host.transientFlags).toEqual([false]);
+  });
+
   it('does nothing while disabled', () => {
     const { host, editor } = setup();
     host.disabled.set(true);
@@ -193,6 +208,13 @@ describe('SegmentEditor.step', () => {
     const { host, editor } = setup();
     editor.step('minute', 1);
     expect(host.parts().minute).toBe(0);
+  });
+
+  it('commits a step as a settled edit', () => {
+    const { host, editor } = setup();
+    host.setParts({ minute: 30 });
+    editor.step('minute', 1);
+    expect(host.transientFlags).toEqual([false]);
   });
 
   it('wraps minute past 59 back to 0', () => {
