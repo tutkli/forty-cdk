@@ -263,7 +263,33 @@ describe('ForDateField', () => {
       expect(r.instance.value()?.getTime()).toBe(new Date(2026, 11, 1).getTime());
     });
 
-    it('clamps a composed value up to minDate', async () => {
+    it('keeps every typed segment when an intermediate year composition falls below minDate (#1129)', async () => {
+      const r = renderHost(Host);
+      r.instance.minDate.set(new Date(1900, 0, 1));
+      await flush(r.fixture);
+      await type(r, 'day', '15');
+      await type(r, 'month', '06');
+      await type(r, 'year', '1990');
+      const value = r.instance.value()!;
+      expect(adapter.getYear(value)).toBe(1990);
+      expect(adapter.getMonth(value)).toBe(6);
+      expect(adapter.getDate(value)).toBe(15);
+    });
+
+    it('composes the same in-range date when the year is typed first (#1129)', async () => {
+      const r = renderHost(Host);
+      r.instance.minDate.set(new Date(1900, 0, 1));
+      await flush(r.fixture);
+      await type(r, 'year', '1990');
+      await type(r, 'day', '15');
+      await type(r, 'month', '06');
+      const value = r.instance.value()!;
+      expect(adapter.getYear(value)).toBe(1990);
+      expect(adapter.getMonth(value)).toBe(6);
+      expect(adapter.getDate(value)).toBe(15);
+    });
+
+    it('clamps a fully entered below-min date up to minDate', async () => {
       const r = renderHost(Host);
       r.instance.minDate.set(new Date(2026, 11, 10));
       await flush(r.fixture);

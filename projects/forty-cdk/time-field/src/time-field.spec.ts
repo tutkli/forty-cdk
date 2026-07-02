@@ -232,6 +232,17 @@ describe('ForTimeField', () => {
       expect(adapter.getHours(value)).toBe(17);
       expect(adapter.getMinutes(value)).toBe(0);
     });
+
+    it('keeps the typed minute when the hour is entered last below minTime (#1129)', async () => {
+      const r = renderHost(Host);
+      r.instance.minTime.set(new Date(2000, 0, 1, 9, 0));
+      await flush(r.fixture);
+      await type(r, 'minute', '45');
+      await type(r, 'hour', '09');
+      const value = r.instance.value()!;
+      expect(adapter.getHours(value)).toBe(9);
+      expect(adapter.getMinutes(value)).toBe(45);
+    });
   });
 
   describe('keyboard editing', () => {
