@@ -148,8 +148,13 @@ export class ForDraggable implements ForDraggableContext {
         onCommit: () => this.#onPointerCommit(),
         onCancel: () => this.#onPointerCancel(),
       });
-      this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
-      this.#destroyRef.onDestroy(() => this.#clearPlaceholder());
+      this.#destroyRef.onDestroy(() => {
+        if (this.lifted()) {
+          this.#list.cancel();
+        }
+        this.#pointerSession?.destroy();
+        this.#clearPlaceholder();
+      });
     }
   }
 

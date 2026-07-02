@@ -1238,4 +1238,94 @@ describe('ForDropList + ForDraggable', () => {
       }
     });
   });
+
+  describe('destroy mid-drag', () => {
+    function firePointer(
+      target: HTMLElement,
+      type: 'pointerdown' | 'pointermove' | 'pointerup',
+      clientX: number,
+      clientY: number,
+    ): void {
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX,
+          clientY,
+          pointerId: 1,
+          button: 0,
+          pointerType: 'mouse',
+        }),
+      );
+    }
+
+    it('removing the lifted item mid-pointer-drag resets the list, drops the preview, and a later lift still works', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+
+      firePointer(first, 'pointerdown', 0, 0);
+      firePointer(first, 'pointermove', 20, 0);
+      fixture.detectChanges();
+      expect(first.hasAttribute('data-dragging')).toBe(true);
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(1);
+
+      comp.rows.set([
+        { id: 2, label: 'Beta' },
+        { id: 3, label: 'Gamma' },
+      ]);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      expect(listEl(el).hasAttribute('data-dragging')).toBe(false);
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(0);
+
+      const second = itemEl(el, 2);
+      second.focus();
+      pressKey(second, ' ');
+      fixture.detectChanges();
+      expect(second.hasAttribute('data-dragging')).toBe(true);
+      expect(listEl(el).hasAttribute('data-dragging')).toBe(true);
+    });
+
+    it('destroying the whole list mid-pointer-drag removes the floating preview from document.body', () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const first = itemEl(el, 1);
+
+      firePointer(first, 'pointerdown', 0, 0);
+      firePointer(first, 'pointermove', 20, 0);
+      fixture.detectChanges();
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(1);
+
+      fixture.destroy();
+
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(0);
+    });
+
+    it('zoneless: removing the lifted item mid-pointer-drag resets the list and drops the preview', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SingleListHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+
+      firePointer(first, 'pointerdown', 0, 0);
+      firePointer(first, 'pointermove', 20, 0);
+      fixture.detectChanges();
+      expect(first.hasAttribute('data-dragging')).toBe(true);
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(1);
+
+      comp.rows.set([
+        { id: 2, label: 'Beta' },
+        { id: 3, label: 'Gamma' },
+      ]);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      expect(listEl(el).hasAttribute('data-dragging')).toBe(false);
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(0);
+    });
+  });
 });
