@@ -848,6 +848,47 @@ describe('ForDatePicker', () => {
       expect(r.instance.value()!.getTime()).toBe(max.getTime());
     });
 
+    it('keeps the picked day when a time segment is cleared then retyped (#1130)', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30));
+      await open(r);
+
+      pressKey(timeSeg('minute'), 'Backspace');
+      await flush(r.fixture);
+
+      const afterClear = r.instance.value();
+      expect(afterClear).not.toBeNull();
+      expect(adapter.getDate(afterClear!)).toBe(15);
+
+      pressKey(timeSeg('minute'), 'ArrowUp');
+      await flush(r.fixture);
+
+      const value = r.instance.value()!;
+      expect(adapter.getYear(value)).toBe(2026);
+      expect(adapter.getMonth(value)).toBe(6);
+      expect(adapter.getDate(value)).toBe(15);
+      expect(adapter.getHours(value)).toBe(14);
+    });
+
+    it('grafts a time entered before any day onto today, never the sentinel (#1130)', async () => {
+      const r = renderHost(DateTimeHost);
+      await open(r);
+
+      pressKey(timeSeg('hour'), '1');
+      pressKey(timeSeg('hour'), '4');
+      pressKey(timeSeg('minute'), '3');
+      pressKey(timeSeg('minute'), '0');
+      await flush(r.fixture);
+
+      const value = r.instance.value();
+      expect(value).not.toBeNull();
+      expect(adapter.getYear(value!)).toBe(2026);
+      expect(adapter.getMonth(value!)).toBe(6);
+      expect(adapter.getDate(value!)).toBe(15);
+      expect(adapter.getHours(value!)).toBe(14);
+      expect(adapter.getMinutes(value!)).toBe(30);
+    });
+
     it('renders the value with its time component', async () => {
       const r = renderHost(DateTimeHost);
       r.instance.value.set(new Date(2026, 5, 20, 14, 30));
