@@ -177,6 +177,23 @@ describe('ForRadioGroup', () => {
       expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
       expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
     });
+
+    it('falls back to the first enabled radio when the selected radio is disabled', () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.options.set([
+        { value: 'red', label: 'Red', disabled: true },
+        { value: 'green', label: 'Green', disabled: false },
+        { value: 'blue', label: 'Blue', disabled: false },
+      ]);
+      fixture.componentInstance.color.set('red');
+      flush();
+
+      const tabindexes = ['red', 'green', 'blue'].map((v) =>
+        radioOf(el, v).getAttribute('tabindex'),
+      );
+      expect(tabindexes).toEqual(['-1', '0', '-1']);
+      expect(tabindexes.filter((t) => t === '0')).toHaveLength(1);
+    });
   });
 
   describe('click selection', () => {
