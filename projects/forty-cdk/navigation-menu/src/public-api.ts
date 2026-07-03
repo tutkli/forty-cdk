@@ -22,4 +22,4 @@ export {
   provideForNavigationMenuDefaults,
   type ForNavigationMenuDefaults,
 } from './navigation-menu-defaults';
-export type { WritingDirection } from 'forty-cdk/core';
+export type { ListNavigationAction, WritingDirection } from 'forty-cdk/core';

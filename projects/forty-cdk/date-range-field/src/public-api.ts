@@ -24,4 +24,10 @@ export {
   type FieldGranularity,
   type SegmentType as DateTimeSegmentType,
 } from 'forty-cdk/core';
-export type { DateAdapter, DateRange, WritingDirection } from 'forty-cdk/core';
+export type {
+  DateAdapter,
+  DateRange,
+  FieldSegment,
+  SegmentEditorContext,
+  WritingDirection,
+} from 'forty-cdk/core';

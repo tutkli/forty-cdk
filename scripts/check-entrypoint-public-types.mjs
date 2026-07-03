@@ -9,19 +9,6 @@ const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
 const CORE_SPECIFIER = 'forty-cdk/core';
 const IGNORED_FILES = new Set(['forty-cdk.d.ts', 'forty-cdk-core.d.ts']);
 
-const CONTRACT_TYPES = new Set([
-  'VetoableEvent',
-  'VetoableNativeEvent',
-  'FloatingSide',
-  'FloatingAlign',
-  'DateRange',
-  'WritingDirection',
-  'DateAdapter',
-  'TimeCapableDateAdapter',
-  'SegmentType',
-  'FieldGranularity',
-]);
-
 if (!existsSync(TYPES_DIR)) {
   console.error(
     `[check-entrypoint-public-types] ${TYPES_DIR} not found — run \`pnpm build\` first.`,
@@ -129,7 +116,7 @@ function analyze(fileName, text) {
 
   visit(sf);
 
-  return [...used].filter((name) => CONTRACT_TYPES.has(name) && !reexported.has(name)).sort();
+  return [...used].filter((name) => !reexported.has(name)).sort();
 }
 
 const failures = [];
@@ -147,7 +134,7 @@ for (const file of readdirSync(TYPES_DIR)) {
 
 if (failures.length) {
   console.error(
-    `[check-entrypoint-public-types] FAIL — ${failures.length} entry point(s) reference core-declared contract types in their public API without re-exporting them:`,
+    `[check-entrypoint-public-types] FAIL — ${failures.length} entry point(s) reference core-declared types in their public API without re-exporting them:`,
   );
   for (const { entry, missing } of failures.sort((a, b) => a.entry.localeCompare(b.entry))) {
     console.error(`  forty-cdk/${entry}: ${missing.join(', ')}`);
@@ -159,5 +146,5 @@ if (failures.length) {
 }
 
 console.log(
-  `[check-entrypoint-public-types] OK — ${checked} entry points; every core-declared contract type in a public signature is re-exported from its own barrel.`,
+  `[check-entrypoint-public-types] OK — ${checked} entry points; every core-declared type in a public signature is re-exported from its own barrel.`,
 );

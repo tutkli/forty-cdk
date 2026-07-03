@@ -12,4 +12,9 @@ export {
   provideForToolbarDefaults,
   type ForToolbarDefaults,
 } from './toolbar-defaults';
-export type { WritingDirection } from 'forty-cdk/core';
+export type {
+  HostRovingItemHandle,
+  ListNavigationAction,
+  RovingTabindex,
+  WritingDirection,
+} from 'forty-cdk/core';

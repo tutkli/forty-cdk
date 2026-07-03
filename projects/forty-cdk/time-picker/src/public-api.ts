@@ -24,6 +24,7 @@ export { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './
 export type {
   FloatingAlign,
   FloatingSide,
+  ListNavigationAction,
   TimeCapableDateAdapter,
   VetoableEvent,
   VetoableNativeEvent,

@@ -10,4 +10,15 @@ export {
   provideForMenubarDefaults,
   type ForMenubarDefaults,
 } from './menubar-defaults';
-export type { FloatingAlign, FloatingSide, WritingDirection } from 'forty-cdk/core';
+export type {
+  FloatingAlign,
+  FloatingSide,
+  ForMenuCloseReason,
+  ForMenuContext,
+  ForMenuItemHandle,
+  ListNavigationAction,
+  MenuActivationModality,
+  MenuSiblingNavigator,
+  RovingTabindex,
+  WritingDirection,
+} from 'forty-cdk/core';
