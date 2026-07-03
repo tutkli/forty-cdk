@@ -33,14 +33,16 @@ import { injectMenubarContext } from './menubar-context';
  * reads the right values when this trigger's menu is the one currently
  * open.
  *
- * Keyboard:
- * - **Click / Enter / Space** — toggle this trigger's menu (focus first item on open).
- * - **ArrowDown** — open and focus first item.
- * - **ArrowUp** — open and focus last item.
- * - **ArrowLeft / ArrowRight** — move focus across sibling triggers (RTL inverts).
+ * Keyboard (orientation-aware):
+ * - **Click** — toggle this trigger's menu (focus first item on open).
+ * - **Enter / Space** — open this trigger's menu, focusing the first item.
+ * - **Horizontal bar** — ArrowDown opens (first item), ArrowUp opens (last item);
+ *   ArrowLeft / ArrowRight move focus across sibling triggers (RTL inverts).
+ * - **Vertical bar** — ArrowUp / ArrowDown move focus across sibling triggers;
+ *   ArrowRight (ArrowLeft in RTL) opens the menu, focusing the first item.
  * - **Home / End** — jump to first / last enabled trigger.
- * - **Typeahead** — printable keys focus the first sibling trigger whose label
- *   starts with the buffered string.
+ * - **Typeahead** — printable keys focus the sibling trigger whose label matches
+ *   the buffered string, anchored on the focused trigger and cycling.
  *
  * While some other trigger's menu is open, hovering this trigger opens it
  * immediately (no delay) — "first open is intentional, subsequent
@@ -175,23 +177,34 @@ export class ForMenubarTrigger {
     if (this.effectiveDisabled()) {
       return;
     }
+    const orientation = this.menubar.orientation();
+    const dir = this.menubar.dir();
+
     // Open / focus-on-open first.
-    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+    if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this.menubar.openTrigger(this.value(), 'first');
       return;
     }
-    if (event.key === 'ArrowUp') {
+    if (orientation === 'horizontal') {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.menubar.openTrigger(this.value(), 'first');
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.menubar.openTrigger(this.value(), 'last');
+        return;
+      }
+    } else if (event.key === (dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight')) {
       event.preventDefault();
-      this.menubar.openTrigger(this.value(), 'last');
+      this.menubar.openTrigger(this.value(), 'first');
       return;
     }
 
     // Trigger-row navigation (cross-axis to the open key, per APG).
-    const action = resolveListNavigation(event, {
-      orientation: this.menubar.orientation(),
-      dir: this.menubar.dir(),
-    });
+    const action = resolveListNavigation(event, { orientation, dir });
     if (action) {
       event.preventDefault();
       this.menubar.navigateTriggers(this.#host.nativeElement, action);

@@ -103,6 +103,20 @@ class MenubarWithSubmenuHost {
   readonly recent = signal(false);
 }
 
+@Component({
+  imports: [ForMenubar, ForMenubarTrigger],
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file">File</button>
+      <button forMenubarTrigger value="format">Format</button>
+      <button forMenubarTrigger value="edit">Edit</button>
+    </div>
+  `,
+})
+class MenubarTypeaheadHost {
+  readonly open = signal<string>('');
+}
+
 /**
  * Builds a pointer event with an explicit `pointerType`. jsdom's
  * `PointerEvent` constructor doesn't populate `pointerType` from its init
@@ -462,6 +476,94 @@ describe('ForMenubar', () => {
       pressKey(triggers[0]!, 'v');
       await flush(r.fixture);
       expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('anchors on the focused trigger and cycles past it to the next same-initial sibling', async () => {
+      const r = renderHost(MenubarTypeaheadHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+
+      pressKey(triggers[0]!, 'f');
+      await flush(r.fixture);
+      expect(triggers[1]!.getAttribute('tabindex')).toBe('0');
+
+      pressKey(triggers[1]!, 'f');
+      await flush(r.fixture);
+      expect(triggers[0]!.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('vertical orientation', () => {
+    async function renderVertical(dir: 'ltr' | 'rtl' = 'ltr') {
+      const r = renderHost(MenubarHost);
+      r.instance.orientation.set('vertical');
+      r.instance.dir.set(dir);
+      await flush(r.fixture);
+      return r;
+    }
+
+    it('ArrowDown moves focus to the next trigger without opening a menu', async () => {
+      const r = await renderVertical();
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('');
+      expect(triggers[1]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowUp moves focus to the previous trigger, wrapping with loop', async () => {
+      const r = await renderVertical();
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowUp');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('');
+      expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('ArrowRight opens the focused trigger on the first item (LTR)', async () => {
+      const r = await renderVertical();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      const event = pressKey(file, 'ArrowRight');
+      await flush(r.fixture);
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe('file');
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('ArrowLeft does not open a menu (LTR)', async () => {
+      const r = await renderVertical();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('');
+    });
+
+    it('ArrowLeft opens the focused trigger on the first item (RTL)', async () => {
+      const r = await renderVertical('rtl');
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      const event = pressKey(file, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(event.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe('file');
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('Enter opens the focused trigger regardless of orientation', async () => {
+      const r = await renderVertical();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'Enter');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('Space opens the focused trigger regardless of orientation', async () => {
+      const r = await renderVertical();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, ' ');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
     });
   });
 

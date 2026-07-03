@@ -16,7 +16,13 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
   imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
   template: `
     <input data-testid="before" placeholder="before-menubar" />
-    <div forMenubar [(value)]="open" [dismissible]="dismissible()" aria-label="Main">
+    <div
+      forMenubar
+      [(value)]="open"
+      [orientation]="orientation()"
+      [dismissible]="dismissible()"
+      aria-label="Main"
+    >
       @for (menu of menus; track menu.value) {
         <button [attr.data-testid]="'trigger-' + menu.value" forMenubarTrigger [value]="menu.value">
           {{ menu.label }}
@@ -50,6 +56,17 @@ export class MenubarFixture {
    */
   protected readonly dismissible = computed(
     () => this.#route.snapshot.queryParamMap.get('dismissible') !== 'false',
+  );
+
+  /**
+   * `?orientation=vertical` renders a vertical menubar so the E2E suite can
+   * assert the orientation-aware keyboard model (Up/Down navigate triggers,
+   * ArrowRight opens).
+   */
+  protected readonly orientation = computed<'horizontal' | 'vertical'>(() =>
+    this.#route.snapshot.queryParamMap.get('orientation') === 'vertical'
+      ? 'vertical'
+      : 'horizontal',
   );
 
   protected readonly menus = [
