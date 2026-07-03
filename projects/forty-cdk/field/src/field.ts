@@ -1,4 +1,4 @@
-import { computed, Directive, inject, signal } from '@angular/core';
+import { computed, Directive, inject, isDevMode, signal } from '@angular/core';
 
 import { adoptHostId, IdGenerator, FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
@@ -47,9 +47,9 @@ export class ForField implements ForFieldContext {
 
   readonly #controlId = signal(this.#idGen.next('for-field-control'));
   readonly #control = signal<FieldControlHandle | null>(null);
-  readonly #hasLabel = signal(false);
-  readonly #hasDescription = signal(false);
-  readonly #hasError = signal(false);
+  readonly #labelCount = signal(0);
+  readonly #descriptionCount = signal(0);
+  readonly #errorCount = signal(0);
 
   /**
    * The element the field actually targets for `id` / `aria-*` association and
@@ -96,7 +96,7 @@ export class ForField implements ForFieldContext {
   readonly touched = computed(() => this.#control()?.touched?.() ?? false);
 
   /** Resolved `aria-labelledby` for the control (label id, or null). */
-  readonly labelledBy = computed(() => (this.#hasLabel() ? this.labelId() : null));
+  readonly labelledBy = computed(() => (this.#labelCount() > 0 ? this.labelId() : null));
 
   /**
    * Resolved `aria-describedby`: the description id always, plus the error id
@@ -106,10 +106,10 @@ export class ForField implements ForFieldContext {
    */
   readonly describedBy = computed(() => {
     const ids: string[] = [];
-    if (this.#hasDescription()) {
+    if (this.#descriptionCount() > 0) {
       ids.push(this.descriptionId());
     }
-    if (this.#hasError() && this.invalid()) {
+    if (this.#errorCount() > 0 && this.invalid()) {
       ids.push(this.errorId());
     }
     return ids.length > 0 ? ids.join(' ') : null;
@@ -117,7 +117,7 @@ export class ForField implements ForFieldContext {
 
   /** Resolved `aria-errormessage`: the error id when present and invalid, else null. */
   readonly errorMessageId = computed(() =>
-    this.#hasError() && this.invalid() ? this.errorId() : null,
+    this.#errorCount() > 0 && this.invalid() ? this.errorId() : null,
   );
 
   /** Register the control whose state the field reflects. */
@@ -138,27 +138,46 @@ export class ForField implements ForFieldContext {
   }
 
   /**
-   * Mark the label slot present; returns an unregister callback. The field
-   * targets a single label per slot — its `labelId` / `descriptionId` /
-   * `errorId` are single ids, not id lists — so one `[forLabel]`,
-   * `[forFieldDescription]`, and `[forFieldError]` per field is the supported
-   * shape. Presence is a boolean, not a count.
+   * Register the label slot; returns an unregister callback. The field targets
+   * a single label per slot — its `labelId` / `descriptionId` / `errorId` are
+   * single ids, not id lists — so one `[forLabel]`, `[forFieldDescription]`,
+   * and `[forFieldError]` per field is the supported shape. Registrations are
+   * counted (mirroring `ForFieldset`'s legend counting), so unmounting one of
+   * several accidental duplicates never drops the association while another is
+   * still mounted; a duplicate emits a dev-mode warning.
    */
   registerLabel(): () => void {
-    this.#hasLabel.set(true);
-    return () => this.#hasLabel.set(false);
+    this.#labelCount.update((n) => n + 1);
+    this.#warnDuplicateSlot(this.#labelCount(), 'forLabel', 'labelId');
+    return () => this.#labelCount.update((n) => n - 1);
   }
 
-  /** Mark the description slot present; returns an unregister callback. See {@link registerLabel} for the single-instance-per-slot contract. */
+  /** Register the description slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
   registerDescription(): () => void {
-    this.#hasDescription.set(true);
-    return () => this.#hasDescription.set(false);
+    this.#descriptionCount.update((n) => n + 1);
+    this.#warnDuplicateSlot(this.#descriptionCount(), 'forFieldDescription', 'descriptionId');
+    return () => this.#descriptionCount.update((n) => n - 1);
   }
 
-  /** Mark the error slot present; returns an unregister callback. See {@link registerLabel} for the single-instance-per-slot contract. */
+  /** Register the error slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
   registerError(): () => void {
-    this.#hasError.set(true);
-    return () => this.#hasError.set(false);
+    this.#errorCount.update((n) => n + 1);
+    this.#warnDuplicateSlot(this.#errorCount(), 'forFieldError', 'errorId');
+    return () => this.#errorCount.update((n) => n - 1);
+  }
+
+  /**
+   * Dev-mode diagnostic: warn when more than one directive claims a slot that
+   * maps to a single shared id, which would produce duplicate DOM ids and
+   * unstable aria wiring. No-op in production and for the first registration.
+   */
+  #warnDuplicateSlot(count: number, selector: string, idName: string): void {
+    if (isDevMode() && count > 1) {
+      console.warn(
+        `[forty-cdk/field] A [forField] supports a single [${selector}], but ${count} are registered. ` +
+          `They share one ${idName}, producing duplicate DOM ids and unstable aria wiring — keep one per field.`,
+      );
+    }
   }
 
   /**

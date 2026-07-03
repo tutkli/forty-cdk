@@ -7,12 +7,13 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 ## Anatomy
 
 ```html
-<div forField>
+<div forField #field="forField">
   <label forLabel>Email address</label>
   <input forFieldControl type="email" required />
   <p forFieldDescription>We'll only use this to send receipts.</p>
-  <!-- rendered only while err.shown() is true -->
+  @if (field.invalid()) {
   <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
+  }
 </div>
 ```
 
@@ -33,6 +34,8 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 You render them; the field handles the ARIA. The error id is wired into `aria-errormessage` (and folded into `aria-describedby`) only while the control is invalid.
 
+Gate the region's `@if` on the field's `invalid()` (exposed via the `[forField]` export, `#field="forField"`) or on the bound Signal Forms field — **not** on a reference to `ForFieldError` itself, which is block-scoped to the `@if` body and so can't appear in the condition that mounts it.
+
 ## Examples
 
 ```ts
@@ -45,11 +48,11 @@ import { ForSwitch } from 'forty-cdk/switch';
   selector: 'demo-field',
   imports: [ForField, ForLabel, ForFieldDescription, ForFieldError, ForSwitch, FormField],
   template: `
-    <div forField class="field">
+    <div forField class="field" #field="forField">
       <label forLabel class="field-label">Notifications</label>
       <button forSwitch [formField]="settings.notify"></button>
       <p forFieldDescription>We'll only email you about security.</p>
-      @if (err.shown()) {
+      @if (field.invalid()) {
         <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
       }
     </div>
@@ -102,12 +105,12 @@ Hint / description (`[forFieldDescription]`). Adopts the field's `descriptionId`
 
 Error region (`[forFieldError]`, `role="alert"`). Reads the control's Signal Forms errors automatically and exposes them as signals.
 
-| Property    | Type                        | Description                                                      |
-| ----------- | --------------------------- | ---------------------------------------------------------------- |
-| `errors`    | `Signal<ValidationError[]>` | The control's current raw validation errors.                     |
-| `messages`  | `Signal<readonly string[]>` | Human-readable messages derived from `errors`.                   |
-| `hasErrors` | `Signal<boolean>`           | `true` when the control has at least one error.                  |
-| `shown`     | `Signal<boolean>`           | `true` when the control is invalid and has errors. Drives `@if`. |
+| Property    | Type                        | Description                                        |
+| ----------- | --------------------------- | -------------------------------------------------- |
+| `errors`    | `Signal<ValidationError[]>` | The control's current raw validation errors.       |
+| `messages`  | `Signal<readonly string[]>` | Human-readable messages derived from `errors`.     |
+| `hasErrors` | `Signal<boolean>`           | `true` when the control has at least one error.    |
+| `shown`     | `Signal<boolean>`           | `true` when the control is invalid and has errors. |
 
 ### `ForFieldControl`
 

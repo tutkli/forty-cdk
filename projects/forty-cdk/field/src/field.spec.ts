@@ -84,6 +84,52 @@ describe('ForField', () => {
     });
   });
 
+  describe('duplicate slot registration', () => {
+    @Component({
+      imports: [ForField, ForFieldDescription, ForSwitch],
+      template: `
+        <div forField data-test-id="field">
+          <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+          @if (showFirst()) {
+            <p forFieldDescription data-test-id="desc1">One.</p>
+          }
+          @if (showSecond()) {
+            <p forFieldDescription data-test-id="desc2">Two.</p>
+          }
+        </div>
+      `,
+    })
+    class DupHost {
+      readonly checked = signal(false);
+      readonly showFirst = signal(true);
+      readonly showSecond = signal(true);
+    }
+
+    it('warns in dev mode when a second description claims the single slot', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(DupHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/field]');
+      expect(warn.mock.calls[0]![0]).toContain('forFieldDescription');
+    });
+
+    it('keeps aria-describedby until the last duplicate unmounts (not the last-registered)', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(DupHost);
+      const control = q(el, 'control');
+      expect(control.hasAttribute('aria-describedby')).toBe(true);
+
+      fixture.componentInstance.showSecond.set(false);
+      await flush();
+      expect(control.hasAttribute('aria-describedby')).toBe(true);
+
+      fixture.componentInstance.showFirst.set(false);
+      await flush();
+      expect(control.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+
   describe('state reflection', () => {
     @Component({
       imports: [ForField, ForFieldError, ForSwitch],

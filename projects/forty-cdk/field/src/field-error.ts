@@ -17,15 +17,20 @@ function extractMessage(error: ValidationError.WithOptionalFieldTree): string {
  * validation errors automatically** — the consumer renders `messages()` (or
  * the raw `errors()`) without any manual plumbing.
  *
- * Carries `role="alert"`. Drive its presence with `@if (err.shown())` (or the
- * field's own `invalid()`); when unmounted the control's `aria-errormessage`
- * drops automatically.
+ * Carries `role="alert"`. Gate its mount on the field's `invalid()` (exposed via
+ * the `[forField]` export, or the bound Signal Forms field) — a template
+ * reference to this directive is block-scoped to the `@if` body, so it cannot
+ * appear in the condition that mounts it. When unmounted the control's
+ * `aria-errormessage` drops automatically.
  *
  * @example
  * ```html
- * @if (err.shown()) {
- *   <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
- * }
+ * <div forField #field="forField">
+ *   <!-- label / control / description … -->
+ *   @if (field.invalid()) {
+ *     <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
+ *   }
+ * </div>
  * ```
  */
 @Directive({
