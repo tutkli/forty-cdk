@@ -25,6 +25,7 @@ import {
 } from 'forty-cdk/core';
 import {
   FOR_TABLE_CONTEXT,
+  type ForTableCellHandle,
   type ForTableContext,
   type ForTableRowHandle,
   type TableMode,
@@ -42,6 +43,8 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
   'prev-row',
   'first',
   'last',
+  'page-up',
+  'page-down',
 ]);
 
 /**
@@ -156,7 +159,9 @@ export class ForTable implements ForTableContext {
   protected readonly headerSize = injectElementSize(this.#headerRowEl);
 
   readonly #rows = new Collection<ForTableRowHandle>();
+  readonly #headerCells = new Collection<ForTableCellHandle>();
   readonly #roving = new RovingTabindex();
+  readonly #enteredCell = signal<HTMLElement | null>(null);
 
   /** Live registered data rows, exposed to `[forTableVirtualized]`'s cross-window navigation bridge. */
   readonly rows = this.#rows.items;
@@ -171,9 +176,57 @@ export class ForTable implements ForTableContext {
   readonly reorderingRowIndex = this.#reorderingRow.asReadonly();
   readonly virtualRowNavigation = this.#virtualNav.asReadonly();
 
-  readonly #flatCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
-  readonly #cols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
+  readonly #headerCellHosts = computed(() => this.#headerCells.items());
+  readonly #dataCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
+  readonly #dataCols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
+
+  /**
+   * Whether the registered header cells form a complete grid row that can join the
+   * body's roving grid. True when at least one header cell registered and the count
+   * matches the data column count (or there are no data rows yet). When header cells
+   * yield their tab stop to a co-located `[forDraggable]`, they do not register, so a
+   * partially-draggable header row is excluded — the header's own reorder roving owns
+   * it — keeping the composite grid's row-major geometry correct.
+   */
+  readonly #headerParticipates = computed(() => {
+    if (this.mode() === 'table') {
+      return false;
+    }
+    const headerCount = this.#headerCellHosts().length;
+    if (headerCount === 0) {
+      return false;
+    }
+    const dataCols = this.#dataCols();
+    return dataCols === 0 || headerCount === dataCols;
+  });
+
+  readonly headerParticipatesInRoving = this.#headerParticipates;
+
+  /**
+   * The composite roving grid: the header cells (as grid row 0, when they form a
+   * complete row) followed by the data cells in row-major order, so the table exposes
+   * a single tab stop and arrow navigation crosses between the header and the body.
+   */
+  readonly #flatCells = computed<readonly ForTableCellHandle[]>(() =>
+    this.#headerParticipates()
+      ? [...this.#headerCellHosts(), ...this.#dataCells()]
+      : this.#dataCells(),
+  );
+  readonly #cols = computed(() => {
+    const dataCols = this.#dataCols();
+    return dataCols > 0 ? dataCols : this.#headerCellHosts().length;
+  });
   readonly #firstEnabledCell = computed(() => firstEnabledHost(this.#flatCells()));
+
+  /** Whether the header row participates in the row-index space (a header row is registered, non-table mode). */
+  readonly #hasHeaderRowIndex = computed(
+    () => this.mode() !== 'table' && this.#headerRowEl() !== null,
+  );
+
+  /** 1-based row offset ARIA applies to data rows because the header row occupies index 1. */
+  readonly dataRowIndexOffset = computed(() => (this.#hasHeaderRowIndex() ? 1 : 0));
+
+  readonly headerRowIndex = computed<number | null>(() => (this.#hasHeaderRowIndex() ? 1 : null));
 
   readonly #registeredValues = computed<readonly unknown[]>(() =>
     this.#rows
@@ -222,7 +275,9 @@ export class ForTable implements ForTableContext {
   });
 
   protected readonly rowCountAttr = computed<number | null>(() =>
-    this.mode() === 'table' ? null : (this.rowCount() ?? this.#rows.items().length),
+    this.mode() === 'table'
+      ? null
+      : (this.rowCount() ?? this.#rows.items().length) + this.dataRowIndexOffset(),
   );
   protected readonly colCountAttr = computed<number | null>(() =>
     this.mode() === 'table' ? null : (this.colCount() ?? this.#cols()),
@@ -291,6 +346,25 @@ export class ForTable implements ForTableContext {
     return this.#firstEnabledCell() === host ? 0 : -1;
   }
 
+  registerHeaderCell(handle: ForTableCellHandle): void {
+    this.#headerCells.register(handle);
+  }
+
+  unregisterHeaderCell(handle: ForTableCellHandle): void {
+    this.#headerCells.unregister(handle);
+  }
+
+  headerCellTabIndex(host: HTMLElement): 0 | -1 {
+    if (!this.#headerParticipates()) {
+      return -1;
+    }
+    return this.cellTabIndex(host);
+  }
+
+  headerCellIndexOf(host: HTMLElement): number {
+    return this.#headerCells.indexOfHost(host);
+  }
+
   isCellHighlighted(host: HTMLElement): boolean {
     return this.#roving.active() === host;
   }
@@ -333,6 +407,12 @@ export class ForTable implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
+    if (this.#handleCellEntryKeydown(event, host)) {
+      return;
+    }
+    if (event.target !== host) {
+      return;
+    }
     if (this.#handleSelectionKeydown(event, host)) {
       return;
     }
@@ -340,6 +420,31 @@ export class ForTable implements ForTableContext {
       return;
     }
     this.#handleGridNavigationKeydown(event, host);
+  }
+
+  /**
+   * APG grid cell-entry mode: Enter or F2 on a focused cell moves focus into the
+   * cell's first interactive widget; Escape returns focus to the owning cell.
+   * Returns `true` when the event was consumed.
+   */
+  #handleCellEntryKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
+    if ((event.key === 'Enter' || event.key === 'F2') && event.target === host) {
+      const target = firstFocusableInCell(host);
+      if (!target) {
+        return false;
+      }
+      event.preventDefault();
+      this.#enteredCell.set(host);
+      target.focus();
+      return true;
+    }
+    if (event.key === 'Escape' && this.#enteredCell() === host && event.target !== host) {
+      event.preventDefault();
+      this.#enteredCell.set(null);
+      host.focus();
+      return true;
+    }
+    return false;
   }
 
   #handleSelectionKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
@@ -409,7 +514,14 @@ export class ForTable implements ForTableContext {
       ROW_CROSSING_ACTIONS.has(action)
     ) {
       const col = currentIndex < 0 ? 0 : currentIndex % cols;
-      const target = resolveCrossWindowRowTarget(action, fromRow, col, total, cols);
+      const target = resolveCrossWindowRowTarget(
+        action,
+        fromRow,
+        col,
+        total,
+        cols,
+        this.#pageSize(),
+      );
       if (target !== null) {
         navigation.navigateTo(target.row, target.col);
       }
@@ -418,6 +530,7 @@ export class ForTable implements ForTableContext {
 
     const next = moveGridIndex(currentIndex < 0 ? 0 : currentIndex, cells.length, action, {
       cols,
+      pageSize: this.#pageSize(),
       isDisabled: (i) => cells[i]!.disabled(),
     });
     if (next === null) {
@@ -425,13 +538,47 @@ export class ForTable implements ForTableContext {
     }
     this.#roving.focusActive(cells[next]!.host);
   }
+
+  /**
+   * Rows a PageUp / PageDown moves. One page is the number of rendered data rows
+   * — in a virtualized grid that is the visible window (plus overscan), so paging
+   * a 100k-row grid advances by a screenful rather than teleporting to an end. A
+   * lone-row window still advances by at least one row.
+   */
+  #pageSize(): number {
+    return Math.max(1, this.#rows.items().length);
+  }
 }
+
+/** Finds the first tabbable descendant of a grid cell for APG Enter / F2 cell entry. */
+function firstFocusableInCell(cell: HTMLElement): HTMLElement | null {
+  const candidates = cell.querySelectorAll<HTMLElement>(CELL_FOCUSABLE_SELECTOR);
+  for (const candidate of candidates) {
+    if (candidate === cell || candidate.hasAttribute('hidden')) {
+      continue;
+    }
+    return candidate;
+  }
+  return null;
+}
+
+const CELL_FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled]):not([type="hidden"])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+  '[contenteditable="true"]',
+].join(',');
 
 /**
  * Resolves the absolute `(row, 0-based column)` target for a row-crossing grid
  * action against the true `total` row count. Arrow row-moves preserve the
- * current column; `first` / `last` jump to the first / last cell of the whole
- * grid. Returns `null` when the move would step past the dataset bounds.
+ * current column; `page-up` / `page-down` move by `pageSize` rows (clamped to
+ * the dataset bounds) preserving the column; `first` / `last` jump to the first
+ * / last cell of the whole grid. Returns `null` when the move would not change
+ * the focused row.
  */
 function resolveCrossWindowRowTarget(
   action: GridNavigationAction,
@@ -439,12 +586,21 @@ function resolveCrossWindowRowTarget(
   col: number,
   total: number,
   cols: number,
+  pageSize: number,
 ): { row: number; col: number } | null {
   switch (action) {
     case 'next-row':
       return fromRow + 1 < total ? { row: fromRow + 1, col } : null;
     case 'prev-row':
       return fromRow - 1 >= 0 ? { row: fromRow - 1, col } : null;
+    case 'page-down': {
+      const row = Math.min(total - 1, fromRow + Math.max(1, pageSize));
+      return row > fromRow ? { row, col } : null;
+    }
+    case 'page-up': {
+      const row = Math.max(0, fromRow - Math.max(1, pageSize));
+      return row < fromRow ? { row, col } : null;
+    }
     case 'first':
       return { row: 0, col: 0 };
     case 'last':

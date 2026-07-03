@@ -68,14 +68,20 @@ export type GridNavigationAction =
   | 'first'
   | 'last'
   | 'first-in-row'
-  | 'last-in-row';
+  | 'last-in-row'
+  | 'page-up'
+  | 'page-down';
 
 export interface GridNavigationOptions {
   /** Number of columns in the grid. Required. */
   cols: number;
   /** Reading direction. RTL swaps ArrowLeft/ArrowRight. Default `'ltr'`. */
   dir?: WritingDirection;
-  /** PageUp / PageDown map to first / last when true. Default `false`. */
+  /**
+   * PageUp / PageDown map to `page-up` / `page-down` when true. Default `false`.
+   * APG grid semantics move focus by one page of rows while keeping the current
+   * column, unlike a 1D list where paging jumps to the ends.
+   */
   pageKeys?: boolean;
 }
 
@@ -84,6 +90,8 @@ export interface GridNavigationOptions {
  *
  * APG: `Ctrl+Home` / `Ctrl+End` jump to the first / last cell of the entire
  * grid. Plain `Home` / `End` go to the first / last cell of the current row.
+ * `PageUp` / `PageDown` (when `pageKeys` is enabled) page up / down by whole
+ * rows while preserving the current column — they do not jump to the grid ends.
  */
 export function resolveGridNavigation(
   event: KeyboardEvent,
@@ -105,9 +113,9 @@ export function resolveGridNavigation(
     case 'End':
       return event.ctrlKey ? 'last' : 'last-in-row';
     case 'PageUp':
-      return pageKeys ? 'first' : null;
+      return pageKeys ? 'page-up' : null;
     case 'PageDown':
-      return pageKeys ? 'last' : null;
+      return pageKeys ? 'page-down' : null;
     default:
       return null;
   }
@@ -149,6 +157,11 @@ export function moveIndex(
 
 export interface MoveGridIndexOptions extends MoveIndexOptions {
   cols: number;
+  /**
+   * Number of rows a `page-up` / `page-down` action moves. Required for those
+   * actions; ignored otherwise. Values below `1` are treated as `1`.
+   */
+  pageSize?: number;
 }
 
 /**
@@ -163,6 +176,10 @@ export interface MoveGridIndexOptions extends MoveIndexOptions {
  *   disabled cell. The last row may be incomplete; if the column doesn't exist
  *   there, falls back to the last filled cell of that row. When `loop=true` the
  *   row index wraps top-to-bottom; otherwise the search stops at the grid edge.
+ * - `page-up` / `page-down`: moves up / down by `pageSize` rows in the same
+ *   column, clamped to the first / last row (no loop). If the landing cell is
+ *   disabled, keeps stepping toward the grid edge one row at a time until an
+ *   enabled cell is found.
  * - `first` / `last`: first / last enabled cell overall.
  * - `first-in-row` / `last-in-row`: row extremes.
  *
@@ -187,6 +204,31 @@ export function moveGridIndex(
       return scanFirstEnabled(0, count, 1, isDisabled);
     case 'last':
       return scanFirstEnabled(count - 1, count, -1, isDisabled);
+    case 'page-up':
+    case 'page-down': {
+      const direction = action === 'page-down' ? 1 : -1;
+      const pageSize = Math.max(1, Math.floor(options.pageSize ?? 1));
+      const col = colOf(current);
+      const currentRow = rowOf(current);
+      const edgeRow = direction === 1 ? totalRows - 1 : 0;
+      let row = currentRow + direction * pageSize;
+      row = Math.min(totalRows - 1, Math.max(0, row));
+      for (;;) {
+        const rowStart = row * cols;
+        const rowEnd = Math.min(rowStart + cols, count);
+        const target = rowStart + col < rowEnd ? rowStart + col : rowEnd - 1;
+        if (target === current) {
+          return null;
+        }
+        if (!isDisabled || !isDisabled(target)) {
+          return target;
+        }
+        if (row === edgeRow) {
+          return null;
+        }
+        row += direction;
+      }
+    }
     case 'first-in-row': {
       const row = rowOf(current);
       const start = row * cols;

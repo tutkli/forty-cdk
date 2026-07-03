@@ -86,6 +86,38 @@ export interface ForTableContext {
   registerHeaderRow(el: HTMLElement): void;
   /** Unregisters the header row's host. Reference-based; safe to call if never registered. */
   unregisterHeaderRow(el: HTMLElement): void;
+  /**
+   * Registers a header cell so it joins the roving-navigation grid as the grid's
+   * first row, giving the table a single composite tab stop shared with the data
+   * cells. No-op in `mode="table"` (header cells are then static structure).
+   */
+  registerHeaderCell(handle: ForTableCellHandle): void;
+  /** Unregisters a header cell. Reference-based. */
+  unregisterHeaderCell(handle: ForTableCellHandle): void;
+  /**
+   * 1-based `aria-rowindex` for the header row in `grid` / `treegrid` mode (always
+   * `1`, since ARIA counts the header row as the grid's first row), or `null` in
+   * `mode="table"` where no row index space exists.
+   */
+  readonly headerRowIndex: Signal<number | null>;
+  /**
+   * Offset ARIA adds to every data row's 1-based `aria-rowindex` so the numbering
+   * counts the header row: `1` when a header row participates in the row-index
+   * space (`grid` / `treegrid` mode with a registered header row), else `0`.
+   */
+  readonly dataRowIndexOffset: Signal<number>;
+  /** Roving `tabindex` (`0` for the single tab stop, `-1` otherwise) for a header cell in grid mode. */
+  headerCellTabIndex(host: HTMLElement): 0 | -1;
+  /** 0-based index of a header cell host among registered header cells in DOM order, or -1 if not registered. */
+  headerCellIndexOf(host: HTMLElement): number;
+  /**
+   * Whether the registered header cells form a complete row that joins the body's
+   * roving composite grid (`grid` / `treegrid` mode, header cell count matches the
+   * data column count). `false` in `table` mode, when no header cells registered, or
+   * when the header row is a column-reorder row (some cells yield to a draggable) —
+   * in which case the header keeps its own standalone tab stops.
+   */
+  readonly headerParticipatesInRoving: Signal<boolean>;
   /** Registers a data row so it joins the row index space and the navigation grid. */
   registerRow(handle: ForTableRowHandle): void;
   /** Unregisters a data row. Reference-based. */
@@ -203,6 +235,17 @@ export const FOR_TABLE_ROW_CONTEXT = new InjectionToken<ForTableRowContext>(
  */
 export function coerceSticky(value: boolean | string): TableStickyValue {
   return value === 'end' ? 'end' : booleanAttribute(value);
+}
+
+/**
+ * Whether a header-cell host carries a drag-drop reorder affordance
+ * (`[forDraggable]` or `[forFreeDrag]`). Detected by DOM marker rather than a
+ * value-import of the drag-drop context, so the sort header and header cell can
+ * yield their roving `tabindex` to the draggable's own tab stop without a
+ * cross-primitive value dependency (only consumers importing drag-drop bundle it).
+ */
+export function hostHasDraggable(el: HTMLElement): boolean {
+  return el.hasAttribute('forDraggable') || el.hasAttribute('forFreeDrag');
 }
 
 export function injectTableContext(piece: string): ForTableContext {

@@ -1,19 +1,37 @@
-import { Directive, ElementRef, inject, input, signal } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, type Signal, signal } from '@angular/core';
 
-import { coerceSticky, injectTableContext, type TableStickyValue } from './table-context';
+import { registerHandle } from 'forty-cdk/core';
+import {
+  coerceSticky,
+  type ForTableCellHandle,
+  hostHasDraggable,
+  injectTableContext,
+  type TableStickyValue,
+} from './table-context';
 
 /**
  * Marks a header cell (`role="columnheader"`). Requires a `name` input that
  * identifies the column — reflected as `data-column` for later phases (sort,
  * resize, reorder) to key off. Optionally sticky via the `sticky` input.
+ *
+ * In `grid` / `treegrid` mode the header cell joins the roving-navigation grid
+ * as a cell of the grid's first row, so the header and body share a single
+ * composite tab stop and Arrow keys navigate between them. The active header
+ * cell carries `tabindex="0"` (others `-1`), reflects `data-highlighted` when
+ * focused, and carries a 1-based `aria-colindex`.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
   exportAs: 'forTableHeaderCell',
   host: {
     role: 'columnheader',
+    '[attr.tabindex]': 'tabindex()',
+    '[attr.aria-colindex]': 'colIndex()',
     '[attr.data-column]': 'name()',
     '[attr.data-sticky]': "sticky() ? (sticky() === 'end' ? 'end' : '') : null",
+    '[attr.data-highlighted]': 'highlighted() ? "" : null',
+    '(focus)': 'onFocus()',
+    '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForTableHeaderCell {
@@ -26,11 +44,42 @@ export class ForTableHeaderCell {
    * selector attribute is not reflected onto the wrapper's host element.
    */
   readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #host = this.el.nativeElement;
 
   /** Column identifier, reflected as `data-column`. Required by later phases (sort, resize, reorder). */
   readonly name = input.required<string>();
 
   readonly #labelEl = signal<HTMLElement | null>(null);
+
+  /** Header cells are never disabled; exposed so the roving grid can treat them uniformly with data cells. */
+  readonly #disabled = signal(false);
+
+  /**
+   * A co-located affordance (e.g. `[forTableSortHeader]`) that needs the header
+   * cell to be a standalone `tabindex="0"` tab stop whenever it is not part of the
+   * body's roving composite grid — that is, in `mode="table"`, or in a
+   * column-reorder header row where the header does not join the roving grid. The
+   * header cell is the single owner of the host `tabindex` — sibling directives
+   * never bind it — so it reflects this intent instead of letting a second
+   * `[tabindex]` binding fight it on the same element.
+   */
+  readonly #standaloneTabStop = signal<Signal<boolean> | null>(null);
+
+  /**
+   * Registers an intent that makes this header cell a `tabindex="0"` tab stop when
+   * it is not participating in the roving composite grid. Called by
+   * `[forTableSortHeader]` so the two never bind `[tabindex]` on the same host.
+   */
+  registerStandaloneTabStop(active: Signal<boolean>): void {
+    this.#standaloneTabStop.set(active);
+  }
+
+  /** Clears a previously registered standalone tab-stop intent. Reference-based. */
+  unregisterStandaloneTabStop(active: Signal<boolean>): void {
+    if (this.#standaloneTabStop() === active) {
+      this.#standaloneTabStop.set(null);
+    }
+  }
 
   /**
    * The element a descendant `[forTableColumnLabel]` marks as this column's label
@@ -60,4 +109,53 @@ export class ForTableHeaderCell {
    * provides the `data-sticky` hook.
    */
   readonly sticky = input(false as TableStickyValue, { transform: coerceSticky });
+
+  /** `true` when a `[forDraggable]` shares this cell and owns its tab stop / keyboard handling instead. */
+  readonly #yieldsToDraggable = hostHasDraggable(this.#host);
+
+  /** `true` when this cell is a roving cell of the body's composite grid. */
+  readonly #inRovingGrid = computed(
+    () => !this.#yieldsToDraggable && this.ctx.headerParticipatesInRoving(),
+  );
+
+  protected readonly tabindex = computed<0 | -1 | null>(() => {
+    if (this.#yieldsToDraggable) {
+      return null;
+    }
+    if (this.#inRovingGrid()) {
+      return this.ctx.headerCellTabIndex(this.#host);
+    }
+    return this.#standaloneTabStop()?.() ? 0 : null;
+  });
+
+  protected readonly colIndex = computed<number | null>(() =>
+    this.#inRovingGrid() ? this.ctx.headerCellIndexOf(this.#host) + 1 : null,
+  );
+
+  protected readonly highlighted = computed(
+    () => this.#inRovingGrid() && this.ctx.isCellHighlighted(this.#host),
+  );
+
+  constructor() {
+    if (!this.#yieldsToDraggable) {
+      const handle: ForTableCellHandle = { host: this.#host, disabled: this.#disabled };
+      registerHandle(
+        handle,
+        (h) => this.ctx.registerHeaderCell(h),
+        (h) => this.ctx.unregisterHeaderCell(h),
+      );
+    }
+  }
+
+  protected onFocus(): void {
+    if (this.#inRovingGrid()) {
+      this.ctx.activateCell(this.#host);
+    }
+  }
+
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (this.#inRovingGrid()) {
+      this.ctx.handleCellKeydown(event, this.#host);
+    }
+  }
 }
