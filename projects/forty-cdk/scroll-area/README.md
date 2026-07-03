@@ -131,6 +131,12 @@ The resolved writing direction is reflected on the root via the native `dir` att
 
 The actual scrolling element. Hides native scrollbars and reports scroll position and geometry to the root. Carries no `data-*` attributes.
 
+| Property    | Type             | Description                                                                                                                                                                                            |
+| ----------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `focusable` | `input<boolean>` | Whether the viewport is a keyboard tab stop. When `true`, emits `tabindex="0"` so the scroll container is focusable and gets native keyboard scrolling. Set `false` to opt out.<br>**Default:** `true` |
+
+Reflects `tabindex="0"` while `focusable` is `true`; no `tabindex` attribute when `false`.
+
 ### `ForScrollAreaContent`
 
 Marks the content element inside the viewport so its size changes drive the synthetic scrollbar. Carries no `data-*` attributes.
@@ -199,7 +205,7 @@ Filler in the corner where horizontal and vertical scrollbars meet. Shows only w
   With `type="always"` the vertical track's grid column is always filled, so the viewport width stays constant whether or not the content overflows — no reflow when it crosses the boundary. The `position: absolute` layout in the [Examples](#examples) section above is the right default for `auto` / `hover` / `scroll`, where an overlaid self-hiding scrollbar is the desired look.
 
 - **Native scrollbars are hidden globally on `[forScrollAreaViewport]`** via an injected `<style>` tag. If you need to opt out (e.g. for a debug build), remove `#for-scroll-area-hide-native` from the head — but that defeats the primitive's purpose.
-- **Keyboard scrolling stays native.** PageUp / PageDown / arrows / Tab still scroll the viewport because the underlying element keeps `overflow: scroll`. The thumb is just a visual + drag affordance.
+- **Keyboard scrolling is native, via a focusable viewport.** `[forScrollAreaViewport]` carries `tabindex="0"` by default, so it is a tab stop and the browser gives the focused overflow container native arrow / PageUp / PageDown / Home / End / Space scrolling — this works in every browser, including Safari (which, unlike Chrome/Firefox, does not make a non-focusable overflow container keyboard-scrollable). The thumb is just a visual + drag affordance. If the projected content already holds focusable elements and you don't want the extra tab stop, set `[focusable]="false"` on the viewport.
 - **Drag uses pointer-capture** so the cursor doesn't lose the thumb if it briefly leaves the track. The `pointermove` / `pointerup` listeners are attached to the owner document (capture still routes them there), and an in-flight drag pins the track `data-state="visible"` and painted — so a drag is never silently aborted if the scrollbar would otherwise self-hide mid-gesture (e.g. a `type="scroll"` fade, or a consumer `display: none` on `[data-state="hidden"]`).
 - **RTL is handled on the horizontal axis.** When the root resolves to `dir="rtl"`, the horizontal thumb starts pinned to the right edge of the track and a leftward drag scrolls the content forward (the browser's native negative-`scrollLeft` model). Set the direction the standard way — `[dir]` on the root or an ancestor `dir` attribute.
 - **Minimum thumb size is 8px**, matching common UI conventions for very long content.
@@ -208,7 +214,17 @@ Filler in the corner where horizontal and vertical scrollbars meet. Shows only w
 
 ## Accessibility
 
-The synthetic scrollbars are purely visual and drag affordances — they carry no ARIA roles. The underlying `[forScrollAreaViewport]` element retains native scroll behavior (keyboard PageUp/PageDown/arrows/Tab still work), so keyboard users are unaffected. The corner element is removed from the accessibility tree via the `hidden` attribute when not visible.
+The synthetic scrollbars are purely visual and drag affordances — they carry no ARIA roles. The corner element is removed from the accessibility tree via the `hidden` attribute when not visible.
+
+`[forScrollAreaViewport]` is focusable by default (`tabindex="0"`), so keyboard users can Tab to the scroll container and scroll it with the arrow keys / PageUp / PageDown / Home / End / Space in every browser — including Safari, which does not make a non-focusable overflow container keyboard-scrollable. Because the viewport is now a tab stop, **recommend** giving it `role="region"` plus an accessible label so screen-reader users know what the focusable container is:
+
+```html
+<div forScrollAreaViewport role="region" aria-label="Release notes">
+  <div forScrollAreaContent>… long content …</div>
+</div>
+```
+
+The label may instead point at a visible heading with `aria-labelledby`. The library does not force a `role` on the viewport: a `role="region"` without an accessible name is itself an accessibility anti-pattern, and only the consumer knows the content's name — so the role and label stay opt-in. If the projected content is already a labelled, keyboard-focusable region, set `[focusable]="false"` on the viewport to avoid a redundant tab stop.
 
 ## Styling
 

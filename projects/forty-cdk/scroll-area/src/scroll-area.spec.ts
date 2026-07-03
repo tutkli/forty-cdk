@@ -53,6 +53,18 @@ class ScrollAreaHost {
 })
 class ScrollAreaHostNoContent {}
 
+@Component({
+  imports: [ForScrollArea, ForScrollAreaViewport],
+  template: `
+    <div forScrollArea>
+      <div forScrollAreaViewport [focusable]="focusable()" data-testid="viewport"></div>
+    </div>
+  `,
+})
+class ScrollAreaFocusableHost {
+  readonly focusable = signal(true);
+}
+
 // A bare root with a viewport so the content ResizeObserver wiring runs. The
 // root directive instance is surfaced via a `viewChild` so the wiring tests can
 // drive `registerContent` / `unregisterContent` / `noteUserScroll` directly —
@@ -297,6 +309,45 @@ describe('ForScrollArea', () => {
       // The pending timeout was cleared on destroy; advancing past the delay
       // must not fire a stray callback on the destroyed directive.
       expect(() => vi.advanceTimersByTime(1_000)).not.toThrow();
+    });
+  });
+
+  describe('viewport keyboard focusability', () => {
+    it('emits tabindex="0" on the viewport by default so it is a keyboard tab stop', () => {
+      const { query } = renderHost(ScrollAreaHost);
+      const viewport = query<HTMLElement>('[forScrollAreaViewport]')!;
+      expect(viewport.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('removes the tab stop (no tabindex attribute) when [focusable]="false"', async () => {
+      const { fixture, query, flush } = renderHost(ScrollAreaFocusableHost);
+      const viewport = query<HTMLElement>('[data-testid="viewport"]')!;
+      expect(viewport.getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.focusable.set(false);
+      await flush();
+      expect(viewport.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('zoneless: toggling [focusable] reflects the tabindex without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(ScrollAreaFocusableHost);
+      await flush(fixture);
+
+      const viewport = fixture.nativeElement.querySelector(
+        '[data-testid="viewport"]',
+      ) as HTMLElement;
+      expect(viewport.getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.focusable.set(false);
+      await flush(fixture);
+      expect(viewport.hasAttribute('tabindex')).toBe(false);
+
+      fixture.componentInstance.focusable.set(true);
+      await flush(fixture);
+      expect(viewport.getAttribute('tabindex')).toBe('0');
     });
   });
 
