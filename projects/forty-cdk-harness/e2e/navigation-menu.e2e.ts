@@ -262,6 +262,22 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expect(el(page, 'active')).toHaveText('none');
   });
 
+  test('Escape in an unrelated input leaves a hover-opened panel alone', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu');
+
+    await el(page, 'before').click();
+    await expectFocused(el(page, 'before'));
+
+    await hoverTo(page, el(page, 'trigger-products'));
+    await expect(el(page, 'content-products')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(el(page, 'content-products')).toBeVisible();
+    await expectFocused(el(page, 'before'));
+    await expect(el(page, 'active')).toHaveText('products');
+  });
+
   test('Tab from inside an open panel closes it once focus leaves the nav', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');
 
