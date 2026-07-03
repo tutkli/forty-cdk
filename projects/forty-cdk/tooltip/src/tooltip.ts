@@ -1,15 +1,13 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
   DestroyRef,
   Directive,
-  DOCUMENT,
   inject,
   input,
   model,
   numberAttribute,
-  PLATFORM_ID,
+  output,
   signal,
 } from '@angular/core';
 
@@ -21,14 +19,15 @@ import {
   createHoverIntent,
   type HoverIntentScheduler,
   adoptHostId,
+  emitVetoableNativeEvent,
   IdGenerator,
   injectPrefersReducedMotion,
   attachPointerGrace,
-  attachScrollDismiss,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
-  type ScrollDismiss,
+  ScrollDismissDispatcher,
+  type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
   FOR_TOOLTIP_CONTEXT,
@@ -249,6 +248,15 @@ export class ForTooltip implements ForTooltipContext {
   );
 
   /**
+   * Fires when the user presses Escape while the tooltip is open, regardless of
+   * where focus currently lives — on the trigger or on an unrelated element (the
+   * common case for a hover-opened tooltip). Routed through the content's
+   * document-level dismissable layer. Call `preventDefault()` on the emitted
+   * veto to keep the tooltip open. The native `KeyboardEvent` is on `.event`.
+   */
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /**
    * Whether the user has requested reduced motion via the OS
    * `prefers-reduced-motion: reduce` media query. Reflected as the boolean
    * `data-reduced-motion` attribute on the root and content so consumers can
@@ -280,13 +288,14 @@ export class ForTooltip implements ForTooltipContext {
   readonly arrow = this.#arrowEl.asReadonly();
 
   readonly #coordinator = inject(TooltipCoordinator);
+  readonly #scrollDismissDispatcher = inject(ScrollDismissDispatcher);
   readonly #hoverIntent: HoverIntentScheduler;
 
   #triggerHovered = false;
   #triggerFocused = false;
   #contentHovered = false;
   #detachGrace: (() => void) | null = null;
-  #scrollDismiss: ScrollDismiss | null = null;
+  #unregisterScrollDismiss: () => void = () => {};
 
   constructor() {
     forceCloseWhenDisabled({
@@ -303,15 +312,13 @@ export class ForTooltip implements ForTooltipContext {
       coordinator: this.#coordinator,
     });
 
-    if (isPlatformBrowser(inject(PLATFORM_ID))) {
-      this.#scrollDismiss = attachScrollDismiss(inject(DOCUMENT), {
-        dismiss: () => this.#dismissOnScroll(),
-      });
-    }
+    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(() =>
+      this.#dismissOnScroll(),
+    );
 
     inject(DestroyRef).onDestroy(() => {
       this.cancelPending();
-      this.#scrollDismiss?.destroy();
+      this.#unregisterScrollDismiss();
     });
   }
 
@@ -426,6 +433,27 @@ export class ForTooltip implements ForTooltipContext {
   }
 
   /**
+   * Emit the public `(escapeKeyDown)` output and, unless the consumer calls
+   * `preventDefault()` on the veto, close the tooltip immediately. Driven by the
+   * content's document-level dismissable layer so Escape dismisses the tooltip
+   * regardless of where focus currently lives — including a hover-opened tooltip
+   * with focus on an unrelated element (WCAG 2.1 SC 1.4.13) — and so a tooltip
+   * layered over a dialog is dismissed by the first Escape while the dialog
+   * stays open (topmost layer first). A no-op when nothing is open.
+   */
+  emitEscapeKeyDown(event: KeyboardEvent): void {
+    if (!this.open()) {
+      return;
+    }
+    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
+    if (!vetoed) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.scheduleClose('escape');
+    }
+  }
+
+  /**
    * Imperatively opens the tooltip — for programmatic control beyond hover and
    * focus (e.g. a design-system wrapper driving the tooltip from a
    * text-truncation observer). Schedules the show after the resolved
@@ -479,7 +507,7 @@ export class ForTooltip implements ForTooltipContext {
 
   /** True while an ancestor scroll has opened the suppression window (opens are no-ops). */
   #scrollSuppressed(): boolean {
-    return this.#scrollDismiss?.isSuppressed() ?? false;
+    return this.#scrollDismissDispatcher.isSuppressed();
   }
 
   /** True when `showOnOverflow` is on and the trigger's text is NOT truncated. */

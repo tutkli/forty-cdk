@@ -58,6 +58,14 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
   scheduleClose(reason: TooltipScheduleReason): void;
   /** Cancel any pending open/close timer without changing state. */
   cancelPending(): void;
+  /**
+   * Emit the public `(escapeKeyDown)` output and, unless prevented, close.
+   * Driven by the content's document-level dismissable layer, so the tooltip
+   * responds to Escape regardless of where focus lives — including a
+   * hover-opened tooltip while focus sits on an unrelated element (WCAG 2.1 SC
+   * 1.4.13) — and dismisses topmost-first when layered over a dialog.
+   */
+  emitEscapeKeyDown(event: KeyboardEvent): void;
 }
 
 export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>('FOR_TOOLTIP_CONTEXT');

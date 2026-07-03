@@ -348,6 +348,7 @@ export {
   type ScrollDismiss,
   type ScrollDismissOptions,
 } from './scroll-dismiss/scroll-dismiss';
+export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';
 export { SelectionModel, type SelectionModelOptions } from './selection-model/selection-model';
 export {
   defaultItemToFormValue,

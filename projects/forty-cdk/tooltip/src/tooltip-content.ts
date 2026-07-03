@@ -19,9 +19,13 @@ import { injectTooltipContext } from './tooltip-context';
  * bubble mounts and unmounts with the open state and `animate.enter` /
  * `animate.leave` work natively.
  *
- * Tooltips have no dismissable layer (Escape is a tooltip controller
- * concern, not an outside-pointer/focus one), no initial focus move, and
- * no return focus on destroy — only the floating positioner is wired.
+ * Escape is routed through the shared document-level `DismissableLayer`
+ * (Escape-only — outside dismissal stays implicit via hover / focus / scroll
+ * timing), so it dismisses the tooltip no matter where focus lives when the
+ * tooltip was hover-opened (WCAG 2.1 SC 1.4.13), and a tooltip layered over a
+ * dialog is dismissed by the first Escape while the dialog stays open. No
+ * initial focus move and no return focus on destroy — the surface is
+ * informational and never steals focus.
  */
 @Directive({
   selector: '[forTooltipContent]',
@@ -46,6 +50,9 @@ export class ForTooltipContent {
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(el));
     injectOverlayShell({
       positioner: toFloatingPositioner(this.ctx, this.ctx.trigger),
+      dismiss: {
+        emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
+      },
     });
   }
 }

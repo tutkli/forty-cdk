@@ -20,6 +20,11 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * dismiss). Keyboard focus stays the touch-accessible fallback for descriptive
  * content.
  *
+ * Escape dismissal is owned by the content's document-level dismissable layer
+ * (see `ForTooltipContent`), so it works from the trigger and from unrelated
+ * focus alike (WCAG 2.1 SC 1.4.13) — the trigger carries no Escape listener of
+ * its own.
+ *
  * The root is normally resolved via DI from the enclosing `[forTooltip]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
  * (e.g. via `ngTemplateOutlet`), DI resolves at the template's declaration
@@ -38,7 +43,6 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
     '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
-    '(keydown.escape)': 'onEscape($event)',
   },
 })
 export class ForTooltipTrigger {
@@ -99,13 +103,5 @@ export class ForTooltipTrigger {
   protected onBlur(): void {
     this.#lastPointerType = null;
     this.ctx().blurTrigger();
-  }
-
-  protected onEscape(event: Event): void {
-    if (this.ctx().open()) {
-      event.preventDefault();
-      event.stopPropagation();
-      this.ctx().scheduleClose('escape');
-    }
   }
 }
