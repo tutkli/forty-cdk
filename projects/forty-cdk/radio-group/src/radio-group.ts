@@ -86,8 +86,9 @@ export class ForRadioGroup
    * Reading direction. When unset (default `null`), the inherited ambient
    * direction is resolved from the nearest ancestor carrying a `dir`
    * attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]`
-   * always wins. The resolved value is reflected to the host `dir` attribute
-   * and swaps ArrowLeft / ArrowRight in RTL.
+   * always wins. The resolved value is reflected to the host `dir` attribute.
+   * In RTL it mirrors the horizontal cursor pair (ArrowLeft / ArrowRight) in
+   * either orientation; the vertical pair (ArrowUp / ArrowDown) is unaffected.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
