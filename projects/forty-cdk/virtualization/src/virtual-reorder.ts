@@ -157,21 +157,17 @@ export class ForVirtualReorder {
     if (key !== ' ' && key !== 'Enter') {
       return;
     }
-    const host = this.#draggableHost(event.target);
-    if (host === null) {
-      return;
-    }
-    const draggable = this.#list.items().find((h) => h.host === host);
+    const draggable = this.#list.items().find((h) => h.host === event.target);
     if (draggable === undefined || draggable.disabled()) {
       return;
     }
-    const vi = this.#absoluteIndex(host);
+    const vi = this.#absoluteIndex(draggable.host);
     if (vi === null) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    this.#kbLift(host, vi);
+    this.#kbLift(draggable.host, vi);
   }
 
   #onLiftedKeydown(event: KeyboardEvent): void {

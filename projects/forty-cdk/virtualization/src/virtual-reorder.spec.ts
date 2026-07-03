@@ -180,6 +180,63 @@ describe('ForVirtualReorder — keyboard', () => {
   });
 });
 
+describe('ForVirtualReorder — interactive row content keeps Space/Enter', () => {
+  it('Space on a button inside a row does not lift the row (button keeps its key)', async () => {
+    const { instance, query, flush: f } = await render(InteractiveHost);
+    const button = query('[data-testid="btn-2"]')!;
+    button.focus();
+
+    dispatchKey(button, ' ');
+    await f();
+    expect(instance.events()).toBe(0);
+
+    dispatchKey(button, 'ArrowDown');
+    await f();
+    dispatchKey(button, ' ');
+    await f();
+    expect(instance.events()).toBe(0);
+    expect(instance.last()).toBeNull();
+  });
+
+  it('Enter on a button inside a row does not lift the row', async () => {
+    const { instance, query, flush: f } = await render(InteractiveHost);
+    const button = query('[data-testid="btn-3"]')!;
+    button.focus();
+
+    dispatchKey(button, 'Enter');
+    await f();
+
+    expect(instance.events()).toBe(0);
+    expect(instance.last()).toBeNull();
+  });
+
+  it('a click on the button still activates it while the row is a reorder host', async () => {
+    const { instance, query, flush: f } = await render(InteractiveHost);
+    const button = query('[data-testid="btn-2"]')!;
+    button.click();
+    await f();
+    expect(instance.buttonClicks()).toBe(1);
+    expect(instance.events()).toBe(0);
+  });
+
+  it('Space on the row host itself still lifts (drag proceeds)', async () => {
+    const { instance, query, flush: f } = await render(InteractiveHost);
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    const lift = dispatchKey(row, ' ');
+    await f();
+    expect(lift.defaultPrevented).toBe(true);
+
+    dispatchKey(row, 'ArrowDown');
+    await f();
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(instance.last()).toEqual({ from: 2, to: 3 });
+  });
+});
+
 describe('ForVirtualReorder — lifted-row pinning', () => {
   it('keeps a pinned out-of-window row mounted in the rendered set', async () => {
     const { instance, query, queryAll, flush: f } = await mount();
@@ -235,5 +292,49 @@ class DisabledHost {
 
   onReorder(): void {
     this.events.update((n) => n + 1);
+  }
+}
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      (itemReorder)="onReorder($event)"
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        {{ row.label }}
+        <button type="button" [attr.data-testid]="'btn-' + row.id" (click)="onButton()">
+          action
+        </button>
+      </div>
+    </div>
+  `,
+})
+class InteractiveHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+  readonly last = signal<ForVirtualReorderEvent | null>(null);
+  readonly events = signal(0);
+  readonly buttonClicks = signal(0);
+  readonly viewport = viewChild.required(ForVirtualViewport);
+
+  onReorder(event: ForVirtualReorderEvent): void {
+    this.last.set(event);
+    this.events.update((n) => n + 1);
+    this.rows.update((rows) => moveItemInArray(rows, event.from, event.to));
+  }
+
+  onButton(): void {
+    this.buttonClicks.update((n) => n + 1);
   }
 }

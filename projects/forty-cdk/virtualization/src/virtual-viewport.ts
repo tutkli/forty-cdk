@@ -188,6 +188,10 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
   }
 
   #retainedItem(index: number): VirtualItem {
+    const measured = this.#virtualizer()?.measurementFor(index) ?? null;
+    if (measured !== null) {
+      return measured;
+    }
     const estimator = this.#estimator();
     let start = 0;
     for (let i = 0; i < index; i++) {

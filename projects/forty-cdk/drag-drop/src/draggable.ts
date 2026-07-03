@@ -279,6 +279,9 @@ export class ForDraggable implements ForDraggableContext {
       }
       return;
     }
+    if (event.target !== host) {
+      return;
+    }
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
       const index = this.#list.lift(host);
