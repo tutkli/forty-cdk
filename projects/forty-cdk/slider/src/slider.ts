@@ -19,6 +19,7 @@ import {
   injectHiddenInput,
   type WritingDirection,
   snapToStep,
+  roundToStepPrecision,
   injectTextDirection,
 } from 'forty-cdk/core';
 import {
@@ -442,10 +443,10 @@ export class ForSlider
     let lo = min;
     let hi = max;
     if (index > 0) {
-      lo = Math.max(lo, values[index - 1]! + gap);
+      lo = Math.max(lo, roundToStepPrecision(values[index - 1]! + gap, step));
     }
     if (index < values.length - 1) {
-      hi = Math.min(hi, values[index + 1]! - gap);
+      hi = Math.min(hi, roundToStepPrecision(values[index + 1]! - gap, step));
     }
     return snapped < lo ? lo : snapped > hi ? hi : snapped;
   }

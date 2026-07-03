@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   DestroyRef,
   Directive,
   ElementRef,
@@ -65,6 +66,7 @@ import {
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
+    '[style.touch-action]': 'touchAction()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
     '(pointerdown)': 'onPointerDown($event)',
@@ -147,6 +149,21 @@ export class ForPaneResizer {
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+
+  /**
+   * `touch-action` for the divider: capture the resize axis so a finger drag
+   * across it can't be stolen by page scrolling (which would fire
+   * `pointercancel` mid-resize), while freeing the perpendicular axis for
+   * scrolling. A `vertical` separator resizes along x (`pan-y`); a `horizontal`
+   * separator resizes along y (`pan-x`). Suppressed while disabled (no drag to
+   * protect).
+   */
+  readonly touchAction = computed<string | null>(() => {
+    if (this.disabled()) {
+      return null;
+    }
+    return this.orientation() === 'vertical' ? 'pan-y' : 'pan-x';
+  });
 
   /**
    * Verb-named alias for the model change emitter. Fires on every value
