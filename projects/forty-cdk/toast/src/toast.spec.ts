@@ -223,15 +223,15 @@ describe('ForToast (declarative)', () => {
   afterEachOverlayCleanup();
 
   describe('static accessibility', () => {
-    it('non-error variants get role=status + aria-live=polite', () => {
+    it('non-error variants get role=status with the host aria-live silenced', () => {
       const { el } = renderHost(DeclarativeHost);
       const t = $(el, 'declarative')!;
       expect(t.getAttribute('role')).toBe('status');
-      expect(t.getAttribute('aria-live')).toBe('polite');
+      expect(t.getAttribute('aria-live')).toBe('off');
       expect(t.getAttribute('aria-atomic')).toBe('true');
     });
 
-    it('error variant becomes role=alert + aria-live=assertive', async () => {
+    it('error variant (no action altText) keeps role=alert + a live host aria-live=assertive', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.variant.set('error');
       await r.flush();
@@ -768,29 +768,41 @@ describe('ForToast (declarative)', () => {
     });
   });
 
-  describe('action altText (WCAG 2.2.1 announcement)', () => {
+  describe('announcements (LiveAnnouncer)', () => {
     afterEach(() => {
       // LiveAnnouncer keeps two off-screen regions in document.body across
-      // tests by design; detach them so `getLiveAnnouncerRegion(...)` returns
-      // null in the next test rather than matching a stale (text-cleared)
-      // region from a previous emission.
+      // tests by design; detach them so each test starts from a clean slate
+      // rather than matching a stale (text-cleared) region from a prior test.
       document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
     });
 
-    it('keeps the host aria-live polite when no action carries altText', () => {
+    it('silences the host aria-live even when no action carries altText', () => {
       const r = renderHost(AltTextHost);
-      // altText defaults to '' — host announcement remains the active path.
-      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('polite');
+      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('off');
     });
 
-    it('does not announce via LiveAnnouncer when altText is the empty string', async () => {
+    it('announces title + description via LiveAnnouncer without any altText', async () => {
       const r = renderHost(AltTextHost);
+      await r.flush();
       await Promise.resolve();
 
-      expect(getLiveAnnouncerRegion('polite')).toBeNull();
-      expect(getLiveAnnouncerRegion('assertive')).toBeNull();
-      // The toast itself still carries the visible content, of course.
+      expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Your changes are live.');
       expect($(r.el, 'alt-toast')!.textContent).toContain('Saved');
+    });
+
+    it('error with no action altText keeps its host live, off the LiveAnnouncer path', async () => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(AltTextHost);
+      fixture.componentInstance.variant.set('error');
+      fixture.componentInstance.title.set('Save failed');
+      fixture.detectChanges();
+      await nextMacrotask();
+
+      const t = fixture.nativeElement.querySelector('[data-test-id="alt-toast"]') as HTMLElement;
+      expect(t.getAttribute('aria-live')).toBe('assertive');
+      expect(getLiveAnnouncerRegion('assertive')?.textContent ?? '').toBe('');
+      expect(getLiveAnnouncerRegion('polite')?.textContent ?? '').toBe('');
     });
 
     it('silences the host aria-live and announces composed message via LiveAnnouncer', async () => {
@@ -810,14 +822,15 @@ describe('ForToast (declarative)', () => {
       expect(region!.textContent).toBe('Saved. Your changes are live.. Undo (Cmd+Z)');
     });
 
-    it('announces a late-bound altText set after first render (F1)', async () => {
+    it('appends a late-bound altText set after first render (F1)', async () => {
       // The reactive announcement effect fires on the edge altText becomes
-      // non-empty, not only on first render. Mount with no altText, then set
-      // it — the silenced path must engage and the announcement must land.
+      // non-empty, folding the recovery hint into the already-announced
+      // title / description without re-mounting anything.
       const r = renderHost(AltTextHost);
       await r.flush();
-      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('polite');
-      expect(getLiveAnnouncerRegion('polite')).toBeNull();
+      await Promise.resolve();
+      expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('off');
+      expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Your changes are live.');
 
       r.instance.altText.set('Undo (Cmd+Z)');
       await r.flush();

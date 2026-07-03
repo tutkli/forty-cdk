@@ -6,9 +6,16 @@ import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
 type Politeness = 'polite' | 'assertive';
 
 /**
- * Tiny ARIA live-region helper. Lazily injects two off-screen regions
- * (`polite` and `assertive`) into `document.body` the first time it is used,
- * then writes / clears messages on demand.
+ * Tiny ARIA live-region helper. Injects two persistent off-screen regions
+ * (`polite` and `assertive`) into `document.body` at construction, then
+ * writes / clears messages on demand.
+ *
+ * The regions are created up front — not on first use — because a live region
+ * must already exist in the accessibility tree before its text changes for
+ * that change to be announced. Creating the region inside the first
+ * `announce()` risks the first message of a session being dropped, since the
+ * node insertion and the text write land too close together for many screen
+ * readers to register the mutation.
  *
  * Sequential identical announcements are flushed through a deferred write
  * (`setTimeout(…, 0)`) so the region is briefly emptied — without that, screen
@@ -43,6 +50,11 @@ export class LiveAnnouncer {
   #generation = 0;
 
   constructor() {
+    if (this.#isBrowser) {
+      for (const politeness of ['polite', 'assertive'] as const) {
+        this.#createRegion(politeness);
+      }
+    }
     inject(DestroyRef).onDestroy(() => {
       for (const region of this.#regions.values()) {
         region.remove();
@@ -63,7 +75,7 @@ export class LiveAnnouncer {
     if (!this.#isBrowser) {
       return;
     }
-    const region = this.#getRegion(politeness);
+    const region = this.#regions.get(politeness)!;
     // Reset first so identical consecutive messages still trigger the reader.
     region.textContent = '';
     // Bump the generation so a superseding announce (or a clear) cancels this
@@ -88,12 +100,8 @@ export class LiveAnnouncer {
     }
   }
 
-  #getRegion(politeness: Politeness): HTMLElement {
-    let region = this.#regions.get(politeness);
-    if (region) {
-      return region;
-    }
-    region = this.#document.createElement('div');
+  #createRegion(politeness: Politeness): void {
+    const region = this.#document.createElement('div');
     region.setAttribute('aria-live', politeness);
     region.setAttribute('aria-atomic', 'true');
     region.setAttribute('role', politeness === 'assertive' ? 'alert' : 'status');
@@ -101,6 +109,5 @@ export class LiveAnnouncer {
     region.style.cssText = VISUALLY_HIDDEN_STYLE;
     this.#document.body.appendChild(region);
     this.#regions.set(politeness, region);
-    return region;
   }
 }

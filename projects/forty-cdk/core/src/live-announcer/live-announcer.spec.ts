@@ -26,35 +26,43 @@ describe('LiveAnnouncer', () => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
   });
 
-  it('lazily creates a single polite region in document.body', async () => {
+  it('creates both live regions in document.body at construction, before any announce', () => {
+    TestBed.inject(LiveAnnouncer);
+
+    const polite = document.querySelector<HTMLElement>('[aria-live="polite"]');
+    const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]');
+    expect(polite!.textContent).toBe('');
+    expect(assertive!.textContent).toBe('');
+    expect(polite!.getAttribute('aria-atomic')).toBe('true');
+    expect(polite!.getAttribute('role')).toBe('status');
+    expect(assertive!.getAttribute('role')).toBe('alert');
+  });
+
+  it('writes the first announcement into the pre-existing polite region', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
-    expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(0);
+    const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+    expect(region.textContent).toBe('');
 
     announcer.announce('hello');
     await drain();
-
-    const regions = document.querySelectorAll<HTMLElement>('[aria-live="polite"]');
-    expect(regions.length).toBe(1);
-    expect(regions[0]!.textContent).toBe('hello');
-    expect(regions[0]!.getAttribute('aria-atomic')).toBe('true');
-    expect(regions[0]!.getAttribute('role')).toBe('status');
+    expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(1);
+    expect(region.textContent).toBe('hello');
 
     announcer.announce('there');
     await drain();
-
     expect(document.querySelectorAll('[aria-live="polite"]').length).toBe(1);
-    expect(regions[0]!.textContent).toBe('there');
+    expect(region.textContent).toBe('there');
   });
 
-  it('creates a separate assertive region with role="alert"', async () => {
+  it('keeps assertive announcements out of the polite region', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('boom', 'assertive');
     await drain();
 
-    const polite = document.querySelector('[aria-live="polite"]');
+    const polite = document.querySelector<HTMLElement>('[aria-live="polite"]');
     const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]');
 
-    expect(polite).toBeNull();
+    expect(polite!.textContent).toBe('');
     expect(assertive!.textContent).toBe('boom');
     expect(assertive!.getAttribute('role')).toBe('alert');
   });
@@ -104,7 +112,7 @@ describe('LiveAnnouncer', () => {
   it('clear() cancels a pending announce so it never paints', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
     announcer.announce('pending');
-    // Region created synchronously by announce(); the write is still queued.
+    // Region exists from construction; the write is still queued.
     const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
     expect(region.textContent).toBe('');
 
@@ -153,7 +161,7 @@ describe('LiveAnnouncer', () => {
     const first = TestBed.inject(LiveAnnouncer);
     first.announce('first');
     await drain();
-    expect(document.querySelectorAll('[aria-live]').length).toBe(1);
+    expect(document.querySelectorAll('[aria-live]').length).toBe(2);
 
     TestBed.resetTestingModule();
     expect(document.querySelectorAll('[aria-live]').length).toBe(0);
@@ -163,17 +171,17 @@ describe('LiveAnnouncer', () => {
     second.announce('second');
     await drain();
 
-    const regions = document.querySelectorAll<HTMLElement>('[aria-live]');
-    expect(regions.length).toBe(1);
-    expect(regions[0]!.textContent).toBe('second');
+    expect(document.querySelectorAll('[aria-live]').length).toBe(2);
+    expect(document.querySelector<HTMLElement>('[aria-live="polite"]')!.textContent).toBe('second');
   });
 
-  it('announce() and clear() are no-ops on a non-browser platform', async () => {
+  it('construction, announce(), and clear() are no-ops on a non-browser platform', async () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection(), { provide: PLATFORM_ID, useValue: 'server' }],
     });
     const announcer = TestBed.inject(LiveAnnouncer);
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
 
     announcer.announce('should not touch the DOM');
     announcer.announce('nor this one', 'assertive');

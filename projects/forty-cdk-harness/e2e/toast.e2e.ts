@@ -158,16 +158,19 @@ test.describe('Toast', () => {
     await expect(el(page, 'toast-0')).toHaveCount(0);
   });
 
-  test('toast host carries aria-live (smoke)', async ({ page }) => {
-    // The full role / aria-live contract is exercised by `toast.spec.ts`;
-    // this assertion just guarantees the live region survives the real
-    // browser mount path (jsdom-only invariants sometimes drift under
-    // real DOM rendering).
+  test('announcement live region survives the real browser mount (smoke)', async ({ page }) => {
+    // The full role / aria-live contract is exercised by `toast.spec.ts`; this
+    // guarantees the shared off-screen live region — the announcement path for
+    // non-error toasts — survives the real browser mount (jsdom-only invariants
+    // sometimes drift under real DOM rendering).
     await gotoFixture(page, 'toast', { side: 'top-right' });
     await el(page, 'enqueue').click();
 
-    const ariaLive = await el(page, 'toast-0').getAttribute('aria-live');
-    expect(ariaLive === 'polite' || ariaLive === 'assertive').toBe(true);
+    // The visible host stays a role="status" region but is no longer live.
+    await expect(el(page, 'toast-0')).toHaveAttribute('aria-live', 'off');
+
+    // The announcement routes through the persistent body-level polite region.
+    await expect(page.locator('body > [aria-live="polite"]')).toHaveText('toast-0');
   });
 
   // Touch-only branch of the shared swipe-dismiss helper. The toast
