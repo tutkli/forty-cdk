@@ -18,11 +18,18 @@ import {
  * Apply on a list item element (e.g. `<li forStepperItem>`). The step's index
  * is derived reactively from its DOM position within the stepper via the root's
  * item collection.
+ *
+ * In `mode="interactive"` the host carries `role="presentation"` so the
+ * `ForStepperList` `role="tablist"` owns the `role="tab"` triggers directly — an
+ * interposed implicit `listitem` would violate the tablist's required-owned-
+ * elements contract. In `mode="progress"` the implicit `listitem` is kept (it
+ * sits correctly under the list's `role="list"`).
  */
 @Directive({
   selector: '[forStepperItem]',
   exportAs: 'forStepperItem',
   host: {
+    '[attr.role]': "ctx.mode() === 'interactive' ? 'presentation' : null",
     '[attr.data-state]': 'resolvedState()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'ctx.orientation()',

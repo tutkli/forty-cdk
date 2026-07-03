@@ -293,8 +293,8 @@ In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. 
 
 Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 
-- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`).
-- **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger. No tab-stop manipulation is performed; triggers carry no `role`.
+- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly — an interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`).
+- **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger; each `<li forStepperItem>` keeps its implicit `listitem` role. No tab-stop manipulation is performed; triggers carry no `role`.
 - **Disabled triggers** in interactive mode retain their tab stop using `aria-disabled="true"` rather than the native `disabled` attribute, so assistive technology can announce them.
 - **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` + `data-disabled=""` on the trigger. Keyboard navigation skips them automatically.
 - **RTL** is supported: set `dir="rtl"` on the root or a DOM ancestor.
