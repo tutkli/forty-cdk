@@ -159,6 +159,7 @@ export class ForSelectContent {
             sticky: ctx.sticky,
             hideWhenDetached: ctx.hideWhenDetached,
             clipUntilPositioned: ctx.clipUntilPositioned,
+            onFirstPosition: () => ctx.scrollSelectedOptionIntoView(),
           };
 
     injectOverlayShell({

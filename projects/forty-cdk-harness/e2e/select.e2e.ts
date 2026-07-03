@@ -327,4 +327,44 @@ test.describe('Select', () => {
       expect(Math.abs((await anchorWidth(page)) - triggerRect!.width)).toBeLessThanOrEqual(1);
     });
   });
+
+  test.describe('scroll-to-selected on open (popper, #1145)', () => {
+    async function openMany(page: Page, selected: string): Promise<void> {
+      await gotoFixture(page, 'select', { many: '1', selected });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+      await expect(el(page, `opt-${selected}`)).toBeAttached();
+    }
+
+    test('reveals a selected option far down the list within the scroll viewport', async ({
+      page,
+    }) => {
+      await openMany(page, 'item-45');
+
+      const overflowing = await el(page, 'content').evaluate(
+        (e) => e.scrollHeight > e.clientHeight,
+      );
+      expect(overflowing).toBe(true);
+
+      await expect
+        .poll(async () => {
+          const opt = await el(page, 'opt-item-45').boundingBox();
+          const content = await el(page, 'content').boundingBox();
+          if (!opt || !content) {
+            return false;
+          }
+          return opt.y >= content.y - 1 && opt.y + opt.height <= content.y + content.height + 1;
+        })
+        .toBe(true);
+
+      expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    });
+
+    test('does not scroll when the selected option is already at the top', async ({ page }) => {
+      await openMany(page, 'item-0');
+
+      await expect(el(page, 'opt-item-0')).toBeFocused();
+      expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBe(0);
+    });
+  });
 });

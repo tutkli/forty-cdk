@@ -687,6 +687,13 @@ export class ForSelect<T = string>
     return false;
   }
 
+  scrollSelectedOptionIntoView(): void {
+    if (this.totalCount() !== undefined) {
+      return;
+    }
+    this.selectedOptionEl()?.scrollIntoView?.({ block: 'nearest' });
+  }
+
   toggle(initialFocus: ForSelectInitialFocus = 'selected'): void {
     this.#controller.toggle(initialFocus);
   }

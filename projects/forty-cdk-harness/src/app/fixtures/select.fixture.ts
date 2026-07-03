@@ -37,6 +37,10 @@ import { queryFlag } from './_query-flag';
         height: 32px;
         box-sizing: border-box;
       }
+      [forSelectContent].scrollable {
+        max-height: var(--for-available-height);
+        overflow-y: auto;
+      }
       /* The decorated field box is deliberately wider than the inner trigger
          so anchor-vs-trigger positioning is distinguishable by width. */
       [forSelectAnchor] {
@@ -81,11 +85,19 @@ import { queryFlag } from './_query-flag';
         </button>
       }
       @if (open()) {
-        <div forSelectContent data-testid="content">
-          <button data-testid="opt-apple" forSelectOption value="apple">Apple</button>
-          <button data-testid="opt-banana" forSelectOption value="banana" disabled>Banana</button>
-          <button data-testid="opt-cherry" forSelectOption value="cherry">Cherry</button>
-          <button data-testid="opt-date" forSelectOption value="date">Date</button>
+        <div forSelectContent data-testid="content" [class.scrollable]="many">
+          @if (many) {
+            @for (i of manyOptions; track i) {
+              <button [attr.data-testid]="'opt-item-' + i" forSelectOption [value]="'item-' + i">
+                Item {{ i }}
+              </button>
+            }
+          } @else {
+            <button data-testid="opt-apple" forSelectOption value="apple">Apple</button>
+            <button data-testid="opt-banana" forSelectOption value="banana" disabled>Banana</button>
+            <button data-testid="opt-cherry" forSelectOption value="cherry">Cherry</button>
+            <button data-testid="opt-date" forSelectOption value="date">Date</button>
+          }
         </div>
       }
     </div>
@@ -125,6 +137,9 @@ export class SelectFixture {
   // e2e specs can assert the listbox is positioned / sized against the box
   // (`--for-anchor-width` ≈ 280px) rather than the inner trigger (160px).
   protected readonly anchor = queryFlag('anchor');
+
+  protected readonly many = queryFlag('many');
+  protected readonly manyOptions = Array.from({ length: 60 }, (_, i) => i);
 
   private readonly vetoOpen = queryFlag('vetoOpen');
   private readonly vetoClose = queryFlag('vetoClose');
