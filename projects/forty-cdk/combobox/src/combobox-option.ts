@@ -113,18 +113,13 @@ export class ForComboboxOption<T = string> {
     return this.highlighted() ? 'true' : 'false';
   });
 
-  /** Reflects `aria-posinset` (1-based) when virtualizing. Falls back to DOM order otherwise. */
+  /** Reflects `aria-posinset` (1-based) in the virtualized path; `null` otherwise. */
   protected readonly ariaPosInSet = computed<string | null>(() => {
-    const explicit = this.posInSet();
-    if (explicit !== null) {
-      return String(explicit + 1);
-    }
     if (this.#ctx.totalCount() === undefined) {
       return null;
     }
-    const items = this.#ctx.options();
-    const idx = items.findIndex((it) => it.id() === this.id());
-    return idx < 0 ? null : String(idx + 1);
+    const pos = this.posInSet();
+    return pos === null ? null : String(pos + 1);
   });
 
   /** Reflects `aria-setsize` when the consumer wires up `[totalCount]`. */
