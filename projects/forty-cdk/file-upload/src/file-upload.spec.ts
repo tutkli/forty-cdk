@@ -176,6 +176,100 @@ describe('ForFileUpload', () => {
     });
   });
 
+  describe('accept filtering on drop', () => {
+    @Component({
+      imports: [ForFileUpload],
+      template: `
+        <div
+          forFileUpload
+          [accept]="accept()"
+          [multiple]="multiple()"
+          (filesChange)="onFiles($event)"
+          (filesRejected)="onRejected($event)"
+        >
+          drop zone
+        </div>
+      `,
+    })
+    class AcceptDropHost {
+      readonly accept = signal<string | null>(null);
+      readonly multiple = signal(false);
+      readonly accepted = signal<FileList | null>(null);
+      readonly rejected = signal<File[] | null>(null);
+      onFiles(files: FileList): void {
+        this.accepted.set(files);
+      }
+      onRejected(files: File[]): void {
+        this.rejected.set(files);
+      }
+    }
+
+    const drop = (zone: HTMLElement, files: File[]): void => {
+      const event = new Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'dataTransfer', {
+        value: { files: files as unknown as FileList, dropEffect: 'none' },
+      });
+      zone.dispatchEvent(event);
+    };
+
+    it('keeps a dropped file that matches a `type/*` wildcard', async () => {
+      const { el, instance, flush: f } = renderHost(AcceptDropHost);
+      instance.accept.set('image/*');
+      await f();
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      drop(zone, [new File(['x'], 'photo.png', { type: 'image/png' })]);
+      await f();
+
+      expect(instance.accepted()?.length).toBe(1);
+      expect(instance.accepted()![0]!.name).toBe('photo.png');
+      expect(instance.rejected()).toBeNull();
+    });
+
+    it('rejects a dropped file whose type is not accepted and reports it on filesRejected', async () => {
+      const { el, instance, flush: f } = renderHost(AcceptDropHost);
+      instance.accept.set('image/*');
+      await f();
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      drop(zone, [new File(['x'], 'malware.exe', { type: 'application/octet-stream' })]);
+      await f();
+
+      expect(instance.accepted()).toBeNull();
+      expect(instance.rejected()?.map((file) => file.name)).toEqual(['malware.exe']);
+    });
+
+    it('matches by file extension case-insensitively', async () => {
+      const { el, instance, flush: f } = renderHost(AcceptDropHost);
+      instance.accept.set('.pdf');
+      await f();
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      drop(zone, [new File(['x'], 'report.PDF', { type: '' })]);
+      await f();
+
+      expect(instance.accepted()?.length).toBe(1);
+      expect(instance.rejected()).toBeNull();
+    });
+
+    it('rejects every non-matching file in a multi-file drop', async () => {
+      const { el, instance, flush: f } = renderHost(AcceptDropHost);
+      instance.accept.set('image/*');
+      instance.multiple.set(true);
+      await f();
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      drop(zone, [
+        new File(['x'], 'a.exe', { type: 'application/octet-stream' }),
+        new File(['x'], 'b.bat', { type: 'application/octet-stream' }),
+      ]);
+      await f();
+
+      expect(instance.accepted()).toBeNull();
+      expect(instance.rejected()?.map((file) => file.name)).toEqual(['a.exe', 'b.bat']);
+    });
+  });
+
   describe('disabled blocks drop emission', () => {
     it('does not emit filesChange when disabled', async () => {
       const { el, instance, flush: f } = renderHost(FileUploadDropOnlyHost);

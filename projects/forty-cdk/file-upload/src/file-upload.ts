@@ -10,6 +10,12 @@ import { FOR_FILE_UPLOAD_CONTEXT, type ForFileUploadContext } from './file-uploa
  * `filesChange` is a plain `output<FileList>()` — this primitive is not a
  * Signal Forms control; the native `<input type="file">` is the form participant.
  *
+ * Dropped files are filtered against `accept` (file-extension and `type/*` MIME
+ * matching) before `filesChange`: the native `accept` attribute only constrains
+ * the file dialog, not a drag&drop, so an un-filtered drop would otherwise leak
+ * a rejected file into `filesChange` and into the input's `files` (native form
+ * submission). Files that fail the filter are emitted on `filesRejected` instead.
+ *
  * Reflects `data-dragging` while files are dragged over the zone and
  * `data-disabled` when the input is disabled.
  */
@@ -41,6 +47,12 @@ export class ForFileUpload implements ForFileUploadContext {
   readonly disabled = input(false, { transform: booleanAttribute });
   /** Emitted when files are chosen via the dialog or dropped onto the zone. */
   readonly filesChange = output<FileList>();
+  /**
+   * Emitted with the dropped files that were rejected by `accept`. Only fires
+   * on the drag&drop path (the native dialog already enforces `accept`), and
+   * only when at least one dropped file failed the filter.
+   */
+  readonly filesRejected = output<File[]>();
 
   readonly #dragging = signal(false);
   protected readonly dragging = this.#dragging.asReadonly();
@@ -89,15 +101,44 @@ export class ForFileUpload implements ForFileUploadContext {
     this.#dragging.set(false);
     const dropped = event.dataTransfer?.files;
     if (!dropped || dropped.length === 0) return;
-    const files = this.#resolveFiles(dropped);
-    if (this.#input) this.#input.files = files;
-    this.emitFiles(files);
+
+    const all = Array.from(dropped);
+    const accepted: File[] = [];
+    const rejected: File[] = [];
+    for (const file of all) {
+      (this.#acceptsFile(file) ? accepted : rejected).push(file);
+    }
+    const limited = this.multiple() ? accepted : accepted.slice(0, 1);
+
+    if (limited.length > 0) {
+      const keptAll = limited.length === all.length;
+      const files = keptAll ? dropped : this.#toFileList(limited);
+      if (this.#input) this.#input.files = files;
+      this.emitFiles(files);
+    }
+    if (rejected.length > 0) this.filesRejected.emit(rejected);
   }
 
-  #resolveFiles(files: FileList): FileList {
-    if (this.multiple() || files.length <= 1) return files;
+  #acceptsFile(file: File): boolean {
+    const accept = this.accept();
+    if (!accept) return true;
+    const tokens = accept
+      .split(',')
+      .map((token) => token.trim().toLowerCase())
+      .filter(Boolean);
+    if (tokens.length === 0) return true;
+    const name = file.name.toLowerCase();
+    const type = file.type.toLowerCase();
+    return tokens.some((token) => {
+      if (token.startsWith('.')) return name.endsWith(token);
+      if (token.endsWith('/*')) return type.startsWith(token.slice(0, -1));
+      return type === token;
+    });
+  }
+
+  #toFileList(files: readonly File[]): FileList {
     const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(files[0]!);
+    for (const file of files) dataTransfer.items.add(file);
     return dataTransfer.files;
   }
 }
