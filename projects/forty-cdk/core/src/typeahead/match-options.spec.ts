@@ -1,4 +1,4 @@
-import { findTypeaheadMatch } from './match-options';
+import { findTypeaheadMatch, foldTypeaheadText } from './match-options';
 
 interface FakeOption {
   readonly text: string;
@@ -96,5 +96,38 @@ describe('findTypeaheadMatch', () => {
       ];
       expect(match(options, { buffer: 'ap', repeated: false, anchorIndex: 2 })).toBe(options[2]);
     });
+  });
+
+  describe('diacritics-insensitive matching (issue #1145 item 9)', () => {
+    const ACCENTED: readonly FakeOption[] = [{ text: 'Évora' }, { text: 'Madrid' }];
+
+    it('matches an accented option from an unaccented query', () => {
+      expect(match(ACCENTED, { buffer: 'e' })).toBe(ACCENTED[0]);
+      expect(match(ACCENTED, { buffer: 'evora' })).toBe(ACCENTED[0]);
+    });
+
+    it('matches an unaccented option from an accented query', () => {
+      const options: readonly FakeOption[] = [{ text: 'Evora' }];
+      expect(match(options, { buffer: 'é' })).toBe(options[0]);
+    });
+
+    it('matches an accented option across an accent mismatch', () => {
+      const options: readonly FakeOption[] = [{ text: 'Café' }, { text: 'Cabernet' }];
+      expect(match(options, { buffer: 'cafe' })).toBe(options[0]);
+      expect(match(options, { buffer: 'caf' })).toBe(options[0]);
+    });
+  });
+});
+
+describe('foldTypeaheadText', () => {
+  it('strips diacritics and lowercases', () => {
+    expect(foldTypeaheadText('Évora')).toBe('evora');
+    expect(foldTypeaheadText('Café')).toBe('cafe');
+    expect(foldTypeaheadText('Ñandú')).toBe('nandu');
+    expect(foldTypeaheadText('ÜBER')).toBe('uber');
+  });
+
+  it('leaves unaccented text lowercased', () => {
+    expect(foldTypeaheadText('Banana')).toBe('banana');
   });
 });

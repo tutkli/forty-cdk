@@ -280,6 +280,24 @@ describe('ForComboboxInput', () => {
 
       expect(input.value).toBe('ap');
     });
+
+    it('completes an accented option from an unaccented prefix (issue #1145 item 9)', async () => {
+      const r = renderHost(InlineActiveHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.visible.set([{ id: 'evora', label: 'Évora' }]);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'e', 1, 'insertText');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('Évora');
+      expect(input.selectionStart).toBe(1);
+      expect(input.selectionEnd).toBe('Évora'.length);
+    });
   });
 
   // renderHost configures provideZonelessChangeDetection(), so these cases

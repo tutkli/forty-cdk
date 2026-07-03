@@ -368,7 +368,11 @@ export {
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';
 export { injectTextDirection } from './text-direction/text-direction';
-export { findTypeaheadMatch, type TypeaheadMatchQuery } from './typeahead/match-options';
+export {
+  findTypeaheadMatch,
+  foldTypeaheadText,
+  type TypeaheadMatchQuery,
+} from './typeahead/match-options';
 export { injectTypeahead, Typeahead, type TypeaheadOptions } from './typeahead/typeahead';
 export {
   createVetoableEvent,

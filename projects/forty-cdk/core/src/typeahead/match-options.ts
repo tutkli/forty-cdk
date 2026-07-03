@@ -1,6 +1,6 @@
 /** State of the typeahead buffer at the moment a match is resolved. */
 export interface TypeaheadMatchQuery {
-  /** The accumulated typeahead buffer. Matched case-insensitively. */
+  /** The accumulated typeahead buffer. Matched case- and diacritics-insensitively. */
   readonly buffer: string;
   /**
    * Whether the buffer is a single character pressed repeatedly (`"c"`,
@@ -18,6 +18,23 @@ export interface TypeaheadMatchQuery {
 }
 
 /**
+ * Folds text to a case- and diacritics-insensitive form for typeahead
+ * matching: decomposes accented characters (`NFD`), strips the combining
+ * diacritical marks, and lowercases, so `"e"` matches `"Évora"`. Shared by
+ * `findTypeaheadMatch` and the Select / Combobox call sites that run their own
+ * prefix matching, so Select, Listbox, and Combobox behave alike for accented
+ * text.
+ *
+ * @param text Raw text to fold (an option label or the typed buffer).
+ */
+export function foldTypeaheadText(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
+
+/**
  * The option-level typeahead match shared by Select and Listbox (DOM-focus and
  * virtualized paths). Scans `options` from the anchor, skipping disabled
  * options, and returns the first whose text starts with the query — matching
@@ -29,8 +46,10 @@ export interface TypeaheadMatchQuery {
  *   (inclusive) so a growing prefix keeps it when it still matches.
  * - Both fall back to the top when nothing is anchored (`anchorIndex < 0`).
  *
- * Text and query are compared trimmed and case-insensitively. Returns the
- * matching option, or `null` when none matches (or the buffer is empty).
+ * Text and query are compared trimmed, case-insensitively, and
+ * diacritics-insensitively (accents are folded via `foldTypeaheadText`).
+ * Returns the matching option, or `null` when none matches (or the buffer is
+ * empty).
  *
  * @typeParam H Option handle type.
  * @param options Live options to scan, in document order.
@@ -44,7 +63,7 @@ export function findTypeaheadMatch<H>(
   getText: (option: H) => string,
   isDisabled: (option: H) => boolean,
 ): H | null {
-  const buffer = query.buffer.toLowerCase();
+  const buffer = foldTypeaheadText(query.buffer);
   if (!buffer || options.length === 0) {
     return null;
   }
@@ -55,7 +74,7 @@ export function findTypeaheadMatch<H>(
     if (isDisabled(option)) {
       continue;
     }
-    if (getText(option).trim().toLowerCase().startsWith(needle)) {
+    if (foldTypeaheadText(getText(option).trim()).startsWith(needle)) {
       return option;
     }
   }

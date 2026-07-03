@@ -31,6 +31,7 @@ import {
   isRequiredInputUnset,
   injectTextDirection,
   findTypeaheadMatch,
+  foldTypeaheadText,
   injectTypeahead,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -675,7 +676,7 @@ export class ForSelect<T = string>
     if (!this.#closedTypeahead.handle(event)) {
       return false;
     }
-    const buffer = this.#closedTypeahead.buffer().toLowerCase();
+    const buffer = foldTypeaheadText(this.#closedTypeahead.buffer());
     if (!buffer) {
       return true;
     }
@@ -683,7 +684,7 @@ export class ForSelect<T = string>
     // is unmounted, so the live `options` registry is empty here. The cache
     // populates the first time the listbox opens and renders options.
     const cached = this.#cachedOptions();
-    const match = cached.find((o) => o.label.toLowerCase().startsWith(buffer));
+    const match = cached.find((o) => foldTypeaheadText(o.label).startsWith(buffer));
     if (match) {
       this.value.set([match.value]);
     }

@@ -76,6 +76,25 @@ class SelectHost {
   readonly cherryDisabled = signal(false);
 }
 
+@Component({
+  imports: BASE_IMPORTS,
+  template: `
+    <div forSelect [(open)]="open" [(value)]="value">
+      <button forSelectTrigger>Trigger</button>
+      @if (open()) {
+        <div forSelectContent>
+          <button data-test-id="evora" forSelectOption value="evora">Évora</button>
+          <button data-test-id="madrid" forSelectOption value="madrid">Madrid</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class DiacriticsSelectHost {
+  readonly open = signal(false);
+  readonly value = signal<readonly string[]>([]);
+}
+
 /**
  * The option directive owns `[id]` (auto-generated) so literal `id="x"`
  * attributes get replaced. Tests query options by an opt-in `data-test-id`
@@ -646,6 +665,21 @@ describe('ForSelect', () => {
       await flush(r.fixture);
 
       expect(r.instance.value()).toEqual([]);
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('closed: matches an accented option from an unaccented key (issue #1145 item 9)', async () => {
+      const r = renderHost(DiacriticsSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      pressKey(trigger, 'e');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['evora']);
       expect(r.instance.open()).toBe(false);
     });
   });
