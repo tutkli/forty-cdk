@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
@@ -82,6 +83,18 @@ async function key(r: R, segment: TimeSegmentType, k: string): Promise<void> {
 }
 
 describe('ForTimeField', () => {
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the first segment, not the group host', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      const field = r.fixture.debugElement
+        .query(By.directive(ForTimeField))
+        .injector.get(ForTimeField);
+      field.focus();
+      expect(document.activeElement).toBe(seg(r, 'hour'));
+    });
+  });
+
   describe('structure & ARIA', () => {
     it('renders a role=group with one role=spinbutton per editable segment', () => {
       const r = renderHost(Host);

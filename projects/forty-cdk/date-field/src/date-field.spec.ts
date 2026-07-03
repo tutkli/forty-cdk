@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 import { CalendarDateTime } from '@internationalized/date';
 
@@ -85,6 +86,18 @@ async function key(r: R, segment: 'day' | 'month' | 'year', k: string): Promise<
 }
 
 describe('ForDateField', () => {
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the first segment, not the group host', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      const field = r.fixture.debugElement
+        .query(By.directive(ForDateField))
+        .injector.get(ForDateField);
+      field.focus();
+      expect(document.activeElement).toBe(seg(r, 'month'));
+    });
+  });
+
   describe('structure & ARIA', () => {
     it('renders a role=group with one role=spinbutton per editable segment', () => {
       const r = renderHost(Host);

@@ -1,6 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { pressKey, renderHost } from '../../src/test-utils';
 import { provideForToggleDefaults } from './toggle-defaults';
@@ -52,6 +53,29 @@ const itemOf = (host: HTMLElement, id: string) =>
 const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forToggleGroup]')!;
 
 describe('ForToggleGroup', () => {
+  describe('focus (focus-on-error)', () => {
+    it('targets the first enabled item, not the group host', async () => {
+      const { el, fixture, flush } = renderHost(ToggleGroupHost);
+      await flush();
+      const group = fixture.debugElement
+        .query(By.directive(ForToggleGroup))
+        .injector.get(ForToggleGroup);
+      group.focus();
+      expect(document.activeElement).toBe(itemOf(el, 'left'));
+    });
+
+    it('targets the pressed item when one is selected', async () => {
+      const { el, fixture, flush } = renderHost(ToggleGroupHost);
+      fixture.componentInstance.value.set(['right']);
+      await flush();
+      const group = fixture.debugElement
+        .query(By.directive(ForToggleGroup))
+        .injector.get(ForToggleGroup);
+      group.focus();
+      expect(document.activeElement).toBe(itemOf(el, 'right'));
+    });
+  });
+
   describe('a11y baseline', () => {
     it('sets role=group, no aria-orientation, and each item type=button + aria-pressed=false', () => {
       const { el } = renderHost(ToggleGroupHost);

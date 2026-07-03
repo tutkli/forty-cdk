@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
@@ -113,6 +114,18 @@ async function fill(r: R, which: Endpoint, hour: string, minute: string): Promis
 }
 
 describe('ForTimeRangeField', () => {
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the first segment of the start endpoint, not the group host', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      const field = r.fixture.debugElement
+        .query(By.directive(ForTimeRangeField))
+        .injector.get(ForTimeRangeField);
+      field.focus();
+      expect(document.activeElement).toBe(seg(r, 'start', 'hour'));
+    });
+  });
+
   describe('structure & ARIA', () => {
     it('renders an outer role=group with two labelled endpoint groups', () => {
       const r = renderHost(Host);

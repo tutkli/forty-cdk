@@ -231,6 +231,19 @@ export class ForDateField<D>
     });
   }
 
+  /**
+   * Move focus to the first editable segment, implementing
+   * `FormValueControl.focus` from `@angular/forms/signals`. Without this override
+   * Signal Forms would focus the host `role="group"` wrapper — which is not
+   * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#engine.focusFirstSegment(options);
+  }
+
   segmentValue(type: SegmentType): number | null {
     return this.#engine.segmentValue(type);
   }

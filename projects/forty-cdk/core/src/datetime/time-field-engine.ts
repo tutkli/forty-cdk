@@ -220,6 +220,11 @@ export class TimeFieldEngine<D> {
     this.#editor.focusSegment(type);
   }
 
+  /** Move focus to the first editable segment — the field's focus-on-error target. */
+  focusFirstSegment(options?: FocusOptions): void {
+    this.#editor.focusFirstSegment(options);
+  }
+
   typeDigit(type: SegmentType, digit: number): void {
     this.#editor.typeDigit(type, digit);
   }

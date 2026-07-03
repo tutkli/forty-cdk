@@ -464,6 +464,20 @@ export class ForCombobox<T = string>
     return this.inputId();
   }
 
+  /**
+   * Move focus to the `role="combobox"` input, implementing
+   * `FormValueControl.focus` from `@angular/forms/signals`. Without this override
+   * Signal Forms would focus the host `[forCombobox]` wrapper — which carries no
+   * focusable role — so focus-on-error would silently go nowhere. No-op when
+   * disabled or before the input has registered.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.input()?.focus(options);
+  }
+
   constructor() {
     super();
     injectHiddenInput<T>({

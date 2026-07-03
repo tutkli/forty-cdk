@@ -355,6 +355,25 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     handle.host.focus();
   }
 
+  /**
+   * Move focus to the first editable segment in locale order — the entry point
+   * a field's `FormValueControl.focus` targets so Signal Forms' focus-on-error
+   * lands on a real spinbutton rather than the non-focusable `role="group"`
+   * host. No-op when no segment has registered yet.
+   */
+  focusFirstSegment(options?: FocusOptions): void {
+    const first = this.#host.editableOrder()[0];
+    if (first === undefined) {
+      return;
+    }
+    const handle = this.#segments.get(first);
+    if (!handle) {
+      return;
+    }
+    this.#host.roving.setActive(handle.host);
+    handle.host.focus(options);
+  }
+
   /** Converts a displayed segment value to its internal representation (hour: 12h→24h). */
   #toInternal(type: SegmentType, display: number): number {
     if (type !== 'hour' || this.#host.cycle() === 24) {

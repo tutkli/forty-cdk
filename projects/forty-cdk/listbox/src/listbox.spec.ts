@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { isRequiredInputUnset } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
@@ -76,6 +77,25 @@ const optOf = (host: HTMLElement, id: string) =>
 const listboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forListbox]')!;
 
 describe('ForListbox', () => {
+  describe('focus (focus-on-error)', () => {
+    it('targets the first enabled option, not the listbox host', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      await flush();
+      const listbox = fixture.debugElement.query(By.directive(ForListbox)).injector.get(ForListbox);
+      listbox.focus();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+    });
+
+    it('targets the selected option when one is selected', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.picked.set(['banana']);
+      await flush();
+      const listbox = fixture.debugElement.query(By.directive(ForListbox)).injector.get(ForListbox);
+      listbox.focus();
+      expect(document.activeElement).toBe(optOf(el, 'banana'));
+    });
+  });
+
   afterEachOverlayCleanup();
 
   describe('static accessibility', () => {
