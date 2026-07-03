@@ -56,17 +56,19 @@ export class DemoFaq {
 
 ### `ForAccordion`
 
-| Property      | Type                                | Description                                                                                                                                                  |
-| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.<br>**Default:** —                                                                   |
-| `multiple`    | `input<boolean>`                    | When true, multiple items can be open simultaneously.<br>**Default:** `false`                                                                                |
-| `collapsible` | `input<boolean>`                    | Single mode only: when true, the open item can be collapsed by clicking it. Otherwise once any item is open, exactly one stays open.<br>**Default:** `false` |
-| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.<br>**Default:** `'vertical'`                                  |
-| `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.<br>**Default:** —                                              |
+| Property      | Type                                | Description                                                                                                                                                              |
+| ------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<readonly string[]>`          | Currently open item values. In single mode the array has 0 or 1 element.<br>**Default:** —                                                                               |
+| `multiple`    | `input<boolean>`                    | When true, multiple items can be open simultaneously.<br>**Default:** `false`                                                                                            |
+| `collapsible` | `input<boolean>`                    | Single mode only: when true, the open item can be collapsed by clicking it. Otherwise once any item is open, exactly one stays open.<br>**Default:** `false`             |
+| `disabled`    | `input<boolean>`                    | When true, disables every item — each trigger reflects the native `disabled` attribute and cannot toggle. Composes with a per-item `[disabled]`.<br>**Default:** `false` |
+| `orientation` | `input<'horizontal' \| 'vertical'>` | Layout direction of the trigger list. In horizontal mode ArrowLeft/Right replace ArrowUp/Down.<br>**Default:** `'vertical'`                                              |
+| `dir`         | `input<'ltr' \| 'rtl'>`             | Writing direction. Only relevant in horizontal mode — swaps the meaning of Left/Right arrows.<br>**Default:** —                                                          |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
 | `data-orientation` | `horizontal` \| `vertical` |
+| `data-disabled`    | present \| absent          |
 
 ### `ForAccordionItem`
 

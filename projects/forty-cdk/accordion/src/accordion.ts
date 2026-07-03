@@ -40,6 +40,7 @@ import {
   exportAs: 'forAccordion',
   host: {
     '[attr.data-orientation]': 'orientation()',
+    '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
   providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
@@ -49,6 +50,15 @@ export class ForAccordion implements ForAccordionContext {
 
   /** When true, multiple items can be expanded simultaneously. */
   readonly multiple = input(false, { transform: booleanAttribute });
+
+  /**
+   * When true, the whole accordion is disabled: every item's trigger reflects
+   * the native `disabled` attribute (dropped from the Tab order and skipped by
+   * arrow-key navigation) and cannot toggle. Composes with a per-item
+   * `[disabled]` — an item is effectively disabled when either is set. Mirrors
+   * the root `disabled` on `ForTabs` / `ForStepper` / `ForDisclosure`.
+   */
+  readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
    * Single mode only: when true, the open item can be collapsed by clicking

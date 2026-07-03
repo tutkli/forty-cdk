@@ -17,7 +17,13 @@ const ACCORDION_IMPORTS = [
 @Component({
   imports: [...ACCORDION_IMPORTS],
   template: `
-    <div forAccordion [(value)]="value" [multiple]="multiple()" [collapsible]="collapsible()">
+    <div
+      forAccordion
+      [(value)]="value"
+      [multiple]="multiple()"
+      [collapsible]="collapsible()"
+      [disabled]="rootDisabled()"
+    >
       @for (id of items(); track id) {
         <div forAccordionItem [value]="id" [disabled]="disabledItem() === id">
           <h3>
@@ -37,6 +43,7 @@ class AccordionHost {
   readonly collapsible = signal(false);
   readonly items = signal(['a', 'b', 'c']);
   readonly disabledItem = signal<string | null>(null);
+  readonly rootDisabled = signal(false);
 }
 
 @Component({
@@ -222,6 +229,31 @@ describe('ForAccordion', () => {
 
       expect(fixture.componentInstance.value()).toEqual([]);
       expect(triggerB.getAttribute('aria-expanded')).toBe('false');
+    });
+  });
+
+  describe('disabled accordion (root [disabled])', () => {
+    it('disables every trigger and reflects data-disabled on the root, without a per-item [disabled]', async () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      await flush();
+
+      for (const id of ['a', 'b', 'c']) {
+        expect(triggerOf(el, id).hasAttribute('disabled')).toBe(true);
+      }
+      expect(el.querySelector('[forAccordion]')!.getAttribute('data-disabled')).toBe('');
+    });
+
+    it('ignores clicks while the accordion is disabled', async () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      await flush();
+
+      triggerOf(el, 'a').click();
+      await flush();
+
+      expect(fixture.componentInstance.value()).toEqual([]);
+      expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('false');
     });
   });
 
