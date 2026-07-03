@@ -9,7 +9,8 @@ import {
   localeSeparators,
   parseLocaleNumber,
   clamp,
-  roundToStepPrecision,
+  decimalPlaces,
+  roundToDecimals,
 } from 'forty-cdk/core';
 import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
@@ -31,7 +32,10 @@ import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
  * Because the displayed (formatted) text can differ from the submitted value,
  * the directive mounts a hidden `<input>` carrying the raw number for native
  * form submission when `name` is set — deliberately unlike `ForInput`, whose
- * visible element is itself the submittable field.
+ * visible element is itself the submittable field. The visible spinbutton's own
+ * `name` attribute is suppressed (`[attr.name]="null"`), so a consumer-set
+ * static `name` feeds only the hidden input and never double-submits its
+ * formatted display text alongside the raw value.
  *
  * The host gets `data-empty` (while the value is `null`), `data-disabled`, and
  * `data-readonly` for CSS hooks, plus `data-touched` / `data-dirty` /
@@ -55,6 +59,7 @@ import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
   exportAs: 'forNumberInput',
   host: {
     role: 'spinbutton',
+    '[attr.name]': 'null',
     '[attr.inputmode]': 'inputmode()',
     '[attr.aria-valuenow]': 'value() ?? null',
     '[attr.aria-valuemin]': 'min() ?? null',
@@ -217,30 +222,30 @@ export class ForNumberInput
 
   /**
    * Increase the value by `by` (defaults to `step`). From empty, lands on the
-   * clamped baseline (`min ?? 0`). Clamps to `[min, max]`.
+   * clamped baseline (`min ?? 0`). Clamps to `[min, max]`. The result is rounded
+   * to the finer decimal precision of `step` and `by`, so a caller-supplied `by`
+   * finer than `step` (`increment(0.25)` with `step=0.1`) keeps its precision
+   * instead of being rounded back to the step grid.
    */
   increment(by: number = this.step()): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
-    this.#applyValue(
-      current === null ? this.#baseline() : roundToStepPrecision(current + by, this.step()),
-    );
+    this.#applyValue(current === null ? this.#baseline() : this.#stepped(current + by, by));
   }
 
   /**
    * Decrease the value by `by` (defaults to `step`). From empty, lands on the
-   * clamped baseline (`min ?? 0`). Clamps to `[min, max]`.
+   * clamped baseline (`min ?? 0`). Clamps to `[min, max]`. The result is rounded
+   * to the finer decimal precision of `step` and `by` (see {@link increment}).
    */
   decrement(by: number = this.step()): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     const current = this.value();
-    this.#applyValue(
-      current === null ? this.#baseline() : roundToStepPrecision(current - by, this.step()),
-    );
+    this.#applyValue(current === null ? this.#baseline() : this.#stepped(current - by, by));
   }
 
   /** Live-parse the typed text into the value (unclamped — clamping waits for commit). */
@@ -276,11 +281,11 @@ export class ForNumberInput
         return;
       case 'PageUp':
         event.preventDefault();
-        this.increment(this.step() * this.stepMultiplier());
+        this.increment(this.#pageStep());
         return;
       case 'PageDown':
         event.preventDefault();
-        this.decrement(this.step() * this.stepMultiplier());
+        this.decrement(this.#pageStep());
         return;
       case 'Home': {
         const min = this.min();
@@ -316,6 +321,14 @@ export class ForNumberInput
       }
     }
     this.#writeDisplay();
+  }
+
+  #stepped(next: number, by: number): number {
+    return roundToDecimals(next, Math.max(decimalPlaces(this.step()), decimalPlaces(by)));
+  }
+
+  #pageStep(): number {
+    return roundToDecimals(this.step() * this.stepMultiplier(), decimalPlaces(this.step()));
   }
 
   #applyValue(raw: number): void {

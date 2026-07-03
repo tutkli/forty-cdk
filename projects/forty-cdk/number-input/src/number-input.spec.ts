@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { form, FormField, min as minRule, required } from '@angular/forms/signals';
 
 import {
@@ -374,6 +375,53 @@ describe('ForNumberInput', () => {
     });
   });
 
+  describe('step precision', () => {
+    @Component({
+      imports: [ForNumberInput],
+      template: `<input forNumberInput [(value)]="qty" [step]="0.1" [stepMultiplier]="3" />`,
+    })
+    class PageStepHost {
+      readonly qty = signal<number | null>(0.1);
+    }
+
+    it('increment(by) keeps a `by` finer than step (0.25 with step 0.1)', async () => {
+      const { fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.qty.set(0.2);
+      await flush();
+      const directive = fixture.debugElement
+        .query(By.directive(ForNumberInput))
+        .injector.get(ForNumberInput);
+
+      directive.increment(0.25);
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0.45);
+    });
+
+    it('ArrowUp with an exponential step (1e-7) rounds cleanly', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.step.set(1e-7);
+      fixture.componentInstance.qty.set(2e-7);
+      await flush();
+      const input = inputOf(el);
+
+      pressKey(input, 'ArrowUp');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(3e-7);
+    });
+
+    it('PageUp with a fractional step and non-decade multiplier stays free of float noise', async () => {
+      const { el, fixture, flush } = renderHost(PageStepHost);
+      await flush();
+      const input = inputOf(el);
+
+      pressKey(input, 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0.4);
+      expect(input.getAttribute('aria-valuenow')).toBe('0.4');
+    });
+  });
+
   describe('clamping', () => {
     it('clamps stepping at min and max', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
@@ -680,6 +728,38 @@ describe('ForNumberInput', () => {
       await flush();
       const formEl = el.querySelector('form')!;
       expect(Array.from(new FormData(formEl).entries())).toEqual([]);
+    });
+
+    @Component({
+      imports: [ForNumberInput],
+      template: `
+        <form>
+          <input
+            forNumberInput
+            [(value)]="qty"
+            name="qty"
+            [formatOptions]="formatOptions()"
+            locale="en-US"
+          />
+        </form>
+      `,
+    })
+    class StaticNameFormHost {
+      readonly qty = signal<number | null>(null);
+      readonly formatOptions = signal<Intl.NumberFormatOptions | null>({
+        style: 'currency',
+        currency: 'USD',
+      });
+    }
+
+    it('does not double-submit a static `name` alongside the hidden input', async () => {
+      const { el, fixture, flush } = renderHost(StaticNameFormHost);
+      fixture.componentInstance.qty.set(1234.5);
+      await flush();
+
+      const formEl = el.querySelector('form')!;
+      expect(inputOf(el).hasAttribute('name')).toBe(false);
+      expect(Array.from(new FormData(formEl).entries())).toEqual([['qty', '1234.5']]);
     });
   });
 
