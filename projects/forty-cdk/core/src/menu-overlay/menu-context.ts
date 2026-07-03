@@ -156,8 +156,14 @@ export interface ForMenuContext {
 
   /** Move focus inside the menu in response to an arrow / Home / End key. */
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void;
-  /** Prefix-match against item text content and focus the first match. */
-  handleTypeahead(event: KeyboardEvent): void;
+  /**
+   * Prefix-match against item text content and focus the first match. Returns
+   * `true` when the key was consumed as a typeahead character (a printable
+   * char, or Space while the buffer is already non-empty). Items applied on a
+   * native `<button>` use this to `preventDefault()` a mid-typeahead Space so
+   * it extends the buffer instead of activating the focused item.
+   */
+  handleTypeahead(event: KeyboardEvent): boolean;
   /**
    * Clear `data-highlighted` from every item without moving focus. Called by
    * `[forMenuContent]` on `pointerleave` so the hover highlight follows the

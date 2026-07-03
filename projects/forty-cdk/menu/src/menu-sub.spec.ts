@@ -222,6 +222,38 @@ describe('ForMenuSub', () => {
     });
   });
 
+  describe('Space mid-typeahead does not open the submenu', () => {
+    it('leaves an empty-buffer Space free to activate the sub-trigger natively', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLButtonElement>('#more')!;
+      more.focus();
+      const ev = pressKey(more, ' ');
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(false);
+    });
+
+    it('suppresses a Space consumed by the parent typeahead', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLButtonElement>('#more')!;
+      more.focus();
+      pressKey(more, 'z');
+      await flush(r.fixture);
+
+      const ev = pressKey(more, ' ');
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(r.instance.subOpen()).toBe(false);
+    });
+  });
+
   describe('closing', () => {
     it('ArrowLeft inside the submenu closes only the submenu', async () => {
       const r = renderHost(SubMenuHost);

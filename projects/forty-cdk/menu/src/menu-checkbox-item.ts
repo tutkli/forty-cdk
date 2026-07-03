@@ -165,6 +165,9 @@ export class ForMenuCheckboxItem {
     // here suppresses the browser-synthesized click so the menu stays open.
     if (event.key === ' ') {
       event.preventDefault();
+      if (this.ctx.handleTypeahead(event)) {
+        return;
+      }
       this.checked.update((v) => !v);
       this.activate.emit(createVetoableEvent());
       return;

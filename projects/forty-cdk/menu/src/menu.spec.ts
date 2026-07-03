@@ -944,6 +944,76 @@ describe('Menu items / content', () => {
     });
   });
 
+  describe('Space mid-typeahead never activates the focused item', () => {
+    it('a plain item leaves an empty-buffer Space free to activate natively', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLButtonElement>('#cut')!;
+      cut.focus();
+      const ev = pressKey(cut, ' ');
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(false);
+    });
+
+    it('a plain item suppresses a Space consumed mid-typeahead', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const cut = document.querySelector<HTMLButtonElement>('#cut')!;
+      cut.focus();
+      pressKey(cut, 'z');
+      await flush(r.fixture);
+
+      const ev = pressKey(cut, ' ');
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.lastSelected()).toBeNull();
+    });
+
+    it('a checkbox item does not toggle on a Space consumed mid-typeahead', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const bold = document.querySelector<HTMLButtonElement>('#bold')!;
+      bold.focus();
+      pressKey(bold, 'z');
+      await flush(r.fixture);
+
+      const ev = pressKey(bold, ' ');
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(r.instance.bold()).toBe(false);
+      expect(r.instance.open()).toBe(true);
+      expect(r.instance.selects).toEqual([]);
+    });
+
+    it('a radio item does not change the group value on a Space consumed mid-typeahead', async () => {
+      const r = renderHost(MenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const right = document.querySelector<HTMLButtonElement>('#right')!;
+      right.focus();
+      pressKey(right, 'z');
+      await flush(r.fixture);
+
+      const ev = pressKey(right, ' ');
+      await flush(r.fixture);
+
+      expect(ev.defaultPrevented).toBe(true);
+      expect(r.instance.alignment()).toBe('left');
+      expect(r.instance.open()).toBe(true);
+    });
+  });
+
   describe('Tab', () => {
     it('closes the menu', async () => {
       const r = renderHost(MenuHost);
