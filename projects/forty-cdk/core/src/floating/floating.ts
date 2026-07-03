@@ -1,4 +1,12 @@
-import { afterNextRender, effect, ElementRef, inject, type Signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  afterNextRender,
+  effect,
+  ElementRef,
+  inject,
+  PLATFORM_ID,
+  type Signal,
+} from '@angular/core';
 import {
   arrow,
   autoUpdate,
@@ -227,10 +235,19 @@ function transformOriginFor(side: FloatingSide, align: FloatingAlign): string {
  * Stylistic concerns (which side gets the arrow offset via
  * `--for-arrow-offset`, pointer events, background, animations) stay with
  * the consumer.
+ *
+ * SSR-safe: returns immediately off-browser (mirroring `injectElementSize`),
+ * so no portal, positioning effect, `computePosition`, or `autoUpdate` is set
+ * up during a server render — `effect()` runs server-side even though
+ * `afterNextRender` gates on `ngServerMode`, so the guard has to be explicit.
  */
 export function injectFloating(config: FloatingConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const el = host.nativeElement;
+
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
 
   if (config.portal !== false) {
     injectPortal();

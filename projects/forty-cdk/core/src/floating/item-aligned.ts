@@ -1,4 +1,12 @@
-import { afterNextRender, effect, ElementRef, inject, type Signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  afterNextRender,
+  effect,
+  ElementRef,
+  inject,
+  PLATFORM_ID,
+  type Signal,
+} from '@angular/core';
 import {
   autoUpdate,
   computePosition,
@@ -145,6 +153,10 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const el = host.nativeElement;
 
+  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
+    return;
+  }
+
   if (config.portal !== false) {
     injectPortal();
   }
@@ -195,40 +207,42 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
             () => collisionPadding,
           ),
         ],
-      }).then(({ x, y }) => {
-        if (!config.open()) {
-          return;
-        }
+      })
+        .then(({ x, y }) => {
+          if (!config.open()) {
+            return;
+          }
 
-        // Position via the `translate` property (not `transform`) so a
-        // consumer's enter animation on `scale` / `transform` pivots in place
-        // instead of scaling the position offset — see the note in
-        // `injectFloating`. Leaves `transform` free for the consumer.
-        el.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
-        el.dataset['position'] = 'item-aligned';
-        // First valid position resolved — reveal the listbox by dropping the
-        // `clip-path: inset(50%)` baseline.
-        el.style.clipPath = '';
+          // Position via the `translate` property (not `transform`) so a
+          // consumer's enter animation on `scale` / `transform` pivots in place
+          // instead of scaling the position offset — see the note in
+          // `injectFloating`. Leaves `transform` free for the consumer.
+          el.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
+          el.dataset['position'] = 'item-aligned';
+          // First valid position resolved — reveal the listbox by dropping the
+          // `clip-path: inset(50%)` baseline.
+          el.style.clipPath = '';
 
-        const triggerRect = reference.getBoundingClientRect();
-        el.style.setProperty('--for-anchor-width', `${Math.round(triggerRect.width)}px`);
-        el.style.setProperty('--for-anchor-height', `${Math.round(triggerRect.height)}px`);
+          const triggerRect = reference.getBoundingClientRect();
+          el.style.setProperty('--for-anchor-width', `${Math.round(triggerRect.width)}px`);
+          el.style.setProperty('--for-anchor-height', `${Math.round(triggerRect.height)}px`);
 
-        const innerHeight = el.ownerDocument.defaultView?.innerHeight ?? 0;
-        const availableHeight = Math.max(0, innerHeight - 2 * collisionPadding);
-        el.style.setProperty(
-          '--for-select-content-available-height',
-          `${Math.round(availableHeight)}px`,
-        );
+          const innerHeight = el.ownerDocument.defaultView?.innerHeight ?? 0;
+          const availableHeight = Math.max(0, innerHeight - 2 * collisionPadding);
+          el.style.setProperty(
+            '--for-select-content-available-height',
+            `${Math.round(availableHeight)}px`,
+          );
 
-        if (!initialScrollDone) {
-          initialScrollDone = true;
-          const target = config.selectedOption() ?? findFirstEnabledOption(el);
-          // jsdom (test env) doesn't implement scrollIntoView — guard the
-          // call so the helper stays usable in non-browser environments.
-          target?.scrollIntoView?.({ block: 'nearest' });
-        }
-      });
+          if (!initialScrollDone) {
+            initialScrollDone = true;
+            const target = config.selectedOption() ?? findFirstEnabledOption(el);
+            // jsdom (test env) doesn't implement scrollIntoView — guard the
+            // call so the helper stays usable in non-browser environments.
+            target?.scrollIntoView?.({ block: 'nearest' });
+          }
+        })
+        .catch(() => {});
     });
 
     // Clean up symmetrically with what computePosition wrote — mirrors

@@ -74,6 +74,15 @@ describe('FocusTrap', () => {
     expect(document.activeElement).toBe(second);
   });
 
+  it('activate() is a no-op off-browser and adds no document keydown listener', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    trap = new FocusTrap(container, stack, undefined, false);
+    trap.activate();
+
+    expect(trap.isActive).toBe(false);
+    expect(addSpy.mock.calls.filter(([type]) => type === 'keydown')).toEqual([]);
+  });
+
   it('cycles forward from the last focusable to the first on Tab', () => {
     trap = new FocusTrap(container, stack);
     trap.activate();
