@@ -355,7 +355,7 @@ export class DemoVirtualizedListbox {
 
 ### Intentional limitations
 
-- **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
+- **Multi-select range modifiers** (Shift+Arrow, Shift+Space, Ctrl+A, Ctrl+Shift+Home/End) are not available in the virtualized path. These require the full materialized option set to compute ranges, which contradicts windowing. Pressing one of these combinations on a virtualized multi-select listbox (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally in both single and multi mode.
 - **Typeahead** matches only the currently rendered window. Options outside the visible range cannot be reached by typing.
 
 ## Self-hiding pieces

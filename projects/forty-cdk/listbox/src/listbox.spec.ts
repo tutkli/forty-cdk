@@ -2121,4 +2121,185 @@ describe('ForListbox', () => {
       expect(lb.getAttribute('tabindex')).toBe('0');
     });
   });
+
+  describe('multi-select keyboard + virtualization guard', () => {
+    @Component({
+      imports: [ForListbox, ForListboxOption],
+      template: `
+        <div
+          forListbox
+          data-test-lb
+          [(value)]="picked"
+          [multiple]="true"
+          [totalCount]="total()"
+          [visibleRange]="range"
+          aria-label="MultiVirtual"
+        >
+          @for (i of indices; track i) {
+            <button
+              type="button"
+              forListboxOption
+              [value]="'item-' + i"
+              [posInSet]="i"
+              [attr.data-test-id]="'opt-' + i"
+            >
+              Item {{ i }}
+            </button>
+          }
+        </div>
+      `,
+    })
+    class MultiVirtualHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly total = signal<number | undefined>(3);
+      readonly range: readonly [number, number] = [0, 3];
+      readonly indices = [0, 1, 2];
+    }
+
+    async function setupMulti(captured: unknown[]) {
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(MultiVirtualHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const lb = el.querySelector<HTMLElement>('[data-test-lb]')!;
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      return { fixture, el, lb };
+    }
+
+    const throwsUnsupported = (captured: readonly unknown[]) =>
+      captured.some(
+        (e) =>
+          e instanceof Error &&
+          /\[forty-cdk\/listbox\] Multi-select range keyboard/.test(e.message),
+      );
+
+    it('throws in dev mode on Shift+ArrowDown in a virtualized multi-select listbox', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      pressKey(lb, 'ArrowDown', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Shift+ArrowUp', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      pressKey(lb, 'ArrowUp', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Shift+Space', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      pressKey(lb, ' ', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Ctrl+A', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      pressKey(lb, 'a', { ctrlKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Meta+A (Cmd)', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      pressKey(lb, 'A', { metaKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Ctrl+Shift+End', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      pressKey(lb, 'End', { ctrlKey: true, shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('preventDefault is called on the intercepted multi-select shortcut', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupMulti(captured);
+      const event = pressKey(lb, 'a', { ctrlKey: true });
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('does not intercept a plain ArrowDown (navigation still works)', async () => {
+      const captured: unknown[] = [];
+      const { el, fixture, lb } = await setupMulti(captured);
+      const first = el.querySelector<HTMLElement>('[data-test-id="opt-0"]')!;
+      expect(lb.getAttribute('aria-activedescendant')).toBe(first.id);
+      pressKey(lb, 'ArrowDown');
+      await flush(fixture);
+      const second = el.querySelector<HTMLElement>('[data-test-id="opt-1"]')!;
+      expect(lb.getAttribute('aria-activedescendant')).toBe(second.id);
+      expect(throwsUnsupported(captured)).toBe(false);
+    });
+
+    it('does not intercept shortcuts in a single-select virtualized listbox', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+
+      @Component({
+        imports: [ForListbox, ForListboxOption],
+        template: `
+          <div forListbox data-test-lb [totalCount]="3" [visibleRange]="range" aria-label="Single">
+            @for (i of indices; track i) {
+              <button type="button" forListboxOption [value]="'item-' + i" [posInSet]="i">
+                Item {{ i }}
+              </button>
+            }
+          </div>
+        `,
+      })
+      class SingleVirtualHost {
+        readonly range: readonly [number, number] = [0, 3];
+        readonly indices = [0, 1, 2];
+      }
+      const fixture = TestBed.createComponent(SingleVirtualHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const lb = el.querySelector<HTMLElement>('[data-test-lb]')!;
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      pressKey(lb, 'ArrowDown', { shiftKey: true });
+      pressKey(lb, 'a', { ctrlKey: true });
+      expect(throwsUnsupported(captured)).toBe(false);
+    });
+
+    it('does not throw when the multi listbox is not virtualized (roving path keeps range keys)', async () => {
+      const r = renderHost(MultiVirtualHost);
+      r.instance.total.set(undefined);
+      await flush(r.fixture);
+      const first = r.el.querySelector<HTMLElement>('[data-test-id="opt-0"]')!;
+      first.focus();
+      await flush(r.fixture);
+      expect(() => pressKey(first, 'ArrowDown', { shiftKey: true })).not.toThrow();
+      await flush(r.fixture);
+      expect(r.instance.picked()).toContain('item-1');
+    });
+  });
 });
