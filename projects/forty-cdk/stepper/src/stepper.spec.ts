@@ -169,6 +169,13 @@ describe('ForStepper', () => {
       }
     });
 
+    it('items carry role=presentation so the tablist owns the tabs directly', () => {
+      const { el } = renderHost(StepperHost);
+      for (let i = 0; i < 3; i++) {
+        expect(itemAt(el, i).getAttribute('role')).toBe('presentation');
+      }
+    });
+
     it('content panels have role=tabpanel', () => {
       const { el } = renderHost(StepperHost);
       for (let i = 0; i < 3; i++) {
@@ -237,6 +244,15 @@ describe('ForStepper', () => {
       fixture.detectChanges();
       for (let i = 0; i < 3; i++) {
         expect(triggerAt(el, i).hasAttribute('role')).toBe(false);
+      }
+    });
+
+    it('items keep their implicit listitem role (no role attr) in progress mode', () => {
+      const { el, instance, fixture } = renderHost(StepperHost);
+      instance.mode.set('progress');
+      fixture.detectChanges();
+      for (let i = 0; i < 3; i++) {
+        expect(itemAt(el, i).hasAttribute('role')).toBe(false);
       }
     });
 
