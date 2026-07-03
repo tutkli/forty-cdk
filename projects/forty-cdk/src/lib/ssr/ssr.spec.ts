@@ -2064,11 +2064,11 @@ describe('SSR smoke tests', () => {
     f.detectChanges();
     const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
     expect(root.getAttribute('role')).toBe('grid');
-    expect(root.getAttribute('aria-rowcount')).toBe('100');
+    expect(root.getAttribute('aria-rowcount')).toBe('101');
     expect(root.getAttribute('aria-colcount')).toBe('2');
     expect(root.getAttribute('aria-multiselectable')).toBe('true');
     const row = f.nativeElement.querySelector('[forTableRow]') as HTMLElement;
-    expect(row.getAttribute('aria-rowindex')).toBe('1');
+    expect(row.getAttribute('aria-rowindex')).toBe('2');
     expect(row.getAttribute('aria-selected')).toBe('false');
     const cell = f.nativeElement.querySelector('[forTableCell]') as HTMLElement;
     expect(cell.getAttribute('aria-colindex')).toBe('1');
@@ -2089,6 +2089,7 @@ describe('SSR smoke tests', () => {
     expect(unseededResizer.hasAttribute('aria-valuenow')).toBe(false);
     const headerRow = f.nativeElement.querySelector('[forTableHeaderRow]') as HTMLElement;
     expect(headerRow.getAttribute('data-orientation')).toBe('horizontal');
+    expect(headerRow.getAttribute('aria-rowindex')).toBe('1');
     const draggableHeaderCell = f.nativeElement.querySelector(
       '[forTableHeaderCell][forDraggable]',
     ) as HTMLElement;

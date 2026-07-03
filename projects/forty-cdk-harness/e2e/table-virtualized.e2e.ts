@@ -9,19 +9,23 @@ test.describe('Table virtualized', () => {
     expect(rowCount).toBeLessThan(60);
   });
 
-  test('aria-rowcount on the root equals the true total (10 000)', async ({ page }) => {
+  test('aria-rowcount on the root equals the true total plus the header row (10 001)', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'table-virtualized');
     const root = el(page, 'root');
-    await expect(root).toHaveAttribute('aria-rowcount', '10000');
+    await expect(root).toHaveAttribute('aria-rowcount', '10001');
   });
 
-  test('each rendered row exposes the absolute 1-based aria-rowindex', async ({ page }) => {
+  test('each rendered row exposes the absolute aria-rowindex shifted past the header row', async ({
+    page,
+  }) => {
     await gotoFixture(page, 'table-virtualized');
     const firstRow = page.locator('[forTableRow]').first();
     const indexAttr = await firstRow.getAttribute('aria-rowindex');
     const virtualIndexAttr = await firstRow.getAttribute('data-testid');
     const rowIndex = parseInt(virtualIndexAttr!.replace('row-', ''), 10);
-    expect(indexAttr).toBe(String(rowIndex + 1));
+    expect(indexAttr).toBe(String(rowIndex + 2));
   });
 
   test('scrolling down renders a different window of rows', async ({ page }) => {
@@ -49,7 +53,7 @@ test.describe('Table virtualized', () => {
       10,
     );
     const rowAfterAriaIndex = await rowAfter.getAttribute('aria-rowindex');
-    expect(rowAfterAriaIndex).toBe(String(rowAfterIndex + 1));
+    expect(rowAfterAriaIndex).toBe(String(rowAfterIndex + 2));
   });
 
   test('focused row stays mounted after scrolling far away (focus retention)', async ({ page }) => {
@@ -182,15 +186,70 @@ test.describe('Table virtualized', () => {
       await expectFocused(el(page, 'cell-0-id'));
     });
 
-    test('PageDown reaches the last row and PageUp returns to the first', async ({ page }) => {
+    test('PageDown pages down by one window (preserving column, not jumping to the end) and clamps; PageUp is symmetric', async ({
+      page,
+    }) => {
       await gotoFixture(page, 'table-virtualized');
+
+      const readFocusedRow = () =>
+        page.evaluate(() => {
+          const testId = document.activeElement?.getAttribute('data-testid') ?? '';
+          const match = /^cell-(\d+)-id$/.exec(testId);
+          return match ? parseInt(match[1]!, 10) : null;
+        });
+
+      const settleFocusedRowAbove = async (previous: number): Promise<number> => {
+        await expect.poll(async () => (await readFocusedRow()) ?? -1).toBeGreaterThan(previous);
+        return (await readFocusedRow())!;
+      };
+
+      const settleFocusedRowBelow = async (previous: number): Promise<number> => {
+        await expect
+          .poll(async () => (await readFocusedRow()) ?? Number.MAX_SAFE_INTEGER)
+          .toBeLessThan(previous);
+        return (await readFocusedRow())!;
+      };
 
       const start = el(page, 'cell-0-id');
       await start.click();
       await expectFocused(start);
 
+      const pageSize = await page.locator('[forTableRow]').count();
+      expect(pageSize).toBeGreaterThan(1);
+      expect(pageSize).toBeLessThan(9999);
+
       await page.keyboard.press('PageDown');
+      const afterOne = el(page, `cell-${pageSize}-id`);
+      await expect(afterOne).toBeAttached();
+      await expectFocused(afterOne);
+
+      let current = pageSize;
+      for (let i = 0; i < 8; i++) {
+        await page.keyboard.press('PageDown');
+        const next = await settleFocusedRowAbove(current);
+        expect(next).toBeLessThan(9999);
+        current = next;
+      }
+
+      await page.keyboard.press('Control+End');
       await expectFocused(el(page, 'cell-9999-name'));
+
+      await page.keyboard.press('ArrowLeft');
+      await expectFocused(el(page, 'cell-9999-id'));
+
+      const bottomPageSize = await page.locator('[forTableRow]').count();
+      expect(bottomPageSize).toBeGreaterThan(1);
+
+      await page.keyboard.press('PageUp');
+      const afterUp = await settleFocusedRowBelow(9999);
+      expect(afterUp).toBeGreaterThan(0);
+      expect(9999 - afterUp).toBe(bottomPageSize);
+
+      await page.keyboard.press('PageDown');
+      await expectFocused(el(page, 'cell-9999-id'));
+
+      await page.keyboard.press('Control+Home');
+      await expectFocused(el(page, 'cell-0-id'));
 
       await page.keyboard.press('PageUp');
       await expectFocused(el(page, 'cell-0-id'));
@@ -249,7 +308,7 @@ test.describe('Table virtualized', () => {
         10,
       );
       const rowAfterAriaIndex = await rowAfter.getAttribute('aria-rowindex');
-      expect(rowAfterAriaIndex).toBe(String(rowAfterIndex + 1));
+      expect(rowAfterAriaIndex).toBe(String(rowAfterIndex + 2));
     });
   });
 });

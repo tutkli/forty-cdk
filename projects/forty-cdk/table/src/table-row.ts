@@ -21,8 +21,9 @@ import {
 /**
  * Marks a data row (`role="row"`). Owns the registry of its data cells (for
  * `aria-colindex`) and registers itself with the root so it joins the row index
- * space (`aria-rowindex`, 1-based over data rows in `grid`/`treegrid` mode) and
- * the 2D navigation grid.
+ * space and the 2D navigation grid. In `grid`/`treegrid` mode `aria-rowindex` is
+ * 1-based and counts the header row as row 1, so the first data row is row 2 when
+ * a header row is present (matching the APG Data Grid numbering).
  */
 @Directive({
   selector: '[forTableRow]',
@@ -69,8 +70,9 @@ export class ForTableRow implements ForTableRowContext {
     if (this.ctx.mode() === 'table') {
       return null;
     }
+    const offset = this.ctx.dataRowIndexOffset();
     const vi = this.virtualIndex();
-    return vi !== null ? vi + 1 : this.ctx.rowIndexOf(this.#host) + 1;
+    return vi !== null ? vi + 1 + offset : this.ctx.rowIndexOf(this.#host) + 1 + offset;
   });
 
   readonly selectionMode: Signal<TableSelectionMode> = this.ctx.selectionMode;

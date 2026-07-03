@@ -190,13 +190,13 @@ test.describe('Table (sortable headers)', () => {
 });
 
 test.describe('Table (grid keyboard navigation)', () => {
-  test('Tab enters the grid on the first cell as a single tab stop, Tab leaves', async ({
+  test('Tab enters the grid on the first header cell as a single tab stop, Tab leaves', async ({
     page,
   }) => {
     await gotoFixture(page, 'table', { selectionMode: 'none' });
     await el(page, 'before').focus();
     await page.keyboard.press('Tab');
-    await expectFocused(el(page, 'cell-0-name'));
+    await expectFocused(el(page, 'header-name'));
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
   });
@@ -231,7 +231,7 @@ test.describe('Table (grid keyboard navigation)', () => {
     await page.keyboard.press('Control+End');
     await expectFocused(el(page, 'cell-19-dept'));
     await page.keyboard.press('Control+Home');
-    await expectFocused(el(page, 'cell-0-name'));
+    await expectFocused(el(page, 'header-name'));
   });
 
   test('ArrowDown skips a disabled cell', async ({ page }) => {

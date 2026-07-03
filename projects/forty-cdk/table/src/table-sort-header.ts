@@ -1,7 +1,17 @@
-import { booleanAttribute, computed, Directive, inject, input, model, output } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  DestroyRef,
+  Directive,
+  ElementRef,
+  inject,
+  input,
+  model,
+  output,
+} from '@angular/core';
 
-import { FOR_DRAGGABLE_CONTEXT } from 'forty-cdk/drag-drop';
-import { injectTableContext } from './table-context';
+import { hostHasDraggable, injectTableContext } from './table-context';
+import { ForTableHeaderCell } from './table-header-cell';
 
 /** Sort direction for a column header. `'none'` means unsorted (no aria-sort emitted). */
 export type TableSortDirection = 'ascending' | 'descending' | 'none';
@@ -21,10 +31,13 @@ export interface TableSortDescriptor {
  * signal and derive each header's `direction` from it. Apply this directive on the
  * same element as `[forTableHeaderCell]`.
  *
- * When a `[forDraggable]` (column reorder) shares the same host cell, this directive
- * yields its `tabindex` to the draggable's roving tab stop so the two never collide on
- * the host attribute; `aria-sort` / `data-sorted` and click / keyboard activation stay
- * on the cell.
+ * The directive emits its own `tabindex="0"` only in `mode="table"`. In `grid` /
+ * `treegrid` mode the header cell owns the roving composite tab stop, so this directive
+ * emits no `tabindex`; `aria-sort` / `data-sorted` and click / keyboard activation stay
+ * on the cell. When a `[forDraggable]` (column reorder) shares the same host cell — in
+ * either mode — this directive also yields its `tabindex` to the draggable's roving tab
+ * stop so the two never collide on the host attribute. The draggable is detected by DOM
+ * marker (the `forDraggable` / `forFreeDrag` attribute), not by a drag-drop value-import.
  *
  * Cycle (default `firstClickDirection='ascending'`): `none → ascending → descending → none`.
  * With `disableClear`: `none → ascending → descending → ascending`.
@@ -40,14 +53,15 @@ export interface TableSortDescriptor {
   host: {
     '[attr.aria-sort]': 'activeDirection()',
     '[attr.data-sorted]': 'activeDirection()',
-    '[attr.tabindex]': 'tabindex()',
     '(click)': 'activate()',
     '(keydown)': 'onKeyDown($event)',
   },
 })
 export class ForTableSortHeader {
   protected readonly ctx = injectTableContext('ForTableSortHeader');
-  readonly #draggable = inject(FOR_DRAGGABLE_CONTEXT, { self: true, optional: true });
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #headerCell = inject(ForTableHeaderCell, { self: true, optional: true });
+  readonly #hasDraggable = hostHasDraggable(this.#host);
 
   /** Column identity included in the `sortChange` payload. */
   readonly column = input.required<string>();
@@ -95,9 +109,21 @@ export class ForTableSortHeader {
     this.sortable() && this.direction() !== 'none' ? this.direction() : null,
   );
 
-  protected readonly tabindex = computed<'0' | null>(() =>
-    !this.#draggable && this.sortable() ? '0' : null,
-  );
+  /**
+   * Whether this sort header needs the host to be a standalone `tabindex="0"` tab
+   * stop: a sortable, non-draggable header. The header cell honors this only when it
+   * is not part of the body's roving composite grid (`mode="table"`, or a
+   * column-reorder header row); in a plain grid / treegrid header the roving grid
+   * owns the tab stop and this intent is superseded.
+   */
+  readonly #standaloneTabStop = computed(() => this.sortable() && !this.#hasDraggable);
+
+  constructor() {
+    this.#headerCell?.registerStandaloneTabStop(this.#standaloneTabStop);
+    inject(DestroyRef).onDestroy(() =>
+      this.#headerCell?.unregisterStandaloneTabStop(this.#standaloneTabStop),
+    );
+  }
 
   /** Activates the sort: computes the next direction, updates the model, and emits `sortChange`. */
   protected activate(): void {

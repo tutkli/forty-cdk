@@ -127,6 +127,17 @@ describe('resolveGridNavigation', () => {
     expect(resolveGridNavigation(key('ArrowLeft'), rtl)).toBe('next');
     expect(resolveGridNavigation(key('ArrowRight'), rtl)).toBe('prev');
   });
+
+  it('PageUp / PageDown map to page moves when pageKeys enabled (not grid ends)', () => {
+    const paged = { cols: 7, pageKeys: true };
+    expect(resolveGridNavigation(key('PageUp'), paged)).toBe('page-up');
+    expect(resolveGridNavigation(key('PageDown'), paged)).toBe('page-down');
+  });
+
+  it('PageUp / PageDown are ignored when pageKeys is off', () => {
+    expect(resolveGridNavigation(key('PageUp'), opts)).toBe(null);
+    expect(resolveGridNavigation(key('PageDown'), opts)).toBe(null);
+  });
 });
 
 describe('moveIndex', () => {
@@ -315,5 +326,33 @@ describe('moveGridIndex', () => {
   it('handles cols = 1 like a vertical list', () => {
     expect(moveGridIndex(0, 5, 'next-row', { cols: 1 })).toBe(1);
     expect(moveGridIndex(0, 5, 'next', { cols: 1 })).toBe(1);
+  });
+
+  it('page-down / page-up move by pageSize rows preserving the column', () => {
+    // 30 items in a 3-col grid → 10 rows. From index 0 (row 0, col 0):
+    expect(moveGridIndex(0, 30, 'page-down', { cols, pageSize: 3 })).toBe(9);
+    // From index 27 (row 9, col 0) page-up by 3 rows → row 6, col 0 = 18.
+    expect(moveGridIndex(27, 30, 'page-up', { cols, pageSize: 3 })).toBe(18);
+    // Column preserved: from index 1 (col 1) page-down 2 rows → row 2, col 1 = 7.
+    expect(moveGridIndex(1, 30, 'page-down', { cols, pageSize: 2 })).toBe(7);
+  });
+
+  it('page moves clamp at the grid edges without looping', () => {
+    // From row 0, page-down beyond the last row clamps to the last row (col 0 = 27).
+    expect(moveGridIndex(0, 30, 'page-down', { cols, pageSize: 100 })).toBe(27);
+    // From row 9 (index 27), page-up beyond row 0 clamps to row 0 (col 0 = 0).
+    expect(moveGridIndex(27, 30, 'page-up', { cols, pageSize: 100 })).toBe(0);
+    // Already at the top edge: page-up is a no-op.
+    expect(moveGridIndex(0, 30, 'page-up', { cols, pageSize: 3 })).toBe(null);
+  });
+
+  it('page move skips a disabled landing cell toward the edge', () => {
+    const isDisabled = (i: number) => i === 9;
+    // page-down from 0 by 3 rows lands on 9 (disabled) → next enabled in column = 12.
+    expect(moveGridIndex(0, 30, 'page-down', { cols, pageSize: 3, isDisabled })).toBe(12);
+  });
+
+  it('page move defaults pageSize to 1 when omitted', () => {
+    expect(moveGridIndex(0, 30, 'page-down', { cols })).toBe(3);
   });
 });

@@ -374,6 +374,58 @@ class GridTableHost {
 }
 
 @Component({
+  imports: [...TABLE_IMPORTS],
+  template: `
+    <table forTable [mode]="mode()">
+      <thead>
+        <tr forTableHeaderRow>
+          @for (col of cols; track col) {
+            <th forTableHeaderCell [name]="col" [attr.data-testid]="'h-' + col">{{ col }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr forTableRow>
+            @for (col of cols; track col) {
+              <td forTableCell [name]="col" [attr.data-testid]="'c-' + col + row.id">
+                {{ col }}{{ row.id }}
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  `,
+})
+class GridWithHeaderHost {
+  readonly cols = ['a', 'b', 'c'] as const;
+  readonly rows = signal([{ id: 0 }, { id: 1 }, { id: 2 }]);
+  readonly mode = signal<TableMode>('grid');
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <table forTable mode="grid">
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr forTableRow>
+            <td forTableCell name="a" [attr.data-testid]="'c-a-' + row.id">
+              <button type="button" [attr.data-testid]="'btn-' + row.id">edit {{ row.id }}</button>
+            </td>
+            <td forTableCell name="b" [attr.data-testid]="'c-b-' + row.id">{{ row.id }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  `,
+})
+class CellEntryGridHost {
+  readonly rows = signal([{ id: 0 }, { id: 1 }]);
+}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
   template: `
     <div
@@ -518,6 +570,29 @@ class SortTableHost {
 })
 class SortReorderTableHost {
   readonly columns = signal<readonly string[]>(['name', 'role']);
+  lastSort: TableSortDescriptor | null = null;
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableSortHeader],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div
+          forTableHeaderCell
+          name="name"
+          forTableSortHeader
+          column="name"
+          (sortChange)="lastSort = $event"
+          data-testid="sort-name"
+        >
+          Name
+        </div>
+      </div>
+    </div>
+  `,
+})
+class GridSortHost {
   lastSort: TableSortDescriptor | null = null;
 }
 
@@ -1018,16 +1093,16 @@ describe('ForTable', () => {
       expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('PageDown moves to last cell, PageUp moves to first', async () => {
+    it('PageDown pages down by rows preserving the column; PageUp pages back up', async () => {
       const { el, flush } = renderHost(GridTableHost);
       const allCells = cells(el);
-      press(allCells[0]!, 'PageDown');
+      press(allCells[1]!, 'PageDown');
       await flush();
-      expect(allCells[8]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[7]!.getAttribute('data-highlighted')).toBe('');
 
-      press(allCells[8]!, 'PageUp');
+      press(allCells[7]!, 'PageUp');
       await flush();
-      expect(allCells[0]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
     });
 
     it('edge does not wrap: ArrowUp from first cell does not move when roving is active', async () => {
@@ -1074,6 +1149,187 @@ describe('ForTable', () => {
       press(allCells[1]!, 'ArrowDown');
       await flush();
       expect(allCells[7]!.getAttribute('data-highlighted')).toBe('');
+    });
+  });
+
+  describe('grid header-row participation (aria numbering + composite tab stop)', () => {
+    const headerCells = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell]'));
+    const dataRows = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+
+    it('header row carries aria-rowindex="1" and data rows start at 2', () => {
+      const { el } = renderHost(GridWithHeaderHost);
+      const headerRow = headerRowEl(el);
+      expect(headerRow.getAttribute('aria-rowindex')).toBe('1');
+      const rows = dataRows(el);
+      expect(rows[0]!.getAttribute('aria-rowindex')).toBe('2');
+      expect(rows[1]!.getAttribute('aria-rowindex')).toBe('3');
+      expect(rows[2]!.getAttribute('aria-rowindex')).toBe('4');
+    });
+
+    it('aria-rowcount includes the header row', () => {
+      const { el } = renderHost(GridWithHeaderHost);
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('4');
+    });
+
+    it('header cells carry a 1-based aria-colindex', () => {
+      const { el } = renderHost(GridWithHeaderHost);
+      const hCells = headerCells(el);
+      expect(hCells[0]!.getAttribute('aria-colindex')).toBe('1');
+      expect(hCells[1]!.getAttribute('aria-colindex')).toBe('2');
+      expect(hCells[2]!.getAttribute('aria-colindex')).toBe('3');
+    });
+
+    it('table mode emits no header aria-rowindex and no header-inclusive aria-rowcount', async () => {
+      const { el, instance, flush } = renderHost(GridWithHeaderHost);
+      instance.mode.set('table');
+      await flush();
+      expect(headerRowEl(el).hasAttribute('aria-rowindex')).toBe(false);
+      expect(rootEl(el).hasAttribute('aria-rowcount')).toBe(false);
+    });
+
+    it('exactly one tab stop across header + body, and it is the first header cell', () => {
+      const { el } = renderHost(GridWithHeaderHost);
+      const all = [...headerCells(el), ...cells(el)];
+      const zeros = all.filter((c) => c.getAttribute('tabindex') === '0');
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(headerCells(el)[0]);
+    });
+
+    it('ArrowUp from a body cell navigates INTO the header row', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const firstDataCell = el.querySelector<HTMLElement>('[data-testid="c-a0"]')!;
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      press(firstDataCell, 'ArrowUp');
+      await flush();
+      expect(headerA.getAttribute('data-highlighted')).toBe('');
+      expect(headerA.getAttribute('tabindex')).toBe('0');
+      expect(firstDataCell.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('ArrowDown from a header cell navigates into the first data row', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      const firstDataCell = el.querySelector<HTMLElement>('[data-testid="c-a0"]')!;
+      press(headerA, 'ArrowDown');
+      await flush();
+      expect(firstDataCell.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('Ctrl+Home lands on the first header cell (grid row 1)', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const lastCell = el.querySelector<HTMLElement>('[data-testid="c-c2"]')!;
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      press(lastCell, 'Home', { ctrlKey: true });
+      await flush();
+      expect(headerA.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('reflects the composite tab stop without Zone.js', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      press(headerA, 'ArrowRight');
+      await flush();
+      const headerB = el.querySelector<HTMLElement>('[data-testid="h-b"]')!;
+      expect(headerB.getAttribute('data-highlighted')).toBe('');
+      expect(headerB.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('grid page navigation (PageUp / PageDown)', () => {
+    it('PageDown pages down by the rendered row count, preserving the column', async () => {
+      const { el, flush } = renderHost(GridWithHeaderHost);
+      const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
+      press(headerA, 'PageDown');
+      await flush();
+      const lastRowA = el.querySelector<HTMLElement>('[data-testid="c-a2"]')!;
+      expect(lastRowA.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('a virtualized grid pages by the window, not to the dataset end', async () => {
+      const { el, instance, flush } = renderHost(CrossWindowTableHost);
+      const start = el.querySelector<HTMLElement>('[data-testid="cell-22-a"]')!;
+      start.focus();
+      await flush();
+      press(start, 'PageDown');
+      await flush();
+      expect(el.querySelector('[data-testid="cell-27-a"]')).toBeNull();
+      instance.windowIndices.set([25, 26, 27, 28, 29]);
+      await flush();
+      expect(document.activeElement).toBe(el.querySelector('[data-testid="cell-27-a"]'));
+    });
+
+    it('PageUp in a virtualized grid pages up by the window, preserving the column', async () => {
+      const { el, instance, flush } = renderHost(CrossWindowTableHost);
+      const start = el.querySelector<HTMLElement>('[data-testid="cell-22-b"]')!;
+      start.focus();
+      await flush();
+      press(start, 'PageUp');
+      await flush();
+      instance.windowIndices.set([15, 16, 17, 18, 19]);
+      await flush();
+      expect(document.activeElement).toBe(el.querySelector('[data-testid="cell-17-b"]'));
+    });
+  });
+
+  describe('grid cell-entry mode (Enter / F2 / Escape)', () => {
+    it('Enter on a focused cell moves focus into the cell widget', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+      cell.focus();
+      const ev = press(cell, 'Enter');
+      await flush();
+      expect(ev.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(btn);
+    });
+
+    it('F2 on a focused cell moves focus into the cell widget', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(btn);
+    });
+
+    it('Escape from inside the widget returns focus to the owning cell', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+      cell.focus();
+      press(cell, 'Enter');
+      await flush();
+      expect(document.activeElement).toBe(btn);
+
+      const esc = press(btn, 'Escape');
+      await flush();
+      expect(esc.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(cell);
+    });
+
+    it('Enter on a cell with no interactive content is not consumed', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const plainCell = el.querySelector<HTMLElement>('[data-testid="c-b-0"]')!;
+      plainCell.focus();
+      const ev = press(plainCell, 'Enter');
+      await flush();
+      expect(ev.defaultPrevented).toBe(false);
+    });
+
+    it('an ArrowRight bubbling from inside a cell widget does not navigate the grid', async () => {
+      const { el, flush } = renderHost(CellEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const otherCell = el.querySelector<HTMLElement>('[data-testid="c-b-0"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="btn-0"]')!;
+      cell.focus();
+      press(cell, 'Enter');
+      await flush();
+      press(btn, 'ArrowRight');
+      await flush();
+      expect(otherCell.getAttribute('data-highlighted')).toBe(null);
     });
   });
 
@@ -1575,6 +1831,29 @@ describe('ForTable', () => {
       expect(el.querySelector('[data-testid="h-name"]')!.getAttribute('tabindex')).toBe('0');
       expect(el.querySelector('[data-testid="h-role"]')!.getAttribute('tabindex')).toBe('-1');
     });
+
+    it('yields via the drag-drop DOM marker, not a drag-drop context import (no forDraggable → sort owns "0")', () => {
+      const { el } = renderHost(SortTableHost);
+      expect(el.querySelector('[data-testid="sort-name"]')!.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('sort header in grid mode', () => {
+    it('emits no tabindex in grid mode: the header cell owns the composite tab stop', () => {
+      const { el } = renderHost(GridSortHost);
+      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+      expect(h.getAttribute('tabindex')).toBe('0');
+      expect(el.querySelectorAll('[tabindex="0"]').length).toBe(1);
+    });
+
+    it('still cycles the sort on click in grid mode', async () => {
+      const { el, instance, flush } = renderHost(GridSortHost);
+      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+    });
   });
 
   describe('column resizer', () => {
@@ -1885,7 +2164,7 @@ describe('ForTable', () => {
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
       expect(allRows[0]!.getAttribute('data-testid')).toBe('row-1');
       expect(allRows[1]!.getAttribute('data-testid')).toBe('row-0');
-      expect(allRows[1]!.getAttribute('aria-rowindex')).toBe('2');
+      expect(allRows[1]!.getAttribute('aria-rowindex')).toBe('3');
     });
   });
 
