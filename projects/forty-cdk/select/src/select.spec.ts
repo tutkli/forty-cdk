@@ -2229,6 +2229,38 @@ describe('ForSelectIndicator', () => {
     });
   });
 
+  describe('scroll-to-selected on open (#1145)', () => {
+    function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
+      const had = 'scrollIntoView' in Element.prototype;
+      const stub = vi.fn();
+      Element.prototype.scrollIntoView = stub;
+      return run(stub).finally(() => {
+        if (!had) {
+          delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+        }
+      });
+    }
+
+    it('reveals the selected option once the positioner resolves (popper)', () =>
+      withScrollStub(async (stub) => {
+        const r = renderHost(SelectHost);
+        r.instance.value.set(['date']);
+        r.instance.open.set(true);
+        await flushPositioning(r.fixture);
+
+        expect(stub.mock.contexts).toContain(getOption('date'));
+      }));
+
+    it('does not scroll when nothing is selected (initial focus lands on the first option)', () =>
+      withScrollStub(async (stub) => {
+        const r = renderHost(SelectHost);
+        r.instance.open.set(true);
+        await flushPositioning(r.fixture);
+
+        expect(stub).not.toHaveBeenCalled();
+      }));
+  });
+
   describe('virtualized option windowing (Shape C)', () => {
     @Component({
       imports: BASE_IMPORTS,

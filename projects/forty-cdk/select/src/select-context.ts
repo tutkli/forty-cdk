@@ -193,6 +193,19 @@ export interface ForSelectContext<T = unknown> {
   focusLastEnabledOption(): boolean;
   /** Focus the first enabled option whose value is currently selected. Returns `false` if none. */
   focusSelectedOption(): boolean;
+  /**
+   * Scroll the selected option into view. Driven from `[forSelectContent]`'s
+   * positioner first-resolved-position hook (`onFirstPosition`) in `'popper'`
+   * mode — the only moment both prerequisites hold: the surface has been
+   * portaled to `document.body` (resetting its `scrollTop` to 0) and
+   * `@floating-ui/dom`'s `size` middleware has constrained it to its
+   * `max-height` (so it is actually scrollable). Focusing the selected option
+   * earlier scrolls before the surface is bounded, so the reveal is lost.
+   * No-op while virtualizing (the navigator owns the virtualized scroll) and
+   * when nothing is selected (initial focus lands on the first option, already
+   * in view at the top).
+   */
+  scrollSelectedOptionIntoView(): void;
 
   toggle(initialFocus?: ForSelectInitialFocus): void;
   openMenu(initialFocus?: ForSelectInitialFocus): void;
