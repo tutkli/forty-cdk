@@ -48,6 +48,14 @@ export interface VirtualizerOptions {
   readonly overscan?: number;
   /** Stable key for the item at `index`. Defaults to the index itself. */
   readonly getItemKey?: (index: number) => string | number;
+  /**
+   * Offset, in CSS pixels, added before the first item along the scroll axis.
+   * Every item's computed offset and every `scrollToIndex` / `scrollToOffset`
+   * alignment shifts by this amount, so a sticky header rendered inside the
+   * scroller no longer overlaps the row a cross-window keyboard move lands on.
+   * Defaults to `0` (today's behaviour). Should be a stable value.
+   */
+  readonly scrollMargin?: number;
 }
 
 /** A single item in the currently rendered window. */
@@ -82,6 +90,14 @@ export interface ForVirtualizer {
   scrollToOffset(offset: number): void;
   /** Record the measured size of a rendered item element (dynamic sizes). */
   measureElement(element: HTMLElement): void;
+  /**
+   * The item at `index` as computed from the core's measurement cache — its
+   * `start` reflects measured sizes and `scrollMargin`, not pure estimate math.
+   * Returns `null` before the core has mounted or when `index` is out of range.
+   * Used to position a retained (pinned) row on its real offset rather than
+   * recomputing it from `estimateSize`.
+   */
+  measurementFor(index: number): VirtualItem | null;
 }
 
 /**
@@ -133,11 +149,13 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
       scrollToIndex: () => undefined,
       scrollToOffset: () => undefined,
       measureElement: () => undefined,
+      measurementFor: () => null,
     };
   }
 
   const horizontal = (options.orientation ?? 'vertical') === 'horizontal';
   const overscan = options.overscan ?? DEFAULT_OVERSCAN;
+  const scrollMargin = options.scrollMargin ?? 0;
   const notify = signal(0, { equal: () => false });
   const mounted = signal(false);
 
@@ -151,6 +169,7 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     getItemKey: options.getItemKey,
     overscan,
     horizontal,
+    scrollMargin,
     scrollToFn: elementScroll,
     observeElementRect,
     observeElementOffset,
@@ -199,5 +218,12 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     scrollToIndex: (index, scrollOptions) => virtualizer.scrollToIndex(index, scrollOptions),
     scrollToOffset: (offset) => virtualizer.scrollToOffset(offset),
     measureElement: (element) => virtualizer.measureElement(element),
+    measurementFor: (index) => {
+      if (!mounted() || index < 0 || index >= options.count()) {
+        return null;
+      }
+      const measurement = virtualizer.measurementsCache[index];
+      return measurement === undefined ? null : toVirtualItem(measurement);
+    },
   };
 }

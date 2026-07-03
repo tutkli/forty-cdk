@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
@@ -171,6 +171,65 @@ describe('ForVirtualViewport + ForVirtualFor', () => {
       const fixture = TestBed.createComponent(BadHost);
       fixture.detectChanges();
     }).toThrow(/\[forty-cdk\/virtualization\]/);
+  });
+});
+
+describe('ForVirtualViewport — retained (pinned) row offset', () => {
+  @Component({
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()">{{ row.label }}</div>
+      </div>
+    `,
+  })
+  class PinHost {
+    readonly rows = signal<Row[]>(makeRows(1000));
+    readonly viewport = viewChild.required(ForVirtualViewport);
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  it('positions a pinned out-of-window row with the pure estimate offset when unmeasured', async () => {
+    const fixture = TestBed.createComponent(PinHost);
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    fixture.componentInstance.viewport().setReorderingIndex(900);
+    await flush(fixture);
+
+    const pinned = rowEls(fixture).find((el) => el.getAttribute('data-index') === '900');
+    expect(pinned).toBeDefined();
+    expect(pinned?.style.transform).toBe('translateY(36000px)');
+  });
+
+  it('positions a pinned out-of-window row with the measured offset once earlier rows are measured', async () => {
+    const fixture = TestBed.createComponent(PinHost);
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    const measured = document.createElement('div');
+    measured.setAttribute('data-index', '0');
+    Object.defineProperty(measured, 'offsetHeight', { configurable: true, value: 100 });
+    Object.defineProperty(measured, 'offsetWidth', { configurable: true, value: 100 });
+    fixture.componentInstance.viewport().measureElement(measured);
+    await flush(fixture);
+
+    fixture.componentInstance.viewport().setReorderingIndex(900);
+    await flush(fixture);
+
+    const pinned = rowEls(fixture).find((el) => el.getAttribute('data-index') === '900');
+    expect(pinned).toBeDefined();
+    expect(pinned?.style.transform).toBe('translateY(36060px)');
   });
 });
 

@@ -312,6 +312,111 @@ describe('injectVirtualizer', () => {
     expect(fixture.componentInstance.v.totalSize()).toBe(0);
   });
 
+  describe('scrollMargin', () => {
+    @Component({
+      selector: 'margin-host',
+      template: `
+        <div #scroll style="overflow:auto; height:200px">
+          <div [style.height.px]="v.totalSize()" style="position:relative">
+            @for (item of v.virtualItems(); track item.key) {
+              <div [attr.data-index]="item.index" [style.height.px]="item.size">
+                {{ item.index }}
+              </div>
+            }
+          </div>
+        </div>
+      `,
+    })
+    class MarginHost {
+      readonly scrollRef = viewChild<ElementRef<HTMLElement>>('scroll');
+      readonly scrollElement = computed(() => this.scrollRef()?.nativeElement ?? null);
+      readonly v = injectVirtualizer({
+        count: signal(1000),
+        estimateSize: () => 40,
+        scrollElement: this.scrollElement,
+        overscan: 5,
+        scrollMargin: 100,
+      });
+    }
+
+    it('shifts every item start by the margin', async () => {
+      const fixture = TestBed.createComponent(MarginHost);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const items = fixture.componentInstance.v.virtualItems();
+      expect(items.length).toBeGreaterThanOrEqual(1);
+      for (const item of items) {
+        expect(item.start).toBe(item.index * 40 + 100);
+      }
+    });
+
+    it('scrollToIndex(align:start) offsets the target by the margin', async () => {
+      const fixture = TestBed.createComponent(MarginHost);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const spy = vi.fn();
+      el.scrollTo = spy;
+      fixture.componentInstance.v.scrollToIndex(10, { align: 'start' });
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ top: 500 }));
+    });
+
+    it('measurementFor reflects the margin-shifted offset', async () => {
+      const fixture = TestBed.createComponent(MarginHost);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const m = fixture.componentInstance.v.measurementFor(10);
+      expect(m).not.toBeNull();
+      expect(m!.start).toBe(10 * 40 + 100);
+    });
+
+    it('default (no scrollMargin) keeps item 0 at offset 0', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      const first = fixture.componentInstance.v.virtualItems().find((i) => i.index === 0);
+      expect(first?.start).toBe(0);
+    });
+  });
+
+  describe('measurementFor', () => {
+    it('returns the measured offset after measureElement grows a row', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const measured = document.createElement('div');
+      measured.setAttribute('data-index', '0');
+      Object.defineProperty(measured, 'offsetHeight', { configurable: true, value: 100 });
+      Object.defineProperty(measured, 'offsetWidth', { configurable: true, value: 100 });
+      fixture.componentInstance.v.measureElement(measured);
+      await flush(fixture);
+
+      const item1 = fixture.componentInstance.v.measurementFor(1);
+      expect(item1).not.toBeNull();
+      expect(item1!.start).toBe(100);
+    });
+
+    it('returns null for an out-of-range index', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      expect(fixture.componentInstance.v.measurementFor(5000)).toBeNull();
+      expect(fixture.componentInstance.v.measurementFor(-1)).toBeNull();
+    });
+  });
+
   describe('SSR empty window', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({
@@ -355,6 +460,7 @@ describe('injectVirtualizer', () => {
       expect(() => v.scrollToOffset(50)).not.toThrow();
       expect(() => v.scrollToIndex(5)).not.toThrow();
       expect(() => v.measureElement(fakeEl)).not.toThrow();
+      expect(v.measurementFor(0)).toBeNull();
       expect(spyScrollTo).not.toHaveBeenCalled();
     });
   });
