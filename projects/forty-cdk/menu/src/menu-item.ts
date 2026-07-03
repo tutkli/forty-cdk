@@ -160,6 +160,8 @@ export class ForMenuItem {
       handleMenuTabOut(this.ctx);
       return;
     }
-    this.ctx.handleTypeahead(event);
+    if (this.ctx.handleTypeahead(event) && event.key === ' ') {
+      event.preventDefault();
+    }
   }
 }

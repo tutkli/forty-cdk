@@ -78,17 +78,25 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     target?.host.focus();
   }
 
-  handleTypeahead(event: KeyboardEvent): void {
+  /**
+   * Feeds `event` to the typeahead buffer and focuses the first matching item.
+   * Returns `true` when the key was consumed as a typeahead character (a
+   * printable char, or Space while the buffer is already non-empty), `false`
+   * otherwise. Items applied on a native `<button>` use the return value to
+   * `preventDefault()` a mid-typeahead Space so it extends the buffer instead
+   * of triggering the button's activation.
+   */
+  handleTypeahead(event: KeyboardEvent): boolean {
     if (!this.#typeahead.handle(event)) {
-      return;
+      return false;
     }
     const buffer = this.#typeahead.buffer().toLowerCase();
     if (!buffer) {
-      return;
+      return true;
     }
     const items = this.#items.items();
     if (items.length === 0) {
-      return;
+      return true;
     }
 
     const cycle = this.#typeahead.isRepeatedChar();
@@ -111,9 +119,10 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
       const source = override !== '' ? override : (item.host.textContent ?? '');
       if (source.trim().toLowerCase().startsWith(query)) {
         item.host.focus();
-        return;
+        return true;
       }
     }
+    return true;
   }
 
   /**

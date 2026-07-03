@@ -184,6 +184,23 @@ describe('MenuItemList', () => {
       list.handleTypeahead(o);
       expect(document.activeElement).toBe(copy.host);
     });
+
+    it('returns true for a consumed key and false for a non-printable one', () => {
+      const list = build();
+      list.registerItem(makeItem('apple'));
+
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: 'a' }))).toBe(true);
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: 'Enter' }))).toBe(false);
+    });
+
+    it('rejects a Space with an empty buffer but consumes it mid-buffer', () => {
+      const list = build();
+      list.registerItem(makeItem('new-york', { text: 'New York' }));
+
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: ' ' }))).toBe(false);
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: 'n' }))).toBe(true);
+      expect(list.handleTypeahead(new KeyboardEvent('keydown', { key: ' ' }))).toBe(true);
+    });
   });
 
   describe('focusFirst/LastEnabledItem', () => {

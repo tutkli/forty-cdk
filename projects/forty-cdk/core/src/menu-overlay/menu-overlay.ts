@@ -221,8 +221,8 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     this.#itemList.navigate(currentItem, action);
   }
 
-  handleTypeahead(event: KeyboardEvent): void {
-    this.#itemList.handleTypeahead(event);
+  handleTypeahead(event: KeyboardEvent): boolean {
+    return this.#itemList.handleTypeahead(event);
   }
 
   /**

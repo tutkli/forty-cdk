@@ -183,8 +183,8 @@ export class MenubarMenuContext implements ForMenuContext {
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     this.#itemList.navigate(currentItem, action);
   }
-  handleTypeahead(event: KeyboardEvent): void {
-    this.#itemList.handleTypeahead(event);
+  handleTypeahead(event: KeyboardEvent): boolean {
+    return this.#itemList.handleTypeahead(event);
   }
   clearItemHighlights(): void {
     this.#itemList.clearHighlights();

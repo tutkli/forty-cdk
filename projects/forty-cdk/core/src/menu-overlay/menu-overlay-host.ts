@@ -87,8 +87,8 @@ export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOver
     this._overlay.navigate(currentItem, action);
   }
 
-  handleTypeahead(event: KeyboardEvent): void {
-    this._overlay.handleTypeahead(event);
+  handleTypeahead(event: KeyboardEvent): boolean {
+    return this._overlay.handleTypeahead(event);
   }
 
   clearItemHighlights(): void {

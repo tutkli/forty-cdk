@@ -166,6 +166,9 @@ export class ForMenuRadioItem {
     // preventDefault here suppresses the browser-synthesized click.
     if (event.key === ' ') {
       event.preventDefault();
+      if (this.menu.handleTypeahead(event)) {
+        return;
+      }
       this.group.select(this.value());
       this.activate.emit(createVetoableEvent());
       return;
