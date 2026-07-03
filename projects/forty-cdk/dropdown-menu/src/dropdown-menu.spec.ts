@@ -516,6 +516,44 @@ describe('ForDropdownMenu', () => {
       expect(r.instance.open()).toBe(true);
       outside.remove();
     });
+
+    it('does not snap focus back to the trigger on a focus-outside close', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      const outside = document.createElement('input');
+      document.body.appendChild(outside);
+      trigger.focus();
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      outside.focus();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(outside);
+      outside.remove();
+    });
+
+    it('does not snap focus back to the trigger on a pointer-down-outside close', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      document.querySelector<HTMLButtonElement>('#a')!.focus();
+
+      const outside = document.createElement('div');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).not.toBe(trigger);
+      outside.remove();
+    });
   });
 
   describe('mount / portal', () => {

@@ -82,4 +82,20 @@ test.describe('DropdownMenu', () => {
     await expect(el(page, 'after')).toBeFocused();
     await expect(el(page, 'trigger')).not.toBeFocused();
   });
+
+  test('clicking an external input closes without stealing focus back to the trigger', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
+
+    const before = page.locator('#before');
+    await before.click();
+
+    await expect(el(page, 'menu')).toHaveCount(0);
+    await expect(before).toBeFocused();
+    await expect(el(page, 'trigger')).not.toBeFocused();
+  });
 });
