@@ -24,6 +24,7 @@ import { ForComboboxChipRemove } from './combobox-chip-remove';
 import { ForComboboxChips } from './combobox-chips';
 import { ForComboboxClear } from './combobox-clear';
 import { ForComboboxContent } from './combobox-content';
+import { provideForComboboxDefaults } from './combobox-defaults';
 import { ForComboboxEmpty } from './combobox-empty';
 import { ForComboboxGroup } from './combobox-group';
 import { ForComboboxGroupLabel } from './combobox-group-label';
@@ -1143,6 +1144,75 @@ describe('ForCombobox', () => {
       r.instance.query.set('Apple');
       await flush(r.fixture);
       expect(clear.style.display).toBe('');
+    });
+
+    describe('aria-label (issue #1145 item 7)', () => {
+      it('carries the default aria-label "Clear"', async () => {
+        @Component({
+          imports: [ForCombobox, ForComboboxInput, ForComboboxClear],
+          template: `
+            <div forCombobox [(open)]="open">
+              <input forComboboxInput />
+              <button forComboboxClear data-test-id="clear">×</button>
+            </div>
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+        }
+
+        const r = renderHost(Host);
+        await flush(r.fixture);
+
+        expect(r.query<HTMLElement>('[data-test-id="clear"]')!.getAttribute('aria-label')).toBe(
+          'Clear',
+        );
+      });
+
+      it('[ariaLabel] overrides the emitted aria-label', async () => {
+        @Component({
+          imports: [ForCombobox, ForComboboxInput, ForComboboxClear],
+          template: `
+            <div forCombobox [(open)]="open">
+              <input forComboboxInput />
+              <button forComboboxClear data-test-id="clear" ariaLabel="Borrar">×</button>
+            </div>
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+        }
+
+        const r = renderHost(Host);
+        await flush(r.fixture);
+
+        expect(r.query<HTMLElement>('[data-test-id="clear"]')!.getAttribute('aria-label')).toBe(
+          'Borrar',
+        );
+      });
+
+      it('an unbound clear button uses provideForComboboxDefaults({ clearAriaLabel })', async () => {
+        @Component({
+          imports: [ForCombobox, ForComboboxInput, ForComboboxClear],
+          providers: [provideForComboboxDefaults({ clearAriaLabel: 'Vaciar' })],
+          template: `
+            <div forCombobox [(open)]="open">
+              <input forComboboxInput />
+              <button forComboboxClear data-test-id="clear">×</button>
+            </div>
+          `,
+        })
+        class Host {
+          readonly open = signal(false);
+        }
+
+        const r = renderHost(Host);
+        await flush(r.fixture);
+
+        expect(r.query<HTMLElement>('[data-test-id="clear"]')!.getAttribute('aria-label')).toBe(
+          'Vaciar',
+        );
+      });
     });
   });
 

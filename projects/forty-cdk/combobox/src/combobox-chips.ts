@@ -1,6 +1,7 @@
-import { Directive, input } from '@angular/core';
+import { Directive, inject, input } from '@angular/core';
 
 import { injectComboboxContext } from './combobox-context';
+import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
 /**
  * Multi-mode chips area. Wrap the chips and the `<input>` together so the
@@ -21,9 +22,9 @@ import { injectComboboxContext } from './combobox-context';
  * </div>
  * ```
  *
- * Carries `role="group"` with `aria-label="Selected items"` (override via
- * `[ariaLabel]`) so screen readers announce the chip cluster as a single
- * unit. The directive itself doesn't manage focus or selection — the
+ * Carries `role="group"` with `aria-label` (default `'Selected items'`,
+ * override via `[ariaLabel]`) so screen readers announce the chip cluster as
+ * a single unit. The directive itself doesn't manage focus or selection — the
  * chips and the input own that — but its presence groups them for
  * assistive tech.
  */
@@ -37,12 +38,14 @@ import { injectComboboxContext } from './combobox-context';
 })
 export class ForComboboxChips {
   protected readonly ctx = injectComboboxContext('ForComboboxChips');
+  readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 
   /**
    * Accessible name for the chip cluster, exposed as `role="group"`'s
    * `aria-label` so screen readers announce the selected chips as a single
-   * unit. Defaults to `'Selected items'`; set `[ariaLabel]` to localize or
-   * override it.
+   * unit. Defaults to the scope's `chipsAriaLabel` (`'Selected items'` unless
+   * overridden via `provideForComboboxDefaults`); set `[ariaLabel]` to
+   * override per-instance, or `null` to drop the attribute.
    */
-  readonly ariaLabel = input<string | null>('Selected items');
+  readonly ariaLabel = input<string | null>(this.#defaults.chipsAriaLabel);
 }
