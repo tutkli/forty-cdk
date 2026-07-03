@@ -189,11 +189,15 @@ export class ForToast implements ForToastContext {
 
   /**
    * `true` when at least one registered `[forToastAction]` carries a
-   * non-empty `altText`. In that mode the host's `aria-live` is silenced
-   * and the announcement is composed and routed through `LiveAnnouncer`.
+   * non-empty `altText` — the WCAG 2.2.1 recovery hint the visible DOM does
+   * not contain, so the toast must voice it through `LiveAnnouncer`.
    */
   readonly #hasActionAltText = computed(() =>
     this.#actions().some((a) => a.altText().trim() !== ''),
+  );
+
+  readonly #hostIsLiveRegion = computed(
+    () => this.variant() === 'error' && !this.#hasActionAltText(),
   );
 
   /**
@@ -219,12 +223,7 @@ export class ForToast implements ForToastContext {
   protected readonly computedRole = computed(() =>
     this.variant() === 'error' ? 'alert' : 'status',
   );
-  protected readonly ariaLive = computed(() => {
-    if (this.#hasActionAltText()) {
-      return 'off';
-    }
-    return this.variant() === 'error' ? 'assertive' : 'polite';
-  });
+  protected readonly ariaLive = computed(() => (this.#hostIsLiveRegion() ? 'assertive' : 'off'));
 
   // Timer state — kept off the reactive graph because pause/resume are
   // imperative and we don't want to trip change detection on every tick.
@@ -273,18 +272,19 @@ export class ForToast implements ForToastContext {
     });
     this.#destroyRef.onDestroy(() => this.#cancelTimer());
 
-    // Route the synthesized announcement through LiveAnnouncer reactively, so
-    // a late-bound `altText` and `ref.update()` text changes are announced —
-    // not only the value present on first render. Only active when at least
-    // one action carries `altText` (the host's silenced `aria-live` path);
-    // otherwise the host's own `aria-live` reads the toast and a manual
-    // announce would duplicate it. A guard against re-announcing identical
-    // text keeps an unrelated re-render from re-reading the same message.
-    // Pure side effect (an imperative `LiveAnnouncer` write), so `effect()` is
-    // the correct primitive here.
+    // Route the synthesized announcement through LiveAnnouncer's pre-existing
+    // region reactively, so a late-bound `altText` and `ref.update()` text
+    // changes are announced — not only the value present on first render. A
+    // live region must already exist before its content changes to announce
+    // reliably, and a toast is inserted with content already present, so every
+    // variant routes here except a bare error, whose `role="alert"` host is the
+    // one live role read reliably on insertion (see `#hostIsLiveRegion`). A
+    // guard against re-announcing identical text keeps an unrelated re-render
+    // from re-reading the same message. Pure side effect (an imperative
+    // `LiveAnnouncer` write), so `effect()` is the correct primitive here.
     let lastAnnounced: string | null = null;
     effect(() => {
-      if (!this.#hasActionAltText()) {
+      if (this.#hostIsLiveRegion()) {
         lastAnnounced = null;
         return;
       }

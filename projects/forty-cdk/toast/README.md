@@ -2,7 +2,7 @@
 
 Brief, auto-dismissing notifications stacked in a corner, opened programmatically through ForToastManager.
 
-The visible toast renders with `role="status"` (`'info'` / `'success'` / `'warning'`) or `role="alert"` (`'error'`) plus `aria-live` so screen readers announce updates without forcing focus. Two ways to use the same primitive:
+The visible toast renders with `role="status"` (`'info'` / `'success'` / `'warning'`) or `role="alert"` (`'error'`), and screen readers announce updates through a shared off-screen live region without focus ever moving. Two ways to use the same primitive:
 
 - **Programmatic** (the common path): inject `ForToastManager` and call `show({ title, … })` from anywhere.
 - **Declarative**: drop `<div forToast>` directly in any template, controlling mount/unmount with `@if`.
@@ -338,14 +338,14 @@ Outputs:
 
 ## Variants
 
-| Variant            | Role     | aria-live   | Use for                                  |
+| Variant            | Role     | Announced   | Use for                                  |
 | ------------------ | -------- | ----------- | ---------------------------------------- |
 | `info` _(default)_ | `status` | `polite`    | Neutral notifications.                   |
 | `success`          | `status` | `polite`    | Confirmations of completed actions.      |
 | `warning`          | `status` | `polite`    | Non-blocking warnings.                   |
 | `error`            | `alert`  | `assertive` | Failures that interrupt the user's task. |
 
-`data-variant` is reflected on the host so consumers can paint per-variant icons / colors purely from CSS.
+The **Announced** column is the politeness a screen reader hears. It is delivered through a shared off-screen live region (see [Live updates and announcements](#live-updates-and-announcements)), so the host's own `aria-live` is `off` for every variant except a bare `error`. `data-variant` is reflected on the host so consumers can paint per-variant icons / colors purely from CSS.
 
 ## Global defaults
 
@@ -371,12 +371,12 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
 
 Implements the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns/alert/).
 
-- `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces, the screen reader reads the **whole** toast rather than only the changed node. It does **not** by itself guarantee a re-announcement on a `ref.update()` text change, and it is irrelevant on the silenced (`altText`) path where `aria-live` is `off`. Re-announcement on update is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
+- `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces — a bare `error` toast, the one variant still announced by its host — the screen reader reads the **whole** toast rather than only the changed node. On every other variant the host `aria-live` is `off` and announcements route through the shared `LiveAnnouncer`, so `aria-atomic` is inert there. Re-announcement on a `ref.update()` text change is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
 - `aria-labelledby` and `aria-describedby` wire automatically from `[forToastTitle]` / `[forToastDescription]`. Multiple titles / descriptions concatenate ids.
 - `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
 - The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut.
 - Pause on hover / focus is mandated by [WCAG 2.1 SC 2.2.1](https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html) for time-limited content.
-- Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. When at least one `[forToastAction]` carries a non-empty `altText`, the toast silences its host `aria-live` and routes a synthesized announcement (`title. description. altText`) through the shared `LiveAnnouncer` — meeting [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions.
+- Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. The `altText` is folded into the synthesized announcement (`title. description. altText`) — meeting [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions. It also switches a bare `error` toast onto the `LiveAnnouncer` path, since the recovery hint is not in the visible DOM the host region would read.
 
   ```html
   <button forToastAction altText="Undo (Cmd+Z)" (click)="restore()">Undo</button>
@@ -384,12 +384,12 @@ Implements the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 
 ### Live updates and announcements
 
-A toast announces on two paths, picked automatically:
+A toast announces on one of two paths, picked automatically:
 
-- **Host `aria-live` (default).** With no `altText` anywhere in the toast, the host carries `aria-live="polite"` (or `assertive` for `error`). The screen reader reads the toast when it mounts and, thanks to `aria-atomic`, re-reads the whole toast when the host region's text changes.
-- **`LiveAnnouncer` (silenced path).** As soon as any `[forToastAction]` carries a non-empty `altText`, the host `aria-live` is set to `off` and the toast composes its message (`title. description. altText`) from the **rendered title / description / altText** and pushes it through the shared off-screen `LiveAnnouncer`.
+- **`LiveAnnouncer` (default).** Every variant except a bare `error` silences its host `aria-live` (`off`) and pushes a composed message (`title. description. altText`) through the shared off-screen `LiveAnnouncer`. Its two politeness regions exist in the accessibility tree _before_ the toast mounts, so the announcement is reliable — a live region has to exist before its content changes to be read, and a toast is always inserted with its content already present, which makes announcing from the host itself unreliable (info / success / warning especially).
+- **Host `role="alert"` (bare error).** An `error` toast with no action `altText` keeps its own host as the live region (`role="alert"`, `aria-live="assertive"`): `alert` is the one live role screen readers read reliably on insertion. As soon as such a toast carries an `altText`, it joins the `LiveAnnouncer` (assertive) path so the recovery hint — absent from the visible DOM — is still voiced.
 
-Both paths are reactive. A late-bound `altText` (set after first render) and any `ref.update()` that changes the title, description, or `altText` re-announces — the composed message is tracked, and an unchanged message never re-fires. This is why the contract is "drive announcements explicitly", not "trust `aria-atomic`": `aria-atomic` does nothing on the silenced path, so the directive owns the re-announce.
+The `LiveAnnouncer` path is reactive. A late-bound `altText` (set after first render) and any `ref.update()` that changes the title, description, or `altText` re-announces — the composed message is tracked, and an unchanged message never re-fires. This is why the contract is "drive announcements explicitly", not "trust `aria-atomic`": `aria-atomic` does nothing on the `LiveAnnouncer` path, so the directive owns the re-announce.
 
 ```ts
 const ref = this.toasts.show({ title: 'Saving…', duration: 0 });
