@@ -412,9 +412,6 @@ describe('ForSlider', () => {
       await flush();
       fixture.componentInstance.valueCommits.length = 0;
 
-      // Push the lower thumb to its max: it clamps to (upper - gap) =
-      // 0.7 - 0.1*3 = 0.39999999999999997 in raw float, which must be
-      // step-rounded to a clean 0.4 rather than leaking the float tail.
       keyDown(thumb(el, 0), 'End');
       await flush();
       keyUp(thumb(el, 0), 'End');
