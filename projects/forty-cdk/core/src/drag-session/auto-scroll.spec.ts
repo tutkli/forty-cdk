@@ -91,6 +91,105 @@ describe('createAutoScroller — SSR / no-window no-op', () => {
   });
 });
 
+describe('createAutoScroller — resolveScrollHost follows the pointer across containers', () => {
+  function scrollableAt(rect: { left: number; top: number; right: number; bottom: number }) {
+    const el = document.createElement('div') as unknown as HTMLElement & { topDelta: number };
+    el.style.overflowY = 'auto';
+    el.style.overflowX = 'auto';
+    Object.defineProperty(el, 'scrollHeight', { value: 1000, configurable: true });
+    Object.defineProperty(el, 'clientHeight', { value: 100, configurable: true });
+    Object.defineProperty(el, 'scrollWidth', { value: 1000, configurable: true });
+    Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true });
+    let top = 0;
+    el.topDelta = 0;
+    Object.defineProperty(el, 'scrollTop', {
+      configurable: true,
+      get: () => top,
+      set: (v: number) => {
+        el.topDelta += v - top;
+        top = v;
+      },
+    });
+    Object.defineProperty(el, 'scrollLeft', { value: 0, writable: true, configurable: true });
+    el.getBoundingClientRect = () =>
+      ({
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.right - rect.left,
+        height: rect.bottom - rect.top,
+        x: rect.left,
+        y: rect.top,
+        toJSON() {},
+      }) as DOMRect;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  const created: HTMLElement[] = [];
+
+  function makeWin(pending: { cb: FrameRequestCallback | null }): Window {
+    return {
+      requestAnimationFrame(cb: FrameRequestCallback): number {
+        pending.cb = cb;
+        return 1;
+      },
+      cancelAnimationFrame(): void {
+        pending.cb = null;
+      },
+      getComputedStyle: (el: Element) => window.getComputedStyle(el),
+      get document() {
+        return document;
+      },
+    } as unknown as Window;
+  }
+
+  function step(pending: { cb: FrameRequestCallback | null }): void {
+    const cb = pending.cb;
+    pending.cb = null;
+    cb?.(0);
+  }
+
+  afterEach(() => {
+    for (const el of created.splice(0)) {
+      el.remove();
+    }
+  });
+
+  it('scrolls the destination container the pointer is over, not the origin', () => {
+    const source = scrollableAt({ left: 0, top: 0, right: 100, bottom: 100 });
+    const dest = scrollableAt({ left: 200, top: 0, right: 300, bottom: 100 });
+    created.push(source, dest);
+
+    const pending: { cb: FrameRequestCallback | null } = { cb: null };
+    let over: HTMLElement = source;
+    const scroller = createAutoScroller({
+      host: source,
+      win: makeWin(pending),
+      edgeSize: 30,
+      maxSpeed: 20,
+      onFrame: () => {},
+      resolveScrollHost: () => over,
+    });
+
+    scroller.update({ x: 50, y: 95 });
+    step(pending);
+    expect(source.topDelta).toBeGreaterThan(0);
+    expect(dest.topDelta).toBe(0);
+
+    source.topDelta = 0;
+
+    over = dest;
+    scroller.update({ x: 250, y: 95 });
+    step(pending);
+    expect(dest.topDelta).toBeGreaterThan(0);
+    expect(source.topDelta).toBe(0);
+
+    scroller.stop();
+  });
+});
+
 describe('computeScrollVelocity — zoneless guard', () => {
   it('pure velocity math works under provideZonelessChangeDetection', () => {
     TestBed.configureTestingModule({

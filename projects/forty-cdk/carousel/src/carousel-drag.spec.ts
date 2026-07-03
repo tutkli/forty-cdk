@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForCarousel } from './carousel';
-import { ForCarouselDrag } from './carousel-drag';
+import { ForCarouselDrag, flickVelocity, resolveDragIndex } from './carousel-drag';
 import { ForCarouselSlide } from './carousel-slide';
 import { ForCarouselTrack } from './carousel-track';
 import { ForCarouselViewport } from './carousel-viewport';
@@ -70,6 +70,32 @@ describe('ForCarouselDrag', () => {
     it('viewport has no --for-carousel-drag var at rest', () => {
       const { el } = renderHost(DragHost);
       expect(viewportEl(el).style.getPropertyValue('--for-carousel-drag')).toBe('');
+    });
+  });
+
+  describe('flick velocity staleness (D: no flick after a long pause)', () => {
+    const FLICK = 0.4;
+
+    it('a fast flick toward the next slide biases the snap forward', () => {
+      const v = flickVelocity(FLICK, false);
+      expect(resolveDragIndex(0, 0.1, v)).toBe(1);
+    });
+
+    it('a stale release zeroes the velocity so the snap goes to nearest', () => {
+      const v = flickVelocity(FLICK, true);
+      expect(v).toBe(0);
+      expect(resolveDragIndex(0, 0.1, v)).toBe(0);
+    });
+
+    it('a stale release does not bias a small backward drag either', () => {
+      const v = flickVelocity(-FLICK, true);
+      expect(v).toBe(0);
+      expect(resolveDragIndex(2, -0.2, v)).toBe(2);
+    });
+
+    it('a fresh release keeps its velocity untouched', () => {
+      expect(flickVelocity(0.9, false)).toBe(0.9);
+      expect(flickVelocity(-0.9, false)).toBe(-0.9);
     });
   });
 
