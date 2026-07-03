@@ -245,10 +245,22 @@ import { ForVisuallyHidden } from 'forty-cdk/core';
  * the disclosure / menu families that gate `isPlatformBrowser`-only
  * viewport / portal side effects (`NavigationMenuOpenFixture`,
  * `MenubarOpenFixture`). Each asserts the open render produces no throw
- * AND leaves `document.body` untouched — `injectPortal`, the shell side
- * effects, and the NavigationMenu viewport re-parenting all run inside
- * `afterNextRender`, which never fires server-side, so the content stays
- * in the view tree and nothing is appended to `<body>`.
+ * AND leaves `document.body` untouched.
+ *
+ * What actually keeps `<body>` untouched is per-side-effect
+ * `isPlatformBrowser` gating — NOT the render lifecycle being skipped.
+ * With only `PLATFORM_ID` mocked (jsdom still provides a real `document`),
+ * `afterNextRender` DOES fire and `effect()` DOES run during change
+ * detection, so the guards have to live inside the side effects themselves:
+ * `injectPortal`, `BodyScrollLock`, `InertSiblingsStack`,
+ * `DismissableLayerStack`, `FocusTrap.activate`, `injectFloating` /
+ * `injectItemAlignedPositioner`, and the NavigationMenu viewport
+ * re-parenting each no-op off-browser. A body-only assertion is therefore
+ * not sufficient on its own — a side effect can escape onto `document`
+ * (a global keydown listener, a timer) without ever appending to `<body>`,
+ * and jsdom masks the APIs a real server lacks, hiding such escapes. So the
+ * suite also spies `document.addEventListener` to prove an open modal
+ * registers no listener server-side.
  */
 
 @Component({
@@ -1825,6 +1837,14 @@ describe('SSR smoke tests', () => {
     expect(dialog.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forDialog]')).toBeNull();
     expect(document.body.style.overflow).toBe(overflowBefore);
+  });
+
+  it('opening a modal Dialog registers no document keydown listener server-side', () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const f = TestBed.createComponent(DialogOpenFixture);
+    f.detectChanges();
+    const keydownCalls = addSpy.mock.calls.filter(([type]) => type === 'keydown');
+    expect(keydownCalls).toEqual([]);
   });
 
   it('opening a free-floating overlay (Drawer) does not portal or mutate <body> server-side', () => {

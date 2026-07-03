@@ -1,3 +1,4 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
@@ -9,6 +10,7 @@ import {
   input,
   numberAttribute,
   output,
+  PLATFORM_ID,
   type Signal,
   signal,
   untracked,
@@ -89,6 +91,7 @@ export class ForToast implements ForToastContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #destroyRef = inject(DestroyRef);
   readonly #announcer = inject(LiveAnnouncer);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly variant = input<ForToastVariant>('info');
 
@@ -425,6 +428,9 @@ export class ForToast implements ForToastContext {
 
   #scheduleTimer(): void {
     this.#cancelTimer();
+    if (!this.#isBrowser) {
+      return;
+    }
     this.#timerEndsAt = Date.now() + this.#remainingMs;
     this.#timerHandle = setTimeout(() => {
       this.#timerHandle = null;

@@ -1,4 +1,5 @@
-import { DOCUMENT, ElementRef, Injectable, inject } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { DOCUMENT, ElementRef, Injectable, inject, PLATFORM_ID } from '@angular/core';
 
 /**
  * Shared CSS selector for tabbable elements. Single source of truth for the
@@ -174,6 +175,7 @@ export class FocusTrap {
   readonly #container: HTMLElement;
   readonly #stack: FocusTrapStack;
   readonly #document: Document;
+  readonly #isBrowser: boolean;
   #returnTo: HTMLElement | null = null;
   #active = false;
   #containerHadTabindex = false;
@@ -182,10 +184,11 @@ export class FocusTrap {
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
 
-  constructor(container: HTMLElement, stack: FocusTrapStack, doc?: Document) {
+  constructor(container: HTMLElement, stack: FocusTrapStack, doc?: Document, isBrowser = true) {
     this.#container = container;
     this.#stack = stack;
     this.#document = doc ?? container.ownerDocument;
+    this.#isBrowser = isBrowser;
   }
 
   get container(): HTMLElement {
@@ -197,7 +200,7 @@ export class FocusTrap {
   }
 
   activate(options: FocusTrapActivateOptions = {}): void {
-    if (this.#active) {
+    if (this.#active || !this.#isBrowser) {
       return;
     }
     this.#active = true;
@@ -341,8 +344,18 @@ export class FocusTrap {
  * want `returnFocus: true`, and an unconditional `returnFocus: true` could
  * dump focus on a removed element. The consumer always knows the right
  * answer; do the deactivate yourself.
+ *
+ * SSR-safe: the trap is constructed with the resolved platform, so
+ * `activate()` is a no-op off-browser (no `document` keydown listener, no
+ * `MutationObserver`) rather than relying on the caller to gate it behind
+ * `afterNextRender`.
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  return new FocusTrap(host.nativeElement, inject(FocusTrapStack), inject(DOCUMENT));
+  return new FocusTrap(
+    host.nativeElement,
+    inject(FocusTrapStack),
+    inject(DOCUMENT),
+    isPlatformBrowser(inject(PLATFORM_ID)),
+  );
 }

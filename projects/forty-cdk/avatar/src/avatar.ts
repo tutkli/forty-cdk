@@ -1,3 +1,4 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   computed,
   DestroyRef,
@@ -7,6 +8,7 @@ import {
   input,
   linkedSignal,
   numberAttribute,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
 
@@ -69,6 +71,7 @@ export class ForAvatar implements ForAvatarContext {
     computation: () => false,
   });
   #timer: ReturnType<typeof setTimeout> | null = null;
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly shouldShowFallback = computed(() => {
     const status = this.#status();
@@ -96,7 +99,7 @@ export class ForAvatar implements ForAvatarContext {
       const status = this.#status();
       const delay = this.fallbackDelayMs();
       this.#cancelTimer();
-      if ((status === 'idle' || status === 'loading') && delay > 0) {
+      if (this.#isBrowser && (status === 'idle' || status === 'loading') && delay > 0) {
         this.#timer = setTimeout(() => {
           this.#timer = null;
           this.#timerElapsed.set(true);
