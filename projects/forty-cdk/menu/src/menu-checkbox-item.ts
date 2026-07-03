@@ -40,6 +40,11 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
  * event keeps the menu open. Per APG, **Space** toggles `checked` and
  * emits `(activate)` without closing the menu, so users can flip several
  * options in one open without consumer glue.
+ *
+ * Disabled items are skipped by arrow-key navigation, typeahead, and
+ * Home/End, and ignore pointer hover, but stay in the DOM carrying
+ * `aria-disabled="true"` (never the native `disabled` attribute) so assistive
+ * tech can still perceive and announce them.
  */
 @Directive({
   selector: '[forMenuCheckboxItem]',
@@ -67,6 +72,8 @@ export class ForMenuCheckboxItem {
 
   /** Two-way bindable. */
   readonly checked = model<boolean>(false);
+
+  /** Per-item disabled, in addition to the menu's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

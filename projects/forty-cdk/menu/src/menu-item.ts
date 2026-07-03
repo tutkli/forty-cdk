@@ -27,9 +27,10 @@ import { handleMenuTabOut } from './menu-tab-out';
  * open after activation (e.g. the action toggled something the user
  * wants to refine), call `event.preventDefault()` on the emitted event.
  *
- * Disabled items remain in the tab/focus rotation (per APG) so screen
- * readers can announce them — `aria-disabled="true"` rather than the
- * native `disabled` attribute.
+ * Disabled items are skipped by arrow-key navigation, typeahead, and
+ * Home/End, and ignore pointer hover, but stay in the DOM carrying
+ * `aria-disabled="true"` (never the native `disabled` attribute) so assistive
+ * tech can still perceive and announce them.
  */
 @Directive({
   selector: '[forMenuItem]',

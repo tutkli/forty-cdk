@@ -38,6 +38,11 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
  * menu — call `event.preventDefault()` on the emitted event to keep the
  * menu open. Per APG, **Space** sets the value and emits `(activate)`
  * without closing the menu.
+ *
+ * Disabled items are skipped by arrow-key navigation, typeahead, and
+ * Home/End, and ignore pointer hover, but stay in the DOM carrying
+ * `aria-disabled="true"` (never the native `disabled` attribute) so assistive
+ * tech can still perceive and announce them.
  */
 @Directive({
   selector: '[forMenuRadioItem]',
@@ -66,6 +71,8 @@ export class ForMenuRadioItem {
 
   /** Identifier added to / read from the radio group's `value`. Required. */
   readonly value = input.required<string>();
+
+  /** Per-item disabled, in addition to the menu's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
