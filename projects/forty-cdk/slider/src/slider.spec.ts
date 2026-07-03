@@ -173,6 +173,34 @@ describe('ForSlider', () => {
     });
   });
 
+  describe('touch-action (#1152)', () => {
+    it('sets touch-action:pan-y on the thumb of a horizontal slider (frees vertical scroll)', () => {
+      const { el } = renderHost(SliderHost);
+      expect(thumb(el, 0).style.touchAction).toBe('pan-y');
+    });
+
+    it('sets touch-action:pan-x on the thumb of a vertical slider (frees horizontal scroll)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.orientation.set('vertical');
+      await flush();
+      expect(thumb(el, 0).style.touchAction).toBe('pan-x');
+    });
+
+    it('omits touch-action on a disabled thumb (no drag to protect)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      expect(thumb(el, 0).style.touchAction).toBe('');
+    });
+
+    it('omits touch-action on a readonly thumb', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.readonly.set(true);
+      await flush();
+      expect(thumb(el, 0).style.touchAction).toBe('');
+    });
+  });
+
   describe('keyboard (single thumb, horizontal LTR)', () => {
     it('ArrowRight increases by step', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
@@ -374,6 +402,27 @@ describe('ForSlider', () => {
       keyDown(thumb(el, 0), 'End');
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([85, 90]);
+    });
+
+    it('neighbor clamp is step-rounded — no float tail with a fractional step + gap (#1152)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.gap.set(3);
+      fixture.componentInstance.picked.set([0.1, 0.7]);
+      await flush();
+      fixture.componentInstance.valueCommits.length = 0;
+
+      // Push the lower thumb to its max: it clamps to (upper - gap) =
+      // 0.7 - 0.1*3 = 0.39999999999999997 in raw float, which must be
+      // step-rounded to a clean 0.4 rather than leaking the float tail.
+      keyDown(thumb(el, 0), 'End');
+      await flush();
+      keyUp(thumb(el, 0), 'End');
+      await flush();
+
+      expect(fixture.componentInstance.picked()).toEqual([0.4, 0.7]);
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('0.4');
+      expect(fixture.componentInstance.valueCommits).toEqual([[0.4, 0.7]]);
     });
 
     it('Home / End on a multi-thumb clamps to neighbor, not absolute extreme', async () => {

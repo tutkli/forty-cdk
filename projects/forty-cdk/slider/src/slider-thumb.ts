@@ -43,6 +43,7 @@ import { injectSliderContext, type SliderArrowKey } from './slider-context';
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '[attr.data-index]': 'index()',
     '[style.--for-slider-thumb-position]': 'fraction()',
+    '[style.touch-action]': 'touchAction()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
     '(pointerdown)': 'onPointerDown($event)',
@@ -71,6 +72,21 @@ export class ForSliderThumb {
   readonly valueText = input<string>('');
 
   protected readonly tabindex = computed(() => (this.ctx.effectiveDisabled() ? -1 : 0));
+
+  /**
+   * `touch-action` for the thumb: capture the slider's own axis so a finger
+   * drag along it can't be stolen by page scrolling (which would fire
+   * `pointercancel` mid-drag and can commit a mid-drag value), while freeing
+   * the perpendicular axis for scrolling. A horizontal slider drags along x
+   * (`pan-y`); a vertical slider drags along y (`pan-x`). Suppressed while the
+   * slider is disabled or readonly (no drag to protect).
+   */
+  protected readonly touchAction = computed<string | null>(() => {
+    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
+      return null;
+    }
+    return this.ctx.orientation() === 'vertical' ? 'pan-x' : 'pan-y';
+  });
 
   protected readonly currentValue = computed(() => {
     const i = this.index();

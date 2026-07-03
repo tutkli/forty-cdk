@@ -118,6 +118,30 @@ describe('ForPaneResizer', () => {
     });
   });
 
+  describe('touch-action (#1152)', () => {
+    it('sets touch-action:pan-y on a vertical separator (resize axis is x)', () => {
+      const { query } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      expect(el.style.touchAction).toBe('pan-y');
+    });
+
+    it('sets touch-action:pan-x on a horizontal separator (resize axis is y)', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      fixture.componentInstance.orientation.set('horizontal');
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      expect(el.style.touchAction).toBe('pan-x');
+    });
+
+    it('omits touch-action while disabled (no drag to protect)', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      expect(el.style.touchAction).toBe('');
+    });
+  });
+
   describe('keyboard (vertical separator, LTR)', () => {
     it('ArrowRight increments by step, ArrowLeft decrements', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
