@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-07-04
+
+### Added
+
+- **Accordion** — `ForAccordion` gains a root `disabled` input that disables every item at once (an _effective_ disabled OR'd into each item, so per-item `[disabled]` is no longer needed), reflected as `data-disabled` on the root and exposed on the context.
+- **Combobox** — the clear button and chip group `aria-label`s are now localizable per scope. `ForComboboxClear` gains an `ariaLabel` input, and `ForComboboxDefaults` adds `clearAriaLabel` (`'Clear'`) and `chipsAriaLabel` (`'Selected items'`), so `provideForComboboxDefaults` translates every combobox clear button / chip group in a scope at once.
+- **Menu** — `[forMenuRadioGroup]` can now be given an accessible name by a projected `[forMenuGroupLabel]`, wiring `aria-labelledby` with the same mechanism `[forMenuGroup]` already uses.
+
+### Changed
+
+- **Overlay managers (Dialog / Drawer / Toast)** — **BREAKING.** The three imperative managers are unified onto one contract:
+  - `OverlayRef.closed` now resolves `{ reason, result }` (was `R | undefined`), so a programmatic `close(value)` is distinguishable from an Escape / backdrop / close-button dismissal. `ForDialogRef` / `ForDrawerRef` type `reason` as their respective close-reason union.
+  - `injectDrawerData<T>()` now returns `T | null` (was `T`), matching `injectDialogData` and the runtime.
+  - Config callbacks renamed to mirror the declarative outputs: `ForDrawerOpenConfig.onDrag` / `onRelease` / `onActiveSnapPointChange` → `dragMove` / `release` / `activeSnapPointChange`, and `ForToastConfig.action.onClick` → `activate`.
+  - `ForDialogDefaults` gains the shared behavior keys `modal` / `dismissible` / `returnFocus` / `initialFocus`, resolved by `ForDialogManager`, matching what `ForDrawerDefaults` already exposed.
+- **Contract & context types** — **BREAKING.** The range value type moves to `forty-cdk/core` and is renamed `CalendarDateRange<D>` → `DateRange<D>` (no compat alias). Cross-primitive contract and context types (e.g. `VetoableEvent` / `VetoableNativeEvent`, `FloatingSide` / `FloatingAlign`, `DateAdapter` / `TimeCapableDateAdapter`, `SegmentType`, and the roving / menu / segment coordination types surfaced through the `FOR_*_CONTEXT` tokens) are now re-exported from each primitive's own entry point, so advanced-composition consumers import them from the entry they already use instead of the no-semver-guarantees `forty-cdk/core` barrel.
+
+### Fixed
+
+- **SSR** — server-side rendering no longer runs browser-only side effects (floating positioning, focus traps, timers) during the initial render.
+- **Menu / Menubar / Context Menu / Navigation Menu** — context-menu now binds the trigger id for the menu's `aria-labelledby` and adds a pointer long-press fallback for touch; menubar gets orientation-aware trigger keys, anchored/cycling typeahead, and a guarded hover-keepalive detach; navigation-menu scopes Escape to focus within the nav; menu skips return-focus on outside-interaction closes and stops Space from activating an item mid-typeahead.
+- **Combobox** — ignores keydown during IME composition; inline-completes against the active option; focuses the trigger before Tab-closing in the picker anatomy; corrects virtualized `aria-posinset` / `aria-setsize`.
+- **Select** — purges removed options from the snapshot; scrolls the selected option into view on open; dev-throws on `selectionFollowsFocus` + virtualization; `onFocusOut` now checks the wrapper rather than the trigger.
+- **Listbox / Tree** — dev-throw on `selectionFollowsFocus` + virtualization; tree keeps a tab stop when selection points to an unrendered node, and fixes virtualized resume, the multi-select guard, and drag handles.
+- **Radio Group** — four-cursor arrow navigation and readonly focus move; keeps a tab stop when the selected radio is disabled.
+- **Tooltip / Hover Card** — Escape dismissal, a touch guard, and shared scroll-dismiss.
+- **Toast** — announces via pre-existing live regions instead of creating its own.
+- **Table** — grid header-row ARIA, page-move keys, and a composite tab stop.
+- **Pagination** — reconciles the current page against the count via `effectivePage`.
+- **Scroll Area** — focusable viewport so keyboard scrolling works.
+- **Virtualization** — fixes the row-content Space/Enter seam and `scrollMargin`.
+- **Drag & Drop** — connected auto-scroll, lifted Home/End, and flick; cancels the drag when the lifted item is destroyed; core pointerId filtering, swipe hygiene, and settle duration.
+- **Slider** — `touch-action` on the thumb/resizer and a step-rounded clamp.
+- **Stepper** — `role="presentation"` on the item in interactive mode.
+- **Field** — error docs, `aria-describedby` composition, and slot counting.
+- **Form primitives** — focus-on-error rollout across the form family.
+- **File Upload** — enforces `accept` on drop and emits `filesRejected`.
+- **Number Input** — parses percent input back to the fraction; guards name double-submit and step precision; core now parses negatives written with U+2212 / a fullwidth minus.
+- **Date Field / Date Picker** — don't clamp mid-typing compositions; don't leak transient time nulls or the sentinel date.
+- **Date Range Field / Time Range Field** — reflect `data-invalid` when the endpoints are out of order.
+- **OTP Input** — reconciles the input on blur after an external reset.
+- **Dialog** — exempts the backdrop from the dismissable layer.
+- **Overlay Manager** — guards the synchronous tick against `NG0101`.
+- **Focus Trap** — skips CSS-hidden elements when trapping focus.
+- **Typeahead (core)** — diacritics-insensitive matching.
+
 ## [0.6.0] - 2026-07-02
 
 ### Added
@@ -224,7 +270,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/tutkli/forty-cdk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tutkli/forty-cdk/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/tutkli/forty-cdk/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/tutkli/forty-cdk/compare/v0.3.0...v0.4.0
