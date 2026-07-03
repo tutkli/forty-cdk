@@ -3,13 +3,31 @@ import { type Provider } from '@angular/core';
 import { createDefaults } from 'forty-cdk/core';
 
 /**
- * Defaults inherited by descendant dialogs in the surrounding injector
- * scope. Configure with `provideForDialogDefaults`. Applies to both
- * declarative dialogs and `ForDialogManager.open()`; the manager resolves
- * `config[key] ?? defaults[key]` so a per-`open()` value always wins over the
- * scope default.
+ * Defaults inherited by dialogs in the surrounding injector scope. Configure
+ * with `provideForDialogDefaults`. Keys map 1:1 to the `[forDialog]` inputs of
+ * the same name; the resolver picks `consumerInput ?? defaults[key] ?? hardcoded
+ * fallback` per key.
+ *
+ * **Scope caveat (declarative vs. programmatic).** Declarative `[forDialog]`
+ * instances read this token from their own injector, so a scoped
+ * `provideForDialogDefaults` (a lazy route, a component `providers`) reaches
+ * every dialog rendered under that scope. `ForDialogManager` is
+ * `providedIn: 'root'` and resolves the token **once, from the root injector**,
+ * so only application-root `provideForDialogDefaults` affects
+ * `ForDialogManager.open()` — a scoped override does not. To customize a
+ * programmatic dialog outside the root, pass the value on the `open()` config
+ * (a per-`open()` value always wins). This asymmetry is shared with
+ * `ForDrawerDefaults`.
  */
 export interface ForDialogDefaults {
+  /** Default `true`. Sets `aria-modal`, locks body scroll, traps focus. */
+  modal?: boolean;
+  /** Default `true`. Whether Escape / backdrop / outside close the dialog. */
+  dismissible?: boolean;
+  /** Default `true`. Restore focus to the previously focused element on close. */
+  returnFocus?: boolean;
+  /** Default `'first'`. Where to send focus on mount. */
+  initialFocus?: 'first' | 'container';
   /**
    * CSS class applied (via `animate.enter`) to the programmatic overlay host
    * when it mounts, so it plays an enter animation. The class lands on the
@@ -33,7 +51,12 @@ export interface ForDialogDefaults {
   backdropAnimateLeave?: string;
 }
 
-const FALLBACK: ForDialogDefaults = {};
+const FALLBACK: ForDialogDefaults = {
+  modal: true,
+  dismissible: true,
+  returnFocus: true,
+  initialFocus: 'first',
+};
 
 const { token, provideDefaults } = createDefaults<ForDialogDefaults>(
   'FOR_DIALOG_DEFAULTS',
@@ -47,6 +70,10 @@ export const FOR_DIALOG_DEFAULTS = token;
  * Configures forty-cdk dialog defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Declarative `[forDialog]` reads the nearest scope; `ForDialogManager.open()`
+ * (root-provided) only sees an application-root configuration — see the
+ * scope caveat on {@link ForDialogDefaults}.
  */
 export function provideForDialogDefaults(defaults: Partial<ForDialogDefaults> = {}): Provider[] {
   return provideDefaults(defaults);

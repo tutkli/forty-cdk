@@ -173,7 +173,7 @@ export class ToastActionExample {
       region: 'toast-action',
       action: {
         label: 'Undo',
-        onClick: () => this.manager.show({ title: 'Restored', region: 'toast-action' }),
+        activate: () => this.manager.show({ title: 'Restored', region: 'toast-action' }),
       },
       duration: 6000,
     });

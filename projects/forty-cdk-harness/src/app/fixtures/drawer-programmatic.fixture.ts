@@ -47,7 +47,7 @@ interface ProgrammaticDrawerData {
   template: `
     <div data-testid="prog-drawer-panel">
       <h2 data-testid="prog-drawer-title" forDrawerTitle>Programmatic Drawer</h2>
-      <p>{{ data.message }}</p>
+      <p>{{ data?.message }}</p>
       <button data-testid="prog-drawer-close" forDrawerClose>Close</button>
     </div>
   `,

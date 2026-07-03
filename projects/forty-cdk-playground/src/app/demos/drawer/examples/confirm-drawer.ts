@@ -29,8 +29,8 @@ export type ConfirmResult = 'confirm' | 'cancel';
   template: `
     <div forDrawerBackdrop class="prog-drawer-backdrop" animate.enter="prog-backdrop-in"></div>
     <div forDrawerHandle class="prog-drawer-handle"></div>
-    <h2 forDrawerTitle class="prog-drawer-title">{{ data.title }}</h2>
-    <p forDrawerDescription class="prog-drawer-desc">{{ data.message }}</p>
+    <h2 forDrawerTitle class="prog-drawer-title">{{ data?.title }}</h2>
+    <p forDrawerDescription class="prog-drawer-desc">{{ data?.message }}</p>
     <div class="prog-drawer-actions">
       <button class="prog-btn" forDrawerClose [closeWith]="cancel">Cancel</button>
       <button class="prog-btn prog-btn--danger" forDrawerClose [closeWith]="confirm">Delete</button>

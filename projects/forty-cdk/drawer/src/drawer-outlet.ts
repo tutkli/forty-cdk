@@ -19,6 +19,7 @@ import {
 } from 'forty-cdk/core';
 import { ForDrawer } from './drawer';
 import type {
+  ForDrawerCloseReason,
   ForDrawerDragEvent,
   ForDrawerReleaseEvent,
   ForDrawerSide,
@@ -64,10 +65,10 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly interactOutside:
     | ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void)
     | undefined;
-  readonly onDrag: ((e: ForDrawerDragEvent) => void) | undefined;
-  readonly onRelease: ((e: ForDrawerReleaseEvent) => void) | undefined;
-  readonly onActiveSnapPointChange: ((snap: ForDrawerSnapPoint | null) => void) | undefined;
-  handleClose(value: unknown): void;
+  readonly dragMove: ((e: ForDrawerDragEvent) => void) | undefined;
+  readonly release: ((e: ForDrawerReleaseEvent) => void) | undefined;
+  readonly activeSnapPointChange: ((snap: ForDrawerSnapPoint | null) => void) | undefined;
+  handleClose(reason: ForDrawerCloseReason, value: unknown): void;
   injectorFor(parent: Injector): Injector;
 }
 
@@ -121,14 +122,14 @@ export class ForDrawerContextInjector extends OverlayContextInjector {}
         [snapPoints]="entry.snapPoints"
         [activeSnapPoint]="entry.activeSnapPoint ?? null"
         [fadeFromIndex]="entry.fadeFromIndex"
-        (dismiss)="entry.handleClose(fd.lastCloseValue())"
+        (dismiss)="entry.handleClose($event, fd.lastCloseValue())"
         (escapeKeyDown)="entry.escapeKeyDown?.($event)"
         (pointerDownOutside)="entry.pointerDownOutside?.($event)"
         (focusOutside)="entry.focusOutside?.($event)"
         (interactOutside)="entry.interactOutside?.($event)"
-        (dragMove)="entry.onDrag?.($event)"
-        (release)="entry.onRelease?.($event)"
-        (activeSnapPointChange)="entry.onActiveSnapPointChange?.($event)"
+        (dragMove)="entry.dragMove?.($event)"
+        (release)="entry.release?.($event)"
+        (activeSnapPointChange)="entry.activeSnapPointChange?.($event)"
         #fd="forDrawer"
       >
         <ng-container forDrawerContextInjector #ctx="forDrawerContextInjector">

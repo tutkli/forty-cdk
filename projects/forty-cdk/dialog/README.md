@@ -125,7 +125,7 @@ export class DemoHost {
       ConfirmDialog,
       { data: { message: 'Are you sure?' } },
     );
-    const result = await ref.closed; // 'confirm' | 'cancel' | undefined
+    const { result } = await ref.closed; // result: 'confirm' | 'cancel' | undefined
     if (result === 'confirm') {
       /* ... */
     }
@@ -302,12 +302,12 @@ The dialog still installs the focus trap (so Tab cycles inside once focus enters
 
 ## Programmatic API
 
-| Symbol                  | Description                                                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`.                                                 |
-| `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<R \| undefined>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`. |
-| `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                       |
-| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` — `null` when `open()` got no `data`.                     |
+| Symbol                  | Description                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ForDialogManager`      | Injectable. `open(component, config?)` returns a `ForDialogRef<R>`.                                                                                           |
+| `ForDialogRef<R>`       | `close(result?)`, `closed: Promise<{ reason: ForDialogCloseReason; result: R \| undefined }>`, `result: Signal<R \| undefined>`, `isClosed: Signal<boolean>`. |
+| `FOR_DIALOG_DATA`       | Token for the `data` payload. Inject in the opened component.                                                                                                 |
+| `injectDialogData<T>()` | Typed accessor for `FOR_DIALOG_DATA`. Returns `T \| null` — `null` when `open()` got no `data`.                                                               |
 
 ### `ForDialogOpenConfig`
 

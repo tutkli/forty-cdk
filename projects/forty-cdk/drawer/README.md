@@ -127,7 +127,7 @@ import {
     ></div>
     <div forDrawerHandle aria-hidden="true"></div>
     <h2 forDrawerTitle>Delete account?</h2>
-    <p forDrawerDescription>{{ data.message }}</p>
+    <p forDrawerDescription>{{ data?.message }}</p>
     <button forDrawerClose [closeWith]="'cancel'">Cancel</button>
     <button forDrawerClose [closeWith]="'confirm'">Confirm</button>
   `,
@@ -150,13 +150,15 @@ class DemoHost {
       side: 'bottom',
       snapPoints: ['148px', 1],
     });
-    const result = await ref.closed;
+    const { result } = await ref.closed;
     if (result === 'confirm') {
       // ...
     }
   }
 }
 ```
+
+`injectDrawerData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload. `await ref.closed` resolves `{ reason, result }` — the `reason` (a `ForDrawerCloseReason`) tells apart an imperative `close()` (`'programmatic'`) from Escape / backdrop / outside / swipe / close-button dismissals.
 
 Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissable layer.
 
@@ -186,22 +188,22 @@ this.#drawers.open(ConfirmDrawer, {
 
 `class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
 
-**Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(dragMove)` / `(release)` / `(activeSnapPointChange)` outputs via the `onDrag` / `onRelease` / `onActiveSnapPointChange` config callbacks:
+**Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(dragMove)` / `(release)` / `(activeSnapPointChange)` outputs, via config callbacks of the same name:
 
 ```ts
 this.#drawers.open(ConfirmDrawer, {
   data,
   snapPoints: ['148px', '50%', 1],
   defaultSnapPoint: '148px',
-  onDrag: ({ percentageDragged }) => this.dragProgress.set(percentageDragged),
-  onRelease: ({ willClose, nextSnapPoint }) => {
+  dragMove: ({ percentageDragged }) => this.dragProgress.set(percentageDragged),
+  release: ({ willClose, nextSnapPoint }) => {
     /* … */
   },
-  onActiveSnapPointChange: (snap) => this.activeSnap.set(snap),
+  activeSnapPointChange: (snap) => this.activeSnap.set(snap),
 });
 ```
 
-`onActiveSnapPointChange` fires with the landed snap on the mount-time default and every drag release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All three subscriptions are released automatically when the drawer closes.
+`activeSnapPointChange` fires with the landed snap on the mount-time default and every drag release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All three subscriptions are released automatically when the drawer closes.
 
 ### Per-channel dismissal (Escape-only drawers)
 

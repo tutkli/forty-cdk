@@ -304,7 +304,7 @@ export {
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
 } from './overlay-manager/overlay-manager';
-export { OverlayRef } from './overlay-manager/overlay-ref';
+export { type OverlayCloseEvent, OverlayRef } from './overlay-manager/overlay-ref';
 export {
   injectOverlayShell,
   type OverlayShellConfig,

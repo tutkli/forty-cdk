@@ -65,7 +65,10 @@ class TestManager extends OverlayManagerCore<TestEntry> {
 
   open(): OverlayRef {
     const { id, remove } = this.nextId();
-    const ref = new OverlayRef(() => this.beginLeave(id, undefined, undefined, remove));
+    const ref = new OverlayRef(
+      () => this.beginLeave(id, undefined, undefined, remove),
+      'programmatic',
+    );
     const entry: TestEntry = {
       id,
       ref,
