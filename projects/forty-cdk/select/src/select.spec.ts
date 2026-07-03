@@ -126,6 +126,53 @@ describe('ForSelect', () => {
 
   afterEachOverlayCleanup();
 
+  describe('focusout touched (containment vs. the wrapper)', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value" [(touched)]="touched">
+          <button forSelectTrigger data-test-id="trigger">Trigger</button>
+          <button type="button" data-test-id="clear">Clear</button>
+        </div>
+      `,
+    })
+    class ClearButtonSelectHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly touched = signal(false);
+    }
+
+    it('does not mark touched when focus moves to a sibling inside the [forSelect] wrapper', async () => {
+      const { el, fixture, flush } = renderHost(ClearButtonSelectHost);
+      await flush();
+      const trigger = el.querySelector<HTMLElement>('[data-test-id="trigger"]')!;
+      const clear = el.querySelector<HTMLElement>('[data-test-id="clear"]')!;
+
+      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: clear }));
+      await flush();
+
+      expect(fixture.componentInstance.touched()).toBe(false);
+    });
+
+    it('marks touched when focus leaves the [forSelect] wrapper entirely', async () => {
+      const { el, fixture, flush } = renderHost(ClearButtonSelectHost);
+      await flush();
+      const trigger = el.querySelector<HTMLElement>('[data-test-id="trigger"]')!;
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+
+      try {
+        trigger.dispatchEvent(
+          new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+        );
+        await flush();
+        expect(fixture.componentInstance.touched()).toBe(true);
+      } finally {
+        outside.remove();
+      }
+    });
+  });
+
   describe('a11y baseline', () => {
     it('wires combobox role + aria-haspopup + aria-expanded + aria-controls', async () => {
       const r = renderHost(SelectHost);
