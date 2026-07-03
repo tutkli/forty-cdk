@@ -260,6 +260,16 @@ export class ForDateRangeField<D>
 
   protected readonly disordered = this.#disordered;
 
+  /**
+   * Folds a self-detected out-of-order range into the base invalidity so
+   * `data-invalid` and a surrounding `[forField]` (error region + folded
+   * `aria-describedby`) stay in step with the host `aria-invalid`, which already
+   * reflects the disorder.
+   */
+  protected override effectiveInvalid(): boolean {
+    return this.ariaInvalid();
+  }
+
   constructor() {
     super();
     const emptySegmentText = computed(() => this.#defaults.emptySegmentText);
