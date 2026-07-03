@@ -2581,4 +2581,58 @@ describe('ForSelectIndicator', () => {
       });
     });
   });
+
+  describe('selectionFollowsFocus + virtualization guard (#1145)', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div
+          forSelect
+          [(open)]="open"
+          [totalCount]="total()"
+          [selectionFollowsFocus]="followsFocus()"
+        >
+          <button forSelectTrigger>T</button>
+          @if (open()) {
+            <div forSelectContent>
+              <button forSelectOption value="a" [posInSet]="0">A</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class GuardHost {
+      readonly open = signal(false);
+      readonly total = signal<number | undefined>(undefined);
+      readonly followsFocus = signal(false);
+    }
+
+    it('throws in dev mode when selectionFollowsFocus is combined with totalCount', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(GuardHost);
+      fixture.componentInstance.total.set(50);
+      fixture.componentInstance.followsFocus.set(true);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/select\] `selectionFollowsFocus` is not supported together with virtualization/,
+      );
+    });
+
+    it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.followsFocus.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('does not throw when virtualized without selectionFollowsFocus', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.total.set(50);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.getAttribute('tabindex')).toBe('0');
+    });
+  });
 });

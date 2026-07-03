@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  isDevMode,
   linkedSignal,
   model,
   numberAttribute,
@@ -275,6 +276,12 @@ export class ForSelect<T = string>
    * Single-mode only. When true, arrow nav also selects the focused option
    * while the listbox is open. APG calls this optional and recommends
    * caution — leave off unless your UX truly benefits. Default `false`.
+   *
+   * Not supported together with virtualization (`totalCount` set): the
+   * virtualized `aria-activedescendant` path resolves off-window navigation
+   * targets asynchronously, so selection cannot follow focus there without
+   * deriving the committed value from a render side effect. Combining the two
+   * throws in dev mode.
    */
   readonly selectionFollowsFocus = input(false, { transform: booleanAttribute });
 
@@ -569,6 +576,19 @@ export class ForSelect<T = string>
       navigator.prime();
       navigator.tryResolvePending();
     });
+
+    if (isDevMode()) {
+      effect(() => {
+        if (this.selectionFollowsFocus() && this.#virtualized()) {
+          throw new Error(
+            '[forty-cdk/select] `selectionFollowsFocus` is not supported together with virtualization ' +
+              '(`totalCount` set). The virtualized activedescendant path resolves off-window navigation ' +
+              'targets asynchronously, so selection cannot follow focus there. Remove one of the two: use ' +
+              '`selectionFollowsFocus` only with the non-virtualized DOM-focus listbox.',
+          );
+        }
+      });
+    }
   }
 
   setInitialFocus(target: ForSelectInitialFocus): void {
