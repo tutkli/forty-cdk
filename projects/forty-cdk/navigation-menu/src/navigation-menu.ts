@@ -3,6 +3,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
@@ -45,7 +46,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
  * item's id, or `''` when nothing is open). The `model()` change emitter
  * fires only on internal transitions, never on consumer writes.
  *
- * Submenús anidados están fuera de scope para v1.
+ * Nested submenus are out of scope for v1.
  *
  * @example
  * ```html
@@ -76,6 +77,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
 })
 export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #document = inject(DOCUMENT);
   readonly #defaults = inject(FOR_NAVIGATION_MENU_DEFAULTS);
   /**
    * Two-way bindable. The id of the open item, or `''` for none. The
@@ -207,6 +209,14 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.value.set(value);
     this.#dismiss.activate({
       onEscapeKeyDown: () => {
+        const active = this.#document.activeElement;
+        const content = this.activeContentHost();
+        const focusWithin =
+          !!active &&
+          (this.#host.nativeElement.contains(active) || (!!content && content.contains(active)));
+        if (!focusWithin) {
+          return;
+        }
         const current = this.value();
         this.close();
         const trigger = current ? this.triggerHostFor(current) : null;

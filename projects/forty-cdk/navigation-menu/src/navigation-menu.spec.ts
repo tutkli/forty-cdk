@@ -420,6 +420,30 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBe('');
       expect(document.activeElement).toBe(trigger);
     });
+
+    it('ignores Escape pressed while focus is outside the nav (no close, no focus steal)', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      const outside = document.createElement('input');
+      document.body.appendChild(outside);
+      try {
+        outside.focus();
+        trigger.click();
+        await flush();
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(document.activeElement).toBe(outside);
+
+        pressKey(outside, 'Escape');
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(document.activeElement).toBe(outside);
+      } finally {
+        outside.remove();
+      }
+    });
   });
 
   describe('RTL', () => {
