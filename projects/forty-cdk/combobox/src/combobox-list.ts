@@ -1,4 +1,4 @@
-import { computed, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
@@ -22,10 +22,9 @@ import { injectComboboxContext } from './combobox-context';
  * ```
  *
  * Carries `role="listbox"`, `tabindex="-1"` (focus stays in the input,
- * activedescendant-driven), `aria-multiselectable` in multi mode,
- * `aria-setsize` when virtualizing, and the labelled-role `aria-label` /
- * `aria-labelledby`. Its id is what the input's `aria-controls` references in
- * the picker anatomy.
+ * activedescendant-driven), `aria-multiselectable` in multi mode, and the
+ * labelled-role `aria-label` / `aria-labelledby`. Its id is what the input's
+ * `aria-controls` references in the picker anatomy.
  *
  * When no `[forComboboxList]` is present, `[forComboboxContent]` itself carries
  * the listbox semantics (the editable anatomy) — this part is additive and
@@ -41,21 +40,11 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.inputId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
-    '[attr.aria-setsize]': 'ariaSetSize()',
   },
 })
 export class ForComboboxList {
   protected readonly ctx = injectComboboxContext('ForComboboxList');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
-
-  /**
-   * Reflects `aria-setsize` when the consumer wires up `[totalCount]` for
-   * virtualization. Falls back to `null` (omitted) otherwise.
-   */
-  protected readonly ariaSetSize = computed<string | null>(() => {
-    const total = this.ctx.totalCount();
-    return total === undefined ? null : String(total);
-  });
 
   constructor() {
     registerHandle(

@@ -3380,13 +3380,14 @@ describe('ForCombobox virtualization', () => {
     }
   }
 
-  it('reflects aria-setsize on the listbox and aria-posinset on each option', async () => {
+  it('emits aria-setsize / aria-posinset on options only, never on the role=listbox container (issue #1145 item 10)', async () => {
     const r = renderHost(VirtHost);
     r.instance.open.set(true);
     await flush(r.fixture);
 
     const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
-    expect(content.getAttribute('aria-setsize')).toBe('100');
+    expect(content.getAttribute('role')).toBe('listbox');
+    expect(content.getAttribute('aria-setsize')).toBeNull();
 
     const item0 = document.querySelector<HTMLElement>('[data-test-id="item-0"]')!;
     expect(item0.getAttribute('aria-posinset')).toBe('1');
@@ -3394,6 +3395,110 @@ describe('ForCombobox virtualization', () => {
 
     const item5 = document.querySelector<HTMLElement>('[data-test-id="item-5"]')!;
     expect(item5.getAttribute('aria-posinset')).toBe('6');
+  });
+
+  describe('aria-posinset fallback (issue #1145 item 6)', () => {
+    @Component({
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+      template: `
+        <div forCombobox [(open)]="open" [totalCount]="100">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              @for (row of rows; track row.id) {
+                <div
+                  [attr.data-test-id]="row.id"
+                  forComboboxOption
+                  [value]="row.id"
+                  [label]="row.label"
+                >
+                  {{ row.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class VirtNoPosHost {
+      readonly open = signal(false);
+      readonly rows = [
+        { id: 'row-a', label: 'Row A' },
+        { id: 'row-b', label: 'Row B' },
+      ];
+    }
+
+    it('emits null (not the window-relative DOM index) when virtualizing without an explicit posInSet', async () => {
+      const r = renderHost(VirtNoPosHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const rowA = document.querySelector<HTMLElement>('[data-test-id="row-a"]')!;
+      const rowB = document.querySelector<HTMLElement>('[data-test-id="row-b"]')!;
+      expect(rowA.getAttribute('aria-posinset')).toBeNull();
+      expect(rowB.getAttribute('aria-posinset')).toBeNull();
+      expect(rowA.getAttribute('aria-setsize')).toBe('100');
+    });
+  });
+
+  describe('picker-anatomy listbox container (issue #1145 item 10)', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxTrigger,
+        ForComboboxInput,
+        ForComboboxContent,
+        ForComboboxList,
+        ForComboboxOption,
+      ],
+      template: `
+        <div forCombobox [(open)]="open" [totalCount]="ITEMS.length" [visibleRange]="range()">
+          <button forComboboxTrigger>Pick</button>
+          @if (open()) {
+            <div forComboboxContent>
+              <input forComboboxInput />
+              <div forComboboxList>
+                @for (it of windowed(); track it.id) {
+                  <div
+                    [attr.data-test-id]="it.id"
+                    forComboboxOption
+                    [value]="it.id"
+                    [label]="it.label"
+                    [posInSet]="it.posInSet"
+                    [disabled]="!!it.disabled"
+                  >
+                    {{ it.label }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class VirtPickerHost {
+      readonly open = signal(false);
+      readonly ITEMS = ITEMS;
+      readonly range = signal<readonly [number, number]>([0, 10]);
+      readonly windowed = computed<readonly (VItem & { posInSet: number })[]>(() => {
+        const [start, end] = this.range();
+        return ITEMS.slice(start, end).map((it, i) => ({ ...it, posInSet: start + i }));
+      });
+    }
+
+    it('carries no aria-setsize on the role=listbox list; its options do', async () => {
+      const r = renderHost(VirtPickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const list = document.querySelector<HTMLElement>('[forComboboxList]')!;
+      expect(list.getAttribute('role')).toBe('listbox');
+      expect(list.getAttribute('aria-setsize')).toBeNull();
+
+      const item0 = document.querySelector<HTMLElement>('[data-test-id="item-0"]')!;
+      expect(item0.getAttribute('aria-setsize')).toBe('100');
+      expect(item0.getAttribute('aria-posinset')).toBe('1');
+    });
   });
 
   it('navigation past the rendered window emits (scrollToIndex)', async () => {

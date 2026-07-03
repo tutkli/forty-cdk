@@ -1,4 +1,4 @@
-import { computed, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import { registerHandle, injectOverlayShell, type OverlayShellConfig } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
@@ -11,8 +11,8 @@ import { injectComboboxContext } from './combobox-context';
  * Two anatomies, picked by whether an inner `[forComboboxList]` is present:
  *
  * - **Editable (no list)** — content itself carries `role="listbox"`,
- *   `tabindex="-1"`, `aria-multiselectable`, `aria-setsize`, and the labelled
- *   role (`aria-label` / `aria-labelledby`). The input's `aria-controls` points
+ *   `tabindex="-1"`, `aria-multiselectable`, and the labelled role
+ *   (`aria-label` / `aria-labelledby`). The input's `aria-controls` points
  *   here. This is the original combobox; nothing about it changes.
  * - **Picker (list present)** — content drops the listbox semantics and becomes
  *   a neutral popup surface; `[forComboboxList]` takes over the listbox role and
@@ -48,7 +48,6 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-labelledby]': 'hasList() ? null : (ctx.ariaLabel() ? null : ctx.inputId())',
     '[attr.aria-label]': 'hasList() ? null : ctx.ariaLabel()',
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
-    '[attr.aria-setsize]': 'hasList() ? null : ariaSetSize()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
 })
@@ -58,17 +57,6 @@ export class ForComboboxContent {
 
   /** When a `[forComboboxList]` is registered the listbox semantics live there, not here. */
   protected readonly hasList = this.ctx.hasList;
-
-  /**
-   * Reflects `aria-setsize` when the consumer wires up `[totalCount]` for
-   * virtualization (editable anatomy only — the picker anatomy's list owns it).
-   * Falls back to `null` (omitted) otherwise — leaving the default
-   * option-count semantics screen readers already infer.
-   */
-  protected readonly ariaSetSize = computed<string | null>(() => {
-    const total = this.ctx.totalCount();
-    return total === undefined ? null : String(total);
-  });
 
   constructor() {
     const ctx = this.ctx;
