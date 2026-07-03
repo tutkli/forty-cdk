@@ -407,11 +407,17 @@ export class ForSelect<T = string>
    * the last non-empty option set across close → re-open cycles.
    *
    * A `linkedSignal` that folds the live option set on every `options()`
-   * change: when the listbox unmounts (`items().length === 0`) it returns the
-   * previous accumulator unchanged so labels stay resolvable while closed. Each
-   * option's `label` is itself a `Signal<string>`, so this never reads
-   * `textContent` from inside the fold — the canonical replacement for the
-   * previous `afterEveryRender(() => signal.set(...))` snapshot (no
+   * change. When the listbox unmounts (`items().length === 0`) it returns the
+   * previous accumulator unchanged so labels stay resolvable while closed. When
+   * mounted, the fold is virtualization-aware: the non-virtualized path renders
+   * the full option set, so the snapshot is rebuilt from the live options alone
+   * — an option the consumer removed is purged rather than lingering forever, so
+   * closed typeahead can only select an option that still exists. The
+   * virtualized path renders one window at a time, so it carries the previous
+   * accumulator forward and merges the window in, keeping off-window labels
+   * resolvable. Each option's `label` is itself a `Signal<string>`, so this
+   * never reads `textContent` from inside the fold — the canonical replacement
+   * for the previous `afterEveryRender(() => signal.set(...))` snapshot (no
    * state-propagation inside an `effect`). A statically-rendered option that
    * registers before its `[value]` binding is written is skipped this fold and
    * folded in on the re-run the binding triggers (see {@link #readHandleValue}).
@@ -427,8 +433,10 @@ export class ForSelect<T = string>
       }
       const toFormValue = this.itemToFormValue();
       const merged = new Map<string, { value: T; label: string }>();
-      for (const entry of prev?.value ?? []) {
-        merged.set(toFormValue(entry.value), entry);
+      if (this.#virtualized()) {
+        for (const entry of prev?.value ?? []) {
+          merged.set(toFormValue(entry.value), entry);
+        }
       }
       for (const item of items) {
         const value = this.#readHandleValue(item);
