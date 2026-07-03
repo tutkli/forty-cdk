@@ -4,9 +4,9 @@ import { registerA11yName } from 'forty-cdk/core';
 import { injectMenuGroupContext } from './menu-group-context';
 
 /**
- * Accessible name for `[forMenuGroup]`. Generates an id on the host and
- * registers it with the parent group so `aria-labelledby` resolves to
- * this element.
+ * Accessible name for `[forMenuGroup]` or `[forMenuRadioGroup]`. Generates an
+ * id on the host and registers it with the parent group so `aria-labelledby`
+ * resolves to this element.
  */
 @Directive({
   selector: '[forMenuGroupLabel]',
