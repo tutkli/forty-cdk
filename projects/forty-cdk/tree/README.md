@@ -535,7 +535,7 @@ export class VirtualTree {
 
 The following behaviors are unavailable in the virtualized path and are documented intentional limitations (same as listbox/select virtualization):
 
-- **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are dropped. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Provide a custom selection UI (checkboxes with `selectionMode="checkbox"`) for multi-select over large trees.
+- **Multi-select range modifiers** (Shift+ArrowUp/Down, Shift+Space, Ctrl/Cmd+A) are unsupported: pressing one on a virtualized `[multiple]` tree throws in dev mode (a no-op in production) rather than silently degrading. Range selection requires knowing the full list of enabled nodes in the range, which is not available when the list is partially unmounted. Use `selectionMode="checkbox"` (each node toggles independently, so no range is needed) for multi-select over large trees.
 - **Cross-window typeahead** only matches within the currently rendered window. Typeahead over unmounted nodes is not supported.
 - **`*` (expand-all-siblings)** is dropped. It requires knowing all siblings at the focused node's level, including those outside the window.
 

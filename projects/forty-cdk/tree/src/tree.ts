@@ -105,7 +105,16 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    */
   readonly expanded = model<readonly string[]>([]);
 
-  /** When true, multiple nodes can be selected. Single mode (default) replaces. */
+  /**
+   * When true, multiple nodes can be selected. Single mode (default) replaces.
+   *
+   * Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) is not
+   * supported together with virtualization (`totalCount` set): range selection
+   * needs the full set of enabled nodes across the range, which is unavailable
+   * while the list is partially unmounted. Pressing one of those combinations on
+   * a virtualized multi-select tree throws in dev mode. Use
+   * `selectionMode="checkbox"` for multi-select over large virtualized trees.
+   */
   readonly multiple = input(false, { transform: booleanAttribute });
 
   /** Disables the whole tree: nodes are not selectable and report `aria-disabled`. */
@@ -260,6 +269,8 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   readonly #activeId = signal<string | null>(null);
 
+  readonly #lastActivePos = signal<number | null>(null);
+
   /**
    * The active node's `id` when using the activedescendant focus model,
    * `null` in the roving-tabindex path. The host reflects this as
@@ -305,9 +316,17 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,
       getActiveId: () => this.#activeId(),
-      setActiveId: (id) => this.#activeId.set(id),
+      setActiveId: (id) => this.#setActiveId(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+      getResumePos: () => this.#lastActivePos(),
     }));
+  }
+
+  #setActiveId(id: string | null): void {
+    if (id !== null) {
+      this.#lastActivePos.set(null);
+    }
+    this.#activeId.set(id);
   }
 
   #focusModel(): FocusModel {
@@ -503,6 +522,11 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   protected onHostKeyDown(event: KeyboardEvent): void {
     if (!this.#virtualized() || this.disabled()) return;
     const host = this.#host.nativeElement;
+    if (this.multiple() && this.#isMultiSelectShortcut(event)) {
+      event.preventDefault();
+      this.#throwUnsupportedVirtualizedMultiSelect();
+      return;
+    }
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
       event.preventDefault();
       this.#activateActiveDescendant();
@@ -543,7 +567,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     const value = this.value();
     const selectedFirst = ordered.find((h) => !h.disabled() && value.includes(h.value()));
     const target = selectedFirst ?? ordered.find((h) => !h.disabled());
-    if (target) this.#activeId.set(target.id());
+    if (target) this.#setActiveId(target.id());
   }
 
   #activateActiveDescendant(): void {
@@ -554,13 +578,49 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     this.select(handle.value());
   }
 
+  #isMultiSelectShortcut(event: KeyboardEvent): boolean {
+    if (event.altKey) {
+      return false;
+    }
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      !event.shiftKey &&
+      (event.key === 'a' || event.key === 'A')
+    ) {
+      return true;
+    }
+    if (event.shiftKey && !event.ctrlKey && !event.metaKey) {
+      if (event.key === ' ' || event.key === 'Spacebar') {
+        return true;
+      }
+      const action = resolveListNavigation(event, {
+        orientation: this.orientation(),
+        dir: this.dir(),
+      });
+      return action === 'next' || action === 'prev';
+    }
+    return false;
+  }
+
+  #throwUnsupportedVirtualizedMultiSelect(): void {
+    if (isDevMode()) {
+      throw new Error(
+        '[forty-cdk/tree] Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) is not ' +
+          'supported together with virtualization (`totalCount` set). Range selection needs the full ' +
+          'set of enabled nodes across the range, which is unavailable while the list is partially ' +
+          'unmounted. Use `selectionMode="checkbox"` for multi-select over large virtualized trees, ' +
+          'or drop `totalCount` to use the non-virtualized roving-tabindex tree.',
+      );
+    }
+  }
+
   registerItem(handle: ForTreeItemHandle): void {
     this.#items.register(handle);
   }
 
   notifyItemClick(itemId: string): void {
     if (!this.#virtualized()) return;
-    this.#activeId.set(itemId);
+    this.#setActiveId(itemId);
     this.#host.nativeElement.focus();
   }
 
@@ -568,6 +628,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     this.#items.unregister(handle);
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {
+      this.#lastActivePos.set(handle.itemIndex());
       this.#activeId.set(null);
     }
   }

@@ -84,6 +84,14 @@ export interface VirtualizedNavigatorDeps<H> {
   readonly setActiveId: (id: string | null) => void;
   /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
   readonly emitScrollToIndex: (idx: number) => void;
+  /**
+   * Optional resume position, consulted only when there is no active id. Lets a
+   * primitive that clears its dangling `aria-activedescendant` on unmount (a
+   * removed element is an invalid target) still resume navigation from the last
+   * active absolute position instead of restarting at the edge. Returns `null`
+   * when there is nothing to resume from.
+   */
+  readonly getResumePos?: () => number | null;
 }
 
 /**
@@ -222,6 +230,11 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
             break;
           }
         }
+      }
+    } else {
+      const resume = this.#deps.getResumePos?.();
+      if (resume !== undefined && resume !== null && resume >= 0 && resume < total) {
+        currentPos = resume;
       }
     }
 

@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  ErrorHandler,
   provideZonelessChangeDetection,
   signal,
   viewChild,
@@ -1288,6 +1289,80 @@ describe('ForTree', () => {
       expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
     });
 
+    it('8b. after the active item unmounts, ArrowDown resumes from the retained position, not the edge', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => {
+        i.windowSize.set(2);
+      });
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(
+        el.querySelector<HTMLElement>('[data-test-id="root-1"]')!.id,
+      );
+
+      instance.windowStart.set(2);
+      await flush(fixture);
+      expect(el.querySelector('[data-test-id="root-1"]')).toBeNull();
+      expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      const lastNode = instance.flat()[instance.flat().length - 1]!;
+      const resumed = el.querySelector<HTMLElement>(`[data-test-id="${lastNode.value}"]`)!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+      expect(resumed.getAttribute('data-test-id')).toBe('root-2');
+    });
+
+    it('8c. after the active item unmounts, ArrowUp resumes from the retained position going backwards', async () => {
+      const { el, fixture, instance } = await setupVirtual((i) => {
+        i.windowSize.set(3);
+      });
+      const tree = treeEl(el);
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(
+        el.querySelector<HTMLElement>('[data-test-id="root-1"]')!.id,
+      );
+
+      instance.windowStart.set(2);
+      instance.windowSize.set(1);
+      await flush(fixture);
+      expect(el.querySelector('[data-test-id="root-1"]')).toBeNull();
+      expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+
+      await pressKey(tree, 'ArrowUp');
+      await flush(fixture);
+      const resumed = el.querySelector<HTMLElement>('[data-test-id="root-0"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
+    it('8d. zoneless — resume-from-retained-position works without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(VirtualHost);
+      fixture.componentInstance.windowSize.set(2);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const tree = el.querySelector<HTMLElement>('[data-test-tree]')!;
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+
+      fixture.componentInstance.windowStart.set(2);
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBeFalsy();
+
+      await pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      const resumed = el.querySelector<HTMLElement>('[data-test-id="root-2"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
+    });
+
     it('9. non-virtualized path unchanged — no aria-activedescendant; ArrowDown moves DOM focus', async () => {
       const { el, fixture } = await setup();
       const tree = treeOf(el);
@@ -1402,6 +1477,136 @@ describe('ForTree', () => {
       await flush(r.fixture);
       const tree = r.el.querySelector<HTMLElement>('[forTree]')!;
       expect(tree.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('multi-select keyboard + virtualization guard', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul
+          forTree
+          data-test-tree
+          [(value)]="picked"
+          [multiple]="true"
+          [totalCount]="total()"
+          aria-label="MultiVirtual"
+        >
+          @for (i of indices; track i) {
+            <li
+              forTreeItem
+              [value]="'n-' + i"
+              [itemIndex]="i"
+              [level]="1"
+              [setSize]="3"
+              [posInSet]="i + 1"
+              [attr.data-test-id]="'n-' + i"
+            >
+              <div forTreeItemLabel>Node {{ i }}</div>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class MultiVirtualHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly total = signal<number | undefined>(3);
+      readonly indices = [0, 1, 2];
+    }
+
+    async function setupMulti(captured: unknown[]) {
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(MultiVirtualHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const tree = el.querySelector<HTMLElement>('[data-test-tree]')!;
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      return { fixture, el, tree };
+    }
+
+    const throwsUnsupported = (captured: readonly unknown[]) =>
+      captured.some(
+        (e) =>
+          e instanceof Error && /\[forty-cdk\/tree\] Multi-select range keyboard/.test(e.message),
+      );
+
+    it('throws in dev mode on Shift+ArrowDown in a virtualized multi-select tree', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupMulti(captured);
+      pressKey(tree, 'ArrowDown', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Shift+ArrowUp in a virtualized multi-select tree', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupMulti(captured);
+      pressKey(tree, 'ArrowUp', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Shift+Space in a virtualized multi-select tree', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupMulti(captured);
+      pressKey(tree, ' ', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Ctrl+A in a virtualized multi-select tree', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupMulti(captured);
+      pressKey(tree, 'a', { ctrlKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Meta+A (Cmd) in a virtualized multi-select tree', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupMulti(captured);
+      pressKey(tree, 'A', { metaKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('preventDefault is called on the intercepted multi-select shortcut', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupMulti(captured);
+      const event = pressKey(tree, 'a', { ctrlKey: true });
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('does not intercept a plain ArrowDown (navigation still works)', async () => {
+      const captured: unknown[] = [];
+      const { el, fixture, tree } = await setupMulti(captured);
+      const first = el.querySelector<HTMLElement>('[data-test-id="n-0"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(first.id);
+      pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      const second = el.querySelector<HTMLElement>('[data-test-id="n-1"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(second.id);
+      expect(throwsUnsupported(captured)).toBe(false);
+    });
+
+    it('does not throw when the multi tree is not virtualized (roving path keeps range keys)', async () => {
+      const r = renderHost(MultiVirtualHost);
+      r.instance.total.set(undefined);
+      await flush(r.fixture);
+      const first = r.el.querySelector<HTMLElement>('[data-test-id="n-0"]')!;
+      first.focus();
+      await flush(r.fixture);
+      expect(() => pressKey(first, 'ArrowDown', { shiftKey: true })).not.toThrow();
+      await flush(r.fixture);
+      expect(r.instance.picked()).toContain('n-1');
     });
   });
 });

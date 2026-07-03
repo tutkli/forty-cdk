@@ -169,6 +169,12 @@ export interface ActiveDescendantFocusModelDeps {
   readonly setActiveId: (id: string | null) => void;
   /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
   readonly emitScrollToIndex: (idx: number) => void;
+  /**
+   * Last active absolute position, retained when the active node unmounts so
+   * navigation resumes from it instead of restarting at the edge. Returns `null`
+   * when there is nothing to resume from.
+   */
+  readonly getResumePos: () => number | null;
 }
 
 /**
