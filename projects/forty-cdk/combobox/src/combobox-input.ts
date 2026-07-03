@@ -166,11 +166,10 @@ export class ForComboboxInput {
   }
 
   #applyInlineCompletion(prefix: string): void {
-    const cached = this.ctx.cachedOptions();
     const lower = prefix.toLowerCase();
-    const match = cached.find((o) => o.label.toLowerCase().startsWith(lower));
+    const label = this.#inlineCompletionLabel(lower);
     const el = this.#host.nativeElement;
-    if (!match || match.label.toLowerCase() === lower) {
+    if (label === null || label.toLowerCase() === lower) {
       // No completion to apply — strip any prior selection so the user's
       // prefix is plainly visible.
       if (el.value !== prefix) {
@@ -181,9 +180,29 @@ export class ForComboboxInput {
     // Use the option's full label as the visible text (preserving its case),
     // with chars [prefixLen..end] selected so the next keystroke replaces
     // the appended suggestion. Matches native browser autocomplete behavior.
-    const composed = match.label;
-    el.value = composed;
-    el.setSelectionRange(prefix.length, composed.length);
+    el.value = label;
+    el.setSelectionRange(prefix.length, label.length);
+  }
+
+  #inlineCompletionLabel(lower: string): string | null {
+    const options = this.ctx.options();
+    if (options.length > 0) {
+      const activeId = this.ctx.activeId();
+      if (activeId !== null) {
+        const active = options.find((o) => o.id() === activeId);
+        if (active && !active.disabled() && active.label().toLowerCase().startsWith(lower)) {
+          return active.label();
+        }
+      }
+      for (const option of options) {
+        if (!option.disabled() && option.label().toLowerCase().startsWith(lower)) {
+          return option.label();
+        }
+      }
+      return null;
+    }
+    const match = this.ctx.cachedOptions().find((o) => o.label.toLowerCase().startsWith(lower));
+    return match ? match.label : null;
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
