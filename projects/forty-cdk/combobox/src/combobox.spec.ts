@@ -2223,6 +2223,41 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
     });
   });
 
+  describe('Tab (picker anatomy, issue #1145 item 5)', () => {
+    it('moves focus to the trigger before closing so Tab advances from the trigger, not the portal', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      input.focus();
+      expect(document.activeElement).toBe(input);
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true });
+      input.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(getTrigger());
+      expect(r.instance.open()).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('closes with reason tab so the (autoFocusOnClose) return-focus hook is skipped', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      input.focus();
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
+    });
+  });
+
   describe('trigger', () => {
     it('throws from ForComboboxTrigger on first change detection', () => {
       @Component({

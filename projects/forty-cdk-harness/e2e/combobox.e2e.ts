@@ -214,5 +214,16 @@ test.describe('Combobox', () => {
       // The panel opened but focus stayed on the trigger (the move was vetoed).
       await expectFocused(trigger);
     });
+
+    test('Tab from the inner input lands on the focusable after the trigger', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'combo-input'));
+
+      await el(page, 'combo-input').press('Tab');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'after'));
+    });
   });
 });
