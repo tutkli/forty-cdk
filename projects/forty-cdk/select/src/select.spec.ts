@@ -1569,6 +1569,84 @@ describe('ForSelect', () => {
       const value = r.query<HTMLSpanElement>('[forSelectValue]')!;
       expect(value.textContent).toBe('Banana');
     });
+
+    it('purges an option removed while open so closed typeahead cannot select it', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value">
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                @for (opt of options(); track opt) {
+                  <button [attr.data-test-id]="opt" forSelectOption [value]="opt">{{ opt }}</button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class DynamicHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>([]);
+        readonly options = signal<readonly string[]>(['apple', 'banana', 'cherry']);
+      }
+
+      const r = renderHost(DynamicHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.options.set(['apple', 'banana']);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      pressKey(trigger, 'c');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual([]);
+    });
+
+    it('still selects an option that survived the removal', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value">
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                @for (opt of options(); track opt) {
+                  <button [attr.data-test-id]="opt" forSelectOption [value]="opt">{{ opt }}</button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class DynamicHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>([]);
+        readonly options = signal<readonly string[]>(['apple', 'banana', 'cherry']);
+      }
+
+      const r = renderHost(DynamicHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.options.set(['apple', 'banana']);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      pressKey(trigger, 'b');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['banana']);
+    });
   });
 
   describe('position input', () => {
