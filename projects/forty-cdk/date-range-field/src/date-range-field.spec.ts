@@ -5,6 +5,7 @@ import { form, FormField, required as requiredRule } from '@angular/forms/signal
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { ForField } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { ForDateRangeField } from './date-range-field';
 import { ForDateRangeFieldEnd, ForDateRangeFieldStart } from './date-range-field-endpoint';
@@ -276,6 +277,8 @@ describe('ForDateRangeField', () => {
       expect(r.instance.value()).toBeNull();
       expect(root(r).getAttribute('aria-invalid')).toBe('true');
       expect(root(r).getAttribute('data-range-error')).toBe('');
+      // data-invalid must not diverge from aria-invalid on a disordered range.
+      expect(root(r).getAttribute('data-invalid')).toBe('');
       // The typed segments are preserved, not silently rewritten.
       expect(seg(r, 'start', 'day').textContent?.trim()).toBe('20');
       expect(seg(r, 'end', 'day').textContent?.trim()).toBe('10');
@@ -293,6 +296,77 @@ describe('ForDateRangeField', () => {
       expect(range.end.getTime()).toBe(new Date(2026, 5, 25).getTime());
       expect(root(r).getAttribute('aria-invalid')).toBeNull();
       expect(root(r).getAttribute('data-range-error')).toBeNull();
+      expect(root(r).getAttribute('data-invalid')).toBeNull();
+    });
+  });
+
+  describe('field integration', () => {
+    @Component({
+      imports: [
+        ForField,
+        ForDateRangeField,
+        ForDateRangeFieldStart,
+        ForDateRangeFieldEnd,
+        ForDateRangeFieldSegment,
+        ForDateRangeFieldLiteral,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forField data-testid="field">
+          <div forDateRangeField [(value)]="value" [locale]="'en-US'" name="stay">
+            <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+              @for (s of start.segments(); track s.id) {
+                @if (!s.isLiteral) {
+                  <span
+                    forDateRangeFieldSegment
+                    [segment]="s.type!"
+                    [attr.data-testid]="'start-' + s.type"
+                    >{{ s.text }}</span
+                  >
+                }
+              }
+            </div>
+            <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+              @for (s of end.segments(); track s.id) {
+                @if (!s.isLiteral) {
+                  <span
+                    forDateRangeFieldSegment
+                    [segment]="s.type!"
+                    [attr.data-testid]="'end-' + s.type"
+                    >{{ s.text }}</span
+                  >
+                }
+              }
+            </div>
+          </div>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly value = signal<DateRange<Date> | null>(null);
+    }
+
+    it('reflects a disordered range as data-invalid on the surrounding [forField]', async () => {
+      const r = renderHost(FieldHost);
+      await r.flush();
+      const fieldEl = r.query('[data-testid="field"]')!;
+
+      const typeInto = async (id: string, digits: string): Promise<void> => {
+        const el = r.query(`[data-testid="${id}"]`)!;
+        for (const d of digits) {
+          pressKey(el, d);
+        }
+        await r.flush();
+      };
+
+      await typeInto('start-month', '06');
+      await typeInto('start-day', '20');
+      await typeInto('start-year', '2026');
+      await typeInto('end-month', '06');
+      await typeInto('end-day', '10');
+      await typeInto('end-year', '2026');
+
+      expect(fieldEl.hasAttribute('data-invalid')).toBe(true);
     });
   });
 

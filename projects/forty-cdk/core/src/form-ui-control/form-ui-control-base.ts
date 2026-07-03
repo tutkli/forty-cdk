@@ -156,6 +156,21 @@ export abstract class FormUiControlBase {
     return this.#hostEl;
   }
 
+  /**
+   * The control's effective invalidity — reflected as `data-invalid` and fed to
+   * a surrounding `[forField]` (which gates its error region and folds the error
+   * id into `aria-describedby`). Defaults to the raw {@link invalid} input.
+   * Override to fold in invalidity the form itself can't express (e.g.
+   * `ForDateRangeField` / `ForTimeRangeField` treating an out-of-order range as
+   * invalid) so `aria-invalid`, `data-invalid`, and the field wiring stay
+   * consistent. Read reactively inside the reflection and field-wiring effects,
+   * so an override may reference its own signals (initialized after this base
+   * `super()` runs).
+   */
+  protected effectiveInvalid(): boolean {
+    return this.invalid();
+  }
+
   constructor() {
     effect(() => {
       const target = this.fieldStateReflectionTarget();
@@ -165,10 +180,10 @@ export abstract class FormUiControlBase {
       target.toggleAttribute('data-touched', this.touched());
       target.toggleAttribute('data-dirty', this.dirty());
       target.toggleAttribute('data-pending', this.pending());
-      target.toggleAttribute('data-invalid', this.invalid());
+      target.toggleAttribute('data-invalid', this.effectiveInvalid());
     });
     injectFieldWiring({
-      invalid: this.invalid,
+      invalid: computed(() => this.effectiveInvalid()),
       required: this.required,
       disabled: this.effectiveDisabled,
       touched: this.touched,

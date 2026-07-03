@@ -267,6 +267,7 @@ describe('ForTimeRangeField', () => {
       expect(r.instance.value()).toBeNull();
       expect(root(r).getAttribute('aria-invalid')).toBe('true');
       expect(root(r).getAttribute('data-range-error')).toBe('');
+      expect(root(r).getAttribute('data-invalid')).toBe('');
       expect(seg(r, 'start', 'hour').textContent?.trim()).toBe('17');
       expect(seg(r, 'end', 'hour').textContent?.trim()).toBe('09');
     });
@@ -283,6 +284,7 @@ describe('ForTimeRangeField', () => {
       expect(adapter.getHours(range.end)).toBe(18);
       expect(root(r).getAttribute('aria-invalid')).toBeNull();
       expect(root(r).getAttribute('data-range-error')).toBeNull();
+      expect(root(r).getAttribute('data-invalid')).toBeNull();
     });
   });
 
