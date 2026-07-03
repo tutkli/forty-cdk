@@ -4,6 +4,7 @@ import {
   Directive,
   inject,
   input,
+  linkedSignal,
   model,
   numberAttribute,
 } from '@angular/core';
@@ -103,10 +104,22 @@ export class ForPagination implements ForPaginationContext {
    */
   readonly ariaLabel = input<string | null>(null);
 
+  /**
+   * The current page reconciled against `count`, clamped to `[1, max(1,
+   * count)]`. A consumer-written out-of-range `page` (e.g. `50` while `count`
+   * is `10`) reads through as a real page here, so `aria-current`, the visible
+   * list, and previous/next math all track a valid page. The `page` model
+   * stays the writable source of truth; navigation writes the reconciled value
+   * back into it via `goToPage`.
+   */
+  readonly effectivePage = linkedSignal<number>(() =>
+    clamp(this.page(), 1, Math.max(1, this.count())),
+  );
+
   /** The computed visible-page list (page numbers + ellipsis gaps). */
   readonly items = computed<readonly PaginationItem[]>(() =>
     computePaginationItems({
-      page: this.page(),
+      page: this.effectivePage(),
       count: this.count(),
       siblingCount: this.siblingCount(),
       boundaryCount: this.boundaryCount(),
@@ -114,13 +127,15 @@ export class ForPagination implements ForPaginationContext {
   );
 
   /** Whether the current page is the first (no previous page). */
-  readonly isFirst = computed(() => this.page() <= 1);
+  readonly isFirst = computed(() => this.effectivePage() <= 1);
 
   /** Whether the current page is the last (no next page). */
-  readonly isLast = computed(() => this.page() >= this.count());
+  readonly isLast = computed(() => this.effectivePage() >= this.count());
 
   /**
-   * Navigate to `page`, clamped to `[1, count]`. No-op when disabled.
+   * Navigate to `page`, clamped to `[1, count]`, and write the reconciled value
+   * back into the `page` model so a two-way `[(page)]` binding sees it. No-op
+   * when disabled.
    */
   goToPage(page: number): void {
     if (this.disabled()) {
@@ -134,11 +149,11 @@ export class ForPagination implements ForPaginationContext {
 
   /** Navigate to the previous page. No-op at the first page or when disabled. */
   previous(): void {
-    this.goToPage(this.page() - 1);
+    this.goToPage(this.effectivePage() - 1);
   }
 
   /** Navigate to the next page. No-op at the last page or when disabled. */
   next(): void {
-    this.goToPage(this.page() + 1);
+    this.goToPage(this.effectivePage() + 1);
   }
 }
