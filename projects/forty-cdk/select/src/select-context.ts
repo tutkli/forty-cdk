@@ -128,6 +128,14 @@ export interface ForSelectContext<T = unknown> {
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
 
+  /**
+   * The `[forSelect]` root (wrapper) element. Lets the trigger tell a focus
+   * move to a sibling *inside* the wrapper (e.g. a clear button next to the
+   * trigger) apart from a genuine focus leave, so `touched` isn't flipped
+   * prematurely when focus stays within the control.
+   */
+  readonly host: HTMLElement;
+
   /** Compare two items for equality. Defaults to `===`; overridden for object values. */
   readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
   /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */

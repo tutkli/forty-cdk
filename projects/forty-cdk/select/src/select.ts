@@ -3,6 +3,7 @@ import {
   computed,
   Directive,
   effect,
+  ElementRef,
   inject,
   input,
   isDevMode,
@@ -93,6 +94,9 @@ export class ForSelect<T = string>
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
   readonly #defaults = inject(FOR_SELECT_DEFAULTS);
+
+  /** The `[forSelect]` root element (see {@link ForSelectContext.host}). */
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /**
    * Two-way bindable. Selected option values. Single-mode keeps 0 or 1

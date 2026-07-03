@@ -113,7 +113,7 @@ export class ForSelectTrigger<T = unknown> {
         return;
       }
       // Focus going to a sibling inside the [forSelect] wrapper — also not a leave.
-      if (this.#host.nativeElement.contains(next)) {
+      if (this.ctx().host.contains(next)) {
         return;
       }
     }
