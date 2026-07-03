@@ -39,6 +39,25 @@ describe('parseLocaleNumber', () => {
     expect(parseLocaleNumber('+7', EN)).toBe(7);
   });
 
+  it('parses a negative formatted with U+2212 MINUS SIGN', () => {
+    expect(parseLocaleNumber('−7', EN)).toBe(-7);
+    expect(parseLocaleNumber('−3.14', EN)).toBe(-3.14);
+  });
+
+  it('parses a grouped negative formatted with U+2212 MINUS SIGN', () => {
+    expect(parseLocaleNumber('−1,234', EN)).toBe(-1234);
+  });
+
+  it('parses a negative formatted with U+FF0D FULLWIDTH HYPHEN-MINUS', () => {
+    expect(parseLocaleNumber('－7', EN)).toBe(-7);
+  });
+
+  it('round-trips a library-formatted negative in an sv-SE-style locale', () => {
+    const sv = localeSeparators('sv-SE');
+    const formatted = new Intl.NumberFormat('sv-SE').format(-1234.5);
+    expect(parseLocaleNumber(formatted, sv)).toBe(-1234.5);
+  });
+
   it('returns null for empty / whitespace-only text', () => {
     expect(parseLocaleNumber('', EN)).toBeNull();
     expect(parseLocaleNumber('   ', EN)).toBeNull();
