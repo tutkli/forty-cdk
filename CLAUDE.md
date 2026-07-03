@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project purpose
 
-`forty-cdk` is an Angular library (ng-packagr) that ships **headless / styleless** UI primitives with WAI-ARIA accessibility built in. Designed from the ground up **idiomatically for modern Angular** — not a port of another framework's patterns. The library exposes state, behavior, focus management, and keyboard interaction; the consumer applies their own styles. New primitives are added under `projects/forty-cdk/src/lib/<primitive>/` following the rules below.
+`forty-cdk` is an Angular library (ng-packagr) that ships **headless / styleless** UI primitives with WAI-ARIA accessibility built in. Designed from the ground up **idiomatically for modern Angular** — not a port of another framework's patterns. The library exposes state, behavior, focus management, and keyboard interaction; the consumer applies their own styles. New primitives are added as their own secondary entry point under `projects/forty-cdk/<primitive>/` following the rules below.
 
 ## Commands
 
@@ -25,10 +25,10 @@ pnpm test:e2e:ui           # playwright test --ui
 pnpm test:e2e:install      # playwright install --with-deps chromium webkit
 ```
 
-Single-file / single-test runs use the `@angular/build:unit-test` builder's own flags — `--include` (spec path, repeatable for several files) and `--filter` (test/suite-name regex). The `-- <path>` / `-- -t "<name>"` passthrough does **not** work on this setup (pnpm mangles the quoted `--`, so `ng` rejects it):
+Single-file / single-test runs use the `@angular/build:unit-test` builder's own flags — `--include` (spec path relative to `projects/forty-cdk/src/`, the spec tsconfig base — so a primitive spec is `../<primitive>/src/<file>.spec.ts`; repeatable for several files) and `--filter` (test/suite-name regex). The `-- <path>` / `-- -t "<name>"` passthrough does **not** work on this setup (pnpm mangles the quoted `--`, so `ng` rejects it):
 
 ```bash
-pnpm exec ng test forty-cdk --include "projects/forty-cdk/src/lib/accordion/accordion.spec.ts"
+pnpm exec ng test forty-cdk --include "../accordion/src/accordion.spec.ts"
 pnpm exec ng test forty-cdk --filter "opens on Enter"
 ```
 
@@ -38,25 +38,28 @@ The Vitest builder / setup-file invariants and the nightly scheduler-hostile shu
 
 ## Architecture
 
-- **Workspace layout.** Single Angular CLI workspace, `projectType: library`. The library lives at `projects/forty-cdk/`: `src/public-api.ts` is the main public entry point consumed by ng-packagr (`ng-package.json`); `src/lib/` holds primitives, one folder per primitive; the only secondary entry point lives at `internationalized-date/` (own `ng-package.json`, see Tree-shakability below); the library's own `package.json` declares `"sideEffects": false` for tree-shaking and pins `@angular/{common,core}` as peers — keep both invariants.
+- **Workspace layout.** Single Angular CLI workspace, `projectType: library`. The library lives at `projects/forty-cdk/`: `src/public-api.ts` is the main public entry point consumed by ng-packagr (`ng-package.json`); each primitive is its own **secondary entry point** at `projects/forty-cdk/<primitive>/` (own `ng-package.json` pointing at `src/public-api.ts`, imported as `forty-cdk/<primitive>`), and the cross-primitive shared code lives in the `forty-cdk/core` entry point at `projects/forty-cdk/core/src/` (see Tree-shakability below); `src/lib/` now holds only the cross-cutting integration specs (the SSR smoke suite plus the static-id / host-directive / toast-over-modal contracts) and `src/test-utils/` the test helpers; the library's own `package.json` declares `"sideEffects": false` for tree-shaking and pins `@angular/{common,core}` as peers — keep both invariants.
 - **Primitives are composable.** A primitive is not a single component; it's a set of standalone directives/components the consumer composes in their template, coordinating via `InjectionToken` + `inject()` (NOT `@ContentChild`). Typical layout:
 
 ```
-accordion/
-  accordion.ts              # ForAccordion (root)
-  accordion-item.ts         # ForAccordionItem
-  accordion-trigger.ts      # ForAccordionTrigger
-  accordion-content.ts      # ForAccordionContent
-  accordion-context.ts      # FOR_ACCORDION_CONTEXT InjectionToken
-  accordion.spec.ts
+accordion/                  # secondary entry point → forty-cdk/accordion
+  ng-package.json           # entryFile: src/public-api.ts
   README.md                 # styleless usage example
-  index.ts                  # public exports for `forty-cdk/accordion`
+  src/
+    accordion.ts            # ForAccordion (root)
+    accordion-item.ts       # ForAccordionItem
+    accordion-trigger.ts    # ForAccordionTrigger
+    accordion-content.ts    # ForAccordionContent
+    accordion-context.ts    # FOR_ACCORDION_CONTEXT InjectionToken
+    accordion-defaults.ts   # provideForAccordionDefaults + FOR_ACCORDION_DEFAULTS
+    accordion.spec.ts
+    public-api.ts           # public exports for `forty-cdk/accordion`
 ```
 
-- **Cross-primitive utilities** (focus trap, live announcer, id generator, roving tabindex, keyboard helpers) live in `projects/forty-cdk/src/lib/_internal/`. Each is named for what it does, not its category — `FocusTrap`, `LiveAnnouncer`, `IdGenerator` — never `*Service`.
+- **Cross-primitive utilities** (focus trap, live announcer, id generator, roving tabindex, keyboard helpers) live in the `forty-cdk/core` entry point at `projects/forty-cdk/core/src/`, imported by primitives via the `forty-cdk/core` specifier (never a relative path). Each is named for what it does, not its category — `FocusTrap`, `LiveAnnouncer`, `IdGenerator` — never `*Service`.
 - **Test utilities** (render helpers, keyboard/focus helpers) live in `projects/forty-cdk/src/test-utils/` and must NOT be re-exported from `public-api.ts`.
-- **Tree-shakability is a first-class constraint.** Avoid cross-primitive imports. The main entry point (`forty-cdk`) + `"sideEffects": false` + standalone directives let tree-shakers drop unused primitives — importing only `ForDisclosure` must not pull in `ForAccordion`. Per-primitive secondary entry points (`forty-cdk/disclosure`, etc.) remain deferred until there's real evidence consumers' bundles need them.
-- **Optional peers must never be imported by value from the main entry point.** The main entry point ships as a single FESM, and a consumer's bundler resolves every top-level import of that file before tree-shaking — an uninstalled optional peer breaks the build even for consumers who never touch the dependent primitive. The sanctioned shapes: (a) **type-only imports** for contract interfaces (`@angular/forms/signals` — erased at compile time, so the optional peer is genuinely optional); (b) a **dedicated secondary entry point** when consumer-facing values of the dependency cross the API (`forty-cdk/internationalized-date` holds the `@internationalized/date` adapters; only consumers importing that entry point need the peer, and it must stay a peer because consumers construct `CalendarDate` values themselves — a bundled copy would break `instanceof`); (c) a **regular `dependency`** (declared in `ng-package.json` `allowedNonPeerDependencies`) when the dependency is internal-only and nothing of it crosses the public API by value (`@floating-ui/dom` — auto-installed, tree-shaken out of non-overlay bundles). Inside a secondary entry point, import the core via the `forty-cdk` specifier, never by relative path.
+- **Tree-shakability is a first-class constraint.** Avoid cross-primitive imports. The main entry point (`forty-cdk`) + `"sideEffects": false` + standalone directives let tree-shakers drop unused primitives — importing only `ForDisclosure` must not pull in `ForAccordion`. On top of that, each primitive ships as its own **secondary entry point** (`forty-cdk/disclosure`, etc.), so a consumer importing from the specific entry gets a bundle their tooling never even sees the other primitives in.
+- **Optional peers must never be imported by value from the main entry point.** The main entry point ships as a single FESM, and a consumer's bundler resolves every top-level import of that file before tree-shaking — an uninstalled optional peer breaks the build even for consumers who never touch the dependent primitive. The sanctioned shapes: (a) **type-only imports** for contract interfaces (`@angular/forms/signals` — erased at compile time, so the optional peer is genuinely optional); (b) a **dedicated secondary entry point** when consumer-facing values of the dependency cross the API (`forty-cdk/internationalized-date` holds the `@internationalized/date` adapters; only consumers importing that entry point need the peer, and it must stay a peer because consumers construct `CalendarDate` values themselves — a bundled copy would break `instanceof`); (c) a **regular `dependency`** (declared in `ng-package.json` `allowedNonPeerDependencies`) when the dependency is internal-only and nothing of it crosses the public API by value (`@floating-ui/dom` — auto-installed, tree-shaken out of non-overlay bundles). Inside a secondary entry point, import the core via the `forty-cdk/core` specifier, never by relative path.
 
 ## Non-negotiable rules
 
@@ -93,7 +96,7 @@ When asked to add a primitive, follow this order:
 3. Confirm the API with the user before implementing if non-trivial design decisions exist.
 4. Implement piece by piece, one file each (no type suffixes), respecting every rule above.
 5. Tests in parallel — behavior, a11y (roles + aria + keyboard + focus), and explicit zoneless coverage (TestBed configured with `provideZonelessChangeDetection`).
-6. Add an SSR smoke fixture for the primitive in `projects/forty-cdk/src/lib/_internal/ssr/ssr.spec.ts` — a minimal compose registered in the suite's fixture list so it is asserted to render server-side without throwing. Overlay / `afterNextRender`-gated primitives get an open-state fixture that also asserts `<body>` is untouched. This is mandatory: the library advertises SSR-safe primitives, and a primitive with no server-side assertion can ship a `document` / `window` access that only fails under Angular Universal. See `.claude/rules/testing.md` for the SSR coverage contract.
+6. Add an SSR smoke fixture for the primitive in `projects/forty-cdk/src/lib/ssr/ssr.spec.ts` — a minimal compose registered in the suite's fixture list so it is asserted to render server-side without throwing. Overlay / `afterNextRender`-gated primitives get an open-state fixture that also asserts `<body>` is untouched. This is mandatory: the library advertises SSR-safe primitives, and a primitive with no server-side assertion can ship a `document` / `window` access that only fails under Angular Universal. See `.claude/rules/testing.md` for the SSR coverage contract.
 7. A `README.md` inside the primitive folder with a minimal styleless usage example.
 8. Verify tree-shaking: the primitive imports cleanly in isolation.
 
