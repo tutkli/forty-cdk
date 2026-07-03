@@ -1,6 +1,7 @@
 import {
   booleanAttribute,
   computed,
+  DestroyRef,
   Directive,
   DOCUMENT,
   effect,
@@ -9,7 +10,11 @@ import {
   input,
 } from '@angular/core';
 
+import { createDebouncedAction, type DebouncedAction } from 'forty-cdk/core';
 import { type ForContextMenuContext, injectContextMenuContext } from './context-menu-context';
+
+const LONG_PRESS_DELAY_MS = 500;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
 
 /**
  * Region that opens its parent `[forContextMenu]` on the `contextmenu` event
@@ -28,6 +33,17 @@ import { type ForContextMenuContext, injectContextMenuContext } from './context-
  * anchors at the focused element's rect and highlights it. The synthesized
  * `contextmenu` that trails an already-handled keydown is swallowed so it
  * cannot demote the rect anchor to a 0x0 point at the keyboard coordinates.
+ *
+ * On touch the directive also runs its own long-press timer: a `touch`
+ * `pointerdown` held for ~500ms — without lifting or moving past a small
+ * tolerance — opens the menu at the touch point, anchored like a right-click.
+ * This is required because iOS Safari never synthesizes the `contextmenu`
+ * event a long-press produces elsewhere; where the browser does synthesize it
+ * (Android, desktop touch emulation) the two paths are mutually exclusive, so
+ * the menu opens exactly once. Since the timer relies on the press not being
+ * pre-empted, suppress the native iOS callout / text-selection on the trigger
+ * with CSS (`-webkit-touch-callout: none; user-select: none;`) — otherwise the
+ * OS gesture fires `pointercancel` and cancels the press.
  *
  * Apply on any element. A default `tabindex="-1"` is host-bound so the
  * trigger can receive programmatic focus and return-focus works out of the
@@ -60,7 +76,10 @@ import { type ForContextMenuContext, injectContextMenuContext } from './context-
     '[id]': 'ctx().triggerId()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '(pointerdown)': 'onPointerDown()',
+    '(pointerdown)': 'onPointerDown($event)',
+    '(pointermove)': 'onPointerMove($event)',
+    '(pointerup)': 'onPointerRelease()',
+    '(pointercancel)': 'onPointerRelease()',
     '(contextmenu)': 'onContextMenu($event)',
     '(keydown)': 'onKeyDown($event)',
   },
@@ -69,6 +88,10 @@ export class ForContextMenuTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
   #pointerActivation = false;
+  #longPressOpened = false;
+  #pressX = 0;
+  #pressY = 0;
+  readonly #longPress: DebouncedAction = createDebouncedAction(() => this.#onLongPress());
 
   /**
    * Optional explicit reference to the `[forContextMenu]` root, named after
@@ -100,13 +123,40 @@ export class ForContextMenuTrigger {
       ctx.registerTrigger(el);
       onCleanup(() => ctx.unregisterTrigger(el));
     });
+    inject(DestroyRef).onDestroy(() => this.#longPress.cancel());
   }
 
-  protected onPointerDown(): void {
+  protected onPointerDown(event: PointerEvent): void {
     this.#pointerActivation = true;
+    this.#longPressOpened = false;
+    this.#longPress.cancel();
+    if (event.pointerType !== 'touch' || this.effectiveDisabled()) {
+      return;
+    }
+    this.#pressX = event.clientX;
+    this.#pressY = event.clientY;
+    this.#longPress.schedule(LONG_PRESS_DELAY_MS);
+  }
+
+  protected onPointerMove(event: PointerEvent): void {
+    if (!this.#longPress.isPending()) {
+      return;
+    }
+    const dx = event.clientX - this.#pressX;
+    const dy = event.clientY - this.#pressY;
+    if (dx * dx + dy * dy > LONG_PRESS_MOVE_TOLERANCE_PX * LONG_PRESS_MOVE_TOLERANCE_PX) {
+      this.#longPress.cancel();
+    }
+  }
+
+  protected onPointerRelease(): void {
+    this.#longPress.cancel();
   }
 
   protected onContextMenu(event: MouseEvent): void {
+    this.#longPress.cancel();
+    const longPressOpened = this.#longPressOpened;
+    this.#longPressOpened = false;
     const pointerActivation = this.#pointerActivation;
     this.#pointerActivation = false;
     if (this.effectiveDisabled()) {
@@ -114,6 +164,9 @@ export class ForContextMenuTrigger {
       return;
     }
     event.preventDefault();
+    if (longPressOpened) {
+      return;
+    }
     if (pointerActivation) {
       this.ctx().setVirtualAnchor(event.clientX, event.clientY);
       this.ctx().openMenu('first', 'pointer');
@@ -138,6 +191,15 @@ export class ForContextMenuTrigger {
     // Stop the browser from opening its own context menu on top of ours.
     event.preventDefault();
     this.#openFromFocusedRect();
+  }
+
+  #onLongPress(): void {
+    if (this.effectiveDisabled() || this.ctx().open()) {
+      return;
+    }
+    this.#longPressOpened = true;
+    this.ctx().setVirtualAnchor(this.#pressX, this.#pressY);
+    this.ctx().openMenu('first', 'pointer');
   }
 
   #openFromFocusedRect(): void {

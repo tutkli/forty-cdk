@@ -189,16 +189,11 @@ test.describe('ContextMenu', () => {
     });
   });
 
-  // ContextMenu's directive listens on the `contextmenu` event. On a real
-  // touch device, sustained touch hold (~500 ms) makes the OS fire a
-  // synthetic `contextmenu` at the touch coordinates. Playwright's
-  // `page.touchscreen` only exposes `tap()` (no hold), so the `longPress`
+  // The directive runs its own long-press timer for touch pointers (iOS
+  // Safari never synthesizes `contextmenu`), so a sustained synthetic touch
+  // hold opens the menu with no `contextmenu` dispatch. The `longPress`
   // helper in `_helpers.ts` dispatches `pointerdown` + 600 ms wait +
-  // `pointerup` synthetically. Synthetic `dispatchEvent`s do not engage
-  // the browser's native long-press → contextmenu synthesis, so this
-  // spec follows the helper with an explicit `contextmenu` dispatch at
-  // the touch coordinates — the result is a deterministic mobile-path
-  // open that mirrors what the OS would do on a real device, and runs
+  // `pointerup`; 600 ms clears the directive's 500 ms threshold. Runs
   // identically on the desktop projects (regression guard).
   test.describe('@mobile long-press', () => {
     test('@mobile long-press opens the menu at the touch position', async ({ page }) => {
@@ -208,14 +203,8 @@ test.describe('ContextMenu', () => {
       expect(regionBox).not.toBeNull();
 
       await longPress(region, 600);
-      // The OS-level `contextmenu` synthesis the long-press would
-      // produce on a real device — dispatched here at the same touch
-      // coordinates so the test deterministically opens the menu
-      // regardless of whether the browser engaged its own synthesis
-      // path (which it doesn't for synthetic dispatchEvent gestures).
       const cx = regionBox!.x + regionBox!.width / 2;
       const cy = regionBox!.y + regionBox!.height / 2;
-      await region.dispatchEvent('contextmenu', { clientX: cx, clientY: cy });
 
       await expect(el(page, 'menu')).toBeVisible();
       await expect(el(page, 'item-1')).toBeFocused();

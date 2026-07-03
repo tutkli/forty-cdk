@@ -53,6 +53,10 @@ function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
 describe('ForContextMenu', () => {
   afterEachOverlayCleanup();
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   describe('right-click trigger', () => {
     it('opens the menu on contextmenu and prevents the native menu', async () => {
       const r = renderHost(ContextMenuHost);
@@ -153,6 +157,188 @@ describe('ForContextMenu', () => {
       expect(region.getAttribute('data-disabled')).toBe('');
       expect(region.hasAttribute('aria-disabled')).toBe(false);
       expect(region.hasAttribute('disabled')).toBe(false);
+    });
+  });
+
+  describe('touch long-press', () => {
+    function touchPointerDown(el: HTMLElement, x: number, y: number): void {
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          pointerType: 'touch',
+          clientX: x,
+          clientY: y,
+        }),
+      );
+    }
+
+    it('opens the menu after a sustained touch press', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.querySelector('[forMenuContent]')).not.toBeNull();
+    });
+
+    it('does not open on a short tap (pointerup before the delay)', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      vi.advanceTimersByTime(200);
+      region.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }));
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('cancels the press when the pointer moves beyond the tolerance (scroll)', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      region.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          pointerType: 'touch',
+          clientX: 30,
+          clientY: 90,
+        }),
+      );
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('opens despite a sub-tolerance finger jitter', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      region.dispatchEvent(
+        new PointerEvent('pointermove', {
+          bubbles: true,
+          pointerType: 'touch',
+          clientX: 33,
+          clientY: 44,
+        }),
+      );
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('cancels the press on pointercancel', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      region.dispatchEvent(
+        new PointerEvent('pointercancel', { bubbles: true, pointerType: 'touch' }),
+      );
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('does not arm the timer for a mouse pointer', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      region.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          pointerType: 'mouse',
+          clientX: 30,
+          clientY: 40,
+        }),
+      );
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('does not open on long-press when disabled', async () => {
+      const r = renderHost(ContextMenuHost);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(false);
+    });
+
+    it('suppresses the trailing synthesized contextmenu after a long-press open', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+      expect(r.instance.open()).toBe(true);
+
+      const trailing = new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 30,
+        clientY: 40,
+      });
+      region.dispatchEvent(trailing);
+      r.fixture.detectChanges();
+
+      expect(trailing.defaultPrevented).toBe(true);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('does not re-open via the timer when contextmenu already opened it', async () => {
+      const r = renderHost(ContextMenuHost);
+      await flush(r.fixture);
+      const region = r.query<HTMLElement>('#region')!;
+
+      vi.useFakeTimers();
+      touchPointerDown(region, 30, 40);
+      region.dispatchEvent(
+        new MouseEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 30,
+          clientY: 40,
+        }),
+      );
+      r.fixture.detectChanges();
+      expect(r.instance.open()).toBe(true);
+
+      vi.advanceTimersByTime(500);
+      r.fixture.detectChanges();
+
+      expect(r.instance.open()).toBe(true);
     });
   });
 
