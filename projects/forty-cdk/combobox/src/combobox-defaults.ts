@@ -22,6 +22,18 @@ export interface ForComboboxDefaults {
    * when `flip` / `shift` runs.
    */
   collisionPadding: number;
+  /**
+   * Accessible name for the multi-mode chips cluster (`[forComboboxChips]`,
+   * `role="group"`), for chip clusters that don't set `[ariaLabel]` locally.
+   * Localize it here to translate every combobox chip group in the scope.
+   */
+  chipsAriaLabel: string;
+  /**
+   * Accessible name for the clear button (`[forComboboxClear]`), for clear
+   * buttons that don't set `[ariaLabel]` locally. Localize it here to
+   * translate every combobox clear button in the scope.
+   */
+  clearAriaLabel: string;
 }
 
 /**
@@ -32,6 +44,8 @@ export interface ForComboboxDefaults {
 export const FOR_COMBOBOX_FALLBACK_DEFAULTS: ForComboboxDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
+  chipsAriaLabel: 'Selected items',
+  clearAriaLabel: 'Clear',
 };
 
 const { token, provideDefaults } = createDefaults<ForComboboxDefaults>(

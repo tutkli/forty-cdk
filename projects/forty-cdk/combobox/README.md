@@ -22,7 +22,7 @@ The editable (default) anatomy — an `<input>` that filters a portaled listbox 
 ```html
 <div forCombobox [(query)]="query" [(value)]="value">
   <input forComboboxInput placeholder="Search…" />
-  <button forComboboxClear aria-label="Clear">×</button>
+  <button forComboboxClear>×</button>
 
   <!-- @if (open()) { -->
   <div forComboboxContent>

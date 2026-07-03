@@ -1,12 +1,17 @@
-import { computed, Directive } from '@angular/core';
+import { computed, Directive, inject, input } from '@angular/core';
 
 import { reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
+import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
 /**
  * Optional clear button. Apply on a `<button type="button">` so Space /
  * Enter dispatch a native click. Clicking calls `clear()` on the root,
  * which resets `[(value)]` and `[(query)]` and the activedescendant.
+ *
+ * Carries `aria-label` (default `'Clear'`, or the scope's `clearAriaLabel`
+ * from `provideForComboboxDefaults`) so the icon-only button has an
+ * accessible name; override per-instance via `[ariaLabel]`.
  *
  * The directive hides the button when there's nothing to clear (no value,
  * empty query) so the consumer can leave it inline in the template without
@@ -19,7 +24,7 @@ import { injectComboboxContext } from './combobox-context';
   exportAs: 'forComboboxClear',
   host: {
     type: 'button',
-    'aria-label': 'Clear',
+    '[attr.aria-label]': 'ariaLabel()',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
     '[attr.tabindex]': '-1',
@@ -28,6 +33,15 @@ import { injectComboboxContext } from './combobox-context';
 })
 export class ForComboboxClear {
   protected readonly ctx = injectComboboxContext('ForComboboxClear');
+  readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
+
+  /**
+   * Accessible name for the clear button, exposed as `aria-label`. Defaults
+   * to the scope's `clearAriaLabel` (`'Clear'` unless overridden via
+   * `provideForComboboxDefaults`); set `[ariaLabel]` to override per-instance,
+   * or `null` to drop the attribute.
+   */
+  readonly ariaLabel = input<string | null>(this.#defaults.clearAriaLabel);
 
   protected readonly hasContent = computed(
     () => this.ctx.value().length > 0 || this.ctx.query().length > 0,
