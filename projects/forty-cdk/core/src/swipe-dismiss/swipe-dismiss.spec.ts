@@ -317,17 +317,12 @@ describe('attachSwipeDismiss', () => {
   it('an unarmed mouse press released outside does not arm a phantom swipe on a later hover', () => {
     const { el, rec, cleanup } = setup({ directions: ['right'], threshold: 50 });
 
-    // Press starts tracking but does not arm (no move past the arm distance).
     pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerType: 'mouse', button: 0 });
-    // The button is released OUTSIDE the element: no pointerup fires on el, so
-    // tracking stays stale (pointerId set, unarmed).
 
-    // A later hover-move with no button held (buttons === 0) must not arm a swipe.
     pointer(el, 'pointermove', { clientX: 80, clientY: 0, pointerType: 'mouse', buttons: 0 });
     expect(rec.starts).toEqual([]);
     expect(rec.moves).toEqual([]);
 
-    // A fresh, real press-and-drag still arms normally after the reset.
     pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerType: 'mouse', button: 0 });
     pointer(el, 'pointermove', { clientX: 80, clientY: 0, pointerType: 'mouse' });
     expect(rec.starts).toHaveLength(1);
