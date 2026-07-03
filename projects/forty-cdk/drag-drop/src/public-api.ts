@@ -21,4 +21,9 @@ export {
   provideForDragDropDefaults,
   type ForDragDropDefaults,
 } from './drag-drop-defaults';
-export type { WritingDirection } from 'forty-cdk/core';
+export type {
+  DragPreview,
+  ListNavigationAction,
+  RovingTabindex,
+  WritingDirection,
+} from 'forty-cdk/core';

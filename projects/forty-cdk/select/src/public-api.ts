@@ -27,6 +27,7 @@ export {
 export type {
   FloatingAlign,
   FloatingSide,
+  ListNavigationAction,
   VetoableEvent,
   VetoableNativeEvent,
   WritingDirection,

@@ -18,4 +18,4 @@ export {
   provideForCarouselDefaults,
   type ForCarouselDefaults,
 } from './carousel-defaults';
-export type { WritingDirection } from 'forty-cdk/core';
+export type { ListNavigationAction, RovingTabindex, WritingDirection } from 'forty-cdk/core';

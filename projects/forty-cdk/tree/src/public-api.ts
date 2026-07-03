@@ -26,4 +26,4 @@ export {
 export { ForTreeNodeDragHandle } from './tree-node-drag-handle';
 export { type ForTreeDragDropEvent } from './tree-drag-drop-event';
 export { moveTreeNode, type MoveTreeNodeOptions } from './move-tree-node';
-export type { WritingDirection } from 'forty-cdk/core';
+export type { ListNavigationAction, RovingTabindex, WritingDirection } from 'forty-cdk/core';

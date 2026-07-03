@@ -25,6 +25,7 @@ export { FOR_MENU_DEFAULTS, provideForMenuDefaults, type ForMenuDefaults } from 
 export type {
   FloatingAlign,
   FloatingSide,
+  Point,
   VetoableEvent,
   VetoableNativeEvent,
   WritingDirection,

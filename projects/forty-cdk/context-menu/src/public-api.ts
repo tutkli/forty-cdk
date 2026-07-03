@@ -9,6 +9,8 @@ export {
 export type {
   FloatingAlign,
   FloatingSide,
+  ForMenuContext,
+  MenuActivationModality,
   VetoableEvent,
   VetoableNativeEvent,
   WritingDirection,

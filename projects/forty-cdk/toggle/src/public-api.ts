@@ -19,4 +19,4 @@ export {
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_INPUTS,
   FOR_TOGGLE_GROUP_HOST_DIRECTIVE_OUTPUTS,
 } from './toggle-group-host-directive';
-export type { WritingDirection } from 'forty-cdk/core';
+export type { ListNavigationAction, RovingTabindex, WritingDirection } from 'forty-cdk/core';

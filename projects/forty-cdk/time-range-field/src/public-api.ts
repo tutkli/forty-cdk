@@ -20,4 +20,10 @@ export {
   FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
 } from './time-range-field-host-directive';
 export { type TimeGranularity, type TimeSegmentType } from 'forty-cdk/core';
-export type { DateRange, TimeCapableDateAdapter, WritingDirection } from 'forty-cdk/core';
+export type {
+  DateRange,
+  FieldSegment,
+  SegmentEditorContext,
+  TimeCapableDateAdapter,
+  WritingDirection,
+} from 'forty-cdk/core';
