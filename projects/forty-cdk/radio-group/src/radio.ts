@@ -110,7 +110,7 @@ export class ForRadio {
       return;
     }
     const action = resolveListNavigation(event, {
-      orientation: this.group.orientation(),
+      orientation: 'both',
       dir: this.group.dir(),
     });
     if (!action) {

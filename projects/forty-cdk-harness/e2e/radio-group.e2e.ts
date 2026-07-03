@@ -77,6 +77,25 @@ test.describe('RadioGroup (arrow navigation + auto-activation)', () => {
     await expectFocused(el(page, 'opt-3'));
     await expect(el(page, 'opt-3')).toHaveAttribute('aria-checked', 'true');
   });
+
+  test('ArrowRight also navigates in a vertical group (four-cursor APG)', async ({ page }) => {
+    await gotoFixture(page, 'radio-group', { checked: '0' });
+    await el(page, 'opt-0').focus();
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'opt-1'));
+    await expect(el(page, 'opt-1')).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+test.describe('RadioGroup (readonly)', () => {
+  test('arrow keys move focus but never change the selected value', async ({ page }) => {
+    await gotoFixture(page, 'radio-group', { checked: '0', readonly: 'true' });
+    await el(page, 'opt-0').focus();
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'opt-1'));
+    await expect(el(page, 'opt-1')).toHaveAttribute('aria-checked', 'false');
+    await expect(el(page, 'opt-0')).toHaveAttribute('aria-checked', 'true');
+  });
 });
 
 test.describe('RadioGroup (horizontal + RTL)', () => {
