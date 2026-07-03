@@ -271,13 +271,19 @@ describe('ForRadioGroup', () => {
       expect(fixture.componentInstance.color()).toBe('red');
     });
 
-    it('ArrowLeft / ArrowRight are ignored in vertical orientation', async () => {
+    it('ArrowRight / ArrowLeft also move focus AND select in vertical orientation (four-cursor APG)', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       radioOf(el, 'red').focus();
+
       pressKey(radioOf(el, 'red'), 'ArrowRight');
       await flush();
-      expect(fixture.componentInstance.color()).toBe('');
+      expect(document.activeElement).toBe(radioOf(el, 'green'));
+      expect(fixture.componentInstance.color()).toBe('green');
+
+      pressKey(radioOf(el, 'green'), 'ArrowLeft');
+      await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
+      expect(fixture.componentInstance.color()).toBe('red');
     });
 
     it('Home / End jump to first / last and select', async () => {
@@ -313,7 +319,7 @@ describe('ForRadioGroup', () => {
   });
 
   describe('horizontal orientation', () => {
-    it('uses ArrowLeft / ArrowRight and ignores ArrowUp / ArrowDown', async () => {
+    it('uses ArrowLeft / ArrowRight and also accepts ArrowUp / ArrowDown (four-cursor APG)', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.orientation.set('horizontal');
       await flush();
@@ -332,7 +338,8 @@ describe('ForRadioGroup', () => {
 
       pressKey(radioOf(el, 'red'), 'ArrowDown');
       await flush();
-      expect(document.activeElement).toBe(radioOf(el, 'red'));
+      expect(document.activeElement).toBe(radioOf(el, 'green'));
+      expect(fixture.componentInstance.color()).toBe('green');
     });
 
     it('RTL swaps ArrowLeft / ArrowRight', async () => {
@@ -362,6 +369,17 @@ describe('ForRadioGroup', () => {
       pressKey(radioOf(el, 'green'), 'ArrowUp');
       await flush();
       expect(document.activeElement).toBe(radioOf(el, 'red'));
+    });
+
+    it('swaps only the horizontal pair (ArrowLeft advances) while ArrowDown stays axis-positive', async () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.dir.set('rtl');
+      await flush();
+
+      radioOf(el, 'red').focus();
+      pressKey(radioOf(el, 'red'), 'ArrowLeft');
+      await flush();
+      expect(document.activeElement).toBe(radioOf(el, 'green'));
     });
   });
 
@@ -415,6 +433,24 @@ describe('ForRadioGroup', () => {
       await flush();
       expect(fixture.componentInstance.color()).toBe('');
       expect(radioOf(el, 'red').hasAttribute('disabled')).toBe(false);
+    });
+
+    it('readonly group: arrow keys move focus but never change the value', async () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.color.set('red');
+      fixture.componentInstance.groupReadonly.set(true);
+      await flush();
+
+      radioOf(el, 'red').focus();
+      pressKey(radioOf(el, 'red'), 'ArrowDown');
+      await flush();
+      expect(document.activeElement).toBe(radioOf(el, 'green'));
+      expect(fixture.componentInstance.color()).toBe('red');
+
+      pressKey(radioOf(el, 'green'), 'End');
+      await flush();
+      expect(document.activeElement).toBe(radioOf(el, 'blue'));
+      expect(fixture.componentInstance.color()).toBe('red');
     });
   });
 

@@ -36,7 +36,10 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
  * auto-wires with `[formField]`.
  *
  * Selection-on-focus: arrow keys move focus AND change the value (APG
- * standard behavior). Wrap-around at the ends. Disabled radios are skipped.
+ * standard behavior). All four cursors navigate in either orientation (the
+ * horizontal pair is RTL-mirrored); `orientation` is a layout / aria hint
+ * only. Wrap-around at the ends. Disabled radios are skipped. Under
+ * `readonly`, arrows still move focus but never change the value.
  *
  * Empty string is the canonical "nothing selected" value (matches HTML form
  * semantics). Choose non-empty `value`s on each `ForRadio`.
@@ -70,15 +73,21 @@ export class ForRadioGroup
   /** Two-way bindable. Selected radio's value. Empty string = none selected. */
   readonly value = model<string>('');
 
-  /** Layout direction for keyboard navigation. */
+  /**
+   * Layout hint reflected as `aria-orientation` and `data-orientation`. It
+   * does **not** restrict keyboard navigation — per the WAI-ARIA Radio Group
+   * pattern all four arrow keys move focus + selection in either orientation
+   * (the horizontal pair is RTL-mirrored). Use it to drive the visual layout
+   * and expose the axis to assistive tech.
+   */
   readonly orientation = input<'horizontal' | 'vertical'>('vertical');
 
   /**
-   * Reading direction for horizontal orientation. When unset (default
-   * `null`), the inherited ambient direction is resolved from the nearest
-   * ancestor carrying a `dir` attribute (or `<html dir>`), defaulting to
-   * `'ltr'`. An explicit `[dir]` always wins. The resolved value is reflected
-   * to the host `dir` attribute and swaps ArrowLeft / ArrowRight in RTL.
+   * Reading direction. When unset (default `null`), the inherited ambient
+   * direction is resolved from the nearest ancestor carrying a `dir`
+   * attribute (or `<html dir>`), defaulting to `'ltr'`. An explicit `[dir]`
+   * always wins. The resolved value is reflected to the host `dir` attribute
+   * and swaps ArrowLeft / ArrowRight in RTL.
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
@@ -143,7 +152,7 @@ export class ForRadioGroup
   }
 
   navigate(currentRadio: HTMLElement, action: ListNavigationAction): void {
-    if (this.effectiveDisabled() || this.readonly()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const items = this.#items.items();
@@ -163,6 +172,9 @@ export class ForRadioGroup
       return;
     }
     target.host.focus();
+    if (this.readonly()) {
+      return;
+    }
     this.value.set(target.value());
   }
 

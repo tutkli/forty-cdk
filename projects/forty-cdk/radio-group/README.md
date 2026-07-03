@@ -74,16 +74,16 @@ export class DemoShipping {
 
 ### `ForRadioGroup`
 
-| Property                                                     | Type                                                      | Description                                                                                                                                                         |
-| ------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                      | `model<string>`                                           | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`.<br>**Default:** — |
-| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Drives keyboard navigation and `aria-orientation`.<br>**Default:** `'vertical'`                                                                                     |
-| `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | Swaps ArrowLeft / ArrowRight in horizontal layouts.<br>**Default:** `'ltr'`                                                                                         |
-| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as `aria-*` / `data-*`. `disabled` and `readonly` block all selection.<br>**Default:** —                                                                  |
-| `loop`                                                       | `input<boolean>`                                          | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group.<br>**Default:** `true`                    |
-| `name`                                                       | `input<string>`                                           | For form association.<br>**Default:** —                                                                                                                             |
-| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                           |
-| `touched`                                                    | `model<boolean>`                                          | Set to `true` when focus leaves the group entirely.<br>**Default:** —                                                                                               |
+| Property                                                     | Type                                                      | Description                                                                                                                                                                              |
+| ------------------------------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                                                      | `model<string>`                                           | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`.<br>**Default:** —                      |
+| `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Layout hint reflected as `aria-orientation` / `data-orientation`. Does **not** restrict arrow navigation — all four cursors navigate in either orientation.<br>**Default:** `'vertical'` |
+| `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                                    |
+| `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as `aria-*` / `data-*`. `disabled` blocks all interaction; `readonly` blocks selection changes but arrows still move focus.<br>**Default:** —                                  |
+| `loop`                                                       | `input<boolean>`                                          | When true (default), arrow nav wraps around past the first / last enabled radio. Set to `false` for a non-wrapping group.<br>**Default:** `true`                                         |
+| `name`                                                       | `input<string>`                                           | For form association.<br>**Default:** —                                                                                                                                                  |
+| `errors`                                                     | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Wired by `[formField]`.<br>**Default:** —                                                                                                                                                |
+| `touched`                                                    | `model<boolean>`                                          | Set to `true` when focus leaves the group entirely.<br>**Default:** —                                                                                                                    |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -119,9 +119,10 @@ Optional slot inside a `ForRadio`. Apply on the element you want to show only wh
 
 - **Tab** moves focus into / out of the group; lands on the selected radio (or the first enabled one if nothing is selected).
 - **Space** / **Enter** select the focused radio (Space is APG; Enter comes from the underlying `<button>` and is harmless).
-- **ArrowDown** / **ArrowUp** in a vertical group, **ArrowRight** / **ArrowLeft** in a horizontal group: move focus AND change selection ("selection on focus"), wrapping at the ends. RTL swaps Left/Right.
+- **ArrowDown** / **ArrowUp** / **ArrowRight** / **ArrowLeft**: all four cursors move focus AND change selection ("selection on focus"), wrapping at the ends, in either orientation (per the WAI-ARIA Radio Group pattern). RTL swaps Left/Right.
 - **Home** / **End** jump to the first / last enabled radio (and select it).
 - Disabled radios are skipped.
+- Under **`readonly`**, arrow keys and Home / End still move focus so the options can be traversed, but selection never changes.
 
 ## Accessibility
 
@@ -129,6 +130,7 @@ Implements the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/pa
 
 - **Provide a group label.** Use `aria-labelledby` (pointing to a heading or `<span>`) or `aria-label`. Without one, screen readers cannot announce the group's purpose.
 - **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
+- **All four arrow keys navigate** regardless of `orientation`, matching the WAI-ARIA Radio Group pattern and native HTML radios; `orientation` is a visual / `aria-orientation` hint only.
 - **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.
 
 ## Styling

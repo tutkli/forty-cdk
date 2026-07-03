@@ -24,6 +24,8 @@ import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
  *    disabled-skip spec relies on a single mid-list disabled option.
  *  - `?checked=3` — pre-checks the radio at that zero-based index. Default
  *    is empty (no selection) so the first-enabled tabstop branch is testable.
+ *  - `?readonly=true` — makes the group readonly, so arrow keys move focus
+ *    without changing the selected value.
  */
 @Component({
   selector: 'app-radio-group-fixture',
@@ -37,6 +39,7 @@ import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
       [(value)]="value"
       [orientation]="orientation"
       [dir]="dir"
+      [readonly]="readonly"
       aria-label="Test radio group"
     >
       @for (opt of options; track opt.value; let i = $index) {
@@ -71,6 +74,9 @@ export class RadioGroupFixture {
 
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+
+  protected readonly readonly: boolean =
+    this.#route.snapshot.queryParamMap.get('readonly') === 'true';
 
   protected readonly disabled: ReadonlySet<number> = parseIndexSet(
     this.#route.snapshot.queryParamMap.get('disabled'),
