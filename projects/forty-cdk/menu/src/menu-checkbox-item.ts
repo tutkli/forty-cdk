@@ -2,25 +2,19 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  ElementRef,
-  inject,
   InjectionToken,
   input,
   model,
   output,
-  signal,
 } from '@angular/core';
 
 import {
-  registerHandle,
-  resolveListNavigation,
   createVetoableEvent,
   emitVetoableEvent,
   type VetoableEvent,
   injectMenuContext,
 } from 'forty-cdk/core';
-import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
-import { handleMenuTabOut } from './menu-tab-out';
+import { createMenuItemInteraction } from './menu-item-interaction';
 
 /**
  * Injection key the `[forMenuItemIndicator]` uses to resolve a parent
@@ -61,14 +55,13 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
-    '(focus)': 'onFocus()',
-    '(blur)': 'onBlur()',
-    '(pointermove)': 'onPointerMove($event)',
+    '(focus)': 'interaction.onFocus()',
+    '(blur)': 'interaction.onBlur()',
+    '(pointermove)': 'interaction.onPointerMove($event)',
   },
 })
 export class ForMenuCheckboxItem {
   protected readonly ctx = injectMenuContext('ForMenuCheckboxItem');
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Two-way bindable. */
   readonly checked = model<boolean>(false);
@@ -85,43 +78,23 @@ export class ForMenuCheckboxItem {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
-  readonly #highlighted = signal(false);
+  protected readonly interaction = createMenuItemInteraction({
+    ctx: this.ctx,
+    effectiveDisabled: this.effectiveDisabled,
+    textValue: this.textValue,
+  });
+
   /**
    * True while this item is the active keyboard candidate or hovered by the
-   * pointer. Set on keyboard-driven focus and on `pointermove` (hover follows
-   * the pointer), cleared on `blur` and when the pointer leaves the surface.
-   * The programmatic initial focus of a pointer-driven open lands without a
-   * highlight until the pointer moves onto the item or keyboard navigation
-   * begins. Reflected as `data-highlighted`.
+   * pointer. Reflected as `data-highlighted`.
    */
-  readonly highlighted = this.#highlighted.asReadonly();
-
-  #suppressNextFocusHighlight = false;
+  readonly highlighted = this.interaction.highlighted;
 
   /**
    * Fires on click / Enter / Space activation. Call `preventDefault()`
    * on the emitted veto to keep the menu open after activation.
    */
   readonly activate = output<VetoableEvent>();
-
-  constructor() {
-    const handle = {
-      host: this.#host.nativeElement,
-      disabled: this.effectiveDisabled,
-      textValue: this.textValue,
-      suppressHighlightOnNextFocus: () => {
-        this.#suppressNextFocusHighlight = true;
-      },
-      clearHighlight: () => {
-        this.#highlighted.set(false);
-      },
-    };
-    registerHandle(
-      handle,
-      (h) => this.ctx.registerItem(h),
-      (h) => this.ctx.unregisterItem(h),
-    );
-  }
 
   protected onClick(): void {
     if (this.effectiveDisabled()) {
@@ -133,38 +106,11 @@ export class ForMenuCheckboxItem {
     }
   }
 
-  protected onFocus(): void {
-    if (this.#suppressNextFocusHighlight) {
-      this.#suppressNextFocusHighlight = false;
-      return;
-    }
-    this.#highlighted.set(true);
-  }
-
-  protected onBlur(): void {
-    this.#suppressNextFocusHighlight = false;
-    this.#highlighted.set(false);
-  }
-
-  protected onPointerMove(event: PointerEvent): void {
-    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
-      return;
-    }
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const host = this.#host.nativeElement;
-    if (host.ownerDocument.activeElement !== host) {
-      host.focus({ preventScroll: true });
-    }
-    this.#highlighted.set(true);
-  }
-
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (handleMenuHorizontalArrow(event, this.ctx)) {
+    if (this.interaction.handleNavigation(event)) {
       return;
     }
     // APG menubar guidance: Space toggles checked without closing the menu
@@ -177,16 +123,6 @@ export class ForMenuCheckboxItem {
       }
       this.checked.update((v) => !v);
       this.activate.emit(createVetoableEvent());
-      return;
-    }
-    const action = resolveListNavigation(event, { orientation: 'vertical' });
-    if (action) {
-      event.preventDefault();
-      this.ctx.navigate(this.#host.nativeElement, action);
-      return;
-    }
-    if (event.key === 'Tab') {
-      handleMenuTabOut(this.ctx);
       return;
     }
     this.ctx.handleTypeahead(event);

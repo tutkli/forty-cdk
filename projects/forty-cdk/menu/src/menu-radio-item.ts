@@ -2,24 +2,18 @@ import {
   booleanAttribute,
   computed,
   Directive,
-  ElementRef,
-  inject,
   InjectionToken,
   input,
   output,
-  signal,
 } from '@angular/core';
 
 import {
-  registerHandle,
-  resolveListNavigation,
   createVetoableEvent,
   emitVetoableEvent,
   type VetoableEvent,
   injectMenuContext,
 } from 'forty-cdk/core';
-import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
-import { handleMenuTabOut } from './menu-tab-out';
+import { createMenuItemInteraction } from './menu-item-interaction';
 import { injectMenuRadioGroupContext } from './menu-radio-group-context';
 
 /**
@@ -59,15 +53,14 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
-    '(focus)': 'onFocus()',
-    '(blur)': 'onBlur()',
-    '(pointermove)': 'onPointerMove($event)',
+    '(focus)': 'interaction.onFocus()',
+    '(blur)': 'interaction.onBlur()',
+    '(pointermove)': 'interaction.onPointerMove($event)',
   },
 })
 export class ForMenuRadioItem {
   protected readonly menu = injectMenuContext('ForMenuRadioItem');
   protected readonly group = injectMenuRadioGroupContext('ForMenuRadioItem');
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Identifier added to / read from the radio group's `value`. Required. */
   readonly value = input.required<string>();
@@ -86,43 +79,23 @@ export class ForMenuRadioItem {
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menu.disabled());
 
-  readonly #highlighted = signal(false);
+  protected readonly interaction = createMenuItemInteraction({
+    ctx: this.menu,
+    effectiveDisabled: this.effectiveDisabled,
+    textValue: this.textValue,
+  });
+
   /**
    * True while this item is the active keyboard candidate or hovered by the
-   * pointer. Set on keyboard-driven focus and on `pointermove` (hover follows
-   * the pointer), cleared on `blur` and when the pointer leaves the surface.
-   * The programmatic initial focus of a pointer-driven open lands without a
-   * highlight until the pointer moves onto the item or keyboard navigation
-   * begins. Reflected as `data-highlighted`.
+   * pointer. Reflected as `data-highlighted`.
    */
-  readonly highlighted = this.#highlighted.asReadonly();
-
-  #suppressNextFocusHighlight = false;
+  readonly highlighted = this.interaction.highlighted;
 
   /**
    * Fires on click / Enter / Space activation. Call `preventDefault()`
    * on the emitted veto to keep the menu open after activation.
    */
   readonly activate = output<VetoableEvent>();
-
-  constructor() {
-    const handle = {
-      host: this.#host.nativeElement,
-      disabled: this.effectiveDisabled,
-      textValue: this.textValue,
-      suppressHighlightOnNextFocus: () => {
-        this.#suppressNextFocusHighlight = true;
-      },
-      clearHighlight: () => {
-        this.#highlighted.set(false);
-      },
-    };
-    registerHandle(
-      handle,
-      (h) => this.menu.registerItem(h),
-      (h) => this.menu.unregisterItem(h),
-    );
-  }
 
   protected onClick(): void {
     if (this.effectiveDisabled()) {
@@ -134,38 +107,11 @@ export class ForMenuRadioItem {
     }
   }
 
-  protected onFocus(): void {
-    if (this.#suppressNextFocusHighlight) {
-      this.#suppressNextFocusHighlight = false;
-      return;
-    }
-    this.#highlighted.set(true);
-  }
-
-  protected onBlur(): void {
-    this.#suppressNextFocusHighlight = false;
-    this.#highlighted.set(false);
-  }
-
-  protected onPointerMove(event: PointerEvent): void {
-    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
-      return;
-    }
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    const host = this.#host.nativeElement;
-    if (host.ownerDocument.activeElement !== host) {
-      host.focus({ preventScroll: true });
-    }
-    this.#highlighted.set(true);
-  }
-
   protected onKeyDown(event: KeyboardEvent): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (handleMenuHorizontalArrow(event, this.menu)) {
+    if (this.interaction.handleNavigation(event)) {
       return;
     }
     // APG menubar guidance: Space sets the group value without closing the
@@ -178,16 +124,6 @@ export class ForMenuRadioItem {
       }
       this.group.select(this.value());
       this.activate.emit(createVetoableEvent());
-      return;
-    }
-    const action = resolveListNavigation(event, { orientation: 'vertical' });
-    if (action) {
-      event.preventDefault();
-      this.menu.navigate(this.#host.nativeElement, action);
-      return;
-    }
-    if (event.key === 'Tab') {
-      handleMenuTabOut(this.menu);
       return;
     }
     this.menu.handleTypeahead(event);
