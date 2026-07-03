@@ -249,19 +249,29 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       return false;
     }
     const target = event.target as HTMLElement;
-    const itemHost = target.closest<HTMLElement>('[forTreeItem]');
-    if (!itemHost) {
-      return false;
-    }
-    const entry = this.#ctx.visibleNodes().find((e) => e.handle.host === itemHost);
+    const entry = this.#resolveVisibleNodeFromTarget(target);
     if (!entry || entry.handle.disabled()) {
       return false;
     }
+    const itemHost = entry.handle.host;
     if (!isInsideGrabArea(itemHost, target, this.#handles)) {
       return false;
     }
     this.#liftedHost = itemHost;
     return true;
+  }
+
+  #resolveVisibleNodeFromTarget(target: HTMLElement): ForTreeVisibleNode | null {
+    const hosts = new Map(this.#ctx.visibleNodes().map((e) => [e.handle.host, e]));
+    let node: HTMLElement | null = target;
+    while (node && node !== this.#hostEl) {
+      const entry = hosts.get(node);
+      if (entry) {
+        return entry;
+      }
+      node = node.parentElement;
+    }
+    return null;
   }
 
   #onPointerLift(event: PointerEvent): boolean {

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  Directive,
   provideZonelessChangeDetection,
   signal,
 } from '@angular/core';
@@ -76,6 +77,19 @@ class TreeDragHost {
 
 function dispatchKey(el: HTMLElement, key: string, opts: KeyboardEventInit = {}): void {
   el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...opts }));
+}
+
+function firePointer(target: EventTarget, type: string, x: number, y: number): void {
+  target.dispatchEvent(
+    new PointerEvent(type, {
+      clientX: x,
+      clientY: y,
+      button: 0,
+      pointerId: 1,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
 }
 
 describe('ForTreeNodeDrag — keyboard', () => {
@@ -640,5 +654,106 @@ describe('ForTreeNodeDrag — zoneless', () => {
     await flush(fixture);
 
     expect(musicEl.getAttribute('data-drop-position')).toBe('before');
+  });
+});
+
+@Directive({
+  selector: '[wrappedTreeItem]',
+  hostDirectives: [{ directive: ForTreeItem, inputs: ['value', 'disabled'] }],
+})
+class WrappedTreeItem {}
+
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, WrappedTreeItem, ForTreeItemLabel],
+  template: `
+    <ul forTree forTreeNodeDrag (nodeDrop)="dropped.set($event)" aria-label="Files">
+      <li wrappedTreeItem value="docs" data-testid="docs">
+        <div forTreeItemLabel data-testid="label-docs">Docs</div>
+      </li>
+      <li wrappedTreeItem value="music" data-testid="music">
+        <div forTreeItemLabel data-testid="label-music">Music</div>
+      </li>
+      <li wrappedTreeItem value="notes" data-testid="notes">
+        <div forTreeItemLabel data-testid="label-notes">Notes</div>
+      </li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class WrappedTreeDragHost {
+  readonly dropped = signal<ForTreeDragDropEvent | null>(null);
+}
+
+describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
+  it('resolves the lifted node from a registered handle on the common case', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    const label = docsEl.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    const event = instance.dropped();
+    expect(event).not.toBeNull();
+    expect(event!.node).toBe('docs');
+  });
+
+  it('resolves the lifted node when the item is composed via hostDirectives (no [forTreeItem] attribute)', async () => {
+    const { instance, query, flush: f } = renderHost(WrappedTreeDragHost);
+    await f();
+
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    expect(docsEl.hasAttribute('forTreeItem')).toBe(false);
+    expect(docsEl.getAttribute('role')).toBe('treeitem');
+    const label = query<HTMLElement>('[data-testid="label-docs"]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    const event = instance.dropped();
+    expect(event).not.toBeNull();
+    expect(event!.node).toBe('docs');
+  });
+
+  it('does not start a pointer drag from outside any tree item', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+
+    firePointer(tree, 'pointerdown', 5, 5);
+    firePointer(document, 'pointermove', 5, 25);
+    await f();
+    firePointer(document, 'pointerup', 5, 25);
+    await f();
+
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('resolves the hostDirective-composed node without Zone.js', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(WrappedTreeDragHost);
+    await flush(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    const label = root.querySelector<HTMLElement>('[data-testid="label-music"]')!;
+
+    firePointer(label, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await flush(fixture);
+    firePointer(document, 'pointerup', 100, 120);
+    await flush(fixture);
+
+    const event = fixture.componentInstance.dropped();
+    expect(event).not.toBeNull();
+    expect(event!.node).toBe('music');
   });
 });
