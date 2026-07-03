@@ -81,6 +81,11 @@ Despite the `webkit-` prefix the attribute is supported across modern Chromium, 
 | `directory` | `boolean`        | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).<br>**Default:** `false`    |
 | `disabled`  | `boolean`        | Whether the zone and all its pieces are disabled.<br>**Default:** `false`                             |
 
+| Output          | Type       | Description                                                                                                                                    |
+| --------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filesChange`   | `FileList` | Files chosen via the dialog or dropped onto the zone. Dropped files are filtered against `accept` before emission.                             |
+| `filesRejected` | `File[]`   | Dropped files rejected by `accept` (file-extension / `type/*` MIME matching). Fires only on the drag&drop path, when at least one is rejected. |
+
 | Data attribute  | Values                                                              |
 | --------------- | ------------------------------------------------------------------- |
 | `data-dragging` | present while files are dragged over the drop zone, else absent     |
