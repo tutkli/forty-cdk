@@ -14,6 +14,7 @@ import {
   Collection,
   firstEnabledHost,
   createDebouncedAction,
+  findTypeaheadMatch,
   type ListNavigationAction,
   type WritingDirection,
   nextEnabledHandle,
@@ -402,18 +403,18 @@ export class ForMenubar implements ForMenubarContext {
     if (!this.#triggerTypeahead.handle(event)) {
       return;
     }
-    const buffer = this.#triggerTypeahead.buffer().toLowerCase();
-    if (!buffer) {
-      return;
-    }
     const items = this.#triggerCollection.items();
-    const match = items.find((t) => {
-      if (t.disabled()) {
-        return false;
-      }
-      const text = t.host.textContent ?? '';
-      return text.trim().toLowerCase().startsWith(buffer);
-    });
+    const currentIndex = items.findIndex((t) => t.host === event.target);
+    const match = findTypeaheadMatch(
+      items,
+      {
+        buffer: this.#triggerTypeahead.buffer(),
+        repeated: this.#triggerTypeahead.isRepeatedChar(),
+        anchorIndex: currentIndex,
+      },
+      (t) => t.host.textContent ?? '',
+      (t) => t.disabled(),
+    );
     match?.host.focus();
   }
 }

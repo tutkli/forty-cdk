@@ -213,4 +213,47 @@ test.describe('Menubar', () => {
     await page.mouse.click(1100, 500);
     await expect(el(page, 'menu-file')).toBeVisible();
   });
+
+  test.describe('vertical orientation', () => {
+    test('ArrowDown / ArrowUp rove among triggers without opening a menu', async ({ page }) => {
+      await gotoFixture(page, 'menubar', { orientation: 'vertical' });
+      await el(page, 'trigger-file').focus();
+
+      // Up/Down are the navigation axis in a vertical bar — they move focus
+      // across triggers and must not open a menu.
+      await page.keyboard.press('ArrowDown');
+      await expectFocused(el(page, 'trigger-edit'));
+      await expect(el(page, 'menu-edit')).toHaveCount(0);
+
+      await page.keyboard.press('ArrowDown');
+      await expectFocused(el(page, 'trigger-view'));
+
+      // Loops at the end back to the first trigger.
+      await page.keyboard.press('ArrowDown');
+      await expectFocused(el(page, 'trigger-file'));
+
+      // ArrowUp loops backwards to the last trigger.
+      await page.keyboard.press('ArrowUp');
+      await expectFocused(el(page, 'trigger-view'));
+    });
+
+    test('ArrowRight opens the focused trigger on its first enabled item', async ({ page }) => {
+      await gotoFixture(page, 'menubar', { orientation: 'vertical' });
+      await el(page, 'trigger-file').focus();
+
+      await page.keyboard.press('ArrowRight');
+      await expect(el(page, 'menu-file')).toBeVisible();
+      await expectFocused(el(page, 'item-file-1'));
+      await expect(el(page, 'trigger-file')).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    test('ArrowLeft does not open a menu in a LTR vertical bar', async ({ page }) => {
+      await gotoFixture(page, 'menubar', { orientation: 'vertical' });
+      await el(page, 'trigger-file').focus();
+
+      await page.keyboard.press('ArrowLeft');
+      await expect(el(page, 'menu-file')).toHaveCount(0);
+      await expectFocused(el(page, 'trigger-file'));
+    });
+  });
 });

@@ -109,7 +109,11 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    */
   pointerEnterTrigger(value: string): void;
 
-  /** Typeahead at the trigger row matches sibling trigger labels. */
+  /**
+   * Typeahead at the trigger row: focuses the sibling trigger whose label
+   * matches the buffered keys, anchored on the currently-focused trigger and
+   * cycling to the next match (per the APG typeahead behaviour).
+   */
   handleTriggerTypeahead(event: KeyboardEvent): void;
 }
 
