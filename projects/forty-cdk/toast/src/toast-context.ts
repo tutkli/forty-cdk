@@ -61,8 +61,8 @@ export interface ForToastConfig<D = unknown> {
    * sticky (no auto-dismiss; only manual / action / escape close).
    */
   duration?: number;
-  /** Action button. The button auto-closes the toast after invoking `onClick`. */
-  action?: { label: string; onClick: () => void };
+  /** Action button. The button auto-closes the toast after invoking `activate`. */
+  action?: { label: string; activate: () => void };
   /** Render an explicit close button. Default `true`. */
   closable?: boolean;
   /**

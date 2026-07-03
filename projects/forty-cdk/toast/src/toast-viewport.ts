@@ -133,7 +133,7 @@ import { ForToastTitle } from './toast-title';
             <div forToastDescription>{{ toast.config.description }}</div>
           }
           @if (toast.config.action; as action) {
-            <button forToastAction (click)="action.onClick()">
+            <button forToastAction (click)="action.activate()">
               {{ action.label }}
             </button>
           }

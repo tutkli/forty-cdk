@@ -18,6 +18,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import { ForDialog } from './dialog';
+import type { ForDialogCloseReason } from './dialog-context';
 
 /**
  * @internal Minimal surface the outlet needs from `ForDialogManager` — avoids
@@ -49,7 +50,7 @@ export interface ForDialogEntry extends OverlayManagerEntry {
   readonly interactOutside:
     | ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void)
     | undefined;
-  handleClose(value: unknown): void;
+  handleClose(reason: ForDialogCloseReason, value: unknown): void;
   injectorFor(parent: Injector): Injector;
 }
 
@@ -94,7 +95,7 @@ export class ForDialogContextInjector extends OverlayContextInjector {}
         [container]="entry.container ?? null"
         [autoFocusOnOpen]="entry.autoFocusOnOpen"
         [autoFocusOnClose]="entry.autoFocusOnClose"
-        (dismiss)="entry.handleClose(fd.lastCloseValue())"
+        (dismiss)="entry.handleClose($event, fd.lastCloseValue())"
         (escapeKeyDown)="entry.escapeKeyDown?.($event)"
         (pointerDownOutside)="entry.pointerDownOutside?.($event)"
         (focusOutside)="entry.focusOutside?.($event)"

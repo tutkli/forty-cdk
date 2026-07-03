@@ -7,6 +7,7 @@ import { ForDialogClose } from './dialog-close';
 import { ForDialogDescription } from './dialog-description';
 import { ForDialogRef } from './dialog-ref';
 import { ForDialogManager, FOR_DIALOG_DATA, injectDialogData } from './dialog-manager';
+import { provideForDialogDefaults } from './dialog-defaults';
 import { ForDialogTitle } from './dialog-title';
 
 interface ConfirmData {
@@ -51,9 +52,12 @@ class TypedDataDialog {
   readonly data: ConfirmData | null = injectDialogData<ConfirmData>();
 }
 
-function setup(): { dialogs: ForDialogManager; trigger: HTMLButtonElement } {
+function setup(extraProviders: Parameters<typeof TestBed.configureTestingModule>[0] = {}): {
+  dialogs: ForDialogManager;
+  trigger: HTMLButtonElement;
+} {
   TestBed.configureTestingModule({
-    providers: [provideZonelessChangeDetection()],
+    providers: [provideZonelessChangeDetection(), ...(extraProviders.providers ?? [])],
   });
   const dialogs = TestBed.inject(ForDialogManager);
   const trigger = document.createElement('button');
@@ -145,7 +149,7 @@ describe('ForDialogManager (programmatic)', () => {
   });
 
   describe('ForDialogRef.close', () => {
-    it('resolves the closed promise with the result', async () => {
+    it('resolves the closed promise with { reason, result }', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open<ConfirmDialog, 'confirm' | 'cancel', ConfirmData>(ConfirmDialog, {
         data: { message: 'x' },
@@ -153,8 +157,9 @@ describe('ForDialogManager (programmatic)', () => {
 
       document.querySelector<HTMLButtonElement>('#ok')!.click();
 
-      const result = await ref.closed;
+      const { reason, result } = await ref.closed;
       expect(result).toBe('confirm');
+      expect(reason).toBe('programmatic');
     });
 
     it('reflects result and isClosed reactively', async () => {
@@ -206,7 +211,7 @@ describe('ForDialogManager (programmatic)', () => {
 
       ref.close('first');
       ref.close('second'); // ignored
-      const result = await ref.closed;
+      const { result } = await ref.closed;
 
       expect(result).toBe('first');
     });
@@ -293,9 +298,10 @@ describe('ForDialogManager (programmatic)', () => {
       });
 
       pressKey(document, 'Escape');
-      const result = await ref.closed;
+      const { reason, result } = await ref.closed;
 
       expect(result).toBeUndefined();
+      expect(reason).toBe('escape');
       expect(ref.isClosed()).toBe(true);
     });
 
@@ -611,18 +617,20 @@ describe('ForDialogManager (programmatic)', () => {
       const { dialogs } = setup();
       const ref = dialogs.open<FullPiecesDialog, { reason: string }>(FullPiecesDialog);
       document.querySelector<HTMLButtonElement>('#close-with')!.click();
-      const result = await ref.closed;
-      expect(result).toEqual({ reason: 'user-confirmed' });
+      const closeEvent = await ref.closed;
+      expect(closeEvent.result).toEqual({ reason: 'user-confirmed' });
+      expect(closeEvent.reason).toBe('closeButton');
       expect(ref.result()).toEqual({ reason: 'user-confirmed' });
     });
 
-    it('forDialogBackdrop click closes a dismissible programmatic dialog', async () => {
+    it('forDialogBackdrop click closes a dismissible programmatic dialog with reason backdrop', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open(FullPiecesDialog);
       const backdrop = document.querySelector<HTMLElement>('[data-testid="bd"]')!;
       backdrop.click();
-      await ref.closed;
+      const { reason } = await ref.closed;
       expect(ref.isClosed()).toBe(true);
+      expect(reason).toBe('backdrop');
     });
   });
 
@@ -645,6 +653,35 @@ describe('ForDialogManager (programmatic)', () => {
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(host.hasAttribute('aria-modal')).toBe(false);
       expect(document.body.style.overflow).toBe('auto');
+    });
+  });
+
+  describe('defaults provider (root scope)', () => {
+    it('behavior key from provideForDialogDefaults applies when config omits it', () => {
+      document.body.style.overflow = 'auto';
+      const { dialogs } = setup({ providers: [provideForDialogDefaults({ modal: false })] });
+      dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.hasAttribute('aria-modal')).toBe(false);
+      expect(document.body.style.overflow).toBe('auto');
+    });
+
+    it('config option overrides the defaults provider', () => {
+      const { dialogs } = setup({ providers: [provideForDialogDefaults({ modal: false })] });
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, modal: true });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('aria-modal')).toBe('true');
+    });
+
+    it('returnFocus:false from the provider takes effect', async () => {
+      const { dialogs, trigger } = setup({
+        providers: [provideForDialogDefaults({ returnFocus: false })],
+      });
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+      expect(document.activeElement).not.toBe(trigger);
     });
   });
 

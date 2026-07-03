@@ -79,7 +79,7 @@ export class DrawerProgrammaticExample {
       animateLeave: 'prog-drawer-out',
       backdropAnimateLeave: 'prog-backdrop-out',
     });
-    const closed = await ref.closed;
-    this.result.set(closed ?? 'dismissed');
+    const { result } = await ref.closed;
+    this.result.set(result ?? 'dismissed');
   }
 }

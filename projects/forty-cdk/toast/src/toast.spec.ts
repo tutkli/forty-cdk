@@ -945,7 +945,7 @@ describe('ForToastManager (programmatic)', () => {
     let clicked = 0;
     const ref = r.instance.toasts.show({
       title: 'Item deleted',
-      action: { label: 'Undo', onClick: () => clicked++ },
+      action: { label: 'Undo', activate: () => clicked++ },
     });
     await r.flush();
     const action = r.el.querySelector<HTMLElement>('[forToastAction]')!;

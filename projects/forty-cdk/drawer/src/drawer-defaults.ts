@@ -8,6 +8,16 @@ import { type ForDrawerSide } from './drawer-context';
  * scope. Configure with `provideForDrawerDefaults`. Keys map 1:1 to the
  * directive inputs of the same name; the directive picks
  * `consumerInput ?? defaults[key] ?? hardcoded fallback` per key.
+ *
+ * **Scope caveat (declarative vs. programmatic).** Declarative `[forDrawer]`
+ * instances read this token from their own injector, so a scoped
+ * `provideForDrawerDefaults` (a lazy route, a component `providers`) reaches
+ * every drawer rendered under that scope. `ForDrawerManager` is
+ * `providedIn: 'root'` and resolves the token **once, from the root injector**,
+ * so only application-root `provideForDrawerDefaults` affects
+ * `ForDrawerManager.open()` — a scoped override does not. To customize a
+ * programmatic drawer outside the root, pass the value on the `open()` config
+ * (a per-`open()` value always wins).
  */
 export interface ForDrawerDefaults {
   /** Default `'bottom'`. */
@@ -129,6 +139,10 @@ export const FOR_DRAWER_DEFAULTS = token;
  * Configures forty-cdk drawer defaults for this injector scope. Partial
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
+ *
+ * Declarative `[forDrawer]` reads the nearest scope; `ForDrawerManager.open()`
+ * (root-provided) only sees an application-root configuration — see the
+ * scope caveat on {@link ForDrawerDefaults}.
  */
 export function provideForDrawerDefaults(defaults: Partial<ForDrawerDefaults> = {}): Provider[] {
   return provideDefaults(defaults);

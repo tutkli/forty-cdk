@@ -14,6 +14,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
+  type ForDrawerCloseReason,
   FOR_DRAWER_INSTANCE_ID,
   type ForDrawerDragEvent,
   type ForDrawerReleaseEvent,
@@ -27,19 +28,24 @@ import { ForDrawerRef } from './drawer-ref';
 
 /**
  * Injection token for the `data` payload passed to `ForDrawerManager.open(component, { data })`.
- * Inject inside the opened component:
+ * The manager always provides this token, falling back to `null` when no `data`
+ * was configured, so inject it inside the opened component:
  *
  * ```ts
- * readonly data = inject(FOR_DRAWER_DATA) as MyShape;
+ * readonly data = inject(FOR_DRAWER_DATA) as MyShape | null;
  * ```
  *
  * Prefer `injectDrawerData<T>()` for typed access without manual casts.
  */
 export const FOR_DRAWER_DATA = new InjectionToken<unknown>('FOR_DRAWER_DATA');
 
-/** Typed accessor for the `data` payload. Equivalent to `inject(FOR_DRAWER_DATA) as T`. */
-export function injectDrawerData<T = unknown>(): T {
-  return inject(FOR_DRAWER_DATA) as T;
+/**
+ * Typed accessor for the `data` payload. Returns `T | null` because the manager
+ * provides `null` when `open()` is called without `data` — guard for `null`
+ * before dereferencing the payload.
+ */
+export function injectDrawerData<T = unknown>(): T | null {
+  return inject(FOR_DRAWER_DATA) as T | null;
 }
 
 export interface ForDrawerOpenConfig<D = unknown> {
@@ -219,14 +225,14 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * programmatic consumer drive bespoke drag visualizations the way the
    * directive consumer can.
    */
-  onDrag?: (event: ForDrawerDragEvent) => void;
+  dragMove?: (event: ForDrawerDragEvent) => void;
 
   /**
    * Mirrors the declarative `(release)` output: invoked once the pointer is
    * released, after the directive has resolved the next snap point / close
    * decision. Read `willClose` and `nextSnapPoint` from the payload.
    */
-  onRelease?: (event: ForDrawerReleaseEvent) => void;
+  release?: (event: ForDrawerReleaseEvent) => void;
 
   /**
    * Mirrors the declarative `(activeSnapPointChange)` output: invoked with
@@ -234,7 +240,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * (mount-time default and drag release). Use this to read back the active
    * snap that the declarative API exposes via `[(activeSnapPoint)]`.
    */
-  onActiveSnapPointChange?: (snapPoint: ForDrawerSnapPoint | null) => void;
+  activeSnapPointChange?: (snapPoint: ForDrawerSnapPoint | null) => void;
 }
 
 interface InternalDrawerEntry extends ForDrawerEntry {
@@ -296,8 +302,9 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
     const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
     const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
 
-    const ref = new ForDrawerRef<R>(() =>
-      this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+    const ref = new ForDrawerRef<R>(
+      () => this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+      'programmatic',
     );
 
     const hostClass = resolveConfigClass(config) ?? '';
@@ -331,12 +338,12 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       pointerDownOutside: config.pointerDownOutside,
       focusOutside: config.focusOutside,
       interactOutside: config.interactOutside,
-      onDrag: config.onDrag,
-      onRelease: config.onRelease,
-      onActiveSnapPointChange: config.onActiveSnapPointChange,
+      dragMove: config.dragMove,
+      release: config.release,
+      activeSnapPointChange: config.activeSnapPointChange,
       ref: ref as ForDrawerRef<unknown>,
-      handleClose(value: unknown): void {
-        ref.close(value as R);
+      handleClose(reason: ForDrawerCloseReason, value: unknown): void {
+        ref.close(value as R, reason);
       },
       injectorFor: this.createInjectorFactory([
         { provide: FOR_DRAWER_DATA, useValue: data },

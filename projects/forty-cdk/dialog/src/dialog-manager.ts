@@ -13,7 +13,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { FOR_DIALOG_INSTANCE_ID } from './dialog-context';
+import { type ForDialogCloseReason, FOR_DIALOG_INSTANCE_ID } from './dialog-context';
 import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
 import type { ForDialogEntry } from './dialog-outlet';
 import { ForDialogOutlet } from './dialog-outlet';
@@ -233,8 +233,9 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
     const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
     const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
 
-    const ref = new ForDialogRef<R>(() =>
-      this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+    const ref = new ForDialogRef<R>(
+      () => this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
+      'programmatic',
     );
 
     const hostClass = resolveConfigClass(config) ?? '';
@@ -244,11 +245,11 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
       id,
       component: component as Type<unknown>,
       hostClass,
-      dismissible: config.dismissible,
-      modal: config.modal,
+      dismissible: config.dismissible ?? this.#defaults.dismissible,
+      modal: config.modal ?? this.#defaults.modal,
       alert: config.alert,
-      returnFocus: config.returnFocus,
-      initialFocus: config.initialFocus,
+      returnFocus: config.returnFocus ?? this.#defaults.returnFocus,
+      initialFocus: config.initialFocus ?? this.#defaults.initialFocus,
       ariaLabel: config.ariaLabel,
       container: config.container,
       animateEnter,
@@ -259,8 +260,8 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
       focusOutside: config.focusOutside,
       interactOutside: config.interactOutside,
       ref: ref as ForDialogRef<unknown>,
-      handleClose(value: unknown): void {
-        ref.close(value as R);
+      handleClose(reason: ForDialogCloseReason, value: unknown): void {
+        ref.close(value as R, reason);
       },
       injectorFor: this.createInjectorFactory([
         { provide: FOR_DIALOG_DATA, useValue: data },

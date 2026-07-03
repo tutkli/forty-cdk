@@ -141,7 +141,7 @@ class SomeComponent {
   undoableDelete(item: Item) {
     this.toasts.show({
       title: 'Item deleted',
-      action: { label: 'Undo', onClick: () => restore(item) },
+      action: { label: 'Undo', activate: () => restore(item) },
       duration: 6000,
     });
   }

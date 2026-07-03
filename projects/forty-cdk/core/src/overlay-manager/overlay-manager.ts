@@ -17,13 +17,17 @@ import type { OverlayRef } from './overlay-ref';
 /**
  * Minimal shape every overlay entry must satisfy so the shared core can index,
  * render, and tear it down. Per-primitive entries (`ForDialogEntry`,
- * `ForDrawerEntry`) extend this with their own directive-input fields.
+ * `ForDrawerEntry`) extend this with their own directive-input fields and
+ * narrow `ref` to their concrete `For<Primitive>Ref`. The core only ever
+ * closes an entry's ref, so the base requires just `close` — this also keeps
+ * the base reason-agnostic (`OverlayRef` is invariant over its close-reason
+ * union, so a narrowed ref would not otherwise assign to a fixed one here).
  *
  * Internal — not re-exported from `public-api.ts`.
  */
 export interface OverlayManagerEntry {
   readonly id: string;
-  readonly ref: OverlayRef<unknown>;
+  readonly ref: Pick<OverlayRef, 'close'>;
 }
 
 /**

@@ -18,7 +18,7 @@ interface SheetData {
 
 @Component({
   template: `
-    <p id="message">{{ data.message }}</p>
+    <p id="message">{{ data?.message }}</p>
     <button id="ok" (click)="ok()">OK</button>
     <button id="cancel" (click)="cancel()">Cancel</button>
   `,
@@ -119,14 +119,16 @@ describe('ForDrawerManager (programmatic)', () => {
   });
 
   describe('ForDrawerRef.close', () => {
-    it('resolves closed with the result', async () => {
+    it('resolves closed with { reason, result }', async () => {
       const { drawers } = setup();
       const ref = drawers.open<SheetDrawer, 'confirm' | 'cancel', SheetData>(SheetDrawer, {
         data: { message: 'x' },
       });
 
       document.querySelector<HTMLButtonElement>('#ok')!.click();
-      expect(await ref.closed).toBe('confirm');
+      const { reason, result } = await ref.closed;
+      expect(result).toBe('confirm');
+      expect(reason).toBe('programmatic');
     });
 
     it('reflects result and isClosed reactively', async () => {
@@ -159,7 +161,7 @@ describe('ForDrawerManager (programmatic)', () => {
       });
       ref.close('first');
       ref.close('second');
-      expect(await ref.closed).toBe('first');
+      expect((await ref.closed).result).toBe('first');
     });
   });
 
@@ -203,12 +205,13 @@ describe('ForDrawerManager (programmatic)', () => {
   });
 
   describe('Escape key', () => {
-    it('closes a dismissible drawer', async () => {
+    it('closes a dismissible drawer with reason escape', async () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
       pressKey(document, 'Escape');
-      await ref.closed;
+      const { reason } = await ref.closed;
       expect(ref.isClosed()).toBe(true);
+      expect(reason).toBe('escape');
     });
 
     it('is ignored when dismissible: false', () => {
@@ -433,36 +436,36 @@ describe('ForDrawerManager (programmatic)', () => {
   });
 
   describe('drag / release / active-snap observability', () => {
-    it('onActiveSnapPointChange fires with the landed default snap on mount', () => {
+    it('activeSnapPointChange fires with the landed default snap on mount', () => {
       const { drawers } = setup();
       const landed: (string | number | null)[] = [];
       drawers.open(SheetDrawer, {
         data: { message: 'x' },
         snapPoints: ['148px', '50%', 1],
-        onActiveSnapPointChange: (snap) => landed.push(snap),
+        activeSnapPointChange: (snap) => landed.push(snap),
       });
       expect(landed).toEqual(['148px']);
     });
 
-    it('does not invoke onActiveSnapPointChange when the consumer pins defaultSnapPoint', () => {
+    it('does not invoke activeSnapPointChange when the consumer pins defaultSnapPoint', () => {
       const { drawers } = setup();
       const landed: (string | number | null)[] = [];
       drawers.open(SheetDrawer, {
         data: { message: 'x' },
         snapPoints: ['148px', '50%', 1],
         defaultSnapPoint: '50%',
-        onActiveSnapPointChange: (snap) => landed.push(snap),
+        activeSnapPointChange: (snap) => landed.push(snap),
       });
       expect(landed).toEqual([]);
     });
 
-    it('accepts onDrag / onRelease callbacks without throwing', async () => {
+    it('accepts dragMove / release callbacks without throwing', async () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, {
         data: { message: 'x' },
         snapPoints: ['148px', 1],
-        onDrag: () => {},
-        onRelease: () => {},
+        dragMove: () => {},
+        release: () => {},
       });
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       ref.close();
@@ -471,13 +474,13 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(document.querySelector('[role="dialog"]')).toBeFalsy();
     });
 
-    it('stops emitting onActiveSnapPointChange after close', async () => {
+    it('stops emitting activeSnapPointChange after close', async () => {
       const { drawers } = setup();
       const landed: (string | number | null)[] = [];
       const ref = drawers.open(SheetDrawer, {
         data: { message: 'x' },
         snapPoints: ['148px', '50%', 1],
-        onActiveSnapPointChange: (snap) => landed.push(snap),
+        activeSnapPointChange: (snap) => landed.push(snap),
       });
       expect(landed).toEqual(['148px']);
       ref.close();
@@ -536,8 +539,9 @@ describe('ForDrawerManager (programmatic)', () => {
       const { drawers } = setup();
       const ref = drawers.open<FullPiecesDrawer, { reason: string }>(FullPiecesDrawer);
       document.querySelector<HTMLButtonElement>('#close-with')!.click();
-      const result = await ref.closed;
-      expect(result).toEqual({ reason: 'user-confirmed' });
+      const closeEvent = await ref.closed;
+      expect(closeEvent.result).toEqual({ reason: 'user-confirmed' });
+      expect(closeEvent.reason).toBe('closeButton');
       expect(ref.result()).toEqual({ reason: 'user-confirmed' });
     });
   });
