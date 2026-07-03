@@ -1345,4 +1345,63 @@ describe('ForTree', () => {
       expect(item.id).toBe('my-node');
     });
   });
+
+  describe('selectionFollowsFocus + virtualization guard', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul
+          forTree
+          [(value)]="picked"
+          [totalCount]="total()"
+          [selectionFollowsFocus]="followsFocus()"
+          aria-label="Guard"
+        >
+          <li
+            forTreeItem
+            value="a"
+            [itemIndex]="0"
+            [level]="1"
+            [setSize]="1"
+            [posInSet]="1"
+            data-test-id="node-a"
+          >
+            <div forTreeItemLabel>A</div>
+          </li>
+        </ul>
+      `,
+    })
+    class GuardHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly total = signal<number | undefined>(undefined);
+      readonly followsFocus = signal(false);
+    }
+
+    it('throws in dev mode when selectionFollowsFocus is combined with totalCount', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(GuardHost);
+      fixture.componentInstance.total.set(50);
+      fixture.componentInstance.followsFocus.set(true);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/tree\] `selectionFollowsFocus` is not supported together with virtualization/,
+      );
+    });
+
+    it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.followsFocus.set(true);
+      await flush(r.fixture);
+      const tree = r.el.querySelector<HTMLElement>('[forTree]')!;
+      expect(tree.hasAttribute('aria-activedescendant')).toBe(false);
+      expect(tree.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('does not throw when virtualized without selectionFollowsFocus', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.total.set(50);
+      await flush(r.fixture);
+      const tree = r.el.querySelector<HTMLElement>('[forTree]')!;
+      expect(tree.getAttribute('tabindex')).toBe('0');
+    });
+  });
 });

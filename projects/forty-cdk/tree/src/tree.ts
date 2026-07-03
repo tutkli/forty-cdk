@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   input,
+  isDevMode,
   model,
   numberAttribute,
   output,
@@ -180,6 +181,12 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * Single-mode only: when true, arrow navigation also selects the focused
    * node. The default is read from `provideForTreeDefaults` for the
    * surrounding scope.
+   *
+   * Not supported together with virtualization (`totalCount` set): the
+   * virtualized `aria-activedescendant` focus model resolves off-window
+   * navigation targets asynchronously, so selection cannot follow focus there
+   * without deriving the committed value from a render side effect. Combining
+   * the two throws in dev mode.
    */
   readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
     transform: booleanAttribute,
@@ -342,6 +349,19 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       model.prime();
       model.tryResolvePending();
     });
+
+    if (isDevMode()) {
+      effect(() => {
+        if (this.selectionFollowsFocus() && this.#virtualized()) {
+          throw new Error(
+            '[forty-cdk/tree] `selectionFollowsFocus` is not supported together with virtualization ' +
+              '(`totalCount` set). The virtualized activedescendant focus model resolves off-window ' +
+              'navigation targets asynchronously, so selection cannot follow focus there. Remove one of ' +
+              'the two: use `selectionFollowsFocus` only with the non-virtualized roving-tabindex tree.',
+          );
+        }
+      });
+    }
   }
 
   isExpanded(value: string): boolean {

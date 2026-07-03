@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   input,
+  isDevMode,
   model,
   numberAttribute,
   output,
@@ -195,6 +196,12 @@ export class ForListbox<T = string>
    * UX truly benefits from selection following focus. Default `false`.
    * The default is read from `provideForListboxDefaults` for the surrounding
    * scope.
+   *
+   * Not supported together with virtualization (`totalCount` set): the
+   * virtualized `aria-activedescendant` path resolves off-window navigation
+   * targets asynchronously, so selection cannot follow focus there without
+   * deriving the committed value from a render side effect. Combining the two
+   * throws in dev mode.
    */
   readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
     transform: booleanAttribute,
@@ -306,6 +313,19 @@ export class ForListbox<T = string>
       navigator.prime();
       navigator.tryResolvePending();
     });
+
+    if (isDevMode()) {
+      effect(() => {
+        if (this.selectionFollowsFocus() && this.#virtualized()) {
+          throw new Error(
+            '[forty-cdk/listbox] `selectionFollowsFocus` is not supported together with virtualization ' +
+              '(`totalCount` set). The virtualized activedescendant path resolves off-window navigation ' +
+              'targets asynchronously, so selection cannot follow focus there. Remove one of the two: use ' +
+              '`selectionFollowsFocus` only with the non-virtualized roving-tabindex listbox.',
+          );
+        }
+      });
+    }
   }
 
   isSelected(v: T): boolean {

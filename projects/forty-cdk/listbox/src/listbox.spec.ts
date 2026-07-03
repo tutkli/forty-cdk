@@ -2050,4 +2050,55 @@ describe('ForListbox', () => {
       });
     });
   });
+
+  describe('selectionFollowsFocus + virtualization guard', () => {
+    @Component({
+      imports: [ForListbox, ForListboxOption],
+      template: `
+        <div
+          forListbox
+          [(value)]="picked"
+          [totalCount]="total()"
+          [selectionFollowsFocus]="followsFocus()"
+        >
+          <button type="button" forListboxOption value="a" [posInSet]="0" data-test-id="opt-a">
+            A
+          </button>
+        </div>
+      `,
+    })
+    class GuardHost {
+      readonly picked = signal<readonly string[]>([]);
+      readonly total = signal<number | undefined>(undefined);
+      readonly followsFocus = signal(false);
+    }
+
+    it('throws in dev mode when selectionFollowsFocus is combined with totalCount', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(GuardHost);
+      fixture.componentInstance.total.set(50);
+      fixture.componentInstance.followsFocus.set(true);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported together with virtualization/,
+      );
+    });
+
+    it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.followsFocus.set(true);
+      await flush(r.fixture);
+      const lb = r.el.querySelector<HTMLElement>('[forListbox]')!;
+      const optA = r.el.querySelector<HTMLElement>('[data-test-id="opt-a"]')!;
+      expect(lb.hasAttribute('aria-activedescendant')).toBe(false);
+      expect(optA.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('does not throw when virtualized without selectionFollowsFocus', async () => {
+      const r = renderHost(GuardHost);
+      r.instance.total.set(50);
+      await flush(r.fixture);
+      const lb = r.el.querySelector<HTMLElement>('[forListbox]')!;
+      expect(lb.getAttribute('tabindex')).toBe('0');
+    });
+  });
 });
