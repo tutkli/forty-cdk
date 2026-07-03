@@ -28,6 +28,14 @@ export interface ForContextMenuContext {
    */
   readonly disabled: Signal<boolean>;
 
+  /**
+   * Id mirrored to the trigger's host `[id]`. `[forMenuContent]` points its
+   * `aria-labelledby` at this id when no explicit `ariaLabel` is set, so the
+   * trigger must carry it for the menu's accessible name to resolve to a real
+   * element instead of a dangling IDREF.
+   */
+  readonly triggerId: Signal<string>;
+
   /** Registers the trigger element so it receives return-focus on close. */
   registerTrigger(el: HTMLElement): void;
 

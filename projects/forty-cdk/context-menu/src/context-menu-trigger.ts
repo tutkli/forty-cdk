@@ -57,6 +57,7 @@ import { type ForContextMenuContext, injectContextMenuContext } from './context-
   exportAs: 'forContextMenuTrigger',
   host: {
     tabindex: '-1',
+    '[id]': 'ctx().triggerId()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(pointerdown)': 'onPointerDown()',
