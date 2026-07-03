@@ -124,6 +124,39 @@ class ComboboxImeHost {
   readonly FRUITS = FRUITS;
 }
 
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  template: `
+    <div
+      forCombobox
+      [(query)]="query"
+      [(open)]="open"
+      autocompleteMode="both"
+      [openOnQuery]="false"
+    >
+      <input forComboboxInput />
+      @if (open()) {
+        <div forComboboxContent>
+          @for (it of visible(); track it.id) {
+            <div [attr.data-test-id]="it.id" forComboboxOption [value]="it.id" [label]="it.label">
+              {{ it.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class InlineActiveHost {
+  readonly query = signal('');
+  readonly open = signal(false);
+  readonly visible = signal<readonly FruitItem[]>([
+    { id: 'apple', label: 'Apple' },
+    { id: 'apricot', label: 'Apricot' },
+    { id: 'banana', label: 'Banana' },
+  ]);
+}
+
 function getInput(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
 }
@@ -208,6 +241,45 @@ describe('ForComboboxInput', () => {
         expect(r.instance.query()).toBe('ap');
       });
     }
+  });
+
+  describe('inline completion resolves against the active option while open (#1145)', () => {
+    it('completes the active option, not a cached option filtered out of the list', async () => {
+      const r = renderHost(InlineActiveHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.visible.set([{ id: 'apricot', label: 'Apricot' }]);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('Apricot');
+      expect(input.selectionStart).toBe(2);
+      expect(input.selectionEnd).toBe('Apricot'.length);
+      expect(document.querySelector('[data-highlighted]')?.getAttribute('data-test-id')).toBe(
+        'apricot',
+      );
+    });
+
+    it('suppresses completion when no rendered option starts with the prefix', async () => {
+      const r = renderHost(InlineActiveHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.visible.set([{ id: 'banana', label: 'Banana' }]);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('ap');
+    });
   });
 
   // renderHost configures provideZonelessChangeDetection(), so these cases
