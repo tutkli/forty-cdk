@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { flush } from '../../src/test-utils/flush';
 import { computePaginationItems } from './pagination-range';
@@ -117,6 +118,10 @@ function prev(fixture: ReturnType<typeof setup>): HTMLButtonElement {
 
 function next(fixture: ReturnType<typeof setup>): HTMLButtonElement {
   return fixture.nativeElement.querySelector('[data-testid="next"]') as HTMLButtonElement;
+}
+
+function directive(fixture: ReturnType<typeof setup>): ForPagination {
+  return fixture.debugElement.query(By.directive(ForPagination)).injector.get(ForPagination);
 }
 
 describe('ForPagination directive', () => {
@@ -306,6 +311,77 @@ describe('ForPagination directive', () => {
   });
 });
 
+describe('ForPagination — effective page reconciliation', () => {
+  it('an out-of-range page (50 with count 10) reads through as effective page 10', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(50);
+    await flush(fixture);
+    const pg = directive(fixture);
+    expect(pg.effectivePage()).toBe(10);
+  });
+
+  it('aria-current="page" lands on the page-10 button for page=50 count=10', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(50);
+    await flush(fixture);
+    const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
+    expect(current?.getAttribute('data-testid')).toBe('page-10');
+  });
+
+  it('previous() from out-of-range 50 (count 10) goes to 9, not 10', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(50);
+    await flush(fixture);
+    prev(fixture).click();
+    await flush(fixture);
+    expect(fixture.componentInstance.page()).toBe(9);
+  });
+
+  it('isFirst/isLast reflect the effective page for an out-of-range page', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(50);
+    await flush(fixture);
+    expect(prev(fixture).hasAttribute('disabled')).toBe(false);
+    expect(next(fixture).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('a below-range page (0) clamps to effective page 1', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(0);
+    await flush(fixture);
+    const pg = directive(fixture);
+    expect(pg.effectivePage()).toBe(1);
+    expect(prev(fixture).hasAttribute('disabled')).toBe(true);
+    const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
+    expect(current?.getAttribute('data-testid')).toBe('page-1');
+  });
+
+  it('a negative page clamps to effective page 1', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(-5);
+    await flush(fixture);
+    const pg = directive(fixture);
+    expect(pg.effectivePage()).toBe(1);
+  });
+
+  it('the in-range path is unchanged: effectivePage equals page', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(4);
+    await flush(fixture);
+    const pg = directive(fixture);
+    expect(pg.effectivePage()).toBe(4);
+    const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
+    expect(current?.getAttribute('data-testid')).toBe('page-4');
+  });
+});
+
 describe('ForPagination — zoneless', () => {
   it('click-driven page change reflects in aria-current without Zone.js', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -321,5 +397,17 @@ describe('ForPagination — zoneless', () => {
     const current = btnsAfter.find((b) => b.getAttribute('aria-current') === 'page');
     expect(current?.getAttribute('data-testid')).toBe('page-3');
     expect(fixture.componentInstance.page()).toBe(3);
+  });
+
+  it('reconciles an out-of-range page to aria-current without Zone.js', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(TestHost);
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(50);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
+    expect(current?.getAttribute('data-testid')).toBe('page-10');
   });
 });

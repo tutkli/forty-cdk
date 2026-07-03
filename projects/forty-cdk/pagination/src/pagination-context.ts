@@ -8,8 +8,18 @@ import type { PaginationItem } from './pagination-range';
  * navigation from a single source of truth.
  */
 export interface ForPaginationContext {
-  /** Current 1-based page. */
+  /**
+   * The consumer-bound 1-based page model. May hold an out-of-range value; use
+   * `effectivePage` for anything that must reflect a valid page.
+   */
   readonly page: Signal<number>;
+  /**
+   * The current page clamped to `[1, max(1, count)]`. This is the value every
+   * piece must read for display and navigation semantics, so an out-of-range
+   * `page` still resolves to a real page (matching `aria-current`, the visible
+   * list, and previous/next math).
+   */
+  readonly effectivePage: Signal<number>;
   /** Total number of pages. */
   readonly count: Signal<number>;
   /** Whether the whole control is disabled. */

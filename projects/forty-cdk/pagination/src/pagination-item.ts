@@ -30,7 +30,7 @@ export class ForPaginationItem {
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx.disabled());
 
   /** Whether this button represents the currently active page. */
-  readonly isCurrent = computed(() => this.ctx.page() === this.page());
+  readonly isCurrent = computed(() => this.ctx.effectivePage() === this.page());
 
   constructor() {
     reflectDisabled(this.effectiveDisabled);
