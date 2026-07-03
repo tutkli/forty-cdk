@@ -166,7 +166,7 @@ Partial overrides inherit unspecified keys from the parent scope (or the library
 Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu/) for the surface (`role="menu"`) and for items (`menuitem` / `menuitemcheckbox` / `menuitemradio`).
 
 - Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.
-- Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (per APG) — they remain focusable so screen readers can announce them, but click and keyboard activation are no-ops.
+- Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (never the native `disabled` attribute) — they are skipped by arrow-key navigation, typeahead, Home/End, and pointer hover, and click / keyboard activation are no-ops, but they stay in the DOM so screen readers can still announce them.
 - `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
 - `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
 - `[forMenuGroup]` and `[forMenuRadioGroup]` both expose `role="group"`; give either an accessible name by projecting a `[forMenuGroupLabel]` inside it, which the group references via `aria-labelledby`.
