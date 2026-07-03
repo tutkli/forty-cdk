@@ -154,4 +154,13 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 - **Virtual anchor.** Right-click captures a 0×0 rect at the pointer location. `Shift+F10` and `ContextMenu` snapshot the bounding rect of the focused element (or the trigger if focus is on it directly), so the menu floats off the element under attention. Both forms feed floating-ui's `flip` and `shift` middleware, so corners and screen edges work without special-casing.
 - **Keyboard activators only fire while focus is inside the trigger.** Keyboard events dispatch to the focused element, so `Shift+F10` / `ContextMenu` anywhere outside the trigger goes to the browser default. The trigger is focusable by default (host-bound `tabindex="-1"`), so this works out of the box; use `tabindex="0"` if you want the region itself reachable via Tab.
 - **Native menu suppressed.** The trigger calls `event.preventDefault()` on `contextmenu` and on the keyboard activators. Set `disabled` to let the browser's native menu surface for that region.
+- **Touch long-press.** The trigger runs its own long-press timer (a `touch` `pointerdown` held ~500 ms, without lifting or moving past a small tolerance, opens the menu at the touch point). This is required because iOS Safari never fires the `contextmenu` event a long-press synthesizes elsewhere; where the browser does synthesize it (Android, desktop touch emulation) the two paths stay mutually exclusive, so the menu opens exactly once. For the press to survive on iOS, suppress the native callout / text-selection on the trigger with CSS — otherwise the OS gesture cancels the press:
+
+```css
+.context-menu-trigger {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+```
+
 - **Mount equals open.** Same convention as the rest of the library — wrap `[forMenuContent]` in `@if (open())` and use `animate.enter` / `animate.leave` for transitions.
