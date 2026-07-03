@@ -26,6 +26,16 @@ function isSpaceSeparator(separator: string): boolean {
 }
 
 /**
+ * Minus-sign variants a locale may emit for a negative, or that a user may type
+ * in their place, normalized to ASCII `-` before the numeric gates: U+2212 MINUS
+ * SIGN (`Intl` formats negatives with it in sv / fi / nb / lt and others) and
+ * U+FF0D FULLWIDTH HYPHEN-MINUS. Without this normalization the sign would be
+ * stripped as noise and a library-formatted negative would silently flip
+ * positive.
+ */
+const MINUS_VARIANTS = /[−－]/g;
+
+/**
  * Group / decimal separators for a given locale, derived once via `Intl`.
  * Falls back to `,` group / `.` decimal for an unknown or undefined locale.
  */
@@ -44,10 +54,11 @@ export function localeSeparators(locale: string | undefined): LocaleSeparators {
 
 /**
  * Parse locale-formatted numeric `text` into a number, or `null` when it is not
- * a valid plain decimal for the given `separators`. The locale decimal separator
- * is normalized to `.`, group separators are validated for placement then
- * stripped, and the canonical form is validated against a strict numeric regex
- * (optional sign + digits + a single optional decimal) before `Number()`.
+ * a valid plain decimal for the given `separators`. The locale minus-sign
+ * variants (U+2212 / U+FF0D) are normalized to ASCII `-`, the locale decimal
+ * separator is normalized to `.`, group separators are validated for placement
+ * then stripped, and the canonical form is validated against a strict numeric
+ * regex (optional sign + digits + a single optional decimal) before `Number()`.
  *
  * Grouping placement is strict: a group separator may appear only in the
  * integer part and only at 3-digit boundaries, so a correctly grouped
@@ -71,7 +82,10 @@ export function parseLocaleNumber(text: string, separators: LocaleSeparators): n
   // plain ASCII space — to the canonical separator, so grouping validation
   // doesn't reject a correctly-spaced number just because the typed space
   // differs from the one `Intl` emits.
-  const input = isSpaceSeparator(group) ? text.replace(SPACE_GROUP_VARIANTS, group) : text;
+  const spaceNormalized = isSpaceSeparator(group)
+    ? text.replace(SPACE_GROUP_VARIANTS, group)
+    : text;
+  const input = spaceNormalized.replace(MINUS_VARIANTS, '-');
   // Strip currency symbols, percent signs, and any other non-numeric noise
   // the locale may include, leaving digits, sign, the locale group/decimal
   // separators, and the exponent letters — the strict gates below reject
