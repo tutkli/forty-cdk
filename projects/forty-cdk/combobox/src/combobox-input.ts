@@ -1,6 +1,6 @@
 import { computed, Directive, DOCUMENT, effect, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, reflectDisabled } from 'forty-cdk/core';
+import { foldTypeaheadText, registerHandle, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -169,10 +169,10 @@ export class ForComboboxInput {
   }
 
   #applyInlineCompletion(prefix: string): void {
-    const lower = prefix.toLowerCase();
-    const label = this.#inlineCompletionLabel(lower);
+    const folded = foldTypeaheadText(prefix);
+    const label = this.#inlineCompletionLabel(folded);
     const el = this.#host.nativeElement;
-    if (label === null || label.toLowerCase() === lower) {
+    if (label === null || foldTypeaheadText(label) === folded) {
       // No completion to apply — strip any prior selection so the user's
       // prefix is plainly visible.
       if (el.value !== prefix) {
@@ -187,24 +187,26 @@ export class ForComboboxInput {
     el.setSelectionRange(prefix.length, label.length);
   }
 
-  #inlineCompletionLabel(lower: string): string | null {
+  #inlineCompletionLabel(folded: string): string | null {
     const options = this.ctx.options();
     if (options.length > 0) {
       const activeId = this.ctx.activeId();
       if (activeId !== null) {
         const active = options.find((o) => o.id() === activeId);
-        if (active && !active.disabled() && active.label().toLowerCase().startsWith(lower)) {
+        if (active && !active.disabled() && foldTypeaheadText(active.label()).startsWith(folded)) {
           return active.label();
         }
       }
       for (const option of options) {
-        if (!option.disabled() && option.label().toLowerCase().startsWith(lower)) {
+        if (!option.disabled() && foldTypeaheadText(option.label()).startsWith(folded)) {
           return option.label();
         }
       }
       return null;
     }
-    const match = this.ctx.cachedOptions().find((o) => o.label.toLowerCase().startsWith(lower));
+    const match = this.ctx
+      .cachedOptions()
+      .find((o) => foldTypeaheadText(o.label).startsWith(folded));
     return match ? match.label : null;
   }
 
