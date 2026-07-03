@@ -1040,6 +1040,83 @@ describe('Menu items / content', () => {
       expect(group.getAttribute('role')).toBe('group');
       expect(group.getAttribute('aria-labelledby')).toBe(label.id);
     });
+
+    it('wires aria-labelledby on a radio group to a projected group label', async () => {
+      @Component({
+        imports: [
+          ForDropdownMenu,
+          ForDropdownMenuTrigger,
+          ForMenuContent,
+          ForMenuRadioGroup,
+          ForMenuRadioItem,
+          ForMenuGroupLabel,
+        ],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Sort</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuRadioGroup [(value)]="sort">
+                  <div forMenuGroupLabel>Sort by</div>
+                  <button id="name" forMenuRadioItem value="name">Name</button>
+                  <button id="date" forMenuRadioItem value="date">Date</button>
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class RadioGroupLabelHost {
+        readonly open = signal(true);
+        readonly sort = signal('name');
+      }
+
+      const r = renderHost(RadioGroupLabelHost);
+      await flush(r.fixture);
+
+      const group = document.querySelector<HTMLElement>('[forMenuRadioGroup]')!;
+      const label = document.querySelector<HTMLElement>('[forMenuGroupLabel]')!;
+
+      expect(group.getAttribute('role')).toBe('group');
+      expect(label.id).toBeTruthy();
+      expect(group.getAttribute('aria-labelledby')).toBe(label.id);
+      expect(document.getElementById(label.id)).toBe(label);
+    });
+
+    it('omits aria-labelledby on a radio group with no projected label', async () => {
+      @Component({
+        imports: [
+          ForDropdownMenu,
+          ForDropdownMenuTrigger,
+          ForMenuContent,
+          ForMenuRadioGroup,
+          ForMenuRadioItem,
+        ],
+        template: `
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Sort</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuRadioGroup [(value)]="sort">
+                  <button id="name" forMenuRadioItem value="name">Name</button>
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class RadioGroupNoLabelHost {
+        readonly open = signal(true);
+        readonly sort = signal('name');
+      }
+
+      const r = renderHost(RadioGroupNoLabelHost);
+      await flush(r.fixture);
+
+      const group = document.querySelector<HTMLElement>('[forMenuRadioGroup]')!;
+      expect(group.getAttribute('role')).toBe('group');
+      expect(group.hasAttribute('aria-labelledby')).toBe(false);
+    });
   });
 
   describe('orphan errors', () => {

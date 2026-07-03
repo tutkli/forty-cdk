@@ -19,6 +19,7 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
   <hr forMenuSeparator />
 
   <div forMenuRadioGroup [(value)]="sortBy">
+    <div forMenuGroupLabel>Sort by</div>
     <button forMenuRadioItem value="name">
       <span forMenuItemIndicator [forceMount]="true">●</span>
       Name
@@ -168,6 +169,7 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 - Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (per APG) — they remain focusable so screen readers can announce them, but click and keyboard activation are no-ops.
 - `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
 - `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
+- `[forMenuGroup]` and `[forMenuRadioGroup]` both expose `role="group"`; give either an accessible name by projecting a `[forMenuGroupLabel]` inside it, which the group references via `aria-labelledby`.
 - Submenus use `side="right"` `align="start"` by default in LTR and `side="left"` `align="start"` in RTL — set `[dir]="'rtl'"` on the top-level `[forDropdownMenu]` / `[forContextMenu]` and every nested `[forMenuSub]` inherits it (and flips `side`, ArrowLeft/Right semantics, etc.). Override per-submenu with `[dir]` or `[side]` if a specific submenu needs to render against the opposite direction.
 - In RTL, ArrowLeft opens a submenu and ArrowRight closes it back to the parent — the swap mirrors the visual flip of the menu chain.
 - **`data-highlighted=""`** is reflected on the focused `[forMenuItem]` / `[forMenuCheckboxItem]` / `[forMenuRadioItem]` so consumers can paint a uniform focus ring shared with the listbox / select / combobox primitives. The attribute is intent-driven: opening a menu with the pointer focuses the first item **without** highlighting it (no "preselected" look on mouse open), while a keyboard open (Enter / Space / ArrowDown / ArrowUp on the trigger, `Shift+F10` for context menus) highlights the initially focused item. Arrow / Home / End / typeahead navigation always highlights the focused item.
