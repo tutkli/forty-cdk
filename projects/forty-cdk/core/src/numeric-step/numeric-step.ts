@@ -4,20 +4,50 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 /**
+ * The number of decimal places `n` carries, handling both plain (`0.1` → 1) and
+ * exponential (`1e-7` → 7, `1.5e-7` → 8) notation — `String(n)` switches to
+ * exponential form below ~`1e-7`, which a naive `indexOf('.')` would read as
+ * zero decimals. Non-finite values report 0.
+ */
+export function decimalPlaces(n: number): number {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  const text = String(n);
+  const exponentIndex = text.indexOf('e');
+  if (exponentIndex < 0) {
+    const dot = text.indexOf('.');
+    return dot < 0 ? 0 : text.length - dot - 1;
+  }
+  const exponent = Number(text.slice(exponentIndex + 1));
+  const mantissa = text.slice(0, exponentIndex);
+  const mantissaDot = mantissa.indexOf('.');
+  const mantissaDecimals = mantissaDot < 0 ? 0 : mantissa.length - mantissaDot - 1;
+  return Math.max(0, mantissaDecimals - exponent);
+}
+
+/**
+ * Rounds `value` to `decimals` decimal places. A non-positive `decimals` (an
+ * integer-precision request) returns `value` unchanged.
+ */
+export function roundToDecimals(value: number, decimals: number): number {
+  if (decimals <= 0) {
+    return value;
+  }
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+/**
  * Rounds `value` to the decimal precision a `step` carries, so repeated
  * `value ± step` arithmetic with a fractional step (e.g. `0.1`) cannot accumulate
  * float noise (`0.1 * 3 === 0.30000000000000004`) that defeats a `next === value`
- * change guard or leaks into `aria-valuenow`. Integer steps return `value`
- * unchanged.
+ * change guard or leaks into `aria-valuenow`. Precision is derived via
+ * {@link decimalPlaces}, so exponential steps (`1e-7`) round correctly; integer
+ * steps return `value` unchanged.
  */
 export function roundToStepPrecision(value: number, step: number): number {
-  const stepText = String(step);
-  const dot = stepText.indexOf('.');
-  if (dot < 0) {
-    return value;
-  }
-  const factor = 10 ** (stepText.length - dot - 1);
-  return Math.round(value * factor) / factor;
+  return roundToDecimals(value, decimalPlaces(step));
 }
 
 /**

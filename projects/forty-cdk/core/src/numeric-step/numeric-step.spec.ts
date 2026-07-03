@@ -1,4 +1,10 @@
-import { clamp, roundToStepPrecision, snapToStep } from './numeric-step';
+import {
+  clamp,
+  decimalPlaces,
+  roundToDecimals,
+  roundToStepPrecision,
+  snapToStep,
+} from './numeric-step';
 
 describe('clamp', () => {
   it('clamps below min to min', () => {
@@ -18,6 +24,43 @@ describe('clamp', () => {
   });
 });
 
+describe('decimalPlaces', () => {
+  it('reports zero for integers', () => {
+    expect(decimalPlaces(5)).toBe(0);
+    expect(decimalPlaces(1000)).toBe(0);
+  });
+
+  it('counts plain-notation decimals', () => {
+    expect(decimalPlaces(0.1)).toBe(1);
+    expect(decimalPlaces(0.25)).toBe(2);
+    expect(decimalPlaces(1.5)).toBe(1);
+  });
+
+  it('counts exponential-notation decimals that String() emits below ~1e-7', () => {
+    expect(decimalPlaces(1e-7)).toBe(7);
+    expect(decimalPlaces(1.5e-7)).toBe(8);
+    expect(decimalPlaces(1e-21)).toBe(21);
+  });
+
+  it('reports zero for a large exponential integer and for non-finite values', () => {
+    expect(decimalPlaces(1e21)).toBe(0);
+    expect(decimalPlaces(Infinity)).toBe(0);
+    expect(decimalPlaces(NaN)).toBe(0);
+  });
+});
+
+describe('roundToDecimals', () => {
+  it('rounds to the requested number of decimals', () => {
+    expect(roundToDecimals(0.30000000000000004, 1)).toBe(0.3);
+    expect(roundToDecimals(0.45000000000000001, 2)).toBe(0.45);
+  });
+
+  it('returns the value unchanged for a non-positive decimals request', () => {
+    expect(roundToDecimals(10.7, 0)).toBe(10.7);
+    expect(roundToDecimals(10.7, -1)).toBe(10.7);
+  });
+});
+
 describe('roundToStepPrecision', () => {
   it('returns the value unchanged for an integer step', () => {
     expect(roundToStepPrecision(10.7, 1)).toBe(10.7);
@@ -29,6 +72,10 @@ describe('roundToStepPrecision', () => {
 
   it('rounds to the decimal precision the step carries', () => {
     expect(roundToStepPrecision(0.1 + 0.2, 0.01)).toBe(0.3);
+  });
+
+  it('rounds an exponential step instead of leaving float noise', () => {
+    expect(roundToStepPrecision(3 * 1e-7, 1e-7)).toBe(3e-7);
   });
 });
 

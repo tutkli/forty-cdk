@@ -289,7 +289,13 @@ export {
   type ModalShellInitialFocusConfig,
   resolveModalExemptOverlays,
 } from './modal-shell/modal-shell';
-export { clamp, roundToStepPrecision, snapToStep } from './numeric-step/numeric-step';
+export {
+  clamp,
+  decimalPlaces,
+  roundToDecimals,
+  roundToStepPrecision,
+  snapToStep,
+} from './numeric-step/numeric-step';
 export { OverlayContextInjector } from './overlay-manager/overlay-context-injector';
 export {
   type OverlayManagerConfig,
