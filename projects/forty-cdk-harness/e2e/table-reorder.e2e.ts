@@ -44,6 +44,9 @@ test.describe('table column reorder', () => {
     const box1 = await row1.boundingBox();
     if (!box0 || !box1) throw new Error('Rows not found');
 
+    await expect(el(page, 'cell-0-name')).toHaveText('Ada');
+    await expect(el(page, 'cell-1-name')).toHaveText('Bob');
+
     const startX = box0.x + box0.width / 2;
     const startY = box0.y + box0.height / 2;
     const targetY = box1.y + box1.height - 4;
@@ -54,12 +57,15 @@ test.describe('table column reorder', () => {
     await page.mouse.move(startX, targetY);
     await page.mouse.up();
 
+    await expect(el(page, 'cell-0-name')).toHaveText('Bob');
+    await expect(el(page, 'cell-1-name')).toHaveText('Ada');
+
     const rows = page.locator('[forTableRow]');
     const firstRowAria = await rows.first().getAttribute('aria-rowindex');
-    expect(firstRowAria).toBe('1');
+    expect(firstRowAria).toBe('2');
 
     const secondRow = rows.nth(1);
-    await expect(secondRow).toHaveAttribute('aria-rowindex', '2');
+    await expect(secondRow).toHaveAttribute('aria-rowindex', '3');
   });
 
   test('keyboard column reorder — Space lift, ArrowRight, Space drop changes order', async ({
