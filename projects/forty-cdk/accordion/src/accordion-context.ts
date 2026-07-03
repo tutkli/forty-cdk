@@ -20,6 +20,8 @@ export interface ForAccordionTriggerHandle {
 export interface ForAccordionContext {
   readonly multiple: Signal<boolean>;
   readonly collapsible: Signal<boolean>;
+  /** Whether the whole accordion is disabled; each item ORs this into its own disabled state. */
+  readonly disabled: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   isExpanded(itemValue: string): boolean;
