@@ -61,6 +61,29 @@ class ProbeControl {
 })
 class HostComp {}
 
+@Directive({
+  selector: '[probeHostControl]',
+})
+class ProbeHostControl {
+  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
+  constructor() {
+    injectFieldWiring({});
+  }
+}
+
+@Component({
+  imports: [ProbeHostControl],
+  template: `<div probeHostControl aria-describedby="global-hint"></div>`,
+})
+class DescribedByHostComp {}
+
+@Component({
+  imports: [ProbeHostControl],
+  template: `<div probeHostControl aria-describedby="field-desc-id"></div>`,
+})
+class OverlappingDescribedByHostComp {}
+
 describe('injectFieldWiring — foreign labelledElement cleanup', () => {
   let context: ForFieldContext;
 
@@ -117,5 +140,45 @@ describe('injectFieldWiring — foreign labelledElement cleanup', () => {
 
     expect(foreign.getAttribute('id')).toBe('consumer-owned-id');
     expect(foreign.hasAttribute('aria-labelledby')).toBe(false);
+  });
+});
+
+describe('injectFieldWiring — consumer aria-describedby composition', () => {
+  let context: ForFieldContext;
+
+  beforeEach(() => {
+    context = makeFieldContext();
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        { provide: FOR_FIELD_CONTEXT, useValue: context },
+      ],
+    });
+  });
+
+  it("appends the field ids after a consumer's static aria-describedby", async () => {
+    const fixture = TestBed.createComponent(DescribedByHostComp);
+    await flush(fixture);
+    const el = fixture.nativeElement.querySelector('[probeHostControl]') as HTMLElement;
+
+    expect(el.getAttribute('aria-describedby')).toBe('global-hint field-desc-id');
+  });
+
+  it('restores the consumer aria-describedby (not removes it) on destroy', async () => {
+    const fixture = TestBed.createComponent(DescribedByHostComp);
+    await flush(fixture);
+    const el = fixture.nativeElement.querySelector('[probeHostControl]') as HTMLElement;
+
+    fixture.destroy();
+
+    expect(el.getAttribute('aria-describedby')).toBe('global-hint');
+  });
+
+  it('does not duplicate a field id already present in the consumer value', async () => {
+    const fixture = TestBed.createComponent(OverlappingDescribedByHostComp);
+    await flush(fixture);
+    const el = fixture.nativeElement.querySelector('[probeHostControl]') as HTMLElement;
+
+    expect(el.getAttribute('aria-describedby')).toBe('field-desc-id');
   });
 });

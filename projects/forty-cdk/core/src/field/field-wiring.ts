@@ -86,14 +86,16 @@ export interface ForFieldContext {
   /** Remove a previously registered control. */
   unregisterControl(handle: FieldControlHandle): void;
   /**
-   * Mark the label slot present; returns an unregister callback. The field
-   * exposes a single `labelId` (not an id list), so one `[forLabel]` per field
-   * is the supported shape — presence is boolean, not a count.
+   * Register a label slot; returns an unregister callback. The field exposes a
+   * single `labelId` (not an id list), so one `[forLabel]` per field is the
+   * supported shape. Registrations are **counted** (not a boolean) so unmounting
+   * one of several accidental duplicates never drops the association while
+   * another is still mounted; a duplicate is flagged with a dev-mode warning.
    */
   registerLabel(): () => void;
-  /** Mark the description slot present; returns an unregister callback. Single `[forFieldDescription]` per field (single `descriptionId`). */
+  /** Register a description slot; returns an unregister callback. Counted, single `[forFieldDescription]` per field — see {@link registerLabel}. */
   registerDescription(): () => void;
-  /** Mark the error slot present; returns an unregister callback. Single `[forFieldError]` per field (single `errorId`). */
+  /** Register an error slot; returns an unregister callback. Counted, single `[forFieldError]` per field — see {@link registerLabel}. */
   registerError(): () => void;
   /**
    * Forward a click to the registered control's focusable element, then focus
@@ -126,8 +128,13 @@ function applyAttr(el: HTMLElement, name: string, value: string | null): void {
  * - registers the control handle so the field can reflect `data-*` state,
  *   gate its error region, and focus the control on label click;
  * - reflects `id` (only if the target has none — the field owns the id a
- *   label's `for` points at), `aria-labelledby`, `aria-describedby`, and
- *   `aria-errormessage` on the target, kept in sync via a single `effect`.
+ *   label's `for` points at), `aria-labelledby`, and `aria-errormessage` on
+ *   the target, kept in sync via a single `effect`;
+ * - **composes** `aria-describedby`: any value the consumer set statically on
+ *   the target is captured on first wiring and preserved, with the field's own
+ *   description / error ids appended after it — so a `aria-describedby="hint"`
+ *   is never clobbered, and it is restored verbatim when the control (or the
+ *   target) is torn down.
  *
  * The wiring target is the host by default, or the handle's
  * {@link FieldControlHandle.labelledElement} when it nominates a distinct
@@ -158,6 +165,7 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
   const labelledElement = handle.labelledElement;
   let previousTarget: HTMLElement | null = null;
   let ownsId = false;
+  let consumerDescribedBy: string | null = null;
 
   effect(() => {
     // Resolve the wiring target: the nominated focusable element when a
@@ -166,11 +174,14 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
     // here, and we wire nothing — never the wrapper host — until it appears.
     const target = labelledElement ? labelledElement() : el;
 
-    if (previousTarget && previousTarget !== target) {
-      clearFieldAttrs(previousTarget, ownsId, field.controlId());
-      ownsId = false;
+    if (previousTarget !== target) {
+      if (previousTarget) {
+        clearFieldAttrs(previousTarget, ownsId, field.controlId(), consumerDescribedBy);
+        ownsId = false;
+      }
+      consumerDescribedBy = target ? target.getAttribute('aria-describedby') : null;
+      previousTarget = target;
     }
-    previousTarget = target;
 
     if (!target) {
       return;
@@ -181,27 +192,51 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
       ownsId = true;
     }
     applyAttr(target, 'aria-labelledby', field.labelledBy());
-    applyAttr(target, 'aria-describedby', field.describedBy());
+    applyAttr(target, 'aria-describedby', composeIds(consumerDescribedBy, field.describedBy()));
     applyAttr(target, 'aria-errormessage', field.errorMessageId());
   });
 
   inject(DestroyRef).onDestroy(() => {
     if (previousTarget) {
-      clearFieldAttrs(previousTarget, ownsId, field.controlId());
+      clearFieldAttrs(previousTarget, ownsId, field.controlId(), consumerDescribedBy);
     }
   });
 }
 
 /**
- * Removes the field's association attributes (`aria-labelledby` /
- * `aria-describedby` / `aria-errormessage`) from a previously-targeted element,
- * plus the field-owned `id` when this helper set it. Symmetric with the
- * migration-cleanup branch so an arbitrary foreign `labelledElement` is left
- * clean once the control is destroyed or the target migrates.
+ * Composes the consumer's own `aria-describedby` (captured before the field
+ * touched the target) with the field's description / error ids: the consumer's
+ * ids first, then any field id not already present. Returns `null` when both
+ * sides are empty so the attribute is removed rather than set to `""`.
  */
-function clearFieldAttrs(target: HTMLElement, ownsId: boolean, controlId: string): void {
+function composeIds(consumer: string | null, fieldIds: string | null): string | null {
+  if (!consumer) {
+    return fieldIds;
+  }
+  if (!fieldIds) {
+    return consumer;
+  }
+  const seen = new Set(consumer.split(/\s+/).filter(Boolean));
+  const extra = fieldIds.split(/\s+/).filter((id) => id && !seen.has(id));
+  return extra.length > 0 ? `${consumer} ${extra.join(' ')}` : consumer;
+}
+
+/**
+ * Removes the field's association attributes (`aria-labelledby` /
+ * `aria-errormessage`) from a previously-targeted element, restores its
+ * `aria-describedby` to the consumer's captured value (or removes it when there
+ * was none), and drops the field-owned `id` when this helper set it. Symmetric
+ * with the migration-cleanup branch so an arbitrary foreign `labelledElement`
+ * is left clean once the control is destroyed or the target migrates.
+ */
+function clearFieldAttrs(
+  target: HTMLElement,
+  ownsId: boolean,
+  controlId: string,
+  consumerDescribedBy: string | null,
+): void {
   applyAttr(target, 'aria-labelledby', null);
-  applyAttr(target, 'aria-describedby', null);
+  applyAttr(target, 'aria-describedby', consumerDescribedBy);
   applyAttr(target, 'aria-errormessage', null);
   if (ownsId && target.getAttribute('id') === controlId) {
     target.removeAttribute('id');
