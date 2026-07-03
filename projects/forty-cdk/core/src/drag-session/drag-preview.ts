@@ -4,7 +4,9 @@ export interface DragPreview {
   moveTo(x: number, y: number): void;
   /**
    * Transition the preview's top-left to `(x, y)`, then `destroy()` it once the transform
-   * transition ends (with a timeout fallback). Marks the element `data-settling` so a consumer
+   * transition ends (with a timeout fallback scaled from the element's computed
+   * `transition-duration` plus a small safety margin, so a transition longer than the old
+   * hard-coded 500 ms is not cut short). Marks the element `data-settling` so a consumer
    * CSS rule keyed on it governs duration / easing. If no transition is configured, destroys
    * immediately. Caller must pass the browser `Window`.
    */
@@ -13,13 +15,24 @@ export interface DragPreview {
   destroy(): void;
 }
 
+const SETTLE_TIMEOUT_SAFETY_MS = 50;
+
+function parseDurationMs(segment: string): number {
+  const value = parseFloat(segment);
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+  return segment.trim().endsWith('ms') ? value : value * 1000;
+}
+
 function attachSettle(target: HTMLElement, destroyFn: () => void): DragPreview['settle'] {
   return (x: number, y: number, win: Window): void => {
     target.setAttribute('data-settling', '');
     void target.offsetWidth;
     const duration = win.getComputedStyle(target).transitionDuration;
     const firstSegment = duration.split(',')[0]?.trim() ?? '';
-    if (!firstSegment || parseFloat(firstSegment) === 0) {
+    const durationMs = parseDurationMs(firstSegment);
+    if (!firstSegment || durationMs === 0) {
       target.style.transform = `translate(${x}px, ${y}px)`;
       destroyFn();
       return;
@@ -40,7 +53,7 @@ function attachSettle(target: HTMLElement, destroyFn: () => void): DragPreview['
       finish();
     };
     target.addEventListener('transitionend', onEnd, { once: true });
-    win.setTimeout(finish, 500);
+    win.setTimeout(finish, durationMs + SETTLE_TIMEOUT_SAFETY_MS);
     target.style.transform = `translate(${x}px, ${y}px)`;
   };
 }

@@ -3,11 +3,12 @@ import { provideZonelessChangeDetection } from '@angular/core';
 
 import { createPointerDragSession, type PointerDragSession } from './pointer-session';
 
-function pointer(type: string, x: number, y: number, button = 0): PointerEvent {
+function pointer(type: string, x: number, y: number, button = 0, pointerId = 1): PointerEvent {
   return new PointerEvent(type, {
     clientX: x,
     clientY: y,
     button,
+    pointerId,
     bubbles: true,
     cancelable: true,
   });
@@ -338,6 +339,62 @@ describe('createPointerDragSession', () => {
     document.dispatchEvent(pointer('pointermove', 110, 100));
     document.dispatchEvent(pointer('pointermove', 120, 100));
     document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.lifts).toBe(1);
+    expect(rec.moves).toBe(2);
+    expect(rec.commits).toBe(1);
+  });
+
+  it('ignores a pointermove from a different pointerId (multi-touch)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 200, 100, 0, 2));
+
+    expect(rec.lifts).toBe(0);
+    expect(rec.moves).toBe(0);
+  });
+
+  it('ignores a pointerup from a different pointerId (does not commit the first drag)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 110, 100, 0, 1));
+    expect(rec.lifts).toBe(1);
+
+    document.dispatchEvent(pointer('pointerup', 110, 100, 0, 2));
+    expect(rec.commits).toBe(0);
+
+    document.dispatchEvent(pointer('pointerup', 110, 100, 0, 1));
+    expect(rec.commits).toBe(1);
+  });
+
+  it('ignores a pointercancel from a different pointerId (does not cancel the first drag)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 110, 100, 0, 1));
+    expect(rec.lifts).toBe(1);
+
+    document.dispatchEvent(pointer('pointercancel', 110, 100, 0, 2));
+    expect(rec.cancels).toBe(0);
+
+    document.dispatchEvent(pointer('pointercancel', 110, 100, 0, 1));
+    expect(rec.cancels).toBe(1);
+  });
+
+  it('the initiating pointerId still drives and commits the session', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 110, 100, 0, 1));
+    document.dispatchEvent(pointer('pointermove', 200, 100, 0, 2));
+    document.dispatchEvent(pointer('pointermove', 120, 100, 0, 1));
+    document.dispatchEvent(pointer('pointerup', 120, 100, 0, 1));
 
     expect(rec.lifts).toBe(1);
     expect(rec.moves).toBe(2);

@@ -159,7 +159,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
   };
 
   const move = (event: PointerEvent): void => {
-    if (!start) {
+    if (!start || event.pointerId !== pointerId) {
       return;
     }
     if (!armed) {
@@ -204,6 +204,9 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
   };
 
   const up = (event: PointerEvent): void => {
+    if (event.pointerId !== pointerId) {
+      return;
+    }
     const wasArmed = armed;
     if (wasArmed) {
       installClickTrap();
@@ -214,9 +217,16 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     }
   };
 
-  const cancel = (): void => {
+  const abort = (): void => {
     resetTracking();
     opts.onCancel();
+  };
+
+  const cancel = (event: PointerEvent): void => {
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    abort();
   };
 
   const down = (event: PointerEvent): void => {
@@ -241,7 +251,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     if (opts.cancelOnEscape) {
       const escape = (event: KeyboardEvent): void => {
         if (armed && event.key === 'Escape') {
-          cancel();
+          abort();
         }
       };
       onDocumentKeydown = escape;
