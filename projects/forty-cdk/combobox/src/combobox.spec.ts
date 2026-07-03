@@ -7,6 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
@@ -137,6 +138,18 @@ function typeInto(input: HTMLInputElement, text: string): void {
 }
 
 describe('ForCombobox', () => {
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the input, not the wrapper host', async () => {
+      const { el, fixture, flush } = renderHost(ComboboxHost);
+      await flush();
+      const combobox = fixture.debugElement
+        .query(By.directive(ForCombobox))
+        .injector.get(ForCombobox);
+      combobox.focus();
+      expect(document.activeElement).toBe(el.querySelector('[forComboboxInput]'));
+    });
+  });
+
   afterEachOverlayCleanup();
 
   describe('portal cleanup', () => {

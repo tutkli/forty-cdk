@@ -157,6 +157,22 @@ export class ForToggleGroup
     reconcileRovingActive(this.roving, this.#items.items);
   }
 
+  /**
+   * Move focus to a toggle item, implementing `FormValueControl.focus` from
+   * `@angular/forms/signals`. Without this override Signal Forms would focus the
+   * host `role="group"` wrapper — which is not focusable — so focus-on-error
+   * would silently go nowhere. Targets the first selected item's host when one
+   * is pressed, else the first enabled item's host; no-op when disabled or when
+   * no enabled item exists.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    const target = this.#firstSelectedHost() ?? this.#firstEnabledHost();
+    target?.focus(options);
+  }
+
   isSelected(v: string): boolean {
     return this.value().includes(v);
   }

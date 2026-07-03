@@ -322,6 +322,19 @@ export class ForTimeRangeField<D>
     });
   }
 
+  /**
+   * Move focus to the first editable segment of the start endpoint, implementing
+   * `FormValueControl.focus` from `@angular/forms/signals`. Without this override
+   * Signal Forms would focus the host `role="group"` wrapper — which is not
+   * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#startEngine.focusFirstSegment(options);
+  }
+
   endpointSegments(
     which: TimeRangeFieldEndpoint,
   ): Signal<readonly FieldSegment<TimeSegmentType>[]> {

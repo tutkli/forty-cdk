@@ -328,6 +328,27 @@ export class ForListbox<T = string>
     }
   }
 
+  /**
+   * Move focus into the listbox, implementing `FormValueControl.focus` from
+   * `@angular/forms/signals`. Targets the host when it is the tab stop (the
+   * virtualized activedescendant model, or an empty / all-disabled roving
+   * listbox); otherwise the first selected option, else the first enabled one —
+   * mirroring the roving entry point. Without this override Signal Forms'
+   * focus-on-error would focus the bound host even in the roving model, where
+   * the options carry the tab stops. No-op when disabled.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    if (this.hostTabindex() === '0') {
+      this.#host.nativeElement.focus(options);
+      return;
+    }
+    const target = this.#firstSelectedHost() ?? this.#firstEnabledHost();
+    target?.focus(options);
+  }
+
   isSelected(v: T): boolean {
     return isInArray(this.value(), v, this.isItemEqualToValue());
   }

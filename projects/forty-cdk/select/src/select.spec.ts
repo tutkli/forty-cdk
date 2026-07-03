@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import {
   afterEachOverlayCleanup,
@@ -113,6 +114,16 @@ function activeTestId(): string | null {
 }
 
 describe('ForSelect', () => {
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the trigger, not the wrapper host', async () => {
+      const { el, fixture, flush } = renderHost(SelectHost);
+      await flush();
+      const select = fixture.debugElement.query(By.directive(ForSelect)).injector.get(ForSelect);
+      select.focus();
+      expect(document.activeElement).toBe(el.querySelector('[forSelectTrigger]'));
+    });
+  });
+
   afterEachOverlayCleanup();
 
   describe('a11y baseline', () => {

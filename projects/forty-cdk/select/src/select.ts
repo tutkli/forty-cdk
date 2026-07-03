@@ -526,6 +526,20 @@ export class ForSelect<T = string>
   }
 
   /**
+   * Move focus to the trigger, implementing `FormValueControl.focus` from
+   * `@angular/forms/signals`. Without this override Signal Forms would focus the
+   * host `[forSelect]` wrapper — which carries no focusable role — so
+   * focus-on-error would silently go nowhere. No-op when disabled or before the
+   * trigger has registered.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.trigger()?.focus(options);
+  }
+
+  /**
    * Read an option handle's `value()` inside the snapshot fold, tolerating the
    * NG0950 thrown while a statically-rendered option is between registering
    * (its constructor, during the content view's creation pass) and having its
