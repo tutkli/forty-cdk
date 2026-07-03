@@ -145,6 +145,46 @@ describe('startPointerResize', () => {
     expect(onResize).toHaveBeenCalledWith(180);
   });
 
+  it('ignores a pointermove from a different pointerId (multi-touch)', () => {
+    const onResize = vi.fn();
+    startPointerResize(pointerEvent('pointerdown', { clientX: 100, pointerId: 1 }), {
+      host: el,
+      axis: 'x',
+      startValue: 200,
+      invert: false,
+      constrain: (n) => n,
+      onResize,
+      onCommit: vi.fn(),
+    });
+
+    el.dispatchEvent(pointerEvent('pointermove', { clientX: 200, pointerId: 2 }));
+    expect(onResize).not.toHaveBeenCalled();
+
+    el.dispatchEvent(pointerEvent('pointermove', { clientX: 120, pointerId: 1 }));
+    expect(onResize).toHaveBeenCalledWith(220);
+  });
+
+  it('ignores a pointerup from a different pointerId (does not end the resize)', () => {
+    const onCommit = vi.fn();
+    startPointerResize(pointerEvent('pointerdown', { clientX: 100, pointerId: 1 }), {
+      host: el,
+      axis: 'x',
+      startValue: 200,
+      invert: false,
+      constrain: (n) => n,
+      onResize: vi.fn(),
+      onCommit,
+    });
+
+    el.dispatchEvent(pointerEvent('pointermove', { clientX: 120, pointerId: 1 }));
+    el.dispatchEvent(pointerEvent('pointerup', { clientX: 120, pointerId: 2 }));
+    expect(onCommit).not.toHaveBeenCalled();
+
+    el.dispatchEvent(pointerEvent('pointerup', { clientX: 120, pointerId: 1 }));
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(onCommit).toHaveBeenCalledWith(220);
+  });
+
   it('teardown removes the listeners: a subsequent pointermove does nothing', () => {
     const onResize = vi.fn();
     const teardown = startPointerResize(pointerEvent('pointerdown', { clientX: 100 }), {

@@ -18,7 +18,10 @@
  * - On `pointermove` the helper waits until the drag exceeds an internal
  *   "arm" distance (a few pixels), picks the dominant axis, and decides
  *   the candidate direction. If that direction is not in the allowed
- *   set the gesture is dropped silently.
+ *   set the gesture is dropped silently. A mouse move seen with no button
+ *   held (`buttons === 0`) before arming resets the stale tracking rather
+ *   than arming a phantom swipe — this covers a press released outside the
+ *   element, which never fires `pointerup` on it.
  * - Once armed, `onSwipeStart` fires (with the constrained delta) and
  *   `onSwipeMove` fires for every subsequent move including the arming
  *   one. Pointer capture is requested so events keep flowing if the
@@ -179,6 +182,10 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
     const dy = event.clientY - startY;
 
     if (!active) {
+      if (event.pointerType === 'mouse' && event.buttons === 0) {
+        reset();
+        return;
+      }
       const detected = detectDirection(dx, dy, opts.getDirections());
       if (!detected) {
         return;

@@ -43,12 +43,13 @@ export interface PointerResizeConfig {
 export function startPointerResize(event: PointerEvent, config: PointerResizeConfig): () => void {
   const { host, axis } = config;
   const startCoord = axis === 'x' ? event.clientX : event.clientY;
+  const pointerId = event.pointerId;
   let current = config.startValue;
   let armed = false;
   let active = true;
 
   function onMove(move: PointerEvent): void {
-    if (!active) {
+    if (!active || move.pointerId !== pointerId) {
       return;
     }
     const raw = axis === 'x' ? move.clientX : move.clientY;
@@ -71,7 +72,7 @@ export function startPointerResize(event: PointerEvent, config: PointerResizeCon
   }
 
   function onUp(up: PointerEvent): void {
-    if (!active) {
+    if (!active || up.pointerId !== pointerId) {
       return;
     }
     active = false;

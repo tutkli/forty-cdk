@@ -8,6 +8,7 @@ function pointer(
     clientY?: number;
     pointerId?: number;
     button?: number;
+    buttons?: number;
     pointerType?: string;
   } = {},
 ): PointerEvent {
@@ -18,6 +19,7 @@ function pointer(
     clientY: init.clientY ?? 0,
     pointerId: init.pointerId ?? 1,
     button: init.button ?? 0,
+    buttons: init.buttons ?? (init.pointerType === 'mouse' ? 1 : 0),
     pointerType: init.pointerType ?? 'touch',
   });
   el.dispatchEvent(ev);
@@ -309,6 +311,21 @@ describe('attachSwipeDismiss', () => {
     pointer(el, 'pointerup', { clientX: 60, clientY: 0, pointerId: 1 });
     expect(released).toEqual([1]);
     expect(rec.ends).toHaveLength(1);
+    cleanup();
+  });
+
+  it('an unarmed mouse press released outside does not arm a phantom swipe on a later hover', () => {
+    const { el, rec, cleanup } = setup({ directions: ['right'], threshold: 50 });
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerType: 'mouse', button: 0 });
+
+    pointer(el, 'pointermove', { clientX: 80, clientY: 0, pointerType: 'mouse', buttons: 0 });
+    expect(rec.starts).toEqual([]);
+    expect(rec.moves).toEqual([]);
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerType: 'mouse', button: 0 });
+    pointer(el, 'pointermove', { clientX: 80, clientY: 0, pointerType: 'mouse' });
+    expect(rec.starts).toHaveLength(1);
     cleanup();
   });
 
