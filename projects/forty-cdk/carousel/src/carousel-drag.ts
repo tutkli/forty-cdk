@@ -21,6 +21,7 @@ import {
 import { injectCarouselContext } from './carousel-context';
 
 const FLICK_VELOCITY_PX_PER_MS = 0.4;
+const FLICK_STALE_VELOCITY_MS = 100;
 
 /**
  * Opt-in pointer drag / swipe directive for the Carousel viewport. Apply on the
@@ -146,9 +147,11 @@ export class ForCarouselDrag {
     this.#dragPx.set(p - this.#startPrimary);
   }
 
-  #onRelease(_detail: SwipeEventDetail): void {
+  #onRelease(detail: SwipeEventDetail): void {
     if (!this.#dragging()) return;
     const dragPx = this.#dragPx();
+    const releaseTime = detail.originalEvent.timeStamp || this.#lastTime;
+    const staleVelocity = releaseTime - this.#lastTime > FLICK_STALE_VELOCITY_MS;
     this.#dragging.set(false);
     this.#dragPx.set(0);
 
@@ -156,10 +159,19 @@ export class ForCarouselDrag {
 
     const sign = this.#nextPerPx();
     const slidesDragged = (dragPx * sign) / this.#slideSizePx;
-    const velocityTowardNext = this.#velocity * sign;
+    const velocityTowardNext = flickVelocity(this.#velocity * sign, staleVelocity);
     const target = resolveDragIndex(this.ctx.activeIndex(), slidesDragged, velocityTowardNext);
     this.ctx.scrollTo(target);
   }
+}
+
+/**
+ * Zeroes the flick velocity when the release is stale (its last move sample is older than
+ * `FLICK_STALE_VELOCITY_MS`), so a pause before lifting can't carry a stale sample into the snap.
+ * Returns the effective velocity fed to `resolveDragIndex`.
+ */
+export function flickVelocity(rawVelocityTowardNext: number, stale: boolean): number {
+  return stale ? 0 : rawVelocityTowardNext;
 }
 
 /**
@@ -168,7 +180,7 @@ export class ForCarouselDrag {
  * index). A fast flick rounds toward the flick direction instead of to nearest.
  * Returns a raw (possibly out-of-range) index; the caller's `scrollTo` normalizes it.
  */
-function resolveDragIndex(
+export function resolveDragIndex(
   activeIndex: number,
   slidesDragged: number,
   velocityTowardNext: number,

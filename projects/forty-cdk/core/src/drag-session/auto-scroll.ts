@@ -84,7 +84,7 @@ export interface AutoScroller {
 
 /** Configuration passed to `createAutoScroller`. */
 export interface AutoScrollerConfig {
-  /** The list host element; used to find the nearest scrollable container. */
+  /** The list host element; used as the fallback start for the scrollable-container search. */
   readonly host: HTMLElement;
   /** The browser `Window`, or `null` in SSR / test environments without a DOM. */
   readonly win: Window | null;
@@ -94,6 +94,15 @@ export interface AutoScrollerConfig {
   readonly maxSpeed: number;
   /** Called after each frame that actually scrolls, so callers can re-resolve the drop target. */
   readonly onFrame: () => void;
+  /**
+   * Optional resolver for the element the scrollable-container search should start from, given the
+   * current pointer position. Returns the element under the pointer (or `null` to fall back to
+   * `host`). Supplied by callers that drag across connected lists so auto-scroll follows the
+   * container the pointer is actually over — not always the origin list. When provided, the scroll
+   * target is re-resolved on every `update`, so a pointer crossing from one list into another
+   * scrolls the destination container.
+   */
+  readonly resolveScrollHost?: (point: { x: number; y: number }) => HTMLElement | null;
 }
 
 interface ScrollTarget {
@@ -144,11 +153,16 @@ export function createAutoScroller(config: AutoScrollerConfig): AutoScroller {
   const win: Window = maybeWin;
 
   let target: ScrollTarget | null = null;
+  let targetEl: HTMLElement | null = null;
   let point: { x: number; y: number } | null = null;
   let rafId: number | null = null;
 
-  function resolveTarget(): ScrollTarget {
-    const el = findScrollContainer(config.host, win);
+  function resolveTarget(at: { x: number; y: number }): ScrollTarget {
+    const start = config.resolveScrollHost
+      ? (config.resolveScrollHost(at) ?? config.host)
+      : config.host;
+    const el = findScrollContainer(start, win);
+    targetEl = el;
     return el ? elementTarget(el) : viewportTarget(win);
   }
 
@@ -171,7 +185,13 @@ export function createAutoScroller(config: AutoScrollerConfig): AutoScroller {
     update(next: { x: number; y: number }): void {
       point = next;
       if (target === null) {
-        target = resolveTarget();
+        target = resolveTarget(point);
+      } else if (config.resolveScrollHost) {
+        const previousEl = targetEl;
+        const nextTarget = resolveTarget(point);
+        if (targetEl !== previousEl) {
+          target = nextTarget;
+        }
       }
       const v = computeScrollVelocity(target.rect(), point, config.edgeSize, config.maxSpeed);
       if (v.x === 0 && v.y === 0) {
@@ -189,6 +209,7 @@ export function createAutoScroller(config: AutoScrollerConfig): AutoScroller {
         rafId = null;
       }
       target = null;
+      targetEl = null;
       point = null;
     },
   };

@@ -63,6 +63,21 @@ class RootElementHost {
   readonly pos = signal<Pos>({ x: 0, y: 0 });
 }
 
+@Component({
+  imports: [ForFreeDrag],
+  template: `
+    <div class="root-a" data-testid="root-a">
+      <div class="root-b" data-testid="root-b">
+        <span forFreeDrag [rootElement]="root()" [(position)]="pos" data-testid="box">Drag</span>
+      </div>
+    </div>
+  `,
+})
+class RebindRootHost {
+  readonly pos = signal<Pos>({ x: 5, y: 5 });
+  readonly root = signal<string>('.root-a');
+}
+
 function fire(
   target: EventTarget,
   type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
@@ -143,6 +158,18 @@ describe('ForFreeDrag', () => {
 
     expect(instance.pos()).toEqual({ x: 12, y: 8 });
     expect(instance.ends()).toEqual([{ x: 12, y: 8 }]);
+  });
+
+  it('pointercancel before arming fires neither dragStart nor dragEnd', () => {
+    const { instance, query } = renderHost(BoxHost);
+    const box = query('[data-testid="box"]')!;
+
+    fire(box, 'pointerdown', 0, 0);
+    fire(box, 'pointercancel', 0, 0);
+
+    expect(instance.starts()).toEqual([]);
+    expect(instance.ends()).toEqual([]);
+    expect(instance.pos()).toEqual({ x: 0, y: 0 });
   });
 
   it('Escape cancels an armed drag and restores the snapshot', () => {
@@ -240,6 +267,23 @@ describe('ForFreeDrag', () => {
 
     expect(dialog.style.transform).toBe('translate(30px, 30px)');
     expect(header.style.transform).toBe('');
+  });
+
+  it('clears the transform on the previous root when rootElement rebinds', async () => {
+    const { fixture, instance, query } = renderHost(RebindRootHost);
+    await flush(fixture);
+    const rootA = query('[data-testid="root-a"]')!;
+    const rootB = query('[data-testid="root-b"]')!;
+
+    expect(rootA.style.transform).toBe('translate(5px, 5px)');
+    expect(rootB.style.transform).toBe('');
+
+    instance.root.set('.root-b');
+    fixture.detectChanges();
+    await flush(fixture);
+
+    expect(rootA.style.transform).toBe('');
+    expect(rootB.style.transform).toBe('translate(5px, 5px)');
   });
 
   it('applies the position transform to the host (zoneless)', async () => {

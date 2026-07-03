@@ -218,6 +218,7 @@ export class ForDropList implements ForDropListContext {
         edgeSize: this.#defaults.autoScrollEdgeSize,
         maxSpeed: this.#defaults.autoScrollMaxSpeed,
         onFrame: () => this.#onAutoScrollFrame(),
+        resolveScrollHost: (point) => this.#scrollHostAt(point),
       });
       this.#destroyRef.onDestroy(() => {
         this.#autoScroller?.stop();
@@ -435,6 +436,24 @@ export class ForDropList implements ForDropListContext {
     this.#resolveDrop(point, lifted);
   }
 
+  #scrollHostAt(point: { x: number; y: number }): HTMLElement | null {
+    const view = this.#document.defaultView;
+    if (!view || typeof this.#document.elementFromPoint !== 'function') {
+      return null;
+    }
+    const under = this.#document.elementFromPoint(point.x, point.y);
+    if (!(under instanceof view.HTMLElement)) {
+      return null;
+    }
+    const containers = [this as ForDropListContext, ...this.#effectiveConnected()];
+    for (const ctx of containers) {
+      if (ctx.host === under || ctx.host.contains(under)) {
+        return ctx.host;
+      }
+    }
+    return null;
+  }
+
   isLifted(el: HTMLElement): boolean {
     return this.#liftedHost() === el;
   }
@@ -444,14 +463,23 @@ export class ForDropList implements ForDropListContext {
     if (liftedHost === null) {
       return;
     }
-    const delta: 1 | -1 = action === 'next' || action === 'last' ? 1 : -1;
     const connected = this.#effectiveConnected();
     const slots = buildDragSlots(
       this.#items.items().length,
       connected.map((c) => c.items().length),
     );
+    if (slots.length === 0) {
+      return;
+    }
     const current = this.#flatIndex();
-    const next = stepSlot(slots, current, delta);
+    let next: number;
+    if (action === 'first') {
+      next = 0;
+    } else if (action === 'last') {
+      next = slots.length - 1;
+    } else {
+      next = stepSlot(slots, current, action === 'next' ? 1 : -1);
+    }
     if (next === current) {
       return;
     }

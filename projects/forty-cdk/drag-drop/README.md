@@ -7,14 +7,15 @@ whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).
 
 ## Keyboard
 
-| State  | Key         | Action                                     |
-| ------ | ----------- | ------------------------------------------ |
-| Idle   | Arrow keys  | Move roving focus between items            |
-| Idle   | Home / End  | Jump to first / last item                  |
-| Idle   | Space/Enter | **Lift** the focused item                  |
-| Lifted | Arrow keys  | Step the logical drop position             |
-| Lifted | Space/Enter | **Drop** (commits and emits `(dragDrop)`)  |
-| Lifted | Escape      | **Cancel** (no event, focus stays on item) |
+| State  | Key         | Action                                            |
+| ------ | ----------- | ------------------------------------------------- |
+| Idle   | Arrow keys  | Move roving focus between items                   |
+| Idle   | Home / End  | Jump to first / last item                         |
+| Idle   | Space/Enter | **Lift** the focused item                         |
+| Lifted | Arrow keys  | Step the logical drop position                    |
+| Lifted | Home / End  | Jump the lifted item to the first / last position |
+| Lifted | Space/Enter | **Drop** (commits and emits `(dragDrop)`)         |
+| Lifted | Escape      | **Cancel** (no event, focus stays on item)        |
 
 Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 `orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.

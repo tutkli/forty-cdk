@@ -117,10 +117,13 @@ export class ForFreeDrag implements ForDraggableContext {
 
   constructor() {
     if (this.#isBrowser) {
-      effect(() => {
+      effect((onCleanup) => {
         const { x, y } = this.position();
         const el = this.#resolvedRoot();
         el.style.transform = x === 0 && y === 0 ? '' : `translate(${x}px, ${y}px)`;
+        onCleanup(() => {
+          el.style.transform = '';
+        });
       });
       this.#pointerSession = createPointerDragSession({
         host: this.#host.nativeElement,
@@ -208,9 +211,10 @@ export class ForFreeDrag implements ForDraggableContext {
 
   #onCancel(): void {
     const lift = this.#lift();
-    if (lift) {
-      this.position.set(lift.position);
+    if (!lift) {
+      return;
     }
+    this.position.set(lift.position);
     this.#lift.set(null);
     this.dragEnd.emit(this.position());
   }

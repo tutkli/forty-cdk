@@ -365,6 +365,36 @@ describe('ForDropList + ForDraggable', () => {
       expect(listEl(el).hasAttribute('data-drag-over')).toBe(false);
       expect(first.hasAttribute('data-dragging')).toBe(false);
     });
+
+    it('End jumps the lifted item to the last position', () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+      first.focus();
+      pressKey(first, ' ');
+      pressKey(first, 'End');
+      pressKey(first, ' ');
+      const drop = comp.lastDrop();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(2);
+      const reordered = moveItemInArray(comp.rows(), drop!.previousIndex, drop!.currentIndex);
+      expect(reordered.map((r) => r.id)).toEqual([2, 3, 1]);
+    });
+
+    it('Home jumps the lifted item to the first position', () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      const third = itemEl(el, 3);
+      third.focus();
+      pressKey(third, ' ');
+      pressKey(third, 'Home');
+      pressKey(third, ' ');
+      const drop = comp.lastDrop();
+      expect(drop!.previousIndex).toBe(2);
+      expect(drop!.currentIndex).toBe(0);
+      const reordered = moveItemInArray(comp.rows(), drop!.previousIndex, drop!.currentIndex);
+      expect(reordered.map((r) => r.id)).toEqual([3, 1, 2]);
+    });
   });
 
   describe('cross-list transfer (forDropListGroup)', () => {
