@@ -272,6 +272,77 @@ describe('ForContextMenu', () => {
     });
   });
 
+  describe('accessible name (aria-labelledby → trigger id)', () => {
+    it('binds the trigger id so the content aria-labelledby resolves to a real element', async () => {
+      const r = renderHost(ContextMenuHost);
+      const region = r.query<HTMLElement>('#region')!;
+      rightClick(region, 0, 0);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const labelledby = content.getAttribute('aria-labelledby');
+      expect(labelledby).toBeTruthy();
+      expect(document.getElementById(labelledby!)).toBe(region);
+    });
+
+    it('generates and mirrors a trigger id when the consumer sets none', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open">
+            <div forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent>
+                <button forMenuItem>Cut</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class NoIdHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(NoIdHost);
+      const trigger = r.query<HTMLElement>('[forContextMenuTrigger]')!;
+      expect(trigger.id).toBeTruthy();
+
+      rightClick(trigger, 0, 0);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
+      expect(document.getElementById(trigger.id)).toBe(trigger);
+    });
+
+    it('drops aria-labelledby in favour of an explicit ariaLabel', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open" ariaLabel="Actions">
+            <div forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent>
+                <button forMenuItem>Cut</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class LabelHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(LabelHost);
+      rightClick(r.query<HTMLElement>('[forContextMenuTrigger]')!, 0, 0);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+      expect(content.getAttribute('aria-label')).toBe('Actions');
+    });
+  });
+
   describe('keyboard activator', () => {
     // Geometry-driven assertions (anchor rect → `--for-anchor-width/-height`
     // and resolved `transform`) live in the Playwright suite — see
