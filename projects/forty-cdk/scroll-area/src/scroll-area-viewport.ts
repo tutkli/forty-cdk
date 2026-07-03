@@ -2,11 +2,13 @@ import {
   DOCUMENT,
   PLATFORM_ID,
   afterNextRender,
+  booleanAttribute,
   DestroyRef,
   Directive,
   effect,
   ElementRef,
   inject,
+  input,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
@@ -38,16 +40,32 @@ function injectHidingStylesOnce(doc: Document): void {
  * The actually-scrolling element. Hides native scrollbars (the only place
  * in forty-cdk that ships CSS — see README), tracks scroll position, and
  * reports geometry to the root so the synthetic scrollbar can render.
+ *
+ * Focusable by default (`tabindex="0"`) so a scroll area whose content has no
+ * focusable children is still reachable and keyboard-scrollable — the browser
+ * gives a focused overflow container native arrow / PageUp / PageDown / Home /
+ * End / Space scrolling. Consumers whose content is already keyboard-focusable
+ * can drop the extra tab stop with `[focusable]="false"`.
  */
 @Directive({
   selector: '[forScrollAreaViewport]',
   exportAs: 'forScrollAreaViewport',
   host: {
+    '[attr.tabindex]': 'focusable() ? 0 : null',
     '(scroll)': 'onScroll()',
   },
 })
 export class ForScrollAreaViewport {
   readonly #ctx = injectScrollAreaContext('ForScrollAreaViewport');
+
+  /**
+   * Whether the viewport is a keyboard tab stop. Defaults to `true`, emitting
+   * `tabindex="0"` so the scroll container is focusable and gets native
+   * keyboard scrolling (arrows / PageUp / PageDown / Home / End / Space) even
+   * when its content holds no focusable elements. Set `false` to remove the
+   * extra tab stop when the projected content is already keyboard-focusable.
+   */
+  readonly focusable = input(true, { transform: booleanAttribute });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
