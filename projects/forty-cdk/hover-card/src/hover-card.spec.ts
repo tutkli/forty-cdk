@@ -328,6 +328,59 @@ describe('ForHoverCard', () => {
     });
   });
 
+  describe('touch / pointer-induced focus guard', () => {
+    it('ignores a touch pointerenter so a tap never opens via the hover path', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'touch' }));
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('does not open on a touch-induced focus (a tap focuses the trigger)', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('does not open on a mouse-induced focus (a click that focuses the trigger)', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'mouse' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('opens on a keyboard focus that follows a suppressed touch tap', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch' }));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(false);
+
+      trigger.dispatchEvent(new FocusEvent('blur'));
+      trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+  });
+
   describe('escape', () => {
     it('closes immediately on Escape, ignoring closeDelay', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);

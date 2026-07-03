@@ -1,16 +1,13 @@
-import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
   DestroyRef,
   Directive,
-  DOCUMENT,
   inject,
   input,
   model,
   numberAttribute,
   output,
-  PLATFORM_ID,
   signal,
 } from '@angular/core';
 
@@ -21,9 +18,8 @@ import {
   forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
-  attachScrollDismiss,
   emitVetoableNativeEvent,
-  type ScrollDismiss,
+  ScrollDismissDispatcher,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
@@ -210,9 +206,10 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly content = this.#contentEl.asReadonly();
 
   readonly #coordinator = inject(HoverCardCoordinator);
+  readonly #scrollDismissDispatcher = inject(ScrollDismissDispatcher);
   readonly #hoverIntent: HoverIntentScheduler;
 
-  #scrollDismiss: ScrollDismiss | null = null;
+  #unregisterScrollDismiss: () => void = () => {};
 
   constructor() {
     forceCloseWhenDisabled({
@@ -229,15 +226,13 @@ export class ForHoverCard implements ForHoverCardContext {
       coordinator: this.#coordinator,
     });
 
-    if (isPlatformBrowser(inject(PLATFORM_ID))) {
-      this.#scrollDismiss = attachScrollDismiss(inject(DOCUMENT), {
-        dismiss: () => this.#dismissOnScroll(),
-      });
-    }
+    this.#unregisterScrollDismiss = this.#scrollDismissDispatcher.register(() =>
+      this.#dismissOnScroll(),
+    );
 
     inject(DestroyRef).onDestroy(() => {
       this.cancelPending();
-      this.#scrollDismiss?.destroy();
+      this.#unregisterScrollDismiss();
     });
   }
 
@@ -302,7 +297,7 @@ export class ForHoverCard implements ForHoverCardContext {
 
   /** True while an ancestor scroll has opened the suppression window (hover opens are no-ops). */
   #scrollSuppressed(): boolean {
-    return this.#scrollDismiss?.isSuppressed() ?? false;
+    return this.#scrollDismissDispatcher.isSuppressed();
   }
 
   /**

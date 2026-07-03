@@ -547,6 +547,17 @@ class RadioFixture {}
 class TooltipFixture {}
 
 @Component({
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  template: `
+    <span forTooltip [open]="true">
+      <button forTooltipTrigger>t</button>
+      <div forTooltipContent>tip</div>
+    </span>
+  `,
+})
+class TooltipOpenFixture {}
+
+@Component({
   imports: [ForDialog, ForDialogTitle],
   template: `
     @if (open()) {
@@ -1657,6 +1668,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   ButtonFixture,
   RadioFixture,
   TooltipFixture,
+  TooltipOpenFixture,
   DialogFixture,
   AvatarFixture,
   ScrollAreaFixture,
@@ -1995,6 +2007,15 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forHoverCardContent]')).toBeNull();
+  });
+
+  it('opening a Tooltip does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(TooltipOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forTooltipContent]') as HTMLElement;
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forTooltipContent]')).toBeNull();
   });
 
   it('Virtualizer renders an empty window with the estimate total server-side', () => {

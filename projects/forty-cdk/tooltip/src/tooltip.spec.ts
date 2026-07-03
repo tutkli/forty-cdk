@@ -3,7 +3,10 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
+import { ForDialog } from 'forty-cdk/dialog';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import {
+  afterEachOverlayCleanup,
   flush,
   flushPositioning,
   installObserverPolyfills,
@@ -497,6 +500,8 @@ describe('ForTooltip', () => {
   });
 
   describe('escape key', () => {
+    afterEachOverlayCleanup();
+
     it('closes immediately, bypassing closeDelay', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
@@ -519,6 +524,146 @@ describe('ForTooltip', () => {
       r.fixture.detectChanges();
 
       expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('closes when Escape is pressed inside the portaled content', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      pressKey(content, 'Escape');
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('closes a hover-opened tooltip when Escape is dispatched on an unrelated element (WCAG 1.4.13)', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      trigger.dispatchEvent(new PointerEvent('pointerenter'));
+      await flush(r.fixture);
+      expect(r.instance.isOpen()).toBe(true);
+
+      // Hover-opened: focus never entered the trigger or the content. Escape
+      // dispatched on an unrelated element still routes through the
+      // document-level dismissable layer and dismisses the tooltip.
+      pressKey(document, 'Escape');
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('reflects the Escape close through data-state without Zone.js', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.getAttribute('data-state')).toBe('open');
+
+      pressKey(document, 'Escape');
+      r.fixture.detectChanges();
+
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+      expect(content.getAttribute('data-state')).toBe('closed');
+      expect(trigger.hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', async () => {
+      const captured: VetoableNativeEvent<KeyboardEvent>[] = [];
+
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div
+            forTooltip
+            #tip="forTooltip"
+            [(open)]="isOpen"
+            [openDelay]="0"
+            [closeDelay]="0"
+            (escapeKeyDown)="onEscape($event)"
+          >
+            <button type="button" forTooltipTrigger>Trigger</button>
+            @if (tip.open()) {
+              <div forTooltipContent>Content</div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly isOpen = signal(false);
+        onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+          captured.push(event);
+          event.preventDefault();
+        }
+      }
+
+      const r = renderHost(Host);
+      r.instance.isOpen.set(true);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+
+      pressKey(content, 'Escape');
+      await flush(r.fixture);
+
+      expect(captured.length).toBe(1);
+      expect(r.instance.isOpen()).toBe(true);
+    });
+  });
+
+  describe('escape layering (tooltip inside a dialog)', () => {
+    afterEachOverlayCleanup();
+
+    @Component({
+      imports: [ForDialog, ForTooltip, ForTooltipTrigger, ForTooltipContent],
+      template: `
+        @if (dialogOpen()) {
+          <div forDialog ariaLabel="Outer dialog" (dismiss)="dialogOpen.set(false)">
+            <div
+              forTooltip
+              #tip="forTooltip"
+              [(open)]="tooltipOpen"
+              [openDelay]="0"
+              [closeDelay]="0"
+            >
+              <button type="button" forTooltipTrigger>Trigger</button>
+              @if (tip.open()) {
+                <div forTooltipContent>Tip</div>
+              }
+            </div>
+          </div>
+        }
+      `,
+    })
+    class TooltipInDialogHost {
+      readonly dialogOpen = signal(true);
+      readonly tooltipOpen = signal(false);
+    }
+
+    it('dismisses the tooltip on the first Escape and the dialog on the second', async () => {
+      const r = renderHost(TooltipInDialogHost);
+      await flush(r.fixture);
+      r.instance.tooltipOpen.set(true);
+      await flush(r.fixture);
+      expect(r.instance.tooltipOpen()).toBe(true);
+      expect(r.instance.dialogOpen()).toBe(true);
+
+      // First Escape: the tooltip's dismissable layer is topmost, so only the
+      // tooltip closes; the dialog stays open.
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.tooltipOpen()).toBe(false);
+      expect(r.instance.dialogOpen()).toBe(true);
+
+      // Second Escape: the dialog is now topmost and closes.
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.dialogOpen()).toBe(false);
     });
   });
 

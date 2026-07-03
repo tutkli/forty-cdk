@@ -10,6 +10,14 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
  * Reflects `data-state` so consumers can style the trigger when its card is
  * open (e.g. an underline that turns solid).
  *
+ * A touch tap does not open the card: a `pointerenter` with
+ * `pointerType === 'touch'` is ignored, and the focus that a tap induces is
+ * ignored too — only keyboard focus (focus not preceded by a pointer
+ * interaction) opens the card. Because the trigger must already convey full
+ * meaning on its own, touch / keyboard-only users miss nothing when the
+ * preview stays closed, and keyboard focus is the touch-accessible way to
+ * reveal it. This mirrors `ForTooltipTrigger`.
+ *
  * **Intentional ARIA exception.** The trigger exposes no `aria-controls`,
  * `aria-expanded`, or `aria-describedby`, and `[forHoverCardContent]` carries
  * no role. This is deliberate: the trigger must already be
@@ -35,7 +43,8 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
   exportAs: 'forHoverCardTrigger',
   host: {
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
-    '(pointerenter)': 'onPointerEnter()',
+    '(pointerenter)': 'onPointerEnter($event)',
+    '(pointerdown)': 'onPointerDown($event)',
     '(pointerleave)': 'onPointerLeave($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
@@ -60,6 +69,7 @@ export class ForHoverCardTrigger {
 
   #hovered = false;
   #focused = false;
+  #lastPointerType: string | null = null;
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -73,9 +83,16 @@ export class ForHoverCardTrigger {
     });
   }
 
-  protected onPointerEnter(): void {
+  protected onPointerEnter(event: PointerEvent): void {
+    if (event.pointerType === 'touch') {
+      return;
+    }
     this.#hovered = true;
     this.ctx().scheduleOpen('hover-trigger');
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    this.#lastPointerType = event.pointerType;
   }
 
   protected onPointerLeave(event: PointerEvent): void {
@@ -88,11 +105,17 @@ export class ForHoverCardTrigger {
   }
 
   protected onFocus(): void {
+    const pointerInduced = this.#lastPointerType !== null;
+    this.#lastPointerType = null;
+    if (pointerInduced) {
+      return;
+    }
     this.#focused = true;
     this.ctx().scheduleOpen('focus');
   }
 
   protected onBlur(): void {
+    this.#lastPointerType = null;
     this.#focused = false;
     this.#scheduleCloseIfInactive('focus');
   }

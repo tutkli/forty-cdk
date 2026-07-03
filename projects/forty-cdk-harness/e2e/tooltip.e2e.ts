@@ -42,6 +42,27 @@ test.describe('Tooltip', () => {
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
 
+  test('closes on Escape when hover-opened with focus on an unrelated element', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'tooltip');
+
+    // Hover-open the tooltip, then move focus to an unrelated element so the
+    // Escape keydown dispatches there rather than on the trigger. WCAG 2.1 SC
+    // 1.4.13 requires hover content to dismiss on Escape regardless of focus
+    // position; it routes through the content's document-level dismissable
+    // layer.
+    await el(page, 'trigger').hover();
+    await expect(el(page, 'tooltip')).toBeVisible();
+
+    const before = el(page, 'before');
+    await before.focus();
+    await expect(before).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'tooltip')).toHaveCount(0);
+  });
+
   test('showOnOverflow shows only when the trigger text is truncated', async ({ page }) => {
     await gotoFixture(page, 'tooltip');
 
