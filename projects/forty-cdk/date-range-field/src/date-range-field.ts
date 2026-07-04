@@ -5,9 +5,7 @@ import {
   ElementRef,
   inject,
   input,
-  linkedSignal,
   model,
-  signal,
   type Signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -23,7 +21,7 @@ import {
   injectDateAdapter,
   injectHiddenInput,
   injectTextDirection,
-  RovingTabindex,
+  RangeFieldComposer,
   type SegmentEditorContext,
   type SegmentType,
   serializeISODate,
@@ -35,11 +33,6 @@ import {
   type ForDateRangeFieldContext,
 } from './date-range-field-context';
 import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
-
-interface CommittedRange<D> {
-  range: DateRange<D> | null;
-  generation: number;
-}
 
 /**
  * Headless, segmented, spin-editable date **range** input — the keyboard-first,
@@ -199,46 +192,7 @@ export class ForDateRangeField<D>
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  readonly #startRoving = new RovingTabindex();
-  readonly #endRoving = new RovingTabindex();
-
-  /**
-   * Monotonic generation bumped by {@link #recompose} on every value it writes.
-   * It tags each *internal* commit so an endpoint source can tell a `null` the
-   * field itself produced (one endpoint mid-edit or the two out of order) from a
-   * `null` an external reset wrote — the two are indistinguishable by the
-   * `value` alone, since `null === null`.
-   */
-  readonly #commitGeneration = signal(0);
-
-  /** The committed range paired with the generation of its last internal write. */
-  readonly #committedValue = computed<CommittedRange<D>>(() => ({
-    range: this.value(),
-    generation: this.#commitGeneration(),
-  }));
-
-  /**
-   * Per-endpoint rehydration source. A `linkedSignal` keyed on the committed
-   * range tagged with the commit generation: a non-null `value` (external write
-   * or our own commit) drives the endpoint's segments from `range.start` /
-   * `range.end`. A `null` `value` is disambiguated by the generation — an
-   * **internal** null (the generation advanced since the last computation,
-   * because *either* endpoint is mid-edit or the two are out of order)
-   * **preserves** the prior endpoint value so a complete endpoint isn't wiped
-   * while its sibling is incomplete; an **external** null (a Signal Forms reset
-   * or a consumer `[(value)]="null"`, where the generation is unchanged)
-   * **clears** the endpoint, matching `ForDateField`. Each endpoint reads its
-   * own `previous`, so there is no cross-endpoint race. The endpoint's own
-   * segment-level edits flow through the engine's parts, not through this source.
-   */
-  readonly #startSource = linkedSignal<CommittedRange<D>, D | null>({
-    source: this.#committedValue,
-    computation: (committed, previous) => this.#rehydrate(committed, previous, 'start'),
-  });
-  readonly #endSource = linkedSignal<CommittedRange<D>, D | null>({
-    source: this.#committedValue,
-    computation: (committed, previous) => this.#rehydrate(committed, previous, 'end'),
-  });
+  readonly #composer: RangeFieldComposer<D>;
 
   readonly #startEngine: DateFieldEngine<D>;
   readonly #endEngine: DateFieldEngine<D>;
@@ -248,17 +202,11 @@ export class ForDateRangeField<D>
   readonly #startLabel = computed<string | null>(() => this.#defaults.startLabel);
   readonly #endLabel = computed<string | null>(() => this.#defaults.endLabel);
 
-  /** Both endpoints complete but the start falls after the end — an unorderable range. */
-  readonly #disordered = computed(() => {
-    const start = this.#startEngine.composed();
-    const end = this.#endEngine.composed();
-    return start !== null && end !== null && this.adapter.compare(start, end) > 0;
-  });
-
   /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
-  protected readonly ariaInvalid = computed(() => this.invalid() || this.#disordered());
+  protected readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
 
-  protected readonly disordered = this.#disordered;
+  /** Both endpoints complete but the start falls after the end — an unorderable range. */
+  protected readonly disordered = computed(() => this.#composer.disordered());
 
   /**
    * Folds a self-detected out-of-order range into the base invalidity so
@@ -272,12 +220,22 @@ export class ForDateRangeField<D>
 
   constructor() {
     super();
+    this.#composer = new RangeFieldComposer<D>({
+      value: this.value,
+      effectiveDisabled: this.effectiveDisabled,
+      readonly: this.readonly,
+      dir: this.dir,
+      composedStart: () => this.#startEngine.composed(),
+      composedEnd: () => this.#endEngine.composed(),
+      compose: (start, end) => (this.adapter.compare(start, end) <= 0 ? { start, end } : null),
+      disordered: (start, end) => this.adapter.compare(start, end) > 0,
+    });
     const emptySegmentText = computed(() => this.#defaults.emptySegmentText);
     this.#startEngine = new DateFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
       readonly: this.readonly,
-      roving: this.#startRoving,
+      roving: this.#composer.startRoving,
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
@@ -285,15 +243,15 @@ export class ForDateRangeField<D>
       emptySegmentText,
       minDate: this.minDate,
       maxDate: this.maxDate,
-      source: this.#startSource,
-      onCommit: () => this.#recompose(),
+      source: this.#composer.startSource,
+      onCommit: () => this.#composer.recompose(),
       piece: 'ForDateRangeField',
     });
     this.#endEngine = new DateFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
       readonly: this.readonly,
-      roving: this.#endRoving,
+      roving: this.#composer.endRoving,
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
@@ -301,12 +259,12 @@ export class ForDateRangeField<D>
       emptySegmentText,
       minDate: this.minDate,
       maxDate: this.maxDate,
-      source: this.#endSource,
-      onCommit: () => this.#recompose(),
+      source: this.#composer.endSource,
+      onCommit: () => this.#composer.recompose(),
       piece: 'ForDateRangeField',
     });
-    this.#startContext = this.#makeEndpointContext(this.#startEngine, this.#startRoving);
-    this.#endContext = this.#makeEndpointContext(this.#endEngine, this.#endRoving);
+    this.#startContext = this.#composer.makeEndpointContext(this.#startEngine, 'start');
+    this.#endContext = this.#composer.makeEndpointContext(this.#endEngine, 'end');
 
     const startName = computed(() => (this.name() ? `${this.name()}-start` : ''));
     const endName = computed(() => (this.name() ? `${this.name()}-end` : ''));
@@ -368,64 +326,5 @@ export class ForDateRangeField<D>
     if (!next || !this.#host.nativeElement.contains(next)) {
       this.markTouched();
     }
-  }
-
-  /**
-   * Re-assembles the committed range from both endpoints' composed values.
-   * Emits a `DateRange` only when both are complete and ordered
-   * (`start <= end`); otherwise clears `value` to `null` while preserving each
-   * endpoint's typed segments (their parts survive an internal `null` value).
-   * Every write bumps {@link #commitGeneration} so the endpoint sources can mark
-   * the resulting `null` as internal and not clear the typed segments.
-   */
-  #recompose(): void {
-    const start = this.#startEngine.composed();
-    const end = this.#endEngine.composed();
-    this.#commitGeneration.update((generation) => generation + 1);
-    if (start !== null && end !== null && this.adapter.compare(start, end) <= 0) {
-      this.value.set({ start, end });
-    } else {
-      this.value.set(null);
-    }
-  }
-
-  #rehydrate(
-    committed: CommittedRange<D>,
-    previous: { source: CommittedRange<D>; value: D | null } | undefined,
-    which: DateRangeFieldEndpoint,
-  ): D | null {
-    if (committed.range !== null) {
-      return committed.range[which];
-    }
-    if (previous && committed.generation !== previous.source.generation) {
-      return previous.value;
-    }
-    return null;
-  }
-
-  #makeEndpointContext(engine: DateFieldEngine<D>, roving: RovingTabindex): SegmentEditorContext {
-    return {
-      effectiveDisabled: this.effectiveDisabled,
-      readonly: this.readonly,
-      dir: this.dir,
-      roving,
-      segmentValue: (type) => engine.segmentValue(type),
-      segmentMin: (type) => engine.segmentMin(type),
-      segmentMax: (type) => engine.segmentMax(type),
-      segmentValueText: (type) => engine.segmentValueText(type),
-      segmentDisplayText: (type) => engine.segmentDisplayText(type),
-      isSegmentEmpty: (type) => engine.isSegmentEmpty(type),
-      isFirstSegmentType: (type) => engine.isFirstSegmentType(type),
-      registerSegment: (handle) => engine.registerSegment(handle),
-      unregisterSegment: (handle) => engine.unregisterSegment(handle),
-      focusSegment: (type) => engine.focusSegment(type),
-      typeDigit: (type, digit) => engine.typeDigit(type, digit),
-      step: (type, delta) => engine.step(type, delta),
-      goToBound: (type, bound) => engine.goToBound(type, bound),
-      setDayPeriod: (period) => engine.setDayPeriod(period),
-      clear: (type) => engine.clear(type),
-      focusSibling: (type, step) => engine.focusSibling(type, step),
-      endTyping: () => engine.endTyping(),
-    };
   }
 }
