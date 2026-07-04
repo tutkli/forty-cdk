@@ -40,19 +40,25 @@ export interface CollectionHandle {
  * from each child's constructor / `DestroyRef.onDestroy`; outside an injection
  * context, call `destroy()` manually.
  *
- * Membership is tracked in a `Set`, so `register` / `unregister` do an O(1)
- * duplicate check instead of scanning the array. Document order is computed
- * lazily and memoized: reading `items()` returns the cached (frozen) array
- * reference until membership or DOM order actually changes, so reads stay O(1)
- * and a single mutation is O(N log N) (the sort) in the current size.
+ * Membership is tracked in a mutable `Set` with a companion epoch signal, so
+ * `register` / `unregister` mutate the set in place (O(1)) and bump the epoch
+ * instead of copying the whole set per call — mounting N members stays O(N)
+ * rather than O(N²). Document order is computed lazily and memoized: reading
+ * `items()` returns the cached (frozen) array reference until membership or DOM
+ * order actually changes, so reads stay O(1) and a single mutation is
+ * O(N log N) (the sort) in the current size. The `MutationObserver` resync is
+ * deferred to a microtask so a burst of same-turn registrations coalesces into
+ * one wiring pass rather than one per member.
  */
 export class Collection<H extends CollectionHandle> {
-  readonly #members = signal<ReadonlySet<H>>(new Set<H>());
+  readonly #membersSet = new Set<H>();
+  readonly #membersEpoch = signal(0);
   readonly #domEpoch = signal(0);
 
   #observer: MutationObserver | null = null;
   readonly #observedParents = new Set<Node>();
   #destroyed = false;
+  #syncScheduled = false;
 
   constructor() {
     try {
@@ -78,33 +84,27 @@ export class Collection<H extends CollectionHandle> {
    * read-only (copy before sorting / splicing).
    */
   readonly items: Signal<readonly H[]> = computed(() => {
+    this.#membersEpoch();
     this.#domEpoch();
-    return Object.freeze(this.#sortByDomOrder([...this.#members()]));
+    return Object.freeze(this.#sortByDomOrder([...this.#membersSet]));
   });
 
   register(handle: H): void {
-    if (this.#destroyed) {
+    if (this.#destroyed || this.#membersSet.has(handle)) {
       return;
     }
-    const members = this.#members();
-    if (members.has(handle)) {
-      return;
-    }
-    const next = new Set(members);
-    next.add(handle);
-    this.#members.set(next);
-    this.#syncObserver();
+    this.#membersSet.add(handle);
+    this.#membersEpoch.update((e) => e + 1);
+    this.#scheduleSync();
   }
 
   unregister(handle: H): void {
-    const members = this.#members();
-    if (!members.has(handle)) {
+    if (!this.#membersSet.has(handle)) {
       return;
     }
-    const next = new Set(members);
-    next.delete(handle);
-    this.#members.set(next);
-    this.#syncObserver();
+    this.#membersSet.delete(handle);
+    this.#membersEpoch.update((e) => e + 1);
+    this.#scheduleSync();
   }
 
   /** Lookup by host element. Returns `undefined` if no handle has that host. */
@@ -125,11 +125,13 @@ export class Collection<H extends CollectionHandle> {
    */
   destroy(): void {
     this.#destroyed = true;
+    this.#syncScheduled = false;
     this.#observer?.disconnect();
     this.#observer = null;
     this.#observedParents.clear();
-    if (this.#members().size > 0) {
-      this.#members.set(new Set<H>());
+    if (this.#membersSet.size > 0) {
+      this.#membersSet.clear();
+      this.#membersEpoch.update((e) => e + 1);
     }
   }
 
@@ -162,6 +164,20 @@ export class Collection<H extends CollectionHandle> {
     });
   }
 
+  #scheduleSync(): void {
+    if (this.#syncScheduled || this.#destroyed) {
+      return;
+    }
+    this.#syncScheduled = true;
+    queueMicrotask(() => {
+      this.#syncScheduled = false;
+      if (this.#destroyed) {
+        return;
+      }
+      this.#syncObserver();
+    });
+  }
+
   #syncObserver(): void {
     if (typeof MutationObserver === 'undefined' || this.#destroyed) {
       return;
@@ -181,7 +197,7 @@ export class Collection<H extends CollectionHandle> {
 
   #resolveParents(): Set<Node> {
     const parents = new Set<Node>();
-    for (const member of this.#members()) {
+    for (const member of this.#membersSet) {
       const parent = member.host.parentNode;
       if (parent) {
         parents.add(parent);
