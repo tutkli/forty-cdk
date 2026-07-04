@@ -157,6 +157,39 @@ class InlineActiveHost {
   ]);
 }
 
+@Component({
+  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  template: `
+    <div
+      forCombobox
+      [(query)]="query"
+      [(open)]="open"
+      autocompleteMode="inline"
+      [autoHighlight]="false"
+      [openOnQuery]="false"
+    >
+      <input forComboboxInput />
+      @if (open()) {
+        <div forComboboxContent>
+          @for (it of source(); track it.id) {
+            <div [attr.data-test-id]="it.id" forComboboxOption [value]="it.id" [label]="it.label">
+              {{ it.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class InlineRemovalHost {
+  readonly query = signal('');
+  readonly open = signal(false);
+  readonly source = signal<readonly FruitItem[]>([
+    { id: 'apple', label: 'apple' },
+    { id: 'banana', label: 'banana' },
+  ]);
+}
+
 function getInput(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
 }
@@ -297,6 +330,48 @@ describe('ForComboboxInput', () => {
       expect(input.value).toBe('Évora');
       expect(input.selectionStart).toBe(1);
       expect(input.selectionEnd).toBe('Évora'.length);
+    });
+  });
+
+  describe('inline completion drops options removed from the source (#1196)', () => {
+    it('stops offering an option the consumer removed from the source', async () => {
+      const r = renderHost(InlineRemovalHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.source.set([{ id: 'apple', label: 'apple' }]);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ba', 2, 'insertText');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('ba');
+    });
+
+    it('still completes an option that remains in the source', async () => {
+      const r = renderHost(InlineRemovalHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.source.set([{ id: 'apple', label: 'apple' }]);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const input = getInput();
+      input.focus();
+      fireInput(input, 'ap', 2, 'insertText');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('apple');
+      expect(input.selectionStart).toBe(2);
+      expect(input.selectionEnd).toBe('apple'.length);
     });
   });
 

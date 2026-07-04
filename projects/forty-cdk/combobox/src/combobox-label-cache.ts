@@ -15,9 +15,21 @@ export interface SnapshotEntry<T> {
 }
 
 /**
+ * Fold accumulator: the accumulated entries (persisted across close / open for
+ * the `selected` fallback) plus the set of ids that were live in the most
+ * recent non-empty window. `liveIds` is what lets {@link OptionLabelCache.liveEntries}
+ * drop options the consumer removed from the source without disturbing the
+ * accumulated snapshot the chip / `selected` fallback relies on.
+ */
+interface LabelCacheState<T> {
+  readonly entries: readonly SnapshotEntry<T>[];
+  readonly liveIds: ReadonlySet<string>;
+}
+
+/**
  * Always-on label cache for `ForCombobox`. Keeps a flat list of
  * `{ id, value, label }` tuples that persists across listbox close / open
- * cycles, driving inline autocomplete and the `selected` label fallback.
+ * cycles, driving the `selected` label fallback and inline autocomplete.
  *
  * Persistence: when the consumer's `@if` unmounts the content
  * (`items().length === 0`) the prior cache is carried over so chips outside
@@ -26,33 +38,41 @@ export interface SnapshotEntry<T> {
  * rebuild signal in the virtualized case (the shared stale-window invariant
  * lives in `foldSnapshotOnTotalCountTransition` from `forty-cdk/core`).
  *
+ * Two projections read the fold: {@link entries} is the full accumulated
+ * snapshot (chip / `selected` label fallback, which must survive an option
+ * leaving the rendered set), while {@link liveEntries} is purge-aware — it
+ * drops entries whose option is no longer in the live window, so inline
+ * completion in the non-virtualized case never offers an option the consumer
+ * removed from the source.
+ *
  * The option's `label` is itself a `Signal<string>` so we never peek at
  * `textContent`. Internal helper — not re-exported from `combobox/index.ts`
  * or `public-api.ts`. Constructed once per host directive, on every combobox
  * (virtualized or not).
  */
 export class OptionLabelCache<T> {
-  readonly #cachedOptions: Signal<readonly SnapshotEntry<T>[]>;
+  readonly #state: Signal<LabelCacheState<T>>;
 
   constructor(deps: {
     readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
     readonly totalCount: Signal<number | undefined>;
   }) {
-    this.#cachedOptions = foldSnapshotOnTotalCountTransition<
+    this.#state = foldSnapshotOnTotalCountTransition<
       ForComboboxOptionHandle<T>,
-      readonly SnapshotEntry<T>[]
+      LabelCacheState<T>
     >(
       deps.items,
       deps.totalCount,
-      () => [],
+      () => ({ entries: [], liveIds: new Set<string>() }),
       (prev, items) => {
         if (items.length === 0) {
           return prev;
         }
         const merged = new Map<string, SnapshotEntry<T>>();
-        for (const entry of prev) {
+        for (const entry of prev.entries) {
           merged.set(entry.id, entry);
         }
+        const liveIds = new Set<string>();
         for (const item of items) {
           // A static option (rendered outside `@for`) registers before its
           // `[value]` binding is written; skip it this fold and pick it up on
@@ -66,8 +86,9 @@ export class OptionLabelCache<T> {
             continue;
           }
           merged.set(entry.id, entry);
+          liveIds.add(entry.id);
         }
-        return [...merged.values()];
+        return { entries: [...merged.values()], liveIds };
       },
     );
   }
@@ -77,19 +98,34 @@ export class OptionLabelCache<T> {
    * listbox is open. Called from the host's bridge effect — without an eager
    * pull the lazy cache never runs during the open cycle (no other consumer
    * pulls it in non-virtualized usage), and persistence across close → re-open
-   * would start from an empty `prev`.
+   * would start from an empty `prev`. Priming on every live window is also what
+   * keeps {@link liveEntries} purge-aware: a removed option is dropped from
+   * `liveIds` on the fold that runs while the shrunken window is mounted.
    */
   prime(): void {
-    this.#cachedOptions();
+    this.#state();
   }
 
   /**
-   * Snapshot of the registered options as plain `{ id, value, label }` tuples.
-   * Drives inline-autocomplete matching and the label-resolution fallback in
-   * `ForCombobox.selected`.
+   * Full accumulated snapshot of the registered options as plain
+   * `{ id, value, label }` tuples. Drives the label-resolution fallback in
+   * `ForCombobox.selected` and the chip labels — both must keep resolving a
+   * value's label after its option leaves the rendered set.
    */
   entries(): readonly SnapshotEntry<T>[] {
-    return this.#cachedOptions();
+    return this.#state().entries;
+  }
+
+  /**
+   * Purge-aware projection: only the entries whose option was present in the
+   * most recent non-empty window. Drives inline-autocomplete matching in the
+   * non-virtualized case so an option the consumer removed from the source
+   * stops being offered as a completion, while {@link entries} keeps it for the
+   * `selected` fallback.
+   */
+  liveEntries(): readonly SnapshotEntry<T>[] {
+    const { entries, liveIds } = this.#state();
+    return entries.filter((entry) => liveIds.has(entry.id));
   }
 
   /**
@@ -101,12 +137,12 @@ export class OptionLabelCache<T> {
    * the live entries unchanged.
    */
   mergedEntries(indexed: ReadonlyMap<number, SnapshotEntry<T>>): readonly SnapshotEntry<T>[] {
-    const live = this.#cachedOptions();
+    const accumulated = this.#state().entries;
     if (indexed.size === 0) {
-      return live;
+      return accumulated;
     }
-    const seen = new Set(live.map((o) => o.id));
-    const merged: SnapshotEntry<T>[] = [...live];
+    const seen = new Set(accumulated.map((o) => o.id));
+    const merged: SnapshotEntry<T>[] = [...accumulated];
     const positions = [...indexed.keys()].sort((a, b) => a - b);
     for (const pos of positions) {
       const entry = indexed.get(pos)!;

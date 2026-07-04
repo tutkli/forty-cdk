@@ -737,6 +737,19 @@ export class ForCombobox<T = string>
     return this.#cachedOptionsMemo();
   }
 
+  readonly #inlineCompletionOptionsMemo = computed<
+    readonly { id: string; value: T; label: string }[]
+  >(() => {
+    if (this.totalCount() === undefined) {
+      return this.#labelCache.liveEntries();
+    }
+    return this.#labelCache.mergedEntries(this.#requireNavigator().snapshotByPos());
+  });
+
+  inlineCompletionOptions(): readonly { id: string; value: T; label: string }[] {
+    return this.#inlineCompletionOptionsMemo();
+  }
+
   clear(clearQuery: boolean = true): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
