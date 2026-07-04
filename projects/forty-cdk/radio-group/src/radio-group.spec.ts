@@ -3,6 +3,7 @@ import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../src/test-utils';
+import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { FOR_RADIO, ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
 import { ForRadioIndicator } from './radio-indicator';
@@ -58,7 +59,52 @@ const radioOf = (host: HTMLElement, id: string) =>
 
 const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forRadioGroup]')!;
 
+const radioItems = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forRadio]'));
+
 describe('ForRadioGroup', () => {
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set(null);
+        await r.flush();
+        return { items: radioItems(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set(null);
+        r.instance.options.set([
+          { value: 'red', label: 'Red', disabled: true },
+          { value: 'green', label: 'Green', disabled: false },
+          { value: 'blue', label: 'Blue', disabled: false },
+        ]);
+        await r.flush();
+        return { items: radioItems(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledMiddle: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set(null);
+        r.instance.options.set([
+          { value: 'red', label: 'Red', disabled: false },
+          { value: 'green', label: 'Green', disabled: true },
+          { value: 'blue', label: 'Blue', disabled: false },
+        ]);
+        await r.flush();
+        return { items: radioItems(r.el), enabledIndices: [0, 2], flush: r.flush };
+      },
+      mountRtl: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set(null);
+        r.instance.orientation.set('horizontal');
+        r.instance.dir.set('rtl');
+        await r.flush();
+        return { items: radioItems(r.el), flush: r.flush };
+      },
+    },
+    { forwardArrow: 'ArrowDown' },
+  );
+
   describe('static accessibility', () => {
     it('sets role=radiogroup, aria-orientation, and each radio gets role=radio + type=button', () => {
       const { el } = renderHost(RadioGroupHost);

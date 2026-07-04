@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
 import { ForMenubar } from './menubar';
@@ -117,6 +118,30 @@ class MenubarTypeaheadHost {
   readonly open = signal<string>('');
 }
 
+@Component({
+  imports: [ForMenubar, ForMenubarTrigger],
+  template: `
+    <div forMenubar [(value)]="open" [orientation]="orientation()" [dir]="dir()">
+      @for (t of triggers(); track t.value) {
+        <button forMenubarTrigger [value]="t.value" [disabled]="t.disabled">{{ t.label }}</button>
+      }
+    </div>
+  `,
+})
+class MenubarRovingHost {
+  readonly open = signal<string>('');
+  readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+  readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  readonly triggers = signal([
+    { value: 'file', label: 'File', disabled: false },
+    { value: 'edit', label: 'Edit', disabled: false },
+    { value: 'view', label: 'View', disabled: false },
+  ]);
+}
+
+const menubarTriggers = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forMenubarTrigger]'));
+
 /**
  * Builds a pointer event with an explicit `pointerType`. jsdom's
  * `PointerEvent` constructor doesn't populate `pointerType` from its init
@@ -134,6 +159,43 @@ function pointerEvent(
 
 describe('ForMenubar', () => {
   afterEachOverlayCleanup();
+
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(MenubarRovingHost);
+        await r.flush();
+        return { items: menubarTriggers(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(MenubarRovingHost);
+        r.instance.triggers.set([
+          { value: 'file', label: 'File', disabled: true },
+          { value: 'edit', label: 'Edit', disabled: false },
+          { value: 'view', label: 'View', disabled: false },
+        ]);
+        await r.flush();
+        return { items: menubarTriggers(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledMiddle: async () => {
+        const r = renderHost(MenubarRovingHost);
+        r.instance.triggers.set([
+          { value: 'file', label: 'File', disabled: false },
+          { value: 'edit', label: 'Edit', disabled: true },
+          { value: 'view', label: 'View', disabled: false },
+        ]);
+        await r.flush();
+        return { items: menubarTriggers(r.el), enabledIndices: [0, 2], flush: r.flush };
+      },
+      mountRtl: async () => {
+        const r = renderHost(MenubarRovingHost);
+        r.instance.dir.set('rtl');
+        await r.flush();
+        return { items: menubarTriggers(r.el), flush: r.flush };
+      },
+    },
+    { forwardArrow: 'ArrowRight' },
+  );
 
   describe('a11y baseline', () => {
     it('reflects role="menubar", aria-orientation, data-state, dir', async () => {

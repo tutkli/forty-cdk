@@ -4,6 +4,10 @@ import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { ForField } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
@@ -86,6 +90,55 @@ class Host {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
 }
 
+@Component({
+  imports: [
+    ForDateRangeField,
+    ForDateRangeFieldStart,
+    ForDateRangeFieldEnd,
+    ForDateRangeFieldSegment,
+    ForDateRangeFieldLiteral,
+  ],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forDateRangeField
+      [(value)]="value"
+      [readonly]="isReadonly()"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+    >
+      <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+        @for (s of start.segments(); track s.id) {
+          @if (s.isLiteral) {
+            <span forDateRangeFieldLiteral>{{ s.text }}</span>
+          } @else {
+            <span forDateRangeFieldSegment [segment]="s.type!">{{ s.text }}</span>
+          }
+        }
+      </div>
+      <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+        @for (s of end.segments(); track s.id) {
+          @if (s.isLiteral) {
+            <span forDateRangeFieldLiteral>{{ s.text }}</span>
+          } @else {
+            <span forDateRangeFieldSegment [segment]="s.type!">{{ s.text }}</span>
+          }
+        }
+      </div>
+    </div>
+  `,
+})
+class DateRangeFieldFormControlHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly isReadonly = signal(false);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forDateRangeField]')!;
@@ -118,6 +171,37 @@ async function fill(
 }
 
 describe('ForDateRangeField', () => {
+  assertFormControlContract(
+    () => {
+      const r = renderHost(DateRangeFieldFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLElement>('[forDateRangeField]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'] },
+  );
+
   describe('focus (focus-on-error)', () => {
     it('moves focus to the first segment of the start endpoint, not the group host', async () => {
       const r = renderHost(Host);

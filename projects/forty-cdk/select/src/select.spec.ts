@@ -9,6 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -16,6 +17,11 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
+import {
+  assertDismissableLayerContract,
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForSelect } from './select';
 import { ForSelectAnchor } from './select-anchor';
@@ -100,6 +106,65 @@ class SelectHost {
 class DiacriticsSelectHost {
   readonly open = signal(false);
   readonly value = signal<readonly string[]>([]);
+}
+
+@Component({
+  imports: BASE_IMPORTS,
+  template: `
+    <div
+      forSelect
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+    >
+      <button forSelectTrigger>Trigger</button>
+      @if (open()) {
+        <div forSelectContent>
+          <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class SelectDismissContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
+}
+
+@Component({
+  imports: [ForSelect, ForSelectTrigger],
+  template: `
+    <div forSelect [disabled]="disabled()" [required]="required()">
+      <button forSelectTrigger>Trigger</button>
+    </div>
+  `,
+})
+class SelectFormControlHost {
+  readonly disabled = signal(false);
+  readonly required = signal(false);
 }
 
 /**
@@ -821,6 +886,47 @@ describe('ForSelect', () => {
       expect(r.instance.open()).toBe(true);
     });
   });
+
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(SelectDismissContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
+
+  assertFormControlContract(
+    () => {
+      const r = renderHost(SelectFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLButtonElement>('[forSelectTrigger]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'disabled':
+              r.instance.disabled.set(value);
+              return;
+            case 'required':
+              r.instance.required.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['disabled', 'required'] },
+  );
 
   describe('modal mode', () => {
     // The focus-trap / inert / scroll-lock / return-focus post-state lives in

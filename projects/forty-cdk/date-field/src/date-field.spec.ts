@@ -6,6 +6,10 @@ import { CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
+import {
   InternationalizedDateTimeAdapter,
   provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
@@ -66,6 +70,39 @@ class Host {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
 }
 
+@Component({
+  imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forDateField
+      [(value)]="value"
+      [readonly]="isReadonly()"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+      #field="forDateField"
+    >
+      @for (s of field.segments(); track s.id) {
+        @if (s.isLiteral) {
+          <span forDateFieldLiteral>{{ s.text }}</span>
+        } @else {
+          <span forDateFieldSegment [segment]="s.type!">{{ s.text }}</span>
+        }
+      }
+    </div>
+  `,
+})
+class DateFieldFormControlHost {
+  readonly value = signal<Date | null>(null);
+  readonly isReadonly = signal(false);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forDateField]')!;
@@ -86,6 +123,37 @@ async function key(r: R, segment: 'day' | 'month' | 'year', k: string): Promise<
 }
 
 describe('ForDateField', () => {
+  assertFormControlContract(
+    () => {
+      const r = renderHost(DateFieldFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLElement>('[forDateField]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'] },
+  );
+
   describe('focus (focus-on-error)', () => {
     it('moves focus to the first segment, not the group host', async () => {
       const r = renderHost(Host);

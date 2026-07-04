@@ -3,7 +3,8 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { FOR_MENU_CONTEXT } from 'forty-cdk/core';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { FOR_MENU_CONTEXT, type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 
 import { ForContextMenu } from './context-menu';
@@ -33,6 +34,52 @@ class ContextMenuHost {
   readonly open = signal(false);
   readonly disabled = signal(false);
   readonly lastSelected = signal<string | null>(null);
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div
+      forContextMenu
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+    >
+      <div forContextMenuTrigger>Right-click here</div>
+      @if (open()) {
+        <div forMenuContent>
+          <button forMenuItem>Cut</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class ContextMenuDismissContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
 }
 
 function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
@@ -699,6 +746,25 @@ describe('ForContextMenu', () => {
 
       expect(r.instance.open()).toBe(false);
     });
+  });
+
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(ContextMenuDismissContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
   });
 
   describe('item selection', () => {

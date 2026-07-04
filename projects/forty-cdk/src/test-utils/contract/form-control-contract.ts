@@ -1,9 +1,28 @@
 /**
  * Shared contract suite for primitives that implement the
- * `FormValueControl` / `FormCheckboxControl` interface family.
+ * `FormValueControl` / `FormCheckboxControl` interface family. Adopted by:
+ * Checkbox, Switch, Toggle, Input, NumberInput, OtpInput, Search, Select,
+ * Combobox, Listbox, Slider, ToggleGroup, DateField, TimeField,
+ * DateRangeField, TimeRangeField.
  *
- * The contract owns every assertion that is identical across
- * Switch, Checkbox, RadioGroup, Slider, Combobox, Select, Listbox:
+ * Each adopter passes only the `flags` it actually reflects on a single
+ * element, so partial adoption is normal:
+ *   - Select / Combobox reflect the `aria-*` + `data-disabled` set on their
+ *     trigger / editable input (a child of the `[forSelect]` / `[forCombobox]`
+ *     wrapper), which is what those adopters return as `control`; the
+ *     form-state `data-*` booleans reflect on the wrapper root, so they pass
+ *     only the flags that live on the returned element (`disabled`,
+ *     `required`).
+ *   - Roving-container controls (`Listbox`, `Slider`, `ToggleGroup`, and the
+ *     date/time fields) are a non-focusable `role="listbox"` / `role="group"`
+ *     host: they drop out of the tab order when disabled (focus lives on a
+ *     roving child / segment), so they omit the `disabled` flag — its
+ *     "stays focusable" assertion does not apply to a container.
+ *   - Controls that reflect `aria-readonly` but not `data-readonly`
+ *     (`ToggleGroup`, `Listbox`) omit `readonly`; controls with no
+ *     `aria-busy` (the date/time fields) omit `pending`.
+ *
+ * The contract owns every assertion that is identical across the adopters:
  *
  *   - Truthy-only ARIA attributes (`aria-disabled`, `aria-readonly`,
  *     `aria-required`, `aria-invalid`, `aria-busy`) are absent when the

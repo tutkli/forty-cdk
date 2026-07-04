@@ -4,6 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { pressKey, renderHost } from '../../src/test-utils';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { provideForToggleDefaults } from './toggle-defaults';
 import { ForToggleGroup } from './toggle-group';
 import { ForToggleGroupItem } from './toggle-group-item';
@@ -52,7 +56,63 @@ const itemOf = (host: HTMLElement, id: string) =>
 
 const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forToggleGroup]')!;
 
+@Component({
+  imports: [ForToggleGroup, ForToggleGroupItem],
+  template: `
+    <div
+      forToggleGroup
+      [(value)]="value"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [pending]="isPending()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+    >
+      <button forToggleGroupItem value="left">Left</button>
+    </div>
+  `,
+})
+class ToggleGroupFormControlHost {
+  readonly value = signal<readonly string[]>([]);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 describe('ForToggleGroup', () => {
+  assertFormControlContract(
+    () => {
+      const r = renderHost(ToggleGroupFormControlHost);
+      const result: FormControlMountResult = {
+        control: groupOf(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'pending':
+              r.instance.isPending.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['required', 'invalid', 'pending', 'touched', 'dirty'] },
+  );
+
   describe('focus (focus-on-error)', () => {
     it('targets the first enabled item, not the group host', async () => {
       const { el, fixture, flush } = renderHost(ToggleGroupHost);
