@@ -29,7 +29,7 @@ import {
   isInArray,
   singleSelected,
   toggleInArray,
-  isRequiredInputUnset,
+  tryReadHandle,
   injectTextDirection,
   findTypeaheadMatch,
   foldTypeaheadText,
@@ -568,14 +568,7 @@ export class ForSelect<T = string>
    * so the dependency is still tracked). Any non-NG0950 error propagates.
    */
   #readHandleValue(item: ForSelectOptionHandle<T>): T | typeof NO_VALUE {
-    try {
-      return item.value();
-    } catch (error) {
-      if (isRequiredInputUnset(error)) {
-        return NO_VALUE;
-      }
-      throw error;
-    }
+    return tryReadHandle(() => item.value(), NO_VALUE);
   }
 
   constructor() {

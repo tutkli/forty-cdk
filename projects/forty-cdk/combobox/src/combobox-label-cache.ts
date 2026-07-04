@@ -1,6 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { foldSnapshotOnTotalCountTransition, tryReadHandle } from './combobox-snapshot-fold';
+import { foldSnapshotOnTotalCountTransition, tryReadHandle } from 'forty-cdk/core';
 import type { ForComboboxOptionHandle } from './combobox-context';
 
 /**
@@ -24,7 +24,7 @@ export interface SnapshotEntry<T> {
  * the listbox area and inline completion after close keep resolving labels.
  * Resets only when the consumer's `totalCount` transitions — a query / source
  * rebuild signal in the virtualized case (the shared stale-window invariant
- * lives in `combobox-snapshot-fold.ts`).
+ * lives in `foldSnapshotOnTotalCountTransition` from `forty-cdk/core`).
  *
  * The option's `label` is itself a `Signal<string>` so we never peek at
  * `textContent`. Internal helper — not re-exported from `combobox/index.ts`

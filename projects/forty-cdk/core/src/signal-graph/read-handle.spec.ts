@@ -60,4 +60,32 @@ describe('tryReadHandle', () => {
       }),
     ).toThrow();
   });
+
+  describe('sentinel overload', () => {
+    const SENTINEL = Symbol('sentinel');
+
+    it('returns the value when the read succeeds', () => {
+      expect(tryReadHandle(() => 42, SENTINEL)).toBe(42);
+    });
+
+    it('returns the sentinel on an NG0950 read', () => {
+      expect(
+        tryReadHandle(() => {
+          throw ng0950();
+        }, SENTINEL),
+      ).toBe(SENTINEL);
+    });
+
+    it('passes a legitimately-null read value through instead of the sentinel', () => {
+      expect(tryReadHandle(() => null, SENTINEL)).toBeNull();
+    });
+
+    it('rethrows a non-NG0950 error unchanged', () => {
+      expect(() =>
+        tryReadHandle(() => {
+          throw new Error('boom');
+        }, SENTINEL),
+      ).toThrow('boom');
+    });
+  });
 });

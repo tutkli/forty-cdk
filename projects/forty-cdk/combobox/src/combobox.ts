@@ -8,9 +8,7 @@ import {
   model,
   numberAttribute,
   output,
-  signal,
 } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
@@ -19,8 +17,6 @@ import {
   type FloatingSide,
   FormUiControlBase,
   injectHiddenInput,
-  adoptHostId,
-  IdGenerator,
   type WritingDirection,
   nextEnabledHandle,
   createPointerSuppression,
@@ -30,6 +26,9 @@ import {
   singleSelected,
   toggleInArray,
   injectTextDirection,
+  ElementRegistry,
+  CloseReasonState,
+  InitialFocusState,
   emitVetoableEvent,
   emitVetoableNativeEvent,
   type VetoableEvent,
@@ -93,7 +92,7 @@ export class ForCombobox<T = string>
   extends FormUiControlBase
   implements FormValueControl<readonly T[]>, ForComboboxContext<T>
 {
-  readonly #idGen = inject(IdGenerator);
+  readonly #registry = inject(ElementRegistry);
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
   readonly #items = new Collection<ForComboboxOptionHandle<T>>();
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
@@ -321,16 +320,21 @@ export class ForCombobox<T = string>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly inputId = signal(this.#idGen.next('for-combobox-input'));
-  readonly contentId = signal(this.#idGen.next('for-combobox-content'));
-  readonly listId = signal(this.#idGen.next('for-combobox-list'));
+  readonly #inputSlot = this.#registry.identifiedSlot<HTMLInputElement>('for-combobox', 'input');
+  readonly #contentSlot = this.#registry.identifiedSlot('for-combobox', 'content');
+  readonly #listSlot = this.#registry.identifiedSlot('for-combobox', 'list');
+  readonly #triggerSlot = this.#registry.elementSlot();
+  readonly #anchorSlot = this.#registry.anchorSlot(
+    '[forty-cdk/combobox] Multiple [forComboboxAnchor] inside the same [forCombobox]; only one is allowed.',
+  );
 
-  readonly #inputEl = signal<HTMLInputElement | null>(null);
-  readonly input = this.#inputEl.asReadonly();
+  readonly inputId = this.#inputSlot.id;
+  readonly contentId = this.#contentSlot.id;
+  readonly listId = this.#listSlot.id;
 
-  readonly #anchorEl = signal<HTMLElement | null>(null);
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
+  readonly input = this.#inputSlot.element;
+
+  readonly trigger = this.#triggerSlot.element;
 
   /**
    * Element floating-ui anchors the listbox against. Resolution order:
@@ -340,17 +344,13 @@ export class ForCombobox<T = string>
    * `aria-controls`, `aria-activedescendant`, keyboard interaction, and its
    * dismissal exemption regardless of where the listbox paints.
    */
-  readonly anchor = computed<ReferenceElement | null>(
-    () => this.#anchorEl() ?? this.#triggerEl() ?? this.#inputEl(),
-  );
+  readonly anchor = this.#anchorSlot.resolve(this.#triggerSlot.element, this.#inputSlot.element);
 
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
+  readonly content = this.#contentSlot.element;
 
-  readonly #listEl = signal<HTMLElement | null>(null);
-  readonly list = this.#listEl.asReadonly();
+  readonly list = this.#listSlot.element;
   /** True once a `[forComboboxList]` has registered (picker anatomy). */
-  readonly hasList = computed(() => this.#listEl() !== null);
+  readonly hasList = computed(() => this.#listSlot.element() !== null);
   /**
    * Id of the element carrying `role="listbox"`: the list when one is
    * registered (picker anatomy), otherwise the content surface (editable
@@ -361,11 +361,11 @@ export class ForCombobox<T = string>
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
 
-  readonly #initialFocus = signal<ForComboboxInitialFocus>('first');
-  readonly initialFocus = this.#initialFocus.asReadonly();
+  readonly #initialFocusState = new InitialFocusState<ForComboboxInitialFocus>('first');
+  readonly initialFocus = this.#initialFocusState.target;
 
-  readonly #lastCloseReason = signal<ForComboboxCloseReason | null>(null);
-  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
+  readonly #closeReasonState = new CloseReasonState<ForComboboxCloseReason>();
+  readonly lastCloseReason = this.#closeReasonState.reason;
 
   /**
    * The activedescendant pointer. Built by {@link createActiveIdSignal} as a
@@ -380,7 +380,7 @@ export class ForCombobox<T = string>
     open: this.open,
     autoHighlight: this.autoHighlight,
     virtualized: () => this.totalCount() !== undefined,
-    initialFocus: this.#initialFocus,
+    initialFocus: this.#initialFocusState.target,
     items: this.#items.items,
     value: this.value,
     equals: this.isItemEqualToValue,
@@ -500,7 +500,7 @@ export class ForCombobox<T = string>
         open: this.open,
         autoHighlight: this.autoHighlight,
         virtualized: () => this.totalCount() !== undefined,
-        initialFocus: this.#initialFocus,
+        initialFocus: this.#initialFocusState.target,
         getActiveId: () => this.#activeId(),
         getLastPositionedId: () => this.#lastPositionedId,
         setLastPositionedId: (id) => (this.#lastPositionedId = id),
@@ -509,57 +509,38 @@ export class ForCombobox<T = string>
   }
 
   registerInput(el: HTMLInputElement): void {
-    adoptHostId(el, this.inputId);
-    this.#inputEl.set(el);
+    this.#inputSlot.register(el);
   }
   unregisterInput(el: HTMLInputElement): void {
-    if (this.#inputEl() === el) {
-      this.#inputEl.set(null);
-    }
+    this.#inputSlot.unregister(el);
   }
 
   registerAnchor(el: HTMLElement): void {
-    const current = this.#anchorEl();
-    if (current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/combobox] Multiple [forComboboxAnchor] inside the same [forCombobox]; only one is allowed.',
-      );
-    }
-    this.#anchorEl.set(el);
+    this.#anchorSlot.register(el);
   }
   unregisterAnchor(el: HTMLElement): void {
-    if (this.#anchorEl() === el) {
-      this.#anchorEl.set(null);
-    }
+    this.#anchorSlot.unregister(el);
   }
 
   registerTrigger(el: HTMLElement): void {
-    this.#triggerEl.set(el);
+    this.#triggerSlot.register(el);
   }
   unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+    this.#triggerSlot.unregister(el);
   }
 
   registerContent(el: HTMLElement): void {
-    adoptHostId(el, this.contentId);
-    this.#contentEl.set(el);
+    this.#contentSlot.register(el);
   }
   unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
+    this.#contentSlot.unregister(el);
   }
 
   registerList(el: HTMLElement): void {
-    adoptHostId(el, this.listId);
-    this.#listEl.set(el);
+    this.#listSlot.register(el);
   }
   unregisterList(el: HTMLElement): void {
-    if (this.#listEl() === el) {
-      this.#listEl.set(null);
-    }
+    this.#listSlot.unregister(el);
   }
 
   registerOption(handle: ForComboboxOptionHandle<T>): void {
@@ -624,7 +605,7 @@ export class ForCombobox<T = string>
    * typing flow and should be visible immediately.
    */
   #syncInputValue(value: string): void {
-    const el = this.#inputEl();
+    const el = this.#inputSlot.element();
     if (el && el.value !== value) {
       el.value = value;
     }
@@ -769,7 +750,7 @@ export class ForCombobox<T = string>
   }
 
   setInitialFocus(target: ForComboboxInitialFocus): void {
-    this.#initialFocus.set(target);
+    this.#initialFocusState.setTarget(target);
   }
 
   toggle(): void {
@@ -787,8 +768,8 @@ export class ForCombobox<T = string>
     if (this.effectiveDisabled() || this.open()) {
       return;
     }
-    this.#initialFocus.set(initialFocus);
-    this.#lastCloseReason.set(null);
+    this.#initialFocusState.setTarget(initialFocus);
+    this.#closeReasonState.reset();
     this.open.set(true);
   }
 
@@ -796,7 +777,7 @@ export class ForCombobox<T = string>
     if (!this.open()) {
       return;
     }
-    this.#lastCloseReason.set(reason);
+    this.#closeReasonState.set(reason);
     this.open.set(false);
     this.#activeId.set(null);
     this.#navigator?.resetPending();
@@ -856,8 +837,8 @@ export class ForCombobox<T = string>
 
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
-    const inputEl = this.#inputEl();
-    const content = this.#contentEl();
+    const inputEl = this.#inputSlot.element();
+    const content = this.#contentSlot.element();
     if (next) {
       if (inputEl && inputEl.contains(next)) {
         return;

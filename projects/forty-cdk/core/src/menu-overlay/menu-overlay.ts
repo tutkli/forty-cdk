@@ -1,22 +1,18 @@
-import {
-  inject,
-  type ModelSignal,
-  type OutputEmitterRef,
-  type Signal,
-  signal,
-  type WritableSignal,
-} from '@angular/core';
+import { inject, type ModelSignal, type OutputEmitterRef, type Signal } from '@angular/core';
 
-import { adoptHostId } from '../host-id/host-id';
-import { IdGenerator } from '../id-generator/id-generator';
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
+import { CloseReasonState } from '../overlay-controller/close-reason-state';
+import {
+  ElementRegistry,
+  type IdentifiedElementSlot,
+} from '../overlay-controller/element-registry';
+import { InitialFocusState } from '../overlay-controller/initial-focus-state';
 import {
   emitVetoableEvent,
   emitVetoableNativeEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../vetoable-event/vetoable-event';
-import { CloseReasonState, InitialFocusState } from './menu-focus-state';
 import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './menu-item-list';
 
 /**
@@ -131,12 +127,12 @@ export interface MenuOverlayHooks {
  * resolve through the directive's injector.
  */
 export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle> {
-  readonly #idGen = inject(IdGenerator);
+  readonly #registry = inject(ElementRegistry);
   readonly #itemList: MenuItemList<H>;
   readonly #hooks: MenuOverlayHooks;
 
-  readonly #triggerId: WritableSignal<string>;
-  readonly #contentId: WritableSignal<string>;
+  readonly #triggerSlot: IdentifiedElementSlot;
+  readonly #contentSlot: IdentifiedElementSlot;
 
   /** Unique id for the trigger element. Stable across the menu's lifetime. */
   readonly triggerId: Signal<string>;
@@ -159,23 +155,21 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    */
   readonly lastCloseReason = this.#closeReasonState.reason;
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-
   /** The focusable element the menu should return focus to on close. */
-  readonly trigger = this.#triggerEl.asReadonly();
-
-  readonly #contentEl = signal<HTMLElement | null>(null);
+  readonly trigger: Signal<HTMLElement | null>;
 
   /** The mounted `[forMenuContent]` element, or `null` while the menu is closed. */
-  readonly content = this.#contentEl.asReadonly();
+  readonly content: Signal<HTMLElement | null>;
 
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
-    this.#triggerId = signal(this.#idGen.next(`${idPrefix}-trigger`));
-    this.#contentId = signal(this.#idGen.next(`${idPrefix}-content`));
-    this.triggerId = this.#triggerId.asReadonly();
-    this.contentId = this.#contentId.asReadonly();
+    this.#triggerSlot = this.#registry.identifiedSlot(idPrefix, 'trigger');
+    this.#contentSlot = this.#registry.identifiedSlot(idPrefix, 'content');
+    this.triggerId = this.#triggerSlot.id.asReadonly();
+    this.contentId = this.#contentSlot.id.asReadonly();
+    this.trigger = this.#triggerSlot.element;
+    this.content = this.#contentSlot.element;
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
@@ -183,25 +177,19 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.#triggerId);
-    this.#triggerEl.set(el);
+    this.#triggerSlot.register(el);
   }
 
   unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+    this.#triggerSlot.unregister(el);
   }
 
   registerContent(el: HTMLElement): void {
-    adoptHostId(el, this.#contentId);
-    this.#contentEl.set(el);
+    this.#contentSlot.register(el);
   }
 
   unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
+    this.#contentSlot.unregister(el);
   }
 
   registerItem(handle: H): void {

@@ -272,7 +272,14 @@ export {
   type MenuActivationModality,
   type MenuSiblingNavigator,
 } from './menu-overlay/menu-context';
-export { CloseReasonState, InitialFocusState } from './menu-overlay/menu-focus-state';
+export { CloseReasonState } from './overlay-controller/close-reason-state';
+export {
+  AnchorSlot,
+  ElementRegistry,
+  ElementSlot,
+  IdentifiedElementSlot,
+} from './overlay-controller/element-registry';
+export { InitialFocusState } from './overlay-controller/initial-focus-state';
 export {
   createMenuItemList,
   type MenuItemHandle,
