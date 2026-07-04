@@ -17,7 +17,7 @@ Pick a time-capable one (required). All time math goes through the same pluggabl
 
 > The day-only `provideInternationalizedDateAdapter()` (`CalendarDate`) cannot carry a time — `ForTimeRangeField` throws a descriptive error if it is the active adapter.
 
-Each endpoint anchors its wall-clock time on a fixed, DST-stable sentinel date (`2000-01-01`) while no value is bound, exactly as `ForTimeField` does, so the two endpoints compare by time-of-day and a time always round-trips to the same instant. Bind an existing range as `value` to edit its endpoints' times in place (each endpoint's calendar day is preserved).
+Each endpoint anchors its wall-clock time on a fixed, DST-stable sentinel date (`2000-01-01`) while no value is bound, exactly as `ForTimeField` does, so the two endpoints compare by time-of-day and a time always round-trips to the same instant. Bind an existing range as `value` to edit its endpoints' times in place (each endpoint's calendar day is preserved, except under `allowOvernight` — see [Overnight ranges](#overnight-ranges)).
 
 ## Anatomy
 
@@ -166,17 +166,18 @@ export class OpeningHoursFormField {
 
 ### `ForTimeRangeField`
 
-| Property      | Type                                              | Description                                                                                                                          |
-| ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<DateRange<D> \| null>`                     | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null` |
-| `minTime`     | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** —    |
-| `maxTime`     | `input<D \| null>`                                | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.<br>**Default:** `null`                 |
-| `granularity` | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                          |
-| `hourCycle`   | `input<12 \| 24 \| null>`                         | 12/24-hour cycle. `null` → locale. 12-hour adds the AM/PM segment to each endpoint.<br>**Default:** `null`                           |
-| `locale`      | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                    |
-| `placeholder` | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                 |
-| `ariaLabel`   | `input<string \| null>`                           | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                          |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`  |
+| Property         | Type                                              | Description                                                                                                                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `model<DateRange<D> \| null>`                     | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`                                                                                                                                              |
+| `minTime`        | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** —                                                                                                                                                 |
+| `maxTime`        | `input<D \| null>`                                | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.<br>**Default:** `null`                                                                                                                                                              |
+| `allowOvernight` | `input<boolean>`                                  | When `true`, a `start > end` entry is read as a range crossing midnight (the end advances to the next day) instead of an error. In this mode the endpoints operate purely on time-of-day (a bound value's calendar days are re-anchored on the sentinel).<br>**Default:** `false` |
+| `granularity`    | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                                                                                                                                                                       |
+| `hourCycle`      | `input<12 \| 24 \| null>`                         | 12/24-hour cycle. `null` → locale. 12-hour adds the AM/PM segment to each endpoint.<br>**Default:** `null`                                                                                                                                                                        |
+| `locale`         | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                                                                                                                                                                 |
+| `placeholder`    | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                                                                                                                                                              |
+| `ariaLabel`      | `input<string \| null>`                           | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                                                                                                                                       |
+| `dir`            | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`                                                                                                                                               |
 
 The endpoint groups (`[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]`) each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start time'` / `'End time'`).
 
@@ -202,6 +203,10 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 ## Ordering
 
 The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
+
+### Overnight ranges
+
+Set `allowOvernight` to read a `start > end` entry as a range that **crosses midnight** (a night shift, `22:00`–`06:00`) rather than a disorder. The field then commits `{ start, end }` with the end advanced to the next day, so the `end >= start` invariant still holds and the emitted range spans the correct duration; `aria-invalid` / `data-range-error` are no longer set. In this mode both endpoints operate purely on their time-of-day — the calendar day of a bound `value` is re-anchored on the DST-stable sentinel rather than preserved, so every edit re-derives the crossing afresh (an end nudged back to a same-day time drops the extra day). Only the time-of-day of each endpoint is meaningful, so this trade-off is immaterial to a time-of-day range.
 
 ## Scope defaults
 

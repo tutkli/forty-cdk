@@ -32,6 +32,7 @@ type Part = 'hour' | 'minute' | 'second' | 'dayPeriod';
       [(value)]="value"
       [minTime]="minTime()"
       [maxTime]="maxTime()"
+      [allowOvernight]="allowOvernight()"
       [hourCycle]="hourCycle()"
       [granularity]="granularity()"
       [disabled]="disabled()"
@@ -79,6 +80,7 @@ class Host {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly minTime = signal<Date | null>(null);
   readonly maxTime = signal<Date | null>(null);
+  readonly allowOvernight = signal(false);
   readonly hourCycle = signal<12 | 24 | null>(24);
   readonly granularity = signal<'hour' | 'minute' | 'second'>('minute');
   readonly disabled = signal(false);
@@ -285,6 +287,58 @@ describe('ForTimeRangeField', () => {
       expect(root(r).getAttribute('aria-invalid')).toBeNull();
       expect(root(r).getAttribute('data-range-error')).toBeNull();
       expect(root(r).getAttribute('data-invalid')).toBeNull();
+    });
+  });
+
+  describe('overnight ranges', () => {
+    it('commits a midnight-crossing range when the start falls after the end', async () => {
+      const r = renderHost(Host);
+      r.instance.allowOvernight.set(true);
+      await flush(r.fixture);
+
+      await fill(r, 'start', '22', '00');
+      await fill(r, 'end', '06', '00');
+
+      const range = r.instance.value()!;
+      expect(adapter.getHours(range.start)).toBe(22);
+      expect(adapter.getHours(range.end)).toBe(6);
+      expect(range.end.getTime() - range.start.getTime()).toBe(8 * 60 * 60 * 1000);
+      expect(root(r).getAttribute('aria-invalid')).toBeNull();
+      expect(root(r).getAttribute('data-range-error')).toBeNull();
+    });
+
+    it('re-editing the end to a same-day time drops the midnight crossing', async () => {
+      const r = renderHost(Host);
+      r.instance.allowOvernight.set(true);
+      await flush(r.fixture);
+
+      await fill(r, 'start', '22', '00');
+      await fill(r, 'end', '06', '00');
+      expect(r.instance.value()!.end.getTime() - r.instance.value()!.start.getTime()).toBe(
+        8 * 60 * 60 * 1000,
+      );
+
+      await type(r, 'end', 'hour', '23');
+
+      const range = r.instance.value()!;
+      expect(adapter.getHours(range.start)).toBe(22);
+      expect(adapter.getHours(range.end)).toBe(23);
+      expect(range.end.getTime() - range.start.getTime()).toBe(60 * 60 * 1000);
+    });
+
+    it('displays a bound midnight-crossing range without flagging disorder', async () => {
+      const r = renderHost(Host);
+      r.instance.allowOvernight.set(true);
+      r.instance.value.set({
+        start: new Date(2026, 5, 10, 22, 0),
+        end: new Date(2026, 5, 11, 6, 0),
+      });
+      await flush(r.fixture);
+
+      expect(seg(r, 'start', 'hour').textContent?.trim()).toBe('22');
+      expect(seg(r, 'end', 'hour').textContent?.trim()).toBe('06');
+      expect(root(r).getAttribute('aria-invalid')).toBeNull();
+      expect(root(r).getAttribute('data-range-error')).toBeNull();
     });
   });
 
