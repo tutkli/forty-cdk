@@ -24,6 +24,7 @@ import {
   stepSlot,
   resolveDropTarget,
   type DropContainerGeometry,
+  type DragRect,
   type DragPreview,
   injectPrefersReducedMotion,
   type ListNavigationAction,
@@ -59,6 +60,26 @@ import { ReorderAnimator } from './reorder-animator';
 export const FOR_DROP_LIST_DEFAULT_ORIENTATION = new InjectionToken<
   'horizontal' | 'vertical' | 'mixed'
 >('FOR_DROP_LIST_DEFAULT_ORIENTATION');
+
+interface DropListGeomEntry {
+  containerRect: DragRect;
+  scrollLeft: number;
+  scrollTop: number;
+  itemRects: readonly DragRect[];
+}
+
+function freezeRect(rect: DragRect): DragRect {
+  return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom };
+}
+
+function shiftRect(rect: DragRect, dx: number, dy: number): DragRect {
+  return {
+    left: rect.left + dx,
+    top: rect.top + dy,
+    right: rect.right + dx,
+    bottom: rect.bottom + dy,
+  };
+}
 
 /**
  * Root directive of the drag-drop primitive. Apply on any container element to
@@ -194,6 +215,7 @@ export class ForDropList implements ForDropListContext {
   #autoScroller: AutoScroller | null = null;
   #lastPoint: { x: number; y: number } | null = null;
   #resolveRaf: number | null = null;
+  #geomCache: Map<ForDropListContext, DropListGeomEntry> | null = null;
 
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
@@ -337,6 +359,7 @@ export class ForDropList implements ForDropListContext {
           originIndex: () => this.#items.indexOfHost(el),
         });
       }
+      this.#snapshotGeometry(el);
     }
     return from;
   }
@@ -372,16 +395,10 @@ export class ForDropList implements ForDropListContext {
   #resolveDrop(point: { x: number; y: number }, lifted: HTMLElement): void {
     const connected = this.#effectiveConnected();
     const containers = [this as ForDropListContext, ...connected];
-    const geoms: DropContainerGeometry[] = containers.map((ctx) => ({
-      rect: ctx.host.getBoundingClientRect(),
-      itemRects: ctx
-        .items()
-        .filter((h) => h.host !== lifted)
-        .map((h) => h.host.getBoundingClientRect()),
-    }));
+    const geoms: DropContainerGeometry[] = containers.map((ctx) => this.#geometryFor(ctx, lifted));
     const target = resolveDropTarget(point, geoms, this.orientation(), this.dir());
-    this.#previewController?.moveTo(point);
     if (!target) {
+      this.#previewController?.moveTo(point);
       return;
     }
     const slots = buildDragSlots(
@@ -390,22 +407,74 @@ export class ForDropList implements ForDropListContext {
     );
     const flat = indexOfSlot(slots, target.containerIndex, target.index);
     if (flat < 0) {
+      this.#previewController?.moveTo(point);
       return;
     }
+    const changed = flat !== this.#flatIndex();
+    const targetCtx = containers[target.containerIndex]!;
+    this.#previewController?.moveTo(point);
     containers.forEach((ctx, i) =>
       ctx.setDragOver(i === target.containerIndex ? target.index : null),
     );
-    const changed = flat !== this.#flatIndex();
     this.#flatIndex.set(flat);
     if (changed) {
-      const targetCtx = containers[target.containerIndex]!;
-      this.#sorter?.onTargetChange(targetCtx, target.index);
+      if (this.#sorter) {
+        this.#sorter.onTargetChange(targetCtx, target.index);
+        this.#invalidateGeometry(targetCtx);
+      }
       const label = (lifted.textContent ?? '').trim();
       this.#announcer.announce(
         this.#defaults.announceMove(label, target.index + 1, targetCtx.items().length),
         'polite',
       );
     }
+  }
+
+  #snapshotGeometry(lifted: HTMLElement): void {
+    const cache = new Map<ForDropListContext, DropListGeomEntry>();
+    const containers = [this as ForDropListContext, ...this.#effectiveConnected()];
+    for (const ctx of containers) {
+      cache.set(ctx, this.#snapshotContainer(ctx, lifted));
+    }
+    this.#geomCache = cache;
+  }
+
+  #snapshotContainer(ctx: ForDropListContext, lifted: HTMLElement): DropListGeomEntry {
+    return {
+      containerRect: freezeRect(ctx.host.getBoundingClientRect()),
+      scrollLeft: ctx.host.scrollLeft,
+      scrollTop: ctx.host.scrollTop,
+      itemRects: ctx
+        .items()
+        .filter((h) => h.host !== lifted)
+        .map((h) => freezeRect(h.host.getBoundingClientRect())),
+    };
+  }
+
+  #geometryFor(ctx: ForDropListContext, lifted: HTMLElement): DropContainerGeometry {
+    const cache = this.#geomCache;
+    const cached = cache?.get(ctx);
+    const itemCount = ctx.items().filter((h) => h.host !== lifted).length;
+    if (!cache || !cached || cached.itemRects.length !== itemCount) {
+      const fresh = this.#snapshotContainer(ctx, lifted);
+      cache?.set(ctx, fresh);
+      return { rect: fresh.containerRect, itemRects: fresh.itemRects };
+    }
+    const freshRect = ctx.host.getBoundingClientRect();
+    const dx =
+      freshRect.left - cached.containerRect.left - (ctx.host.scrollLeft - cached.scrollLeft);
+    const dy = freshRect.top - cached.containerRect.top - (ctx.host.scrollTop - cached.scrollTop);
+    if (dx === 0 && dy === 0) {
+      return { rect: freezeRect(freshRect), itemRects: cached.itemRects };
+    }
+    return {
+      rect: freezeRect(freshRect),
+      itemRects: cached.itemRects.map((r) => shiftRect(r, dx, dy)),
+    };
+  }
+
+  #invalidateGeometry(ctx: ForDropListContext): void {
+    this.#geomCache?.delete(ctx);
   }
 
   #flushResolve(lifted: HTMLElement): void {
@@ -614,6 +683,7 @@ export class ForDropList implements ForDropListContext {
     }
     this.#liftedHost.set(null);
     this.#flatIndex.set(0);
+    this.#geomCache = null;
     if (!keepPreview) {
       this.#previewController?.destroy();
     }
