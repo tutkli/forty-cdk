@@ -312,6 +312,61 @@ describe('injectVirtualizer', () => {
     expect(fixture.componentInstance.v.totalSize()).toBe(0);
   });
 
+  describe('virtualItems memoization', () => {
+    it('keeps the same array reference across a notify that leaves the window unchanged', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const { v, count } = fixture.componentInstance;
+      const before = v.virtualItems();
+      expect(before.length).toBeGreaterThanOrEqual(1);
+
+      count.set(999);
+      await flush(fixture);
+
+      const after = v.virtualItems();
+      expect(after).toBe(before);
+    });
+
+    it('returns a new array reference when the window actually changes', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const { v, count } = fixture.componentInstance;
+      const before = v.virtualItems();
+      expect(before.length).toBeGreaterThan(3);
+
+      count.set(3);
+      await flush(fixture);
+
+      const after = v.virtualItems();
+      expect(after).not.toBe(before);
+      expect(after.length).toBe(3);
+    });
+
+    it('keeps range reference-stable when the window is unchanged', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const { v, count } = fixture.componentInstance;
+      const before = v.range();
+
+      count.set(999);
+      await flush(fixture);
+
+      expect(v.range()).toBe(before);
+    });
+  });
+
   describe('scrollMargin', () => {
     @Component({
       selector: 'margin-host',
