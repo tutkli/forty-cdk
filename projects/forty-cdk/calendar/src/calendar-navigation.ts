@@ -127,7 +127,7 @@ export class CalendarNavigation<D> {
       next = this.#host.bounds.clamp(this.#cursor.apply(target));
       this.#cursor.markPaged(next);
     } else {
-      next = target;
+      next = this.#host.bounds.clamp(target);
       this.#cursor.setFocusedDay(next);
     }
     this.#host.focusedDate.set(next);

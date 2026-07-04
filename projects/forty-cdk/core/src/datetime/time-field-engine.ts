@@ -249,6 +249,10 @@ export class TimeFieldEngine<D> {
     this.#editor.focusSibling(type, step);
   }
 
+  endTyping(): void {
+    this.#editor.endTyping();
+  }
+
   /** Field-specific `aria-valuetext`: only the empty marker; numeric otherwise. */
   #valueText(type: SegmentType): string | null {
     return this.isSegmentEmpty(type) ? this.#config.emptySegmentText() : null;

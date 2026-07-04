@@ -33,7 +33,7 @@ export interface DateAdapter<D> {
    * **SSR / hydration caveat.** The result depends on the runtime time zone, so
    * a server render and a client hydration can disagree by up to a day near
    * midnight — the server may compute a different calendar day than the
-   * browser. `ForCalendar` reads this once to mark the `data-today` /
+   * browser. `ForCalendar` reads this on each render to mark the `data-today` /
    * `aria-current="date"` cell, so a mismatch surfaces there as a hydration
    * error and a flicker on the highlighted "today" cell.
    *

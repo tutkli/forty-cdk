@@ -293,6 +293,10 @@ export class DateFieldEngine<D> {
     this.#editor.focusSibling(type, step);
   }
 
+  endTyping(): void {
+    this.#editor.endTyping();
+  }
+
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time(): TimeCapableDateAdapter<D> {
     return assertTimeCapable(this.#config.adapter, this.#config.piece);

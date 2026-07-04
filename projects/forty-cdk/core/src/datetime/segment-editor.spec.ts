@@ -365,6 +365,26 @@ describe('SegmentEditor.clear', () => {
   });
 });
 
+describe('SegmentEditor.endTyping', () => {
+  it('drops the mid-typing buffer so a partial digit repaints from the committed value', () => {
+    const { editor } = setup();
+    editor.typeDigit('day', 1);
+    expect(editor.segmentDisplayText('day')).toBe('1');
+
+    editor.endTyping();
+    expect(editor.segmentDisplayText('day')).toBe('01');
+  });
+
+  it('repaints a segment whose transient buffer committed null back to its placeholder', () => {
+    const { editor } = setup();
+    editor.typeDigit('day', 0);
+    expect(editor.segmentDisplayText('day')).toBe('0');
+
+    editor.endTyping();
+    expect(editor.segmentDisplayText('day')).toBe('day');
+  });
+});
+
 describe('SegmentEditor.focusSibling', () => {
   it('moves the active element forward to the next editable segment', () => {
     const { host, editor, handles } = setup();

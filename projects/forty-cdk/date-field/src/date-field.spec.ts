@@ -98,6 +98,19 @@ describe('ForDateField', () => {
     });
   });
 
+  describe('typing buffer on blur (#1150)', () => {
+    it('drops a partially typed digit when the segment loses focus', async () => {
+      const r = renderHost(Host);
+      await type(r, 'day', '1');
+      expect(seg(r, 'day').textContent!.trim()).toBe('1');
+
+      seg(r, 'day').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+
+      expect(seg(r, 'day').textContent!.trim()).toBe('01');
+    });
+  });
+
   describe('structure & ARIA', () => {
     it('renders a role=group with one role=spinbutton per editable segment', () => {
       const r = renderHost(Host);

@@ -298,6 +298,10 @@ export class ForTimeField<D>
     this.#engine.focusSibling(type, step);
   }
 
+  endTyping(): void {
+    this.#engine.endTyping();
+  }
+
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as Node | null;
     if (!next || !this.#host.nativeElement.contains(next)) {

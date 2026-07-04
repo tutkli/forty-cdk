@@ -44,6 +44,7 @@ export interface SegmentEditorContext {
   setDayPeriod(period: 'am' | 'pm'): void;
   clear(type: SegmentType): void;
   focusSibling(type: SegmentType, step: -1 | 1): void;
+  endTyping(): void;
 }
 
 /**
@@ -79,6 +80,7 @@ export interface SegmentEditorContext {
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
+    '(blur)': 'onBlur()',
   },
 })
 export abstract class ForDateTimeSegmentBase {
@@ -139,6 +141,10 @@ export abstract class ForDateTimeSegmentBase {
 
   protected onFocus(): void {
     this.ctx.focusSegment(this.segment());
+  }
+
+  protected onBlur(): void {
+    this.ctx.endTyping();
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
