@@ -161,9 +161,9 @@ Set `selectionMode="range"` and bind `[(range)]` to get date-range selection. In
 </div>
 ```
 
-**Interaction model.** Click (or `Enter` / `Space`) a first cell to set the anchor; the grid enters selecting state. Click (or `Enter` / `Space`) a second cell at or after the anchor to commit the range. Clicking before the anchor re-anchors (starts over from the earlier date). No explicit Escape-to-cancel — an in-progress anchor is simply overwritten by the next click.
+**Interaction model.** Click (or `Enter` / `Space`) a first cell to set the anchor; the grid enters selecting state. Click (or `Enter` / `Space`) a second cell **in either direction** to commit the range — clicking before the anchor commits the inverted band `[click, anchor]` (matching the hover preview), it does not start over. There is no separate "start over" gesture and no explicit Escape-to-cancel: once a range is committed, the next click begins a fresh anchor.
 
-**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview end (the keyboard equivalent of pointer hover).
+**Keyboard in range mode.** `Enter` / `Space` on the focused cell sets the anchor on the first press and commits on the second (same key as single mode). While selecting, arrow / `Home` / `End` / `PageUp` / `PageDown` move the keyboard focus and update the preview cursor (the keyboard equivalent of pointer hover); moving before the anchor previews — and commits — the inverted band.
 
 **`min` / `max` / `isDateUnavailable`** still gate both endpoints. An unavailable or out-of-bounds date cannot become an anchor or an end.
 
