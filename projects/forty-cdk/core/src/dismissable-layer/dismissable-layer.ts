@@ -88,19 +88,19 @@ export class DismissableLayerStack {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmost()?.['handleEscape'](event);
+    this.#topmost()?.handleEscape(event);
   };
   readonly #onPointerDown = (event: Event): void => {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmost()?.['handlePointerDown'](event as PointerEvent);
+    this.#topmost()?.handlePointerDown(event as PointerEvent);
   };
   readonly #onFocusIn = (event: Event): void => {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmost()?.['handleFocusIn'](event as FocusEvent);
+    this.#topmost()?.handleFocusIn(event as FocusEvent);
   };
 
   constructor() {
@@ -230,14 +230,23 @@ export class DismissableLayer {
     return this.#stack.suppress(fn);
   }
 
-  protected handleEscape(event: KeyboardEvent): void {
+  /**
+   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * on `Escape`. Public only so the stack can call it without exploiting a TS
+   * visibility loophole; not part of the supported API (stripped from `.d.ts`).
+   */
+  handleEscape(event: KeyboardEvent): void {
     this.#options.onEscapeKeyDown?.(event);
     if (!event.defaultPrevented) {
       this.#options.onDismiss?.();
     }
   }
 
-  protected handlePointerDown(event: PointerEvent): void {
+  /**
+   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * on an outside `pointerdown`. See {@link handleEscape}.
+   */
+  handlePointerDown(event: PointerEvent): void {
     const target = resolveEventTarget(event);
     if (!target || this.#contains(target)) {
       return;
@@ -249,7 +258,11 @@ export class DismissableLayer {
     }
   }
 
-  protected handleFocusIn(event: FocusEvent): void {
+  /**
+   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * on an outside `focusin`. See {@link handleEscape}.
+   */
+  handleFocusIn(event: FocusEvent): void {
     const target = resolveEventTarget(event);
     if (!target || this.#contains(target)) {
       return;
