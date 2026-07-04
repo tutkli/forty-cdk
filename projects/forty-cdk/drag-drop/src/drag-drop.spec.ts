@@ -1358,4 +1358,308 @@ describe('ForDropList + ForDraggable', () => {
       expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(0);
     });
   });
+
+  describe('geometry caching (#1153)', () => {
+    interface StubbedRect {
+      el: HTMLElement;
+      calls: () => number;
+    }
+
+    function stubRect(
+      el: HTMLElement,
+      rect: { left: number; top: number; right: number; bottom: number },
+      counter: { n: number },
+    ): StubbedRect {
+      const value: DOMRect = {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.right - rect.left,
+        height: rect.bottom - rect.top,
+        x: rect.left,
+        y: rect.top,
+        toJSON() {},
+      };
+      el.getBoundingClientRect = () => {
+        counter.n++;
+        return value;
+      };
+      return { el, calls: () => counter.n };
+    }
+
+    function layout(el: HTMLElement, counter: { n: number }): void {
+      const list = el.querySelector<HTMLElement>('[forDropList]')!;
+      stubRect(list, { left: 0, top: 0, right: 200, bottom: 240 }, counter);
+      const items = list.querySelectorAll<HTMLElement>('[forDraggable]');
+      items.forEach((item, i) => {
+        stubRect(item, { left: 0, top: i * 20, right: 200, bottom: i * 20 + 20 }, counter);
+      });
+    }
+
+    function layoutConnected(
+      el: HTMLElement,
+      counterA: { n: number },
+      counterB: { n: number },
+    ): void {
+      const lists = el.querySelectorAll<HTMLElement>('[forDropList]');
+      const listA = lists[0]!;
+      const listB = lists[1]!;
+      stubRect(listA, { left: 0, top: 0, right: 200, bottom: 240 }, counterA);
+      const itemsA = listA.querySelectorAll<HTMLElement>('[forDraggable]');
+      itemsA.forEach((item, i) => {
+        stubRect(item, { left: 0, top: i * 20, right: 200, bottom: i * 20 + 20 }, counterA);
+      });
+      stubRect(listB, { left: 300, top: 0, right: 500, bottom: 240 }, counterB);
+      const itemsB = listB.querySelectorAll<HTMLElement>('[forDraggable]');
+      itemsB.forEach((item, i) => {
+        stubRect(item, { left: 300, top: i * 20, right: 500, bottom: i * 20 + 20 }, counterB);
+      });
+    }
+
+    @Component({
+      imports: [...DND_IMPORTS],
+      template: `
+        <ul
+          forDropList
+          #listA="forDropList"
+          [autoScroll]="false"
+          [connectedTo]="[listB]"
+          (dragDrop)="onDropA($event)"
+        >
+          @for (row of rowsA(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="'a-' + row.id">
+              {{ row.label }}
+            </li>
+          }
+        </ul>
+        <ul
+          forDropList
+          #listB="forDropList"
+          [autoScroll]="false"
+          [connectedTo]="[listA]"
+          (dragDrop)="onDropB($event)"
+        >
+          @for (row of rowsB(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="'b-' + row.id">
+              {{ row.label }}
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class ConnectedPerfHost {
+      readonly listRefA = viewChild.required<ForDropList>('listA');
+      readonly rowsA: WritableSignal<Row[]> = signal(
+        Array.from({ length: 12 }, (_, i) => ({ id: i + 1, label: `A${i + 1}` })),
+      );
+      readonly rowsB: WritableSignal<Row[]> = signal(
+        Array.from({ length: 4 }, (_, i) => ({ id: i + 1, label: `B${i + 1}` })),
+      );
+      readonly lastDropA = signal<ForDragDropEvent | null>(null);
+      readonly lastDropB = signal<ForDragDropEvent | null>(null);
+      onDropA(e: ForDragDropEvent): void {
+        this.lastDropA.set(e);
+      }
+      onDropB(e: ForDragDropEvent): void {
+        this.lastDropB.set(e);
+      }
+    }
+
+    @Component({
+      imports: [ForDropList, ForDraggable, ForDragPlaceholder],
+      template: `
+        <ul
+          forDropList
+          #list="forDropList"
+          [autoScroll]="false"
+          liveSort
+          (dragDrop)="onDrop($event)"
+        >
+          @for (row of rows(); track row.id) {
+            <li forDraggable [dragData]="row" [attr.data-test-id]="row.id">
+              {{ row.label }}
+              <ng-template forDragPlaceholder><span class="ph">gap</span></ng-template>
+            </li>
+          }
+        </ul>
+      `,
+    })
+    class LiveSortPerfHost {
+      readonly listRef = viewChild.required<ForDropList>('list');
+      readonly rows: WritableSignal<Row[]> = signal(
+        Array.from({ length: 12 }, (_, i) => ({ id: i + 1, label: `Row ${i + 1}` })),
+      );
+      readonly lastDrop = signal<ForDragDropEvent | null>(null);
+      onDrop(event: ForDragDropEvent): void {
+        this.lastDrop.set(event);
+      }
+    }
+
+    function makeRaf(pending: { cb: FrameRequestCallback | null }) {
+      const raf = vi
+        .spyOn(window, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          pending.cb = cb;
+          return 1;
+        });
+      const cancel = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {
+        pending.cb = null;
+      });
+      return { raf, cancel };
+    }
+
+    function runFrame(pending: { cb: FrameRequestCallback | null }): void {
+      const cb = pending.cb;
+      pending.cb = null;
+      cb?.(performance.now());
+    }
+
+    it('reads at most O(containers) rects per frame after lift — not O(items)', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ConnectedPerfHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const counterA = { n: 0 };
+      const counterB = { n: 0 };
+      layoutConnected(el, counterA, counterB);
+      const list = fixture.componentInstance.listRefA();
+      const first = itemEl(el, 'a-1');
+
+      const pending: { cb: FrameRequestCallback | null } = { cb: null };
+      makeRaf(pending);
+
+      list.pointerLift(first, { x: 100, y: 10 });
+      const readsAtLift = counterA.n + counterB.n;
+      expect(readsAtLift).toBeGreaterThan(0);
+
+      const containerCount = 2;
+      for (let step = 0; step < 5; step++) {
+        const before = counterA.n + counterB.n;
+        list.pointerMove({ x: 100, y: 30 + step * 10 });
+        runFrame(pending);
+        const perFrame = counterA.n + counterB.n - before;
+        expect(perFrame).toBeLessThanOrEqual(2 * containerCount);
+      }
+    });
+
+    it('does not re-read every item rect on a pure auto-scroll-style frame (liveSort off)', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SingleListHost);
+      fixture.componentInstance.rows.set(
+        Array.from({ length: 12 }, (_, i) => ({ id: i + 1, label: `Row ${i + 1}` })),
+      );
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const counter = { n: 0 };
+      layout(el, counter);
+      const first = itemEl(el, 1);
+
+      const ref = fixture.debugElement.children[0]!.injector.get(ForDropList);
+
+      const pending: { cb: FrameRequestCallback | null } = { cb: null };
+      makeRaf(pending);
+
+      ref.pointerLift(first, { x: 100, y: 10 });
+      ref.pointerMove({ x: 100, y: 30 });
+      runFrame(pending);
+      const readsAfterFirstFrame = counter.n;
+
+      ref.pointerMove({ x: 100, y: 40 });
+      runFrame(pending);
+      const readsSecondFrame = counter.n - readsAfterFirstFrame;
+
+      expect(readsSecondFrame).toBeLessThanOrEqual(2);
+    });
+
+    it('re-measures the invalidated container after the liveSort placeholder moves', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(LiveSortPerfHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const counter = { n: 0 };
+      layout(el, counter);
+      const list = fixture.componentInstance.listRef();
+      const first = itemEl(el, 1);
+
+      const pending: { cb: FrameRequestCallback | null } = { cb: null };
+      makeRaf(pending);
+
+      list.pointerLift(first, { x: 100, y: 10 });
+      list.pointerMove({ x: 100, y: 210 });
+      runFrame(pending);
+      const beforeReMeasure = counter.n;
+      list.pointerMove({ x: 100, y: 50 });
+      runFrame(pending);
+      const afterReMeasure = counter.n - beforeReMeasure;
+
+      expect(afterReMeasure).toBeGreaterThan(2);
+    });
+
+    it('resolves the same drop index across cached frames as a fresh measure would', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SingleListHost);
+      fixture.componentInstance.rows.set(
+        Array.from({ length: 6 }, (_, i) => ({ id: i + 1, label: `Row ${i + 1}` })),
+      );
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const counter = { n: 0 };
+      layout(el, counter);
+      const ref = fixture.debugElement.children[0]!.injector.get(ForDropList);
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 1);
+
+      const pending: { cb: FrameRequestCallback | null } = { cb: null };
+      makeRaf(pending);
+
+      ref.pointerLift(first, { x: 100, y: 10 });
+      ref.pointerMove({ x: 100, y: 95 });
+      runFrame(pending);
+      ref.pointerMove({ x: 100, y: 95 });
+      runFrame(pending);
+      ref.drop();
+      fixture.detectChanges();
+
+      const drop = comp.lastDrop();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousIndex).toBe(0);
+      expect(drop!.currentIndex).toBe(4);
+    });
+
+    it('resolves cross-list transfer from cached geometry after lift', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ConnectedPerfHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const counterA = { n: 0 };
+      const counterB = { n: 0 };
+      layoutConnected(el, counterA, counterB);
+      const list = fixture.componentInstance.listRefA();
+      const comp = fixture.componentInstance;
+      const first = itemEl(el, 'a-1');
+
+      const pending: { cb: FrameRequestCallback | null } = { cb: null };
+      makeRaf(pending);
+
+      list.pointerLift(first, { x: 100, y: 10 });
+      list.pointerMove({ x: 400, y: 15 });
+      runFrame(pending);
+      list.pointerMove({ x: 400, y: 15 });
+      runFrame(pending);
+      list.drop();
+      fixture.detectChanges();
+
+      const drop = comp.lastDropA();
+      expect(drop).not.toBeNull();
+      expect(drop!.previousContainer.host).toBe(listEl(el, 0));
+      expect(drop!.container.host).toBe(listEl(el, 1));
+      expect(drop!.currentIndex).toBe(1);
+    });
+  });
 });
