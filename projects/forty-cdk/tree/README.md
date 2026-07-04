@@ -273,20 +273,22 @@ forty-cdk ships no filtering machinery — matching stays consumer-owned. The li
 3. **Highlight matched text with consumer CSS.** Wrap matched text in a `<mark>` element or apply a `.match` class while rendering filtered labels. No new data attribute is emitted by the library.
 
 ```ts
+import { linkedSignal } from '@angular/core';
 import { expandToReveal } from 'forty-cdk/tree';
 
 readonly query = signal('');
 readonly filtered = computed(() => filterNodes(this.roots, this.query()));
 
-constructor() {
-  // Consumer-owned: re-reveal matches whenever the query changes.
-  effect(() => {
-    const matches = collectIds(this.filtered());
-    this.expanded.update((open) => [
-      ...new Set([...open, ...expandToReveal(matches, this.ancestorsOf)]),
-    ]);
-  });
-}
+// Two-way bindable via [(expanded)]: manual expand/collapse is preserved through
+// `previous.value`, and a new query re-reveals every match by re-deriving from
+// the matched set. `linkedSignal` is the idiomatic replacement for
+// `effect(() => this.expanded.update(...))` — no state written inside an effect.
+readonly expanded = linkedSignal<readonly string[], readonly string[]>({
+  source: () => collectIds(this.filtered()),
+  computation: (matches, previous) => [
+    ...new Set([...(previous?.value ?? []), ...expandToReveal(matches, this.ancestorsOf)]),
+  ],
+});
 
 // Returns a node's ancestor ids from the consumer's own hierarchy.
 ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the path */ };
