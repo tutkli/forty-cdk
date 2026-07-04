@@ -98,10 +98,12 @@ export class CalendarRangeSelection<D> {
   }
 
   /**
-   * Apply a click on `date` to the anchor → commit flow. Returns `true` when the
-   * click moved the selection (so the root should move focus to `date`), `false`
-   * when it was rejected by the min / max length guard (anchor preserved, no
-   * focus move).
+   * Apply a click on `date` to the anchor → commit flow. The first click sets
+   * the anchor; the second commits the range in **either direction** — clicking
+   * before the anchor commits the inverted band `[date, anchor]` (honouring the
+   * hover preview) rather than starting over. Returns `true` when the click moved
+   * the selection (so the root should move focus to `date`), `false` when it was
+   * rejected by the min / max length guard (anchor preserved, no focus move).
    */
   select(date: D): boolean {
     const adapter = this.#host.adapter;
@@ -109,19 +111,18 @@ export class CalendarRangeSelection<D> {
     if (anchor === null) {
       this.#host.range.set(null);
       this.#anchor.set(date);
-    } else if (compareDateOf(adapter, date, anchor) < 0) {
-      this.#anchor.set(date);
-    } else {
-      if (!this.#rangeLengthSatisfied(anchor, date)) {
-        return false;
-      }
-      this.#host.range.set({ start: anchor, end: date });
-      this.#anchor.set(null);
+      return true;
     }
+    const [start, end] = compareDateOf(adapter, date, anchor) < 0 ? [date, anchor] : [anchor, date];
+    if (!this.#rangeLengthSatisfied(start, end)) {
+      return false;
+    }
+    this.#host.range.set({ start, end });
+    this.#anchor.set(null);
     return true;
   }
 
-  #rangeLengthSatisfied(anchor: D, end: D): boolean {
+  #rangeLengthSatisfied(start: D, end: D): boolean {
     const adapter = this.#host.adapter;
     const minLen = this.#host.minRangeLength();
     const maxLen = this.#host.maxRangeLength();
@@ -129,7 +130,7 @@ export class CalendarRangeSelection<D> {
       return true;
     }
     let len = 1;
-    let cursor = anchor;
+    let cursor = start;
     while (compareDateOf(adapter, cursor, end) < 0) {
       cursor = adapter.addDays(cursor, 1);
       len++;

@@ -1057,6 +1057,21 @@ describe('ForCalendar', () => {
       expect(rangeCell(r, JUN_20).hasAttribute('data-range-preview')).toBe(false);
     });
 
+    it('hover preview before the anchor paints the inverted band [hovered, anchor]', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      click(rangeCell(r, JUN_15));
+      await flush(r.fixture);
+      rangeCell(r, JUN_10).dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-preview')).toBe(true);
+      expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-range-preview')).toBe(true);
+      expect(rangeCell(r, JUN_15).hasAttribute('data-range-preview')).toBe(true);
+      expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
+      expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(true);
+    });
+
     it('data-in-range and data-range-preview are mutually exclusive', async () => {
       const r = renderHost(CalendarRangeHost);
 
@@ -1075,7 +1090,7 @@ describe('ForCalendar', () => {
       expect(mid.hasAttribute('data-in-range')).toBe(true);
     });
 
-    it('re-anchor: clicking before the anchor starts over', async () => {
+    it('commit inverted range: clicking before the anchor commits [click, anchor]', async () => {
       const r = renderHost(CalendarRangeHost);
 
       click(rangeCell(r, JUN_15));
@@ -1083,9 +1098,12 @@ describe('ForCalendar', () => {
       click(rangeCell(r, JUN_10));
       await flush(r.fixture);
 
-      expect(r.instance.range()).toBeNull();
+      const range = r.instance.range();
+      expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
+      expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
       expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
-      expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(false);
+      expect(rangeCell(r, JUN_15).hasAttribute('data-range-end')).toBe(true);
+      expect(rangeCell(r, new Date(2026, 5, 12)).hasAttribute('data-in-range')).toBe(true);
     });
 
     it('keyboard: Enter sets anchor, arrows move preview, Enter commits', async () => {
@@ -1110,6 +1128,23 @@ describe('ForCalendar', () => {
       expect(range).not.toBeNull();
       expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
       expect(adapter.isSameDay(range!.end, new Date(2026, 5, 12))).toBe(true);
+    });
+
+    it('keyboard: navigating before the anchor commits the inverted range', async () => {
+      const r = renderHost(CalendarRangeHost);
+
+      pressKey(rangeCell(r, JUN_15), 'Enter');
+      await flush(r.fixture);
+      pressKey(rangeCell(r, JUN_15), 'ArrowLeft');
+      await flush(r.fixture);
+      pressKey(rangeCell(r, new Date(2026, 5, 14)), 'ArrowLeft');
+      await flush(r.fixture);
+      pressKey(rangeCell(r, new Date(2026, 5, 13)), 'Enter');
+      await flush(r.fixture);
+
+      const range = r.instance.range();
+      expect(adapter.isSameDay(range!.start, new Date(2026, 5, 13))).toBe(true);
+      expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
     });
 
     it('maxRangeLength: clicking past the limit is a no-op, anchor is preserved', async () => {
