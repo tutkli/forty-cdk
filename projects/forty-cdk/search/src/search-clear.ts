@@ -1,12 +1,12 @@
-import { computed, Directive, input } from '@angular/core';
+import { computed, Directive } from '@angular/core';
 
 import { reflectDisabled } from 'forty-cdk/core';
-import type { ForSearch } from './search';
+import { injectSearchGroup } from './search-context';
 
 /**
- * Optional clear button for `[forSearch]`. Apply on a `<button>` element and
- * pass the exported search instance through the selector input:
- * `[forSearchClear]="s"` where `#s="forSearch"` is on the `<input>`.
+ * Optional clear button for `[forSearch]`. Apply on a `<button>` element inside
+ * a `[forSearchGroup]` that also wraps the `[forSearch]`; the group bridges the
+ * button to the field, so no instance is passed through the template.
  *
  * The button self-hides while the value is `''`, so consumers can leave it
  * inline in the template without an extra `@if`. Visibility is enforced with
@@ -24,6 +24,14 @@ import type { ForSearch } from './search';
  *
  * The button stays in the natural tab order (no `tabindex="-1"`) unlike
  * `[forComboboxClear]`, which lives inside an `aria-activedescendant` flow.
+ *
+ * @example
+ * ```html
+ * <div forSearchGroup>
+ *   <input forSearch [(value)]="query" />
+ *   <button forSearchClear>×</button>
+ * </div>
+ * ```
  */
 @Directive({
   selector: '[forSearchClear]',
@@ -37,32 +45,30 @@ import type { ForSearch } from './search';
   },
 })
 export class ForSearchClear {
-  /**
-   * The `[forSearch]` instance to operate on. Pass the exported reference:
-   * `<input forSearch #s="forSearch" /> <button [forSearchClear]="s">`.
-   */
-  readonly search = input.required<ForSearch>({ alias: 'forSearchClear' });
+  protected readonly group = injectSearchGroup('ForSearchClear');
 
   /** `true` while there is text to clear; drives the self-hide logic. */
-  protected readonly hasContent = computed(() => this.search().value().length > 0);
+  protected readonly hasContent = computed(() => (this.group.field()?.value().length ?? 0) > 0);
 
   /**
-   * Disabled when the search field is disabled or read-only — the clear action
-   * is unavailable in those states.
+   * Disabled when the search field is absent, disabled, or read-only — the
+   * clear action is unavailable in those states.
    */
-  protected readonly isDisabled = computed(
-    () => this.search().effectiveDisabled() || this.search().readonly(),
-  );
+  protected readonly isDisabled = computed(() => {
+    const field = this.group.field();
+    return !field || field.effectiveDisabled() || field.readonly();
+  });
 
   constructor() {
     reflectDisabled(this.isDisabled);
   }
 
   protected onClick(): void {
-    if (this.isDisabled()) {
+    const field = this.group.field();
+    if (!field || this.isDisabled()) {
       return;
     }
-    this.search().clear();
-    this.search().focusInput();
+    field.clear();
+    field.focusInput();
   }
 }

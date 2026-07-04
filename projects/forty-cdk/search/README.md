@@ -7,8 +7,10 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 ## Anatomy
 
 ```html
-<input forSearch #s="forSearch" [(value)]="query" placeholder="Search…" />
-<button [forSearchClear]="s" aria-label="Clear search">×</button>
+<div forSearchGroup>
+  <input forSearch [(value)]="query" placeholder="Search…" />
+  <button forSearchClear aria-label="Clear search">×</button>
+</div>
 ```
 
 ## Examples
@@ -16,13 +18,17 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 ### Basic usage
 
 ```html
-<input forSearch #s="forSearch" [(value)]="query" placeholder="Search…" />
-<button [forSearchClear]="s" aria-label="Clear search">×</button>
+<div forSearchGroup>
+  <input forSearch [(value)]="query" placeholder="Search…" />
+  <button forSearchClear aria-label="Clear search">×</button>
+</div>
 ```
 
 `[forSearchClear]` self-hides while the value is empty and refocuses the input
-on activation. Pass the exported `#s="forSearch"` reference through the
-selector input — no wrapping element is required.
+on activation. Wrap the field and the button in a `[forSearchGroup]` so the
+button can coordinate with the field — the void `<input>` can't contain the
+button as a DOM descendant, so they bridge through the group registry. A
+standalone `[forSearch]` (no clear button) needs no group.
 
 ### With Signal Forms and Field
 
@@ -51,15 +57,18 @@ auto-wires with `[formField]` and auto-associates inside a `[forField]`.
 | `data-readonly` | present when the field is read-only     |
 | `data-empty`    | present while the value is `''` (empty) |
 
+### `ForSearchGroup`
+
+Optional coordination wrapper. Renders nothing and imposes no role or layout;
+it bridges the `[forSearchClear]` button to the `[forSearch]` field through a
+registry, since the void `<input>` can't contain the button as a descendant.
+Required only when you use the clear button.
+
 ### `ForSearchClear`
 
-Clear button. Pass the exported `[forSearch]` instance through the selector
-input (`[forSearchClear]="s"`). Self-hides while the value is empty and
-refocuses the input on activation.
-
-| Property | Type                        | Description                                                          |
-| -------- | --------------------------- | -------------------------------------------------------------------- |
-| `search` | `input.required<ForSearch>` | The `[forSearch]` instance to operate on (aliased `forSearchClear`). |
+Clear button. Apply on a `<button>` inside a `[forSearchGroup]` that also wraps
+the `[forSearch]` — no instance is passed through the template. Self-hides while
+the value is empty and refocuses the input on activation.
 
 ## Accessibility
 

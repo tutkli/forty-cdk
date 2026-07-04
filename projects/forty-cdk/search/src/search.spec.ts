@@ -10,6 +10,7 @@ import { flush } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForField, ForLabel } from 'forty-cdk/field';
 import { ForSearchClear } from './search-clear';
+import { ForSearchGroup } from './search-group';
 import { ForSearch } from './search';
 
 const typeInto = (el: HTMLInputElement, text: string): void => {
@@ -18,22 +19,23 @@ const typeInto = (el: HTMLInputElement, text: string): void => {
 };
 
 @Component({
-  imports: [ForSearch, ForSearchClear],
+  imports: [ForSearchGroup, ForSearch, ForSearchClear],
   template: `
-    <input
-      forSearch
-      #s="forSearch"
-      [(value)]="text"
-      [disabled]="isDisabled()"
-      [readonly]="isReadonly()"
-      [required]="isRequired()"
-      [invalid]="isInvalid()"
-      [pending]="isPending()"
-      [(touched)]="isTouched"
-      [dirty]="isDirty()"
-      [name]="fieldName()"
-    />
-    <button [forSearchClear]="s" data-test-id="clear">×</button>
+    <div forSearchGroup>
+      <input
+        forSearch
+        [(value)]="text"
+        [disabled]="isDisabled()"
+        [readonly]="isReadonly()"
+        [required]="isRequired()"
+        [invalid]="isInvalid()"
+        [pending]="isPending()"
+        [(touched)]="isTouched"
+        [dirty]="isDirty()"
+        [name]="fieldName()"
+      />
+      <button forSearchClear data-test-id="clear">×</button>
+    </div>
   `,
 })
 class SearchHost {
@@ -207,6 +209,20 @@ describe('ForSearch', () => {
       await flush();
       expect(fixture.componentInstance.text()).toBe('query');
       expect(document.activeElement).not.toBe(input);
+    });
+  });
+
+  describe('group coordination', () => {
+    @Component({
+      imports: [ForSearchClear],
+      template: `<button forSearchClear>×</button>`,
+    })
+    class OrphanClearHost {}
+
+    it('throws when [forSearchClear] is used without a [forSearchGroup]', () => {
+      expect(() => renderHost(OrphanClearHost)).toThrow(
+        /\[forty-cdk\/search\] ForSearchClear must be used inside a \[forSearchGroup\]/,
+      );
     });
   });
 
