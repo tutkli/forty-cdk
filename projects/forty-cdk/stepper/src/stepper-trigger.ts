@@ -13,8 +13,10 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
  * activation is native. A static element (`<span>`) is acceptable for progress
  * mode.
  *
- * Disabled triggers in interactive mode keep their tab stop (`aria-disabled`
- * instead of native `disabled`) so assistive tech can announce them.
+ * Disabled triggers in interactive mode reflect `aria-disabled` (never the
+ * native `disabled` attribute) and drop out of the Tab sequence (`tabindex`
+ * `-1`) and arrow navigation, but stay in the accessibility tree so assistive
+ * tech can still announce them.
  */
 @Directive({
   selector: '[forStepperTrigger]',
@@ -50,7 +52,7 @@ export class ForStepperTrigger {
   /**
    * APG tabindex cascade (interactive mode only). In progress mode returns
    * `null` so no tab-stop attribute is emitted. In interactive mode:
-   * - `null` when not selectable (disabled or unreachable in linear mode).
+   * - `-1` when not selectable (disabled or unreachable in linear mode).
    * - Roving-tracker value once any trigger has been focused.
    * - `0` when this step is current.
    * - `-1` when another trigger owns the current step.

@@ -36,9 +36,9 @@ Optional — install only if you use the matching entry point / primitives:
 
 ## Primitives
 
-Each primitive lives under [`src/lib/<primitive>/`](src/lib) with its own `README.md` and a minimal styleless usage example.
+Each primitive lives in its own folder under `projects/forty-cdk/` (e.g. [`accordion/`](accordion), [`dialog/`](dialog)) with its own `README.md` and a minimal styleless usage example.
 
-The library ships one main entry point (`forty-cdk`) plus a single secondary entry point, `forty-cdk/internationalized-date`, which holds the `@internationalized/date` adapters so that optional peer stays truly optional. Standalone directives plus `"sideEffects": false` let tree-shakers drop primitives you don't import.
+Every primitive ships as its own **secondary entry point** — import `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on — backed by the shared `forty-cdk/core` entry point. The `@internationalized/date` adapters live in a dedicated `forty-cdk/internationalized-date` entry point so that optional peer stays truly optional. The main `forty-cdk` barrel is **intentionally empty** (it exports no symbols): always import from the specific `forty-cdk/<primitive>` entry point. Standalone directives plus `"sideEffects": false` mean your bundle only ever includes the primitives you import.
 
 ## Directive → host element matrix
 
@@ -335,7 +335,7 @@ Tests run on Vitest via the Angular CLI builder `@angular/build:unit-test`:
 ```bash
 pnpm test                                              # all specs, single pass
 pnpm exec ng test forty-cdk --watch                    # watch mode
-pnpm exec ng test forty-cdk --include "projects/forty-cdk/src/lib/accordion/accordion.spec.ts"  # single file
+pnpm exec ng test forty-cdk --include "../accordion/src/accordion.spec.ts"  # single file (path relative to projects/forty-cdk/src/)
 pnpm exec ng test forty-cdk --filter "Enter and Space select"  # tests by name (regex)
 ```
 
