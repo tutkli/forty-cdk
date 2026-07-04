@@ -441,6 +441,67 @@ describe('ForSlider', () => {
   // assert it without stubbing `track.getBoundingClientRect()`, which would
   // tautologically check the math against the stub.
 
+  describe('pointermove layout reads (#1153)', () => {
+    const pointer = (type: string, init: PointerEventInit) =>
+      new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, ...init });
+
+    const stubRect = (el: HTMLElement, left: number, width: number): DOMRect =>
+      ({
+        left,
+        width,
+        right: left + width,
+        top: 0,
+        bottom: 0,
+        height: 0,
+        x: left,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    it('reads the track rect once at drag start, never per pointermove', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      const trackEl = track(el);
+      const rectSpy = vi
+        .spyOn(trackEl, 'getBoundingClientRect')
+        .mockReturnValue(stubRect(trackEl, 0, 100));
+
+      thumb(el, 0).dispatchEvent(pointer('pointerdown', { clientX: 50, clientY: 0 }));
+      expect(rectSpy).toHaveBeenCalledTimes(1);
+
+      window.dispatchEvent(pointer('pointermove', { clientX: 60, clientY: 0 }));
+      window.dispatchEvent(pointer('pointermove', { clientX: 70, clientY: 0 }));
+      window.dispatchEvent(pointer('pointermove', { clientX: 80, clientY: 0 }));
+      await flush();
+
+      expect(rectSpy).toHaveBeenCalledTimes(1);
+      expect(fixture.componentInstance.picked()).toEqual([80]);
+
+      window.dispatchEvent(pointer('pointerup', { clientX: 80, clientY: 0 }));
+      rectSpy.mockRestore();
+    });
+
+    it('keeps updating the value across moves from the cached rect', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      const trackEl = track(el);
+      const rectSpy = vi
+        .spyOn(trackEl, 'getBoundingClientRect')
+        .mockReturnValue(stubRect(trackEl, 0, 100));
+
+      thumb(el, 0).dispatchEvent(pointer('pointerdown', { clientX: 20, clientY: 0 }));
+      window.dispatchEvent(pointer('pointermove', { clientX: 20, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([20]);
+
+      window.dispatchEvent(pointer('pointermove', { clientX: 90, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([90]);
+
+      window.dispatchEvent(pointer('pointerup', { clientX: 90, clientY: 0 }));
+      expect(rectSpy).toHaveBeenCalledTimes(1);
+      rectSpy.mockRestore();
+    });
+  });
+
   describe('CSS variable exposure', () => {
     it('thumb exposes --for-slider-thumb-position as a fraction', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);

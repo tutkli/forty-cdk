@@ -16,6 +16,10 @@ function waitForMutationObserver(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+function flushMicrotasks(): Promise<void> {
+  return Promise.resolve();
+}
+
 describe('Collection', () => {
   let host: HTMLElement;
   let a: HTMLElement;
@@ -65,6 +69,7 @@ describe('Collection', () => {
     col.register(handle('a', a));
     col.register(handle('b', b));
     col.register(handle('c', c));
+    await waitForMutationObserver();
 
     expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
     expect(col.indexOfHost(c)).toBe(2);
@@ -208,6 +213,7 @@ describe('Collection', () => {
     outer.register(handle('b', b));
     inner.register(handle('x', x));
     inner.register(handle('y', y));
+    await waitForMutationObserver();
 
     const outerBefore = outer.items();
     const innerBefore = inner.items();
@@ -234,6 +240,103 @@ describe('Collection', () => {
 
     col.register(handle('a', a));
     expect(col.items()).toEqual([]);
+  });
+
+  describe('epoch-based membership (#1153)', () => {
+    it('resolves DOM order for many handles registered out of order', () => {
+      const col = new Collection<Handle>();
+      const hosts: HTMLElement[] = [];
+      for (let i = 0; i < 50; i++) {
+        const el = document.createElement('div');
+        el.id = `n${i}`;
+        host.appendChild(el);
+        hosts.push(el);
+      }
+      for (let i = hosts.length - 1; i >= 0; i--) {
+        col.register(handle(`n${i}`, hosts[i]!));
+      }
+
+      expect(col.items().map((h) => h.id)).toEqual(hosts.map((_, i) => `n${i}`));
+    });
+
+    it('dedups a double-register without copying membership', () => {
+      const col = new Collection<Handle>();
+      const ha = handle('a', a);
+      const before = col.items();
+      col.register(ha);
+      col.register(ha);
+      col.register(ha);
+
+      expect(col.items().map((h) => h.id)).toEqual(['a']);
+      expect(col.items()).not.toBe(before);
+    });
+
+    it('unregister removes and reflects synchronously', () => {
+      const col = new Collection<Handle>();
+      const ha = handle('a', a);
+      const hb = handle('b', b);
+      col.register(ha);
+      col.register(hb);
+      expect(col.items().map((h) => h.id)).toEqual(['a', 'b']);
+
+      col.unregister(ha);
+      expect(col.items().map((h) => h.id)).toEqual(['b']);
+    });
+
+    it('destroy clears membership and ignores later register', () => {
+      const col = new Collection<Handle>();
+      col.register(handle('a', a));
+      col.register(handle('b', b));
+
+      col.destroy();
+      expect(col.items()).toEqual([]);
+
+      col.register(handle('c', c));
+      expect(col.items()).toEqual([]);
+    });
+
+    it('reflects membership synchronously after register (before the microtask flushes)', () => {
+      const col = new Collection<Handle>();
+      col.register(handle('a', a));
+      col.register(handle('b', b));
+
+      expect(col.items().map((h) => h.id)).toEqual(['a', 'b']);
+    });
+
+    it('coalesces a burst of same-turn registrations into a single observer resync', async () => {
+      const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
+      try {
+        const col = new Collection<Handle>();
+        col.register(handle('a', a));
+        col.register(handle('b', b));
+        col.register(handle('c', c));
+
+        expect(observeSpy).not.toHaveBeenCalled();
+
+        await flushMicrotasks();
+
+        expect(observeSpy).toHaveBeenCalledTimes(1);
+        col.destroy();
+      } finally {
+        observeSpy.mockRestore();
+      }
+    });
+
+    it('does not resync the observer after destroy cancels the pending microtask', async () => {
+      const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
+      try {
+        const col = new Collection<Handle>();
+        col.register(handle('a', a));
+        col.register(handle('b', b));
+        col.destroy();
+
+        await flushMicrotasks();
+
+        expect(observeSpy).not.toHaveBeenCalled();
+      } finally {
+        observeSpy.mockRestore();
+      }
+    });
   });
 
   it('disconnects the observer when the owning injection context is destroyed', async () => {

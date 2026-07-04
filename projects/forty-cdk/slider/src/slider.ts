@@ -278,12 +278,18 @@ export class ForSlider
 
   pointerToValue(clientX: number, clientY: number): number {
     const track = this.#trackEl();
+    if (!track) {
+      return this.minValue();
+    }
+    return this.#pointerToValueWithRect(clientX, clientY, track.getBoundingClientRect());
+  }
+
+  #pointerToValueWithRect(clientX: number, clientY: number, rect: DOMRect | null): number {
     const min = this.minValue();
     const max = this.maxValue();
-    if (!track) {
+    if (!rect) {
       return min;
     }
-    const rect = track.getBoundingClientRect();
     const horizontal = this.orientation() === 'horizontal';
     let fraction: number;
     if (horizontal) {
@@ -334,12 +340,13 @@ export class ForSlider
       return;
     }
     const pointerId = event.pointerId;
+    const rect = this.#trackEl()?.getBoundingClientRect() ?? null;
     const move = (e: PointerEvent) => {
       if (e.pointerId !== pointerId) {
         return;
       }
       e.preventDefault();
-      this.setValueAt(index, this.pointerToValue(e.clientX, e.clientY));
+      this.setValueAt(index, this.#pointerToValueWithRect(e.clientX, e.clientY, rect));
     };
     // Drag tracking listens on the document's defaultView (the window)
     // so the pointer can leave the slider track without losing the drag.
