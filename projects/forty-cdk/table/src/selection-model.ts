@@ -18,10 +18,9 @@ export interface SelectionModelOptions<T> {
 }
 
 /**
- * Signal-first selection state shared across primitives (table rows today;
- * listbox / tree can converge later). Single- or multi-select, equality-aware
- * membership, and `added` / `removed` deltas from the last mutation. Every
- * mutating method returns whether the selection actually changed.
+ * The table's internal signal-first selection-state helper. Single- or
+ * multi-select with equality-aware membership; every mutating method returns
+ * whether the selection actually changed.
  *
  * The model does **not** own its backing store: callers pass a
  * `WritableSignal<readonly T[]>` (typically their own `model()`), so there is a
@@ -33,15 +32,8 @@ export class SelectionModel<T> {
   readonly #multiple: Signal<boolean>;
   readonly #compareWith: (a: T, b: T) => boolean;
 
-  readonly #added = signal<readonly T[]>([]);
-  readonly #removed = signal<readonly T[]>([]);
-
   /** The current selection, in insertion order. Readonly view of the backing source. */
   readonly selected: Signal<readonly T[]>;
-  /** Values added by the most recent mutation through this model. */
-  readonly added: Signal<readonly T[]> = this.#added.asReadonly();
-  /** Values removed by the most recent mutation through this model. */
-  readonly removed: Signal<readonly T[]> = this.#removed.asReadonly();
 
   constructor(source: WritableSignal<readonly T[]>, options?: SelectionModelOptions<T>) {
     this.#source = source;
@@ -118,13 +110,13 @@ export class SelectionModel<T> {
 
   #commit(next: readonly T[]): boolean {
     const current = this.#source();
-    const added = next.filter((v) => !this.#has(current, v));
-    const removed = current.filter((v) => !this.#has(next, v));
-    if (added.length === 0 && removed.length === 0) {
+    const changed =
+      current.length !== next.length ||
+      next.some((v) => !this.#has(current, v)) ||
+      current.some((v) => !this.#has(next, v));
+    if (!changed) {
       return false;
     }
-    this.#added.set(added);
-    this.#removed.set(removed);
     this.#source.set(next);
     return true;
   }

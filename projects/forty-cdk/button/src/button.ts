@@ -9,7 +9,9 @@ import {
   signal,
 } from '@angular/core';
 
-import { injectFocusVisible, injectHovered, injectPressed } from 'forty-cdk/core';
+import { injectFocusVisible } from './focus-visible';
+import { injectHovered } from './hovered';
+import { injectPressed } from './pressed';
 
 /**
  * Headless implementation of the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/).

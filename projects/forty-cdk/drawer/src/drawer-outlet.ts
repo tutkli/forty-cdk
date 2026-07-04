@@ -3,14 +3,13 @@ import {
   Component,
   DestroyRef,
   Directive,
+  Injector,
   inject,
-  type Injector,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 
 import {
-  OverlayContextInjector,
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
@@ -75,14 +74,23 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
 /**
  * @internal Exposes the element injector at a child of the row's `[forDrawer]`
  * element so the user component rendered via `NgComponentOutlet` resolves
- * `FOR_DRAWER_CONTEXT` from the enclosing `[forDrawer]` host. The shared body
- * lives in `OverlayContextInjector`; this only carries the drawer selector.
+ * `FOR_DRAWER_CONTEXT` from the enclosing `[forDrawer]` host.
  */
 @Directive({
   selector: '[forDrawerContextInjector]',
   exportAs: 'forDrawerContextInjector',
 })
-export class ForDrawerContextInjector extends OverlayContextInjector {}
+export class ForDrawerContextInjector {
+  /**
+   * Element injector at a child of the row's `[forDrawer]` element, which
+   * already resolves `FOR_DRAWER_CONTEXT`. The outlet feeds this injector to
+   * `entry.injectorFor(ctx.injector)`, making the user component rendered via
+   * `NgComponentOutlet` inherit the context alongside the data token / ref /
+   * consumer providers — so every piece (`[forDrawerClose]`,
+   * `[forDrawerTitle]`, …) resolves exactly as in the declarative path.
+   */
+  readonly injector = inject(Injector);
+}
 
 /**
  * @internal Outlet component created once by `ForDrawerManager` on the first

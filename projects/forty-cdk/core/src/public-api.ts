@@ -225,9 +225,6 @@ export {
   MODAL_EXEMPT_ATTRIBUTE,
   MODAL_PEER_ATTRIBUTE,
 } from './inert-siblings/inert-siblings';
-export { injectFocusVisible } from './interactions/focus-visible';
-export { type HoveredOptions, injectHovered } from './interactions/hovered';
-export { injectPressed, type PressedOptions } from './interactions/pressed';
 export {
   type ExpandCollapseAction,
   type GridNavigationAction,
@@ -309,7 +306,6 @@ export {
   roundToStepPrecision,
   snapToStep,
 } from './numeric-step/numeric-step';
-export { OverlayContextInjector } from './overlay-manager/overlay-context-injector';
 export {
   type OverlayManagerConfig,
   OverlayManagerCore,
@@ -368,7 +364,6 @@ export {
   type ScrollDismissOptions,
 } from './scroll-dismiss/scroll-dismiss';
 export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';
-export { SelectionModel, type SelectionModelOptions } from './selection-model/selection-model';
 export {
   defaultItemToFormValue,
   isInArray,

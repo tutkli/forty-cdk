@@ -85,24 +85,6 @@ describe('SelectionModel', () => {
     });
   });
 
-  describe('deltas', () => {
-    it('added / removed reflect the most recent mutation', () => {
-      const src = signal<readonly string[]>(['a']);
-      const model = new SelectionModel(src, { multiple: true });
-      model.select('b');
-      expect(model.added()).toEqual(['b']);
-      expect(model.removed()).toEqual([]);
-    });
-
-    it('setSelection reports replaced items as added and removed', () => {
-      const src = signal<readonly string[]>(['a', 'b']);
-      const model = new SelectionModel(src, { multiple: true });
-      model.setSelection('c');
-      expect(model.added()).toEqual(['c']);
-      expect(model.removed()).toEqual(['a', 'b']);
-    });
-  });
-
   describe('toggle', () => {
     it('toggles a value in then out', () => {
       const src = signal<readonly string[]>([]);
