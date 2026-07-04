@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, minLength, required } from '@angular/forms/signals';
 import { ForField, ForFieldError, ForLabel } from 'forty-cdk/field';
-import { ForSearch, ForSearchClear } from 'forty-cdk/search';
+import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 
 interface Filters {
   readonly term: string;
@@ -10,20 +10,27 @@ interface Filters {
 @Component({
   selector: 'app-search-field-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormField, ForField, ForLabel, ForSearch, ForSearchClear, ForFieldError],
+  imports: [
+    FormField,
+    ForField,
+    ForLabel,
+    ForSearchGroup,
+    ForSearch,
+    ForSearchClear,
+    ForFieldError,
+  ],
   template: `
     <div forField class="field">
       <label forLabel class="field-label">
         <span class="field-label-text">Search the docs</span>
-        <div class="search">
+        <div forSearchGroup class="search">
           <input
             forSearch
-            #s="forSearch"
             class="search-input"
             placeholder="At least 3 characters…"
             [formField]="filtersForm.term"
           />
-          <button [forSearchClear]="s" class="search-clear" aria-label="Clear search">×</button>
+          <button forSearchClear class="search-clear" aria-label="Clear search">×</button>
         </div>
       </label>
       @if (filtersForm.term().touched() && !filtersForm.term().valid()) {

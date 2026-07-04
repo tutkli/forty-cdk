@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
-import { ForSearch, ForSearchClear } from 'forty-cdk/search';
+import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 
 const PRIMITIVES = [
   'Accordion',
@@ -19,10 +19,10 @@ const PRIMITIVES = [
 @Component({
   selector: 'app-search-default-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForSearch, ForSearchClear],
+  imports: [ForSearchGroup, ForSearch, ForSearchClear],
   template: `
     <div class="stage">
-      <div class="search">
+      <div forSearchGroup class="search">
         <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="none"
@@ -34,13 +34,12 @@ const PRIMITIVES = [
         </svg>
         <input
           forSearch
-          #s="forSearch"
           class="search-input"
           [(value)]="query"
           placeholder="Search primitives…"
           aria-label="Search primitives"
         />
-        <button [forSearchClear]="s" class="search-clear" aria-label="Clear search">×</button>
+        <button forSearchClear class="search-clear" aria-label="Clear search">×</button>
       </div>
 
       <ul class="results">

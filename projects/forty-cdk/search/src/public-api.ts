@@ -1,5 +1,12 @@
 export { ForSearch } from './search';
 export { ForSearchClear } from './search-clear';
+export { ForSearchGroup } from './search-group';
+export {
+  FOR_SEARCH_GROUP,
+  injectSearchGroup,
+  type ForSearchContext,
+  type ForSearchGroupContext,
+} from './search-context';
 export {
   FOR_SEARCH_DEFAULTS,
   provideForSearchDefaults,

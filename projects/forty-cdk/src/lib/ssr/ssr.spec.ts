@@ -47,7 +47,7 @@ import {
   ForScrollAreaThumb,
   ForScrollAreaViewport,
 } from 'forty-cdk/scroll-area';
-import { ForSearch, ForSearchClear } from 'forty-cdk/search';
+import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
@@ -520,10 +520,12 @@ class CheckboxFixture {}
 class TextareaFixture {}
 
 @Component({
-  imports: [ForSearch, ForSearchClear],
+  imports: [ForSearchGroup, ForSearch, ForSearchClear],
   template: `
-    <input forSearch #s="forSearch" />
-    <button [forSearchClear]="s" aria-label="Clear search">×</button>
+    <div forSearchGroup>
+      <input forSearch />
+      <button forSearchClear aria-label="Clear search">×</button>
+    </div>
   `,
 })
 class SearchFixture {}
