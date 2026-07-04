@@ -75,8 +75,8 @@ export class ForTimePickerOption<D = unknown> {
     };
     registerHandle(
       handle,
-      (h) => this.#ctx.registerOption(h),
-      (h) => this.#ctx.unregisterOption(h),
+      (h) => this.#ctx.overlay.registerOption(h),
+      (h) => this.#ctx.overlay.unregisterOption(h),
     );
   }
 
@@ -121,7 +121,7 @@ export class ForTimePickerOption<D = unknown> {
     });
     if (action) {
       event.preventDefault();
-      this.#ctx.navigate(this.#host.nativeElement, action);
+      this.#ctx.overlay.navigate(this.#host.nativeElement, action);
     }
   }
 }

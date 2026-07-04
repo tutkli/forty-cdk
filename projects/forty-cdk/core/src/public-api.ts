@@ -248,6 +248,7 @@ export {
   type NextEnabledHandleOptions,
 } from './keyboard-navigation/move-in-collection';
 export {
+  type ListboxOverlayContext,
   ListboxOverlayController,
   type ListboxOverlayControllerDeps,
   type ListboxOverlayEmitTargets,

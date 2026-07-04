@@ -25,8 +25,8 @@ import { injectTimePickerContext } from './time-picker-context';
   host: {
     role: 'listbox',
     tabindex: '-1',
-    '[id]': 'ctx.contentId()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
+    '[id]': 'ctx.overlay.contentId()',
+    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.overlay.triggerId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
@@ -42,19 +42,19 @@ export class ForTimePickerContent {
     const ctx = this.ctx;
     registerHandle(
       this.#host.nativeElement,
-      (el) => ctx.registerContent(el),
-      (el) => ctx.unregisterContent(el),
+      (el) => ctx.overlay.registerContent(el),
+      (el) => ctx.overlay.unregisterContent(el),
     );
 
     const focusInitial = (): boolean => {
-      const target = ctx.initialFocus();
+      const target = ctx.overlay.initialFocus();
       if (target === 'selected') {
-        return ctx.focusSelectedOption() || ctx.focusFirstEnabledOption();
+        return ctx.focusSelectedOption() || ctx.overlay.focusFirstEnabledOption();
       }
       if (target === 'last') {
-        return ctx.focusLastEnabledOption();
+        return ctx.overlay.focusLastEnabledOption();
       }
-      return ctx.focusFirstEnabledOption();
+      return ctx.overlay.focusFirstEnabledOption();
     };
 
     if (ctx.modal()) {
@@ -63,10 +63,10 @@ export class ForTimePickerContent {
         returnFocus: ctx.returnFocus,
         initialFocus: {
           move: focusInitial,
-          veto: () => ctx.emitAutoFocusOnOpen(),
+          veto: () => ctx.overlay.emitAutoFocusOnOpen(),
         },
         autoFocusOnClose: () => (event) => {
-          if (ctx.emitAutoFocusOnClose()) {
+          if (ctx.overlay.emitAutoFocusOnClose()) {
             event.preventDefault();
           }
         },
@@ -74,12 +74,12 @@ export class ForTimePickerContent {
           dismissible: ctx.dismissible,
           requestClose: (reason) => {
             ctx.markTouched();
-            ctx.closeMenu(reason);
+            ctx.overlay.closeMenu(reason);
           },
-          emitEscapeKeyDown: (veto) => ctx.forwardEscapeKeyDown(veto),
-          emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
-          emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
-          emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
+          emitEscapeKeyDown: (veto) => ctx.overlay.forwardEscapeKeyDown(veto),
+          emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
+          emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
+          emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         },
       });
       return;
@@ -88,7 +88,7 @@ export class ForTimePickerContent {
     injectOverlayShell({
       positioner: {
         kind: 'floating',
-        reference: ctx.anchor,
+        reference: ctx.overlay.anchor,
         open: ctx.open,
         side: ctx.side,
         align: ctx.align,
@@ -105,26 +105,26 @@ export class ForTimePickerContent {
         dismissible: ctx.dismissible,
         requestClose: (reason) => {
           ctx.markTouched();
-          ctx.closeMenu(reason);
+          ctx.overlay.closeMenu(reason);
         },
-        emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
-        emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
-        emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
+        emitEscapeKeyDown: (event) => ctx.overlay.emitEscapeKeyDown(event),
+        emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         exemptElements: () => {
-          const t = ctx.trigger();
+          const t = ctx.overlay.trigger();
           return t ? [t] : [];
         },
       },
       initialFocus: {
         move: focusInitial,
-        veto: () => ctx.emitAutoFocusOnOpen(),
+        veto: () => ctx.overlay.emitAutoFocusOnOpen(),
       },
       returnFocus: {
         enabled: ctx.returnFocus,
-        target: () => ctx.trigger(),
-        veto: () => ctx.emitAutoFocusOnClose(),
-        skip: () => ctx.lastCloseReason() === 'tab',
+        target: () => ctx.overlay.trigger(),
+        veto: () => ctx.overlay.emitAutoFocusOnClose(),
+        skip: () => ctx.overlay.lastCloseReason() === 'tab',
       },
     });
   }

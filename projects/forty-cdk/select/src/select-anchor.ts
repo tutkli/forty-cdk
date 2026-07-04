@@ -42,8 +42,8 @@ export class ForSelectAnchor {
   constructor() {
     registerHandle(
       this.#host.nativeElement,
-      (el) => this.#ctx.registerAnchor(el),
-      (el) => this.#ctx.unregisterAnchor(el),
+      (el) => this.#ctx.overlay.registerAnchor(el),
+      (el) => this.#ctx.overlay.unregisterAnchor(el),
     );
   }
 }

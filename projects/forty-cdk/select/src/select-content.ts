@@ -57,8 +57,8 @@ import { injectSelectContext } from './select-context';
     role: 'listbox',
     '[attr.tabindex]': 'ctx.totalCount() !== undefined ? "0" : "-1"',
     '[attr.aria-activedescendant]': 'ctx.activeDescendantId()',
-    '[id]': 'ctx.contentId()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
+    '[id]': 'ctx.overlay.contentId()',
+    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.overlay.triggerId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
@@ -76,8 +76,8 @@ export class ForSelectContent {
     const ctx = this.ctx;
     registerHandle(
       this.#host.nativeElement,
-      (el) => ctx.registerContent(el),
-      (el) => ctx.unregisterContent(el),
+      (el) => ctx.overlay.registerContent(el),
+      (el) => ctx.overlay.unregisterContent(el),
     );
 
     // Primitive-owned initial-focus algorithm shared by both shells.
@@ -89,14 +89,14 @@ export class ForSelectContent {
         ctx.seedVirtualizedInitialFocus();
         return true;
       }
-      const target = ctx.initialFocus();
+      const target = ctx.overlay.initialFocus();
       if (target === 'selected') {
-        return ctx.focusSelectedOption() || ctx.focusFirstEnabledOption();
+        return ctx.focusSelectedOption() || ctx.overlay.focusFirstEnabledOption();
       }
       if (target === 'last') {
-        return ctx.focusLastEnabledOption();
+        return ctx.overlay.focusLastEnabledOption();
       }
-      return ctx.focusFirstEnabledOption();
+      return ctx.overlay.focusFirstEnabledOption();
     };
 
     // Static branch — `modal` (and `position`) is read once on construction.
@@ -112,10 +112,10 @@ export class ForSelectContent {
         // first → last) instead of its own first-focusable move.
         initialFocus: {
           move: focusInitial,
-          veto: () => ctx.emitAutoFocusOnOpen(),
+          veto: () => ctx.overlay.emitAutoFocusOnOpen(),
         },
         autoFocusOnClose: () => (event) => {
-          if (ctx.emitAutoFocusOnClose()) {
+          if (ctx.overlay.emitAutoFocusOnClose()) {
             event.preventDefault();
           }
         },
@@ -125,12 +125,12 @@ export class ForSelectContent {
           // the anchored path's touched-on-dismiss behaviour.
           requestClose: (reason) => {
             ctx.markTouched();
-            ctx.closeMenu(reason);
+            ctx.overlay.closeMenu(reason);
           },
-          emitEscapeKeyDown: (veto) => ctx.forwardEscapeKeyDown(veto),
-          emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
-          emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
-          emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
+          emitEscapeKeyDown: (veto) => ctx.overlay.forwardEscapeKeyDown(veto),
+          emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
+          emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
+          emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         },
       });
       return;
@@ -140,14 +140,14 @@ export class ForSelectContent {
       ctx.position() === 'item-aligned'
         ? {
             kind: 'item-aligned',
-            reference: ctx.anchor,
+            reference: ctx.overlay.anchor,
             open: ctx.open,
             selectedOption: ctx.selectedOptionEl,
             collisionPadding: ctx.collisionPadding,
           }
         : {
             kind: 'floating',
-            reference: ctx.anchor,
+            reference: ctx.overlay.anchor,
             open: ctx.open,
             side: ctx.side,
             align: ctx.align,
@@ -169,32 +169,32 @@ export class ForSelectContent {
         // Mirror the modal path's touched-on-dismiss behaviour.
         requestClose: (reason) => {
           ctx.markTouched();
-          ctx.closeMenu(reason);
+          ctx.overlay.closeMenu(reason);
         },
-        emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
-        emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
-        emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
-        emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),
+        emitEscapeKeyDown: (event) => ctx.overlay.emitEscapeKeyDown(event),
+        emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
+        emitFocusOutside: (veto) => ctx.overlay.emitFocusOutside(veto),
+        emitInteractOutside: (veto) => ctx.overlay.emitInteractOutside(veto),
         // Trigger button is exempt — its own click handler toggles open/close;
         // without exemption pointer-down-outside would race and double-close.
         exemptElements: () => {
-          const t = ctx.trigger();
+          const t = ctx.overlay.trigger();
           return t ? [t] : [];
         },
       },
       initialFocus: {
         move: focusInitial,
-        veto: () => ctx.emitAutoFocusOnOpen(),
+        veto: () => ctx.overlay.emitAutoFocusOnOpen(),
       },
       returnFocus: {
         enabled: ctx.returnFocus,
-        target: () => ctx.trigger(),
+        target: () => ctx.overlay.trigger(),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
-        veto: () => ctx.emitAutoFocusOnClose(),
+        veto: () => ctx.overlay.emitAutoFocusOnClose(),
         // Skip on `'tab'` closes — Tab already moved focus to the trigger
         // and let the browser advance from there; re-focusing would steal
         // it back.
-        skip: () => ctx.lastCloseReason() === 'tab',
+        skip: () => ctx.overlay.lastCloseReason() === 'tab',
       },
     });
   }

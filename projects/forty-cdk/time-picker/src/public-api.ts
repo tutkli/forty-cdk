@@ -10,6 +10,7 @@ export {
   type ForTimePickerContext,
   type ForTimePickerInitialFocus,
   type ForTimePickerOptionHandle,
+  type ForTimePickerOverlayContext,
 } from './time-picker-context';
 export {
   FOR_TIME_PICKER_DEFAULTS,
@@ -24,6 +25,7 @@ export { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './
 export type {
   FloatingAlign,
   FloatingSide,
+  ListboxOverlayContext,
   ListNavigationAction,
   TimeCapableDateAdapter,
   VetoableEvent,
