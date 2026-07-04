@@ -32,7 +32,7 @@ import { PEOPLE } from './people';
         class="tbl"
         selectionMode="multiple"
         selectionBehavior="toggle"
-        [(selection)]="selection"
+        [(value)]="selection"
       >
         <div role="rowgroup">
           <div forTableHeaderRow class="tbl-row tbl-head">

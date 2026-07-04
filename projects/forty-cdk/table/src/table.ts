@@ -75,7 +75,7 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
   },
   providers: [{ provide: FOR_TABLE_CONTEXT, useExisting: ForTable }],
 })
-export class ForTable implements ForTableContext {
+export class ForTable<T = unknown> implements ForTableContext {
   /**
    * ARIA role emitted on the host. `'table'` is the default static read-only
    * structure. `'grid'` and `'treegrid'` provide single-tab-stop roving + 2D
@@ -125,13 +125,14 @@ export class ForTable implements ForTableContext {
 
   /**
    * Two-way bindable selected row values (each row's `[value]`). Single mode keeps
-   * 0–1 entries. The implicit `selectionChange` fires only on internal mutations
-   * (selector / row click / Space / select-all), never on consumer writes.
+   * 0–1 entries. The implicit `valueChange` fires only on internal mutations
+   * (selector / row click / Space / select-all), never on consumer writes. The
+   * directive infers the row-value type `T` from this binding.
    */
-  readonly selection = model<readonly unknown[]>([]);
+  readonly value = model<readonly T[]>([]);
 
   /** Equality comparator for row values. Defaults to `===`; supply id-based for objects. */
-  readonly compareWith = input<(a: unknown, b: unknown) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
 
   /**
    * Full ordered set of selectable row values (each row's `[value]`), for a
@@ -142,7 +143,7 @@ export class ForTable implements ForTableContext {
    * universe of selectable values, so a range can span unmounted rows and the
    * tri-state reflects the true dataset. Per-row selection is unaffected.
    */
-  readonly selectableValues = input<readonly unknown[] | null>(null);
+  readonly selectableValues = input<readonly T[] | null>(null);
 
   /**
    * Two-way bindable open parent-row values (each row's `[value]`), for
@@ -150,7 +151,7 @@ export class ForTable implements ForTableContext {
    * expand/collapse (ArrowRight/ArrowLeft, `toggleRowExpansion`), never on
    * consumer writes through `[(expanded)]`. Ignored outside `treegrid` mode.
    */
-  readonly expanded = model<readonly unknown[]>([]);
+  readonly expanded = model<readonly T[]>([]);
 
   readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
@@ -228,18 +229,18 @@ export class ForTable implements ForTableContext {
 
   readonly headerRowIndex = computed<number | null>(() => (this.#hasHeaderRowIndex() ? 1 : null));
 
-  readonly #registeredValues = computed<readonly unknown[]>(() =>
+  readonly #registeredValues = computed<readonly T[]>(() =>
     this.#rows
       .items()
-      .map((row) => row.value())
+      .map((row) => row.value() as T)
       .filter((v) => v !== undefined),
   );
-  readonly #aggregateValues = computed<readonly unknown[]>(
+  readonly #aggregateValues = computed<readonly T[]>(
     () => this.selectableValues() ?? this.#registeredValues(),
   );
 
-  readonly #selection = new TableRowSelection({
-    selection: this.selection,
+  readonly #selection = new TableRowSelection<T>({
+    selection: this.value,
     selectionMode: this.selectionMode,
     selectionBehavior: this.selectionBehavior,
     compareWith: this.compareWith,
@@ -248,7 +249,7 @@ export class ForTable implements ForTableContext {
 
   readonly selectAllState: Signal<TableSelectAllState> = this.#selection.selectAllState;
 
-  readonly #expansion = new TableExpansion({
+  readonly #expansion = new TableExpansion<T>({
     expanded: this.expanded,
     compareWith: this.compareWith,
   });
@@ -295,11 +296,11 @@ export class ForTable implements ForTableContext {
     this.#rootEl.style.setProperty(`--for-table-col-${column}-width`, `${width}px`);
   }
 
-  isRowExpanded(value: unknown): boolean {
+  isRowExpanded(value: T): boolean {
     return this.#expansion.isExpanded(value);
   }
 
-  toggleRowExpansion(value: unknown): void {
+  toggleRowExpansion(value: T): void {
     this.#expansion.toggle(value);
   }
 
@@ -375,16 +376,16 @@ export class ForTable implements ForTableContext {
     }
   }
 
-  isRowSelected(value: unknown): boolean {
+  isRowSelected(value: T): boolean {
     return this.#selection.isSelected(value);
   }
 
-  toggleRowSelection(value: unknown): void {
+  toggleRowSelection(value: T): void {
     this.#selection.toggle(value);
   }
 
   selectRow(
-    value: unknown,
+    value: T,
     modifiers?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
   ): void {
     this.#selection.select(value, modifiers);
@@ -394,10 +395,10 @@ export class ForTable implements ForTableContext {
     this.#selection.toggleSelectAll();
   }
 
-  #rowValueOfCell(cellHost: HTMLElement): unknown {
+  #rowValueOfCell(cellHost: HTMLElement): T | undefined {
     for (const row of this.#rows.items()) {
       if (row.cells().some((cell) => cell.host === cellHost)) {
-        return row.value();
+        return row.value() as T;
       }
     }
     return undefined;
@@ -472,7 +473,7 @@ export class ForTable implements ForTableContext {
     if (!row?.expandable()) {
       return false;
     }
-    const value = row.value();
+    const value = row.value() as T;
     const open = this.#expansion.isExpanded(value);
     if (intent === 'expand' && !open) {
       event.preventDefault();

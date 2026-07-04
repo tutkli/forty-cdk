@@ -348,7 +348,7 @@ for the full analysis.
 ```
 
 ```ts
-onDrop(event: ForDragDropEvent<MyItem>): void {
+onDrop(event: ForDragDropEvent): void {
   this.items.set(
     moveItemInArray(this.items(), event.previousIndex, event.currentIndex),
   );
@@ -373,7 +373,7 @@ onDrop(event: ForDragDropEvent<MyItem>): void {
 ```
 
 ```ts
-onDrop(event: ForDragDropEvent<MyItem>): void {
+onDrop(event: ForDragDropEvent): void {
   if (event.previousContainer === event.container) {
     this.updateList(event.container, (arr) =>
       moveItemInArray(arr, event.previousIndex, event.currentIndex),

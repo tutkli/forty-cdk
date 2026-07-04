@@ -47,7 +47,7 @@ export class ForTableRow implements ForTableRowContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #cells = new Collection<ForTableCellHandle>();
 
-  /** This row's selection identity, written into the table's `[(selection)]`. Leave unset for non-selectable rows. */
+  /** This row's selection identity, written into the table's `[(value)]`. Leave unset for non-selectable rows. */
   readonly value = input<unknown>();
 
   /** 1-based tree depth for `aria-level` in `mode="treegrid"`. Ignored in other modes. */
