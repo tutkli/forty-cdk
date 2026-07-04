@@ -19,6 +19,16 @@ import { inject, InjectionToken } from '@angular/core';
  * A `Temporal.PlainDate` adapter is a planned non-breaking addition once the
  * Temporal API is broadly available across browsers (#354).
  *
+ * **Calendar system (Gregorian).** This seam abstracts the date *library* and
+ * locale-aware *formatting*, not the calendar *system*'s month structure. The
+ * `ForCalendar` grid, the month picker and the date field assume a
+ * Gregorian-structured year: exactly twelve months, `month` in **1-12**, and the
+ * year ending at month 12. An adapter over a calendar with a different month
+ * structure (e.g. a 13-month year) is out of scope; calendar-system
+ * pluggability would be revisited alongside the Temporal adapter track (#354).
+ * The optional {@link compareDate} hook overrides day-only *ordering* only — it
+ * does not make the grid non-Gregorian.
+ *
  * Implementations must be pure with respect to their date type: every
  * operation returns a value and never mutates its inputs. The `D` produced by
  * mutating operations (`add*`, `createDate`) is a fresh value, which keeps it
@@ -124,8 +134,11 @@ export interface DateAdapter<D> {
    * Adapters may **omit** this method: {@link compareDateOf} then derives the
    * day-only comparison from the {@link getYear} / {@link getMonth} /
    * {@link getDate} getters, which is correct for any adapter. Implement it only
-   * to override that default (e.g. for a non-Gregorian ordering). Day-only
-   * adapters whose {@link compare} already ignores time need not implement it.
+   * to override that default (e.g. a bespoke day-granular ordering). This
+   * overrides day-only *ordering* only — it does not change the Gregorian month
+   * structure the grid assumes (see the *Calendar system* note on the interface).
+   * Day-only adapters whose {@link compare} already ignores time need not
+   * implement it.
    */
   compareDate?(a: D, b: D): number;
 
