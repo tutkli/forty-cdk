@@ -341,13 +341,16 @@ export class ForTimePicker<D>
       step: this.step(),
       granularity: this.granularity(),
       formatOptions: this.#effectiveFormatOptions(),
+      locale: this.locale() ?? undefined,
     });
   });
 
   /** Formatted display of the current value, or `null` when empty. */
   readonly formattedValue = computed<string | null>(() => {
     const v = this.value();
-    return v === null ? null : this.adapter.format(v, this.#effectiveFormatOptions());
+    return v === null
+      ? null
+      : this.adapter.format(v, this.#effectiveFormatOptions(), this.locale() ?? undefined);
   });
 
   protected override fieldLabelledElement(): HTMLElement | null {

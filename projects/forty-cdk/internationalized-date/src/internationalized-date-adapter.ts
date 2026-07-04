@@ -83,11 +83,12 @@ export class InternationalizedDateAdapter implements DateAdapter<CalendarDate> {
   }
 
   /**
-   * Formats through the runtime's default locale and time zone. Subject to the
-   * SSR/hydration caveat on {@link DateAdapter.format}.
+   * Formats through `locale` (or the runtime's default locale when omitted) and
+   * the runtime time zone. Subject to the SSR/hydration caveat on
+   * {@link DateAdapter.format}.
    */
-  format(date: CalendarDate, options: Intl.DateTimeFormatOptions): string {
-    return new Intl.DateTimeFormat(undefined, options).format(date.toDate(getLocalTimeZone()));
+  format(date: CalendarDate, options: Intl.DateTimeFormatOptions, locale?: string): string {
+    return new Intl.DateTimeFormat(locale, options).format(date.toDate(getLocalTimeZone()));
   }
 }
 

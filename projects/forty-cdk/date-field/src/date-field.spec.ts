@@ -18,7 +18,7 @@ import { ForDateFieldSegment } from './date-field-segment';
 
 const adapter = new NativeDateAdapter();
 
-const marchLongName = adapter.format(adapter.createDate(2001, 3, 1), { month: 'long' });
+const marchLongName = adapter.format(adapter.createDate(2001, 3, 1), { month: 'long' }, 'en-US');
 
 type Placeholders = Partial<Record<'day' | 'month' | 'year', string>>;
 
@@ -196,6 +196,18 @@ describe('ForDateField', () => {
       await type(r, 'month', '03');
       expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('3');
       expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe(marchLongName);
+    });
+
+    it('formats the month aria-valuetext through the configured [locale] (#1150)', async () => {
+      const r = renderHost(Host);
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+
+      await type(r, 'month', '03');
+
+      const frMarch = adapter.format(adapter.createDate(2001, 3, 1), { month: 'long' }, 'fr-FR');
+      expect(frMarch).not.toBe(marchLongName);
+      expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe(frMarch);
     });
 
     it('announces an empty state on every empty numeric segment', async () => {

@@ -41,6 +41,8 @@ export interface BuildTimeSlotsConfig<D> {
   readonly granularity: TimePickerGranularity;
   /** `Intl.DateTimeFormat` options for the slot label. */
   readonly formatOptions: Intl.DateTimeFormatOptions;
+  /** BCP 47 locale for the slot label; the runtime default when omitted. */
+  readonly locale?: string;
 }
 
 function timeOfDaySeconds<D>(
@@ -69,7 +71,8 @@ function timeOfDaySeconds<D>(
  * Pure function: no signals, no DOM, no side effects.
  */
 export function buildTimeSlots<D>(config: BuildTimeSlotsConfig<D>): readonly ForTimeSlot<D>[] {
-  const { adapter, anchor, selected, minTime, maxTime, step, granularity, formatOptions } = config;
+  const { adapter, anchor, selected, minTime, maxTime, step, granularity, formatOptions, locale } =
+    config;
   const stepSeconds = Math.max(1, Math.round(step)) * 60;
   const minSec = minTime !== null ? timeOfDaySeconds(adapter, minTime, 'second') : null;
   const maxSec = maxTime !== null ? timeOfDaySeconds(adapter, maxTime, 'second') : null;
@@ -80,7 +83,7 @@ export function buildTimeSlots<D>(config: BuildTimeSlotsConfig<D>): readonly For
     const m = Math.floor((t % 3600) / 60);
     const s = t % 60;
     const value = adapter.setTime(anchor, h, m, s);
-    const label = adapter.format(value, formatOptions);
+    const label = adapter.format(value, formatOptions, locale);
     const slotGranularSec = timeOfDaySeconds(adapter, value, granularity);
     const slotFullSec = h * 3600 + m * 60 + s;
     const isSelected =

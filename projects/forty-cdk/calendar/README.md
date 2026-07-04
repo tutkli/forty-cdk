@@ -123,21 +123,22 @@ The library is styleless: style the boolean `data-*` hooks on `[forCalendarCell]
 
 ### `ForCalendar`
 
-| Property            | Type                                   | Description                                                                                                                                           |
-| ------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection.<br>**Default:** `null` |
-| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.<br>**Default:** `'single'`        |
-| `range`             | `model<DateRange<D> \| null>`          | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits/clears.<br>**Default:** `null` |
-| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op.<br>**Default:** `null` (no minimum)                                               |
-| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op.<br>**Default:** `null` (no maximum)                                                |
-| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable.<br>**Default:** `null`                                                            |
-| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable.<br>**Default:** `null`                                                              |
-| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable).<br>**Default:** `() => false`                                             |
-| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days suffixed                         |
-| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.<br>**Default:** —                                        |
-| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                |
-| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                        |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows                   |
+| Property            | Type                                   | Description                                                                                                                                                                                  |
+| ------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`                     | Two-way bindable selected date, or `null`. Used in `selectionMode="single"`. `(valueChange)` fires only on internal selection.<br>**Default:** `null`                                        |
+| `selectionMode`     | `input<'single' \| 'range'>`           | `'single'` (default) keeps the single-date `value` flow. `'range'` switches to anchor → commit and exposes `range`.<br>**Default:** `'single'`                                               |
+| `range`             | `model<DateRange<D> \| null>`          | Two-way bindable committed range. Only used in `selectionMode="range"`. `(rangeChange)` fires only on internal commits/clears.<br>**Default:** `null`                                        |
+| `minRangeLength`    | `input<number \| null>`                | Minimum inclusive day count. A commit shorter than this is a no-op.<br>**Default:** `null` (no minimum)                                                                                      |
+| `maxRangeLength`    | `input<number \| null>`                | Maximum inclusive day count. A commit longer than this is a no-op.<br>**Default:** `null` (no maximum)                                                                                       |
+| `min`               | `input<D \| null>`                     | Minimum selectable date (inclusive). Earlier dates are unavailable.<br>**Default:** `null`                                                                                                   |
+| `max`               | `input<D \| null>`                     | Maximum selectable date (inclusive). Later dates are unavailable.<br>**Default:** `null`                                                                                                     |
+| `isDateUnavailable` | `input<(date: D) => boolean>`          | Per-date predicate marking a date unavailable (present but not selectable).<br>**Default:** `() => false`                                                                                    |
+| `dateLabel`         | `input<CalendarDateLabelFormatter<D>>` | Formats each gridcell's `aria-label` (full accessible date).<br>**Default:** localized full date, outside-month days suffixed                                                                |
+| `disabled`          | `input<boolean>`                       | Disables the whole calendar (no focus movement, no selection). Reflected as `data-disabled`.<br>**Default:** —                                                                               |
+| `readonly`          | `input<boolean>`                       | Read-only: dates stay focusable, selection is blocked. Reflected as `data-readonly`.<br>**Default:** —                                                                                       |
+| `firstDayOfWeek`    | `input<number \| null>`                | First column's weekday, **0-6** (`0` = Sunday).<br>**Default:** `null` → the adapter's value (or `provideForCalendarDefaults`)                                                               |
+| `locale`            | `input<string \| null>`                | BCP 47 locale for the heading, weekday headers, month-picker options and cell `aria-label` names. The calendar system stays Gregorian.<br>**Default:** `null` → the runtime's default locale |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`        | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir` and mirrors horizontal arrows                                                          |
 
 ### Data attributes
 

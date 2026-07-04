@@ -318,9 +318,11 @@ export class DateFieldEngine<D> {
     // adapter's calendar system rather than assuming Gregorian month numbering.
     // A probe date built with `createDate` maps the 1-12 number to a localized
     // long name without involving the entered value.
-    return this.#config.adapter.format(this.#config.adapter.createDate(RESOLVER_YEAR, month, 1), {
-      month: 'long',
-    });
+    return this.#config.adapter.format(
+      this.#config.adapter.createDate(RESOLVER_YEAR, month, 1),
+      { month: 'long' },
+      this.#config.locale() ?? undefined,
+    );
   }
 
   /** Base value for stepping an empty segment: date parts from today, time parts from their minimum. */

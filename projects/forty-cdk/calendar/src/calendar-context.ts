@@ -98,12 +98,17 @@ export interface CalendarDayCell<D> {
  *
  * @typeParam D The adapter's date type.
  * @param date The cell's date.
- * @param context Formatting context: the active {@link DateAdapter} and whether
- *   the date falls outside the visible month.
+ * @param context Formatting context: the active {@link DateAdapter}, whether the
+ *   date falls outside the visible month, and the calendar's resolved `locale`
+ *   (`null` = runtime default) to forward to `adapter.format`.
  */
 export type CalendarDateLabelFormatter<D> = (
   date: D,
-  context: { readonly adapter: DateAdapter<D>; readonly outsideMonth: boolean },
+  context: {
+    readonly adapter: DateAdapter<D>;
+    readonly outsideMonth: boolean;
+    readonly locale: string | null;
+  },
 ) => string;
 
 /** A week row in the calendar grid. */

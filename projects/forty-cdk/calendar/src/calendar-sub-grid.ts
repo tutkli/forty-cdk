@@ -15,6 +15,8 @@ export interface CalendarSubGridHost<D> {
   readonly adapter: DateAdapter<D>;
   /** Resolved writing direction; `'rtl'` mirrors the horizontal arrows. */
   readonly dir: () => 'ltr' | 'rtl';
+  /** The formatting locale (`null` = runtime default), forwarded to `adapter.format`. */
+  readonly locale: () => string | null;
   /** Number of years the year grid shows as an aligned block. */
   readonly yearBlockSize: () => number;
   /** Start year of the aligned block containing the visible year. */

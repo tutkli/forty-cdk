@@ -33,11 +33,12 @@ export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
   options(): readonly CalendarMonthOption[] {
     const adapter = this.#host.adapter;
     const year = this.#host.visibleYear();
+    const locale = this.#host.locale() ?? undefined;
     const options: CalendarMonthOption[] = [];
     for (let month = 1; month <= 12; month++) {
       options.push({
         value: month,
-        label: adapter.format(adapter.createDate(year, month, 1), { month: 'long' }),
+        label: adapter.format(adapter.createDate(year, month, 1), { month: 'long' }, locale),
         disabled: this.#host.isMonthOutOfBounds(year, month),
       });
     }

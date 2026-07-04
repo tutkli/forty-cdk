@@ -32,11 +32,12 @@ export class CalendarDayNavigator<D> implements CalendarViewStrategy {
   readonly weekDays = computed<readonly CalendarWeekday[]>(() => {
     const adapter = this.#host.adapter;
     const firstDay = this.#host.firstDayOfWeek();
+    const locale = this.#host.locale() ?? undefined;
     return this.#matrix()[0]!.map((date, index) => ({
       key: String((firstDay + index) % 7),
-      narrow: adapter.format(date, { weekday: 'narrow' }),
-      short: adapter.format(date, { weekday: 'short' }),
-      long: adapter.format(date, { weekday: 'long' }),
+      narrow: adapter.format(date, { weekday: 'narrow' }, locale),
+      short: adapter.format(date, { weekday: 'short' }, locale),
+      long: adapter.format(date, { weekday: 'long' }, locale),
     }));
   });
 
@@ -151,6 +152,8 @@ export interface CalendarDayNavigatorHost<D> {
   readonly adapter: DateAdapter<D>;
   /** Resolved writing direction; `'rtl'` mirrors the horizontal arrows. */
   readonly dir: () => 'ltr' | 'rtl';
+  /** The formatting locale (`null` = runtime default), forwarded to `adapter.format`. */
+  readonly locale: () => string | null;
   /** The roving focused date (the day grid's tab stop). */
   readonly focusedDate: () => D;
   /** First day of the visible month, driving the rendered matrix. */
