@@ -27,7 +27,6 @@
 export const FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS = [
   'value',
   'open',
-  'range',
   'align',
   'alignOffset',
   'ariaLabel',
@@ -52,11 +51,9 @@ export const FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS = [
   'name',
   'pending',
   'placeholder',
-  'rangeSeparator',
   'readonly',
   'required',
   'returnFocus',
-  'selectionMode',
   'side',
   'sideOffset',
   'sticky',
@@ -71,7 +68,6 @@ export const FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS = [
 export const FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS = [
   'valueChange',
   'openChange',
-  'rangeChange',
   'escapeKeyDown',
   'pointerDownOutside',
   'focusOutside',

@@ -100,7 +100,7 @@ test.describe('DatePicker', () => {
   });
 });
 
-test.describe('DatePicker — range', () => {
+test.describe('DateRangePicker (range selection)', () => {
   test('committing a range closes the surface and the trigger shows the formatted range', async ({
     page,
   }) => {

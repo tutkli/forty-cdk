@@ -131,6 +131,12 @@ export class ForDateRangePicker<D>
    */
   readonly maxRangeLength = input<number | null>(null);
 
+  /**
+   * Separator rendered between start and end in `[forDatePickerValue]`. Default
+   * `' – '` (en-dash with spaces).
+   */
+  readonly rangeSeparator = input<string>(' – ');
+
   /** Formatted committed range (`start – end`) via the adapter, or `null` when empty. */
   readonly formattedValue = computed<string | null>(() => {
     const range = this.value();
