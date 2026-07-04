@@ -66,12 +66,6 @@ export interface ForSliderContext {
   pointerToValue(clientX: number, clientY: number): number;
   /** Index of the thumb whose value is closest to `target`. */
   nearestThumbIndex(target: number): number;
-  /**
-   * Begin a drag for the given thumb. Attaches global pointermove / pointerup
-   * listeners; the thumb's own `(pointerdown)` calls this directly, and the
-   * track's calls it after picking the nearest thumb.
-   */
-  beginDrag(index: number, event: PointerEvent): void;
 
   // track el (registered by `ForSliderTrack`)
   setTrack(el: HTMLElement | null): void;

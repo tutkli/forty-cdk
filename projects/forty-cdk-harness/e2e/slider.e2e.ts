@@ -534,12 +534,13 @@ test.describe('Slider (step granularity)', () => {
   });
 });
 
-// Touch path coverage for the slider thumb's `(pointerdown)` and the
-// window-bound `pointermove` / `pointerup` listeners. The desktop
-// blocks above use `page.mouse` directly; the `@mobile` block routes
-// through `dragFrom`'s touch branch (synthetic `pointerType: 'touch'`
-// events via `dispatchEvent`) on the mobile projects, while falling
-// back to the mouse branch on desktop projects as a regression guard.
+// Touch path coverage for the slider's root-hosted pointer-drag session
+// (`createPointerDragSession`, document-bound move / up with pointer
+// capture). The desktop blocks above use `page.mouse` directly; the
+// `@mobile` block routes through `dragFrom`'s touch branch (synthetic
+// `pointerType: 'touch'` events via `dispatchEvent`) on the mobile
+// projects, while falling back to the mouse branch on desktop projects as
+// a regression guard.
 test.describe('Slider (@mobile touch drag)', () => {
   test('@mobile touch drag of the thumb updates aria-valuenow', async ({ page }, testInfo) => {
     await gotoFixture(page, 'slider');
