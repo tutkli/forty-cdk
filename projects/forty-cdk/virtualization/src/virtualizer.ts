@@ -123,6 +123,19 @@ function toVirtualItem(item: CoreVirtualItem): VirtualItem {
   };
 }
 
+function virtualItemsEqual(a: readonly VirtualItem[], b: readonly VirtualItem[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (x.index !== y.index || x.key !== y.key || x.start !== y.start || x.size !== y.size) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Headless windowing core: given a reactive item count, a size estimator and a
  * scroll container, returns the slice of items currently visible (plus
@@ -193,11 +206,14 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
   });
   inject(DestroyRef).onDestroy(() => cleanup?.());
 
-  const virtualItems = computed<readonly VirtualItem[]>(() => {
-    notify();
-    if (!mounted()) return [];
-    return virtualizer.getVirtualItems().map(toVirtualItem);
-  });
+  const virtualItems = computed<readonly VirtualItem[]>(
+    () => {
+      notify();
+      if (!mounted()) return [];
+      return virtualizer.getVirtualItems().map(toVirtualItem);
+    },
+    { equal: virtualItemsEqual },
+  );
 
   const totalSize = computed<number>(() => {
     notify();
