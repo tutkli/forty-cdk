@@ -25,9 +25,4 @@ export {
   type TableSelectionBehavior,
   type TableSelectAllState,
 } from './table-context';
-export {
-  FOR_TABLE_DEFAULTS,
-  provideForTableDefaults,
-  type ForTableDefaults,
-} from './table-defaults';
 export type { WritingDirection } from 'forty-cdk/core';

@@ -9,8 +9,3 @@ export {
   type ForFieldContext,
   type FieldControlHandle,
 } from './field-context';
-export {
-  FOR_FIELD_DEFAULTS,
-  provideForFieldDefaults,
-  type ForFieldDefaults,
-} from './field-defaults';

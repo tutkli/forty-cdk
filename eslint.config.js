@@ -716,16 +716,20 @@ const fortyCdkPlugin = {
       },
     },
 
-    // Enforces CLAUDE.md § "Defaults providers": every primitive that ships a
-    // root <name>.ts file must also ship a sibling <name>-defaults.ts (empty
-    // stub or populated). Recognises both library layouts:
+    // Enforces CLAUDE.md § "Defaults providers": a primitive must ship a
+    // sibling <name>-defaults.ts ONLY when it actually consumes scoped
+    // defaults — i.e. some non-defaults source file in the entry's src/
+    // injects the `FOR_<PRIMITIVE>_DEFAULTS` token. Primitives with no
+    // per-scope tunables omit the file entirely (no empty stub). Recognises
+    // both library layouts:
     //   - per-entry-point:  projects/forty-cdk/<entry>/src/<entry>.ts
     //   - legacy folder:    projects/forty-cdk/src/lib/<name>/<name>.ts
     // In the per-entry-point layout the primitive name is the entry-point
     // folder (the segment before /src/), NOT the immediate parent dir (which
     // is `src`). The `core` entry holds the cross-cutting utilities (the former
     // `_internal`) and is exempt, as are `_internal`/`test-utils`. A dedicated
-    // fixture (require-defaults-sibling.fixture.ts) exercises the rule under
+    // fixture (require-defaults-sibling.fixture.ts) references its derived
+    // token with no sibling present, so it exercises the rule under
     // `pnpm lint:rule-fixtures`. Fires once per primitive root file via a
     // Program-level filesystem check.
     'require-defaults-sibling': {
@@ -733,12 +737,12 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'Each primitive must expose a sibling `<name>-defaults.ts` per CLAUDE.md § "Defaults providers".',
+            'A primitive that injects `FOR_<PRIMITIVE>_DEFAULTS` must expose a sibling `<name>-defaults.ts` per CLAUDE.md § "Defaults providers".',
         },
         schema: [],
         messages: {
           missing:
-            'Primitive `{{name}}` is missing the required `{{name}}-defaults.ts` sibling file (CLAUDE.md § "Defaults providers"). Even when there are no per-scope tunables yet, expose an empty stub so future additions don’t churn the public API.',
+            'Primitive `{{name}}` injects `{{token}}` but the required `{{name}}-defaults.ts` sibling file is missing (CLAUDE.md § "Defaults providers"). Add the sibling declaring `provideFor<Primitive>Defaults` + `{{token}}`.',
         },
       },
       create(context) {
@@ -757,6 +761,35 @@ const fortyCdkPlugin = {
             return { primitive: legacy[1], dir };
           }
           return null;
+        }
+        // Derives the scoped-defaults token name from a kebab-case primitive
+        // name: `date-picker` → `FOR_DATE_PICKER_DEFAULTS`.
+        function tokenNameOf(primitive) {
+          return `FOR_${primitive.replace(/-/g, '_').toUpperCase()}_DEFAULTS`;
+        }
+        // True when any sibling `.ts` source in `dir` (excluding the defaults
+        // file itself and spec files) references the token.
+        function anySiblingInjectsToken(dir, primitive, token) {
+          let entries;
+          try {
+            entries = fs.readdirSync(dir);
+          } catch {
+            return false;
+          }
+          const defaultsFile = `${primitive}-defaults.ts`;
+          for (const name of entries) {
+            if (!name.endsWith('.ts')) continue;
+            if (name === defaultsFile) continue;
+            if (name.endsWith('.spec.ts')) continue;
+            let source;
+            try {
+              source = fs.readFileSync(path.join(dir, name), 'utf8');
+            } catch {
+              continue;
+            }
+            if (source.includes(token)) return true;
+          }
+          return false;
         }
         return {
           Program(node) {
@@ -779,13 +812,17 @@ const fortyCdkPlugin = {
               info = primitiveRootOf(normalized, dir);
             }
             if (!info) return;
+            const token = tokenNameOf(info.primitive);
+            // Only require the sibling when the primitive actually consumes
+            // scoped defaults (some non-defaults source injects the token).
+            if (!anySiblingInjectsToken(info.dir, info.primitive, token)) return;
             const sibling = path.join(info.dir, `${info.primitive}-defaults.ts`);
             if (!fs.existsSync(sibling)) {
               context.report({
                 node,
                 loc: { line: 1, column: 0 },
                 messageId: 'missing',
-                data: { name: info.primitive },
+                data: { name: info.primitive, token },
               });
             }
           },

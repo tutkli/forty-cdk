@@ -51,7 +51,7 @@ accordion/                  # secondary entry point → forty-cdk/accordion
     accordion-trigger.ts    # ForAccordionTrigger
     accordion-content.ts    # ForAccordionContent
     accordion-context.ts    # FOR_ACCORDION_CONTEXT InjectionToken
-    accordion-defaults.ts   # provideForAccordionDefaults + FOR_ACCORDION_DEFAULTS
+    accordion-defaults.ts   # provideForAccordionDefaults + FOR_ACCORDION_DEFAULTS (only when the primitive has per-scope tunables)
     accordion.spec.ts
     public-api.ts           # public exports for `forty-cdk/accordion`
 ```
