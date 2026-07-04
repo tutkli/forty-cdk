@@ -16,18 +16,27 @@ async function renderedIndices(page: Page): Promise<number[]> {
   return values.sort((a, b) => a - b);
 }
 
+/**
+ * Scroll the virtualized root and wait for the rendered window to advance past
+ * the top of the list, then return the settled ascending `data-index` values.
+ * Replaces a fixed dwell after the scroll: the window re-render is async, so we
+ * poll until the smallest rendered index clears `minStart` before sampling.
+ */
+async function scrollAndSettle(page: Page, minStart = 50): Promise<number[]> {
+  await el(page, 'root').evaluate((node) => {
+    node.scrollTop = 100 * 44;
+  });
+  await expect.poll(async () => (await renderedIndices(page))[0] ?? -1).toBeGreaterThan(minStart);
+  return renderedIndices(page);
+}
+
 test.describe('Virtualized *forVirtualFor list reorder', () => {
   test.beforeEach(async ({ page }) => {
     await gotoFixture(page, 'virtual-reorder');
   });
 
   test('pointer reorder within a mid-dataset window emits ABSOLUTE indices', async ({ page }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     const to = from + 1;
     expect(from).toBeGreaterThan(50);
@@ -54,12 +63,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
   test('keyboard lift→ArrowDown→drop within the window emits ABSOLUTE indices', async ({
     page,
   }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
@@ -74,12 +78,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
   test('keyboard End jump moves the target to the dataset end (9999) with absolute indices', async ({
     page,
   }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
@@ -94,12 +93,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
   test('Shift+pointer scrub drops the lifted row at a far target in a single gesture', async ({
     page,
   }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
@@ -148,10 +142,12 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
-    // Hold near the bottom edge so the drop list auto-scrolls the window forward.
-    for (let i = 0; i < 12; i++) {
-      await page.mouse.move(startX, edgeY);
-      await page.waitForTimeout(60);
+    let maxRendered = from;
+    for (let i = 0; i < 80 && maxRendered <= from + 30; i++) {
+      await page.mouse.move(startX, i % 2 ? edgeY : edgeY - 1);
+      await page.waitForTimeout(50);
+      const idx = await renderedIndices(page);
+      maxRendered = idx[idx.length - 1] ?? maxRendered;
     }
     await page.mouse.up();
 
