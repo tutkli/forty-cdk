@@ -1,14 +1,4 @@
-import {
-  computed,
-  Directive,
-  ElementRef,
-  inject,
-  input,
-  linkedSignal,
-  model,
-  signal,
-  type Signal,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, model, type Signal } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
@@ -20,7 +10,7 @@ import {
   injectDateAdapter,
   injectHiddenInput,
   injectTextDirection,
-  RovingTabindex,
+  RangeFieldComposer,
   type SegmentEditorContext,
   serializeISOTime,
   type TimeCapableDateAdapter,
@@ -36,11 +26,6 @@ import {
   type TimeRangeFieldEndpoint,
 } from './time-range-field-context';
 import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
-
-interface CommittedRange<D> {
-  range: DateRange<D> | null;
-  generation: number;
-}
 
 /**
  * Headless, segmented, spin-editable time-of-day **range** input — the
@@ -224,46 +209,7 @@ export class ForTimeRangeField<D>
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  readonly #startRoving = new RovingTabindex();
-  readonly #endRoving = new RovingTabindex();
-
-  /**
-   * Monotonic generation bumped by {@link #recompose} on every value it writes.
-   * It tags each *internal* commit so an endpoint source can tell a `null` the
-   * field itself produced (one endpoint mid-edit or the two out of order) from a
-   * `null` an external reset wrote — the two are indistinguishable by the
-   * `value` alone, since `null === null`.
-   */
-  readonly #commitGeneration = signal(0);
-
-  /** The committed range paired with the generation of its last internal write. */
-  readonly #committedValue = computed<CommittedRange<D>>(() => ({
-    range: this.value(),
-    generation: this.#commitGeneration(),
-  }));
-
-  /**
-   * Per-endpoint rehydration source. A `linkedSignal` keyed on the committed
-   * range tagged with the commit generation: a non-null `value` (external write
-   * or our own commit) drives the endpoint's segments from `range.start` /
-   * `range.end`. A `null` `value` is disambiguated by the generation — an
-   * **internal** null (the generation advanced since the last computation,
-   * because *either* endpoint is mid-edit or the two are out of order)
-   * **preserves** the prior endpoint value so a complete endpoint isn't wiped
-   * while its sibling is incomplete; an **external** null (a Signal Forms reset
-   * or a consumer `[(value)]="null"`, where the generation is unchanged)
-   * **clears** the endpoint, matching `ForTimeField`. Each endpoint reads its
-   * own `previous`, so there is no cross-endpoint race. The endpoint's own
-   * segment-level edits flow through the engine's parts, not through this source.
-   */
-  readonly #startSource = linkedSignal<CommittedRange<D>, D | null>({
-    source: this.#committedValue,
-    computation: (committed, previous) => this.#rehydrate(committed, previous, 'start'),
-  });
-  readonly #endSource = linkedSignal<CommittedRange<D>, D | null>({
-    source: this.#committedValue,
-    computation: (committed, previous) => this.#rehydrate(committed, previous, 'end'),
-  });
+  readonly #composer: RangeFieldComposer<D>;
 
   readonly #startEngine: TimeFieldEngine<D>;
   readonly #endEngine: TimeFieldEngine<D>;
@@ -273,24 +219,15 @@ export class ForTimeRangeField<D>
   readonly #startLabel = computed<string | null>(() => this.#defaults.startLabel);
   readonly #endLabel = computed<string | null>(() => this.#defaults.endLabel);
 
+  /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
+  protected readonly ariaInvalid = computed(() => this.invalid() || this.#composer.disordered());
+
   /**
    * Both endpoints complete but the start falls after the end — an unorderable
    * range. Never flagged when {@link allowOvernight} is set, where a `start > end`
    * entry is a valid midnight-crossing range instead of an error.
    */
-  readonly #disordered = computed(() => {
-    if (this.allowOvernight()) {
-      return false;
-    }
-    const start = this.#startEngine.composed();
-    const end = this.#endEngine.composed();
-    return start !== null && end !== null && this.adapter.compare(start, end) > 0;
-  });
-
-  /** `aria-invalid` reflects the form-driven invalidity OR a self-detected disorder. */
-  protected readonly ariaInvalid = computed(() => this.invalid() || this.#disordered());
-
-  protected readonly disordered = this.#disordered;
+  protected readonly disordered = computed(() => this.#composer.disordered());
 
   /**
    * Folds a self-detected out-of-order range into the base invalidity so
@@ -304,12 +241,32 @@ export class ForTimeRangeField<D>
 
   constructor() {
     super();
+    this.#composer = new RangeFieldComposer<D>({
+      value: this.value,
+      effectiveDisabled: this.effectiveDisabled,
+      readonly: this.readonly,
+      dir: this.dir,
+      composedStart: () => this.#startEngine.composed(),
+      composedEnd: () => this.#endEngine.composed(),
+      compose: (start, end) => {
+        if (this.adapter.compare(start, end) <= 0) {
+          return { start, end };
+        }
+        return this.allowOvernight() ? { start, end: this.adapter.addDays(end, 1) } : null;
+      },
+      disordered: (start, end) =>
+        this.allowOvernight() ? false : this.adapter.compare(start, end) > 0,
+      normalizeEndpointSource: (value) =>
+        this.allowOvernight()
+          ? composeWithTime(this.adapter, timeSentinel(this.adapter), value)
+          : value,
+    });
     const emptySegmentText = computed(() => this.#defaults.emptySegmentText);
     this.#startEngine = new TimeFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
       readonly: this.readonly,
-      roving: this.#startRoving,
+      roving: this.#composer.startRoving,
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
@@ -317,14 +274,14 @@ export class ForTimeRangeField<D>
       emptySegmentText,
       minTime: this.minTime,
       maxTime: this.maxTime,
-      source: this.#startSource,
-      onCommit: () => this.#recompose(),
+      source: this.#composer.startSource,
+      onCommit: () => this.#composer.recompose(),
     });
     this.#endEngine = new TimeFieldEngine<D>({
       adapter: this.adapter,
       disabled: this.effectiveDisabled,
       readonly: this.readonly,
-      roving: this.#endRoving,
+      roving: this.#composer.endRoving,
       granularity: this.granularity,
       hourCycle: this.hourCycle,
       locale: this.locale,
@@ -332,11 +289,11 @@ export class ForTimeRangeField<D>
       emptySegmentText,
       minTime: this.minTime,
       maxTime: this.maxTime,
-      source: this.#endSource,
-      onCommit: () => this.#recompose(),
+      source: this.#composer.endSource,
+      onCommit: () => this.#composer.recompose(),
     });
-    this.#startContext = this.#makeEndpointContext(this.#startEngine, this.#startRoving);
-    this.#endContext = this.#makeEndpointContext(this.#endEngine, this.#endRoving);
+    this.#startContext = this.#composer.makeEndpointContext(this.#startEngine, 'start');
+    this.#endContext = this.#composer.makeEndpointContext(this.#endEngine, 'end');
 
     const startName = computed(() => (this.name() ? `${this.name()}-start` : ''));
     const endName = computed(() => (this.name() ? `${this.name()}-end` : ''));
@@ -394,86 +351,5 @@ export class ForTimeRangeField<D>
     if (!next || !this.#host.nativeElement.contains(next)) {
       this.markTouched();
     }
-  }
-
-  /**
-   * Re-assembles the committed range from both endpoints' composed values.
-   * Emits a `DateRange` when both are complete and ordered (`start <= end`), or —
-   * with {@link allowOvernight} — when the start falls after the end, advancing
-   * the end to the next day so the range crosses midnight while keeping the
-   * `end >= start` invariant. Otherwise clears `value` to `null` while preserving
-   * each endpoint's typed segments (their parts survive an internal `null`
-   * value). Every write bumps {@link #commitGeneration} so the endpoint sources
-   * can mark the resulting `null` as internal and not clear the typed segments.
-   */
-  #recompose(): void {
-    const start = this.#startEngine.composed();
-    const end = this.#endEngine.composed();
-    this.#commitGeneration.update((generation) => generation + 1);
-    if (start === null || end === null) {
-      this.value.set(null);
-      return;
-    }
-    if (this.adapter.compare(start, end) <= 0) {
-      this.value.set({ start, end });
-    } else if (this.allowOvernight()) {
-      this.value.set({ start, end: this.adapter.addDays(end, 1) });
-    } else {
-      this.value.set(null);
-    }
-  }
-
-  #rehydrate(
-    committed: CommittedRange<D>,
-    previous: { source: CommittedRange<D>; value: D | null } | undefined,
-    which: TimeRangeFieldEndpoint,
-  ): D | null {
-    if (committed.range !== null) {
-      return this.#normalizeEndpointSource(committed.range[which]);
-    }
-    if (previous && committed.generation !== previous.source.generation) {
-      return previous.value;
-    }
-    return null;
-  }
-
-  /**
-   * In overnight mode each endpoint's source is re-anchored to the DST-stable
-   * sentinel day, so the engine composes purely on time-of-day and every
-   * {@link #recompose} derives the midnight crossing afresh — an end advanced to
-   * the next day never sticks and corrupts a later same-day edit. In the default
-   * mode the bound value's calendar day is preserved, so the endpoint is returned
-   * unchanged.
-   */
-  #normalizeEndpointSource(value: D): D {
-    return this.allowOvernight()
-      ? composeWithTime(this.adapter, timeSentinel(this.adapter), value)
-      : value;
-  }
-
-  #makeEndpointContext(engine: TimeFieldEngine<D>, roving: RovingTabindex): SegmentEditorContext {
-    return {
-      effectiveDisabled: this.effectiveDisabled,
-      readonly: this.readonly,
-      dir: this.dir,
-      roving,
-      segmentValue: (type) => engine.segmentValue(type),
-      segmentMin: (type) => engine.segmentMin(type),
-      segmentMax: (type) => engine.segmentMax(type),
-      segmentValueText: (type) => engine.segmentValueText(type),
-      segmentDisplayText: (type) => engine.segmentDisplayText(type),
-      isSegmentEmpty: (type) => engine.isSegmentEmpty(type),
-      isFirstSegmentType: (type) => engine.isFirstSegmentType(type),
-      registerSegment: (handle) => engine.registerSegment(handle),
-      unregisterSegment: (handle) => engine.unregisterSegment(handle),
-      focusSegment: (type) => engine.focusSegment(type),
-      typeDigit: (type, digit) => engine.typeDigit(type, digit),
-      step: (type, delta) => engine.step(type, delta),
-      goToBound: (type, bound) => engine.goToBound(type, bound),
-      setDayPeriod: (period) => engine.setDayPeriod(period),
-      clear: (type) => engine.clear(type),
-      focusSibling: (type, step) => engine.focusSibling(type, step),
-      endTyping: () => engine.endTyping(),
-    };
   }
 }

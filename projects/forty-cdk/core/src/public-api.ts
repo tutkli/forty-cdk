@@ -54,6 +54,12 @@ export {
 } from './datetime/date-segments';
 export { dayPeriodNames, from12, resolveHourCycle, to12 } from './datetime/hour-cycle';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
+export {
+  RangeFieldComposer,
+  type RangeFieldComposerConfig,
+  type RangeFieldEndpoint,
+  type RangeFieldEndpointEngine,
+} from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';
 export {
   type DateSegmentType,
