@@ -3,14 +3,13 @@ import {
   Component,
   DestroyRef,
   Directive,
+  Injector,
   inject,
-  type Injector,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 
 import {
-  OverlayContextInjector,
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
@@ -57,14 +56,23 @@ export interface ForDialogEntry extends OverlayManagerEntry {
 /**
  * @internal Exposes the element injector at a child of the row's `[forDialog]`
  * element so the user component rendered via `NgComponentOutlet` resolves
- * `FOR_DIALOG_CONTEXT` from the enclosing `[forDialog]` host. The shared body
- * lives in `OverlayContextInjector`; this only carries the dialog selector.
+ * `FOR_DIALOG_CONTEXT` from the enclosing `[forDialog]` host.
  */
 @Directive({
   selector: '[forDialogContextInjector]',
   exportAs: 'forDialogContextInjector',
 })
-export class ForDialogContextInjector extends OverlayContextInjector {}
+export class ForDialogContextInjector {
+  /**
+   * Element injector at a child of the row's `[forDialog]` element, which
+   * already resolves `FOR_DIALOG_CONTEXT`. The outlet feeds this injector to
+   * `entry.injectorFor(ctx.injector)`, making the user component rendered via
+   * `NgComponentOutlet` inherit the context alongside the data token / ref /
+   * consumer providers — so every piece (`[forDialogClose]`,
+   * `[forDialogTitle]`, …) resolves exactly as in the declarative path.
+   */
+  readonly injector = inject(Injector);
+}
 
 /**
  * @internal Outlet component created once by `ForDialogManager` on the first

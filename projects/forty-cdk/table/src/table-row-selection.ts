@@ -1,6 +1,6 @@
 import { computed, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { SelectionModel } from 'forty-cdk/core';
+import { SelectionModel } from './selection-model';
 import type {
   TableSelectAllState,
   TableSelectionBehavior,
