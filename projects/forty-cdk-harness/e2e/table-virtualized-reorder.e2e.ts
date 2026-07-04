@@ -16,18 +16,27 @@ async function renderedIndices(page: Page): Promise<number[]> {
   return values.sort((a, b) => a - b);
 }
 
+/**
+ * Scroll the virtualized root and wait for the rendered window to advance past
+ * the top of the list, then return the settled ascending `data-index` values.
+ * Replaces a fixed dwell after the scroll: the window re-render is async, so we
+ * poll until the smallest rendered index clears `minStart` before sampling.
+ */
+async function scrollAndSettle(page: Page, minStart = 50): Promise<number[]> {
+  await el(page, 'root').evaluate((node) => {
+    node.scrollTop = 100 * 44;
+  });
+  await expect.poll(async () => (await renderedIndices(page))[0] ?? -1).toBeGreaterThan(minStart);
+  return renderedIndices(page);
+}
+
 test.describe('Table virtualized row reorder', () => {
   test.beforeEach(async ({ page }) => {
     await gotoFixture(page, 'table-virtualized-reorder');
   });
 
   test('pointer reorder within a mid-dataset window emits ABSOLUTE indices', async ({ page }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     // Pick a row near the middle of the window so both it and its successor are mounted.
     const from = indices[Math.floor(indices.length / 2)]!;
     const to = from + 1;
@@ -55,12 +64,7 @@ test.describe('Table virtualized row reorder', () => {
   test('keyboard lift→ArrowDown→drop within the window emits ABSOLUTE indices', async ({
     page,
   }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
@@ -75,12 +79,7 @@ test.describe('Table virtualized row reorder', () => {
   test('keyboard End jump moves target to dataset end (9999) with absolute indices', async ({
     page,
   }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
@@ -95,12 +94,7 @@ test.describe('Table virtualized row reorder', () => {
   test('Shift+pointer scrub drops the lifted row at a far target in a single gesture', async ({
     page,
   }) => {
-    await el(page, 'root').evaluate((node) => {
-      node.scrollTop = 100 * 44;
-    });
-    await page.waitForTimeout(200);
-
-    const indices = await renderedIndices(page);
+    const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 

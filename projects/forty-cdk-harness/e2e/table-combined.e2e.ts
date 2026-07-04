@@ -121,13 +121,11 @@ test.describe('Table combined composition', () => {
     await el(page, 'root').evaluate((node, h) => {
       (node as HTMLElement).scrollTop = 50 * h;
     }, ROW_HEIGHT);
-    await page.waitForTimeout(200);
     await expect(el(page, 'row-50')).toBeAttached();
 
     await el(page, 'root').evaluate((node) => {
       (node as HTMLElement).scrollTop = 0;
     });
-    await page.waitForTimeout(200);
     await expect(el(page, 'row-0')).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -142,7 +140,6 @@ test.describe('Table combined composition', () => {
     await el(page, 'root').evaluate((node, h) => {
       (node as HTMLElement).scrollTop = 60 * h;
     }, ROW_HEIGHT);
-    await page.waitForTimeout(200);
     const farRow = el(page, 'row-60');
     await expect(farRow).toBeAttached();
     await expect(farRow).toHaveAttribute('aria-selected', 'true');
@@ -167,14 +164,16 @@ test.describe('Table combined composition', () => {
     await root.evaluate((node) => {
       (node as HTMLElement).scrollTop = (node as HTMLElement).scrollHeight;
     });
-    await page.waitForTimeout(200);
-    const appended = await page
-      .locator('[forTableRow]')
-      .evaluateAll(
-        (nodes, n) =>
-          nodes.some((node) => Number((node as HTMLElement).getAttribute('data-index')) >= n),
-        initial,
-      );
-    expect(appended).toBe(true);
+    await expect
+      .poll(() =>
+        page
+          .locator('[forTableRow]')
+          .evaluateAll(
+            (nodes, n) =>
+              nodes.some((node) => Number((node as HTMLElement).getAttribute('data-index')) >= n),
+            initial,
+          ),
+      )
+      .toBe(true);
   });
 });
