@@ -96,5 +96,5 @@ export class RadioGroupHorizontalExample {
     { value: 'xl', label: 'XL' },
   ];
 
-  protected readonly value = signal('m');
+  protected readonly value = signal<string | null>('m');
 }

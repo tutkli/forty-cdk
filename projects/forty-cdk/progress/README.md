@@ -73,7 +73,7 @@ export class DemoUpload {
 
 | Property             | Type                                      | Description                                                                                                                                 |
 | -------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `model<number \| null>`                   | Two-way bindable. Current progress in `[0, max]`. `null` = indeterminate.<br>**Default:** —                                                 |
+| `value`              | `input<number \| null>`                   | Current progress in `[0, max]` (one-way; display-only). `null` = indeterminate.<br>**Default:** `null`                                      |
 | `max`                | `input<number>`                           | Upper bound. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100` |
 | `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                       |
 | `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.<br>**Default:** —                               |

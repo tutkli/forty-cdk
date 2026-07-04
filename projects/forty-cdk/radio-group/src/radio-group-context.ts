@@ -19,7 +19,7 @@ export interface ForRadioHandle {
  * activation through `select` / `navigate`.
  */
 export interface ForRadioGroupContext {
-  readonly value: Signal<string>;
+  readonly value: Signal<string | null>;
   /**
    * The group's effective disabled — its own `disabled` input OR'd with a
    * surrounding disabled `[forFieldset]`. Each `ForRadio` ORs this into its own

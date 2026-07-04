@@ -36,7 +36,7 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
 
       <playground-demo
         title="Signal Forms"
-        subtitle="<code>forRadioGroup</code> implements <code>FormValueControl&lt;string&gt;</code>, so <code>[formField]</code> binds the selected value into the form and surfaces validity back. This field is required: <kbd>Tab</kbd> through without choosing and the group reflects <code>data-invalid</code> / <code>data-touched</code> once focus leaves it."
+        subtitle="<code>forRadioGroup</code> implements <code>FormValueControl&lt;string | null&gt;</code>, so <code>[formField]</code> binds the selected value into the form and surfaces validity back. This field is required: <kbd>Tab</kbd> through without choosing and the group reflects <code>data-invalid</code> / <code>data-touched</code> once focus leaves it."
         sourcePath="radio-group/examples/form-field.example.ts"
       >
         <app-radio-group-form-field-example />

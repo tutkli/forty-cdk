@@ -11,7 +11,7 @@ import type { ForAvatarStatus } from './avatar-context';
   imports: [ForAvatar, ForAvatarImage, ForAvatarFallback],
   template: `
     <span forAvatar #a="forAvatar" [fallbackDelayMs]="delay()">
-      <img forAvatarImage [src]="src()" alt="" (loadStatusChanged)="emitted.push($event)" />
+      <img forAvatarImage [src]="src()" alt="" (loadStatusChange)="emitted.push($event)" />
       @if (a.shouldShowFallback()) {
         <span forAvatarFallback>fallback</span>
       }

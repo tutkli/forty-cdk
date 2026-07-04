@@ -82,7 +82,7 @@ export class RadioGroupFixture {
     this.#route.snapshot.queryParamMap.get('disabled'),
   );
 
-  protected readonly value = signal<string>(
+  protected readonly value = signal<string | null>(
     parseCheckedValue(
       this.#route.snapshot.queryParamMap.get('checked'),
       this.options.map((o) => o.value),

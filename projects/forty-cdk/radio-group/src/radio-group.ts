@@ -32,7 +32,7 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
  * to descendant `ForRadio` directives.
  *
  * Implements the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/patterns/radio/)
- * and `FormValueControl<string>` from `@angular/forms/signals`, so it
+ * and `FormValueControl<string | null>` from `@angular/forms/signals`, so it
  * auto-wires with `[formField]`.
  *
  * Selection-on-focus: arrow keys move focus AND change the value (APG
@@ -41,8 +41,9 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
  * only. Wrap-around at the ends. Disabled radios are skipped. Under
  * `readonly`, arrows still move focus but never change the value.
  *
- * Empty string is the canonical "nothing selected" value (matches HTML form
- * semantics). Choose non-empty `value`s on each `ForRadio`.
+ * `null` is the canonical "nothing selected" value, matching every other
+ * scalar `FormValueControl` in the library (`T | null`). Choose non-empty
+ * `value`s on each `ForRadio`.
  */
 @Directive({
   selector: '[forRadioGroup]',
@@ -65,13 +66,13 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
 })
 export class ForRadioGroup
   extends FormUiControlBase
-  implements FormValueControl<string>, ForRadioGroupContext
+  implements FormValueControl<string | null>, ForRadioGroupContext
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #defaults = inject(FOR_RADIO_GROUP_DEFAULTS);
 
-  /** Two-way bindable. Selected radio's value. Empty string = none selected. */
-  readonly value = model<string>('');
+  /** Two-way bindable. Selected radio's value; `null` = none selected. */
+  readonly value = model<string | null>(null);
 
   /**
    * Layout hint reflected as `aria-orientation` and `data-orientation`. It

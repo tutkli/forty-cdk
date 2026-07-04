@@ -2,7 +2,7 @@
 
 A set of radio buttons where only one option can be selected, with arrow-key navigation.
 
-Headless implementation with selection-on-focus, wrap-around arrow navigation, and `FormValueControl<string>` integration for Angular Signal Forms.
+Headless implementation with selection-on-focus, wrap-around arrow navigation, and `FormValueControl<string | null>` integration for Angular Signal Forms.
 
 ## Anatomy
 
@@ -76,7 +76,7 @@ export class DemoShipping {
 
 | Property                                                     | Type                                                      | Description                                                                                                                                                                              |
 | ------------------------------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                                                      | `model<string>`                                           | Two-way bindable. The selected radio's value. Empty string = none selected (matches HTML form semantics). Required by `FormValueControl<string>`.<br>**Default:** —                      |
+| `value`                                                      | `model<string \| null>`                                   | Two-way bindable. The selected radio's value; `null` = none selected. Required by `FormValueControl<string \| null>`.<br>**Default:** `null`                                             |
 | `orientation`                                                | `input<'horizontal' \| 'vertical'>`                       | Layout hint reflected as `aria-orientation` / `data-orientation`. Does **not** restrict arrow navigation — all four cursors navigate in either orientation.<br>**Default:** `'vertical'` |
 | `dir`                                                        | `input<'ltr' \| 'rtl'>`                                   | Swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                                    |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` | `input<boolean>`                                          | Reflected as `aria-*` / `data-*`. `disabled` blocks all interaction; `readonly` blocks selection changes but arrows still move focus.<br>**Default:** —                                  |
