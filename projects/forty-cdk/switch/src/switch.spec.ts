@@ -158,9 +158,13 @@ describe('ForSwitch', () => {
     it('flips touched=true via blur and stays interactive afterwards', async () => {
       const { el, flush } = renderHost(SwitchHost);
       const sw = switchOf(el);
+      expect(sw.hasAttribute('data-touched')).toBe(false);
+
       sw.focus();
       sw.dispatchEvent(new FocusEvent('blur'));
       await flush();
+      expect(sw.getAttribute('data-touched')).toBe('');
+
       sw.click();
       await flush();
       expect(sw.getAttribute('aria-checked')).toBe('true');

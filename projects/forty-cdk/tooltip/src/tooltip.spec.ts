@@ -112,6 +112,8 @@ describe('ForTooltip', () => {
   });
 
   describe('a11y baseline', () => {
+    afterEachOverlayCleanup();
+
     it('wires the trigger to content via id and aria-describedby (only while open)', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -192,6 +194,8 @@ describe('ForTooltip', () => {
   });
 
   describe('portal', () => {
+    afterEachOverlayCleanup();
+
     it('moves content out of its declared parent into document.body', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -215,6 +219,8 @@ describe('ForTooltip', () => {
   });
 
   describe('hover open/close with delays', () => {
+    afterEachOverlayCleanup();
+
     it('opens after openDelay on pointerenter', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -268,6 +274,8 @@ describe('ForTooltip', () => {
   });
 
   describe('focus interaction', () => {
+    afterEachOverlayCleanup();
+
     it('opens on focus respecting openDelay', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -300,6 +308,8 @@ describe('ForTooltip', () => {
   });
 
   describe('touch interaction', () => {
+    afterEachOverlayCleanup();
+
     it('does not open on a touch-induced focus (a tap focuses the trigger)', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -347,6 +357,8 @@ describe('ForTooltip', () => {
   });
 
   describe('trigger activation (press) dismisses', () => {
+    afterEachOverlayCleanup();
+
     it('a click dismisses an open tooltip and the focus it induces does not reopen it', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -411,6 +423,8 @@ describe('ForTooltip', () => {
   });
 
   describe('pointer-induced focus does not open (only keyboard focus does)', () => {
+    afterEachOverlayCleanup();
+
     it('does not open on a mouse-induced focus (a click that focuses the trigger)', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -454,6 +468,8 @@ describe('ForTooltip', () => {
   });
 
   describe('hover / focus interplay', () => {
+    afterEachOverlayCleanup();
+
     it('does not close on pointerleave while the trigger is still focused', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
@@ -668,6 +684,8 @@ describe('ForTooltip', () => {
   });
 
   describe('hoverableContent', () => {
+    afterEachOverlayCleanup();
+
     it('keeps the tooltip open when the pointer moves into the content', async () => {
       const r = renderHost(HoverableTooltipHost);
       await flush(r.fixture);
@@ -746,6 +764,8 @@ describe('ForTooltip', () => {
   });
 
   describe('disabled', () => {
+    afterEachOverlayCleanup();
+
     it('ignores hover and focus while disabled', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isDisabled.set(true);
@@ -794,6 +814,8 @@ describe('ForTooltip', () => {
   });
 
   describe('show() / hide() imperative API', () => {
+    afterEachOverlayCleanup();
+
     it('show() opens the tooltip after openDelay', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -909,6 +931,8 @@ describe('ForTooltip', () => {
   });
 
   describe('floating-ui positioning', () => {
+    afterEachOverlayCleanup();
+
     it('writes a position and data-placement on the content once open', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
@@ -925,6 +949,8 @@ describe('ForTooltip', () => {
   });
 
   describe('arrow', () => {
+    afterEachOverlayCleanup();
+
     it('registers and gets positioned absolutely while open', async () => {
       const r = renderHost(TooltipWithArrowHost);
       r.instance.isOpen.set(true);
@@ -1000,6 +1026,8 @@ describe('ForTooltip', () => {
   });
 
   describe('(openChange) output', () => {
+    afterEachOverlayCleanup();
+
     it('emits when hover/focus delays toggle open', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
@@ -1087,6 +1115,8 @@ describe('ForTooltip', () => {
   });
 
   describe('provideForTooltipDefaults', () => {
+    afterEachOverlayCleanup();
+
     @Component({
       imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
       providers: [provideForTooltipDefaults({ skipDelayDuration: 1000 })],
@@ -1224,6 +1254,8 @@ describe('ForTooltip', () => {
   });
 
   describe('positioning defaults from provideForTooltipDefaults', () => {
+    afterEachOverlayCleanup();
+
     it('positions on the scope side when the instance sets no side', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
@@ -1398,6 +1430,8 @@ describe('ForTooltip', () => {
   });
 
   describe('showOnOverflow / hoverableContent defaults', () => {
+    afterEachOverlayCleanup();
+
     it('resolves both from the scope when the inputs are unset', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
@@ -1457,6 +1491,8 @@ describe('ForTooltip', () => {
   });
 
   describe('prefers-reduced-motion: reduce', () => {
+    afterEachOverlayCleanup();
+
     let restoreReducedMotion: () => void;
     beforeEach(() => {
       restoreReducedMotion = withReducedMotion();
@@ -1504,6 +1540,8 @@ describe('ForTooltip', () => {
   });
 
   describe('reduced-motion styling hook (default)', () => {
+    afterEachOverlayCleanup();
+
     it('omits data-reduced-motion when reduced motion is not requested', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
@@ -1517,6 +1555,8 @@ describe('ForTooltip', () => {
   });
 
   describe('scroll dismiss', () => {
+    afterEachOverlayCleanup();
+
     function getTooltip(r: ReturnType<typeof renderHost<TooltipHost>>): ForTooltip {
       return r.fixture.debugElement.query(By.directive(ForTooltip)).injector.get(ForTooltip);
     }
@@ -1607,6 +1647,8 @@ describe('ForTooltip', () => {
   });
 
   describe('zoneless reactivity', () => {
+    afterEachOverlayCleanup();
+
     it('reflects open writes after detectChanges without Zone.js', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
@@ -1624,6 +1666,8 @@ describe('ForTooltip', () => {
   });
 
   describe('explicit root reference (stamped templates)', () => {
+    afterEachOverlayCleanup();
+
     @Component({
       imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, NgTemplateOutlet],
       template: `
