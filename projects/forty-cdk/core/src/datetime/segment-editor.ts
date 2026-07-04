@@ -253,6 +253,15 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     this.#typing.set(null);
   }
 
+  /**
+   * Clears the ephemeral type-to-fill buffer so a partially typed, uncommitted
+   * digit is not left painted once the segment loses focus. The segment repaints
+   * from its committed value (zero-padded, or the placeholder when empty).
+   */
+  endTyping(): void {
+    this.#typing.set(null);
+  }
+
   typeDigit(type: SegmentType, digit: number): void {
     if (this.#host.disabled() || this.#host.readonly() || type === 'dayPeriod') {
       return;

@@ -201,10 +201,12 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  readonly #today = this.adapter.today();
+  readonly #initialToday = this.adapter.today();
 
   /** Internal focused date (the roving entry point), seeded from `value ?? range.start ?? today`. */
-  readonly focusedDate = linkedSignal<D>(() => this.value() ?? this.range()?.start ?? this.#today);
+  readonly focusedDate = linkedSignal<D>(
+    () => this.value() ?? this.range()?.start ?? this.#initialToday,
+  );
 
   readonly #bounds = new CalendarBounds<D>({
     adapter: this.adapter,
@@ -242,7 +244,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       scheduleFocus: (fn) => this.#scheduleFocus(fn),
       focusDayCell: (target) => this.#focusDayCell(target),
     },
-    this.value() ?? this.range()?.start ?? this.#today,
+    this.value() ?? this.range()?.start ?? this.#initialToday,
   );
 
   readonly #dayNav = new CalendarDayNavigator<D>({
@@ -255,24 +257,18 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     applyDayKeyMove: (target, isPaging) => this.#nav.applyDayKeyMove(target, isPaging),
   });
 
-  readonly #monthNav = new CalendarMonthNavigator<D>(
-    {
-      ...this.#subGridHost(),
-      ...this.#pickerViewHost(),
-      isMonthOutOfBounds: (year, month) => this.#bounds.isMonthOutOfBounds(year, month),
-      selectMonth: (month) => this.selectMonth(month),
-    },
-    this.#today,
-  );
+  readonly #monthNav = new CalendarMonthNavigator<D>({
+    ...this.#subGridHost(),
+    ...this.#pickerViewHost(),
+    isMonthOutOfBounds: (year, month) => this.#bounds.isMonthOutOfBounds(year, month),
+    selectMonth: (month) => this.selectMonth(month),
+  });
 
-  readonly #yearNav = new CalendarYearNavigator<D>(
-    {
-      ...this.#subGridHost(),
-      ...this.#pickerViewHost(),
-      selectYear: (year) => this.selectYear(year),
-    },
-    this.#today,
-  );
+  readonly #yearNav = new CalendarYearNavigator<D>({
+    ...this.#subGridHost(),
+    ...this.#pickerViewHost(),
+    selectYear: (year) => this.selectYear(year),
+  });
 
   readonly #strategies: Record<CalendarView, CalendarViewStrategy> = {
     day: this.#dayNav,
@@ -298,6 +294,8 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
       isPreviousMonthDisabled: this.#bounds.isPreviousMonthDisabled,
       isNextMonthDisabled: this.#bounds.isNextMonthDisabled,
       isYearDisabled: (year) => this.#bounds.isYearDisabled(year),
+      clamp: (date) => this.#bounds.clamp(date),
+      today: () => this.adapter.today(),
     };
   }
 
@@ -464,7 +462,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   isToday(date: D): boolean {
-    return this.adapter.isSameDay(date, this.#today);
+    return this.adapter.isSameDay(date, this.adapter.today());
   }
 
   isFocused(date: D): boolean {

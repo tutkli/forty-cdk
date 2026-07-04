@@ -34,6 +34,12 @@ export interface CalendarSubGridHost<D> {
 
   /** Whether every day of `year` is out of `[min, max]`. */
   isYearDisabled(year: number): boolean;
+
+  /** Clamp `date` into the calendar's `[min, max]` bounds. */
+  clamp(date: D): D;
+
+  /** Today's date in the runtime time zone, re-read on each access. */
+  today(): D;
 }
 
 /**

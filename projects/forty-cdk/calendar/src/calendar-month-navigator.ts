@@ -15,7 +15,7 @@ const GRID_COLUMNS = 3;
  * (selected / today / focused / disabled), its table-driven keyboard mover, and
  * the per-view paging / focus the root composes as a {@link CalendarViewStrategy}.
  *
- * Constructed directly by the root (`new CalendarMonthNavigator(host, today)`);
+ * Constructed directly by the root (`new CalendarMonthNavigator(host)`);
  * it holds no injection context, mirroring how `SegmentEditor` is lifted out of
  * the date / time fields.
  *
@@ -23,12 +23,10 @@ const GRID_COLUMNS = 3;
  */
 export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
   readonly #host: CalendarMonthNavigatorHost<D>;
-  readonly #today: D;
   readonly #cells = new Collection<ForCalendarMonthCellHandle>();
 
-  constructor(host: CalendarMonthNavigatorHost<D>, today: D) {
+  constructor(host: CalendarMonthNavigatorHost<D>) {
     this.#host = host;
-    this.#today = today;
   }
 
   /** Twelve localized, bounds-aware month options for the visible year. */
@@ -88,10 +86,8 @@ export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
 
   isToday(month: number): boolean {
     const adapter = this.#host.adapter;
-    return (
-      adapter.getYear(this.#today) === this.#host.visibleYear() &&
-      adapter.getMonth(this.#today) === month
-    );
+    const today = this.#host.today();
+    return adapter.getYear(today) === this.#host.visibleYear() && adapter.getMonth(today) === month;
   }
 
   isFocused(month: number): boolean {
@@ -109,7 +105,7 @@ export class CalendarMonthNavigator<D> implements CalendarViewStrategy {
       return;
     }
     event.preventDefault();
-    this.#host.setFocusedDate(this.#host.dateInMonth(target.year, target.month));
+    this.#host.setFocusedDate(this.#host.clamp(this.#host.dateInMonth(target.year, target.month)));
     this.#host.scheduleFocus(() => this.focusCell(this.#host.visibleMonthNumber()));
   }
 

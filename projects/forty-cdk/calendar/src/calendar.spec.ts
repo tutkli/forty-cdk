@@ -2,7 +2,12 @@ import { Component, model, provideZonelessChangeDetection, signal, viewChild } f
 import { TestBed } from '@angular/core/testing';
 import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
-import { compareDateOf, type DateAdapter, type DateRange } from 'forty-cdk/core';
+import {
+  compareDateOf,
+  type DateAdapter,
+  type DateRange,
+  type TimeCapableDateAdapter,
+} from 'forty-cdk/core';
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import { buildMonthMatrix } from './build-month-matrix';
 import { ForCalendar } from './calendar';
@@ -559,6 +564,20 @@ describe('ForCalendar', () => {
       expect(r.queryAll('[aria-current="date"]').length).toBe(1);
     });
 
+    it('re-reads today() so aria-current follows the clock across a re-render (#1150)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.value.set(new Date(2026, 5, 10));
+      await flush(r.fixture);
+      expect(cell(r, JUN_15).getAttribute('aria-current')).toBe('date');
+
+      vi.setSystemTime(new Date(2026, 5, 16));
+      r.instance.value.set(new Date(2026, 5, 11));
+      await flush(r.fixture);
+
+      expect(cell(r, new Date(2026, 5, 16)).getAttribute('aria-current')).toBe('date');
+      expect(cell(r, JUN_15).hasAttribute('aria-current')).toBe(false);
+    });
+
     it('marks outside-month padding days with data-outside-month', () => {
       const r = renderHost(CalendarHost);
       expect(cell(r, JUN_15).hasAttribute('data-outside-month')).toBe(false);
@@ -913,6 +932,45 @@ describe('ForCalendar', () => {
       pressKey(focusedCell(r), 'PageUp');
       await flush(r.fixture);
       expect(focusedCell(r)).toBe(cell(r, new Date(2026, 5, 3)));
+    });
+
+    it('clamps flat arrow / Home moves at min so focus never leaves [min, max] (#1150)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.min.set(JUN_15);
+      r.instance.value.set(JUN_15);
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+
+      pressKey(focusedCell(r), 'ArrowLeft');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+
+      pressKey(focusedCell(r), 'ArrowUp');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+
+      pressKey(focusedCell(r), 'Home');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+    });
+
+    it('clamps flat arrow / End moves at max so focus never leaves [min, max] (#1150)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.max.set(JUN_15);
+      r.instance.value.set(JUN_15);
+      await flush(r.fixture);
+
+      pressKey(focusedCell(r), 'ArrowRight');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+
+      pressKey(focusedCell(r), 'ArrowDown');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
+
+      pressKey(focusedCell(r), 'End');
+      await flush(r.fixture);
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
     });
   });
 
@@ -1502,6 +1560,47 @@ describe('ForCalendar', () => {
       );
       expect(earlierDay).toBeLessThan(0);
     });
+
+    describe('cross-adapter contract (#1150)', () => {
+      function assertYearsBelow100<D>(dateAdapter: DateAdapter<D>): void {
+        expect(dateAdapter.getYear(dateAdapter.createDate(50, 6, 15))).toBe(50);
+        expect(dateAdapter.getYear(dateAdapter.createDate(7, 1, 1))).toBe(7);
+
+        const addedYears = dateAdapter.addYears(dateAdapter.createDate(99, 6, 15), 2);
+        expect(dateAdapter.getYear(addedYears)).toBe(101);
+
+        const backBelow = dateAdapter.addYears(dateAdapter.createDate(101, 6, 15), -2);
+        expect(dateAdapter.getYear(backBelow)).toBe(99);
+
+        const addedMonths = dateAdapter.addMonths(dateAdapter.createDate(50, 12, 1), 1);
+        expect(dateAdapter.getYear(addedMonths)).toBe(51);
+        expect(dateAdapter.getMonth(addedMonths)).toBe(1);
+      }
+
+      function assertAddPreservesTime<D>(dateAdapter: TimeCapableDateAdapter<D>): void {
+        const seed = dateAdapter.setTime(dateAdapter.createDate(2026, 6, 15), 14, 30, 45);
+        for (const advanced of [
+          dateAdapter.addDays(seed, 3),
+          dateAdapter.addMonths(seed, 2),
+          dateAdapter.addYears(seed, 1),
+        ]) {
+          expect(dateAdapter.getHours(advanced)).toBe(14);
+          expect(dateAdapter.getMinutes(advanced)).toBe(30);
+          expect(dateAdapter.getSeconds(advanced)).toBe(45);
+        }
+      }
+
+      it('maps years 1-99 to the literal year, never the 1901-1999 legacy offset', () => {
+        assertYearsBelow100(new NativeDateAdapter());
+        assertYearsBelow100(new InternationalizedDateAdapter());
+        assertYearsBelow100(new InternationalizedDateTimeAdapter());
+      });
+
+      it('add* preserves the wall-clock time on every time-capable adapter', () => {
+        assertAddPreservesTime(new NativeDateAdapter());
+        assertAddPreservesTime(new InternationalizedDateTimeAdapter());
+      });
+    });
   });
 
   describe('date-time min/max boundary day (#370)', () => {
@@ -1756,6 +1855,33 @@ describe('ForCalendar', () => {
 
       expect(trigger(r).textContent!.trim()).toBe(String(2027));
       expect(r.queryAll('[forCalendarMonthCell][tabindex="0"]').length).toBe(1);
+    });
+
+    it('clamps flat month-grid moves so focus never leaves [min, max] (#1150)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.min.set(new Date(2026, 5, 1));
+      r.instance.view.set('month');
+      await flush(r.fixture);
+      expect(monthCell(r, 6).hasAttribute('data-highlighted')).toBe(true);
+
+      pressKey(monthCell(r, 6), 'ArrowLeft');
+      await flush(r.fixture);
+
+      expect(monthCell(r, 6).hasAttribute('data-highlighted')).toBe(true);
+      expect(trigger(r).textContent!.trim()).toBe(String(2026));
+    });
+
+    it('clamps flat year-grid moves so focus never leaves [min, max] (#1150)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.min.set(new Date(2026, 0, 1));
+      r.instance.view.set('year');
+      await flush(r.fixture);
+      expect(yearCell(r, 2026).hasAttribute('data-highlighted')).toBe(true);
+
+      pressKey(yearCell(r, 2026), 'ArrowLeft');
+      await flush(r.fixture);
+
+      expect(yearCell(r, 2026).hasAttribute('data-highlighted')).toBe(true);
     });
 
     it('clicking a month cell drills to day view and shows that month, value unchanged', async () => {

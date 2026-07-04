@@ -2,12 +2,49 @@ import { Injectable, type Provider } from '@angular/core';
 
 import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
 
-function daysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
+function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
-function clampDay(year: number, month: number, day: number): Date {
-  return new Date(year, month - 1, Math.min(day, daysInMonth(year, month)));
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
+
+function daysInMonth(year: number, month: number): number {
+  return month === 2 && isLeapYear(year) ? 29 : DAYS_IN_MONTH[month - 1]!;
+}
+
+function makeDate(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours = 0,
+  minutes = 0,
+  seconds = 0,
+  milliseconds = 0,
+): Date {
+  const date = new Date(0);
+  date.setFullYear(year, monthIndex, day);
+  date.setHours(hours, minutes, seconds, milliseconds);
+  return date;
+}
+
+function clampDay(
+  year: number,
+  month: number,
+  day: number,
+  hours = 0,
+  minutes = 0,
+  seconds = 0,
+  milliseconds = 0,
+): Date {
+  return makeDate(
+    year,
+    month - 1,
+    Math.min(day, daysInMonth(year, month)),
+    hours,
+    minutes,
+    seconds,
+    milliseconds,
+  );
 }
 
 /**
@@ -67,18 +104,42 @@ export class NativeDateAdapter implements DateAdapter<Date> {
   }
 
   addDays(date: Date, n: number): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+    return makeDate(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate() + n,
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds(),
+    );
   }
 
   addMonths(date: Date, n: number): Date {
     const total = date.getMonth() + n;
     const year = date.getFullYear() + Math.floor(total / 12);
     const month = ((total % 12) + 12) % 12;
-    return clampDay(year, month + 1, date.getDate());
+    return clampDay(
+      year,
+      month + 1,
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds(),
+    );
   }
 
   addYears(date: Date, n: number): Date {
-    return clampDay(date.getFullYear() + n, date.getMonth() + 1, date.getDate());
+    return clampDay(
+      date.getFullYear() + n,
+      date.getMonth() + 1,
+      date.getDate(),
+      date.getHours(),
+      date.getMinutes(),
+      date.getSeconds(),
+      date.getMilliseconds(),
+    );
   }
 
   compare(a: Date, b: Date): number {
@@ -122,7 +183,7 @@ export class NativeDateAdapter implements DateAdapter<Date> {
   }
 
   setTime(date: Date, hours: number, minutes: number, seconds: number): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, seconds);
+    return makeDate(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, seconds);
   }
 }
 

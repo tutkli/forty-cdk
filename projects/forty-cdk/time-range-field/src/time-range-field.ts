@@ -421,6 +421,7 @@ export class ForTimeRangeField<D>
       setDayPeriod: (period) => engine.setDayPeriod(period),
       clear: (type) => engine.clear(type),
       focusSibling: (type, step) => engine.focusSibling(type, step),
+      endTyping: () => engine.endTyping(),
     };
   }
 }
