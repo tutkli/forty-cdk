@@ -354,7 +354,10 @@ export {
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
-export { reconcileRovingActive } from './roving-tabindex/reconcile-roving-active';
+export {
+  reconcileRovingActive,
+  type ReconcileRovingActiveOptions,
+} from './roving-tabindex/reconcile-roving-active';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { isScrollableAtEdge } from './scroll-boundary/scroll-boundary';
 export {

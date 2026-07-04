@@ -21,6 +21,7 @@ import {
   resolveListNavigation,
   resolveTreeExpandCollapse,
   type WritingDirection,
+  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
   injectTypeahead,
@@ -347,20 +348,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   }
 
   constructor() {
-    effect(() => {
-      if (this.#virtualized()) return;
-      const active = this.roving.active();
-      if (active === null) {
-        return;
-      }
-      const visible = this.#visibleEntries();
-      const entry = visible.find((e) => e.handle.host === active);
-      if (entry && !entry.handle.disabled() && active.isConnected) {
-        return;
-      }
-      const fallback = visible.find((e) => !e.handle.disabled());
-      this.roving.setActive(fallback?.handle.host ?? null);
-    });
+    reconcileRovingActive(this.roving, this.#visibleHandles, { fallback: 'first-enabled' });
     effect(() => {
       this.#items.items();
       if (!this.#virtualized()) return;
