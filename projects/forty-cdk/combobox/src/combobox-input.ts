@@ -205,7 +205,7 @@ export class ForComboboxInput {
       return null;
     }
     const match = this.ctx
-      .cachedOptions()
+      .inlineCompletionOptions()
       .find((o) => foldTypeaheadText(o.label).startsWith(folded));
     return match ? match.label : null;
   }

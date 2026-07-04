@@ -237,8 +237,21 @@ export interface ForComboboxContext<T = unknown> {
    * virtualizing. See `scrollActiveOptionIntoView` on `ForCombobox`.
    */
   scrollActiveOptionIntoView(): void;
-  /** Read-only access to the cached snapshot consumed by inline-autocomplete in the input directive. */
+  /**
+   * Read-only access to the full accumulated label snapshot. Consumed by the
+   * chip label resolution and `ForCombobox.selected` fallback, both of which
+   * must keep resolving a value's label after its option leaves the rendered
+   * set.
+   */
   cachedOptions(): readonly { id: string; value: T; label: string }[];
+  /**
+   * Read-only access to the snapshot consumed by inline-autocomplete in the
+   * input directive. Non-virtualized: a purge-aware, live-only projection so an
+   * option removed from the source stops being offered as a completion.
+   * Virtualized: the full merged snapshot, so completion still matches options
+   * scrolled out of view.
+   */
+  inlineCompletionOptions(): readonly { id: string; value: T; label: string }[];
 
   /**
    * Total number of options in the consumer's source array. Used for

@@ -166,6 +166,30 @@ describe('OptionLabelCache', () => {
     expect(h.entries().map((e) => e.id)).toEqual(['a', 'b']);
   });
 
+  it('purges a live-window removal from liveEntries but keeps it in entries (#1196)', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
+    h.setItems([a.handle, b.handle]);
+    h.cache.prime();
+    expect(h.cache.liveEntries().map((e) => e.id)).toEqual(['a', 'b']);
+
+    h.setItems([a.handle]);
+    h.cache.prime();
+
+    expect(h.entries().map((e) => e.id)).toContain('b');
+    expect(h.cache.liveEntries().map((e) => e.id)).toEqual(['a']);
+  });
+
+  it('carries liveEntries across an unmount so inline completion survives close', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    h.setItems([a.handle]);
+    h.cache.prime();
+    h.setItems([]);
+    expect(h.cache.liveEntries().map((e) => e.id)).toEqual(['a']);
+  });
+
   it('resets when totalCount transitions', () => {
     const h = createLabelCache(100);
     const a = makeHandle({ id: 'r-50', value: 'fifty', label: 'Row 50', posInSet: 50 });
