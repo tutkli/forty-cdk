@@ -157,6 +157,19 @@ export class ForSelect<T = string>
    */
   readonly open = model<boolean>(false);
 
+  /**
+   * When true, multiple options can be selected and option activation toggles
+   * without closing the listbox. Single mode (default) keeps the value array at
+   * 0 or 1 element and closes on select.
+   *
+   * Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A,
+   * Ctrl+Shift+Home/End) is not supported together with virtualization
+   * (`totalCount` set): range selection needs the full set of enabled options
+   * across the range, which is unavailable while the list is partially
+   * unmounted. Pressing one of those combinations on a virtualized multi-select
+   * listbox throws in dev mode. Toggle options individually with Enter, Space,
+   * or click, or drop `totalCount` to use the non-virtualized DOM-focus listbox.
+   */
   readonly multiple = input(false, { transform: booleanAttribute });
 
   /**
@@ -832,6 +845,11 @@ export class ForSelect<T = string>
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
+    if (this.multiple() && this.#isMultiSelectShortcut(event)) {
+      event.preventDefault();
+      this.#throwUnsupportedVirtualizedMultiSelect();
+      return;
+    }
     if (event.key === 'Tab') {
       if (this.modal()) {
         return;
@@ -892,6 +910,43 @@ export class ForSelect<T = string>
       return;
     }
     this.activate(handle.value());
+  }
+
+  #isMultiSelectShortcut(event: KeyboardEvent): boolean {
+    if (event.altKey) {
+      return false;
+    }
+    const mod = event.ctrlKey || event.metaKey;
+    if (mod && !event.shiftKey) {
+      return event.key === 'a' || event.key === 'A';
+    }
+    if (mod && event.shiftKey) {
+      return event.key === 'Home' || event.key === 'End';
+    }
+    if (event.shiftKey) {
+      if (event.key === ' ' || event.key === 'Spacebar') {
+        return true;
+      }
+      const action = resolveListNavigation(event, {
+        orientation: this.orientation(),
+        dir: this.dir(),
+      });
+      return action === 'next' || action === 'prev';
+    }
+    return false;
+  }
+
+  #throwUnsupportedVirtualizedMultiSelect(): void {
+    if (isDevMode()) {
+      throw new Error(
+        '[forty-cdk/select] Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, ' +
+          'Ctrl+Shift+Home/End) is not supported together with virtualization (`totalCount` set). ' +
+          'Range selection needs the full set of enabled options across the range, which is ' +
+          'unavailable while the list is partially unmounted. Toggle options individually with ' +
+          'Enter, Space, or click, or drop `totalCount` to use the non-virtualized DOM-focus ' +
+          'listbox.',
+      );
+    }
   }
 
   #commitActiveDescendantOnTab(): void {

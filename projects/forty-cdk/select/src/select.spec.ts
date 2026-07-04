@@ -1,5 +1,11 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, Directive, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  Directive,
+  ErrorHandler,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -2725,6 +2731,177 @@ describe('ForSelectIndicator', () => {
       await flush(r.fixture);
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('multi-select keyboard + virtualization guard', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div
+          forSelect
+          [(open)]="open"
+          [(value)]="value"
+          [multiple]="true"
+          [totalCount]="total()"
+          [visibleRange]="range"
+        >
+          <button forSelectTrigger data-test-id="trigger">
+            <span forSelectValue></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent data-test-id="content">
+              @for (i of indices; track i) {
+                <button
+                  forSelectOption
+                  [value]="'item-' + i"
+                  [posInSet]="i"
+                  [attr.data-test-id]="'opt-' + i"
+                >
+                  Item {{ i }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class MultiVirtualSelectHost {
+      readonly open = signal(false);
+      readonly value = signal<readonly string[]>([]);
+      readonly total = signal<number | undefined>(3);
+      readonly range: readonly [number, number] = [0, 3];
+      readonly indices = [0, 1, 2];
+    }
+
+    async function setupMulti(captured: unknown[]) {
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(MultiVirtualSelectHost);
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="content"]')!;
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      return { fixture, content };
+    }
+
+    const throwsUnsupported = (captured: readonly unknown[]) =>
+      captured.some(
+        (e) =>
+          e instanceof Error && /\[forty-cdk\/select\] Multi-select range keyboard/.test(e.message),
+      );
+
+    it('throws in dev mode on Shift+ArrowDown in a virtualized multi-select select', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupMulti(captured);
+      pressKey(content, 'ArrowDown', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Shift+Space', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupMulti(captured);
+      pressKey(content, ' ', { shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Ctrl+A', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupMulti(captured);
+      pressKey(content, 'a', { ctrlKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Meta+A (Cmd)', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupMulti(captured);
+      pressKey(content, 'A', { metaKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('throws in dev mode on Ctrl+Shift+End', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupMulti(captured);
+      pressKey(content, 'End', { ctrlKey: true, shiftKey: true });
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('preventDefault is called on the intercepted multi-select shortcut', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupMulti(captured);
+      const event = pressKey(content, 'a', { ctrlKey: true });
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('does not intercept a plain ArrowDown (navigation still works)', async () => {
+      const captured: unknown[] = [];
+      const { content, fixture } = await setupMulti(captured);
+      const first = document.querySelector<HTMLElement>('[data-test-id="opt-0"]')!;
+      expect(content.getAttribute('aria-activedescendant')).toBe(first.id);
+      pressKey(content, 'ArrowDown');
+      await flush(fixture);
+      const second = document.querySelector<HTMLElement>('[data-test-id="opt-1"]')!;
+      expect(content.getAttribute('aria-activedescendant')).toBe(second.id);
+      expect(throwsUnsupported(captured)).toBe(false);
+    });
+
+    it('does not intercept shortcuts in a single-select virtualized select', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [totalCount]="3" [visibleRange]="range">
+            <button forSelectTrigger>T</button>
+            @if (open()) {
+              <div forSelectContent data-test-id="single-content">
+                @for (i of indices; track i) {
+                  <button forSelectOption [value]="'item-' + i" [posInSet]="i">Item {{ i }}</button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class SingleVirtualSelectHost {
+        readonly open = signal(false);
+        readonly range: readonly [number, number] = [0, 3];
+        readonly indices = [0, 1, 2];
+      }
+      const fixture = TestBed.createComponent(SingleVirtualSelectHost);
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="single-content"]')!;
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      pressKey(content, 'ArrowDown', { shiftKey: true });
+      pressKey(content, 'a', { ctrlKey: true });
+      expect(throwsUnsupported(captured)).toBe(false);
     });
   });
 });

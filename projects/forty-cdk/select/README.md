@@ -436,7 +436,7 @@ readonly v = injectVirtualizer({
 
 ### Intentional limitations
 
-- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, and Ctrl+A are not implemented — range operations require knowledge of every intermediate position, which is unavailable in a windowed render.
+- **No multi-select range modifiers in the virtualized path.** Shift+Arrow, Shift+Space, Ctrl+A, and Ctrl+Shift+Home/End are not implemented — range operations require knowledge of every intermediate position, which is unavailable in a windowed render. Pressing one of these combinations on a virtualized multi-select select (`[multiple]` + `[totalCount]`) throws in dev mode rather than silently doing nothing, so the unsupported path surfaces during development; production builds no-op. Per-option toggling via Enter, Space, or click works normally.
 - **Typeahead matches only the rendered window.** `[forSelect]` runs typeahead against the live registered options; options scrolled out of the window are unmounted and invisible to the buffer.
 - **Cold-open committed-index resolution.** On the very first open, if the committed value has never been rendered (the option has never scrolled into the window), the position snapshot is empty and `[forSelect]` falls back to focusing the first enabled option. This mirrors the `[forSelectValue]` / `[itemToLabel]` cold-cache limitation: supply `[itemToLabel]` to render the label and open the listbox once to prime the snapshot.
 
