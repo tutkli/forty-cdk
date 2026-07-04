@@ -34,10 +34,10 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
   host: {
     type: 'button',
     role: 'combobox',
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'ctx().overlay.triggerId()',
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
-    '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
+    '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
     '[attr.aria-disabled]': 'ctx().effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx().required() ? "true" : null',
@@ -73,14 +73,14 @@ export class ForSelectTrigger<T = unknown> {
     // resolved root changes (explicit reference swapped at runtime).
     effect((onCleanup) => {
       const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
+      ctx.overlay.registerTrigger(el);
+      onCleanup(() => ctx.overlay.unregisterTrigger(el));
     });
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
   protected onClick(): void {
-    this.ctx().toggle('selected');
+    this.ctx().overlay.toggle('selected');
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -89,13 +89,13 @@ export class ForSelectTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.ctx().openMenu('selected');
+      this.ctx().overlay.openMenu('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       // ArrowUp lands on the selected option if any, else the last enabled.
-      this.ctx().openMenu(this.ctx().value().length > 0 ? 'selected' : 'last');
+      this.ctx().overlay.openMenu(this.ctx().value().length > 0 ? 'selected' : 'last');
       return;
     }
     // Closed-state typeahead — single-mode shortcut to match native <select>.
@@ -108,7 +108,7 @@ export class ForSelectTrigger<T = unknown> {
     const next = event.relatedTarget as HTMLElement | null;
     if (next) {
       // Focus moving into the listbox content (we just opened it) — not a leave.
-      const content = this.ctx().content();
+      const content = this.ctx().overlay.content();
       if (content && content.contains(next)) {
         return;
       }

@@ -21,7 +21,6 @@ import {
   FormUiControlBase,
   injectHiddenInput,
   IdGenerator,
-  type ListNavigationAction,
   resolveListNavigation,
   type WritingDirection,
   ListboxOverlayController,
@@ -43,6 +42,7 @@ import {
   type ForSelectContext,
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
+  type ForSelectOverlayContext,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
 import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
@@ -366,6 +366,9 @@ export class ForSelect<T = string>
       autoFocusOnOpen: this.autoFocusOnOpen,
       autoFocusOnClose: this.autoFocusOnClose,
     },
+    loop: this.loop,
+    dismissible: this.dismissible,
+    escapeReason: 'escape',
     markTouched: () => this.markTouched(),
     onClose: () => {
       if (this.#virtualized()) {
@@ -386,25 +389,16 @@ export class ForSelect<T = string>
     },
   });
 
-  readonly triggerId = this.#controller.triggerId;
-  readonly contentId = this.#controller.contentId;
-  readonly initialFocus = this.#controller.initialFocus;
-  readonly lastCloseReason = this.#controller.lastCloseReason;
-  readonly trigger = this.#controller.trigger;
-
   /**
-   * Element floating-ui anchors the listbox against. Prefers an optional
-   * `[forSelectAnchor]` when registered, otherwise falls back to the trigger
-   * so existing selects without an anchor keep their behavior. Decoupled from
-   * `trigger` so the trigger keeps driving `aria-controls`, the click toggle,
-   * focus return, and its dismissal exemption regardless of where the listbox
-   * paints.
+   * The shared overlay-listbox coordination surface (trigger / anchor / content
+   * registration + ids, DOM-focus navigation, the open / close machine, the
+   * initial-focus / close-reason state, and the dismiss + auto-focus emit
+   * forwarders). Exposed on the context so child directives read the overlay
+   * machinery here — the root no longer re-forwards each member. The optional
+   * `[forSelectAnchor]` (reached via `overlay.anchor`) is preferred when
+   * registered, otherwise floating-ui falls back to the trigger.
    */
-  readonly anchor = this.#controller.anchor;
-
-  readonly content = this.#controller.content;
-
-  readonly options = this.#controller.options;
+  readonly overlay: ForSelectOverlayContext<T> = this.#controller;
 
   /** The active option's `id` in the virtualized path, `null` in the default path. */
   readonly activeDescendantId = computed<string | null>(() =>
@@ -414,7 +408,7 @@ export class ForSelect<T = string>
   #navigator: SelectVirtualizedNavigator<T> | null = null;
   #requireNavigator(): SelectVirtualizedNavigator<T> {
     return (this.#navigator ??= new SelectVirtualizedNavigator<T>({
-      items: this.options,
+      items: this.#controller.options,
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,
       loop: this.loop,
@@ -451,7 +445,7 @@ export class ForSelect<T = string>
     readonly ForSelectOptionHandle<T>[],
     readonly { value: T; label: string }[]
   >({
-    source: () => this.options(),
+    source: () => this.#controller.options(),
     computation: (items, prev) => {
       if (items.length === 0) {
         return prev?.value ?? [];
@@ -519,7 +513,7 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return null;
     }
-    const items = this.options();
+    const items = this.#controller.options();
     const toFormValue = this.itemToFormValue();
     const byKey = new Map<string, ForSelectOptionHandle<T>>();
     for (const o of items) {
@@ -535,11 +529,11 @@ export class ForSelect<T = string>
   });
 
   protected override fieldLabelledElement(): HTMLElement | null {
-    return this.trigger();
+    return this.#controller.trigger();
   }
 
   protected override fieldLabelledElementId(): string {
-    return this.triggerId();
+    return this.#controller.triggerId();
   }
 
   /**
@@ -553,7 +547,7 @@ export class ForSelect<T = string>
     if (this.effectiveDisabled()) {
       return;
     }
-    this.trigger()?.focus(options);
+    this.#controller.trigger()?.focus(options);
   }
 
   /**
@@ -593,7 +587,7 @@ export class ForSelect<T = string>
     });
 
     effect(() => {
-      this.options();
+      this.#controller.options();
       if (!this.#virtualized()) {
         return;
       }
@@ -614,38 +608,6 @@ export class ForSelect<T = string>
         }
       });
     }
-  }
-
-  setInitialFocus(target: ForSelectInitialFocus): void {
-    this.#controller.setInitialFocus(target);
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#controller.registerTrigger(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    this.#controller.unregisterTrigger(el);
-  }
-
-  registerAnchor(el: HTMLElement): void {
-    this.#controller.registerAnchor(el);
-  }
-  unregisterAnchor(el: HTMLElement): void {
-    this.#controller.unregisterAnchor(el);
-  }
-
-  registerContent(el: HTMLElement): void {
-    this.#controller.registerContent(el);
-  }
-  unregisterContent(el: HTMLElement): void {
-    this.#controller.unregisterContent(el);
-  }
-
-  registerOption(handle: ForSelectOptionHandle<T>): void {
-    this.#controller.registerOption(handle);
-  }
-  unregisterOption(handle: ForSelectOptionHandle<T>): void {
-    this.#controller.unregisterOption(handle);
   }
 
   isSelected(v: T): boolean {
@@ -671,11 +633,7 @@ export class ForSelect<T = string>
     // Single-mode: idempotent select + close. Skip the redundant set (and its
     // `valueChange` emission) when the same sole value is already selected.
     this.#setSingle(v);
-    this.closeMenu('select');
-  }
-
-  navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
-    this.#controller.navigate(currentOption, action, this.loop());
+    this.#controller.closeMenu('select');
   }
 
   handleTypeahead(event: KeyboardEvent): void {
@@ -683,7 +641,7 @@ export class ForSelect<T = string>
       return;
     }
     const match = findTypeaheadMatch(
-      this.options(),
+      this.#controller.options(),
       { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
       (o) => o.host.textContent ?? '',
       (o) => o.disabled(),
@@ -715,21 +673,13 @@ export class ForSelect<T = string>
     return true;
   }
 
-  focusFirstEnabledOption(): boolean {
-    return this.#controller.focusFirstEnabledOption();
-  }
-
-  focusLastEnabledOption(): boolean {
-    return this.#controller.focusLastEnabledOption();
-  }
-
   focusSelectedOption(): boolean {
     const values = this.value();
     if (values.length === 0) {
       return false;
     }
     const equals = this.isItemEqualToValue();
-    const items = this.options();
+    const items = this.#controller.options();
     for (const v of values) {
       const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
       if (opt) {
@@ -747,18 +697,6 @@ export class ForSelect<T = string>
     this.selectedOptionEl()?.scrollIntoView?.({ block: 'nearest' });
   }
 
-  toggle(initialFocus: ForSelectInitialFocus = 'selected'): void {
-    this.#controller.toggle(initialFocus);
-  }
-
-  openMenu(initialFocus: ForSelectInitialFocus = 'selected'): void {
-    this.#controller.openMenu(initialFocus);
-  }
-
-  closeMenu(reason: ForSelectCloseReason): void {
-    this.#controller.closeMenu(reason);
-  }
-
   commitOnTab(value: T): void {
     if (this.effectiveDisabled()) {
       return;
@@ -772,49 +710,7 @@ export class ForSelect<T = string>
     // its own re-focus — otherwise it would steal focus back from wherever
     // the browser advanced it.
     this.#controller.focusTrigger();
-    this.closeMenu('tab');
-  }
-
-  emitEscapeKeyDown(event: KeyboardEvent): void {
-    this.#controller.emitEscapeKeyDown(event, this.dismissible(), 'escape');
-  }
-
-  /**
-   * Outside-interaction emit forwarders. The shared `#pendingOutsideVeto`
-   * reuse between the specific outside channels and the composite
-   * `interactOutside` lives in `injectOverlayShell`; these only fire the
-   * matching output with the veto the shell built.
-   */
-  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.#controller.emitPointerDownOutside(veto);
-  }
-  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.#controller.emitFocusOutside(veto);
-  }
-  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.#controller.emitInteractOutside(veto);
-  }
-
-  /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
-  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.#controller.forwardEscapeKeyDown(veto);
-  }
-
-  /**
-   * Implicit close requested by the shell after an un-vetoed outside
-   * interaction. Marks the control touched (mirroring the trigger blur) and
-   * closes with the channel's reason.
-   */
-  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    this.#controller.requestClose(reason);
-  }
-
-  emitAutoFocusOnOpen(): boolean {
-    return this.#controller.emitAutoFocusOnOpen();
-  }
-
-  emitAutoFocusOnClose(): boolean {
-    return this.#controller.emitAutoFocusOnClose();
+    this.#controller.closeMenu('tab');
   }
 
   override markTouched(): void {
@@ -873,7 +769,7 @@ export class ForSelect<T = string>
       return;
     }
     this.#activeId.set(optionId);
-    this.content()?.focus();
+    this.#controller.content()?.focus();
   }
 
   #committedIndex(navigator: SelectVirtualizedNavigator<T>): number | null {
@@ -898,7 +794,7 @@ export class ForSelect<T = string>
     if (id === null) {
       return;
     }
-    const handle = this.options().find((o) => o.id() === id);
+    const handle = this.#controller.options().find((o) => o.id() === id);
     if (!handle || handle.disabled()) {
       return;
     }
@@ -944,12 +840,12 @@ export class ForSelect<T = string>
 
   #commitActiveDescendantOnTab(): void {
     const id = this.#activeId();
-    const handle = id === null ? undefined : this.options().find((o) => o.id() === id);
+    const handle = id === null ? undefined : this.#controller.options().find((o) => o.id() === id);
     if (handle && !handle.disabled()) {
       this.commitOnTab(handle.value());
       return;
     }
-    this.closeMenu('tab');
+    this.#controller.closeMenu('tab');
   }
 
   #typeaheadVirtualized(event: KeyboardEvent): void {
@@ -957,7 +853,7 @@ export class ForSelect<T = string>
       return;
     }
     const match = findTypeaheadMatch(
-      this.options(),
+      this.#controller.options(),
       { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
       (o) => o.host.textContent ?? '',
       (o) => o.disabled(),

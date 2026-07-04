@@ -17,7 +17,6 @@ import {
   IdGenerator,
   type FloatingAlign,
   type FloatingSide,
-  type ListNavigationAction,
   type WritingDirection,
   ListboxOverlayController,
   FormUiControlBase,
@@ -36,6 +35,7 @@ import {
   type ForTimePickerContext,
   type ForTimePickerInitialFocus,
   type ForTimePickerOptionHandle,
+  type ForTimePickerOverlayContext,
 } from './time-picker-context';
 import { FOR_TIME_PICKER_DEFAULTS } from './time-picker-defaults';
 
@@ -278,28 +278,22 @@ export class ForTimePicker<D>
       autoFocusOnOpen: this.autoFocusOnOpen,
       autoFocusOnClose: this.autoFocusOnClose,
     },
+    loop: this.loop,
+    dismissible: this.dismissible,
+    escapeReason: 'escape',
     markTouched: () => this.markTouched(),
   });
 
-  readonly triggerId = this.#controller.triggerId;
-  readonly contentId = this.#controller.contentId;
-  readonly initialFocus = this.#controller.initialFocus;
-  readonly lastCloseReason = this.#controller.lastCloseReason;
-  readonly trigger = this.#controller.trigger;
-
   /**
-   * Element floating-ui anchors the listbox against. Prefers an optional
-   * `[forTimePickerAnchor]` when registered, otherwise falls back to the
-   * trigger so existing pickers without an anchor keep their behavior.
-   * Decoupled from `trigger` so the trigger keeps driving `aria-controls`, the
-   * click toggle, focus return, and its dismissal exemption regardless of where
-   * the listbox paints.
+   * The shared overlay-listbox coordination surface (trigger / anchor / content
+   * registration + ids, DOM-focus navigation, the open / close machine, the
+   * initial-focus / close-reason state, and the dismiss + auto-focus emit
+   * forwarders). Exposed on the context so child directives read the overlay
+   * machinery here — the root no longer re-forwards each member. The optional
+   * `[forTimePickerAnchor]` (reached via `overlay.anchor`) is preferred when
+   * registered, otherwise floating-ui falls back to the trigger.
    */
-  readonly anchor = this.#controller.anchor;
-
-  readonly content = this.#controller.content;
-
-  readonly options = this.#controller.options;
+  readonly overlay: ForTimePickerOverlayContext = this.#controller;
 
   readonly #sentinel = computed(() => timeSentinel(this.adapter));
 
@@ -354,11 +348,11 @@ export class ForTimePicker<D>
   });
 
   protected override fieldLabelledElement(): HTMLElement | null {
-    return this.trigger();
+    return this.#controller.trigger();
   }
 
   protected override fieldLabelledElementId(): string {
-    return this.triggerId();
+    return this.#controller.triggerId();
   }
 
   constructor() {
@@ -374,38 +368,6 @@ export class ForTimePicker<D>
       }),
       disabled: this.effectiveDisabled,
     });
-  }
-
-  setInitialFocus(target: ForTimePickerInitialFocus): void {
-    this.#controller.setInitialFocus(target);
-  }
-
-  registerTrigger(el: HTMLElement): void {
-    this.#controller.registerTrigger(el);
-  }
-  unregisterTrigger(el: HTMLElement): void {
-    this.#controller.unregisterTrigger(el);
-  }
-
-  registerAnchor(el: HTMLElement): void {
-    this.#controller.registerAnchor(el);
-  }
-  unregisterAnchor(el: HTMLElement): void {
-    this.#controller.unregisterAnchor(el);
-  }
-
-  registerContent(el: HTMLElement): void {
-    this.#controller.registerContent(el);
-  }
-  unregisterContent(el: HTMLElement): void {
-    this.#controller.unregisterContent(el);
-  }
-
-  registerOption(handle: ForTimePickerOptionHandle): void {
-    this.#controller.registerOption(handle);
-  }
-  unregisterOption(handle: ForTimePickerOptionHandle): void {
-    this.#controller.unregisterOption(handle);
   }
 
   #sameTimeOfDay(a: D, b: D): boolean {
@@ -435,20 +397,8 @@ export class ForTimePicker<D>
     }
     this.value.set(v);
     if (this.closeOnSelect()) {
-      this.closeMenu('select');
+      this.#controller.closeMenu('select');
     }
-  }
-
-  navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
-    this.#controller.navigate(currentOption, action, this.loop());
-  }
-
-  focusFirstEnabledOption(): boolean {
-    return this.#controller.focusFirstEnabledOption();
-  }
-
-  focusLastEnabledOption(): boolean {
-    return this.#controller.focusLastEnabledOption();
   }
 
   focusSelectedOption(): boolean {
@@ -456,7 +406,7 @@ export class ForTimePicker<D>
     if (current === null) {
       return false;
     }
-    const items = this.options();
+    const items = this.#controller.options();
     const opt = items.find((o) => {
       if (o.disabled()) {
         return false;
@@ -471,18 +421,6 @@ export class ForTimePicker<D>
     return false;
   }
 
-  toggle(initialFocus: ForTimePickerInitialFocus = 'selected'): void {
-    this.#controller.toggle(initialFocus);
-  }
-
-  openMenu(initialFocus: ForTimePickerInitialFocus = 'selected'): void {
-    this.#controller.openMenu(initialFocus);
-  }
-
-  closeMenu(reason: ForTimePickerCloseReason): void {
-    this.#controller.closeMenu(reason);
-  }
-
   commitOnTab(value: D): void {
     if (this.effectiveDisabled()) {
       return;
@@ -491,37 +429,7 @@ export class ForTimePicker<D>
       this.value.set(value);
     }
     this.#controller.focusTrigger();
-    this.closeMenu('tab');
-  }
-
-  emitEscapeKeyDown(event: KeyboardEvent): void {
-    this.#controller.emitEscapeKeyDown(event, this.dismissible(), 'escape');
-  }
-
-  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.#controller.emitPointerDownOutside(veto);
-  }
-  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.#controller.emitFocusOutside(veto);
-  }
-  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.#controller.emitInteractOutside(veto);
-  }
-
-  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.#controller.forwardEscapeKeyDown(veto);
-  }
-
-  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    this.#controller.requestClose(reason);
-  }
-
-  emitAutoFocusOnOpen(): boolean {
-    return this.#controller.emitAutoFocusOnOpen();
-  }
-
-  emitAutoFocusOnClose(): boolean {
-    return this.#controller.emitAutoFocusOnClose();
+    this.#controller.closeMenu('tab');
   }
 
   override markTouched(): void {

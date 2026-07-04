@@ -72,6 +72,12 @@ export interface ListboxOverlayControllerDeps<
   readonly isOpen: () => boolean;
   /** Dismiss / auto-focus outputs to forward to. */
   readonly emit: ListboxOverlayEmitTargets;
+  /** Whether keyboard navigation wraps at the ends of the option list. */
+  readonly loop: Signal<boolean>;
+  /** Whether Escape / outside interactions dismiss the overlay. */
+  readonly dismissible: Signal<boolean>;
+  /** Close reason set when Escape dismisses the overlay (both primitives use `'escape'`). */
+  readonly escapeReason: CloseReason;
   /** Mark the control touched (mirrors the trigger blur) on Escape / outside dismissal. */
   readonly markTouched: () => void;
   /**
@@ -86,6 +92,72 @@ export interface ListboxOverlayControllerDeps<
   readonly onNavigateFocus?: (target: H) => void;
   /** Per-primitive option-unregister side effect (Select clears a stale activedescendant). */
   readonly onUnregisterOption?: (handle: H) => void;
+}
+
+/**
+ * The narrow, typed facade a primitive surfaces on its coordination context
+ * (`ctx.overlay`) so child directives read the shared overlay-listbox state and
+ * behavior here instead of the root re-forwarding every member. Implemented by
+ * {@link ListboxOverlayController}; each primitive's context exposes it as a
+ * sub-object, keeping the child-facing surface a single, self-documenting seam.
+ *
+ * @typeParam H Primitive option-handle type.
+ * @typeParam Focus Initial-focus union.
+ * @typeParam CloseReason Close-reason union owned by the primitive.
+ */
+export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Focus, CloseReason> {
+  /** The trigger's stable id, adopted from a consumer-set static id when present. */
+  readonly triggerId: Signal<string>;
+  /** The content surface's stable id, adopted from a consumer-set static id when present. */
+  readonly contentId: Signal<string>;
+  /** Where focus should land after the content mounts. Triggers set this before flipping `open`. */
+  readonly initialFocus: Signal<Focus>;
+  /** Reason of the most recent close, or `null` while open (or before any close). */
+  readonly lastCloseReason: Signal<CloseReason | null>;
+  /** The button trigger — exempt from outside-pointer checks and the focus-return target. */
+  readonly trigger: Signal<HTMLElement | null>;
+  /**
+   * Element floating-ui anchors the content against. Prefers a registered
+   * anchor, otherwise falls back to the trigger.
+   */
+  readonly anchor: Signal<ReferenceElement | null>;
+  /** The mounted content element. */
+  readonly content: Signal<HTMLElement | null>;
+  /** All registered options in DOM order. */
+  readonly options: Signal<readonly H[]>;
+
+  /** Set the initial-focus target ahead of the next open. */
+  setInitialFocus(target: Focus): void;
+
+  registerTrigger(el: HTMLElement): void;
+  unregisterTrigger(el: HTMLElement): void;
+  registerAnchor(el: HTMLElement): void;
+  unregisterAnchor(el: HTMLElement): void;
+  registerContent(el: HTMLElement): void;
+  unregisterContent(el: HTMLElement): void;
+  registerOption(handle: H): void;
+  unregisterOption(handle: H): void;
+
+  /** Move focus inside the open content in response to an arrow / Home / End key. */
+  navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
+  focusFirstEnabledOption(): boolean;
+  focusLastEnabledOption(): boolean;
+
+  toggle(initialFocus: Focus): void;
+  openMenu(initialFocus: Focus): void;
+  closeMenu(reason: CloseReason): void;
+
+  /** Escape on the anchored path: emit `(escapeKeyDown)`, then close when un-vetoed and dismissible. */
+  emitEscapeKeyDown(event: KeyboardEvent): void;
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
+  /** Modal-path Escape forwarder: emit only; the modal shell owns the close. */
+  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void;
+  /** Implicit close requested by the shell after an un-vetoed outside interaction. */
+  requestClose(reason: CloseReason): void;
+  emitAutoFocusOnOpen(): boolean;
+  emitAutoFocusOnClose(): boolean;
 }
 
 /**
@@ -107,7 +179,11 @@ export interface ListboxOverlayControllerDeps<
  * @typeParam Focus Initial-focus union.
  * @typeParam CloseReason Close-reason union.
  */
-export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focus, CloseReason> {
+export class ListboxOverlayController<
+  H extends ListboxOverlayOptionHandle,
+  Focus,
+  CloseReason,
+> implements ListboxOverlayContext<H, Focus, CloseReason> {
   readonly #deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>;
   readonly #items = new Collection<H>();
 
@@ -186,11 +262,13 @@ export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focu
     this.#deps.onUnregisterOption?.(handle);
   }
 
-  navigate(currentOption: HTMLElement, action: ListNavigationAction, loop: boolean): void {
+  navigate(currentOption: HTMLElement, action: ListNavigationAction): void {
     if (this.#deps.effectiveDisabled()) {
       return;
     }
-    const target = nextEnabledHandle(this.#items.items(), currentOption, action, { loop });
+    const target = nextEnabledHandle(this.#items.items(), currentOption, action, {
+      loop: this.#deps.loop(),
+    });
     if (target === null) {
       return;
     }
@@ -245,12 +323,12 @@ export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focu
     this.#deps.onClose?.(reason);
   }
 
-  emitEscapeKeyDown(event: KeyboardEvent, dismissible: boolean, escapeReason: CloseReason): void {
+  emitEscapeKeyDown(event: KeyboardEvent): void {
     const vetoed = emitVetoableNativeEvent(this.#deps.emit.escapeKeyDown, event);
-    if (!vetoed && dismissible) {
+    if (!vetoed && this.#deps.dismissible()) {
       event.stopPropagation();
       this.#deps.markTouched();
-      this.closeMenu(escapeReason);
+      this.closeMenu(this.#deps.escapeReason);
     }
   }
 

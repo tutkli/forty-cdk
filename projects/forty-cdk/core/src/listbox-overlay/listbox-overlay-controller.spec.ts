@@ -48,6 +48,7 @@ interface Harness {
   readonly parent: HTMLElement;
   readonly open: WritableSignal<boolean>;
   readonly effectiveDisabled: WritableSignal<boolean>;
+  readonly dismissible: WritableSignal<boolean>;
   readonly touched: { count: number };
   readonly closed: CloseReason[];
   readonly navigated: FakeHandle[];
@@ -68,6 +69,8 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
 
   const open = signal(false);
   const effectiveDisabled = signal(false);
+  const loop = signal(true);
+  const dismissible = signal(true);
   const touched = { count: 0 };
   const closed: CloseReason[] = [];
   const navigated: FakeHandle[] = [];
@@ -98,13 +101,26 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
       setOpen: (v) => open.set(v),
       isOpen: () => open(),
       emit,
+      loop,
+      dismissible,
+      escapeReason: 'escape',
       markTouched: () => {
         touched.count++;
       },
       onClose: (reason) => closed.push(reason),
       onNavigateFocus: opts.withNavigateFocus ? (target) => navigated.push(target) : undefined,
     });
-    harness = { controller, parent, open, effectiveDisabled, touched, closed, navigated, emit };
+    harness = {
+      controller,
+      parent,
+      open,
+      effectiveDisabled,
+      dismissible,
+      touched,
+      closed,
+      navigated,
+      emit,
+    };
   });
   return harness;
 }
@@ -212,7 +228,7 @@ describe('ListboxOverlayController', () => {
     controller.registerOption(b);
     controller.registerOption(c);
 
-    controller.navigate(a.host, 'next' as ListNavigationAction, true);
+    controller.navigate(a.host, 'next' as ListNavigationAction);
     expect(document.activeElement).toBe(c.host);
   });
 
@@ -223,7 +239,7 @@ describe('ListboxOverlayController', () => {
     controller.registerOption(a);
     controller.registerOption(b);
 
-    controller.navigate(a.host, 'next' as ListNavigationAction, true);
+    controller.navigate(a.host, 'next' as ListNavigationAction);
     expect(navigated).toEqual([b]);
   });
 
@@ -253,16 +269,17 @@ describe('ListboxOverlayController', () => {
     const { controller, open, touched, closed } = createHarness();
     open.set(true);
     const event = new KeyboardEvent('keydown', { key: 'Escape' });
-    controller.emitEscapeKeyDown(event, true, 'escape');
+    controller.emitEscapeKeyDown(event);
     expect(open()).toBe(false);
     expect(touched.count).toBe(1);
     expect(closed).toEqual(['escape']);
   });
 
   it('emitEscapeKeyDown does not close when not dismissible', () => {
-    const { controller, open, touched } = createHarness();
+    const { controller, open, touched, dismissible } = createHarness();
+    dismissible.set(false);
     open.set(true);
-    controller.emitEscapeKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }), false, 'escape');
+    controller.emitEscapeKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(open()).toBe(true);
     expect(touched.count).toBe(0);
   });
@@ -271,7 +288,7 @@ describe('ListboxOverlayController', () => {
     const { controller, open, emit } = createHarness();
     emit.escapeKeyDown.subscribe((veto) => veto.preventDefault());
     open.set(true);
-    controller.emitEscapeKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }), true, 'escape');
+    controller.emitEscapeKeyDown(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(open()).toBe(true);
   });
 

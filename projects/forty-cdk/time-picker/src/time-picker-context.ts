@@ -1,13 +1,11 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   type CollectionHandle,
   type FloatingAlign,
   type FloatingSide,
-  type ListNavigationAction,
+  type ListboxOverlayContext,
   type WritingDirection,
-  type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
 
@@ -37,7 +35,24 @@ export interface ForTimePickerOptionHandle extends CollectionHandle {
 }
 
 /**
- * Coordination contract owned by `[forTimePicker]`.
+ * The shared overlay-listbox coordination surface a `[forTimePicker]` exposes on
+ * its context (`ctx.overlay`): trigger / anchor / content registries + ids,
+ * DOM-focus navigation, the open / close machine, the initial-focus /
+ * close-reason state, and the dismiss / auto-focus emit forwarders. Backed by
+ * the shared `ListboxOverlayController`, so child directives read it here
+ * instead of the root re-forwarding each member.
+ */
+export type ForTimePickerOverlayContext = ListboxOverlayContext<
+  ForTimePickerOptionHandle,
+  ForTimePickerInitialFocus,
+  ForTimePickerCloseReason
+>;
+
+/**
+ * Coordination contract owned by `[forTimePicker]`. The shared overlay-listbox
+ * surface (trigger / anchor / content registration, navigation, the open /
+ * close machine, dismiss forwarders) is reached through
+ * {@link ForTimePickerContext.overlay}.
  *
  * @typeParam D The adapter's date-time type.
  */
@@ -50,7 +65,8 @@ export interface ForTimePickerContext<D = unknown> {
   readonly value: Signal<D | null>;
   /**
    * Whether the listbox is open, as a read-only signal. Mutate it through
-   * `toggle` / `openMenu` / `closeMenu` or the root's `[(open)]` binding.
+   * `overlay.toggle` / `overlay.openMenu` / `overlay.closeMenu` or the root's
+   * `[(open)]` binding.
    */
   readonly open: Signal<boolean>;
   readonly effectiveDisabled: Signal<boolean>;
@@ -77,43 +93,22 @@ export interface ForTimePickerContext<D = unknown> {
   readonly placeholder: Signal<string>;
   readonly granularity: Signal<TimePickerGranularity>;
   readonly formattedValue: Signal<string | null>;
-  readonly triggerId: Signal<string>;
-  readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
-  readonly initialFocus: Signal<ForTimePickerInitialFocus>;
-  setInitialFocus(target: ForTimePickerInitialFocus): void;
-  readonly lastCloseReason: Signal<ForTimePickerCloseReason | null>;
-  readonly anchor: Signal<ReferenceElement | null>;
-  readonly trigger: Signal<HTMLElement | null>;
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
-  registerAnchor(el: HTMLElement): void;
-  unregisterAnchor(el: HTMLElement): void;
-  readonly content: Signal<HTMLElement | null>;
-  registerContent(el: HTMLElement): void;
-  unregisterContent(el: HTMLElement): void;
-  registerOption(handle: ForTimePickerOptionHandle): void;
-  unregisterOption(handle: ForTimePickerOptionHandle): void;
-  readonly options: Signal<readonly ForTimePickerOptionHandle[]>;
+
+  /**
+   * The shared overlay-listbox coordination surface (trigger / anchor / content
+   * registration + ids, navigation, open / close machine, initial-focus /
+   * close-reason state, dismiss + auto-focus emit forwarders). Child directives
+   * read the overlay machinery here instead of the root re-forwarding each
+   * member; the value-specific behavior below stays on the context directly.
+   */
+  readonly overlay: ForTimePickerOverlayContext;
+
   readonly slots: Signal<readonly ForTimeSlot<D>[]>;
   isSelected(value: D): boolean;
   activate(value: D): void;
-  navigate(currentOption: HTMLElement, action: ListNavigationAction): void;
-  focusFirstEnabledOption(): boolean;
-  focusLastEnabledOption(): boolean;
   focusSelectedOption(): boolean;
-  toggle(initialFocus?: ForTimePickerInitialFocus): void;
-  openMenu(initialFocus?: ForTimePickerInitialFocus): void;
-  closeMenu(reason: ForTimePickerCloseReason): void;
   commitOnTab(value: D): void;
-  emitEscapeKeyDown(event: KeyboardEvent): void;
-  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
-  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
-  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
-  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
-  forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void;
-  emitAutoFocusOnOpen(): boolean;
-  emitAutoFocusOnClose(): boolean;
   markTouched(): void;
 }
 

@@ -14,6 +14,7 @@ export {
   type ForSelectContext,
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
+  type ForSelectOverlayContext,
 } from './select-context';
 export {
   FOR_SELECT_DEFAULTS,
@@ -27,6 +28,7 @@ export {
 export type {
   FloatingAlign,
   FloatingSide,
+  ListboxOverlayContext,
   ListNavigationAction,
   VetoableEvent,
   VetoableNativeEvent,

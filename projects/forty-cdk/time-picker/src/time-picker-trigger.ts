@@ -23,10 +23,10 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
   host: {
     type: 'button',
     role: 'combobox',
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'ctx().overlay.triggerId()',
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
-    '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
+    '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
     '[attr.aria-disabled]': 'ctx().effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx().required() ? "true" : null',
@@ -57,14 +57,14 @@ export class ForTimePickerTrigger<D = unknown> {
     const el = this.#host.nativeElement;
     effect((onCleanup) => {
       const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
+      ctx.overlay.registerTrigger(el);
+      onCleanup(() => ctx.overlay.unregisterTrigger(el));
     });
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
   protected onClick(): void {
-    this.ctx().toggle('selected');
+    this.ctx().overlay.toggle('selected');
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -73,19 +73,19 @@ export class ForTimePickerTrigger<D = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.ctx().openMenu('selected');
+      this.ctx().overlay.openMenu('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      this.ctx().openMenu(this.ctx().value() !== null ? 'selected' : 'last');
+      this.ctx().overlay.openMenu(this.ctx().value() !== null ? 'selected' : 'last');
     }
   }
 
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     if (next) {
-      const content = this.ctx().content();
+      const content = this.ctx().overlay.content();
       if (content && content.contains(next)) {
         return;
       }
