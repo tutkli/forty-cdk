@@ -1,18 +1,14 @@
-import {
-  computed,
-  type OutputEmitterRef,
-  type Signal,
-  signal,
-  type WritableSignal,
-} from '@angular/core';
+import { type OutputEmitterRef, type Signal, signal, type WritableSignal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../collection/collection';
 import { firstEnabledHost } from '../collection/first-enabled-host';
-import { adoptHostId } from '../host-id/host-id';
 import type { IdGenerator } from '../id-generator/id-generator';
 import { type ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import { nextEnabledHandle } from '../keyboard-navigation/move-in-collection';
+import { AnchorSlot, IdentifiedElementSlot } from '../overlay-controller/element-registry';
+import { CloseReasonState } from '../overlay-controller/close-reason-state';
+import { InitialFocusState } from '../overlay-controller/initial-focus-state';
 import {
   emitVetoableEvent,
   emitVetoableNativeEvent,
@@ -113,22 +109,22 @@ export interface ListboxOverlayControllerDeps<
  */
 export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focus, CloseReason> {
   readonly #deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>;
-  readonly #idGen: IdGenerator;
   readonly #items = new Collection<H>();
+
+  readonly #triggerSlot: IdentifiedElementSlot;
+  readonly #contentSlot: IdentifiedElementSlot;
+  readonly #anchorSlot: AnchorSlot;
 
   readonly triggerId: WritableSignal<string>;
   readonly contentId: WritableSignal<string>;
 
-  readonly #initialFocus: ReturnType<typeof signal<Focus>>;
+  readonly #initialFocusState: InitialFocusState<Focus>;
   readonly initialFocus: Signal<Focus>;
 
-  readonly #lastCloseReason = signal<CloseReason | null>(null);
-  readonly lastCloseReason = this.#lastCloseReason.asReadonly();
+  readonly #closeReasonState = new CloseReasonState<CloseReason>();
+  readonly lastCloseReason = this.#closeReasonState.reason;
 
-  readonly #triggerEl = signal<HTMLElement | null>(null);
-  readonly trigger = this.#triggerEl.asReadonly();
-
-  readonly #anchorEl = signal<HTMLElement | null>(null);
+  readonly trigger: Signal<HTMLElement | null>;
 
   /**
    * Element floating-ui anchors the listbox against. Prefers an optional
@@ -137,58 +133,49 @@ export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focu
    */
   readonly anchor: Signal<ReferenceElement | null>;
 
-  readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly content = this.#contentEl.asReadonly();
+  readonly content: Signal<HTMLElement | null>;
 
   /** All registered options in DOM order. */
   readonly options: Signal<readonly H[]>;
 
   constructor(idGen: IdGenerator, deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>) {
     this.#deps = deps;
-    this.#idGen = idGen;
-    this.triggerId = signal(this.#idGen.next(`${deps.idPrefix}-trigger`));
-    this.contentId = signal(this.#idGen.next(`${deps.idPrefix}-content`));
-    this.#initialFocus = signal<Focus>(deps.defaultInitialFocus);
-    this.initialFocus = this.#initialFocus.asReadonly();
-    this.anchor = computed<ReferenceElement | null>(() => this.#anchorEl() ?? this.#triggerEl());
+    this.#triggerSlot = new IdentifiedElementSlot(signal(idGen.next(`${deps.idPrefix}-trigger`)));
+    this.#contentSlot = new IdentifiedElementSlot(signal(idGen.next(`${deps.idPrefix}-content`)));
+    this.#anchorSlot = new AnchorSlot(deps.multipleAnchorsError);
+    this.triggerId = this.#triggerSlot.id;
+    this.contentId = this.#contentSlot.id;
+    this.trigger = this.#triggerSlot.element;
+    this.content = this.#contentSlot.element;
+    this.#initialFocusState = new InitialFocusState<Focus>(deps.defaultInitialFocus);
+    this.initialFocus = this.#initialFocusState.target;
+    this.anchor = this.#anchorSlot.resolve(this.#triggerSlot.element);
     this.options = this.#items.items;
   }
 
   setInitialFocus(target: Focus): void {
-    this.#initialFocus.set(target);
+    this.#initialFocusState.setTarget(target);
   }
 
   registerTrigger(el: HTMLElement): void {
-    adoptHostId(el, this.triggerId);
-    this.#triggerEl.set(el);
+    this.#triggerSlot.register(el);
   }
   unregisterTrigger(el: HTMLElement): void {
-    if (this.#triggerEl() === el) {
-      this.#triggerEl.set(null);
-    }
+    this.#triggerSlot.unregister(el);
   }
 
   registerAnchor(el: HTMLElement): void {
-    const current = this.#anchorEl();
-    if (current !== null && current !== el) {
-      throw new Error(this.#deps.multipleAnchorsError);
-    }
-    this.#anchorEl.set(el);
+    this.#anchorSlot.register(el);
   }
   unregisterAnchor(el: HTMLElement): void {
-    if (this.#anchorEl() === el) {
-      this.#anchorEl.set(null);
-    }
+    this.#anchorSlot.unregister(el);
   }
 
   registerContent(el: HTMLElement): void {
-    adoptHostId(el, this.contentId);
-    this.#contentEl.set(el);
+    this.#contentSlot.register(el);
   }
   unregisterContent(el: HTMLElement): void {
-    if (this.#contentEl() === el) {
-      this.#contentEl.set(null);
-    }
+    this.#contentSlot.unregister(el);
   }
 
   registerOption(handle: H): void {
@@ -247,13 +234,13 @@ export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focu
     if (this.#deps.effectiveDisabled()) {
       return;
     }
-    this.#initialFocus.set(initialFocus);
-    this.#lastCloseReason.set(null);
+    this.#initialFocusState.setTarget(initialFocus);
+    this.#closeReasonState.reset();
     this.#deps.setOpen(true);
   }
 
   closeMenu(reason: CloseReason): void {
-    this.#lastCloseReason.set(reason);
+    this.#closeReasonState.set(reason);
     this.#deps.setOpen(false);
     this.#deps.onClose?.(reason);
   }
@@ -296,6 +283,6 @@ export class ListboxOverlayController<H extends ListboxOverlayOptionHandle, Focu
 
   /** Focus the trigger, e.g. on a Tab commit before the content unmounts. */
   focusTrigger(): void {
-    this.#triggerEl()?.focus();
+    this.#triggerSlot.element()?.focus();
   }
 }

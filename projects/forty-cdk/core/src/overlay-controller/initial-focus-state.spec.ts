@@ -1,9 +1,14 @@
-import { CloseReasonState, InitialFocusState } from './menu-focus-state';
+import { InitialFocusState } from './initial-focus-state';
 
 describe('InitialFocusState', () => {
   it('defaults the target to "first"', () => {
     const state = new InitialFocusState();
     expect(state.target()).toBe('first');
+  });
+
+  it('accepts an explicit default target for a widened focus union', () => {
+    const state = new InitialFocusState<'first' | 'last' | 'selected'>('selected');
+    expect(state.target()).toBe('selected');
   });
 
   it('setTarget updates the target signal', () => {
@@ -38,27 +43,5 @@ describe('InitialFocusState', () => {
     const state = new InitialFocusState();
     state.prepareOpen('first', true);
     expect(state.consumeHighlight()).toBe(true);
-  });
-});
-
-describe('CloseReasonState', () => {
-  it('starts at null', () => {
-    const state = new CloseReasonState<'escape' | 'tab'>();
-    expect(state.reason()).toBeNull();
-  });
-
-  it('records the most recent reason via set', () => {
-    const state = new CloseReasonState<'escape' | 'tab'>();
-    state.set('escape');
-    expect(state.reason()).toBe('escape');
-    state.set('tab');
-    expect(state.reason()).toBe('tab');
-  });
-
-  it('reset clears the reason back to null', () => {
-    const state = new CloseReasonState<'escape' | 'tab'>();
-    state.set('escape');
-    state.reset();
-    expect(state.reason()).toBeNull();
   });
 });

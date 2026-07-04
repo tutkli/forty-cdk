@@ -26,12 +26,23 @@ export function isRequiredInputUnset(error: unknown): boolean {
  * `linkedSignal` dirty and it re-runs, folding the handle in once its value is
  * set. Any non-NG0950 error propagates unchanged.
  */
-export function tryReadHandle<R>(read: () => R): R | null {
+export function tryReadHandle<R>(read: () => R): R | null;
+/**
+ * Sentinel overload: return `sentinel` instead of `null` in the NG0950 window.
+ * Lets a caller distinguish "input unset" from a legitimately-`null` read value
+ * (e.g. `ForSelect`, whose option value may be `null`, folds on a private
+ * `NO_VALUE` symbol). Any non-NG0950 error still propagates unchanged.
+ *
+ * @param read The handle read to attempt.
+ * @param sentinel The value to return when the read throws NG0950.
+ */
+export function tryReadHandle<R, S>(read: () => R, sentinel: S): R | S;
+export function tryReadHandle<R, S>(read: () => R, ...rest: [S] | []): R | S | null {
   try {
     return read();
   } catch (error) {
     if (isRequiredInputUnset(error)) {
-      return null;
+      return rest.length > 0 ? (rest[0] as S) : null;
     }
     throw error;
   }

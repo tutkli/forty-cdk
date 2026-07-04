@@ -1,6 +1,6 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { tryReadHandle } from './combobox-snapshot-fold';
+import { tryReadHandle } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
 import type { OptionLabelCache } from './combobox-label-cache';
 import type { VirtualizedNavigator } from './combobox-virtualized-navigator';

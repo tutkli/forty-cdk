@@ -1,7 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { VirtualizedNavigator as VirtualizedNavigatorCore } from 'forty-cdk/core';
-import { tryReadHandle } from './combobox-snapshot-fold';
+import { tryReadHandle, VirtualizedNavigator as VirtualizedNavigatorCore } from 'forty-cdk/core';
 import type { ForComboboxOptionHandle } from './combobox-context';
 import type { SnapshotEntry } from './combobox-label-cache';
 
