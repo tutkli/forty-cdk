@@ -1,6 +1,7 @@
-import { computed, Directive, input } from '@angular/core';
+import { computed, Directive, inject, input } from '@angular/core';
 
 import { injectStepperContext } from './stepper-context';
+import { FOR_STEPPER_DEFAULTS } from './stepper-defaults';
 
 /**
  * Optional progress indicator for the Stepper. Reads the stepper context and
@@ -28,6 +29,7 @@ import { injectStepperContext } from './stepper-context';
 })
 export class ForStepperProgress {
   protected readonly ctx = injectStepperContext('ForStepperProgress');
+  readonly #defaults = inject(FOR_STEPPER_DEFAULTS);
 
   /**
    * Basis for the reported percent. `'index'` (default) derives progress from
@@ -74,11 +76,16 @@ export class ForStepperProgress {
 
   /**
    * Human-readable position string reflected to `aria-valuetext`: `"Step X of N"`
-   * on the `'index'` basis, `"P% complete"` on the `'completed'` basis.
+   * on the `'index'` basis, `"P% complete"` on the `'completed'` basis. Both
+   * strings are built from the scope's `stepValueText` / `progressValueText`
+   * defaults, localizable via `provideForStepperDefaults`.
    */
   readonly valueText = computed<string>(() =>
     this.valueBy() === 'completed'
-      ? `${this.percent()}% complete`
-      : `Step ${Math.min(this.ctx.selectedIndex() + 1, this.ctx.count())} of ${this.ctx.count()}`,
+      ? this.#defaults.progressValueText(this.percent())
+      : this.#defaults.stepValueText(
+          Math.min(this.ctx.selectedIndex() + 1, this.ctx.count()),
+          this.ctx.count(),
+        ),
   );
 }

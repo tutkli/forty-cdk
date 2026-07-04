@@ -30,7 +30,7 @@ interface Filters {
             placeholder="At least 3 characters…"
             [formField]="filtersForm.term"
           />
-          <button forSearchClear class="search-clear" aria-label="Clear search">×</button>
+          <button forSearchClear class="search-clear" ariaLabel="Clear search">×</button>
         </div>
       </label>
       @if (filtersForm.term().touched() && !filtersForm.term().valid()) {

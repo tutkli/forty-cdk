@@ -10,6 +10,7 @@ import { flush } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForField, ForLabel } from 'forty-cdk/field';
 import { ForSearchClear } from './search-clear';
+import { provideForSearchDefaults } from './search-defaults';
 import { ForSearchGroup } from './search-group';
 import { ForSearch } from './search';
 
@@ -209,6 +210,68 @@ describe('ForSearch', () => {
       await flush();
       expect(fixture.componentInstance.text()).toBe('query');
       expect(document.activeElement).not.toBe(input);
+    });
+  });
+
+  describe('clear button aria-label (issue #1159)', () => {
+    it('carries the default aria-label "Clear"', () => {
+      const { el } = renderHost(SearchHost);
+      expect(clearOf(el).getAttribute('aria-label')).toBe('Clear');
+    });
+
+    it('[ariaLabel] overrides the emitted aria-label', () => {
+      @Component({
+        imports: [ForSearchGroup, ForSearch, ForSearchClear],
+        template: `
+          <div forSearchGroup>
+            <input forSearch [(value)]="text" />
+            <button forSearchClear data-test-id="clear" ariaLabel="Borrar">×</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly text = signal('');
+      }
+
+      const { el } = renderHost(Host);
+      expect(clearOf(el).getAttribute('aria-label')).toBe('Borrar');
+    });
+
+    it('[ariaLabel]="null" drops the attribute', () => {
+      @Component({
+        imports: [ForSearchGroup, ForSearch, ForSearchClear],
+        template: `
+          <div forSearchGroup>
+            <input forSearch [(value)]="text" />
+            <button forSearchClear data-test-id="clear" [ariaLabel]="null">×</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly text = signal('');
+      }
+
+      const { el } = renderHost(Host);
+      expect(clearOf(el).hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('an unbound clear button uses provideForSearchDefaults({ clearAriaLabel })', () => {
+      @Component({
+        imports: [ForSearchGroup, ForSearch, ForSearchClear],
+        providers: [provideForSearchDefaults({ clearAriaLabel: 'Vaciar' })],
+        template: `
+          <div forSearchGroup>
+            <input forSearch [(value)]="text" />
+            <button forSearchClear data-test-id="clear">×</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly text = signal('');
+      }
+
+      const { el } = renderHost(Host);
+      expect(clearOf(el).getAttribute('aria-label')).toBe('Vaciar');
     });
   });
 

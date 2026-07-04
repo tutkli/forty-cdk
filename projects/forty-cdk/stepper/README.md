@@ -183,6 +183,19 @@ index; `valueBy="completed"` tracks the count of completed steps.
 }
 ```
 
+The `aria-valuetext` string (`"Step N of M"` on the `index` basis, `"P% complete"` on the
+`completed` basis) is verbalized by screen readers, so it is localizable centrally via
+`provideForStepperDefaults` — override the `stepValueText` / `progressValueText` builders:
+
+```ts
+providers: [
+  provideForStepperDefaults({
+    stepValueText: (current, total) => `Paso ${current} de ${total}`,
+    progressValueText: (percent) => `${percent}% completado`,
+  }),
+];
+```
+
 ### Custom icon per state (indicator example)
 
 ```html
