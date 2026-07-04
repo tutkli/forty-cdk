@@ -1,4 +1,4 @@
-import { linkedSignal, signal, type Signal } from '@angular/core';
+import { linkedSignal, signal, type Signal, untracked } from '@angular/core';
 
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 
@@ -185,9 +185,15 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * requested position mounts, seeds activedescendant to its id and scrolls it
    * into view. Returns `true` if a pending request was resolved, `false`
    * otherwise.
+   *
+   * Called from the adapter's bridge effect, whose documented reactive trigger
+   * is `items()`. The pending slot is read **untracked**: this method writes it
+   * back to `null` on a successful resolve, and tracking the read would make
+   * that write re-invalidate the calling effect — a self-invalidation that
+   * double-runs the prime / fold pass in every consuming primitive.
    */
   tryResolvePending(): boolean {
-    const pendingPos = this.#pendingActivePos();
+    const pendingPos = untracked(this.#pendingActivePos);
     if (pendingPos === null) {
       return false;
     }
