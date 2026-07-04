@@ -13,6 +13,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   assertTimeCapable,
+  composeWithTime,
   type DateRange,
   type FieldSegment,
   FormUiControlBase,
@@ -26,6 +27,7 @@ import {
   TimeFieldEngine,
   type TimeGranularity,
   type TimeSegmentType,
+  timeSentinel,
   type WritingDirection,
 } from 'forty-cdk/core';
 import {
@@ -67,13 +69,16 @@ interface CommittedRange<D> {
  * form, and the `DateRange` `end >= start` invariant always holds (a
  * complete-but-out-of-order entry keeps the typed segments but leaves `value`
  * `null`, reflecting `aria-invalid="true"` + `data-range-error` so the disorder
- * is perceivable; restoring order emits the range).
+ * is perceivable; restoring order emits the range). Set {@link allowOvernight}
+ * to instead read a `start > end` entry as a midnight-crossing range (the end
+ * advances to the next day) rather than an error.
  *
  * Each endpoint anchors its wall-clock time on a fixed, DST-stable sentinel date
  * (`2000-01-01`) while no value is bound, exactly as `ForTimeField` does, so the
  * endpoints compare by time-of-day and a time always round-trips to the same
  * instant. Bind an existing range as `value` to edit its endpoints' times in
- * place (each endpoint's calendar day is preserved).
+ * place (each endpoint's calendar day is preserved — except under
+ * {@link allowOvernight}, where both endpoints re-anchor on the sentinel).
  *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
@@ -146,7 +151,8 @@ export class ForTimeRangeField<D>
 
   /**
    * Two-way bindable committed time range, or `null` while either endpoint is
-   * incomplete or the two are out of order. Required by
+   * incomplete or the two are out of order (unless {@link allowOvernight} reads a
+   * `start > end` entry as a midnight-crossing range). Required by
    * `FormValueControl<DateRange<D> | null>` — this **is** the form
    * value, so it auto-wires with `[formField]`. The `model()` change emitter
    * (`(valueChange)`) fires only when the field itself composes or clears a
@@ -168,6 +174,23 @@ export class ForTimeRangeField<D>
    * `maxTime` (not `max`) for the same reason as {@link minTime}.
    */
   readonly maxTime = input<D | null>(null);
+
+  /**
+   * Whether a start time-of-day after the end is interpreted as an **overnight**
+   * range that crosses midnight (e.g. `22:00`–`06:00`, a night shift) rather than
+   * an unorderable error. Defaults to `false`, where `start > end` keeps `value`
+   * `null` and reflects `aria-invalid` (the existing behaviour). When `true`, such
+   * an entry commits `{ start, end }` with the end advanced to the **next day**,
+   * so the `DateRange` `end >= start` invariant still holds and the emitted range
+   * spans the correct duration; the disorder is no longer flagged.
+   *
+   * In overnight mode both endpoints operate purely on their time-of-day: the
+   * calendar day of a bound `value` is not preserved across edits (it is
+   * re-anchored on the DST-stable sentinel), the reverse of the default mode. Only
+   * the time-of-day of each endpoint is meaningful, so this trade-off is
+   * immaterial to a time-of-day range.
+   */
+  readonly allowOvernight = input<boolean>(false);
 
   /** Smallest editable unit shared by both endpoints: `'hour'`, `'minute'` (default), or `'second'`. */
   readonly granularity = input<TimeGranularity>('minute');
@@ -250,8 +273,15 @@ export class ForTimeRangeField<D>
   readonly #startLabel = computed<string | null>(() => this.#defaults.startLabel);
   readonly #endLabel = computed<string | null>(() => this.#defaults.endLabel);
 
-  /** Both endpoints complete but the start falls after the end — an unorderable range. */
+  /**
+   * Both endpoints complete but the start falls after the end — an unorderable
+   * range. Never flagged when {@link allowOvernight} is set, where a `start > end`
+   * entry is a valid midnight-crossing range instead of an error.
+   */
   readonly #disordered = computed(() => {
+    if (this.allowOvernight()) {
+      return false;
+    }
     const start = this.#startEngine.composed();
     const end = this.#endEngine.composed();
     return start !== null && end !== null && this.adapter.compare(start, end) > 0;
@@ -368,18 +398,26 @@ export class ForTimeRangeField<D>
 
   /**
    * Re-assembles the committed range from both endpoints' composed values.
-   * Emits a `DateRange` only when both are complete and ordered
-   * (`start <= end`); otherwise clears `value` to `null` while preserving each
-   * endpoint's typed segments (their parts survive an internal `null` value).
-   * Every write bumps {@link #commitGeneration} so the endpoint sources can mark
-   * the resulting `null` as internal and not clear the typed segments.
+   * Emits a `DateRange` when both are complete and ordered (`start <= end`), or —
+   * with {@link allowOvernight} — when the start falls after the end, advancing
+   * the end to the next day so the range crosses midnight while keeping the
+   * `end >= start` invariant. Otherwise clears `value` to `null` while preserving
+   * each endpoint's typed segments (their parts survive an internal `null`
+   * value). Every write bumps {@link #commitGeneration} so the endpoint sources
+   * can mark the resulting `null` as internal and not clear the typed segments.
    */
   #recompose(): void {
     const start = this.#startEngine.composed();
     const end = this.#endEngine.composed();
     this.#commitGeneration.update((generation) => generation + 1);
-    if (start !== null && end !== null && this.adapter.compare(start, end) <= 0) {
+    if (start === null || end === null) {
+      this.value.set(null);
+      return;
+    }
+    if (this.adapter.compare(start, end) <= 0) {
       this.value.set({ start, end });
+    } else if (this.allowOvernight()) {
+      this.value.set({ start, end: this.adapter.addDays(end, 1) });
     } else {
       this.value.set(null);
     }
@@ -391,12 +429,26 @@ export class ForTimeRangeField<D>
     which: TimeRangeFieldEndpoint,
   ): D | null {
     if (committed.range !== null) {
-      return committed.range[which];
+      return this.#normalizeEndpointSource(committed.range[which]);
     }
     if (previous && committed.generation !== previous.source.generation) {
       return previous.value;
     }
     return null;
+  }
+
+  /**
+   * In overnight mode each endpoint's source is re-anchored to the DST-stable
+   * sentinel day, so the engine composes purely on time-of-day and every
+   * {@link #recompose} derives the midnight crossing afresh — an end advanced to
+   * the next day never sticks and corrupts a later same-day edit. In the default
+   * mode the bound value's calendar day is preserved, so the endpoint is returned
+   * unchanged.
+   */
+  #normalizeEndpointSource(value: D): D {
+    return this.allowOvernight()
+      ? composeWithTime(this.adapter, timeSentinel(this.adapter), value)
+      : value;
   }
 
   #makeEndpointContext(engine: TimeFieldEngine<D>, roving: RovingTabindex): SegmentEditorContext {

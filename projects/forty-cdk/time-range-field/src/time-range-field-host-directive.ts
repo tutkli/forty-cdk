@@ -26,6 +26,7 @@
  */
 export const FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS = [
   'value',
+  'allowOvernight',
   'ariaLabel',
   'dir',
   'dirty',
