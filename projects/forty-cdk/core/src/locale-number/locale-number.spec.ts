@@ -1,15 +1,15 @@
 import { localeSeparators, parseLocaleNumber, type LocaleSeparators } from './locale-number';
 
-const EN: LocaleSeparators = { group: ',', decimal: '.' };
-const DE: LocaleSeparators = { group: '.', decimal: ',' };
+const EN: LocaleSeparators = { group: ',', decimal: '.', groupSizes: [3] };
+const DE: LocaleSeparators = { group: '.', decimal: ',', groupSizes: [3] };
 
 describe('localeSeparators', () => {
   it('derives comma group / dot decimal for en-US', () => {
-    expect(localeSeparators('en-US')).toEqual({ group: ',', decimal: '.' });
+    expect(localeSeparators('en-US')).toEqual({ group: ',', decimal: '.', groupSizes: [3] });
   });
 
   it('derives dot group / comma decimal for de-DE', () => {
-    expect(localeSeparators('de-DE')).toEqual({ group: '.', decimal: ',' });
+    expect(localeSeparators('de-DE')).toEqual({ group: '.', decimal: ',', groupSizes: [3] });
   });
 
   it('derives a narrow no-break space group for fr-FR', () => {
@@ -22,6 +22,14 @@ describe('localeSeparators', () => {
     const { group, decimal } = localeSeparators(undefined);
     expect(typeof group).toBe('string');
     expect(typeof decimal).toBe('string');
+  });
+
+  it('derives uniform 3-digit grouping sizes for en-US', () => {
+    expect(localeSeparators('en-US').groupSizes).toEqual([3]);
+  });
+
+  it('derives Indic lakh grouping sizes [3, 2] for en-IN', () => {
+    expect(localeSeparators('en-IN').groupSizes).toEqual([3, 2]);
   });
 });
 
@@ -104,5 +112,32 @@ describe('parseLocaleNumber', () => {
   it('parses a space-grouped integer typed with ASCII spaces in an NBSP-grouping locale', () => {
     const frSeparators = localeSeparators('fr-FR');
     expect(parseLocaleNumber('1 234 567', frSeparators)).toBe(1234567);
+  });
+
+  it('parses Indic lakh-grouped output the library itself produced (#1162)', () => {
+    const inSeparators = localeSeparators('en-IN');
+    const formatted = new Intl.NumberFormat('en-IN').format(1234567);
+    expect(formatted).toBe('12,34,567');
+    expect(parseLocaleNumber(formatted, inSeparators)).toBe(1234567);
+  });
+
+  it('rejects 3-digit grouping in a lakh-grouping locale', () => {
+    const inSeparators = localeSeparators('en-IN');
+    expect(parseLocaleNumber('1,234,567', inSeparators)).toBeNull();
+  });
+
+  describe('lenient grouping (mid-edit)', () => {
+    it('accepts an over-long trailing group by stripping separators (#1162)', () => {
+      expect(parseLocaleNumber('1,2345', EN, { lenientGrouping: true })).toBe(12345);
+    });
+
+    it('accepts otherwise-misgrouped digits while typing', () => {
+      expect(parseLocaleNumber('1,2,3', EN, { lenientGrouping: true })).toBe(123);
+    });
+
+    it('still rejects genuinely non-numeric text in lenient mode', () => {
+      expect(parseLocaleNumber('1,2e3', EN, { lenientGrouping: true })).toBeNull();
+      expect(parseLocaleNumber('1.2.3', EN, { lenientGrouping: true })).toBeNull();
+    });
   });
 });

@@ -258,7 +258,7 @@ export class ForNumberInput
       this.value.set(null);
       return;
     }
-    const parsed = parseLocaleNumber(raw, this.#separators());
+    const parsed = parseLocaleNumber(raw, this.#separators(), { lenientGrouping: true });
     // Ignore unparseable input: keep the last valid value, leave the user's
     // in-progress text untouched; commit() reformats from the value on blur.
     if (parsed !== null) {
