@@ -247,19 +247,73 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(1234567);
     });
 
-    it('rejects a misgrouped integer instead of collapsing it', async () => {
-      const { el, fixture, flush } = renderHost(NumberHost);
-      fixture.componentInstance.locale.set('en-US');
-      await flush();
-      const input = inputOf(el);
-      input.focus();
+    describe('incremental edits of grouped values (#1162)', () => {
+      const grouped = (host: NumberHost) => {
+        host.locale.set('en-US');
+        host.formatOptions.set({ maximumFractionDigits: 0 });
+        host.qty.set(1234);
+      };
 
-      typeInto(input, '9');
-      await flush();
-      // "1,2,3" is not valid grouping; it must NOT silently parse to 123.
-      typeInto(input, '1,2,3');
-      await flush();
-      expect(fixture.componentInstance.qty()).toBe(9);
+      it('accepts a digit appended to the end of a grouped value; blur reformats', async () => {
+        const { el, fixture, flush } = renderHost(NumberHost);
+        grouped(fixture.componentInstance);
+        await flush();
+        const input = inputOf(el);
+        expect(input.value).toBe('1,234');
+
+        input.focus();
+        typeInto(input, '1,2345');
+        await flush();
+        expect(fixture.componentInstance.qty()).toBe(12345);
+
+        input.dispatchEvent(new FocusEvent('blur'));
+        await flush();
+        expect(fixture.componentInstance.qty()).toBe(12345);
+        expect(input.value).toBe('12,345');
+      });
+
+      it('accepts a digit inserted inside a grouped value', async () => {
+        const { el, fixture, flush } = renderHost(NumberHost);
+        grouped(fixture.componentInstance);
+        await flush();
+        const input = inputOf(el);
+        input.focus();
+
+        typeInto(input, '1,5234');
+        await flush();
+        expect(fixture.componentInstance.qty()).toBe(15234);
+      });
+
+      it('accepts deleting a group separator', async () => {
+        const { el, fixture, flush } = renderHost(NumberHost);
+        grouped(fixture.componentInstance);
+        await flush();
+        const input = inputOf(el);
+        input.focus();
+
+        typeInto(input, '1234');
+        await flush();
+        expect(fixture.componentInstance.qty()).toBe(1234);
+      });
+
+      it('round-trips en-IN lakh-grouped output through edit → parse', async () => {
+        const { el, fixture, flush } = renderHost(NumberHost);
+        fixture.componentInstance.locale.set('en-IN');
+        fixture.componentInstance.formatOptions.set({ maximumFractionDigits: 0 });
+        fixture.componentInstance.qty.set(1234567);
+        await flush();
+        const input = inputOf(el);
+        expect(input.value).toBe('12,34,567');
+
+        input.focus();
+        typeInto(input, '12,34,5678');
+        await flush();
+        expect(fixture.componentInstance.qty()).toBe(12345678);
+
+        input.dispatchEvent(new FocusEvent('blur'));
+        await flush();
+        expect(input.value).toBe('1,23,45,678');
+      });
     });
 
     it('parses a space-grouped integer typed with ASCII spaces in an NBSP-grouping locale (#590 F5)', async () => {

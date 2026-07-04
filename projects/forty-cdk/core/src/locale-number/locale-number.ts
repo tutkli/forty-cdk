@@ -4,6 +4,13 @@ export interface LocaleSeparators {
   readonly group: string;
   /** The locale decimal separator. */
   readonly decimal: string;
+  /**
+   * The integer grouping sizes for this locale, primary (rightmost) group
+   * first. Most locales are uniform `[3]` (`1,234,567`); Indic locales use lakh
+   * / crore grouping `[3, 2]` (`12,34,567`). Used to validate group-separator
+   * placement against the locale's real grouping instead of assuming 3.
+   */
+  readonly groupSizes: readonly number[];
 }
 
 /** Escapes a string for safe interpolation into a `RegExp` source. */
@@ -36,20 +43,37 @@ function isSpaceSeparator(separator: string): boolean {
 const MINUS_VARIANTS = /[−－]/g;
 
 /**
- * Group / decimal separators for a given locale, derived once via `Intl`.
- * Falls back to `,` group / `.` decimal for an unknown or undefined locale.
+ * Group / decimal separators (and integer grouping sizes) for a given locale,
+ * derived once via `Intl`. Falls back to `,` group / `.` decimal / `[3]` sizes
+ * for an unknown or undefined locale.
  */
 export function localeSeparators(locale: string | undefined): LocaleSeparators {
   let group = ',';
   let decimal = '.';
-  for (const part of new Intl.NumberFormat(locale).formatToParts(11111.1)) {
+  const integerLengths: number[] = [];
+  for (const part of new Intl.NumberFormat(locale).formatToParts(1234567.1)) {
     if (part.type === 'group') {
       group = part.value;
     } else if (part.type === 'decimal') {
       decimal = part.value;
+    } else if (part.type === 'integer') {
+      integerLengths.push(part.value.length);
     }
   }
-  return { group, decimal };
+  return { group, decimal, groupSizes: deriveGroupSizes(integerLengths) };
+}
+
+/**
+ * Reduce the integer-part widths of a grouped reference number (left-to-right)
+ * to the locale's grouping template, primary (rightmost) group first. The
+ * most-significant group is dropped — it is a partial that carries no size
+ * rule. Returns `[3]` when the reference exposes no grouping.
+ */
+function deriveGroupSizes(integerLengths: readonly number[]): readonly number[] {
+  const rightToLeft = integerLengths.slice(1).reverse();
+  const primary = rightToLeft[0] ?? 3;
+  const secondary = rightToLeft[1] ?? primary;
+  return primary === secondary ? [primary] : [primary, secondary];
 }
 
 /**
@@ -60,10 +84,18 @@ export function localeSeparators(locale: string | undefined): LocaleSeparators {
  * then stripped, and the canonical form is validated against a strict numeric
  * regex (optional sign + digits + a single optional decimal) before `Number()`.
  *
- * Grouping placement is strict: a group separator may appear only in the
- * integer part and only at 3-digit boundaries, so a correctly grouped
- * `"1,234,567"` parses while a misgrouped `"1,2,3"` is rejected (`null`)
- * rather than silently collapsing to `123`.
+ * Grouping placement is validated against the locale's real grouping sizes
+ * (`separators.groupSizes`): a group separator may appear only in the integer
+ * part and only at legal boundaries, so a correctly grouped `"1,234,567"` (or
+ * the Indic `"12,34,567"`) parses while a misgrouped `"1,2,3"` is rejected
+ * (`null`) rather than silently collapsing to `123`.
+ *
+ * Pass `{ lenientGrouping: true }` to skip that placement check — the group
+ * separators are stripped and any cleanly-parsing digit sequence is accepted.
+ * This is the mid-edit mode: while the user types inside a formatted value the
+ * intermediate grouping is almost never well-formed (`"1,234"` → `"1,2345"`),
+ * and the display is reformatted from the committed value on blur anyway, so
+ * enforcing grouping during typing would silently discard valid edits.
  *
  * For locales that group with a space (the NBSP / NNBSP fr-style locales),
  * whitespace-space variants — including the plain ASCII space a user is most
@@ -75,8 +107,12 @@ export function localeSeparators(locale: string | undefined): LocaleSeparators {
  * such as multiple signs (`+-5`) or multiple decimals (`1.2.3`); all map to
  * `null`, the same outcome callers already treat as "keep the last valid value".
  */
-export function parseLocaleNumber(text: string, separators: LocaleSeparators): number | null {
-  const { group, decimal } = separators;
+export function parseLocaleNumber(
+  text: string,
+  separators: LocaleSeparators,
+  options?: { readonly lenientGrouping?: boolean },
+): number | null {
+  const { group, decimal, groupSizes } = separators;
   // When the locale groups with a space (NBSP / NNBSP in fr-style locales),
   // normalize every whitespace-space variant the user might type — including a
   // plain ASCII space — to the canonical separator, so grouping validation
@@ -93,7 +129,11 @@ export function parseLocaleNumber(text: string, separators: LocaleSeparators): n
   // as `23` instead of being seen (and refused) as malformed.
   const noise = new RegExp(`[^\\d${escapeRegExp(group)}${escapeRegExp(decimal)}eE+-]`, 'g');
   const cleaned = input.trim().replace(noise, '');
-  if (cleaned.includes(group) && !groupingIsValid(cleaned, group, decimal)) {
+  if (
+    !options?.lenientGrouping &&
+    cleaned.includes(group) &&
+    !groupingIsValid(cleaned, group, decimal, groupSizes)
+  ) {
     return null;
   }
   let normalized = cleaned.split(group).join('');
@@ -108,14 +148,37 @@ export function parseLocaleNumber(text: string, separators: LocaleSeparators): n
 }
 
 /**
- * Validates that every group separator in `cleaned` sits at a legal 3-digit
- * boundary within the integer part (none in the fractional part). Permits a
- * leading sign and a shorter leading group (`1,234` / `12,345` / `123,456`).
+ * Validates that every group separator in `cleaned` sits at a legal boundary
+ * within the integer part (none in the fractional part), against the locale's
+ * grouping template `groupSizes` (primary group first). The rightmost group
+ * must be exactly the primary size, interior groups exactly the secondary size,
+ * and the leading group between 1 and the secondary size — so uniform `[3]`
+ * accepts `1,234,567` and Indic `[3, 2]` accepts `12,34,567`, while `1,2,3` or
+ * a separator stranded in the fractional part is rejected. Permits a leading
+ * sign.
  */
-function groupingIsValid(cleaned: string, group: string, decimal: string): boolean {
+function groupingIsValid(
+  cleaned: string,
+  group: string,
+  decimal: string,
+  groupSizes: readonly number[],
+): boolean {
   const integerPart = cleaned.split(decimal)[0] ?? '';
-  const sign = /^[+-]/.test(integerPart) ? integerPart[0]! : '';
-  const digitsWithGroups = sign ? integerPart.slice(1) : integerPart;
-  const g = escapeRegExp(group);
-  return new RegExp(`^\\d{1,3}(?:${g}\\d{3})+$`).test(digitsWithGroups);
+  const digitsWithGroups = /^[+-]/.test(integerPart) ? integerPart.slice(1) : integerPart;
+  const groups = digitsWithGroups.split(group);
+  if (groups.length < 2 || groups.some((part) => !/^\d+$/.test(part))) {
+    return false;
+  }
+  const primary = groupSizes[0] ?? 3;
+  const secondary = groupSizes[1] ?? primary;
+  const last = groups.length - 1;
+  return groups.every((part, index) => {
+    if (index === last) {
+      return part.length === primary;
+    }
+    if (index === 0) {
+      return part.length <= secondary;
+    }
+    return part.length === secondary;
+  });
 }
