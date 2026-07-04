@@ -265,53 +265,9 @@ Bind the calendar **and** the time field **one-way** to `picker.value()` (not `[
 
 The value display (`[forDatePickerValue]`) automatically appends the time to its formatting when `granularity > 'day'` and you haven't set time fields in `formatOptions`.
 
-## Range selection
+## Range selection — `ForDateRangePicker`
 
-Set `selectionMode="range"` on both the picker root and the projected calendar and bind `[(range)]` to a `DateRange<D> | null` signal.
-
-```ts
-import { type DateRange } from 'forty-cdk/date-picker';
-
-readonly dateRange = signal<DateRange<CalendarDate> | null>(null);
-```
-
-```html
-<div
-  forDatePicker
-  selectionMode="range"
-  [(range)]="dateRange"
-  [(open)]="open"
-  [ariaLabel]="'Choose date range'"
->
-  <button forDatePickerTrigger>
-    <span forDatePickerValue [placeholder]="'Pick a range'"></span>
-  </button>
-
-  @if (open()) {
-  <div forDatePickerContent>
-    <div forCalendar selectionMode="range" [(range)]="dateRange">
-      <!-- …header + grid… -->
-    </div>
-  </div>
-  }
-</div>
-```
-
-**`formattedValue` in range mode.** `[forDatePickerValue]` renders `start – end` using the adapter's `format` for each endpoint. The separator defaults to `' – '` and is configurable via `[rangeSeparator]`.
-
-**`closeOnSelect` in range mode.** The surface closes when a full range is committed (both endpoints set). Clicking the first cell (anchor) keeps the surface open; clicking the second (end) commits and closes. Set `[closeOnSelect]="false"` to keep it open after commit.
-
-**v1 scope.** Range mode is day-granular only (`granularity` / time is not supported in v1). The `[(range)]` model is not a `FormValueControl` target — it does not integrate with `[formField]` in v1. `minRangeLength` / `maxRangeLength` are configured on the projected `[forCalendar]` directly.
-
-| New input / model | Type                          | Description                                                                                     |
-| ----------------- | ----------------------------- | ----------------------------------------------------------------------------------------------- |
-| `selectionMode`   | `input<'single' \| 'range'>`  | `'single'` keeps the existing `value` flow. `'range'` switches to range mode.                   |
-| `range`           | `model<DateRange<D> \| null>` | Two-way bindable committed range. `(rangeChange)` fires only on commit / clear. Default `null`. |
-| `rangeSeparator`  | `input<string>`               | String placed between start and end in the formatted display. Default `' – '`.                  |
-
-## Range as a Signal Forms value — `ForDateRangePicker`
-
-`ForDatePicker[selectionMode="range"]` exposes the range through a plain two-way `[(range)]` model with **no** form contract — so a range inside a form has to be hand-wired. `ForDateRangePicker` (selector `[forDateRangePicker]`) is the form-capable sibling: it is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
+For date-range selection use the dedicated `ForDateRangePicker` root (selector `[forDateRangePicker]`). It is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
 
 It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular in v1 (no time composition).
 

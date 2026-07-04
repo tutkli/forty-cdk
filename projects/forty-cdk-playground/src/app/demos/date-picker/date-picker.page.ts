@@ -6,7 +6,6 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { DatePickerConstraintsExample } from './examples/constraints.example';
 import { DatePickerDateTimeExample } from './examples/date-time.example';
 import { DatePickerDefaultExample } from './examples/default.example';
-import { DatePickerRangeExample } from './examples/range.example';
 import { DatePickerRangeFormExample } from './examples/range-form.example';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
@@ -20,7 +19,6 @@ import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
     DatePickerDefaultExample,
     DatePickerDateTimeExample,
     DatePickerConstraintsExample,
-    DatePickerRangeExample,
     DatePickerRangeFormExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
@@ -48,15 +46,7 @@ import readmeContent from '../../../../../forty-cdk/date-picker/README.md';
 
       <playground-demo
         title="Range selection"
-        subtitle='Set <code>selectionMode="range"</code> on both the picker root and the projected <code>ForCalendar</code>, and bind <code>[(range)]</code> to the same signal. The trigger renders start – end via <code>forDatePickerValue</code>. The first click (anchor) keeps the surface open; the second click commits the range and closes.'
-        sourcePath="date-picker/examples/range.example.ts"
-      >
-        <app-date-picker-range-example />
-      </playground-demo>
-
-      <playground-demo
-        title="Range as a form value"
-        subtitle='<code>ForDateRangePicker</code> is the form-capable sibling of <code>ForDatePicker[selectionMode="range"]</code>: it is the root AND the form value, implementing <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> wires the committed range into the form directly. The two-click anchor → commit flow keeps <code>value()</code> null until both endpoints are chosen, so a required range stays invalid until a full range is committed.'
+        subtitle='<code>ForDateRangePicker</code> is the dedicated date-range root: it is the root AND the form value, implementing <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> wires the committed range into the form directly. Project a <code>ForCalendar</code> in <code>selectionMode="range"</code> and bind its <code>[(range)]</code> to <code>picker.value</code>. The two-click anchor → commit flow keeps <code>value()</code> null until both endpoints are chosen, so a required range stays invalid until a full range is committed.'
         sourcePath="date-picker/examples/range-form.example.ts"
       >
         <app-date-picker-range-form-example />

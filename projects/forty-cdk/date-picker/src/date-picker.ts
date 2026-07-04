@@ -15,7 +15,6 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   assertTimeCapable,
   type DateAdapter,
-  type DateRange,
   injectDateAdapter,
   injectHiddenInput,
   clampToBounds,
@@ -23,7 +22,6 @@ import {
   serializeISODate,
   FOR_TIME_VALUE_SOURCE,
 } from 'forty-cdk/core';
-import { type ForCalendar } from 'forty-cdk/calendar';
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
@@ -62,10 +60,9 @@ type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
  * entered time onto each calendar selection. This needs a time-capable adapter
  * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`).
  *
- * Range selection here is the non-form, two-way-bound `[(range)]` variant
- * (`selectionMode="range"`). For a range that is a Signal Forms value
- * (`FormValueControl<DateRange<D> | null>`, auto-wiring with
- * `[formField]`), use the dedicated `ForDateRangePicker` root instead.
+ * For date **range** selection use the dedicated `ForDateRangePicker` root —
+ * it implements `FormValueControl<DateRange<D> | null>` and auto-wires with
+ * `[formField]`.
  *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
  *   date-time) type.
@@ -165,24 +162,6 @@ export class ForDatePicker<D>
   readonly hourCycle = input<12 | 24 | null>(null);
 
   /**
-   * Selection mode. `'single'` (default) keeps the existing single-date
-   * `[(value)]` and `FormValueControl<D | null>` behaviour unchanged.
-   * `'range'` switches to the two-click anchor → commit flow and exposes the
-   * result through `[(range)]`. Range mode is day-granular and ignores
-   * `granularity` / time. Range here is not a Signal Forms value — use
-   * `ForDateRangePicker` for that.
-   */
-  readonly selectionMode = input<'single' | 'range'>('single');
-
-  /**
-   * Two-way bindable committed date range, or `null`. Only used when
-   * `selectionMode="range"`. The `model()` change emitter (`(rangeChange)`)
-   * fires only when the picker internally commits or clears a range, never on
-   * consumer writes via `[(range)]`.
-   */
-  readonly range = model<DateRange<D> | null>(null);
-
-  /**
    * `formatOptions` augmented with time fields when `granularity > 'day'` and
    * the consumer hasn't already specified any — so a date-time picker's value
    * display shows the time without extra wiring, while an explicit
@@ -211,18 +190,6 @@ export class ForDatePicker<D>
 
   /** Formatted current value via the adapter, or `null` when empty. */
   readonly formattedValue = computed<string | null>(() => {
-    if (this.selectionMode() === 'range') {
-      const r = this.range();
-      if (r === null) {
-        return null;
-      }
-      const fmtOpts = this.#effectiveFormatOptions();
-      return (
-        this.adapter.format(r.start, fmtOpts) +
-        this.rangeSeparator() +
-        this.adapter.format(r.end, fmtOpts)
-      );
-    }
     const value = this.value();
     return value === null ? null : this.adapter.format(value, this.#effectiveFormatOptions());
   });
@@ -268,32 +235,16 @@ export class ForDatePicker<D>
     });
 
     // Calendar selection bridge. This `effect` does no state derivation — it
-    // only (re)subscribes to the projected calendar's `valueChange` or
-    // `rangeChange` as the surface mounts / unmounts. The writes happen
-    // asynchronously in the subscription callback (a discrete selection event),
-    // exactly like a click handler, never during the effect's reactive
-    // computation.
+    // only (re)subscribes to the projected calendar's `valueChange` as the
+    // surface mounts / unmounts. The writes happen asynchronously in the
+    // subscription callback (a discrete selection event), exactly like a click
+    // handler, never during the effect's reactive computation.
     effect((onCleanup) => {
       const calendar = this.calendar();
       if (!calendar) {
         return;
       }
       this.assertSameAdapter(calendar);
-
-      if (this.selectionMode() === 'range') {
-        const sub = (calendar as ForCalendar<D>).range.subscribe((next) => {
-          if (this.readonly() || this.effectiveDisabled()) {
-            return;
-          }
-          this.range.set(next as DateRange<D> | null);
-          this.markTouched();
-          if (next !== null && this.closeOnSelect()) {
-            this.close();
-          }
-        });
-        onCleanup(() => sub.unsubscribe());
-        return;
-      }
 
       const sub = calendar.value.subscribe((date) => {
         if (this.readonly() || this.effectiveDisabled()) {

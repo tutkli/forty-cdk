@@ -16,6 +16,7 @@ import {
   ForDatePickerContent,
   ForDatePickerTrigger,
   ForDatePickerValue,
+  ForDateRangePicker,
 } from 'forty-cdk/date-picker';
 
 import { queryFlag } from './_query-flag';
@@ -28,6 +29,7 @@ import { queryFlag } from './_query-flag';
     ForDatePickerTrigger,
     ForDatePickerValue,
     ForDatePickerContent,
+    ForDateRangePicker,
     ForCalendar,
     ForCalendarHeading,
     ForCalendarPrevButton,
@@ -53,13 +55,7 @@ import { queryFlag } from './_query-flag';
     <input data-testid="before" placeholder="before-trigger" />
 
     @if (isRange) {
-      <div
-        forDatePicker
-        selectionMode="range"
-        [(range)]="range"
-        [(open)]="open"
-        [ariaLabel]="'Choose date range'"
-      >
+      <div forDateRangePicker [(value)]="range" [(open)]="open" [ariaLabel]="'Choose date range'">
         <button data-testid="trigger" forDatePickerTrigger>
           <span forDatePickerValue [placeholder]="'Pick a range'"></span>
         </button>

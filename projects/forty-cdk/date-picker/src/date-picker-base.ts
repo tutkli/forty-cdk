@@ -119,12 +119,6 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
   /** Text rendered by `[forDatePickerValue]` when nothing is selected. */
   readonly placeholder = input<string>('');
 
-  /**
-   * Separator rendered between start and end in `[forDatePickerValue]` while a
-   * range is displayed. Default `' – '` (en-dash with spaces).
-   */
-  readonly rangeSeparator = input<string>(' – ');
-
   /** Side the surface is anchored to. Defaults to `'bottom'`. Ignored in `modal` mode. */
   readonly side = input<FloatingSide | undefined>('bottom');
 
