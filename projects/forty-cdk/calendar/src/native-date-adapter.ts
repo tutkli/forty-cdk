@@ -159,11 +159,11 @@ export class NativeDateAdapter implements DateAdapter<Date> {
   }
 
   /**
-   * Formats through the runtime's default locale. Subject to the SSR/hydration
-   * caveat on {@link DateAdapter.format}.
+   * Formats through `locale`, or the runtime's default locale when omitted.
+   * Subject to the SSR/hydration caveat on {@link DateAdapter.format}.
    */
-  format(date: Date, options: Intl.DateTimeFormatOptions): string {
-    return new Intl.DateTimeFormat(undefined, options).format(date);
+  format(date: Date, options: Intl.DateTimeFormatOptions, locale?: string): string {
+    return new Intl.DateTimeFormat(locale, options).format(date);
   }
 
   supportsTime(): boolean {

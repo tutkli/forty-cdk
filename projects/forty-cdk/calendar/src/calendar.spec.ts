@@ -61,6 +61,7 @@ function keyOf(date: Date): string {
       [readonly]="readonly()"
       [firstDayOfWeek]="firstDayOfWeek()"
       [dir]="dir()"
+      [locale]="locale()"
     >
       <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
       <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
@@ -102,6 +103,7 @@ class CalendarHost {
   readonly readonly = signal(false);
   readonly firstDayOfWeek = signal<number | null>(null);
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  readonly locale = signal<string | null>(null);
 }
 
 @Component({
@@ -1492,6 +1494,47 @@ describe('ForCalendar', () => {
     });
   });
 
+  describe('locale (#1150)', () => {
+    it('formats the heading through the configured [locale]', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+
+      const options: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
+      const juneFr = adapter.format(new Date(2026, 5, 1), options, 'fr-FR');
+      expect(juneFr).not.toBe(adapter.format(new Date(2026, 5, 1), options, 'en-US'));
+      expect(r.query('[data-testid="heading"]')!.textContent!.trim()).toBe(juneFr);
+    });
+
+    it('formats weekday headers through the configured [locale]', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('en-US');
+      await flush(r.fixture);
+      const enSunday = r.query('[data-testid="col-0"]')!.getAttribute('aria-label');
+
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+
+      expect(r.query('[data-testid="col-0"]')!.getAttribute('aria-label')).not.toBe(enSunday);
+    });
+
+    it('formats each cell aria-label through the configured [locale]', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+
+      const options: Intl.DateTimeFormatOptions = {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      };
+      expect(r.query('[data-testid="cell-2026-6-15"]')!.getAttribute('aria-label')).toBe(
+        adapter.format(new Date(2026, 5, 15), options, 'fr-FR'),
+      );
+    });
+  });
+
   describe('date adapters', () => {
     it('native and internationalized adapters produce identical month matrices', () => {
       const native = new NativeDateAdapter();
@@ -1594,6 +1637,27 @@ describe('ForCalendar', () => {
         new Date(2026, 5, 20, 0, 0),
       );
       expect(earlierDay).toBeLessThan(0);
+    });
+
+    it('format honours the explicit locale argument on every adapter (#1150)', () => {
+      const options: Intl.DateTimeFormatOptions = { month: 'long' };
+      const native = new NativeDateAdapter();
+      const intl = new InternationalizedDateAdapter();
+      const dateTime = new InternationalizedDateTimeAdapter();
+
+      const nativeMarch = new Date(2026, 2, 1);
+      expect(native.format(nativeMarch, options, 'fr-FR')).toBe(
+        new Intl.DateTimeFormat('fr-FR', options).format(nativeMarch),
+      );
+      expect(native.format(nativeMarch, options, 'fr-FR')).not.toBe(
+        native.format(nativeMarch, options, 'en-US'),
+      );
+      expect(intl.format(intl.createDate(2026, 3, 1), options, 'fr-FR')).not.toBe(
+        intl.format(intl.createDate(2026, 3, 1), options, 'en-US'),
+      );
+      expect(dateTime.format(new CalendarDateTime(2026, 3, 1, 0, 0), options, 'fr-FR')).not.toBe(
+        dateTime.format(new CalendarDateTime(2026, 3, 1, 0, 0), options, 'en-US'),
+      );
     });
 
     describe('cross-adapter contract (#1150)', () => {

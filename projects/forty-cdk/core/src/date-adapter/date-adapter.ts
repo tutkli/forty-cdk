@@ -149,24 +149,28 @@ export interface DateAdapter<D> {
   isValid(date: D): boolean;
 
   /**
-   * Formats `date` for display using the runtime's default locale.
+   * Formats `date` for display. When `locale` is omitted the runtime's default
+   * locale is used; pass one to force a specific locale for month / weekday /
+   * day-period names.
    *
-   * **SSR / hydration caveat.** The result resolves against the runtime's
-   * default locale, so a server render and a client hydration can produce
-   * different strings when the server and browser locales differ — surfacing as
-   * a hydration mismatch on every formatted value (heading, weekday headers,
-   * cell labels). The runtime time zone applies too for adapters that format
-   * through a wall-clock instant.
+   * **SSR / hydration caveat.** With no `locale` the result resolves against the
+   * runtime's default locale, so a server render and a client hydration can
+   * produce different strings when the server and browser locales differ —
+   * surfacing as a hydration mismatch on every formatted value (heading, weekday
+   * headers, cell labels). The runtime time zone applies too for adapters that
+   * format through a wall-clock instant.
    *
-   * **SSR-safe pattern.** Pin a locale (or format client-side) for the server
+   * **SSR-safe pattern.** Pin a `locale` (or format client-side) for the server
    * render so both environments resolve the same locale. See the calendar
    * README's "SSR / hydration" section.
    *
    * @param options Standard `Intl.DateTimeFormat` options (e.g.
    *   `{ month: 'long', year: 'numeric' }` for a calendar heading,
    *   `{ weekday: 'short' }` for a column header).
+   * @param locale Optional BCP 47 locale tag governing the formatted names;
+   *   falls back to the runtime's default locale when omitted.
    */
-  format(date: D, options: Intl.DateTimeFormatOptions): string;
+  format(date: D, options: Intl.DateTimeFormatOptions, locale?: string): string;
 
   /**
    * Whether this adapter's `D` can carry a wall-clock time component (hour /

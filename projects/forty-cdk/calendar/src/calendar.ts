@@ -125,15 +125,16 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    * tech can tell them apart from the visible month. Override to localize that
    * suffix or change the format entirely.
    */
-  readonly dateLabel = input<CalendarDateLabelFormatter<D>>((date, { adapter, outsideMonth }) => {
-    const formatted = adapter.format(date, {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-    return outsideMonth ? `${formatted} (outside month)` : formatted;
-  });
+  readonly dateLabel = input<CalendarDateLabelFormatter<D>>(
+    (date, { adapter, outsideMonth, locale }) => {
+      const formatted = adapter.format(
+        date,
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+        locale ?? undefined,
+      );
+      return outsideMonth ? `${formatted} (outside month)` : formatted;
+    },
+  );
 
   /** Disables the whole calendar: no focus movement, no selection. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -200,6 +201,14 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+
+  /**
+   * BCP 47 locale tag governing the formatted month / weekday / cell-label names
+   * (heading, weekday headers, month-picker options, gridcell `aria-label`).
+   * When `null` (default), the adapter formats through the runtime's default
+   * locale. Does not change the calendar system, which stays Gregorian.
+   */
+  readonly locale = input<string | null>(null);
 
   readonly #initialToday = this.adapter.today();
 
@@ -285,6 +294,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     return {
       adapter: this.adapter,
       dir: this.dir,
+      locale: () => this.locale(),
       yearBlockSize: () => this.yearBlockSize(),
       yearBlockStart: () => this.#yearBlockStart(),
       visibleMonthLabel: () => this.visibleMonthLabel(),
@@ -347,7 +357,11 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   }
 
   readonly visibleMonthLabel = computed(() =>
-    this.adapter.format(this.visibleMonth(), { month: 'long', year: 'numeric' }),
+    this.adapter.format(
+      this.visibleMonth(),
+      { month: 'long', year: 'numeric' },
+      this.locale() ?? undefined,
+    ),
   );
 
   /** The visible month's full year (e.g. `2026`). */
@@ -485,6 +499,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
     return this.dateLabel()(date, {
       adapter: this.adapter,
       outsideMonth: this.isOutsideMonth(date),
+      locale: this.locale(),
     });
   }
 

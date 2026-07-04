@@ -38,6 +38,7 @@ const BASE_IMPORTS = [
       [disabled]="disabled()"
       [readonly]="readonly()"
       [loop]="loop()"
+      [locale]="locale()"
       #picker="forTimePicker"
     >
       <button data-testid="trigger" forTimePickerTrigger>
@@ -73,6 +74,7 @@ class TimePickerHost {
   readonly readonly = signal(false);
   readonly loop = signal(true);
   readonly placeholder = signal('Pick a time');
+  readonly locale = signal<string | null>(null);
 }
 
 function getTrigger(): HTMLButtonElement {
@@ -216,6 +218,27 @@ describe('ForTimePicker', () => {
       const slots = getSlots();
       const thirteenHour = Array.from(slots).find((s) => s.textContent?.trim().startsWith('13'));
       expect(thirteenHour).not.toBeNull();
+    });
+
+    it('formats slot labels and the trigger value through [locale] (#1150)', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.hourCycle.set(null);
+      r.instance.value.set(new Date(2000, 0, 1, 13, 0, 0));
+      r.instance.open.set(true);
+
+      r.instance.locale.set('en-US');
+      await flush(r.fixture);
+      const enValue = document.querySelector('[forTimePickerValue]')!.textContent!.trim();
+      const enMidnight = getSlot('slot-0')!.textContent!.trim();
+
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+      const frValue = document.querySelector('[forTimePickerValue]')!.textContent!.trim();
+      const frMidnight = getSlot('slot-0')!.textContent!.trim();
+
+      expect(enValue).not.toBe(frValue);
+      expect(enMidnight).not.toBe(frMidnight);
     });
   });
 
