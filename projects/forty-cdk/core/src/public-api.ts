@@ -15,8 +15,8 @@
  * Stability: the symbols re-exported here carry NO semver guarantees. They are
  * an internal composition surface shared between forty-cdk's own entry points,
  * not a supported public API. Consume primitives from their own
- * `forty-cdk/<primitive>` entry points (or the main `forty-cdk` barrel), not
- * from here.
+ * `forty-cdk/<primitive>` entry points, not from here (the main `forty-cdk`
+ * barrel is intentionally empty — see the package README).
  */
 
 export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';

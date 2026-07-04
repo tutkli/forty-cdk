@@ -1,13 +1,13 @@
 /**
  * Allowed-character class for an OTP / PIN input. Drives both the per-character
  * filter (rejected characters are dropped and fire `valueInvalid`) and the
- * derived `inputmode`. Override entirely with a custom `pattern` RegExp.
+ * derived `inputmode`. Override entirely with a custom `allowedPattern` RegExp.
  */
 export type OtpInputType = 'numeric' | 'alphanumeric' | 'alphabetic';
 
 /**
- * Matches a value made up only of digits. Bind to `[pattern]` for a digit-only
- * code; equivalent to the default `type="numeric"`.
+ * Matches a value made up only of digits. Bind to `[allowedPattern]` for a
+ * digit-only code; equivalent to the default `type="numeric"`.
  */
 export const OTP_REGEXP_ONLY_DIGITS = /^[0-9]+$/;
 

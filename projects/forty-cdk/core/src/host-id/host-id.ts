@@ -15,7 +15,7 @@ import { IdGenerator } from '../id-generator/id-generator';
  * Only **static** ids (written in the template, present on the element at
  * directive construction) are visible here. A consumer `[id]="expr"` property
  * binding evaluates after construction, so it is not adopted — and still
- * fights the `[id]` host binding. See `.claude/rules/conventions.md`.
+ * fights the `[id]` host binding.
  *
  * Must be invoked in an injection context — internally injects
  * {@link IdGenerator}.

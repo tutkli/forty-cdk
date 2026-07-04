@@ -46,7 +46,7 @@ interface LiftSnapshot {
  * `createPointerDragSession` transport and accepts `[forDragHandle]` children.
  *
  * Pointer-only: there is no WAI-ARIA APG pattern for "freely reposition an element", so this is
- * a documented headless exception (see `.claude/rules/conventions.md`). It owns no role or ARIA
+ * a documented headless exception. It owns no role or ARIA
  * state and must not destroy the moved element's semantics — the consumer keeps the moved
  * element operable at its default position (e.g. a repositionable dialog stays usable by
  * keyboard); dragging is a pointer convenience, not the only way to use it.
