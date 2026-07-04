@@ -358,6 +358,14 @@ export class ForPopover implements ForPopoverContext {
     this.open.update((v) => !v);
   }
 
+  /**
+   * Close the popover. Honored regardless of `dismissible` — an explicit close
+   * is always applied. Used by `[forPopoverClose]`.
+   */
+  close(): void {
+    this.open.set(false);
+  }
+
   emitEscapeKeyDown(event: KeyboardEvent): void {
     const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
     if (!vetoed && this.dismissible()) {

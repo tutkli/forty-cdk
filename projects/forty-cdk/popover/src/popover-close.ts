@@ -19,6 +19,6 @@ export class ForPopoverClose {
   readonly #ctx = injectPopoverContext('ForPopoverClose');
 
   protected onClick(): void {
-    this.#ctx.open.set(false);
+    this.#ctx.close();
   }
 }

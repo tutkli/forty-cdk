@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type CollectionHandle,
@@ -53,7 +53,12 @@ export interface ForNavigationMenuViewportHandle {
 export type ForNavigationMenuMotion = 'from-start' | 'from-end' | 'to-start' | 'to-end';
 
 export interface ForNavigationMenuContext {
-  readonly value: ModelSignal<string>;
+  /**
+   * The open item's value, or `''` for none, as a read-only signal. Mutate it
+   * through `open` / `close` / `toggle` or the root's `[(value)]` binding — a
+   * direct write would skip the scheduled open / close delays.
+   */
+  readonly value: Signal<string>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;

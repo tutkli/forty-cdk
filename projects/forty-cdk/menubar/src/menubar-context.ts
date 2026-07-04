@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type CollectionHandle,
@@ -44,12 +44,11 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
  */
 export interface ForMenubarContext extends MenuSiblingNavigator {
   /**
-   * Two-way bindable. The value of the open trigger, or `''` for none.
-   * The `model()` change emitter (`(valueChange)`) fires only on internal
-   * transitions (trigger interaction, Escape, outside dismissal, item
-   * select, cross-menu nav), never on consumer writes via `[(value)]`.
+   * The value of the open trigger, or `''` for none, as a read-only signal.
+   * Mutate it through `openTrigger` / `closeOpen` or the root's `[(value)]`
+   * binding — a direct write would bypass the bar's open / close coordination.
    */
-  readonly value: ModelSignal<string>;
+  readonly value: Signal<string>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;

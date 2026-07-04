@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type ModelSignal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 /**
  * Coordination contract owned by `[forMenuRadioGroup]`. Radio items inject
@@ -7,7 +7,11 @@ import { inject, InjectionToken, type ModelSignal } from '@angular/core';
  * group needing to know about menu internals (and vice versa).
  */
 export interface ForMenuRadioGroupContext {
-  readonly value: ModelSignal<string>;
+  /**
+   * The selected value, as a read-only signal. Mutate it through `select` or
+   * the root's `[(value)]` binding rather than writing it directly.
+   */
+  readonly value: Signal<string>;
   isSelected(value: string): boolean;
   select(value: string): void;
 }

@@ -1,4 +1,4 @@
-import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
@@ -42,8 +42,17 @@ export interface ForTimePickerOptionHandle extends CollectionHandle {
  * @typeParam D The adapter's date-time type.
  */
 export interface ForTimePickerContext<D = unknown> {
-  readonly value: ModelSignal<D | null>;
-  readonly open: ModelSignal<boolean>;
+  /**
+   * The selected time, as a read-only signal. Mutate it through `activate` /
+   * `commitOnTab` or the root's `[(value)]` binding — a direct write would
+   * bypass the disabled / readonly guards and `markTouched`.
+   */
+  readonly value: Signal<D | null>;
+  /**
+   * Whether the listbox is open, as a read-only signal. Mutate it through
+   * `toggle` / `openMenu` / `closeMenu` or the root's `[(open)]` binding.
+   */
+  readonly open: Signal<boolean>;
   readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;
   readonly required: Signal<boolean>;

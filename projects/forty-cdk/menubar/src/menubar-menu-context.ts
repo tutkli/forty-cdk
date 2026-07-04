@@ -1,4 +1,4 @@
-import { computed, type ModelSignal, type Signal, signal } from '@angular/core';
+import { computed, type Signal, signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
@@ -21,7 +21,7 @@ import type { ForMenubarTriggerHandle } from './menubar-context';
  * (testable, no `inject()`) while still reading the bar's reactive state.
  */
 export interface MenubarMenuHost extends MenuSiblingNavigator {
-  readonly value: ModelSignal<string>;
+  readonly value: Signal<string>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly dir: ForMenuContext['dir'];
