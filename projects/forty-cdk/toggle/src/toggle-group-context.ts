@@ -1,4 +1,4 @@
-import { inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type CollectionHandle,
@@ -23,7 +23,12 @@ export interface ForToggleGroupItemHandle extends CollectionHandle {
  * `navigate` to drive state changes.
  */
 export interface ForToggleGroupContext {
-  readonly value: ModelSignal<readonly string[]>;
+  /**
+   * The current selection, as a read-only signal. Mutate it through `toggle`
+   * or the root's `[(value)]` binding — a direct write would bypass the group's
+   * disabled guard and single/multiple mode rules.
+   */
+  readonly value: Signal<readonly string[]>;
   readonly multiple: Signal<boolean>;
   /**
    * The group's effective disabled — its own `disabled` input OR'd with a

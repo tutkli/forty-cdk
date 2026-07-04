@@ -1,4 +1,4 @@
-import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import { type AnchoredPositioningContext, type VetoableNativeEvent } from 'forty-cdk/core';
 
@@ -13,7 +13,12 @@ import { type AnchoredPositioningContext, type VetoableNativeEvent } from 'forty
  * to the directive instance directly.
  */
 export interface ForPopoverContext extends AnchoredPositioningContext {
-  readonly open: ModelSignal<boolean>;
+  /**
+   * Whether the popover is open, as a read-only signal. Mutate it through
+   * `toggle` / `close` / `requestClose` or the root's `[(open)]` binding — a
+   * direct write would bypass the root's `disabled` guard.
+   */
+  readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
@@ -53,6 +58,13 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
 
   /** Toggle from a trigger click. Honours `disabled`. */
   toggle(): void;
+
+  /**
+   * Close the popover. Honored regardless of `dismissible` — used by
+   * `[forPopoverClose]` and available to custom close pieces. Prefer this over
+   * writing `open` directly so the close routes through the root.
+   */
+  close(): void;
 
   /**
    * Escape is consumer-owned (its close differs per primitive); Content

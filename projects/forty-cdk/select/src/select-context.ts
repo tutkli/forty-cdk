@@ -1,4 +1,4 @@
-import { computed, inject, InjectionToken, type ModelSignal, type Signal } from '@angular/core';
+import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
@@ -71,8 +71,18 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
  * still read from the rendered `textContent`.
  */
 export interface ForSelectContext<T = unknown> {
-  readonly value: ModelSignal<readonly T[]>;
-  readonly open: ModelSignal<boolean>;
+  /**
+   * The current selection, as a read-only signal. Mutate it through the guarded
+   * methods (`activate` / `commitOnTab`) or the root's `[(value)]` binding — a
+   * direct write would bypass the root's disabled / readonly guards and
+   * `markTouched`.
+   */
+  readonly value: Signal<readonly T[]>;
+  /**
+   * Whether the listbox is open, as a read-only signal. Mutate it through
+   * `toggle` / `openMenu` / `closeMenu` or the root's `[(open)]` binding.
+   */
+  readonly open: Signal<boolean>;
   readonly multiple: Signal<boolean>;
 
   /**
