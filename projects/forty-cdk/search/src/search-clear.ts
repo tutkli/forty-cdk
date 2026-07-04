@@ -1,7 +1,8 @@
-import { computed, Directive } from '@angular/core';
+import { computed, Directive, inject, input } from '@angular/core';
 
 import { reflectDisabled } from 'forty-cdk/core';
 import { injectSearchGroup } from './search-context';
+import { FOR_SEARCH_DEFAULTS } from './search-defaults';
 
 /**
  * Optional clear button for `[forSearch]`. Apply on a `<button>` element inside
@@ -17,10 +18,10 @@ import { injectSearchGroup } from './search-context';
  * On activation (click) the button clears the value to `''` and refocuses the
  * input so the user can continue typing without chasing the caret.
  *
- * The `aria-label="Clear"` default is set as a static host attribute. Consumers
- * who want a different label can override it with their own `aria-label` on the
- * same element — the consumer's attribute wins per Angular's host-binding
- * precedence rules.
+ * Carries `aria-label` (default `'Clear'`, or the scope's `clearAriaLabel` from
+ * `provideForSearchDefaults`) so the icon-only button has an accessible name;
+ * override per-instance via `[ariaLabel]`, or set it to `null` to drop the
+ * attribute.
  *
  * The button stays in the natural tab order (no `tabindex="-1"`) unlike
  * `[forComboboxClear]`, which lives inside an `aria-activedescendant` flow.
@@ -38,7 +39,7 @@ import { injectSearchGroup } from './search-context';
   exportAs: 'forSearchClear',
   host: {
     type: 'button',
-    'aria-label': 'Clear',
+    '[attr.aria-label]': 'ariaLabel()',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
     '(click)': 'onClick()',
@@ -46,6 +47,15 @@ import { injectSearchGroup } from './search-context';
 })
 export class ForSearchClear {
   protected readonly group = injectSearchGroup('ForSearchClear');
+  readonly #defaults = inject(FOR_SEARCH_DEFAULTS);
+
+  /**
+   * Accessible name for the clear button, exposed as `aria-label`. Defaults to
+   * the scope's `clearAriaLabel` (`'Clear'` unless overridden via
+   * `provideForSearchDefaults`); set `[ariaLabel]` to override per-instance, or
+   * `null` to drop the attribute.
+   */
+  readonly ariaLabel = input<string | null>(this.#defaults.clearAriaLabel);
 
   /** `true` while there is text to clear; drives the self-hide logic. */
   protected readonly hasContent = computed(() => (this.group.field()?.value().length ?? 0) > 0);

@@ -524,7 +524,7 @@ class TextareaFixture {}
   template: `
     <div forSearchGroup>
       <input forSearch />
-      <button forSearchClear aria-label="Clear search">×</button>
+      <button forSearchClear ariaLabel="Clear search">×</button>
     </div>
   `,
 })

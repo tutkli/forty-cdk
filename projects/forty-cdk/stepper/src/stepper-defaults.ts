@@ -22,6 +22,18 @@ export interface ForStepperDefaults {
    * trigger.
    */
   loop: boolean;
+  /**
+   * Builds the `aria-valuetext` for `[forStepperProgress]` on the `'index'`
+   * basis (default `"Step N of M"`). Override to localize centrally. `current`
+   * is the 1-based current step and `total` is the step count.
+   */
+  stepValueText: (current: number, total: number) => string;
+  /**
+   * Builds the `aria-valuetext` for `[forStepperProgress]` on the `'completed'`
+   * basis (default `"P% complete"`). Override to localize centrally. `percent`
+   * is the whole-number completion percent in `[0, 100]`.
+   */
+  progressValueText: (percent: number) => string;
 }
 
 /**
@@ -32,6 +44,8 @@ export interface ForStepperDefaults {
 export const FOR_STEPPER_FALLBACK_DEFAULTS: ForStepperDefaults = {
   activationMode: 'manual',
   loop: true,
+  stepValueText: (current, total) => `Step ${current} of ${total}`,
+  progressValueText: (percent) => `${percent}% complete`,
 };
 
 const { token, provideDefaults } = createDefaults<ForStepperDefaults>(

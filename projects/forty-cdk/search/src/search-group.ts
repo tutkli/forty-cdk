@@ -21,7 +21,7 @@ import {
  * ```html
  * <div forSearchGroup>
  *   <input forSearch [(value)]="query" placeholder="Search…" />
- *   <button forSearchClear aria-label="Clear search">×</button>
+ *   <button forSearchClear ariaLabel="Clear search">×</button>
  * </div>
  * ```
  */

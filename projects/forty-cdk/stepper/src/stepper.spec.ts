@@ -1131,6 +1131,51 @@ describe('ForStepperProgress', () => {
     ).toBe('50');
   });
 
+  describe('aria-valuetext localization (issue #1159)', () => {
+    @Component({
+      imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperProgress],
+      providers: [
+        provideForStepperDefaults({
+          stepValueText: (current, total) => `Paso ${current} de ${total}`,
+          progressValueText: (percent) => `${percent}% completado`,
+        }),
+      ],
+      template: `
+        <div forStepper [(selectedIndex)]="selectedIndex">
+          <div forStepperProgress [valueBy]="valueBy()" data-testid="progress"></div>
+          <ol forStepperList ariaLabel="Steps">
+            @for (s of steps(); track $index) {
+              <li forStepperItem [completed]="s.completed">
+                <button type="button" forStepperTrigger>Step {{ $index }}</button>
+              </li>
+            }
+          </ol>
+        </div>
+      `,
+    })
+    class LocalizedProgressHost {
+      readonly selectedIndex = signal(0);
+      readonly valueBy = signal<'index' | 'completed'>('index');
+      readonly steps = signal([{ completed: false }, { completed: false }, { completed: false }]);
+    }
+
+    it('index basis uses the scope stepValueText override', () => {
+      const { el, instance, fixture } = renderHost(LocalizedProgressHost);
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      expect(progressEl(el).getAttribute('aria-valuetext')).toBe('Paso 2 de 3');
+    });
+
+    it('completed basis uses the scope progressValueText override', () => {
+      const { el, instance, fixture } = renderHost(LocalizedProgressHost);
+      instance.valueBy.set('completed');
+      instance.steps.set([{ completed: true }, { completed: false }, { completed: false }]);
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      expect(progressEl(el).getAttribute('aria-valuetext')).toBe('50% completado');
+    });
+  });
+
   it('orphan guard: ForStepperProgress outside [forStepper] throws', () => {
     @Component({
       imports: [ForStepperProgress],

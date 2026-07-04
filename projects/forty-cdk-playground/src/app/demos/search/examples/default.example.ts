@@ -39,7 +39,7 @@ const PRIMITIVES = [
           placeholder="Search primitives…"
           aria-label="Search primitives"
         />
-        <button forSearchClear class="search-clear" aria-label="Clear search">×</button>
+        <button forSearchClear class="search-clear" ariaLabel="Clear search">×</button>
       </div>
 
       <ul class="results">

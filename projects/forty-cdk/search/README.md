@@ -9,7 +9,7 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 ```html
 <div forSearchGroup>
   <input forSearch [(value)]="query" placeholder="Search…" />
-  <button forSearchClear aria-label="Clear search">×</button>
+  <button forSearchClear ariaLabel="Clear search">×</button>
 </div>
 ```
 
@@ -20,7 +20,7 @@ A role='searchbox' text input that mirrors its value to a signal and reflects va
 ```html
 <div forSearchGroup>
   <input forSearch [(value)]="query" placeholder="Search…" />
-  <button forSearchClear aria-label="Clear search">×</button>
+  <button forSearchClear ariaLabel="Clear search">×</button>
 </div>
 ```
 
@@ -70,11 +70,21 @@ Clear button. Apply on a `<button>` inside a `[forSearchGroup]` that also wraps
 the `[forSearch]` — no instance is passed through the template. Self-hides while
 the value is empty and refocuses the input on activation.
 
+| Input       | Type             | Default                            | Description                                                                    |
+| ----------- | ---------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
+| `ariaLabel` | `string \| null` | scope `clearAriaLabel` (`'Clear'`) | Accessible name for the icon-only button. Set to `null` to drop the attribute. |
+
 ## Accessibility
 
 - The `role="searchbox"` attribute is set statically by the directive.
 - Validation state (`aria-required`, `aria-invalid`, `aria-readonly`,
   `aria-disabled`) is reflected as truthy-only attributes (absent when `false`).
-- `[forSearchClear]` carries `aria-label="Clear"` by default; override it with
-  a consumer-set `aria-label` on the same element if the default label is not
-  appropriate for the context.
+- `[forSearchClear]` carries `aria-label="Clear"` by default so the icon-only
+  button has an accessible name. Override it per-instance with `[ariaLabel]`, or
+  centrally (and for localization) with `provideForSearchDefaults`:
+
+  ```ts
+  providers: [provideForSearchDefaults({ clearAriaLabel: 'Limpiar' })];
+  ```
+
+  Set `[ariaLabel]="null"` to drop the attribute entirely.

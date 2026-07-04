@@ -97,6 +97,11 @@ import {
   provideForScrollAreaDefaults,
 } from '../../../scroll-area/src/scroll-area-defaults';
 import {
+  FOR_SEARCH_DEFAULTS,
+  FOR_SEARCH_FALLBACK_DEFAULTS,
+  provideForSearchDefaults,
+} from '../../../search/src/search-defaults';
+import {
   FOR_SELECT_DEFAULTS,
   FOR_SELECT_FALLBACK_DEFAULTS,
   provideForSelectDefaults,
@@ -211,6 +216,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_MENU_FALLBACK_DEFAULTS,
     provide: provideForMenuDefaults,
     override: { subMenuOpenDelay: 250 },
+  }),
+  defaultsCase({
+    name: 'provideForSearchDefaults',
+    token: FOR_SEARCH_DEFAULTS,
+    fallback: FOR_SEARCH_FALLBACK_DEFAULTS,
+    provide: provideForSearchDefaults,
+    override: { clearAriaLabel: 'Limpiar' },
   }),
   defaultsCase({
     name: 'provideForSelectDefaults',
