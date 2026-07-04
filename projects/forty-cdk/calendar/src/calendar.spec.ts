@@ -1612,6 +1612,15 @@ describe('ForCalendar', () => {
         expect(dateAdapter.getMonth(addedMonths)).toBe(1);
       }
 
+      function assertGregorianYear<D>(dateAdapter: DateAdapter<D>): void {
+        for (let month = 1; month <= 12; month++) {
+          expect(dateAdapter.getMonth(dateAdapter.createDate(2026, month, 1))).toBe(month);
+        }
+        const afterDecember = dateAdapter.addMonths(dateAdapter.createDate(2026, 12, 1), 1);
+        expect(dateAdapter.getYear(afterDecember)).toBe(2027);
+        expect(dateAdapter.getMonth(afterDecember)).toBe(1);
+      }
+
       function assertAddPreservesTime<D>(dateAdapter: TimeCapableDateAdapter<D>): void {
         const seed = dateAdapter.setTime(dateAdapter.createDate(2026, 6, 15), 14, 30, 45);
         for (const advanced of [
@@ -1634,6 +1643,12 @@ describe('ForCalendar', () => {
       it('add* preserves the wall-clock time on every time-capable adapter', () => {
         assertAddPreservesTime(new NativeDateAdapter());
         assertAddPreservesTime(new InternationalizedDateTimeAdapter());
+      });
+
+      it('exposes a twelve-month Gregorian year (month 1-12, December is the last month)', () => {
+        assertGregorianYear(new NativeDateAdapter());
+        assertGregorianYear(new InternationalizedDateAdapter());
+        assertGregorianYear(new InternationalizedDateTimeAdapter());
       });
     });
   });

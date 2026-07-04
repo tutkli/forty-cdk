@@ -26,6 +26,8 @@ bootstrapApplication(App, {
 
 `@internationalized/date` is a widely-used immutable date primitive; it works in every browser today with no polyfill, and its reference-equality-on-mutation makes it signal-friendly. Both `@internationalized/date` adapters operate on the **Gregorian** calendar today — `createDate` always builds a Gregorian date, so the grid stays Gregorian regardless of the runtime locale. True non-Gregorian calendar systems are deferred to the planned `Temporal.PlainDate` adapter ([#354](https://github.com/tutkli/forty-cdk/issues/354)), a non-breaking addition once the Temporal API is broadly available across browsers — the `DateAdapter<D>` seam means adopting it later is a drop-in, not a migration.
 
+**Calendar system (Gregorian).** The adapter seam abstracts the date _library_ and locale-aware _formatting_, not the calendar _system_'s month structure. The grid, the month picker and the date field assume a Gregorian-structured year — exactly twelve months, `month` **1-12**, the year ending at month 12. Adapters over calendars with a different month structure (e.g. a 13-month year) are out of scope; calendar-system pluggability would be revisited with the `Temporal.PlainDate` adapter track ([#354](https://github.com/tutkli/forty-cdk/issues/354)). The optional `compareDate` hook overrides day-only _ordering_ only — it does not make the grid non-Gregorian.
+
 ## Anatomy
 
 ```html
