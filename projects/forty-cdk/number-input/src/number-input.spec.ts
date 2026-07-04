@@ -695,6 +695,45 @@ describe('ForNumberInput', () => {
       await flush();
       expect(fixture.componentInstance.qty()).toBe(6);
     });
+
+    it('round-trips a percent value in a space-grouping locale on edit (#1174)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('fr-FR');
+      fixture.componentInstance.formatOptions.set({ style: 'percent' });
+      fixture.componentInstance.qty.set(0.5);
+      await flush();
+      const input = inputOf(el);
+      const fifty = new Intl.NumberFormat('fr-FR', { style: 'percent' }).format(0.5);
+      const fiftyOne = new Intl.NumberFormat('fr-FR', { style: 'percent' }).format(0.51);
+      expect(input.value).toBe(fifty);
+
+      input.focus();
+      typeInto(input, fiftyOne);
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0.51);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0.51);
+      expect(input.value).toBe(fiftyOne);
+    });
+
+    it('round-trips a unit value in a space-grouping locale on edit (#1174)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('fr-FR');
+      fixture.componentInstance.formatOptions.set({ style: 'unit', unit: 'kilometer' });
+      fixture.componentInstance.qty.set(5);
+      await flush();
+      const input = inputOf(el);
+      const five = new Intl.NumberFormat('fr-FR', { style: 'unit', unit: 'kilometer' }).format(5);
+      const six = new Intl.NumberFormat('fr-FR', { style: 'unit', unit: 'kilometer' }).format(6);
+      expect(input.value).toBe(five);
+
+      input.focus();
+      typeInto(input, six);
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(6);
+    });
   });
 
   describe('disabled / readonly block interaction', () => {

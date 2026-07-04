@@ -126,6 +126,33 @@ describe('parseLocaleNumber', () => {
     expect(parseLocaleNumber('1,234,567', inSeparators)).toBeNull();
   });
 
+  describe('spaced-literal formatOptions in a space-grouping locale (#1174)', () => {
+    const fr = localeSeparators('fr-FR');
+
+    it('parses a percent display whose trailing % is space-separated', () => {
+      const display = new Intl.NumberFormat('fr-FR', { style: 'percent' }).format(0.51);
+      expect(parseLocaleNumber(display, fr)).toBe(51);
+    });
+
+    it('parses a trailing-currency display whose symbol is space-separated', () => {
+      const display = new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'EUR',
+      }).format(6);
+      expect(parseLocaleNumber(display, fr)).toBe(6);
+    });
+
+    it('normalizes only digit-flanked spaces, so grouping and a trailing literal coexist', () => {
+      const display = new Intl.NumberFormat('fr-FR', { style: 'percent' }).format(12.34);
+      expect(parseLocaleNumber(display, fr)).toBe(1234);
+    });
+
+    it('still normalizes a legitimately space-grouped integer', () => {
+      const display = new Intl.NumberFormat('fr-FR').format(1234567);
+      expect(parseLocaleNumber(display, fr)).toBe(1234567);
+    });
+  });
+
   describe('lenient grouping (mid-edit)', () => {
     it('accepts an over-long trailing group by stripping separators (#1162)', () => {
       expect(parseLocaleNumber('1,2345', EN, { lenientGrouping: true })).toBe(12345);
