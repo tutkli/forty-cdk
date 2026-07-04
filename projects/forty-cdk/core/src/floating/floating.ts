@@ -1,16 +1,7 @@
-import { isPlatformBrowser } from '@angular/common';
-import {
-  afterNextRender,
-  effect,
-  ElementRef,
-  inject,
-  PLATFORM_ID,
-  type Signal,
-} from '@angular/core';
+import { type Signal } from '@angular/core';
 import {
   arrow,
-  autoUpdate,
-  computePosition,
+  type ComputePositionReturn,
   flip,
   hide,
   type Middleware,
@@ -22,7 +13,7 @@ import {
   size,
 } from '@floating-ui/dom';
 
-import { injectPortal } from '../portal/portal';
+import { runPositioning } from './run-positioning';
 
 const PLACEMENT_OPPOSITE: Record<FloatingSide, FloatingSide> = {
   top: 'bottom',
@@ -207,202 +198,119 @@ function transformOriginFor(side: FloatingSide, align: FloatingAlign): string {
 
 /**
  * Wires a floating UI element (tooltip, popover, menu...) to its anchor.
- * Must be called from an injection context. Pulls the `ElementRef` it lives
- * on as the floating element. Owns:
+ * Must be called from an injection context. Delegates the platform gate,
+ * portal, anti-flash baseline, `autoUpdate` loop, and symmetric cleanup to
+ * the shared {@link runPositioning} scaffold, and supplies the anchored
+ * positioner's own per-run body: the `offset` / `flip` / `shift` / `size` /
+ * `hide` / `arrow` middleware stack, plus the writes that follow each resolved
+ * position — `data-placement`, `data-side`, `data-align`, `data-occluded`
+ * (when the `hide` middleware reports the reference is off-screen),
+ * `data-detached` (when `hideWhenDetached` is on and the reference escaped its
+ * clipping ancestors), the `--for-anchor-width/-height`,
+ * `--for-available-width/-height`, and `--for-content-transform-origin` CSS
+ * variables, and the optional arrow's position + `--for-arrow-offset`.
  *
- * 1. Optional portal — `appendChild` to `document.body` once mounted, `remove()`
- *    on `DestroyRef.onDestroy`.
- * 2. A reactive effect that subscribes to `open`/`reference`/`placement`/
- *    offsets/arrow and runs `autoUpdate` while open, cleaning up via the
- *    effect's `onCleanup` when the deps change or the host destroys.
- * 3. Inside `autoUpdate`'s callback, calls `computePosition` and applies the
- *    resolved position via the `translate` property (leaving `transform`
- *    free for the consumer's animations), plus `data-placement`, `data-side`,
- *    `data-align`, `data-occluded` (when the `hide` middleware reports the
- *    reference is off-screen), and CSS variables (`--for-anchor-width/-height`,
- *    `--for-available-width/-height`, `--for-content-transform-origin`).
- *    On the first resolved position it also drops the `clip-path` baseline
- *    so the surface is only painted once anchored — otherwise a CSS enter
- *    animation would flash at the viewport's top-left corner before
- *    `computePosition` (which is async) resolves.
+ * On the first resolved position of each run it invokes `onFirstPosition`
+ * once — after the portal move and after `size` applied its `max-height`, so
+ * a consumer can touch the now-portaled, now-sized surface.
  *
- * Cleanup is symmetric: when `open` flips back to `false` (or the host is
- * destroyed) the helper clears every style, CSS variable, and `data-*`
- * attribute it set, on both the floating element and the optional arrow.
- * That keeps the next open from inheriting stale geometry from the
- * previous mount.
+ * Cleanup is asymmetric on purpose: {@link resetFloatingStyles} strips the
+ * transient sizing vars and occlusion attributes but retains the resolved
+ * `translate` and placement outputs so a closing surface stays anchored to its
+ * trigger through `animate.leave`; the next mount re-arms the baseline and
+ * recomputes everything before painting.
  *
  * Stylistic concerns (which side gets the arrow offset via
- * `--for-arrow-offset`, pointer events, background, animations) stay with
- * the consumer.
- *
- * SSR-safe: returns immediately off-browser (mirroring `injectElementSize`),
- * so no portal, positioning effect, `computePosition`, or `autoUpdate` is set
- * up during a server render — `effect()` runs server-side even though
- * `afterNextRender` gates on `ngServerMode`, so the guard has to be explicit.
+ * `--for-arrow-offset`, pointer events, background, animations) stay with the
+ * consumer.
  */
 export function injectFloating(config: FloatingConfig): void {
-  const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  const el = host.nativeElement;
-
-  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
-    return;
-  }
-
-  if (config.portal !== false) {
-    injectPortal();
-  }
-
-  afterNextRender(() => {
-    // Baseline styles required for positioning. Set imperatively so consumer
-    // host bindings don't have to remember.
-    //
-    // `clip-path: inset(50%)` keeps the surface unpainted until floating-ui
-    // resolves its first position. `computePosition` is async, so without
-    // this a CSS enter animation (`animate.enter`) plays one or two frames
-    // at the `left:0 / top:0` origin — before the resolved position lands —
-    // and the overlay flashes at the viewport's top-left corner. `clip-path`
-    // (rather than `visibility: hidden`) keeps the element focusable, so the
-    // overlay shell's initial-focus move still lands while the surface is
-    // unpainted. Dropped on the first resolved position below.
-    Object.assign(el.style, {
-      position: 'fixed',
-      left: '0',
-      top: '0',
-    });
-    if (config.clipUntilPositioned?.() !== false) {
-      el.style.clipPath = 'inset(50%)';
-    }
-  });
-
   const fallbackShiftPadding = config.shiftPadding ?? 8;
 
-  effect((onCleanup) => {
-    // Read `open`/`reference` first and early-return before establishing
-    // dependencies on the rest of the config. A closed overlay must only
-    // track `open`/`reference` — reading the rest up front would re-run this
-    // effect on any offset/side change while closed, defeating the "don't
-    // pay for positioning while closed" intent.
-    const isOpen = config.open();
-    const reference = config.reference();
+  runPositioning({
+    reference: config.reference,
+    open: config.open,
+    portal: config.portal,
+    clipUntilPositioned: config.clipUntilPositioned,
+    computeAndApply: (el, reference) => {
+      const arrowEl = config.arrow?.() ?? null;
 
-    if (!isOpen || !reference) {
-      return;
-    }
+      let firstPositionResolved = false;
 
-    const arrowEl = config.arrow?.() ?? null;
+      // Resolve placement from `side` + `align` with sensible defaults.
+      const sideInput = config.side?.() ?? 'bottom';
+      const alignInput = config.align?.() ?? 'center';
+      const requestedPlacement: Placement = joinPlacement(sideInput, alignInput);
 
-    let firstPositionResolved = false;
+      const sideOffsetVal = config.sideOffset?.() ?? 0;
+      const alignOffsetVal = config.alignOffset?.() ?? 0;
+      const avoidCollisions = config.avoidCollisions?.() ?? true;
+      // `collisionPadding`, when set, applies uniformly to flip + shift +
+      // size. When unset, preserve the historical defaults:
+      // `flip` had no padding, `shift` had `shiftPadding ?? 8`.
+      const collisionPaddingExplicit = config.collisionPadding?.();
+      const flipPaddingValue = collisionPaddingExplicit ?? 0;
+      const shiftPaddingValue = collisionPaddingExplicit ?? fallbackShiftPadding;
+      const sizePaddingValue = collisionPaddingExplicit ?? fallbackShiftPadding;
+      const collisionBoundary = config.collisionBoundary?.() ?? null;
+      const arrowPaddingVal = config.arrowPadding?.() ?? 0;
+      const stickyVal = config.sticky?.() ?? false;
+      const hideOnDetach = config.hideWhenDetached?.() ?? false;
 
-    // Re-arm the `clip-path: inset(50%)` baseline at the start of every open
-    // effect run, not only in `afterNextRender`. A config change while open
-    // re-runs this effect: `onCleanup` calls `resetFloatingStyles`, which
-    // clears `clip-path`, so without re-arming the surface would paint at the
-    // previous frame's stale `translate` until the async `computePosition`
-    // resolves. Re-arming hides it until the first resolved position drops the
-    // baseline again below.
-    if (config.clipUntilPositioned?.() !== false) {
-      el.style.clipPath = 'inset(50%)';
-    }
+      const middleware: Middleware[] = [
+        offset({ mainAxis: sideOffsetVal, crossAxis: alignOffsetVal }),
+      ];
 
-    // Resolve placement from `side` + `align` with sensible defaults.
-    const sideInput = config.side?.() ?? 'bottom';
-    const alignInput = config.align?.() ?? 'center';
-    const requestedPlacement: Placement = joinPlacement(sideInput, alignInput);
+      if (avoidCollisions) {
+        const flipOptions: Parameters<typeof flip>[0] = { padding: flipPaddingValue };
+        if (collisionBoundary) flipOptions.boundary = collisionBoundary;
+        middleware.push(flip(flipOptions));
 
-    const sideOffsetVal = config.sideOffset?.() ?? 0;
-    const alignOffsetVal = config.alignOffset?.() ?? 0;
-    const avoidCollisions = config.avoidCollisions?.() ?? true;
-    // `collisionPadding`, when set, applies uniformly to flip + shift +
-    // size. When unset, preserve the historical defaults:
-    // `flip` had no padding, `shift` had `shiftPadding ?? 8`.
-    const collisionPaddingExplicit = config.collisionPadding?.();
-    const flipPaddingValue = collisionPaddingExplicit ?? 0;
-    const shiftPaddingValue = collisionPaddingExplicit ?? fallbackShiftPadding;
-    const sizePaddingValue = collisionPaddingExplicit ?? fallbackShiftPadding;
-    const collisionBoundary = config.collisionBoundary?.() ?? null;
-    const arrowPaddingVal = config.arrowPadding?.() ?? 0;
-    const stickyVal = config.sticky?.() ?? false;
-    const hideOnDetach = config.hideWhenDetached?.() ?? false;
-
-    const middleware: Middleware[] = [
-      offset({ mainAxis: sideOffsetVal, crossAxis: alignOffsetVal }),
-    ];
-
-    if (avoidCollisions) {
-      const flipOptions: Parameters<typeof flip>[0] = { padding: flipPaddingValue };
-      if (collisionBoundary) flipOptions.boundary = collisionBoundary;
-      middleware.push(flip(flipOptions));
-
-      if (stickyVal !== 'always') {
-        const shiftOptions: Parameters<typeof shift>[0] = { padding: shiftPaddingValue };
-        if (collisionBoundary) shiftOptions.boundary = collisionBoundary;
-        middleware.push(shift(shiftOptions));
+        if (stickyVal !== 'always') {
+          const shiftOptions: Parameters<typeof shift>[0] = { padding: shiftPaddingValue };
+          if (collisionBoundary) shiftOptions.boundary = collisionBoundary;
+          middleware.push(shift(shiftOptions));
+        }
       }
-    }
 
-    // `size` exposes available width/height as CSS variables so the
-    // consumer can `max-height: var(--for-available-height)` etc.
-    const sizeOptions: Parameters<typeof size>[0] = {
-      padding: sizePaddingValue,
-      apply({ availableWidth, availableHeight }) {
-        el.style.setProperty(
-          '--for-available-width',
-          `${Math.max(0, Math.round(availableWidth))}px`,
-        );
-        el.style.setProperty(
-          '--for-available-height',
-          `${Math.max(0, Math.round(availableHeight))}px`,
-        );
-      },
-    };
-    if (collisionBoundary) sizeOptions.boundary = collisionBoundary;
-    middleware.push(size(sizeOptions));
+      // `size` exposes available width/height as CSS variables so the
+      // consumer can `max-height: var(--for-available-height)` etc.
+      const sizeOptions: Parameters<typeof size>[0] = {
+        padding: sizePaddingValue,
+        apply({ availableWidth, availableHeight }) {
+          el.style.setProperty(
+            '--for-available-width',
+            `${Math.max(0, Math.round(availableWidth))}px`,
+          );
+          el.style.setProperty(
+            '--for-available-height',
+            `${Math.max(0, Math.round(availableHeight))}px`,
+          );
+        },
+      };
+      if (collisionBoundary) sizeOptions.boundary = collisionBoundary;
+      middleware.push(size(sizeOptions));
 
-    middleware.push(hide({ strategy: 'referenceHidden' }));
-    if (hideOnDetach) {
-      middleware.push(hide({ strategy: 'escaped' }));
-    }
+      middleware.push(hide({ strategy: 'referenceHidden' }));
+      if (hideOnDetach) {
+        middleware.push(hide({ strategy: 'escaped' }));
+      }
 
-    if (arrowEl) {
-      middleware.push(arrow({ element: arrowEl, padding: arrowPaddingVal }));
-    }
+      if (arrowEl) {
+        middleware.push(arrow({ element: arrowEl, padding: arrowPaddingVal }));
+      }
 
-    const cleanup = autoUpdate(reference, el, () => {
-      computePosition(reference, el, {
-        strategy: 'fixed',
+      return {
         placement: requestedPlacement,
         middleware,
-      })
-        .then(({ x, y, placement: resolvedPlacement, middlewareData }) => {
-          // The element may have been hidden again between schedule and
-          // resolution — bail so styles aren't clobbered after close.
-          if (!config.open()) {
-            return;
-          }
-
+        apply({ placement: resolvedPlacement, middlewareData }: ComputePositionReturn) {
           const { side: resolvedSide, align: resolvedAlign } = splitPlacement(
             resolvedPlacement as Placement,
           );
 
-          // Position via the `translate` property, NOT `transform`. CSS
-          // composes the individual `translate` / `rotate` / `scale`
-          // properties before the `transform` property, with `translate`
-          // outermost — so a consumer's enter animation on `scale` (or
-          // `transform`) pivots in place around `--for-content-transform-origin`
-          // instead of scaling the position offset itself. Using `transform`
-          // here made `scale(0.9)` shrink the translation too, dragging the
-          // surface in from the viewport's top-left corner as it grew. Leaving
-          // `transform` free for the consumer is the whole point.
-          el.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
           el.dataset['placement'] = resolvedPlacement;
           el.dataset['side'] = resolvedSide;
           el.dataset['align'] = resolvedAlign;
-          // First valid position resolved — reveal the surface by dropping
-          // the `clip-path: inset(50%)` baseline. From here the consumer's
-          // enter animation runs anchored to the trigger, with the scale
-          // origin set by `--for-content-transform-origin` below.
-          el.style.clipPath = '';
 
           if (!firstPositionResolved) {
             firstPositionResolved = true;
@@ -453,23 +361,15 @@ export function injectFloating(config: FloatingConfig): void {
             arrowEl.dataset['placement'] = resolvedSide;
             arrowEl.dataset['side'] = resolvedSide;
           }
-        })
-        // The reference can detach mid-frame during virtualization /
-        // autoUpdate scrolls, which makes computePosition reject. Swallow
-        // — autoUpdate will reschedule with the next live frame and the
-        // previous styles are still on the element.
-        .catch(() => {});
-    });
-
-    // Clean up symmetrically with what computePosition wrote so a re-open
-    // doesn't inherit stale geometry from the previous mount.
-    onCleanup(() => {
-      cleanup();
-      resetFloatingStyles(el);
-      if (arrowEl) {
-        resetArrowStyles(arrowEl);
-      }
-    });
+        },
+        reset() {
+          resetFloatingStyles(el);
+          if (arrowEl) {
+            resetArrowStyles(arrowEl);
+          }
+        },
+      };
+    },
   });
 }
 

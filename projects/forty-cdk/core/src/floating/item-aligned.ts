@@ -1,21 +1,12 @@
-import { isPlatformBrowser } from '@angular/common';
+import { type Signal } from '@angular/core';
 import {
-  afterNextRender,
-  effect,
-  ElementRef,
-  inject,
-  PLATFORM_ID,
-  type Signal,
-} from '@angular/core';
-import {
-  autoUpdate,
-  computePosition,
   type Middleware,
   type Padding,
+  type Placement,
   type ReferenceElement,
 } from '@floating-ui/dom';
 
-import { injectPortal } from '../portal/portal';
+import { runPositioning } from './run-positioning';
 
 export interface ItemAlignedConfig {
   /**
@@ -131,97 +122,43 @@ function itemAligned(
  * "snaps over" the trigger when opened, mirroring macOS native `<select>`
  * dropdowns.
  *
- * Owns:
- * 1. Optional portal — `appendChild` to `document.body` on first render,
- *    `remove()` on destroy.
- * 2. A reactive effect that runs `autoUpdate(reference, listbox, …)` while
- *    `open` is true. Inside, calls `computePosition` with the custom
- *    `itemAligned` middleware and writes the resolved position via the
- *    `translate` property (leaving `transform` free for the consumer),
- *    `data-position="item-aligned"`, anchor-width / anchor-height /
- *    available-height CSS vars. On the first resolved position it drops the
- *    `clip-path` hide baseline so the listbox is only painted once anchored.
- * 3. After the first position resolves, scrolls the target option into view
- *    via `scrollIntoView({ block: 'nearest' })` so the visual anchor stays
- *    correct when the listbox is taller than the viewport.
+ * Delegates the platform gate, portal, anti-flash baseline, `autoUpdate` loop,
+ * `translate` write, `clip-path` drop, and symmetric cleanup to the shared
+ * {@link runPositioning} scaffold, and supplies its own per-run body: the
+ * custom `itemAligned` middleware plus the writes that follow each resolved
+ * position — `data-position="item-aligned"`, the `--for-anchor-width/-height`
+ * and `--for-select-content-available-height` CSS vars — and, on the first
+ * resolved position, `scrollIntoView({ block: 'nearest' })` on the target
+ * option so the visual anchor stays correct when the listbox is taller than
+ * the viewport.
  *
  * `side`, `align`, `sideOffset`, `alignOffset`, `placement`, `flip`, `shift`,
  * and `arrow` are intentionally **not** part of this API — item-aligned mode
  * treats them as no-ops.
  */
 export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
-  const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  const el = host.nativeElement;
+  runPositioning({
+    reference: config.reference,
+    open: config.open,
+    portal: config.portal,
+    computeAndApply: (el, reference) => {
+      const collisionPadding = paddingTop(config.collisionPadding?.(), 8);
 
-  if (!isPlatformBrowser(inject(PLATFORM_ID))) {
-    return;
-  }
+      let initialScrollDone = false;
 
-  if (config.portal !== false) {
-    injectPortal();
-  }
-
-  afterNextRender(() => {
-    // `clip-path: inset(50%)` keeps the listbox unpainted until the first
-    // position resolves, so a CSS enter animation never flashes a frame at
-    // the `left:0 / top:0` origin before the async `computePosition().then()`
-    // writes the real `transform`. `clip-path` (not `visibility: hidden`)
-    // keeps the element focusable so the overlay shell's initial-focus move
-    // (selected option) still lands. Dropped on the first resolved position.
-    Object.assign(el.style, {
-      position: 'fixed',
-      left: '0',
-      top: '0',
-      clipPath: 'inset(50%)',
-    });
-  });
-
-  effect((onCleanup) => {
-    const isOpen = config.open();
-    const reference = config.reference();
-
-    if (!isOpen || !reference) {
-      return;
-    }
-
-    const collisionPadding = paddingTop(config.collisionPadding?.(), 8);
-
-    // Re-arm the `clip-path: inset(50%)` baseline on every open effect run.
-    // `onCleanup` now calls `resetItemAlignedStyles` which clears it, so
-    // without re-arming a reopen / selection change would paint at the
-    // previous frame's stale `translate` until `computePosition` re-resolves.
-    el.style.clipPath = 'inset(50%)';
-
-    let initialScrollDone = false;
-
-    const cleanup = autoUpdate(reference, el, () => {
-      computePosition(reference, el, {
-        strategy: 'fixed',
+      return {
         // Placement is irrelevant — `itemAligned` overrides x/y outright —
         // but `computePosition` requires *some* placement. Pick a stable one
         // so middleware data stays predictable.
-        placement: 'bottom-start',
+        placement: 'bottom-start' satisfies Placement,
         middleware: [
           itemAligned(
             () => config.selectedOption(),
             () => collisionPadding,
           ),
         ],
-      })
-        .then(({ x, y }) => {
-          if (!config.open()) {
-            return;
-          }
-
-          // Position via the `translate` property (not `transform`) so a
-          // consumer's enter animation on `scale` / `transform` pivots in place
-          // instead of scaling the position offset — see the note in
-          // `injectFloating`. Leaves `transform` free for the consumer.
-          el.style.translate = `${Math.round(x)}px ${Math.round(y)}px`;
+        apply() {
           el.dataset['position'] = 'item-aligned';
-          // First valid position resolved — reveal the listbox by dropping the
-          // `clip-path: inset(50%)` baseline.
-          el.style.clipPath = '';
 
           const triggerRect = reference.getBoundingClientRect();
           el.style.setProperty('--for-anchor-width', `${Math.round(triggerRect.width)}px`);
@@ -241,18 +178,12 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
             // call so the helper stays usable in non-browser environments.
             target?.scrollIntoView?.({ block: 'nearest' });
           }
-        })
-        .catch(() => {});
-    });
-
-    // Clean up symmetrically with what computePosition wrote — mirrors
-    // `injectFloating` — so a same-instance reopen doesn't inherit stale
-    // `translate` / `--for-*` / `data-position` or a dropped anti-flash
-    // baseline.
-    onCleanup(() => {
-      cleanup();
-      resetItemAlignedStyles(el);
-    });
+        },
+        reset() {
+          resetItemAlignedStyles(el);
+        },
+      };
+    },
   });
 }
 
