@@ -18,7 +18,6 @@ import { ForTableHeaderRow } from './table-header-row';
 import { ForTableRow } from './table-row';
 import { ForTableRowSelector } from './table-row-selector';
 import { ForTableSelectAll } from './table-select-all';
-import { FOR_TABLE_DEFAULTS, provideForTableDefaults } from './table-defaults';
 import {
   type TableMode,
   type TableSelectionMode,
@@ -1000,24 +999,6 @@ describe('ForTable', () => {
       expect(() => TestBed.createComponent(Orphan)).toThrow(
         /\[forty-cdk\/table\] ForTableCell must be used inside a \[forTable\] element\./,
       );
-    });
-  });
-
-  describe('defaults', () => {
-    it('resolves an empty defaults object at the root injector', () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const resolved = TestBed.runInInjectionContext(() => TestBed.inject(FOR_TABLE_DEFAULTS));
-      expect(resolved).toEqual({});
-    });
-
-    it('provideForTableDefaults() with no overrides resolves an empty defaults object', () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection(), ...provideForTableDefaults()],
-      });
-      const resolved = TestBed.runInInjectionContext(() => TestBed.inject(FOR_TABLE_DEFAULTS));
-      expect(resolved).toEqual({});
     });
   });
 
