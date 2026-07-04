@@ -1,4 +1,4 @@
-import { provideZonelessChangeDetection, signal } from '@angular/core';
+import { ApplicationRef, effect, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { readEntryGuarded, VirtualizedNavigator } from './virtualized-navigator';
@@ -372,5 +372,40 @@ describe('VirtualizedNavigator zoneless reactivity', () => {
       h.navigator.prime();
       expect(h.navigator.snapshotByPos().get(1)?.id).toBe('r-1');
     });
+  });
+
+  it('does not self-invalidate a bridge effect when resolving a pending target', () => {
+    const appRef = TestBed.inject(ApplicationRef);
+    const h = createNavigator({ total: 100, range: [0, 10] });
+    h.setItems(Array.from({ length: 10 }, (_, i) => makeHandle({ id: `r-${i}`, pos: i })));
+
+    let runs = 0;
+    TestBed.runInInjectionContext(() => {
+      effect(() => {
+        h.navigator.prime();
+        h.navigator.tryResolvePending();
+        runs++;
+      });
+    });
+
+    appRef.tick();
+    expect(runs).toBe(1);
+
+    // Seeding an off-window target (as a keydown handler does) writes only the
+    // pending slot. The effect tracks items(), not the pending slot, so it must
+    // not re-run.
+    h.navigator.seedActive(99);
+    appRef.tick();
+    expect(runs).toBe(1);
+    expect(h.getActive()).toBeNull();
+
+    // The freshly-mounted window is a real items() change: the effect runs once
+    // more and resolves the pending target — writing the slot back to null must
+    // not trigger a further self-invalidating run.
+    h.setItems([makeHandle({ id: 'r-99', pos: 99 })]);
+    h.setRange([99, 100]);
+    appRef.tick();
+    expect(runs).toBe(2);
+    expect(h.getActive()).toBe('r-99');
   });
 });
