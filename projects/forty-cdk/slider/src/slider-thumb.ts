@@ -6,8 +6,9 @@ import { injectSliderContext, type SliderArrowKey } from './slider-context';
 /**
  * One slider thumb. Apply on any focusable element (commonly `<span>` /
  * `<div>` with the directive's auto-injected `tabindex`). The directive
- * sets `role="slider"`, the live `aria-value*` attributes, keyboard
- * handling, and starts a drag on pointerdown.
+ * sets `role="slider"`, the live `aria-value*` attributes, and keyboard
+ * handling. Pointer drag is coordinated by the parent `[forSlider]`, whose
+ * root-hosted pointer session drags this thumb when the press lands on it.
  *
  * `[index]` is the 0-based position in the parent slider's `value()` array
  * — pass the loop index when rendering N thumbs:
@@ -46,7 +47,6 @@ import { injectSliderContext, type SliderArrowKey } from './slider-context';
     '[style.touch-action]': 'touchAction()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
-    '(pointerdown)': 'onPointerDown($event)',
   },
 })
 export class ForSliderThumb {
@@ -190,20 +190,5 @@ export class ForSliderThumb {
       default:
         return;
     }
-  }
-
-  protected onPointerDown(event: PointerEvent): void {
-    if (this.ctx.effectiveDisabled() || this.ctx.readonly()) {
-      return;
-    }
-    if (event.button !== undefined && event.button !== 0) {
-      return;
-    }
-    // Stop the track's pointerdown handler from re-running "nearest thumb"
-    // — clicking directly on a thumb should drag *that* thumb.
-    event.stopPropagation();
-    event.preventDefault();
-    this.#host.nativeElement.focus();
-    this.ctx.beginDrag(this.index(), event);
   }
 }

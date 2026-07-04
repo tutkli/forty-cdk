@@ -539,15 +539,15 @@ describe('ForSlider', () => {
       thumb(el, 0).dispatchEvent(pointer('pointerdown', { clientX: 50, clientY: 0 }));
       expect(rectSpy).toHaveBeenCalledTimes(1);
 
-      window.dispatchEvent(pointer('pointermove', { clientX: 60, clientY: 0 }));
-      window.dispatchEvent(pointer('pointermove', { clientX: 70, clientY: 0 }));
-      window.dispatchEvent(pointer('pointermove', { clientX: 80, clientY: 0 }));
+      document.dispatchEvent(pointer('pointermove', { clientX: 60, clientY: 0 }));
+      document.dispatchEvent(pointer('pointermove', { clientX: 70, clientY: 0 }));
+      document.dispatchEvent(pointer('pointermove', { clientX: 80, clientY: 0 }));
       await flush();
 
       expect(rectSpy).toHaveBeenCalledTimes(1);
       expect(fixture.componentInstance.picked()).toEqual([80]);
 
-      window.dispatchEvent(pointer('pointerup', { clientX: 80, clientY: 0 }));
+      document.dispatchEvent(pointer('pointerup', { clientX: 80, clientY: 0 }));
       rectSpy.mockRestore();
     });
 
@@ -559,16 +559,66 @@ describe('ForSlider', () => {
         .mockReturnValue(stubRect(trackEl, 0, 100));
 
       thumb(el, 0).dispatchEvent(pointer('pointerdown', { clientX: 20, clientY: 0 }));
-      window.dispatchEvent(pointer('pointermove', { clientX: 20, clientY: 0 }));
+      document.dispatchEvent(pointer('pointermove', { clientX: 20, clientY: 0 }));
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([20]);
 
-      window.dispatchEvent(pointer('pointermove', { clientX: 90, clientY: 0 }));
+      document.dispatchEvent(pointer('pointermove', { clientX: 90, clientY: 0 }));
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([90]);
 
-      window.dispatchEvent(pointer('pointerup', { clientX: 90, clientY: 0 }));
+      document.dispatchEvent(pointer('pointerup', { clientX: 90, clientY: 0 }));
       expect(rectSpy).toHaveBeenCalledTimes(1);
+      rectSpy.mockRestore();
+    });
+  });
+
+  describe('multi-touch pointer filter (#1228)', () => {
+    const pointer = (type: string, init: PointerEventInit) =>
+      new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, ...init });
+
+    const stubRect = (el: HTMLElement, left: number, width: number): DOMRect =>
+      ({
+        left,
+        width,
+        right: left + width,
+        top: 0,
+        bottom: 0,
+        height: 0,
+        x: left,
+        y: 0,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    it('a second pointer cannot drive or commit an in-progress drag (inherited #1225 filter)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      const trackEl = track(el);
+      const rectSpy = vi
+        .spyOn(trackEl, 'getBoundingClientRect')
+        .mockReturnValue(stubRect(trackEl, 0, 100));
+
+      thumb(el, 0).dispatchEvent(pointer('pointerdown', { pointerId: 1, clientX: 50, clientY: 0 }));
+      document.dispatchEvent(pointer('pointermove', { pointerId: 1, clientX: 60, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+
+      document.dispatchEvent(pointer('pointermove', { pointerId: 2, clientX: 90, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+
+      fixture.componentInstance.valueCommits.length = 0;
+      document.dispatchEvent(pointer('pointerup', { pointerId: 2, clientX: 90, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([60]);
+      expect(fixture.componentInstance.valueCommits).toEqual([]);
+
+      document.dispatchEvent(pointer('pointermove', { pointerId: 1, clientX: 70, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([70]);
+      document.dispatchEvent(pointer('pointerup', { pointerId: 1, clientX: 70, clientY: 0 }));
+      await flush();
+      expect(fixture.componentInstance.valueCommits).toEqual([[70]]);
+
       rectSpy.mockRestore();
     });
   });

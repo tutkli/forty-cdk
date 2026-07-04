@@ -1,3 +1,4 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
@@ -9,14 +10,17 @@ import {
   input,
   model,
   output,
+  PLATFORM_ID,
   signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   Collection,
+  createPointerDragSession,
   FormUiControlBase,
   injectHiddenInput,
+  type PointerDragSession,
   type WritingDirection,
   snapToStep,
   roundToStepPrecision,
@@ -77,6 +81,7 @@ export class ForSlider
 {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #defaults = inject(FOR_SLIDER_DEFAULTS);
 
   /**
@@ -170,7 +175,9 @@ export class ForSlider
   readonly #thumbs = new Collection<ForSliderThumbHandle>();
   readonly #trackEl = signal<HTMLElement | null>(null);
   readonly #destroyRef = inject(DestroyRef);
-  readonly #activeDragCleanups = new Set<() => void>();
+  #pointerSession: PointerDragSession | null = null;
+  #dragIndex = 0;
+  #dragRect: DOMRect | null = null;
   #interactionMutated = false;
   #armedThumb: number | null = null;
 
@@ -225,12 +232,20 @@ export class ForSlider
       values: stringValues,
       disabled: this.effectiveDisabled,
     });
-    this.#destroyRef.onDestroy(() => {
-      for (const cleanup of this.#activeDragCleanups) {
-        cleanup();
-      }
-      this.#activeDragCleanups.clear();
-    });
+    if (this.#isBrowser) {
+      this.#pointerSession = createPointerDragSession({
+        host: this.#host.nativeElement,
+        document: this.#document,
+        armThreshold: 0,
+        capturePointer: true,
+        canStart: (event) => this.#onDragStart(event),
+        onLift: () => true,
+        onMove: (event) => this.#onDragMove(event),
+        onCommit: () => this.#onDragEnd(),
+        onCancel: () => this.#onDragEnd(),
+      });
+      this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
+    }
   }
 
   setValueAt(index: number, raw: number): void {
@@ -335,43 +350,56 @@ export class ForSlider
     return bestIndex;
   }
 
-  beginDrag(index: number, event: PointerEvent): void {
-    if (this.effectiveDisabled() || this.readonly()) {
-      return;
+  #resolveThumb(target: EventTarget | null): ForSliderThumbHandle | null {
+    if (!(target instanceof Node)) {
+      return null;
     }
-    const pointerId = event.pointerId;
-    const rect = this.#trackEl()?.getBoundingClientRect() ?? null;
-    const move = (e: PointerEvent) => {
-      if (e.pointerId !== pointerId) {
-        return;
+    for (const handle of this.#thumbs.items()) {
+      if (handle.host === target || handle.host.contains(target)) {
+        return handle;
       }
-      e.preventDefault();
-      this.setValueAt(index, this.#pointerToValueWithRect(e.clientX, e.clientY, rect));
-    };
-    // Drag tracking listens on the document's defaultView (the window)
-    // so the pointer can leave the slider track without losing the drag.
-    // Read it through the injected DOCUMENT to stay SSR-friendly — pointer
-    // events themselves only fire in the browser, so the optional chain
-    // simply makes this a no-op on the server.
-    const win = this.#document.defaultView;
-    const cleanup = () => {
-      win?.removeEventListener('pointermove', move);
-      win?.removeEventListener('pointerup', stop);
-      win?.removeEventListener('pointercancel', stop);
-      this.#activeDragCleanups.delete(cleanup);
-    };
-    const stop = (e: PointerEvent) => {
-      if (e.pointerId !== pointerId) {
-        return;
-      }
-      cleanup();
-      this.markTouched();
-      this.commitInteraction();
-    };
-    win?.addEventListener('pointermove', move);
-    win?.addEventListener('pointerup', stop);
-    win?.addEventListener('pointercancel', stop);
-    this.#activeDragCleanups.add(cleanup);
+    }
+    return null;
+  }
+
+  #onDragStart(event: PointerEvent): boolean {
+    if (this.effectiveDisabled() || this.readonly()) {
+      return false;
+    }
+    if (event.button !== undefined && event.button !== 0) {
+      return false;
+    }
+    const trackEl = this.#trackEl();
+    this.#dragRect = trackEl?.getBoundingClientRect() ?? null;
+    const hit = this.#resolveThumb(event.target);
+    if (hit) {
+      this.#dragIndex = hit.index();
+      hit.host.focus();
+      return true;
+    }
+    if (!trackEl || !(event.target instanceof Node) || !trackEl.contains(event.target)) {
+      return false;
+    }
+    const target = this.#pointerToValueWithRect(event.clientX, event.clientY, this.#dragRect);
+    const index = this.nearestThumbIndex(target);
+    if (index < 0) {
+      return false;
+    }
+    this.#dragIndex = index;
+    this.setValueAt(index, target);
+    return true;
+  }
+
+  #onDragMove(event: PointerEvent): void {
+    this.setValueAt(
+      this.#dragIndex,
+      this.#pointerToValueWithRect(event.clientX, event.clientY, this.#dragRect),
+    );
+  }
+
+  #onDragEnd(): void {
+    this.markTouched();
+    this.commitInteraction();
   }
 
   setTrack(el: HTMLElement | null): void {
