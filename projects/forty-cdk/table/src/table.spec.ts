@@ -433,7 +433,7 @@ class CellEntryGridHost {
       mode="grid"
       [selectionMode]="selectionMode()"
       [selectionBehavior]="behavior()"
-      [(selection)]="selection"
+      [(value)]="selection"
     >
       <div role="rowgroup">
         <div role="row">
@@ -478,7 +478,7 @@ class SelectionTableHost {
       selectionMode="multiple"
       selectionBehavior="replace"
       [selectableValues]="totalValues()"
-      [(selection)]="selection"
+      [(value)]="selection"
     >
       <div role="rowgroup">
         <div role="row">
@@ -505,6 +505,43 @@ class TotalSelectionTableHost {
   readonly totalValues = signal<readonly unknown[] | null>([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
   readonly windowIds = signal<readonly number[]>([0, 5, 9]);
   readonly selection = signal<readonly unknown[]>([]);
+}
+
+interface PersonRow {
+  id: number;
+  name: string;
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector],
+  template: `
+    <div
+      forTable
+      mode="grid"
+      selectionMode="multiple"
+      [compareWith]="compareById"
+      [(value)]="selected"
+    >
+      <div role="rowgroup">
+        @for (row of rows; track row.id) {
+          <div forTableRow [value]="row" [attr.data-testid]="'row-' + row.id">
+            <div forTableCell name="sel" [attr.data-testid]="'cell-sel-' + row.id">
+              <span forTableRowSelector [attr.data-testid]="'selector-' + row.id"></span>
+            </div>
+            <div forTableCell name="name">{{ row.name }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class GenericTableHost {
+  readonly rows: readonly PersonRow[] = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+  ];
+  readonly selected = signal<readonly PersonRow[]>([]);
+  readonly compareById = (a: PersonRow, b: PersonRow): boolean => a.id === b.id;
 }
 
 @Component({
@@ -1330,6 +1367,19 @@ describe('ForTable', () => {
       press(btn, 'ArrowRight');
       await flush();
       expect(otherCell.getAttribute('data-highlighted')).toBe(null);
+    });
+  });
+
+  describe('generic value typing', () => {
+    it('infers the row-value type from [(value)] and selects object rows via a typed [compareWith]', async () => {
+      const { el, instance, flush } = renderHost(GenericTableHost);
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(instance.selected()).toEqual([{ id: 1, name: 'Alice' }]);
+      expect(el.querySelector('[data-testid="row-1"]')!.getAttribute('aria-selected')).toBe('true');
     });
   });
 

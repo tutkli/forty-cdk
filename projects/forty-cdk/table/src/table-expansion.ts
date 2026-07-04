@@ -4,11 +4,11 @@ import { type Signal, type WritableSignal } from '@angular/core';
  * Dependencies for {@link TableExpansion}. Wires the helper to `ForTable`'s
  * `[(expanded)]` model and the row-value comparator.
  */
-export interface TableExpansionDeps {
+export interface TableExpansionDeps<T> {
   /** Two-way bindable open parent-row values (each row's `[value]`). */
-  readonly expanded: WritableSignal<readonly unknown[]>;
+  readonly expanded: WritableSignal<readonly T[]>;
   /** Equality comparator for row values. */
-  readonly compareWith: Signal<(a: unknown, b: unknown) => boolean>;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
 }
 
 /**
@@ -17,17 +17,17 @@ export interface TableExpansionDeps {
  *
  * Internal — not re-exported from `table/index.ts` or `public-api.ts`.
  */
-export class TableExpansion {
-  readonly #expanded: WritableSignal<readonly unknown[]>;
-  readonly #compareWith: Signal<(a: unknown, b: unknown) => boolean>;
+export class TableExpansion<T> {
+  readonly #expanded: WritableSignal<readonly T[]>;
+  readonly #compareWith: Signal<(a: T, b: T) => boolean>;
 
-  constructor(deps: TableExpansionDeps) {
+  constructor(deps: TableExpansionDeps<T>) {
     this.#expanded = deps.expanded;
     this.#compareWith = deps.compareWith;
   }
 
   /** Whether `value` is currently in the open-rows set. */
-  isExpanded(value: unknown): boolean {
+  isExpanded(value: T): boolean {
     return this.#expanded().some((v) => this.#compareWith()(v, value));
   }
 
@@ -35,7 +35,7 @@ export class TableExpansion {
    * Sets a parent row's expansion in or out of the open-rows set. No-op when
    * `value` is undefined or already in the requested state.
    */
-  setExpanded(value: unknown, open: boolean): void {
+  setExpanded(value: T, open: boolean): void {
     if (value === undefined) {
       return;
     }
@@ -49,7 +49,7 @@ export class TableExpansion {
   }
 
   /** Toggles a parent row's expansion. No-op when `value` is undefined. */
-  toggle(value: unknown): void {
+  toggle(value: T): void {
     if (value === undefined) {
       return;
     }

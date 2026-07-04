@@ -218,17 +218,16 @@ Controls how a row click (on the row or on a cell) mutates the selection:
 - `'toggle'` (default) — clicking a row always flips its selected state.
 - `'replace'` — clicking a row replaces the selection with that single row. Modifier keys in `'multiple'` mode: **Ctrl/Cmd-click** toggles the clicked row without clearing others; **Shift-click** extends a range from the last anchor to the clicked row.
 
-### `[(selection)]`
+### `[(value)]`
 
-A two-way-bindable `model<readonly unknown[]>()`. Single mode keeps 0–1 entries. The implicit `selectionChange` output fires only on internal mutations (selector / row click / Space / select-all). Consumer writes to the bound signal are reflected on the next change-detection cycle.
+A two-way-bindable `model<readonly T[]>()`. `ForTable<T>` infers the row-value type `T` from this binding (`unknown` when unbound), so `compareWith`, `selectableValues`, and the selection methods specialize accordingly. Single mode keeps 0–1 entries. The implicit `valueChange` output fires only on internal mutations (selector / row click / Space / select-all). Consumer writes to the bound signal are reflected on the next change-detection cycle.
 
 ### `compareWith`
 
-An equality comparator `(a: unknown, b: unknown) => boolean` used for membership checks. Defaults to `===`. Supply an id-based comparator when rows carry objects:
+An equality comparator `(a: T, b: T) => boolean` used for membership checks. Defaults to `===`. Supply an id-based comparator when rows carry objects:
 
 ```ts
-protected readonly idEquals = (a: unknown, b: unknown) =>
-  (a as { id: number }).id === (b as { id: number }).id;
+protected readonly idEquals = (a: Person, b: Person) => a.id === b.id;
 ```
 
 ### Space-to-select on a focused grid cell
@@ -267,11 +266,11 @@ By default the select-all tri-state, `toggleSelectAll`, and Shift-click range se
 
 Supply the full ordered set of selectable values via `[selectableValues]` so the aggregates compute against the true dataset instead of the window:
 
-- The select-all tri-state reflects `selection` vs. the full set, so it stays correct across scrolling.
+- The select-all tri-state reflects the current selection vs. the full set, so it stays correct across scrolling.
 - `toggleSelectAll()` selects / clears every supplied value.
 - Shift-click range resolves against the supplied order, so a range can span rows that are not currently mounted.
 
-Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected — it persists in the bound `[(selection)]` array regardless of mount state. Leave `[selectableValues]` unset (`null`, the default) for non-virtualized tables to keep the registered-rows behaviour.
+Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected — it persists in the bound `[(value)]` array regardless of mount state. Leave `[selectableValues]` unset (`null`, the default) for non-virtualized tables to keep the registered-rows behaviour.
 
 ```html
 <div
@@ -281,7 +280,7 @@ Per-row selection (`[forTableRowSelector]`, row click, Space) is unaffected — 
   selectionMode="multiple"
   [rowCount]="people().length"
   [selectableValues]="peopleIds()"
-  [(selection)]="selection"
+  [(value)]="selection"
 >
   <!-- header with [forTableSelectAll], windowed rows with [forTableRowSelector] -->
 </div>
@@ -294,13 +293,7 @@ protected readonly peopleIds = computed(() => this.people().map((p) => p.id));
 ### Minimal multiple-select example
 
 ```html
-<div
-  forTable
-  mode="grid"
-  selectionMode="multiple"
-  selectionBehavior="toggle"
-  [(selection)]="selection"
->
+<div forTable mode="grid" selectionMode="multiple" selectionBehavior="toggle" [(value)]="selection">
   <div role="rowgroup">
     <div forTableHeaderRow>
       <div forTableHeaderCell name="sel">
@@ -789,19 +782,19 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 
 ### `ForTable`
 
-| Property            | Type                                  | Description                                                                                                                                  |
-| ------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`              | `'table' \| 'grid' \| 'treegrid'`     | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                     |
-| `ariaLabel`         | `string \| null`                      | Reactive accessible label.<br>**Default:** `null`                                                                                            |
-| `dir`               | `'ltr' \| 'rtl' \| null`              | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                       |
-| `rowCount`          | `number`                              | True total data-row count for `aria-rowcount`. Ignored in `table` mode.<br>**Default:** rendered count                                       |
-| `colCount`          | `number`                              | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count                                         |
-| `selectionMode`     | `'none' \| 'single' \| 'multiple'`    | Row selection mode.<br>**Default:** `'none'`                                                                                                 |
-| `selectionBehavior` | `'toggle' \| 'replace'`               | How a row click mutates selection (modifier-aware in `replace` mode).<br>**Default:** `'toggle'`                                             |
-| `selection`         | `model<readonly unknown[]>([])`       | Two-way bindable selected row values.<br>**Default:** `[]`                                                                                   |
-| `compareWith`       | `(a: unknown, b: unknown) => boolean` | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                          |
-| `selectableValues`  | `readonly unknown[] \| null`          | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null` |
-| `expanded`          | `model<readonly unknown[]>([])`       | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                  |
+| Property            | Type                               | Description                                                                                                                                  |
+| ------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`              | `'table' \| 'grid' \| 'treegrid'`  | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                     |
+| `ariaLabel`         | `string \| null`                   | Reactive accessible label.<br>**Default:** `null`                                                                                            |
+| `dir`               | `'ltr' \| 'rtl' \| null`           | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                       |
+| `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Ignored in `table` mode.<br>**Default:** rendered count                                       |
+| `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count                                         |
+| `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                 |
+| `selectionBehavior` | `'toggle' \| 'replace'`            | How a row click mutates selection (modifier-aware in `replace` mode).<br>**Default:** `'toggle'`                                             |
+| `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                    |
+| `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                          |
+| `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null` |
+| `expanded`          | `model<readonly T[]>([])`          | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                  |
 
 ### `ForTableHeaderCell`
 

@@ -85,8 +85,15 @@ export function injectDropListContext(piece: string): ForDropListContext {
 }
 
 /** Emitted by the **source** `ForDropList` on a committed drop (keyboard or pointer). */
-export interface ForDragDropEvent<T = unknown> {
-  readonly item: T;
+export interface ForDragDropEvent {
+  /**
+   * The dropped item's `[dragData]` payload. Typed `unknown` because a
+   * `[forDropList]` owns no item data (bring-your-own-data), so there is no
+   * input for Angular to infer an item type from. Narrow it against your own
+   * model when you need it, or reorder purely by `previousIndex` /
+   * `currentIndex` and ignore it.
+   */
+  readonly item: unknown;
   readonly previousContainer: ForDropListContext;
   readonly container: ForDropListContext;
   readonly previousIndex: number;

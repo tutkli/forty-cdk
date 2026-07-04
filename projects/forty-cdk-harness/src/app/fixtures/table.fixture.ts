@@ -110,7 +110,7 @@ import {
         ariaLabel="Team members"
         [selectionMode]="selectionMode()"
         [selectionBehavior]="selectionBehavior()"
-        [(selection)]="selection"
+        [(value)]="selection"
       >
         <div data-testid="header-row" forTableHeaderRow>
           <div

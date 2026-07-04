@@ -4,19 +4,19 @@ import { TableRowSelection, type TableRowSelectionDeps } from './table-row-selec
 import type { TableSelectionBehavior, TableSelectionMode } from './table-context';
 
 interface Setup {
-  readonly selection: WritableSignal<readonly unknown[]>;
+  readonly selection: WritableSignal<readonly string[]>;
   readonly selectionMode: WritableSignal<TableSelectionMode>;
   readonly selectionBehavior: WritableSignal<TableSelectionBehavior>;
-  readonly aggregateValues: WritableSignal<readonly unknown[]>;
-  readonly model: TableRowSelection;
+  readonly aggregateValues: WritableSignal<readonly string[]>;
+  readonly model: TableRowSelection<string>;
 }
 
-function setup(overrides?: Partial<TableRowSelectionDeps>): Setup {
-  const selection = signal<readonly unknown[]>([]);
+function setup(overrides?: Partial<TableRowSelectionDeps<string>>): Setup {
+  const selection = signal<readonly string[]>([]);
   const selectionMode = signal<TableSelectionMode>('multiple');
   const selectionBehavior = signal<TableSelectionBehavior>('toggle');
-  const aggregateValues = signal<readonly unknown[]>(['a', 'b', 'c', 'd']);
-  const model = new TableRowSelection({
+  const aggregateValues = signal<readonly string[]>(['a', 'b', 'c', 'd']);
+  const model = new TableRowSelection<string>({
     selection,
     selectionMode,
     selectionBehavior,

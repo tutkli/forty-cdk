@@ -198,7 +198,7 @@ function makeRows(start: number, length: number): Row[] {
       [estimateRowSize]="ROW_HEIGHT"
       [scrollElement]="scrollEl()"
       [selectionMode]="selectionMode()"
-      [(selection)]="selection"
+      [(value)]="selection"
       [selectableValues]="allIds()"
       #v="forTableVirtualized"
     >

@@ -16,23 +16,23 @@ export interface TableSelectionModifiers {
 
 /**
  * Dependencies for {@link TableRowSelection}. Wires the helper to `ForTable`'s
- * `[(selection)]` model, its selection inputs, and the aggregate value universe.
+ * `[(value)]` model, its selection inputs, and the aggregate value universe.
  */
-export interface TableRowSelectionDeps {
+export interface TableRowSelectionDeps<T> {
   /** Two-way bindable selected row values (each row's `[value]`). */
-  readonly selection: WritableSignal<readonly unknown[]>;
+  readonly selection: WritableSignal<readonly T[]>;
   /** The active row-selection mode. `'none'` disables selection. */
   readonly selectionMode: Signal<TableSelectionMode>;
   /** How a row click mutates the selection (`'toggle'` / `'replace'`). */
   readonly selectionBehavior: Signal<TableSelectionBehavior>;
   /** Equality comparator for row values. */
-  readonly compareWith: Signal<(a: unknown, b: unknown) => boolean>;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /**
    * Ordered universe of selectable row values for aggregate operations
    * (range extension, select-all tri-state). Spans rows beyond the rendered
    * window when the table is virtualized or server-paged.
    */
-  readonly aggregateValues: Signal<readonly unknown[]>;
+  readonly aggregateValues: Signal<readonly T[]>;
 }
 
 /**
@@ -42,14 +42,14 @@ export interface TableRowSelectionDeps {
  *
  * Internal — not re-exported from `table/index.ts` or `public-api.ts`.
  */
-export class TableRowSelection {
+export class TableRowSelection<T> {
   readonly #selectionMode: Signal<TableSelectionMode>;
   readonly #selectionBehavior: Signal<TableSelectionBehavior>;
-  readonly #compareWith: Signal<(a: unknown, b: unknown) => boolean>;
-  readonly #aggregateValues: Signal<readonly unknown[]>;
+  readonly #compareWith: Signal<(a: T, b: T) => boolean>;
+  readonly #aggregateValues: Signal<readonly T[]>;
 
-  readonly #model: SelectionModel<unknown>;
-  readonly #anchor = signal<unknown>(undefined);
+  readonly #model: SelectionModel<T>;
+  readonly #anchor = signal<T | undefined>(undefined);
 
   /** Aggregate selection state across all selectable rows (`'none'` / `'some'` / `'all'`). */
   readonly selectAllState = computed<TableSelectAllState>(() => {
@@ -69,24 +69,24 @@ export class TableRowSelection {
     return count === values.length ? 'all' : 'some';
   });
 
-  constructor(deps: TableRowSelectionDeps) {
+  constructor(deps: TableRowSelectionDeps<T>) {
     this.#selectionMode = deps.selectionMode;
     this.#selectionBehavior = deps.selectionBehavior;
     this.#compareWith = deps.compareWith;
     this.#aggregateValues = deps.aggregateValues;
-    this.#model = new SelectionModel<unknown>(deps.selection, {
+    this.#model = new SelectionModel<T>(deps.selection, {
       multiple: computed(() => deps.selectionMode() === 'multiple'),
       compareWith: (a, b) => deps.compareWith()(a, b),
     });
   }
 
   /** Whether `value` is currently in the selection. */
-  isSelected(value: unknown): boolean {
+  isSelected(value: T): boolean {
     return this.#model.isSelected(value);
   }
 
   /** Toggles `value` in or out of the selection and re-anchors. No-op in `'none'` mode. */
-  toggle(value: unknown): void {
+  toggle(value: T): void {
     if (this.#selectionMode() === 'none') {
       return;
     }
@@ -99,7 +99,7 @@ export class TableRowSelection {
    * `selectionBehavior`: `'toggle'` always flips; `'replace'` replaces (Ctrl/Cmd
    * toggles a single item, Shift extends a range in multiple mode).
    */
-  select(value: unknown, modifiers?: TableSelectionModifiers): void {
+  select(value: T, modifiers?: TableSelectionModifiers): void {
     const mode = this.#selectionMode();
     if (mode === 'none') {
       return;
@@ -135,7 +135,7 @@ export class TableRowSelection {
     }
   }
 
-  #selectRange(toValue: unknown): void {
+  #selectRange(toValue: T): void {
     const values = this.#aggregateValues();
     const equals = this.#compareWith();
     const toIdx = values.findIndex((v) => equals(v, toValue));

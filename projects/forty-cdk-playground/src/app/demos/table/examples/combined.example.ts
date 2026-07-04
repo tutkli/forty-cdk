@@ -62,7 +62,7 @@ const FALLBACK_WIDTH: Record<PersonColumn, number> = {
         [rowCount]="displayRows().length"
         [estimateRowSize]="rowHeight"
         selectionMode="multiple"
-        [(selection)]="selection"
+        [(value)]="selection"
         [selectableValues]="allIds()"
       >
         <div
