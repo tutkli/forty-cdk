@@ -78,9 +78,9 @@ export class DemoAvatar {
 
 ### `ForAvatarImage`
 
-| Property              | Type                      | Description                                                         |
-| --------------------- | ------------------------- | ------------------------------------------------------------------- |
-| `(loadStatusChanged)` | `output<ForAvatarStatus>` | Output. Emits whenever the lifecycle transitions.<br>**Default:** — |
+| Property             | Type                      | Description                                                         |
+| -------------------- | ------------------------- | ------------------------------------------------------------------- |
+| `(loadStatusChange)` | `output<ForAvatarStatus>` | Output. Emits whenever the lifecycle transitions.<br>**Default:** — |
 
 | Data attribute | Values                                     |
 | -------------- | ------------------------------------------ |

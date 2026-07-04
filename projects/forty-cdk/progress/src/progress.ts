@@ -1,4 +1,4 @@
-import { booleanAttribute, computed, Directive, effect, inject, input, model } from '@angular/core';
+import { booleanAttribute, computed, Directive, effect, inject, input } from '@angular/core';
 
 import { LiveAnnouncer, clamp } from 'forty-cdk/core';
 import {
@@ -53,11 +53,12 @@ export class ForProgress implements ForProgressContext {
   readonly #defaults = inject(FOR_PROGRESS_DEFAULTS);
 
   /**
-   * Two-way bindable. Current progress in `[0, max]`, or `null` for the
-   * indeterminate state. Values outside the range are clamped for ARIA but
-   * the model retains what the consumer wrote.
+   * Current progress in `[0, max]`, or `null` for the indeterminate state.
+   * One-way `[value]` input: a progress bar is display-only and reports no
+   * interactive value, so it exposes no two-way binding. Values outside the
+   * range are clamped for ARIA; the input retains the raw value.
    */
-  readonly value = model<number | null>(null);
+  readonly value = input<number | null>(null);
 
   /** Maximum value. Defaults to `100` (so a raw value reads as a percentage). */
   readonly max = input<number>(100);

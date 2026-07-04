@@ -38,7 +38,7 @@ const RADIO_IMPORTS = [ForRadioGroup, ForRadio] as const;
   `,
 })
 class RadioGroupHost {
-  readonly color = signal('');
+  readonly color = signal<string | null>('');
   readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly groupDisabled = signal(false);
@@ -95,7 +95,7 @@ describe('ForRadioGroup', () => {
         `,
       })
       class IndicatorHost {
-        readonly color = signal('red');
+        readonly color = signal<string | null>('red');
       }
 
       const { el } = renderHost(IndicatorHost);
@@ -213,6 +213,23 @@ describe('ForRadioGroup', () => {
       fixture.componentInstance.color.set('blue');
       await flush();
       expect(radioOf(el, 'blue').getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('empty selection (null sentinel)', () => {
+    it('clears the selection back to none when the value is set to null', async () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.color.set('green');
+      await flush();
+      expect(radioOf(el, 'green').getAttribute('aria-checked')).toBe('true');
+      expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
+
+      fixture.componentInstance.color.set(null);
+      await flush();
+      for (const v of ['red', 'green', 'blue']) {
+        expect(radioOf(el, v).getAttribute('aria-checked')).toBe('false');
+      }
+      expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('0');
     });
   });
 
@@ -539,7 +556,7 @@ describe('ForRadioGroup', () => {
       `,
     })
     class IndicatorHost {
-      readonly color = signal('');
+      readonly color = signal<string | null>('');
     }
 
     it('reflects data-state unchecked without a hidden attribute while no radio is selected', () => {
@@ -594,7 +611,7 @@ describe('ForRadioGroup', () => {
         `,
       })
       class SubclassHost {
-        readonly color = signal('red');
+        readonly color = signal<string | null>('red');
       }
 
       const { el } = renderHost(SubclassHost);
@@ -620,7 +637,7 @@ describe('ForRadioGroup', () => {
       `,
     })
     class FlagsHost {
-      readonly color = signal('');
+      readonly color = signal<string | null>('');
       readonly touched = signal(false);
       readonly dirty = signal(false);
       readonly pending = signal(false);
@@ -657,7 +674,7 @@ describe('ForRadioGroup', () => {
       `,
     })
     class FormHost {
-      readonly color = signal('');
+      readonly color = signal<string | null>('');
       readonly fieldName = signal<string>('');
     }
 

@@ -1,4 +1,4 @@
-import { computed, Directive, input, model } from '@angular/core';
+import { computed, Directive, input } from '@angular/core';
 
 import { clamp } from 'forty-cdk/core';
 import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from './meter-context';
@@ -42,11 +42,12 @@ import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from '.
 })
 export class ForMeter implements ForMeterContext {
   /**
-   * Two-way bindable. Current measurement, clamped to `[min, max]` for
-   * everything reflected on the host. The model retains what the consumer
-   * wrote so external bindings are not surprised.
+   * Current measurement. One-way `[value]` input: a meter is a display-only
+   * readout with no interactive value, so it exposes no two-way binding.
+   * Clamped to `[min, max]` for everything reflected on the host; the input
+   * retains the raw value so a consumer reading it back is not surprised.
    */
-  readonly value = model<number>(0);
+  readonly value = input<number>(0);
 
   /** Lower bound. Defaults to `0`. */
   readonly min = input<number>(0);

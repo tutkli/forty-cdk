@@ -101,5 +101,5 @@ export class RadioGroupDefaultExample {
     { value: 'overnight', label: 'Overnight', disabled: true },
   ];
 
-  protected readonly value = signal('standard');
+  protected readonly value = signal<string | null>('standard');
 }

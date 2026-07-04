@@ -18,7 +18,7 @@ function injectTableContext(): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      '[forty-cdk/table] ForTableVirtualized must be used inside a [forTable] element.',
+      '[forty-cdk/virtualization] ForTableVirtualized must be used inside a [forTable] element.',
     );
   }
   return ctx;
