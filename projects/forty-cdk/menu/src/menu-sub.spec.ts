@@ -8,6 +8,8 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
@@ -55,6 +57,60 @@ class SubMenuHost {
   readonly open = signal(false);
   readonly subOpen = signal(false);
   readonly lastSelected = signal<string | null>(null);
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Options</button>
+      @if (open()) {
+        <div forMenuContent>
+          <div
+            forMenuSub
+            [(open)]="subOpen"
+            [dismissible]="dismissible()"
+            (escapeKeyDown)="onEscape($event)"
+            (pointerDownOutside)="onPointer($event)"
+            (focusOutside)="onFocus($event)"
+            (interactOutside)="onInteract($event)"
+          >
+            <button forMenuSubTrigger>More</button>
+            @if (subOpen()) {
+              <div forMenuSubContent>
+                <button forMenuItem>Advanced</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class SubMenuDismissContractHost {
+  readonly open = signal(false);
+  readonly subOpen = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
 }
 
 /**
@@ -363,6 +419,27 @@ describe('ForMenuSub', () => {
       expect(r.instance.lastSelected()).toBe('paste');
       expect(r.instance.open()).toBe(false);
     });
+  });
+
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(SubMenuDismissContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.subOpen(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
   });
 
   describe('hover-follows-pointer (#662)', () => {

@@ -3,6 +3,10 @@ import { form, FormField } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../src/test-utils/render';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { ForFieldset } from 'forty-cdk/fieldset';
 import { ForSlider } from './slider';
 import { ForSliderRange } from './slider-range';
@@ -83,6 +87,39 @@ class SliderHost {
   }
 }
 
+@Component({
+  imports: [...SLIDER_IMPORTS],
+  template: `
+    <div
+      forSlider
+      [(value)]="picked"
+      [readonly]="isReadonly()"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [pending]="isPending()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+      data-test-id="root"
+    >
+      <span forSliderTrack>
+        <span forSliderRange></span>
+        @for (v of picked(); let i = $index; track i) {
+          <span forSliderThumb [index]="i" label="Volume"></span>
+        }
+      </span>
+    </div>
+  `,
+})
+class SliderFormControlHost {
+  readonly picked = signal<readonly number[]>([50]);
+  readonly isReadonly = signal(false);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 const root = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="root"]')!;
 const track = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="track"]')!;
 const range = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="range"]')!;
@@ -107,6 +144,40 @@ const keyUp = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) =
 // below does not need geometry and stays in Vitest.
 
 describe('ForSlider', () => {
+  assertFormControlContract(
+    () => {
+      const r = renderHost(SliderFormControlHost);
+      const result: FormControlMountResult = {
+        control: root(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'pending':
+              r.instance.isPending.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
+  );
+
   describe('static accessibility', () => {
     it('sets role=group on root and role=slider on each thumb', () => {
       const { el } = renderHost(SliderHost);

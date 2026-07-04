@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { disabled, form, FormField, required } from '@angular/forms/signals';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'forty-cdk/core';
 import { provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
   ForTimePicker,
@@ -77,6 +78,59 @@ class TimePickerHost {
   readonly locale = signal<string | null>(null);
 }
 
+@Component({
+  imports: BASE_IMPORTS,
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forTimePicker
+      [(open)]="open"
+      [step]="60"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+      #picker="forTimePicker"
+    >
+      <button forTimePickerTrigger>Open</button>
+      @if (open()) {
+        <div forTimePickerContent>
+          @for (slot of picker.slots(); track slot.id) {
+            <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">
+              {{ slot.label }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  `,
+})
+class TimePickerDismissContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
+}
+
 function getTrigger(): HTMLButtonElement {
   return document.querySelector<HTMLButtonElement>('[forTimePickerTrigger]')!;
 }
@@ -95,6 +149,25 @@ function getSlots(): NodeListOf<HTMLElement> {
 
 describe('ForTimePicker', () => {
   afterEachOverlayCleanup();
+
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(TimePickerDismissContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
 
   describe('a11y baseline', () => {
     it('wires combobox role + aria-haspopup + aria-expanded on trigger', async () => {

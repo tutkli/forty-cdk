@@ -10,7 +10,13 @@ import {
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
-import { assertTimeCapable, type DateAdapter, FOR_TIME_VALUE_SOURCE } from 'forty-cdk/core';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import {
+  assertTimeCapable,
+  type DateAdapter,
+  FOR_TIME_VALUE_SOURCE,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 import {
   ForCalendar,
   ForCalendarCell,
@@ -122,6 +128,73 @@ class Host {
   }
 }
 
+@Component({
+  imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerContent, ...CALENDAR_PIECES],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forDatePicker
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+      ariaLabel="Choose date"
+    >
+      <button forDatePickerTrigger>Open</button>
+      @if (open()) {
+        <div forDatePickerContent>
+          <div forCalendar>
+            <table forCalendarGrid #grid="forCalendarGrid">
+              <thead forCalendarGridHeader>
+                <tr>
+                  @for (day of grid.weekDays(); track day.key) {
+                    <th scope="col">{{ day.short }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (week of grid.weeks(); track week.key) {
+                  <tr>
+                    @for (c of week.days; track c.key) {
+                      <td forCalendarCell [date]="c.date">{{ c.label }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class DatePickerDismissContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
+}
+
 type R = RenderResult<Host>;
 
 const trigger = (r: R) => r.query<HTMLButtonElement>('[forDatePickerTrigger]')!;
@@ -144,6 +217,25 @@ describe('ForDatePicker', () => {
   });
 
   afterEachOverlayCleanup();
+
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(DatePickerDismissContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
 
   describe('structure & ARIA', () => {
     it('wires the trigger as a dialog disclosure button', () => {

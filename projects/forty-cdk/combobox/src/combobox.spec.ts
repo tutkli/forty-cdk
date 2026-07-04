@@ -17,6 +17,10 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForCombobox } from './combobox';
 import { ForComboboxAnchor } from './combobox-anchor';
@@ -116,6 +120,19 @@ class ComboboxHost {
     if (!q) return FRUITS;
     return FRUITS.filter((it) => it.label.toLowerCase().includes(q));
   });
+}
+
+@Component({
+  imports: [ForCombobox, ForComboboxInput],
+  template: `
+    <div forCombobox [disabled]="disabled()" [required]="required()">
+      <input forComboboxInput />
+    </div>
+  `,
+})
+class ComboboxFormControlHost {
+  readonly disabled = signal(false);
+  readonly required = signal(false);
 }
 
 function getOption(testId: string): HTMLElement {
@@ -540,6 +557,28 @@ describe('ForCombobox', () => {
       expect(r.instance.open()).toBe(true);
     });
   });
+
+  assertFormControlContract(
+    () => {
+      const r = renderHost(ComboboxFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLInputElement>('[forComboboxInput]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'disabled':
+              r.instance.disabled.set(value);
+              return;
+            case 'required':
+              r.instance.required.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['disabled', 'required'] },
+  );
 
   describe('selection (click)', () => {
     it('clicking an option commits value + label and closes', async () => {

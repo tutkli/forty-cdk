@@ -1,7 +1,15 @@
 /**
  * Shared contract suite for primitives that own a roving-tabindex
- * keyboard model — Toolbar, ToggleGroup, RadioGroup, Tabs, Listbox,
- * Menu (and submenus), Menubar.
+ * keyboard model. Adopted by: Tabs, Toolbar, Stepper, Listbox,
+ * RadioGroup, Menubar.
+ *
+ * Menu (and submenus) is intentionally excluded: its items keep a static
+ * `tabindex="-1"` and the shared menu overlay moves focus imperatively
+ * (managed-focus), so no item ever carries `tabindex="0"` — the contract's
+ * entry-point assertion does not model that pattern. Drag-drop is excluded
+ * too: its keyboard model reorders the lifted item (Arrow = move item) and
+ * has no Home/End, so it moves the DOM, not focus, and diverges from the
+ * focus-movement assertions here.
  *
  * The contract owns the assertions that are identical across every
  * roving primitive:

@@ -1,7 +1,14 @@
 /**
  * Shared contract suite for primitives that participate in the
- * dismissable-layer behaviour — Dialog, Popover, DropdownMenu,
- * ContextMenu, Combobox content, Select content, HoverCard.
+ * dismissable-layer behaviour. Adopted by: Dialog, Drawer, Popover,
+ * Select, ContextMenu, TimePicker, DatePicker, MenuSub.
+ *
+ * Combobox is intentionally excluded: its Escape is handled by the
+ * editable input's own `keydown` listener (focus stays in the input per
+ * the ARIA combobox pattern), not the shared document-level dismissable
+ * layer, so the contract's `document`-dispatched Escape never reaches it.
+ * Its pointer-down-outside / focus-outside paths do route through the
+ * layer and are covered by combobox's own spec.
  *
  * The contract owns the assertions that are identical across every
  * dismissable layer:

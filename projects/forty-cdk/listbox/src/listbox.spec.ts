@@ -11,6 +11,11 @@ import { By } from '@angular/platform-browser';
 import { isRequiredInputUnset } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import {
+  assertFormControlContract,
+  assertRovingTabindexContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { ForListbox } from './listbox';
 import { ForListboxGroup } from './listbox-group';
 import { ForListboxGroupLabel } from './listbox-group-label';
@@ -76,7 +81,108 @@ const optOf = (host: HTMLElement, id: string) =>
 
 const listboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forListbox]')!;
 
+const listboxItems = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forListboxOption]'));
+
+@Component({
+  imports: [...LISTBOX_IMPORTS],
+  template: `
+    <ul
+      forListbox
+      [(value)]="picked"
+      [disabled]="isDisabled()"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [pending]="isPending()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+    >
+      <li>
+        <button type="button" forListboxOption value="apple">Apple</button>
+      </li>
+    </ul>
+  `,
+})
+class ListboxFormControlHost {
+  readonly picked = signal<readonly string[]>([]);
+  readonly isDisabled = signal(false);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 describe('ForListbox', () => {
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(ListboxHost);
+        await r.flush();
+        return { items: listboxItems(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.options.set([
+          { value: 'apple', label: 'Apple', disabled: true },
+          { value: 'apricot', label: 'Apricot', disabled: false },
+          { value: 'banana', label: 'Banana', disabled: false },
+        ]);
+        await r.flush();
+        return { items: listboxItems(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledMiddle: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.options.set([
+          { value: 'apple', label: 'Apple', disabled: false },
+          { value: 'apricot', label: 'Apricot', disabled: true },
+          { value: 'banana', label: 'Banana', disabled: false },
+        ]);
+        await r.flush();
+        return { items: listboxItems(r.el), enabledIndices: [0, 2], flush: r.flush };
+      },
+      mountRtl: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.orientation.set('horizontal');
+        r.instance.dir.set('rtl');
+        await r.flush();
+        return { items: listboxItems(r.el), flush: r.flush };
+      },
+    },
+    { forwardArrow: 'ArrowDown' },
+  );
+
+  assertFormControlContract(
+    () => {
+      const r = renderHost(ListboxFormControlHost);
+      const result: FormControlMountResult = {
+        control: listboxOf(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'pending':
+              r.instance.isPending.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['required', 'invalid', 'pending', 'touched', 'dirty'] },
+  );
+
   describe('focus (focus-on-error)', () => {
     it('targets the first enabled option, not the listbox host', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);

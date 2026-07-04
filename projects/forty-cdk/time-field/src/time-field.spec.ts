@@ -4,6 +4,10 @@ import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
+import {
+  assertFormControlContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import type { TimeSegmentType } from './build-time-segments';
 import { ForTimeField } from './time-field';
@@ -63,6 +67,39 @@ class Host {
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
 }
 
+@Component({
+  imports: [ForTimeField, ForTimeFieldSegment, ForTimeFieldLiteral],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forTimeField
+      [(value)]="value"
+      [readonly]="isReadonly()"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+      #field="forTimeField"
+    >
+      @for (s of field.segments(); track s.id) {
+        @if (s.isLiteral) {
+          <span forTimeFieldLiteral>{{ s.text }}</span>
+        } @else {
+          <span forTimeFieldSegment [segment]="s.type!">{{ s.text }}</span>
+        }
+      }
+    </div>
+  `,
+})
+class TimeFieldFormControlHost {
+  readonly value = signal<Date | null>(null);
+  readonly isReadonly = signal(false);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 type R = RenderResult<Host>;
 
 const root = (r: R) => r.query('[forTimeField]')!;
@@ -83,6 +120,37 @@ async function key(r: R, segment: TimeSegmentType, k: string): Promise<void> {
 }
 
 describe('ForTimeField', () => {
+  assertFormControlContract(
+    () => {
+      const r = renderHost(TimeFieldFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLElement>('[forTimeField]')!,
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'] },
+  );
+
   describe('focus (focus-on-error)', () => {
     it('moves focus to the first segment, not the group host', async () => {
       const r = renderHost(Host);
