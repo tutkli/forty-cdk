@@ -10,11 +10,13 @@ import { FOR_FILE_UPLOAD_CONTEXT, type ForFileUploadContext } from './file-uploa
  * `filesChange` is a plain `output<FileList>()` — this primitive is not a
  * Signal Forms control; the native `<input type="file">` is the form participant.
  *
- * Dropped files are filtered against `accept` (file-extension and `type/*` MIME
- * matching) before `filesChange`: the native `accept` attribute only constrains
- * the file dialog, not a drag&drop, so an un-filtered drop would otherwise leak
- * a rejected file into `filesChange` and into the input's `files` (native form
- * submission). Files that fail the filter are emitted on `filesRejected` instead.
+ * Files chosen through either entry point — the native dialog or a drag&drop —
+ * are filtered against `accept` (file-extension and `type/*` MIME matching)
+ * before `filesChange`. The native `accept` attribute only constrains the
+ * dialog's default filter, so a drop, or a dialog selection made through the
+ * "All files" override, could otherwise leak a rejected file into `filesChange`
+ * and into the input's `files` (native form submission). Files that fail the
+ * filter are emitted on `filesRejected` instead.
  *
  * Reflects `data-dragging` while files are dragged over the zone and
  * `data-disabled` when the input is disabled.
@@ -48,9 +50,9 @@ export class ForFileUpload implements ForFileUploadContext {
   /** Emitted when files are chosen via the dialog or dropped onto the zone. */
   readonly filesChange = output<FileList>();
   /**
-   * Emitted with the dropped files that were rejected by `accept`. Only fires
-   * on the drag&drop path (the native dialog already enforces `accept`), and
-   * only when at least one dropped file failed the filter.
+   * Emitted with the files that were rejected by `accept`, from either the
+   * drag&drop path or a dialog selection made through the "All files" override.
+   * Fires only when at least one selected file failed the filter.
    */
   readonly filesRejected = output<File[]>();
 
@@ -70,9 +72,31 @@ export class ForFileUpload implements ForFileUploadContext {
     this.#input?.click();
   }
 
-  /** Emits `filesChange` with the provided `FileList` if it contains at least one file. */
-  emitFiles(files: FileList): void {
-    if (files.length > 0) this.filesChange.emit(files);
+  /**
+   * Filters `files` against `accept`, caps the result to a single file when not
+   * `multiple`, syncs the registered input's `files` for native form submission,
+   * then emits `filesChange` with the accepted set and `filesRejected` with the
+   * rest. Shared by the drag&drop and dialog paths so `accept` is enforced
+   * identically through both entry points and they cannot diverge.
+   */
+  acceptFiles(files: FileList): void {
+    const all = Array.from(files);
+    if (all.length === 0) return;
+
+    const accepted: File[] = [];
+    const rejected: File[] = [];
+    for (const file of all) {
+      (this.#acceptsFile(file) ? accepted : rejected).push(file);
+    }
+    const limited = this.multiple() ? accepted : accepted.slice(0, 1);
+
+    if (limited.length > 0) {
+      const keptAll = limited.length === all.length;
+      const list = keptAll ? files : this.#toFileList(limited);
+      if (this.#input && this.#input.files !== list) this.#input.files = list;
+      this.filesChange.emit(list);
+    }
+    if (rejected.length > 0) this.filesRejected.emit(rejected);
   }
 
   protected onDragEnter(event: DragEvent): void {
@@ -101,22 +125,7 @@ export class ForFileUpload implements ForFileUploadContext {
     this.#dragging.set(false);
     const dropped = event.dataTransfer?.files;
     if (!dropped || dropped.length === 0) return;
-
-    const all = Array.from(dropped);
-    const accepted: File[] = [];
-    const rejected: File[] = [];
-    for (const file of all) {
-      (this.#acceptsFile(file) ? accepted : rejected).push(file);
-    }
-    const limited = this.multiple() ? accepted : accepted.slice(0, 1);
-
-    if (limited.length > 0) {
-      const keptAll = limited.length === all.length;
-      const files = keptAll ? dropped : this.#toFileList(limited);
-      if (this.#input) this.#input.files = files;
-      this.emitFiles(files);
-    }
-    if (rejected.length > 0) this.filesRejected.emit(rejected);
+    this.acceptFiles(dropped);
   }
 
   #acceptsFile(file: File): boolean {

@@ -59,6 +59,53 @@ test.describe('FileUpload', () => {
     await expect(el(page, 'zone')).not.toHaveAttribute('data-dragging');
   });
 
+  test('drop filters by accept: accepted emit, rejected reported, input reflects accepted', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'file-upload', { accept: '1', multiple: '1' });
+
+    const dataTransfer = await page.evaluateHandle(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(['img'], 'photo.png', { type: 'image/png' }));
+      dt.items.add(new File(['doc'], 'notes.txt', { type: 'text/plain' }));
+      return dt;
+    });
+
+    await el(page, 'zone').dispatchEvent('drop', { dataTransfer });
+
+    await expect(el(page, 'count')).toHaveText('1');
+    await expect(el(page, 'files')).toHaveText('photo.png');
+    await expect(el(page, 'rejected')).toHaveText('notes.txt');
+
+    const inputFiles = await el(page, 'input').evaluate((node) =>
+      Array.from((node as HTMLInputElement).files ?? [])
+        .map((file) => file.name)
+        .join(','),
+    );
+    expect(inputFiles).toBe('photo.png');
+  });
+
+  test('dialog: a non-matching file chosen via the accept override is rejected, not emitted', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'file-upload', { accept: '1' });
+
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      el(page, 'trigger').click(),
+    ]);
+
+    await fileChooser.setFiles({
+      name: 'notes.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('nope'),
+    });
+
+    await expect(el(page, 'rejected')).toHaveText('notes.txt');
+    await expect(el(page, 'count')).toHaveText('0');
+    await expect(el(page, 'files')).toHaveText('');
+  });
+
   test('directory: input reflects webkitdirectory when enabled', async ({ page }) => {
     await gotoFixture(page, 'file-upload');
     await expect(el(page, 'input')).not.toHaveAttribute('webkitdirectory');
