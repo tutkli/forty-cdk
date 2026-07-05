@@ -215,7 +215,7 @@ import { queryFlag } from './_query-flag';
         </table>
       </div>
     } @else {
-      <div forCalendar [(value)]="value" [dir]="dir">
+      <div forCalendar [(value)]="value" [max]="boundMax" [dir]="dir">
         <header>
           <button forCalendarPrevButton [ariaLabel]="'Previous month'" data-testid="prev">‹</button>
           <h2 forCalendarHeading #heading="forCalendarHeading" data-testid="heading">
@@ -251,7 +251,11 @@ import { queryFlag } from './_query-flag';
   `,
 })
 export class CalendarFixture {
-  protected readonly value = signal<Date | null>(new Date(2026, 5, 15));
+  protected readonly isBound = queryFlag('bound');
+  protected readonly value = signal<Date | null>(
+    this.isBound ? new Date(2026, 4, 15) : new Date(2026, 5, 15),
+  );
+  protected readonly boundMax: Date | null = this.isBound ? new Date(2026, 5, 30) : null;
   protected readonly range = signal<DateRange<Date> | null>({
     start: new Date(2026, 5, 10),
     end: new Date(2026, 5, 15),

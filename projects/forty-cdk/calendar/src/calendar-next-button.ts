@@ -1,6 +1,5 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -9,6 +8,11 @@ import { injectCalendarContext } from './calendar-context';
  * Keeps DOM focus on itself while paging; the `aria-live` heading announces the
  * new period. Auto-disabled at the view's bound, or when the whole calendar is
  * disabled.
+ *
+ * Reflects the disabled state through `aria-disabled` + `data-disabled` only —
+ * never the native `disabled` attribute — so a button that auto-disables at the
+ * bound while focused keeps DOM focus instead of being ejected from the focus
+ * order. Activation is a no-op while disabled.
  *
  * Provide an accessible name via the `[ariaLabel]` input (e.g.
  * `[ariaLabel]="'Next'"`).
@@ -21,7 +25,7 @@ import { injectCalendarContext } from './calendar-context';
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '(click)': 'ctx.pageNext()',
+    '(click)': 'page()',
   },
 })
 export class ForCalendarNextButton {
@@ -32,7 +36,10 @@ export class ForCalendarNextButton {
 
   protected readonly disabled = computed(() => this.ctx.disabled() || this.ctx.isNextDisabled());
 
-  constructor() {
-    reflectDisabled(this.disabled);
+  protected page(): void {
+    if (this.disabled()) {
+      return;
+    }
+    this.ctx.pageNext();
   }
 }
