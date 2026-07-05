@@ -85,6 +85,55 @@ test.describe('table column reorder', () => {
   });
 });
 
+test.describe('table column reorder — composite grid tab stop (#1223)', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoFixture(page, 'table-column-reorder');
+  });
+
+  test('the column-reorderable grid is a single tab stop across header and body', async ({
+    page,
+  }) => {
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'header-name')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'after')).toBeFocused();
+  });
+
+  test('Arrow keys cross between the draggable header row and the body', async ({ page }) => {
+    await el(page, 'header-name').focus();
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'cell-0-name')).toBeFocused();
+
+    await page.keyboard.press('ArrowUp');
+    await expect(el(page, 'header-name')).toBeFocused();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(el(page, 'header-role')).toBeFocused();
+  });
+
+  test('the single tab stop follows roving focus into the body', async ({ page }) => {
+    await el(page, 'header-name').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'cell-0-name')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'after')).toBeFocused();
+  });
+
+  test('Space still lifts a draggable header cell for keyboard reordering', async ({ page }) => {
+    await el(page, 'header-name').focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Space');
+
+    const firstHeader = page.locator('[forTableHeaderCell]').first();
+    await expect(firstHeader).toHaveAttribute('data-column', 'role');
+  });
+});
+
 test.describe('table reorder boundary + lockAxis passthrough', () => {
   test('column lockAxis="x" — preview y stays at lift-time y while x tracks pointer', async ({
     page,

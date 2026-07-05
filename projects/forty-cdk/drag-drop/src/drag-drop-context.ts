@@ -76,6 +76,30 @@ export const FOR_DRAG_DROP_CONTEXT = new InjectionToken<ForDropListContext>(
   'FOR_DRAG_DROP_CONTEXT',
 );
 
+/**
+ * Optional external authority for a `[forDropList]`'s roving tab order, provided on the
+ * list host by a wrapper that composes the list into a larger roving model. When present,
+ * the list defers each item's roving `tabindex` to the delegate instead of its own
+ * `RovingTabindex`, so the composed list shares one tab stop with the surrounding widget
+ * rather than exposing a second one.
+ *
+ * `ForTableColumnReorder` provides one backed by the table's composite grid roving so a
+ * sortable + column-reorderable grid exposes a single tab stop across header and body,
+ * per the WAI-ARIA Data Grid pattern.
+ *
+ * {@link itemTabindex} returns `null` to defer to the list's own roving — a wrapper hands
+ * control back for states where the composed model does not apply (e.g. a `mode="table"`
+ * header row that is not part of any composite grid).
+ */
+export interface ForDropListRovingDelegate {
+  /** Roving `tabindex` for `el` (`0` for the single tab stop, `-1` otherwise), or `null` to defer to the list's own roving. */
+  itemTabindex(el: HTMLElement): -1 | 0 | null;
+}
+
+export const FOR_DROP_LIST_ROVING_DELEGATE = new InjectionToken<ForDropListRovingDelegate>(
+  'FOR_DROP_LIST_ROVING_DELEGATE',
+);
+
 export function injectDropListContext(piece: string): ForDropListContext {
   const ctx = inject(FOR_DRAG_DROP_CONTEXT, { optional: true });
   if (!ctx) {

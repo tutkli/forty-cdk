@@ -182,12 +182,14 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly #dataCols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
 
   /**
-   * Whether the registered header cells form a complete grid row that can join the
-   * body's roving grid. True when at least one header cell registered and the count
-   * matches the data column count (or there are no data rows yet). When header cells
-   * yield their tab stop to a co-located `[forDraggable]`, they do not register, so a
-   * partially-draggable header row is excluded — the header's own reorder roving owns
-   * it — keeping the composite grid's row-major geometry correct.
+   * Whether the registered header cells form a complete grid row that joins the body's
+   * roving grid as its first row. True in `grid` / `treegrid` mode when at least one
+   * header cell registered and the count matches the data column count (or there are no
+   * data rows yet). Draggable header cells (a `[forTableColumnReorder]` row) register the
+   * same way, so a column-reorderable grid still forms one composite tab stop across
+   * header and body — the reorder wrapper hands its drop-list roving over to this grid via
+   * `FOR_DROP_LIST_ROVING_DELEGATE` and routes idle header navigation through
+   * `handleHeaderCellKeydown`.
    */
   readonly #headerParticipates = computed(() => {
     if (this.mode() === 'table') {
@@ -424,6 +426,22 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   /**
+   * Resolves grid navigation for a header cell that yields its host interaction to a
+   * co-located `[forDraggable]` (a `[forTableColumnReorder]` row). `[forTableColumnReorder]`
+   * calls this from a capture-phase listener for idle (not-lifted) header cells, so Arrow /
+   * Home / End / Page keys move roving focus across the composite header + body grid while
+   * Space / Enter still fall through to the draggable's lift. Returns `true` when the key
+   * resolved to a grid action (and was consumed), `false` otherwise. No-op (returns `false`)
+   * outside `grid` / `treegrid` mode or when the header row does not join the composite grid.
+   */
+  handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
+    if (this.mode() === 'table' || !this.#headerParticipates()) {
+      return false;
+    }
+    return this.#handleGridNavigationKeydown(event, host);
+  }
+
+  /**
    * APG grid cell-entry mode: Enter or F2 on a focused cell moves focus into the
    * cell's first interactive widget; Escape returns focus to the owning cell.
    * Returns `true` when the event was consumed.
@@ -488,11 +506,11 @@ export class ForTable<T = unknown> implements ForTableContext {
     return false;
   }
 
-  #handleGridNavigationKeydown(event: KeyboardEvent, host: HTMLElement): void {
+  #handleGridNavigationKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     const cols = this.#cols();
     const cells = this.#flatCells();
     if (cols === 0 || cells.length === 0) {
-      return;
+      return false;
     }
     const action: GridNavigationAction | null = resolveGridNavigation(event, {
       cols,
@@ -500,7 +518,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       pageKeys: true,
     });
     if (action === null) {
-      return;
+      return false;
     }
     event.preventDefault();
     const currentIndex = cells.findIndex((cell) => cell.host === host);
@@ -526,7 +544,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       if (target !== null) {
         navigation.navigateTo(target.row, target.col);
       }
-      return;
+      return true;
     }
 
     const next = moveGridIndex(currentIndex < 0 ? 0 : currentIndex, cells.length, action, {
@@ -535,9 +553,10 @@ export class ForTable<T = unknown> implements ForTableContext {
       isDisabled: (i) => cells[i]!.disabled(),
     });
     if (next === null) {
-      return;
+      return true;
     }
     this.#roving.focusActive(cells[next]!.host);
+    return true;
   }
 
   /**

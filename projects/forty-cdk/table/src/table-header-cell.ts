@@ -19,6 +19,12 @@ import {
  * composite tab stop and Arrow keys navigate between them. The active header
  * cell carries `tabindex="0"` (others `-1`), reflects `data-highlighted` when
  * focused, and carries a 1-based `aria-colindex`.
+ *
+ * When a `[forDraggable]` shares the cell (a `[forTableColumnReorder]` row) the
+ * cell still participates in that composite grid — `aria-colindex`,
+ * `data-highlighted`, and focus activation stay on the cell — but it yields the
+ * host `tabindex` and keydown to the draggable, so the grid keeps a single tab
+ * stop and `[forTableColumnReorder]` routes idle Arrow navigation across it.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
@@ -110,13 +116,20 @@ export class ForTableHeaderCell {
    */
   readonly sticky = input(false as TableStickyValue, { transform: coerceSticky });
 
-  /** `true` when a `[forDraggable]` shares this cell and owns its tab stop / keyboard handling instead. */
+  /** `true` when a `[forDraggable]` shares this cell and owns its host `tabindex` / keydown instead. */
   readonly #yieldsToDraggable = hostHasDraggable(this.#host);
 
-  /** `true` when this cell is a roving cell of the body's composite grid. */
-  readonly #inRovingGrid = computed(
-    () => !this.#yieldsToDraggable && this.ctx.headerParticipatesInRoving(),
-  );
+  /**
+   * `true` when this header row joins the body's composite roving grid (`grid` /
+   * `treegrid` mode with a complete header row). A draggable header cell
+   * (`[forTableColumnReorder]`) still participates — it carries `aria-colindex` /
+   * `data-highlighted` and activates the roving cell on focus — even though it yields
+   * the host `tabindex` and keydown to its co-located `[forDraggable]`.
+   */
+  readonly #participates = computed(() => this.ctx.headerParticipatesInRoving());
+
+  /** `true` when this cell owns its host `tabindex` / keydown as a plain roving grid cell (no draggable). */
+  readonly #inRovingGrid = computed(() => !this.#yieldsToDraggable && this.#participates());
 
   protected readonly tabindex = computed<0 | -1 | null>(() => {
     if (this.#yieldsToDraggable) {
@@ -129,26 +142,24 @@ export class ForTableHeaderCell {
   });
 
   protected readonly colIndex = computed<number | null>(() =>
-    this.#inRovingGrid() ? this.ctx.headerCellIndexOf(this.#host) + 1 : null,
+    this.#participates() ? this.ctx.headerCellIndexOf(this.#host) + 1 : null,
   );
 
   protected readonly highlighted = computed(
-    () => this.#inRovingGrid() && this.ctx.isCellHighlighted(this.#host),
+    () => this.#participates() && this.ctx.isCellHighlighted(this.#host),
   );
 
   constructor() {
-    if (!this.#yieldsToDraggable) {
-      const handle: ForTableCellHandle = { host: this.#host, disabled: this.#disabled };
-      registerHandle(
-        handle,
-        (h) => this.ctx.registerHeaderCell(h),
-        (h) => this.ctx.unregisterHeaderCell(h),
-      );
-    }
+    const handle: ForTableCellHandle = { host: this.#host, disabled: this.#disabled };
+    registerHandle(
+      handle,
+      (h) => this.ctx.registerHeaderCell(h),
+      (h) => this.ctx.unregisterHeaderCell(h),
+    );
   }
 
   protected onFocus(): void {
-    if (this.#inRovingGrid()) {
+    if (this.#participates()) {
       this.ctx.activateCell(this.#host);
     }
   }
