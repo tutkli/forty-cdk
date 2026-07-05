@@ -145,6 +145,29 @@ describe('ForAvatar', () => {
       expect(root.getAttribute('data-status')).toBe('error');
     });
 
+    it('does not emit loadStatusChange after the directive is destroyed while decode is pending (#1163)', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      Object.defineProperty(img, 'naturalWidth', { configurable: true, get: () => 0 });
+      let settleDecode!: () => void;
+      img.decode = (): Promise<void> => new Promise<void>((resolve) => (settleDecode = resolve));
+
+      fixture.componentInstance.src.set('https://example.test/pending.svg');
+      await flush();
+
+      fixture.componentInstance.emitted.length = 0;
+
+      fixture.destroy();
+      expect(() => {
+        settleDecode();
+      }).not.toThrow();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(fixture.componentInstance.emitted).toEqual([]);
+    });
+
     it('re-reports the lifecycle for a new cached src even when it resolves to the same status (#590 F2)', async () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       const img = query<HTMLImageElement>('img')!;
