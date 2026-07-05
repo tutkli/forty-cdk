@@ -12,8 +12,16 @@ export type ForMeterQuality = 'optimum' | 'sub-optimum' | 'even-less-good';
 export interface ForMeterContext {
   /** Clamped to `[min, max]`. Use this for any visual / ARIA reflection. */
   readonly clampedValue: Signal<number>;
-  readonly min: Signal<number>;
-  readonly max: Signal<number>;
+  /**
+   * Sanitized lower bound (`min <= max`). Use this for any ARIA / visual
+   * reflection instead of the raw `min` input.
+   */
+  readonly sanitizedMin: Signal<number>;
+  /**
+   * Sanitized upper bound (`min <= max`). Use this for any ARIA / visual
+   * reflection instead of the raw `max` input.
+   */
+  readonly sanitizedMax: Signal<number>;
   /** `0..100`. */
   readonly percentage: Signal<number>;
   /**

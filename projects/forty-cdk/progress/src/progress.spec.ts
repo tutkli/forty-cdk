@@ -15,6 +15,7 @@ import { ForProgressIndicator } from './progress-indicator';
       [max]="max()"
       [getValueLabel]="getLabel()"
       [announceCompletion]="announce()"
+      [ariaLabel]="ariaLabel()"
     >
       <div forProgressIndicator></div>
     </div>
@@ -25,6 +26,7 @@ class ProgressHost {
   readonly max = signal(100);
   readonly getLabel = signal<((v: number, m: number) => string) | null>(null);
   readonly announce = signal(false);
+  readonly ariaLabel = signal<string | null>(null);
 }
 
 // LiveAnnouncer (driven by [announceCompletion]) schedules every text write
@@ -131,6 +133,25 @@ describe('ForProgress', () => {
 
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('aria-valuetext')).toBe('42 of 200 MB');
+    });
+  });
+
+  describe('ariaLabel', () => {
+    it('omits aria-label by default, reflects a set label, and drops an empty one', async () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.value.set(40);
+      await flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      expect(el.hasAttribute('aria-label')).toBe(false);
+
+      fixture.componentInstance.ariaLabel.set('Upload progress');
+      await flush();
+      expect(el.getAttribute('aria-label')).toBe('Upload progress');
+
+      fixture.componentInstance.ariaLabel.set('');
+      await flush();
+      expect(el.hasAttribute('aria-label')).toBe(false);
     });
   });
 

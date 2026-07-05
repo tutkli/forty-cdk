@@ -13,8 +13,8 @@ import { injectMeterContext } from './meter-context';
   host: {
     '[attr.data-quality]': 'context.quality()',
     '[attr.data-value]': 'context.clampedValue()',
-    '[attr.data-min]': 'context.min()',
-    '[attr.data-max]': 'context.max()',
+    '[attr.data-min]': 'context.sanitizedMin()',
+    '[attr.data-max]': 'context.sanitizedMax()',
     '[attr.data-percentage]': 'context.percentageAttr()',
     '[style.--for-meter-percentage]': 'percentageStyle()',
   },
