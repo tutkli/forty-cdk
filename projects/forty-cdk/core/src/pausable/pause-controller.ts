@@ -11,7 +11,11 @@ export interface PauseControllerOptions {
    * `visibility-pause` source: it applies the `'visibility'` reason while the
    * page is backgrounded (seeding from the current state on construction) and
    * releases it when the page becomes visible again. The reason key is always
-   * the literal `'visibility'`, so the reason union must include it.
+   * the literal `'visibility'`, so the reason union `R` must include it — a
+   * caller that leaves page-visibility tracking enabled (i.e. does not pass
+   * `trackPageVisibility: false`) fails to compile unless `'visibility'` is
+   * assignable to `R`. Pass `trackPageVisibility: false` to opt out, which also
+   * exempts the caller from that constraint.
    */
   trackPageVisibility?: boolean;
   /**
@@ -51,10 +55,20 @@ export interface PauseController<R extends string> {
  * Builds a {@link PauseController}. When `trackPageVisibility` is enabled the
  * `'visibility'` reason is wired to the shared `visibility-pause` source and
  * its subscription is torn down with the surrounding injector.
+ *
+ * The caller contract is compiler-checked: because page-visibility tracking
+ * defaults on and always holds the literal `'visibility'` reason, a caller that
+ * leaves it enabled must have `'visibility'` assignable to `R`. When it isn't,
+ * the `options` argument becomes required and must be `{ trackPageVisibility:
+ * false }`, so enabling the source without a matching reason union fails to
+ * compile. Callers that pass `trackPageVisibility: false` are exempt (any `R`).
  */
 export function injectPauseController<R extends string>(
-  options: PauseControllerOptions = {},
+  ...args: 'visibility' extends R
+    ? [options?: PauseControllerOptions]
+    : [options: PauseControllerOptions & { trackPageVisibility: false }]
 ): PauseController<R> {
+  const options: PauseControllerOptions = args[0] ?? {};
   const reasons = new Set<R>();
   const paused = signal(false);
 

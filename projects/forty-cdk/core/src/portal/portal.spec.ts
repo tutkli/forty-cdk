@@ -129,6 +129,76 @@ describe('injectPortal', () => {
     }
   });
 
+  it('removes the element despite an infinite (never-finishing) animation', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(PortalHost);
+    await flush(fixture);
+
+    const portaled = document.querySelector<HTMLElement>('portaled-bubble')!;
+
+    const neverResolves = new Promise<void>(() => undefined);
+    const infinite = {
+      finished: neverResolves,
+      effect: { getComputedTiming: () => ({ iterations: Infinity }) },
+    } as unknown as Animation;
+    portaled.getAnimations = (() => [infinite]) as HTMLElement['getAnimations'];
+    const rafSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0;
+      });
+
+    try {
+      fixture.destroy();
+      await nextMacrotask();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
+    } finally {
+      rafSpy.mockRestore();
+      document.querySelectorAll('portaled-bubble').forEach((n) => n.remove());
+    }
+  });
+
+  it('still awaits a finite animation before removing when mixed with an infinite one', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(PortalHost);
+    await flush(fixture);
+
+    const portaled = document.querySelector<HTMLElement>('portaled-bubble')!;
+
+    let resolveFinished!: () => void;
+    const finished = new Promise<void>((resolve) => {
+      resolveFinished = resolve;
+    });
+    const finite = {
+      finished,
+      effect: { getComputedTiming: () => ({ iterations: 1 }) },
+    } as unknown as Animation;
+    const infinite = {
+      finished: new Promise<void>(() => undefined),
+      effect: { getComputedTiming: () => ({ iterations: Infinity }) },
+    } as unknown as Animation;
+    portaled.getAnimations = (() => [infinite, finite]) as HTMLElement['getAnimations'];
+    const rafSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0;
+      });
+
+    try {
+      fixture.destroy();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(1);
+
+      resolveFinished();
+      await nextMacrotask();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
+    } finally {
+      rafSpy.mockRestore();
+      document.querySelectorAll('portaled-bubble').forEach((n) => n.remove());
+    }
+  });
+
   it('honors a custom target container', async () => {
     const target = document.createElement('div');
     target.id = 'custom-target';

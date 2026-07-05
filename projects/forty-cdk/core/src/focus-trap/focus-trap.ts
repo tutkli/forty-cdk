@@ -2,11 +2,19 @@ import { isPlatformBrowser } from '@angular/common';
 import { DOCUMENT, ElementRef, Injectable, inject, PLATFORM_ID } from '@angular/core';
 
 /**
- * Shared CSS selector for tabbable elements. Single source of truth for the
+ * Shared CSS selector for focusable elements. Single source of truth for the
  * library — primitives that need their own focus-finding logic (e.g. the
  * dialog directive's non-modal initial focus, the programmatic dialog
  * manager's bootstrap, future menu / popover initial-focus paths) import
  * this rather than maintaining a private copy that drifts.
+ *
+ * This matches elements that can *receive* focus — the superset used for
+ * initial-focus targets. A natively-focusable element carrying
+ * `tabindex="-1"` (e.g. a `<button tabindex="-1">` roving-tabindex
+ * collection item) still matches via its tag selector, but is excluded from
+ * the sequential Tab cycle at runtime by `isTabbableCandidate`. `iframe` and
+ * `summary` are included because both are natively focusable and can
+ * legitimately be an initial-focus target inside a trapped surface.
  */
 export const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -19,14 +27,18 @@ export const FOCUSABLE_SELECTOR = [
   '[contenteditable="true"]',
   'audio[controls]',
   'video[controls]',
+  'iframe',
+  'summary',
 ].join(',');
 
 /**
- * Returns the first tabbable descendant of `container`, or `null` if none
- * exists. Mirrors the filter used by `FocusTrap`: excludes `[hidden]`,
- * elements carrying or nested under an `[inert]` ancestor below the
- * container, and elements hidden via CSS (`display: none` /
- * `visibility: hidden`), which cannot receive focus.
+ * Returns the first focusable descendant of `container`, or `null` if none
+ * exists. Mirrors the filter used by `FocusTrap` for its initial-focus
+ * target: excludes `[hidden]`, elements carrying or nested under an
+ * `[inert]` ancestor below the container, and elements hidden via CSS
+ * (`display: none` / `visibility: hidden`), which cannot receive focus. This
+ * is the focusable set — a candidate carrying `tabindex="-1"` is a valid
+ * initial-focus target even though it never participates in the Tab cycle.
  */
 export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
   const candidates = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
@@ -40,6 +52,10 @@ export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
 
 function isFocusableCandidate(el: HTMLElement, root: HTMLElement): boolean {
   return !el.hasAttribute('hidden') && !hasInertAncestor(el, root) && !isCssHidden(el, root);
+}
+
+function isTabbableCandidate(el: HTMLElement, root: HTMLElement): boolean {
+  return el.tabIndex >= 0 && isFocusableCandidate(el, root);
 }
 
 function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
@@ -180,6 +196,7 @@ export class FocusTrap {
   #active = false;
   #containerHadTabindex = false;
   #focusablesCache: HTMLElement[] | null = null;
+  #tabbablesCache: HTMLElement[] | null = null;
   #observer: MutationObserver | null = null;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
@@ -216,6 +233,7 @@ export class FocusTrap {
     if (win && typeof win.MutationObserver === 'function') {
       this.#observer = new win.MutationObserver(() => {
         this.#focusablesCache = null;
+        this.#tabbablesCache = null;
       });
       this.#observer.observe(this.#container, {
         childList: true,
@@ -256,6 +274,18 @@ export class FocusTrap {
     }
   }
 
+  /**
+   * Deactivates the trap: removes the keydown listener, unregisters from the
+   * stack, disconnects the observer, and (unless `returnFocus: false`)
+   * restores focus to the element captured on activation.
+   *
+   * Return focus is skipped when the captured target is no longer connected
+   * to the document — e.g. the trigger was unmounted while the surface was
+   * open. Focusing a disconnected node is a no-op that silently drops focus
+   * to `<body>`; skipping the imperative move instead lets the browser apply
+   * its own default (focus stays on the surface's last-focused element until
+   * that element is itself removed), which is the least-surprising behavior.
+   */
   deactivate(options: FocusTrapDeactivateOptions = {}): void {
     if (!this.#active) {
       return;
@@ -266,6 +296,7 @@ export class FocusTrap {
     this.#observer?.disconnect();
     this.#observer = null;
     this.#focusablesCache = null;
+    this.#tabbablesCache = null;
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -274,7 +305,7 @@ export class FocusTrap {
     this.#containerHadTabindex = false;
 
     const returnFocus = options.returnFocus !== false;
-    if (returnFocus && this.#returnTo) {
+    if (returnFocus && this.#returnTo?.isConnected) {
       this.#returnTo.focus();
     }
     this.#returnTo = null;
@@ -297,14 +328,16 @@ export class FocusTrap {
     if (!this.#stack.isTopmost(this)) {
       return;
     }
-    const focusables = this.#focusables();
-    if (focusables.length === 0) {
+    const tabbables = this.#tabbables();
+    if (tabbables.length === 0) {
       event.preventDefault();
-      this.#focusContainer();
+      if (!this.#container.contains(this.#document.activeElement)) {
+        this.#focusContainer();
+      }
       return;
     }
-    const first = focusables[0]!;
-    const last = focusables[focusables.length - 1]!;
+    const first = tabbables[0]!;
+    const last = tabbables[tabbables.length - 1]!;
     const active = this.#document.activeElement;
 
     if (!this.#container.contains(active)) {
@@ -330,6 +363,15 @@ export class FocusTrap {
     const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
     this.#focusablesCache = all.filter((el) => isFocusableCandidate(el, this.#container));
     return this.#focusablesCache;
+  }
+
+  #tabbables(): HTMLElement[] {
+    if (this.#tabbablesCache !== null) {
+      return this.#tabbablesCache;
+    }
+    const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    this.#tabbablesCache = all.filter((el) => isTabbableCandidate(el, this.#container));
+    return this.#tabbablesCache;
   }
 }
 

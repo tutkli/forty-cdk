@@ -1,4 +1,4 @@
-import { FocusTrap, FocusTrapStack } from './focus-trap';
+import { findFirstFocusable, FocusTrap, FocusTrapStack } from './focus-trap';
 
 function tab(shift = false): KeyboardEvent {
   return new KeyboardEvent('keydown', {
@@ -536,6 +536,92 @@ describe('FocusTrap', () => {
       b3.focus();
       document.dispatchEvent(tab());
       expect(document.activeElement?.id).toBe('b2');
+    });
+  });
+
+  describe('tabbable endpoints exclude tabindex="-1" candidates', () => {
+    beforeEach(() => {
+      container.innerHTML = `
+        <button id="t1">tabbable one</button>
+        <button id="rov1" tabindex="-1">roving non-tabbable</button>
+        <button id="t2">tabbable two</button>
+        <button id="rov2" tabindex="-1">roving non-tabbable last</button>
+      `;
+    });
+
+    it('wraps forward from the last tabbable to the first, skipping trailing tabindex="-1" items', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const t2 = container.querySelector<HTMLElement>('#t2')!;
+      t2.focus();
+      document.dispatchEvent(tab());
+
+      expect(document.activeElement?.id).toBe('t1');
+    });
+
+    it('wraps backward from the first tabbable to the last, skipping tabindex="-1" items', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const t1 = container.querySelector<HTMLElement>('#t1')!;
+      t1.focus();
+      document.dispatchEvent(tab(true));
+
+      expect(document.activeElement?.id).toBe('t2');
+    });
+
+    it('treats a tabindex="-1" item at a Tab edge as a middle element (no wrap)', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const rov2 = container.querySelector<HTMLElement>('#rov2')!;
+      rov2.focus();
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe('focusable selector includes iframe and summary', () => {
+    it('includes an <iframe> in the focusable set', () => {
+      container.innerHTML = `<iframe id="frame" title="embedded"></iframe>`;
+      const frame = container.querySelector<HTMLElement>('#frame')!;
+
+      expect(findFirstFocusable(container)).toBe(frame);
+    });
+
+    it('includes a <summary> inside <details> in the focusable set', () => {
+      container.innerHTML = `
+        <details>
+          <summary id="sum">details summary</summary>
+          <p>body</p>
+        </details>
+      `;
+      const summary = container.querySelector<HTMLElement>('#sum')!;
+
+      expect(findFirstFocusable(container)).toBe(summary);
+    });
+  });
+
+  describe('return focus when the target is disconnected', () => {
+    it('does not throw and does not focus a disconnected node on deactivate', () => {
+      const returnTarget = document.createElement('button');
+      returnTarget.id = 'return-target';
+      document.body.appendChild(returnTarget);
+      returnTarget.focus();
+
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      expect(document.activeElement?.id).toBe('b1');
+
+      returnTarget.remove();
+
+      expect(() => trap!.deactivate()).not.toThrow();
+      expect(document.activeElement).not.toBe(returnTarget);
+      expect(returnTarget.isConnected).toBe(false);
+      expect(document.activeElement?.id).toBe('b1');
     });
   });
 });

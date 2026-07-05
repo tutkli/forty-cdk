@@ -9,6 +9,7 @@ import {
   InertSiblingsStack,
   MODAL_EXEMPT_ATTRIBUTE,
 } from '../inert-siblings/inert-siblings';
+import { buildOutsideVetoOptions } from '../overlay-controller/outside-veto';
 import { injectPortal } from '../portal/portal';
 import {
   createVetoableEvent,
@@ -296,7 +297,6 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     //     either handler vetoes the close.
     const dismissCfg = config.dismiss;
     if (dismissCfg !== undefined) {
-      let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
       dismissable.activate({
         exemptElements: () => [
           ...(dismissCfg.exemptElements?.() ?? []),
@@ -310,27 +310,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
             dismissCfg.requestClose('escape');
           }
         },
-        onPointerDownOutside: (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          dismissCfg.emitPointerDownOutside(
-            pendingOutsideVeto as VetoableNativeEvent<PointerEvent>,
-          );
-        },
-        onFocusOutside: (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          dismissCfg.emitFocusOutside(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-        },
-        onInteractOutside: (event) => {
-          const veto =
-            pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          pendingOutsideVeto = null;
-          dismissCfg.emitInteractOutside(veto);
-          if (!veto.defaultPrevented && dismissCfg.dismissible()) {
-            dismissCfg.requestClose(
-              event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside',
-            );
-          }
-        },
+        ...buildOutsideVetoOptions(dismissCfg),
       });
     }
 

@@ -188,15 +188,18 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
 }
 
 /**
- * Strip every inline style, CSS custom property, and `data-*` attribute
- * `injectItemAlignedPositioner` writes to the listbox (including the
- * `clip-path` hide baseline). Mirrors `resetFloatingStyles` in `floating.ts`
- * so a closed-then-reopened listbox starts from a clean slate — no leftover
- * `translate` jumping the next open, no stale `--for-*` poisoning size
- * styles, no orphaned `data-position`.
+ * Strip the transient sizing vars, CSS custom properties, and `data-*`
+ * attributes `injectItemAlignedPositioner` writes to the listbox — including
+ * the `clip-path` hide baseline — while **retaining** the resolved `translate`.
+ * Mirrors `resetFloatingStyles` in `floating.ts`: the surface is portaled
+ * until `getAnimations().finished`, so during an `animate.leave` exit the host
+ * keeps `position: fixed; left: 0; top: 0` and the retained `translate` stays
+ * anchored over the trigger instead of flashing at the viewport origin. The
+ * next mount re-arms the `clip-path` baseline in `afterNextRender` and
+ * recomputes the position before painting, so the retained `translate` never
+ * produces a stale-position flash.
  */
 function resetItemAlignedStyles(el: HTMLElement): void {
-  el.style.removeProperty('translate');
   el.style.removeProperty('clip-path');
   el.style.removeProperty('--for-anchor-width');
   el.style.removeProperty('--for-anchor-height');

@@ -281,6 +281,7 @@ export class ForTimePicker<D>
     loop: this.loop,
     dismissible: this.dismissible,
     escapeReason: 'escape',
+    programmaticReason: 'programmatic',
     markTouched: () => this.markTouched(),
   });
 

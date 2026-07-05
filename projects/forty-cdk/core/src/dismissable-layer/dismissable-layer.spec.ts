@@ -214,6 +214,26 @@ describe('DismissableLayer', () => {
 
       expect(calls).toEqual([]);
     });
+
+    it('still dismisses when a nested element stops focusin propagation on the bubble phase', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        onFocusOutside: () => calls.push('focus'),
+        onDismiss: () => calls.push('dismiss'),
+      });
+
+      const target = outside.querySelector('#out')!;
+      const stop = (event: Event): void => event.stopPropagation();
+      outside.addEventListener('focusin', stop);
+      try {
+        target.dispatchEvent(new FocusEvent('focusin', { bubbles: true, cancelable: true }));
+      } finally {
+        outside.removeEventListener('focusin', stop);
+      }
+
+      expect(calls).toEqual(['focus', 'dismiss']);
+    });
   });
 
   describe('layer stacking', () => {

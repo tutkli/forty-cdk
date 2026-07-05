@@ -9,10 +9,8 @@ import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
 import { InertSiblingsStack, MODAL_PEER_ATTRIBUTE } from '../inert-siblings/inert-siblings';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
-import {
-  createVetoableNativeEvent,
-  type VetoableNativeEvent,
-} from '../vetoable-event/vetoable-event';
+import { buildOutsideVetoOptions } from '../overlay-controller/outside-veto';
+import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
 /**
  * Tagged-union positioner config. The shell delegates to either
@@ -290,24 +288,16 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
     }
 
     if (layer && dismissCfg) {
-      // Pointer-down-outside and focus-outside both fire on the same physical
-      // interaction as the composite `interactOutside`, and the dismissable
-      // layer always invokes the specific listener before the composite one.
-      // We build a single veto wrapper on the specific call and reuse it for
-      // the composite call, so a `preventDefault()` in either handler vetoes
-      // the close. Escape never enters this reuse — it is a one-shot,
-      // consumer-owned channel forwarded verbatim below.
-      let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-      const requestClose = dismissCfg.requestClose;
-      const dismissible = dismissCfg.dismissible;
-      const options: DismissableLayerActivateOptions = {};
+      const options: DismissableLayerActivateOptions = {
+        ...buildOutsideVetoOptions(dismissCfg),
+      };
 
       // The implicit outside-close fires from the composite `onInteractOutside`
       // handler only (the specific pointer/focus handlers just emit). A wiring
       // that provides `requestClose` but omits `emitInteractOutside` would emit
       // its outside outputs yet never close — fail loudly in dev rather than
       // ship that silent gap.
-      if (isDevMode() && requestClose && !dismissCfg.emitInteractOutside) {
+      if (isDevMode() && dismissCfg.requestClose && !dismissCfg.emitInteractOutside) {
         throw new Error(
           '[forty-cdk/overlay-shell] dismiss.requestClose requires dismiss.emitInteractOutside to be wired; the implicit outside-close fires from the composite interactOutside channel.',
         );
@@ -321,32 +311,6 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
       // omits this channel; hover-card schedules a timed close).
       if (dismissCfg.emitEscapeKeyDown) {
         options.onEscapeKeyDown = dismissCfg.emitEscapeKeyDown;
-      }
-      if (dismissCfg.emitPointerDownOutside) {
-        const emit = dismissCfg.emitPointerDownOutside;
-        options.onPointerDownOutside = (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          emit(pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
-        };
-      }
-      if (dismissCfg.emitFocusOutside) {
-        const emit = dismissCfg.emitFocusOutside;
-        options.onFocusOutside = (event) => {
-          pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          emit(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-        };
-      }
-      if (dismissCfg.emitInteractOutside) {
-        const emit = dismissCfg.emitInteractOutside;
-        options.onInteractOutside = (event) => {
-          const veto =
-            pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-          pendingOutsideVeto = null;
-          emit(veto);
-          if (!veto.defaultPrevented && dismissible?.() && requestClose) {
-            requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
-          }
-        };
       }
 
       layer.activate(options);

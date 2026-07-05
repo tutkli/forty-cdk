@@ -109,12 +109,12 @@ export class DismissableLayerStack {
     }
     this.#document.addEventListener('keydown', this.#onKeyDown);
     this.#document.addEventListener('pointerdown', this.#onPointerDown, true);
-    this.#document.addEventListener('focusin', this.#onFocusIn);
+    this.#document.addEventListener('focusin', this.#onFocusIn, true);
 
     inject(DestroyRef).onDestroy(() => {
       this.#document.removeEventListener('keydown', this.#onKeyDown);
       this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
-      this.#document.removeEventListener('focusin', this.#onFocusIn);
+      this.#document.removeEventListener('focusin', this.#onFocusIn, true);
       this.#stack.length = 0;
       this.#suppressDepth = 0;
     });
