@@ -24,12 +24,12 @@ class AvatarHost {
   readonly emitted: ForAvatarStatus[] = [];
 }
 
-// `ForAvatarImage` reports its initial lifecycle status from an
-// `afterNextRender` callback, which re-enters on the next microtask. These
-// specs run under `vi.useFakeTimers()`; `flush()` stays safe there (its
-// macrotask hop advances the faked clock by 0ms rather than awaiting a real
-// `setTimeout`), and the interleaved `await Promise.resolve()` hops walk
-// through the afterNextRender re-entry one microtask at a time.
+// `ForAvatarImage` reports its lifecycle status from an `afterNextRender`
+// callback and a `src` MutationObserver, both of which re-enter on a microtask.
+// These specs run under `vi.useFakeTimers()`, where a single awaited `flush()`
+// is safe and sufficient: its macrotask hop advances the faked clock by 0ms
+// (rather than awaiting a real `setTimeout`, which never fires while timers are
+// faked) and drains the pending microtasks, so the status settles in one hop.
 
 describe('ForAvatar', () => {
   beforeEach(() => {
@@ -43,7 +43,6 @@ describe('ForAvatar', () => {
     it('starts in idle when src is empty', async () => {
       const { query, flush } = renderHost(AvatarHost);
       await flush();
-      await Promise.resolve();
 
       const root = query<HTMLElement>('[forAvatar]')!;
       expect(root.getAttribute('data-status')).toBe('idle');
@@ -52,8 +51,6 @@ describe('ForAvatar', () => {
     it('transitions to loading then loaded on the load event', async () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       fixture.componentInstance.src.set('https://example.test/me.png');
-      await flush();
-      await Promise.resolve();
       await flush();
 
       const img = query<HTMLImageElement>('img')!;
@@ -73,8 +70,6 @@ describe('ForAvatar', () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       fixture.componentInstance.src.set('https://example.test/missing.png');
       await flush();
-      await Promise.resolve();
-      await flush();
 
       const img = query<HTMLImageElement>('img')!;
       const root = query<HTMLElement>('[forAvatar]')!;
@@ -92,8 +87,6 @@ describe('ForAvatar', () => {
       Object.defineProperty(img, 'naturalWidth', { configurable: true, get: () => 48 });
 
       fixture.componentInstance.src.set('https://example.test/cached.png');
-      await flush();
-      await Promise.resolve();
       await flush();
 
       const root = query<HTMLElement>('[forAvatar]')!;
@@ -133,12 +126,6 @@ describe('ForAvatar', () => {
       img.decode = (): Promise<void> => Promise.reject(new Error('broken'));
 
       fixture.componentInstance.src.set('https://example.test/broken.png');
-      await flush();
-      await Promise.resolve();
-      await flush();
-
-      await Promise.resolve();
-      await Promise.resolve();
       await flush();
 
       const root = query<HTMLElement>('[forAvatar]')!;
@@ -180,14 +167,10 @@ describe('ForAvatar', () => {
 
       fixture.componentInstance.src.set('https://example.test/first.png');
       await flush();
-      await Promise.resolve();
-      await flush();
       expect(fixture.componentInstance.emitted).toContain('loaded');
       fixture.componentInstance.emitted.length = 0;
 
       fixture.componentInstance.src.set('https://example.test/second.png');
-      await flush();
-      await Promise.resolve();
       await flush();
       expect(fixture.componentInstance.emitted).toEqual(['loaded']);
     });
@@ -197,8 +180,6 @@ describe('ForAvatar', () => {
       const img = query<HTMLImageElement>('img')!;
 
       fixture.componentInstance.src.set('https://example.test/me.png');
-      await flush();
-      await Promise.resolve();
       await flush();
       fixture.componentInstance.emitted.length = 0;
 
@@ -243,8 +224,6 @@ describe('ForAvatar', () => {
       fixture.componentInstance.delay.set(500);
       fixture.componentInstance.src.set('https://example.test/me.png');
       await flush();
-      await Promise.resolve();
-      await flush();
 
       vi.advanceTimersByTime(100);
       await flush();
@@ -263,8 +242,6 @@ describe('ForAvatar', () => {
       fixture.componentInstance.delay.set(500);
       fixture.componentInstance.src.set('https://example.test/slow.png');
       await flush();
-      await Promise.resolve();
-      await flush();
 
       expect(query<HTMLElement>('[forAvatarFallback]')).toBeNull();
 
@@ -280,8 +257,6 @@ describe('ForAvatar', () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       fixture.componentInstance.delay.set(1000);
       fixture.componentInstance.src.set('https://example.test/missing.png');
-      await flush();
-      await Promise.resolve();
       await flush();
 
       query<HTMLImageElement>('img')!.dispatchEvent(new Event('error'));
@@ -315,8 +290,6 @@ describe('ForAvatar', () => {
       expect(root.getAttribute('data-status')).toBe('idle');
 
       fixture.componentInstance.src.set('https://example.test/me.png');
-      await flush();
-      await Promise.resolve();
       await flush();
 
       expect(root.getAttribute('data-status')).toBe('loading');
