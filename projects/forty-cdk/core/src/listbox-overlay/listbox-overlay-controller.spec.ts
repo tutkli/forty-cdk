@@ -104,6 +104,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
       loop,
       dismissible,
       escapeReason: 'escape',
+      programmaticReason: 'programmatic',
       markTouched: () => {
         touched.count++;
       },
@@ -299,6 +300,22 @@ describe('ListboxOverlayController', () => {
     expect(touched.count).toBe(1);
     expect(open()).toBe(false);
     expect(closed).toEqual(['pointerDownOutside']);
+  });
+
+  it('requestClose is a no-op while already closed, preserving the prior close reason', () => {
+    const { controller, open, touched, closed } = createHarness();
+    open.set(true);
+    controller.closeMenu('tab');
+    expect(open()).toBe(false);
+    expect(controller.lastCloseReason()).toBe('tab');
+
+    const setOpen = vi.spyOn(open, 'set');
+    controller.requestClose('focusOutside');
+
+    expect(setOpen).not.toHaveBeenCalled();
+    expect(controller.lastCloseReason()).toBe('tab');
+    expect(touched.count).toBe(0);
+    expect(closed).toEqual(['tab']);
   });
 
   it('emitAutoFocusOnOpen / emitAutoFocusOnClose report the veto', () => {

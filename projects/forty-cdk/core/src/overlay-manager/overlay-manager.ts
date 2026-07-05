@@ -172,13 +172,13 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
       return;
     }
     requestAnimationFrame(() => {
-      const animations = targets.flatMap((el) => el.getAnimations());
-      if (animations.length === 0) {
+      const finite = targets.flatMap((el) => el.getAnimations()).filter(isFiniteAnimation);
+      if (finite.length === 0) {
         remove();
         return;
       }
-      Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(
-        () => remove(),
+      Promise.all(finite.map((animation) => animation.finished.catch(() => undefined))).then(() =>
+        remove(),
       );
     });
   }
@@ -284,4 +284,21 @@ function isRecursiveTickError(error: unknown): boolean {
   }
   const { code, message } = error as { code?: unknown; message?: unknown };
   return code === 101 || (typeof message === 'string' && message.startsWith('NG0101'));
+}
+
+/**
+ * True when `animation` will actually finish — i.e. it does not run forever.
+ * An infinite exit animation (a shimmer / pulse with `animation-iteration-count:
+ * infinite`) reports `Infinity` iterations, and its `finished` promise never
+ * resolves; awaiting it would strand `beginLeave` and leak the overlay entry.
+ * Filtering these out before awaiting `finished` lets teardown proceed once the
+ * finite animations settle (or immediately, when none remain). Guards for a
+ * possibly-null effect and for environments lacking `getComputedTiming`.
+ */
+function isFiniteAnimation(animation: Animation): boolean {
+  const effect = animation.effect;
+  if (!effect || typeof effect.getComputedTiming !== 'function') {
+    return true;
+  }
+  return effect.getComputedTiming().iterations !== Infinity;
 }

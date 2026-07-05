@@ -384,6 +384,7 @@ export class ForSelect<T = string>
     loop: this.loop,
     dismissible: this.dismissible,
     escapeReason: 'escape',
+    programmaticReason: 'programmatic',
     markTouched: () => this.markTouched(),
     onClose: () => {
       if (this.#virtualized()) {

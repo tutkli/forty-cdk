@@ -17,7 +17,7 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush } from '../../../src/test-utils';
+import { flush, nextMacrotask } from '../../../src/test-utils';
 import {
   OverlayManagerCore,
   type OverlayManagerEntry,
@@ -77,6 +77,22 @@ class TestManager extends OverlayManagerCore<TestEntry> {
     };
     this.register(entry);
     return ref;
+  }
+
+  openWithLeave(leaveClass: string): { ref: OverlayRef; id: string } {
+    const { id, remove } = this.nextId();
+    const ref = new OverlayRef(
+      () => this.beginLeave(id, leaveClass, undefined, remove),
+      'programmatic',
+    );
+    const entry: TestEntry = {
+      id,
+      ref,
+      component: TestOverlayOutlet,
+      injectorFor: this.createInjectorFactory([]),
+    };
+    this.register(entry);
+    return { ref, id };
   }
 
   exposeInjectorFactory(providers: readonly Provider[]): (parent: Injector) => Injector {
@@ -153,6 +169,80 @@ describe('OverlayManagerCore', () => {
     expect(a.isClosed()).toBe(true);
     expect(b.isClosed()).toBe(true);
     expect(manager.openCount()).toBe(0);
+  });
+
+  describe('beginLeave exit-animation await', () => {
+    function mountHost(manager: TestManager): { host: HTMLElement; ref: OverlayRef } {
+      const { ref, id } = manager.openWithLeave('leaving');
+      const host = document.createElement('div');
+      host.setAttribute('data-test-overlay-id', id);
+      document.body.appendChild(host);
+      return { host, ref };
+    }
+
+    it('removes the entry despite an infinite (never-finishing) exit animation', async () => {
+      const manager = makeManager();
+      const { host, ref } = mountHost(manager);
+
+      const infinite = {
+        finished: new Promise<void>(() => undefined),
+        effect: { getComputedTiming: () => ({ iterations: Infinity }) },
+      } as unknown as Animation;
+      host.getAnimations = (() => [infinite]) as HTMLElement['getAnimations'];
+      const rafSpy = vi
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0);
+          return 0;
+        });
+
+      try {
+        expect(manager.openCount()).toBe(1);
+        ref.close();
+        await nextMacrotask();
+        expect(manager.openCount()).toBe(0);
+      } finally {
+        rafSpy.mockRestore();
+        host.remove();
+      }
+    });
+
+    it('still awaits a finite exit animation before removing when mixed with an infinite one', async () => {
+      const manager = makeManager();
+      const { host, ref } = mountHost(manager);
+
+      let resolveFinished!: () => void;
+      const finished = new Promise<void>((resolve) => {
+        resolveFinished = resolve;
+      });
+      const finite = {
+        finished,
+        effect: { getComputedTiming: () => ({ iterations: 1 }) },
+      } as unknown as Animation;
+      const infinite = {
+        finished: new Promise<void>(() => undefined),
+        effect: { getComputedTiming: () => ({ iterations: Infinity }) },
+      } as unknown as Animation;
+      host.getAnimations = (() => [infinite, finite]) as HTMLElement['getAnimations'];
+      const rafSpy = vi
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0);
+          return 0;
+        });
+
+      try {
+        ref.close();
+        expect(manager.openCount()).toBe(1);
+
+        resolveFinished();
+        await nextMacrotask();
+        expect(manager.openCount()).toBe(0);
+      } finally {
+        rafSpy.mockRestore();
+        host.remove();
+      }
+    });
   });
 
   describe('open() from within change detection (NG0101 — #1138)', () => {

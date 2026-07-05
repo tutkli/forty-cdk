@@ -78,6 +78,8 @@ export interface ListboxOverlayControllerDeps<
   readonly dismissible: Signal<boolean>;
   /** Close reason set when Escape dismisses the overlay (both primitives use `'escape'`). */
   readonly escapeReason: CloseReason;
+  /** Close reason set when {@link ListboxOverlayController.toggle} closes the overlay (both primitives use `'programmatic'`). */
+  readonly programmaticReason: CloseReason;
   /** Mark the control touched (mirrors the trigger blur) on Escape / outside dismissal. */
   readonly markTouched: () => void;
   /**
@@ -302,7 +304,7 @@ export class ListboxOverlayController<
       return;
     }
     if (this.#deps.isOpen()) {
-      this.closeMenu('programmatic' as CloseReason);
+      this.closeMenu(this.#deps.programmaticReason);
     } else {
       this.openMenu(initialFocus);
     }
@@ -346,7 +348,16 @@ export class ListboxOverlayController<
     this.#deps.emit.escapeKeyDown.emit(veto);
   }
 
+  /**
+   * Implicit close requested by the shell after an un-vetoed outside
+   * interaction. The `isOpen` guard keeps a stale event from re-closing an
+   * already-closed overlay and clobbering its `lastCloseReason` (e.g. a `'tab'`
+   * close must survive so the content skips its return-focus).
+   */
   requestClose(reason: CloseReason): void {
+    if (!this.#deps.isOpen()) {
+      return;
+    }
     this.#deps.markTouched();
     this.closeMenu(reason);
   }

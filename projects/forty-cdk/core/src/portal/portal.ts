@@ -76,14 +76,31 @@ export function injectPortal(config: PortalConfig = {}): void {
       return;
     }
     requestAnimationFrame(() => {
-      const animations = el.getAnimations();
-      if (animations.length === 0) {
+      const finite = el.getAnimations().filter(isFiniteAnimation);
+      if (finite.length === 0) {
         el.remove();
         return;
       }
-      Promise.all(animations.map((animation) => animation.finished.catch(() => undefined))).then(
-        () => el.remove(),
+      Promise.all(finite.map((animation) => animation.finished.catch(() => undefined))).then(() =>
+        el.remove(),
       );
     });
   });
+}
+
+/**
+ * True when `animation` will actually finish — i.e. it does not run forever.
+ * An infinite animation (a shimmer / pulse with `animation-iteration-count:
+ * infinite`) reports `Infinity` iterations, and its `finished` promise never
+ * resolves; awaiting it would strand deferred teardown and leak the node.
+ * Filtering these out before awaiting `finished` lets teardown proceed once the
+ * finite animations settle (or immediately, when none remain). Guards for a
+ * possibly-null effect and for environments lacking `getComputedTiming`.
+ */
+function isFiniteAnimation(animation: Animation): boolean {
+  const effect = animation.effect;
+  if (!effect || typeof effect.getComputedTiming !== 'function') {
+    return true;
+  }
+  return effect.getComputedTiming().iterations !== Infinity;
 }
