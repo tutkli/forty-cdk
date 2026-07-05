@@ -116,6 +116,14 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
     day: 'numeric',
   });
 
+  /**
+   * BCP 47 locale tag driving the text rendered by `[forDatePickerValue]`. When
+   * `null` (default), the adapter formats through the runtime's default locale.
+   * The projected `ForCalendar` is not forwarded this value — bind its own
+   * `[locale]` directly, mirroring how `minDate` / `maxDate` are forwarded.
+   */
+  readonly locale = input<string | null>(null);
+
   /** Text rendered by `[forDatePickerValue]` when nothing is selected. */
   readonly placeholder = input<string>('');
 

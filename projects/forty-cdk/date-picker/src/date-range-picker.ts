@@ -144,10 +144,11 @@ export class ForDateRangePicker<D>
       return null;
     }
     const fmtOpts = this.formatOptions();
+    const locale = this.locale() ?? undefined;
     return (
-      this.adapter.format(range.start, fmtOpts) +
+      this.adapter.format(range.start, fmtOpts, locale) +
       this.rangeSeparator() +
-      this.adapter.format(range.end, fmtOpts)
+      this.adapter.format(range.end, fmtOpts, locale)
     );
   });
 

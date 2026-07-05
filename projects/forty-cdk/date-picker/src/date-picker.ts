@@ -191,7 +191,9 @@ export class ForDatePicker<D>
   /** Formatted current value via the adapter, or `null` when empty. */
   readonly formattedValue = computed<string | null>(() => {
     const value = this.value();
-    return value === null ? null : this.adapter.format(value, this.#effectiveFormatOptions());
+    return value === null
+      ? null
+      : this.adapter.format(value, this.#effectiveFormatOptions(), this.locale() ?? undefined);
   });
 
   /**

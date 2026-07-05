@@ -43,6 +43,7 @@ export const FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS = [
   'hideWhenDetached',
   'invalid',
   'isDateUnavailable',
+  'locale',
   'maxDate',
   'maxRangeLength',
   'minDate',

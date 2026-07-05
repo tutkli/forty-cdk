@@ -46,6 +46,7 @@ const CALENDAR_PIECES = [ForCalendar, ForCalendarGrid, ForCalendarCell];
       [readonly]="readonly()"
       [closeOnSelect]="closeOnSelect()"
       [rangeSeparator]="separator()"
+      [locale]="locale()"
       [ariaLabel]="ariaLabel()"
       name="stay"
       #picker="forDateRangePicker"
@@ -91,6 +92,7 @@ class Host {
   readonly readonly = signal(false);
   readonly closeOnSelect = signal(true);
   readonly separator = signal(' – ');
+  readonly locale = signal<string | null>(null);
   readonly ariaLabel = signal<string | null>('Choose date range');
   readonly openChanges: boolean[] = [];
 }
@@ -314,6 +316,39 @@ describe('ForDateRangePicker', () => {
       await flush(r.fixture);
 
       expect(valueEl(r).textContent ?? '').toContain(' to ');
+    });
+
+    it('formats both endpoints through [locale] (#1247)', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 0, 10), end: new Date(2026, 2, 15) });
+
+      r.instance.locale.set('en-US');
+      await flush(r.fixture);
+      const en = valueEl(r).textContent!.trim();
+
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+      const fr = valueEl(r).textContent!.trim();
+
+      expect(en).toContain('January');
+      expect(en).toContain('March');
+      expect(fr).toContain('janvier');
+      expect(fr).toContain('mars');
+      expect(en).not.toBe(fr);
+    });
+
+    it('leaves the default (null locale) output identical to a locale-less adapter format (#1247)', async () => {
+      const r = renderHost(Host);
+      const start = new Date(2026, 0, 10);
+      const end = new Date(2026, 2, 15);
+      r.instance.value.set({ start, end });
+      await flush(r.fixture);
+
+      const fmtOpts = { year: 'numeric', month: 'long', day: 'numeric' } as const;
+      const sep = r.instance.separator();
+      expect(valueEl(r).textContent!.trim()).toBe(
+        `${adapter.format(start, fmtOpts)}${sep}${adapter.format(end, fmtOpts)}`,
+      );
     });
   });
 
