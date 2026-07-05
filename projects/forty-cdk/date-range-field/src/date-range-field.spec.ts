@@ -392,7 +392,6 @@ describe('ForDateRangeField', () => {
         ForDateRangeFieldStart,
         ForDateRangeFieldEnd,
         ForDateRangeFieldSegment,
-        ForDateRangeFieldLiteral,
       ],
       providers: [...provideNativeDateAdapter()],
       template: `

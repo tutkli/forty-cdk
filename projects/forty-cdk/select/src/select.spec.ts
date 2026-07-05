@@ -199,7 +199,7 @@ describe('ForSelect', () => {
 
   describe('focusout touched (containment vs. the wrapper)', () => {
     @Component({
-      imports: BASE_IMPORTS,
+      imports: [ForSelect, ForSelectTrigger],
       template: `
         <div forSelect [(open)]="open" [(value)]="value" [(touched)]="touched">
           <button forSelectTrigger data-test-id="trigger">Trigger</button>
