@@ -14,8 +14,12 @@ export interface ForFileUploadContext {
   registerInput(el: HTMLInputElement): void;
   /** Opens the native file chooser dialog by programmatically clicking the registered input. */
   openFileDialog(): void;
-  /** Emits `filesChange` with the given `FileList` if it is non-empty. */
-  emitFiles(files: FileList): void;
+  /**
+   * Filters the given `FileList` against `accept`, syncs the registered input's
+   * `files` for native form submission, then emits `filesChange` (accepted) and
+   * `filesRejected` (rejected). Shared by the drag&drop and dialog paths.
+   */
+  acceptFiles(files: FileList): void;
 }
 
 export const FOR_FILE_UPLOAD_CONTEXT = new InjectionToken<ForFileUploadContext>(

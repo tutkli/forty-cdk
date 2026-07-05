@@ -17,6 +17,7 @@ import { ForFileUploadTrigger } from './file-upload-trigger';
       [directory]="directory()"
       [disabled]="disabled()"
       (filesChange)="onFiles($event)"
+      (filesRejected)="onRejected($event)"
     >
       <button forFileUploadTrigger data-testid="trigger">Choose files</button>
       <input forFileUploadInput data-testid="input" aria-label="Upload files" />
@@ -29,8 +30,12 @@ class FileUploadHost {
   readonly directory = signal(false);
   readonly disabled = signal(false);
   readonly capturedFiles = signal<FileList | null>(null);
+  readonly rejectedFiles = signal<File[] | null>(null);
   onFiles(files: FileList): void {
     this.capturedFiles.set(files);
+  }
+  onRejected(files: File[]): void {
+    this.rejectedFiles.set(files);
   }
 }
 
@@ -306,6 +311,23 @@ describe('ForFileUpload', () => {
       const captured = instance.capturedFiles();
       expect(captured).not.toBeNull();
       expect(captured![0]!.name).toBe('c.txt');
+    });
+
+    it('applies the accept filter to a dialog selection made through the "All files" override', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      instance.accept.set('image/*');
+      await f();
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+
+      Object.defineProperty(input, 'files', {
+        value: [new File(['x'], 'notes.txt', { type: 'text/plain' })] as unknown as FileList,
+        configurable: true,
+      });
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await f();
+
+      expect(instance.capturedFiles()).toBeNull();
+      expect(instance.rejectedFiles()?.map((file) => file.name)).toEqual(['notes.txt']);
     });
   });
 
