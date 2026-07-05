@@ -27,6 +27,16 @@ function escapeRegExp(value: string): string {
  */
 const SPACE_GROUP_VARIANTS = /[    ]/g;
 
+/**
+ * Matches a group-separator space variant only when it sits between two digits.
+ * `Intl` emits a space variant both between digit groups (a real group
+ * separator) and between the number and a trailing literal (the `%` / unit /
+ * currency symbol in fr-style locales); normalizing only the digit-flanked
+ * spaces leaves that literal-separating space for the noise strip instead of
+ * promoting it to a group separator that fails grouping validation.
+ */
+const DIGIT_GROUPED_SPACE = new RegExp(`(?<=\\d)${SPACE_GROUP_VARIANTS.source}(?=\\d)`, 'g');
+
 /** Whether `separator` is one of the whitespace group-separator variants. */
 function isSpaceSeparator(separator: string): boolean {
   return /^[    ]$/.test(separator);
@@ -97,10 +107,13 @@ function deriveGroupSizes(integerLengths: readonly number[]): readonly number[] 
  * and the display is reformatted from the committed value on blur anyway, so
  * enforcing grouping during typing would silently discard valid edits.
  *
- * For locales that group with a space (the NBSP / NNBSP fr-style locales),
- * whitespace-space variants — including the plain ASCII space a user is most
- * likely to type — are normalized to the locale's canonical separator first,
- * so a correctly-spaced number parses regardless of which space was typed.
+ * For locales that group with a space (the NBSP / NNBSP fr-style locales), a
+ * whitespace-space variant — including the plain ASCII space a user is most
+ * likely to type — is normalized to the locale's canonical separator only when
+ * it sits between two digits, so a correctly-spaced number parses regardless of
+ * which space was typed while the space `Intl` places before a trailing literal
+ * (`%` / unit / currency) is left for the noise strip rather than promoted to a
+ * group separator that would fail grouping validation.
  *
  * Exponent notation is intentionally rejected — `2e3` is not valid spinbutton
  * input and silently parsing it to `2000` is surprising. So are malformed forms
@@ -114,13 +127,11 @@ export function parseLocaleNumber(
 ): number | null {
   const { group, decimal, groupSizes } = separators;
   // When the locale groups with a space (NBSP / NNBSP in fr-style locales),
-  // normalize every whitespace-space variant the user might type — including a
-  // plain ASCII space — to the canonical separator, so grouping validation
-  // doesn't reject a correctly-spaced number just because the typed space
-  // differs from the one `Intl` emits.
-  const spaceNormalized = isSpaceSeparator(group)
-    ? text.replace(SPACE_GROUP_VARIANTS, group)
-    : text;
+  // normalize a whitespace-space variant to the canonical separator only when it
+  // sits between two digits, so a group-separator space still parses regardless
+  // of which variant was typed while a space before a trailing literal is left
+  // for the noise strip instead of being promoted to a group separator.
+  const spaceNormalized = isSpaceSeparator(group) ? text.replace(DIGIT_GROUPED_SPACE, group) : text;
   const input = spaceNormalized.replace(MINUS_VARIANTS, '-');
   // Strip currency symbols, percent signs, and any other non-numeric noise
   // the locale may include, leaving digits, sign, the locale group/decimal
