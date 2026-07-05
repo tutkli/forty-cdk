@@ -1,11 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import {
-  registerHandle,
-  reflectDisabled,
-  resolveListNavigation,
-  FOR_HOST_ROVING_CONTEXT,
-} from 'forty-cdk/core';
+import { registerHandle, resolveListNavigation, FOR_HOST_ROVING_CONTEXT } from 'forty-cdk/core';
 import { injectToggleGroupContext } from './toggle-group-context';
 
 /**
@@ -27,7 +22,7 @@ import { injectToggleGroupContext } from './toggle-group-context';
  * group. Selection still lives on the group; only focus is shared.
  */
 @Directive({
-  selector: '[forToggleGroupItem]',
+  selector: 'button[forToggleGroupItem]',
   exportAs: 'forToggleGroupItem',
   host: {
     type: 'button',
@@ -102,8 +97,6 @@ export class ForToggleGroupItem {
         (h) => rovingHost.unregisterItem(h),
       );
     }
-
-    reflectDisabled(this.effectiveDisabled);
   }
 
   protected onClick(): void {

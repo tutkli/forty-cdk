@@ -185,9 +185,21 @@ describe('ForToggleGroup', () => {
       for (const v of ['left', 'center', 'right']) {
         const item = itemOf(r.el, v);
         expect(item.getAttribute('aria-disabled')).toBe('true');
-        expect(item.hasAttribute('disabled')).toBe(true);
+        expect(item.hasAttribute('disabled')).toBe(false);
         expect(item.getAttribute('data-disabled')).toBe('');
       }
+    });
+
+    it('keeps a disabled item focusable (aria-disabled, no native disabled)', async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const item = itemOf(r.el, 'left');
+      expect(item.getAttribute('aria-disabled')).toBe('true');
+      expect(item.hasAttribute('disabled')).toBe(false);
+      item.focus();
+      expect(document.activeElement).toBe(item);
     });
   });
 
