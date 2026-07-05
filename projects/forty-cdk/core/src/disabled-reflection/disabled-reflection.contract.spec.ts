@@ -11,8 +11,6 @@ import {
   ForNumberInputGroup,
   ForNumberInputIncrement,
 } from 'forty-cdk/number-input';
-import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
-import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
 import {
   ForCalendar,
   ForCalendarNextButton,
@@ -318,31 +316,6 @@ class DrawerTriggerHost {
 }
 
 @Component({
-  imports: [ForToolbar, ForToolbarButton],
-  template: `
-    <div forToolbar>
-      <button forToolbarButton [disabled]="disabled()" data-testid="target">Action</button>
-    </div>
-  `,
-})
-class ToolbarButtonHost {
-  readonly disabled = signal(false);
-}
-
-@Component({
-  imports: [ForToggleGroup, ForToggleGroupItem],
-  template: `
-    <div forToggleGroup [(value)]="value">
-      <button forToggleGroupItem value="a" [disabled]="disabled()" data-testid="target">A</button>
-    </div>
-  `,
-})
-class ToggleGroupItemHost {
-  readonly value = signal<readonly string[]>([]);
-  readonly disabled = signal(false);
-}
-
-@Component({
   imports: [ForInput],
   template: `<input forInput [disabled]="disabled()" data-testid="target" />`,
 })
@@ -457,16 +430,6 @@ describe('disabled reflection — library-wide contract', () => {
     it('drawer trigger', () => {
       configure();
       expectImperativeDisabledSurvives(mount(DrawerTriggerHost));
-    });
-
-    it('toolbar button', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(ToolbarButtonHost));
-    });
-
-    it('toggle-group item', () => {
-      configure();
-      expectImperativeDisabledSurvives(mount(ToggleGroupItemHost));
     });
 
     it('input', () => {

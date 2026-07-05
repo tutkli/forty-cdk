@@ -26,7 +26,7 @@ import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
  * ```
  */
 @Directive({
-  selector: '[forToggle]',
+  selector: 'button[forToggle]',
   exportAs: 'forToggle',
   host: {
     type: 'button',

@@ -342,17 +342,21 @@ describe('ForToolbar', () => {
       fixture.componentInstance.disabled.set(true);
       await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
-      expect(buttons[0]!.hasAttribute('disabled')).toBe(true);
-      expect(buttons[1]!.hasAttribute('disabled')).toBe(true);
+      expect(buttons[0]!.getAttribute('aria-disabled')).toBe('true');
+      expect(buttons[0]!.hasAttribute('disabled')).toBe(false);
+      expect(buttons[1]!.getAttribute('aria-disabled')).toBe('true');
+      expect(buttons[1]!.hasAttribute('disabled')).toBe(false);
     });
 
-    it('disabled button emits native disabled without aria-disabled', async () => {
+    it('disabled button keeps aria-disabled (no native disabled) and stays focusable', async () => {
       const { fixture, queryAll, flush } = renderHost(ToolbarHost);
       fixture.componentInstance.middleDisabled.set(true);
       await flush();
       const buttons = queryAll<HTMLButtonElement>('button');
-      expect(buttons[1]!.hasAttribute('disabled')).toBe(true);
-      expect(buttons[1]!.hasAttribute('aria-disabled')).toBe(false);
+      expect(buttons[1]!.getAttribute('aria-disabled')).toBe('true');
+      expect(buttons[1]!.hasAttribute('disabled')).toBe(false);
+      buttons[1]!.focus();
+      expect(document.activeElement).toBe(buttons[1]);
     });
 
     it('disabled link keeps aria-disabled (no native disabled on <a>)', async () => {

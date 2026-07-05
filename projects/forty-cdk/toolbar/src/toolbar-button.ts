@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, reflectDisabled, resolveListNavigation } from 'forty-cdk/core';
+import { registerHandle, resolveListNavigation } from 'forty-cdk/core';
 import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
 
 /**
@@ -14,10 +14,12 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
   host: {
     type: 'button',
     '[attr.tabindex]': 'tabindex()',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-orientation]': 'toolbar?.orientation()',
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
+    '(click)': 'onClick($event)',
   },
 })
 export class ForToolbarButton {
@@ -63,7 +65,13 @@ export class ForToolbarButton {
       (h) => toolbar.registerItem(h),
       (h) => toolbar.unregisterItem(h),
     );
-    reflectDisabled(this.effectiveDisabled);
+  }
+
+  protected onClick(event: MouseEvent): void {
+    if (this.effectiveDisabled()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
   }
 
   protected onFocus(): void {

@@ -211,7 +211,7 @@ Arrow keys move focus only — selection requires an explicit click or Space / E
 Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) (toggle-button variant).
 
 - **`[forToggle]`** emits `role="button"` with `aria-pressed="true|false"` — announced as "toggle button" by screen readers.
-- **`[forToggleGroup]`** emits `role="toolbar"` with `aria-orientation`. Provide a label via `aria-label` or `aria-labelledby`.
+- **`[forToggleGroup]`** emits `role="group"` and reflects `data-orientation` for CSS (not `aria-orientation`). Provide a label via `aria-label` or `aria-labelledby`.
 - **Roving tabindex** manages focus within the group. The consumer never sets `tabindex` manually.
 - **A disabled item stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than native `disabled`, so assistive tech still announces it while interaction is a no-op.
 
