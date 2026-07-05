@@ -40,6 +40,7 @@ import {
 } from 'forty-cdk/core';
 import {
   FOR_DRAG_DROP_CONTEXT,
+  FOR_DROP_LIST_ROVING_DELEGATE,
   type ForDragDropEvent,
   type ForDraggableHandle,
   type ForDropListContext,
@@ -111,6 +112,7 @@ export class ForDropList implements ForDropListContext {
   readonly #prefersReducedMotion = injectPrefersReducedMotion();
   readonly #defaultOrientation =
     inject(FOR_DROP_LIST_DEFAULT_ORIENTATION, { optional: true }) ?? 'vertical';
+  readonly #rovingDelegate = inject(FOR_DROP_LIST_ROVING_DELEGATE, { optional: true });
 
   /**
    * Layout orientation of the list. Affects which arrow keys move focus and the lifted item, and
@@ -264,6 +266,10 @@ export class ForDropList implements ForDropListContext {
   }
 
   itemTabindex(el: HTMLElement): -1 | 0 | null {
+    const delegated = this.#rovingDelegate?.itemTabindex(el);
+    if (delegated !== undefined && delegated !== null) {
+      return delegated;
+    }
     return this.roving.hasActive() ? this.roving.tabindexFor(el) : null;
   }
 

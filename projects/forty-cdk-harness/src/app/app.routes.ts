@@ -259,6 +259,11 @@ export const routes: Routes = [
       import('./fixtures/table-reorder.fixture').then((m) => m.TableReorderFixture),
   },
   {
+    path: 'table-column-reorder',
+    loadComponent: () =>
+      import('./fixtures/table-column-reorder.fixture').then((m) => m.TableColumnReorderFixture),
+  },
+  {
     path: 'table-treegrid',
     loadComponent: () =>
       import('./fixtures/table-treegrid.fixture').then((m) => m.TableTreegridFixture),

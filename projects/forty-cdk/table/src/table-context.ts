@@ -87,9 +87,11 @@ export interface ForTableContext {
   /** Unregisters the header row's host. Reference-based; safe to call if never registered. */
   unregisterHeaderRow(el: HTMLElement): void;
   /**
-   * Registers a header cell so it joins the roving-navigation grid as the grid's
+   * Registers a header cell so it can join the roving-navigation grid as the grid's
    * first row, giving the table a single composite tab stop shared with the data
-   * cells. No-op in `mode="table"` (header cells are then static structure).
+   * cells. Draggable header cells (`[forTableColumnReorder]`) register the same way so
+   * a column-reorderable grid stays a single tab stop. Inert in `mode="table"`, where
+   * header cells stay static structure and the row does not join any grid.
    */
   registerHeaderCell(handle: ForTableCellHandle): void;
   /** Unregisters a header cell. Reference-based. */
@@ -113,9 +115,9 @@ export interface ForTableContext {
   /**
    * Whether the registered header cells form a complete row that joins the body's
    * roving composite grid (`grid` / `treegrid` mode, header cell count matches the
-   * data column count). `false` in `table` mode, when no header cells registered, or
-   * when the header row is a column-reorder row (some cells yield to a draggable) —
-   * in which case the header keeps its own standalone tab stops.
+   * data column count). Draggable header cells (`[forTableColumnReorder]`) participate
+   * too, so a column-reorderable grid stays a single composite tab stop. `false` in
+   * `table` mode or when no header cells registered.
    */
   readonly headerParticipatesInRoving: Signal<boolean>;
   /** Registers a data row so it joins the row index space and the navigation grid. */
@@ -132,6 +134,15 @@ export interface ForTableContext {
   activateCell(host: HTMLElement): void;
   /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
   handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
+  /**
+   * Resolves grid navigation for a header cell that yields its host interaction to a
+   * co-located `[forDraggable]`. `[forTableColumnReorder]` calls this from a
+   * capture-phase listener for idle header cells so Arrow / Home / End / Page keys move
+   * roving focus across the composite header + body grid, while Space / Enter fall
+   * through to the draggable's lift. Returns `true` when the key was consumed as a grid
+   * action, `false` otherwise (including outside a participating `grid` / `treegrid`).
+   */
+  handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean;
   /** Returns whether `value` is currently in the selection. */
   isRowSelected(value: unknown): boolean;
   /** Toggles `value` in or out of the selection, respecting `selectionMode`. No-op in `'none'` mode. */

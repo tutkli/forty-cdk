@@ -18,7 +18,11 @@ import { ForDraggable } from './draggable';
 import { ForDropList } from './drop-list';
 import { ForDropListGroup } from './drop-list-group';
 import { moveItemInArray } from './move-item-in-array';
-import type { ForDragDropEvent } from './drag-drop-context';
+import {
+  FOR_DROP_LIST_ROVING_DELEGATE,
+  type ForDragDropEvent,
+  type ForDropListRovingDelegate,
+} from './drag-drop-context';
 
 const DND_IMPORTS = [ForDropList, ForDraggable] as const;
 const HANDLE_IMPORTS = [ForDropList, ForDraggable, ForDragHandle] as const;
@@ -190,6 +194,43 @@ class HandleHost {
   }
 }
 
+@Component({
+  imports: [...DND_IMPORTS],
+  template: `
+    <ul forDropList>
+      <li forDraggable [dragData]="1" data-test-id="1">Alpha</li>
+      <li forDraggable [dragData]="2" data-test-id="2" data-tab-stop>Beta</li>
+      <li forDraggable [dragData]="3" data-test-id="3">Gamma</li>
+    </ul>
+  `,
+  providers: [
+    {
+      provide: FOR_DROP_LIST_ROVING_DELEGATE,
+      useValue: {
+        itemTabindex: (el: HTMLElement) => (el.hasAttribute('data-tab-stop') ? 0 : -1),
+      } satisfies ForDropListRovingDelegate,
+    },
+  ],
+})
+class DelegateGovernsHost {}
+
+@Component({
+  imports: [...DND_IMPORTS],
+  template: `
+    <ul forDropList>
+      <li forDraggable [dragData]="1" data-test-id="1">Alpha</li>
+      <li forDraggable [dragData]="2" data-test-id="2">Beta</li>
+    </ul>
+  `,
+  providers: [
+    {
+      provide: FOR_DROP_LIST_ROVING_DELEGATE,
+      useValue: { itemTabindex: () => null } satisfies ForDropListRovingDelegate,
+    },
+  ],
+})
+class DelegateDefersHost {}
+
 function itemEl(host: HTMLElement, testId: string | number): HTMLElement {
   return host.querySelector<HTMLElement>(`[data-test-id="${testId}"]`)!;
 }
@@ -276,6 +317,21 @@ describe('ForDropList + ForDraggable', () => {
       expect(d.getAttribute('tabindex')).toBe('-1');
       expect(d.getAttribute('aria-disabled')).toBe('true');
       expect(d.hasAttribute('data-disabled')).toBe(true);
+    });
+  });
+
+  describe('roving tabindex delegate (FOR_DROP_LIST_ROVING_DELEGATE)', () => {
+    it('defers each item tabindex to the delegate when it governs the tab order', () => {
+      const { el } = renderHost(DelegateGovernsHost);
+      expect(itemEl(el, 1).getAttribute('tabindex')).toBe('-1');
+      expect(itemEl(el, 2).getAttribute('tabindex')).toBe('0');
+      expect(itemEl(el, 3).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('falls back to the list own roving (first enabled item) when the delegate returns null', () => {
+      const { el } = renderHost(DelegateDefersHost);
+      expect(itemEl(el, 1).getAttribute('tabindex')).toBe('0');
+      expect(itemEl(el, 2).getAttribute('tabindex')).toBe('-1');
     });
   });
 

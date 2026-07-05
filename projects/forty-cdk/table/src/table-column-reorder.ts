@@ -1,9 +1,12 @@
-import { DestroyRef, Directive, inject, output } from '@angular/core';
+import { DestroyRef, Directive, ElementRef, inject, output, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 import {
   FOR_DROP_LIST_DEFAULT_ORIENTATION,
+  FOR_DROP_LIST_ROVING_DELEGATE,
   ForDropList,
   type ForDragDropEvent,
+  type ForDropListRovingDelegate,
   moveItemInArray,
 } from 'forty-cdk/drag-drop';
 import { injectTableContext } from './table-context';
@@ -33,6 +36,13 @@ export interface TableColumnReorderDescriptor {
  * the row axis), so no `orientation` binding is needed. Bind `orientation="vertical"` to
  * override for the rare case.
  *
+ * In `mode="grid"` / `mode="treegrid"` the draggable header cells join the table's composite
+ * roving grid as its first row, so a sortable + column-reorderable grid keeps the **single
+ * tab stop** the WAI-ARIA Data Grid pattern calls for: `Tab` enters the grid once, Arrow keys
+ * cross between header and body, and Space / Enter on a header cell still lifts it for keyboard
+ * reordering. It hands its drop-list roving to the grid via `FOR_DROP_LIST_ROVING_DELEGATE` and
+ * routes idle header navigation through the table's grid keyboard handler.
+ *
  * @example
  * ```html
  * <div forTableHeaderRow forTableColumnReorder (columnReorder)="columns.set($event.columns)">
@@ -45,7 +55,19 @@ export interface TableColumnReorderDescriptor {
 @Directive({
   selector: '[forTableColumnReorder]',
   exportAs: 'forTableColumnReorder',
-  providers: [{ provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'horizontal' }],
+  providers: [
+    { provide: FOR_DROP_LIST_DEFAULT_ORIENTATION, useValue: 'horizontal' },
+    {
+      provide: FOR_DROP_LIST_ROVING_DELEGATE,
+      useFactory: (): ForDropListRovingDelegate => {
+        const ctx = injectTableContext('ForTableColumnReorder');
+        return {
+          itemTabindex: (el) =>
+            ctx.headerParticipatesInRoving() ? ctx.headerCellTabIndex(el) : null,
+        };
+      },
+    },
+  ],
   hostDirectives: [
     {
       directive: ForDropList,
@@ -65,6 +87,8 @@ export interface TableColumnReorderDescriptor {
 export class ForTableColumnReorder {
   protected readonly ctx = injectTableContext('ForTableColumnReorder');
   readonly #list = inject(ForDropList);
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   /**
    * Fires once per committed reorder gesture (pointer drop or keyboard drop) with the
@@ -73,8 +97,45 @@ export class ForTableColumnReorder {
   readonly columnReorder = output<TableColumnReorderDescriptor>();
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
     const sub = this.#list.dragDrop.subscribe((event: ForDragDropEvent) => this.#emit(event));
-    inject(DestroyRef).onDestroy(() => sub.unsubscribe());
+    destroyRef.onDestroy(() => sub.unsubscribe());
+
+    if (this.#isBrowser) {
+      const onCaptureKeydown = (event: KeyboardEvent): void => this.#onCaptureKeydown(event);
+      this.#host.addEventListener('keydown', onCaptureKeydown, { capture: true });
+      destroyRef.onDestroy(() =>
+        this.#host.removeEventListener('keydown', onCaptureKeydown, { capture: true }),
+      );
+    }
+  }
+
+  /**
+   * When the header row joins the composite grid, intercepts idle (not-lifted) Arrow /
+   * Home / End / Page keys on a draggable header cell in the capture phase and routes them
+   * through the table's grid navigation, then stops propagation so the draggable's own
+   * keydown does not also navigate. Space / Enter (and every key while a keyboard drag is in
+   * progress) fall through untouched, so the draggable still owns the lift / move / drop /
+   * cancel gesture — keeping the header one navigation continuum with the body while
+   * preserving column reordering.
+   */
+  #onCaptureKeydown(event: KeyboardEvent): void {
+    if (!this.ctx.headerParticipatesInRoving()) {
+      return;
+    }
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    if (
+      !this.#list.items().some((handle) => handle.host === target) ||
+      this.#list.isLifted(target)
+    ) {
+      return;
+    }
+    if (this.ctx.handleHeaderCellKeydown(event, target)) {
+      event.stopPropagation();
+    }
   }
 
   #emit(event: ForDragDropEvent): void {

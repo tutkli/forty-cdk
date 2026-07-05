@@ -1255,6 +1255,92 @@ describe('ForTable', () => {
     });
   });
 
+  describe('grid + column-reorder composite tab stop (#1223)', () => {
+    const headerCell = (el: HTMLElement, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
+    const dataCell = (el: HTMLElement, rowId: number, col: string) =>
+      el.querySelector<HTMLElement>(
+        `[data-testid="row-${rowId}"] [forTableCell][data-column="${col}"]`,
+      )!;
+    const gridCells = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLElement>('[forTableHeaderCell], [forTableCell]'));
+    const tabStops = (el: HTMLElement) =>
+      gridCells(el).filter((c) => c.getAttribute('tabindex') === '0');
+
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('exposes exactly one tab stop across header + body, on the first header cell', () => {
+      const { el } = renderHost(ReorderTableHost);
+      const zeros = tabStops(el);
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(headerCell(el, 'name'));
+    });
+
+    it('draggable header cells still carry a 1-based aria-colindex', () => {
+      const { el } = renderHost(ReorderTableHost);
+      expect(headerCell(el, 'name').getAttribute('aria-colindex')).toBe('1');
+      expect(headerCell(el, 'role').getAttribute('aria-colindex')).toBe('2');
+      expect(headerCell(el, 'dept').getAttribute('aria-colindex')).toBe('3');
+    });
+
+    it('counts the draggable header row in aria-rowindex / aria-rowcount', () => {
+      const { el } = renderHost(ReorderTableHost);
+      expect(headerRowEl(el).getAttribute('aria-rowindex')).toBe('1');
+      expect(rowEl(el).getAttribute('aria-rowindex')).toBe('2');
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('4');
+    });
+
+    it('ArrowDown from a draggable header cell moves into the first data row', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      press(headerCell(el, 'name'), 'ArrowDown');
+      await flush();
+      expect(dataCell(el, 0, 'name').getAttribute('data-highlighted')).toBe('');
+      expect(dataCell(el, 0, 'name').getAttribute('tabindex')).toBe('0');
+      expect(headerCell(el, 'name').getAttribute('tabindex')).toBe('-1');
+      expect(tabStops(el).length).toBe(1);
+    });
+
+    it('ArrowUp from the first data row moves into the draggable header row', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      press(dataCell(el, 0, 'name'), 'ArrowUp');
+      await flush();
+      expect(headerCell(el, 'name').getAttribute('data-highlighted')).toBe('');
+      expect(headerCell(el, 'name').getAttribute('tabindex')).toBe('0');
+      expect(dataCell(el, 0, 'name').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('ArrowRight moves the composite tab stop between draggable header cells', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      press(headerCell(el, 'name'), 'ArrowRight');
+      await flush();
+      expect(headerCell(el, 'role').getAttribute('data-highlighted')).toBe('');
+      expect(headerCell(el, 'role').getAttribute('tabindex')).toBe('0');
+      expect(headerCell(el, 'name').getAttribute('tabindex')).toBe('-1');
+      expect(tabStops(el).length).toBe(1);
+    });
+
+    it('Space still lifts a header cell for keyboard reordering (capture nav does not swallow the lift)', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      const header = headerCell(el, 'name');
+      header.focus();
+      press(header, ' ');
+      await flush();
+      expect(header.getAttribute('data-dragging')).toBe('');
+    });
+
+    it('keeps a single composite tab stop across a draggable header without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(ReorderTableHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const zeros = tabStops(el);
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(el.querySelector('[data-testid="h-name"]'));
+    });
+  });
+
   describe('grid page navigation (PageUp / PageDown)', () => {
     it('PageDown pages down by the rendered row count, preserving the column', async () => {
       const { el, flush } = renderHost(GridWithHeaderHost);
