@@ -896,18 +896,32 @@ describe('ForCalendar', () => {
       expect(liveRegion()?.textContent ?? '').toBe('');
     });
 
-    it('disables prev / next at the min / max bounds', async () => {
+    it('reflects a single disabled model at the min / max bounds: aria-disabled + data-disabled, never native disabled (#1285)', async () => {
       const r = renderHost(CalendarHost);
       r.instance.min.set(new Date(2026, 5, 1));
       r.instance.max.set(new Date(2026, 5, 30));
       await flush(r.fixture);
 
-      const prev = r.query('[data-testid="prev"]')!;
+      for (const btn of [r.query('[data-testid="prev"]')!, r.query('[data-testid="next"]')!]) {
+        expect(btn.hasAttribute('disabled')).toBe(false);
+        expect(btn.getAttribute('aria-disabled')).toBe('true');
+        expect(btn.getAttribute('data-disabled')).toBe('');
+      }
+    });
+
+    it('a bound-disabled navigation button is inoperable: clicking does not move the roving date (#1285)', async () => {
+      const r = renderHost(CalendarHost);
+      r.instance.max.set(new Date(2026, 5, 30));
+      await flush(r.fixture);
+
       const next = r.query('[data-testid="next"]')!;
-      expect(prev.hasAttribute('disabled')).toBe(true);
-      expect(prev.getAttribute('aria-disabled')).toBe('true');
-      expect(next.hasAttribute('disabled')).toBe(true);
       expect(next.getAttribute('aria-disabled')).toBe('true');
+      expect(next.hasAttribute('disabled')).toBe(false);
+
+      next.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(focusedCell(r)).toBe(cell(r, JUN_15));
     });
 
     it('clamps the focused date into [min, max] when paging lands before min', async () => {
@@ -1881,6 +1895,21 @@ describe('ForCalendar', () => {
       click(trigger(r));
       await flush(r.fixture);
       expect(viewRoot(r).getAttribute('data-view')).toBe('year');
+    });
+
+    it('view trigger reflects a single disabled model when disabled: aria-disabled + data-disabled, never native disabled (#1285)', async () => {
+      const r = renderHost(CalendarViewsHost);
+      r.instance.disabled.set(true);
+      await flush(r.fixture);
+
+      const vt = trigger(r);
+      expect(vt.hasAttribute('disabled')).toBe(false);
+      expect(vt.getAttribute('aria-disabled')).toBe('true');
+      expect(vt.getAttribute('data-disabled')).toBe('');
+
+      click(vt);
+      await flush(r.fixture);
+      expect(viewRoot(r).getAttribute('data-view')).toBe('day');
     });
 
     it('view trigger label reflects the active view', async () => {

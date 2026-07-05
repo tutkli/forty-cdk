@@ -94,6 +94,20 @@ test.describe('Calendar', () => {
     await expect(el(page, 'cell-2026-7-15')).toBeVisible();
   });
 
+  test('paging to a bound keeps DOM focus on the navigation button (aria-disabled, not native disabled) (#1285)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'calendar', { bound: '1' });
+    const next = el(page, 'next');
+
+    await next.click();
+    await expect(el(page, 'cell-2026-6-15')).toBeVisible();
+
+    await expect(next).toHaveAttribute('aria-disabled', 'true');
+    await expect(next).not.toHaveAttribute('disabled');
+    await expectFocused(next);
+  });
+
   test('RTL mirrors ArrowLeft / ArrowRight', async ({ page }) => {
     await gotoFixture(page, 'calendar', { rtl: '1' });
     await el(page, 'cell-2026-6-15').focus();
