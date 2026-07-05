@@ -1,4 +1,6 @@
-import { Directive, input } from '@angular/core';
+import { Directive, inject, input } from '@angular/core';
+
+import { FOR_BREADCRUMBS_DEFAULTS } from './breadcrumbs-defaults';
 
 /**
  * Headless breadcrumb trail implementing the
@@ -34,16 +36,21 @@ import { Directive, input } from '@angular/core';
   exportAs: 'forBreadcrumbs',
   host: {
     role: 'navigation',
-    '[attr.aria-label]': "ariaLabel() || 'Breadcrumb'",
+    '[attr.aria-label]': 'ariaLabel()',
   },
 })
 export class ForBreadcrumbs {
+  readonly #defaults = inject(FOR_BREADCRUMBS_DEFAULTS);
+
   /**
-   * Accessible label for the navigation landmark. Defaults to `'Breadcrumb'`
-   * so a bare `<nav forBreadcrumbs>` is already a correctly labelled landmark —
-   * the conventional name for this pattern. Override it (or point a native
+   * Accessible label for the navigation landmark. Defaults to the scope's
+   * `label` (`'Breadcrumb'` unless overridden via
+   * `provideForBreadcrumbsDefaults`), so a bare `<nav forBreadcrumbs>` is
+   * already a correctly labelled landmark — the conventional name for this
+   * pattern. Override it per-instance via `[ariaLabel]` (or point a native
    * `aria-labelledby` at a visible heading) when the page hosts more than one
-   * breadcrumb trail and they need to be told apart.
+   * breadcrumb trail and they need to be told apart; set it to `null` to drop
+   * the attribute and rely on `aria-labelledby`.
    */
-  readonly ariaLabel = input<string | null>(null);
+  readonly ariaLabel = input<string | null>(this.#defaults.label);
 }
