@@ -25,12 +25,20 @@ export interface CollectionHandle {
  * exposed array when nodes move, and consumers' `computed`s recompute
  * automatically.
  *
- * The observer watches `childList` (without `subtree`) on each distinct
- * **direct parent** of the registered hosts, so it only fires for additions,
- * removals, and reorders of this collection's own members. In a nested
- * composition (e.g. a Tree of `forTreeGroup` containers, each owning its own
- * `Collection`) a single mutation deep in the tree no longer cascades through
- * every ancestor's observer — only the owning collection is invalidated.
+ * The observer watches `childList` (without `subtree`) on every node from each
+ * host's **direct parent up to and including the deepest common ancestor** of
+ * all registered hosts. Observing that ancestor chain — not just each host's
+ * direct parent — catches reorders that happen at an intermediate wrapper above
+ * the hosts: in the common `<ul><li><button forTab></li>…</ul>` markup,
+ * reordering the `<li>` wrappers moves the hosts in document order by mutating
+ * the `<ul>`'s child list without touching any host's direct parent (`<li>`),
+ * so a direct-parent-only observer would miss it and freeze `items()` at the
+ * stale order. The `<ul>` is on the common-ancestor chain, so its reorder is
+ * seen. Bounding the observed nodes to the chain up to the common ancestor (and
+ * still using `childList` rather than `subtree`) keeps the observation local: a
+ * mutation confined to a sibling subtree — e.g. a nested `forTreeGroup`
+ * container's own `Collection` reordering deeper down — does not touch any node
+ * on this collection's chain and so does not invalidate it.
  *
  * The collection itself is not Angular-aware, but when instantiated inside an
  * Angular injection context (the common case — a field initializer on the
@@ -56,7 +64,7 @@ export class Collection<H extends CollectionHandle> {
   readonly #domEpoch = signal(0);
 
   #observer: MutationObserver | null = null;
-  readonly #observedParents = new Set<Node>();
+  readonly #observedNodes = new Set<Node>();
   #destroyed = false;
   #syncScheduled = false;
 
@@ -73,9 +81,10 @@ export class Collection<H extends CollectionHandle> {
    * All registered handles, in DOM document order.
    *
    * Order is resolved from each handle's `host` via `compareDocumentPosition`
-   * and refreshed reactively when membership changes or the shared parents'
-   * children are reordered, so it stays correct under runtime reordering
-   * (`@for` sort / drag-reorder), not just under static `@for` / `@if`.
+   * and refreshed reactively when membership changes or a node on the hosts'
+   * common-ancestor chain reorders its children, so it stays correct under
+   * runtime reordering (`@for` sort / drag-reorder), not just under static
+   * `@for` / `@if`.
    * Handles whose host is detached (or shares an exact position with another)
    * keep a stable relative order at the end.
    *
@@ -128,7 +137,7 @@ export class Collection<H extends CollectionHandle> {
     this.#syncScheduled = false;
     this.#observer?.disconnect();
     this.#observer = null;
-    this.#observedParents.clear();
+    this.#observedNodes.clear();
     if (this.#membersSet.size > 0) {
       this.#membersSet.clear();
       this.#membersEpoch.update((e) => e + 1);
@@ -182,36 +191,79 @@ export class Collection<H extends CollectionHandle> {
     if (typeof MutationObserver === 'undefined' || this.#destroyed) {
       return;
     }
-    const parents = this.#resolveParents();
-    if (this.#sameParents(parents)) {
+    const nodes = this.#resolveObservedNodes();
+    if (this.#sameNodes(nodes)) {
       return;
     }
     this.#observer ??= new MutationObserver(() => this.#domEpoch.update((e) => e + 1));
     this.#observer.disconnect();
-    this.#observedParents.clear();
-    for (const parent of parents) {
-      this.#observer.observe(parent, { childList: true });
-      this.#observedParents.add(parent);
+    this.#observedNodes.clear();
+    for (const node of nodes) {
+      this.#observer.observe(node, { childList: true });
+      this.#observedNodes.add(node);
     }
   }
 
-  #resolveParents(): Set<Node> {
-    const parents = new Set<Node>();
+  #resolveObservedNodes(): Set<Node> {
+    const hosts: HTMLElement[] = [];
     for (const member of this.#membersSet) {
-      const parent = member.host.parentNode;
-      if (parent) {
-        parents.add(parent);
+      if (member.host.isConnected) {
+        hosts.push(member.host);
       }
     }
-    return parents;
+    const nodes = new Set<Node>();
+    if (hosts.length === 0) {
+      return nodes;
+    }
+    if (hosts.length === 1) {
+      const parent = hosts[0]!.parentNode;
+      if (parent) {
+        nodes.add(parent);
+      }
+      return nodes;
+    }
+    const commonAncestor = this.#commonAncestor(hosts);
+    for (const host of hosts) {
+      for (let node: Node | null = host.parentNode; node; node = node.parentNode) {
+        nodes.add(node);
+        if (node === commonAncestor) {
+          break;
+        }
+      }
+    }
+    return nodes;
   }
 
-  #sameParents(parents: Set<Node>): boolean {
-    if (parents.size !== this.#observedParents.size) {
+  #commonAncestor(hosts: HTMLElement[]): Node | null {
+    const chain: Node[] = [];
+    const chainIndex = new Map<Node, number>();
+    for (let node: Node | null = hosts[0]!; node; node = node.parentNode) {
+      chainIndex.set(node, chain.length);
+      chain.push(node);
+    }
+    let ancestorIndex = 0;
+    for (let i = 1; i < hosts.length; i++) {
+      let node: Node | null = hosts[i]!;
+      while (node && !chainIndex.has(node)) {
+        node = node.parentNode;
+      }
+      if (!node) {
+        return null;
+      }
+      const index = chainIndex.get(node)!;
+      if (index > ancestorIndex) {
+        ancestorIndex = index;
+      }
+    }
+    return chain[ancestorIndex]!;
+  }
+
+  #sameNodes(nodes: Set<Node>): boolean {
+    if (nodes.size !== this.#observedNodes.size) {
       return false;
     }
-    for (const parent of parents) {
-      if (!this.#observedParents.has(parent)) {
+    for (const node of nodes) {
+      if (!this.#observedNodes.has(node)) {
         return false;
       }
     }

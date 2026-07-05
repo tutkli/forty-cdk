@@ -34,6 +34,7 @@ export const FOR_SELECT_HOST_DIRECTIVE_INPUTS = [
   'avoidCollisions',
   'clipUntilPositioned',
   'collisionPadding',
+  'dataVersion',
   'dir',
   'dirty',
   'disabled',

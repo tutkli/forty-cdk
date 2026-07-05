@@ -164,6 +164,18 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
 
   /**
+   * Optional virtualized-only seam that tells the directive the flattened node
+   * list changed **without** a `totalCount` transition — a same-length re-sort
+   * or refresh. Bind any value that changes on such a refresh (a version
+   * counter, the array reference, a sort-key string); when it changes the
+   * position snapshot rebuilds from empty so navigation never resolves against a
+   * stale off-window entry. Leave unset (default) when the node count always
+   * changes on a refresh. Equivalent to calling {@link ForTree.invalidateSnapshot}
+   * imperatively.
+   */
+  readonly dataVersion = input<unknown>();
+
+  /**
    * Emitted when keyboard navigation reaches a node outside the rendered
    * window. The consumer passes this index to `injectVirtualizer`'s
    * `scrollToIndex` so the correct node mounts.
@@ -320,7 +332,23 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       setActiveId: (id) => this.#setActiveId(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
       getResumePos: () => this.#lastActivePos(),
+      dataVersion: this.dataVersion,
     }));
+  }
+
+  /**
+   * Force the virtualized position snapshot to rebuild from empty on the next
+   * fold, discarding stale off-window entries. Call after a same-length refresh
+   * of the flattened node list (a re-sort / reload that keeps `totalCount`
+   * unchanged) when you cannot express the change through the reactive
+   * `[dataVersion]` input. No-op when the tree is not virtualized (`totalCount`
+   * unset).
+   */
+  invalidateSnapshot(): void {
+    if (!this.#virtualized()) {
+      return;
+    }
+    this.#requireActiveDescendantModel().invalidateSnapshot();
   }
 
   #setActiveId(id: string | null): void {

@@ -2,9 +2,9 @@ import { isPlatformBrowser } from '@angular/common';
 import { DestroyRef, effect, inject, PLATFORM_ID, type Signal, signal } from '@angular/core';
 
 export interface ElementBox {
-  /** Border-box width in CSS pixels. */
+  /** Padding-box width (`clientWidth`) in CSS pixels — content plus padding, excluding borders and any scrollbar. */
   readonly width: number;
-  /** Border-box height in CSS pixels. */
+  /** Padding-box height (`clientHeight`) in CSS pixels — content plus padding, excluding borders and any scrollbar. */
   readonly height: number;
   /** scrollWidth in CSS pixels. */
   readonly scrollWidth: number;

@@ -226,6 +226,63 @@ describe('Collection', () => {
     expect(outer.items()).toBe(outerBefore);
   });
 
+  it('reflects the new DOM order after intermediate wrappers are reordered', async () => {
+    const ul = document.createElement('ul');
+    const wrappers: HTMLLIElement[] = [];
+    const buttons: HTMLButtonElement[] = [];
+    for (const id of ['a', 'b', 'c']) {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.id = id;
+      li.appendChild(button);
+      ul.appendChild(li);
+      wrappers.push(li);
+      buttons.push(button);
+    }
+    host.appendChild(ul);
+
+    const col = new Collection<Handle>();
+    col.register(handle('a', buttons[0]!));
+    col.register(handle('b', buttons[1]!));
+    col.register(handle('c', buttons[2]!));
+    await waitForMutationObserver();
+
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
+
+    ul.insertBefore(wrappers[2]!, wrappers[0]!);
+    await waitForMutationObserver();
+
+    expect(col.items().map((h) => h.id)).toEqual(['c', 'a', 'b']);
+    expect(col.indexOfHost(buttons[2]!)).toBe(0);
+    expect(col.indexOfHost(buttons[1]!)).toBe(2);
+  });
+
+  it('does not invalidate when a sibling wrapper subtree below the common ancestor mutates', async () => {
+    const ul = document.createElement('ul');
+    const buttons: HTMLButtonElement[] = [];
+    for (const id of ['a', 'b']) {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.id = id;
+      li.appendChild(button);
+      ul.appendChild(li);
+      buttons.push(button);
+    }
+    host.appendChild(ul);
+
+    const col = new Collection<Handle>();
+    col.register(handle('a', buttons[0]!));
+    col.register(handle('b', buttons[1]!));
+    await waitForMutationObserver();
+
+    const before = col.items();
+
+    buttons[0]!.appendChild(document.createElement('span'));
+    await waitForMutationObserver();
+
+    expect(col.items()).toBe(before);
+  });
+
   it('disconnects the observer and clears membership on destroy', async () => {
     const col = new Collection<Handle>();
     col.register(handle('a', a));

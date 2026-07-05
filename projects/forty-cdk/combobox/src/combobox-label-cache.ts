@@ -90,6 +90,7 @@ export class OptionLabelCache<T> {
         }
         return { entries: [...merged.values()], liveIds };
       },
+      { deferOnTotalTransition: true },
     );
   }
 

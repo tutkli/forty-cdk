@@ -175,6 +175,14 @@ export interface ActiveDescendantFocusModelDeps {
    * when there is nothing to resume from.
    */
   readonly getResumePos: () => number | null;
+  /**
+   * Optional monotonic "the dataset changed" signal. When provided and its
+   * value changes, the position snapshot rebuilds from empty — the seam a
+   * consumer wires to `[dataVersion]` so a same-length re-sort / refresh of the
+   * flattened node list purges stale off-window entries. See
+   * {@link ActiveDescendantFocusModel.invalidateSnapshot}.
+   */
+  readonly dataVersion?: Signal<unknown>;
 }
 
 /**
@@ -195,7 +203,7 @@ export class ActiveDescendantFocusModel implements FocusModel {
   constructor(deps: ActiveDescendantFocusModelDeps) {
     this.#deps = deps;
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: () => false },
+      { ...deps, loop: () => false, dataVersion: deps.dataVersion },
       {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
@@ -219,6 +227,11 @@ export class ActiveDescendantFocusModel implements FocusModel {
   /** @see VirtualizedNavigator.tryResolvePending */
   tryResolvePending(): boolean {
     return this.#core.tryResolvePending();
+  }
+
+  /** @see VirtualizedNavigator.invalidateSnapshot */
+  invalidateSnapshot(): void {
+    this.#core.invalidateSnapshot();
   }
 
   focusTarget(handle: ForTreeItemHandle): void {

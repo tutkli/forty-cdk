@@ -47,11 +47,17 @@ export class InputModality {
   /**
    * `true` when the most recent input modality was the keyboard, `false` after
    * a pointer interaction (or before any interaction). Stays `false` on the
-   * server.
+   * server. A `keydown` carrying a `Meta` / `Control` / `Alt` modifier is
+   * treated as a shortcut rather than keyboard navigation and does **not** flip
+   * this to `true` (matching the platform `:focus-visible` heuristic); `Shift`
+   * alone still counts, since `Shift`+`Tab` is legitimate keyboard navigation.
    */
   readonly keyboard: Signal<boolean> = this.#keyboard.asReadonly();
 
-  readonly #onKeyDown = (): void => {
+  readonly #onKeyDown = (event: KeyboardEvent): void => {
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
     this.#keyboard.set(true);
   };
   readonly #onPointerDown = (): void => {

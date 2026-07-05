@@ -293,6 +293,21 @@ class DisclosureFixture {}
 class AccordionFixture {}
 
 @Component({
+  imports: [ForAccordion, ForAccordionItem, ForAccordionTrigger, ForAccordionContent],
+  template: `
+    <div dir="rtl">
+      <div forAccordion>
+        <div forAccordionItem value="one">
+          <button forAccordionTrigger>One</button>
+          <section forAccordionContent>one body</section>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class AccordionRtlFixture {}
+
+@Component({
   imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
   template: `
     <div forTabs value="a">
@@ -1719,6 +1734,7 @@ class BreakpointsFixture {
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
+  AccordionRtlFixture,
   TabsFixture,
   TableFixture,
   TableGridFixture,
@@ -1840,6 +1856,13 @@ describe('SSR smoke tests', () => {
     // the server too; the stable content id is what hydration matches on.
     expect(content.getAttribute('id')).toBeTruthy();
     expect(trigger.hasAttribute('aria-controls')).toBe(false);
+  });
+
+  it('Accordion reflects dir="rtl" from an ancestor [dir="rtl"] server-side', () => {
+    const f = TestBed.createComponent(AccordionRtlFixture);
+    f.detectChanges();
+    const root = f.nativeElement.querySelector('[forAccordion]') as HTMLElement;
+    expect(root.getAttribute('dir')).toBe('rtl');
   });
 
   it('AvatarImage mounts with data-status server-side without constructing a MutationObserver', () => {

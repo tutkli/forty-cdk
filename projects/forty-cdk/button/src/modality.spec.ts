@@ -28,6 +28,42 @@ describe('InputModality', () => {
     expect(modality.keyboard()).toBe(true);
   });
 
+  it('ignores modifier shortcuts (Ctrl / Meta / Alt) so keyboard stays false during mouse use', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const modality = TestBed.inject(InputModality);
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    expect(modality.keyboard()).toBe(false);
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, key: 'c', ctrlKey: true }),
+    );
+    expect(modality.keyboard()).toBe(false);
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, key: 'c', metaKey: true }),
+    );
+    expect(modality.keyboard()).toBe(false);
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowDown', altKey: true }),
+    );
+    expect(modality.keyboard()).toBe(false);
+  });
+
+  it('treats Shift alone as keyboard navigation (Shift+Tab)', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const modality = TestBed.inject(InputModality);
+
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    expect(modality.keyboard()).toBe(false);
+
+    document.body.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, key: 'Tab', shiftKey: true }),
+    );
+    expect(modality.keyboard()).toBe(true);
+  });
+
   it('listens on the capture phase so it settles before content can stop propagation', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const modality = TestBed.inject(InputModality);

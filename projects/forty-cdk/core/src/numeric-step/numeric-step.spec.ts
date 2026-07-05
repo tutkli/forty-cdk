@@ -95,4 +95,22 @@ describe('snapToStep', () => {
   it('returns the raw value when step is not positive', () => {
     expect(snapToStep(23.7, 0, 0)).toBe(23.7);
   });
+
+  describe('when min has more decimal precision than step', () => {
+    it('keeps every grid point of min=0.05, step=0.1 mapping to itself', () => {
+      for (let k = 0; k <= 20; k++) {
+        const expected = roundToDecimals(0.05 + k * 0.1, 2);
+        expect(snapToStep(expected, 0.1, 0.05)).toBe(expected);
+      }
+    });
+
+    it('does not drift a grid point up to the next step', () => {
+      expect(snapToStep(0.15, 0.1, 0.05)).toBe(0.15);
+      expect(snapToStep(0.05, 0.1, 0.05)).toBe(0.05);
+    });
+
+    it('snaps a raw in-between value onto the finer grid', () => {
+      expect(snapToStep(0.17, 0.1, 0.05)).toBe(0.15);
+    });
+  });
 });
