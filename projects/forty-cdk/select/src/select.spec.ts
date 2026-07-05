@@ -513,6 +513,332 @@ describe('ForSelect', () => {
     });
   });
 
+  describe('multi-select APG keyboard (non-virtualized)', () => {
+    const openMulti = async (initial: readonly string[] = []) => {
+      const r = renderHost(SelectHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set(initial);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return r;
+    };
+
+    describe('Shift+ArrowDown / Shift+ArrowUp', () => {
+      it('moves focus to the next option AND toggles it on', async () => {
+        const r = await openMulti();
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'ArrowDown', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('banana');
+        expect(r.instance.value()).toEqual(['banana']);
+      });
+
+      it('toggles an already-selected option off on Shift+Arrow', async () => {
+        const r = await openMulti(['banana']);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'ArrowDown', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('banana');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('Shift+ArrowUp toggles the previous option', async () => {
+        const r = await openMulti();
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'ArrowUp', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apple');
+        expect(r.instance.value()).toEqual(['apple']);
+      });
+
+      it('skips disabled options', async () => {
+        const r = await openMulti();
+        r.instance.cherryDisabled.set(true);
+        await flush(r.fixture);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'ArrowDown', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('date');
+        expect(r.instance.value()).toEqual(['date']);
+      });
+
+      it('does NOT toggle in single mode (just moves focus)', async () => {
+        const r = renderHost(SelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'ArrowDown', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('banana');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('respects readonly (no toggle, focus still moves)', async () => {
+        const r = await openMulti();
+        r.instance.readonly.set(true);
+        await flush(r.fixture);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'ArrowDown', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('banana');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('Shift+ArrowDown on the last option is a no-op (no wrap, no toggle)', async () => {
+        const r = await openMulti();
+        getOption('date').focus();
+        pressKey(getOption('date'), 'ArrowDown', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('date');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('Shift+ArrowUp on the first option is a no-op (no wrap, no toggle)', async () => {
+        const r = await openMulti();
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'ArrowUp', { shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apple');
+        expect(r.instance.value()).toEqual([]);
+      });
+    });
+
+    describe('Shift+Space (range from anchor)', () => {
+      it('selects the contiguous range from anchor to focused option (forward)', async () => {
+        const r = await openMulti();
+        getOption('apple').click();
+        await flush(r.fixture);
+        getOption('date').focus();
+        pressKey(getOption('date'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple', 'banana', 'cherry', 'date']);
+      });
+
+      it('selects the contiguous range from anchor to focused option (backward)', async () => {
+        const r = await openMulti();
+        getOption('date').click();
+        await flush(r.fixture);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['date', 'apple', 'banana', 'cherry']);
+      });
+
+      it('preserves selection outside the range', async () => {
+        const r = await openMulti(['date']);
+        getOption('apple').click();
+        await flush(r.fixture);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['date', 'apple', 'banana']);
+      });
+
+      it('skips disabled options in the range', async () => {
+        const r = await openMulti();
+        r.instance.cherryDisabled.set(true);
+        await flush(r.fixture);
+        getOption('apple').click();
+        await flush(r.fixture);
+        getOption('date').focus();
+        pressKey(getOption('date'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple', 'banana', 'date']);
+      });
+
+      it('falls back to selecting the focused option when no anchor exists', async () => {
+        const r = await openMulti();
+        getOption('banana').focus();
+        pressKey(getOption('banana'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['banana']);
+      });
+
+      it('preventDefault stops the native button activation', async () => {
+        const r = await openMulti();
+        getOption('apple').focus();
+        const event = pressKey(getOption('apple'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(event.defaultPrevented).toBe(true);
+      });
+    });
+
+    describe('Ctrl/Cmd+A', () => {
+      it('selects every enabled option', async () => {
+        const r = await openMulti();
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'a', { ctrlKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple', 'banana', 'cherry', 'date']);
+      });
+
+      it('also accepts uppercase A', async () => {
+        const r = await openMulti();
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'A', { ctrlKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toHaveLength(4);
+      });
+
+      it('also accepts metaKey (mac Cmd+A)', async () => {
+        const r = await openMulti();
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'a', { metaKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toHaveLength(4);
+      });
+
+      it('clears the selection when every enabled option is already selected (toggle)', async () => {
+        const r = await openMulti(['apple', 'banana', 'cherry', 'date']);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'a', { ctrlKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('skips disabled options', async () => {
+        const r = await openMulti();
+        r.instance.cherryDisabled.set(true);
+        await flush(r.fixture);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'a', { ctrlKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple', 'banana', 'date']);
+      });
+
+      it('no-op in single mode', async () => {
+        const r = renderHost(SelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), 'a', { ctrlKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual([]);
+      });
+    });
+
+    describe('Ctrl+Shift+Home / Ctrl+Shift+End', () => {
+      it('Ctrl+Shift+End selects from current to the last option and focuses it', async () => {
+        const r = await openMulti();
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'End', { ctrlKey: true, shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('date');
+        expect(r.instance.value()).toEqual(['banana', 'cherry', 'date']);
+      });
+
+      it('Ctrl+Shift+Home selects from current to the first option and focuses it', async () => {
+        const r = await openMulti();
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'Home', { ctrlKey: true, shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apple');
+        expect(r.instance.value()).toEqual(['apple', 'banana']);
+      });
+
+      it('preserves selection outside the range', async () => {
+        const r = await openMulti(['date']);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'Home', { ctrlKey: true, shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['date', 'apple', 'banana']);
+      });
+
+      it('skips disabled options in the range and lands focus on the last enabled edge', async () => {
+        const r = await openMulti();
+        r.instance.cherryDisabled.set(true);
+        await flush(r.fixture);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'End', { ctrlKey: true, shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('date');
+        expect(r.instance.value()).toEqual(['banana', 'date']);
+      });
+
+      it('respects readonly (no selection change, focus still moves to the edge)', async () => {
+        const r = await openMulti();
+        r.instance.readonly.set(true);
+        await flush(r.fixture);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'End', { ctrlKey: true, shiftKey: true });
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('date');
+        expect(r.instance.value()).toEqual([]);
+      });
+
+      it('no-op in single mode', async () => {
+        const r = renderHost(SelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), 'End', { ctrlKey: true, shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual([]);
+      });
+    });
+
+    describe('anchor lifecycle', () => {
+      it('is set on click activation', async () => {
+        const r = await openMulti();
+        getOption('banana').click();
+        await flush(r.fixture);
+        getOption('apple').focus();
+        pressKey(getOption('apple'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['banana', 'apple']);
+      });
+
+      it('moves to the most recent click', async () => {
+        const r = await openMulti();
+        getOption('apple').click();
+        getOption('date').click();
+        await flush(r.fixture);
+        getOption('banana').focus();
+        pressKey(getOption('banana'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple', 'date', 'banana', 'cherry']);
+      });
+
+      it('survives an insert of preceding options (identity anchor, not DOM index)', async () => {
+        @Component({
+          imports: BASE_IMPORTS,
+          template: `
+            <div forSelect multiple [(open)]="open" [(value)]="value">
+              <button forSelectTrigger>Trigger</button>
+              @if (open()) {
+                <div forSelectContent>
+                  @for (o of options(); track o) {
+                    <button forSelectOption [value]="o" [attr.data-test-id]="o">{{ o }}</button>
+                  }
+                </div>
+              }
+            </div>
+          `,
+        })
+        class DynamicMultiSelectHost {
+          readonly open = signal(false);
+          readonly value = signal<readonly string[]>([]);
+          readonly options = signal<readonly string[]>(['apple', 'banana', 'cherry', 'date']);
+        }
+
+        const r = renderHost(DynamicMultiSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        getOption('banana').click();
+        await flush(r.fixture);
+
+        r.instance.options.update((opts) => ['almond', ...opts]);
+        await flush(r.fixture);
+
+        getOption('date').focus();
+        pressKey(getOption('date'), ' ', { shiftKey: true });
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['banana', 'cherry', 'date']);
+      });
+    });
+  });
+
   describe('keyboard navigation (open)', () => {
     it('ArrowDown / ArrowUp move focus, wrapping with loop', async () => {
       const r = renderHost(SelectHost);

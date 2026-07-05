@@ -65,6 +65,7 @@ import { queryFlag } from './_query-flag';
       forSelect
       [(value)]="value"
       [(open)]="open"
+      [multiple]="multiple"
       [position]="position"
       [modal]="modal"
       placeholder="Pick a fruit"
@@ -127,6 +128,10 @@ export class SelectFixture {
   // `?modal=1` routes [forSelectContent] through `_internal/modal-shell` (focus
   // trap + inert siblings + body-scroll-lock) instead of the anchored popover.
   protected readonly modal = queryFlag('modal');
+
+  // `?multiple=1` enables multi-select so specs can exercise the APG range
+  // keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End).
+  protected readonly multiple = queryFlag('multiple');
 
   // `?spacer=1` inserts vertical space above the trigger so the item-aligned
   // positioner can center a selected option over the trigger without hitting

@@ -183,6 +183,37 @@ export interface ForSelectContext<T = unknown> {
   isSelected(value: T): boolean;
   /** Toggle in multi-mode, replace + close in single-mode. No-op on disabled / readonly. */
   activate(value: T): void;
+
+  /**
+   * Multi-select only (APG range keyboard). Move focus to the next / previous
+   * enabled option and toggle it in/out of the selection, without moving the
+   * range anchor. Non-wrapping. No-op in single mode, when disabled, or in the
+   * virtualized path. Focus still moves under `readonly`; only the selection
+   * mutation is blocked.
+   */
+  extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void;
+  /**
+   * Multi-select only (APG range keyboard, Shift+Space). Add every enabled
+   * option between the range anchor and the focused option to the selection,
+   * preserving any selection outside the span. Falls back to selecting just the
+   * focused option when no anchor exists. No-op in single mode, disabled,
+   * readonly, or the virtualized path.
+   */
+  selectRangeToFocused(currentOption: HTMLElement): void;
+  /**
+   * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Select every enabled
+   * option, or clear the selection when they are all already selected (toggle).
+   * No-op in single mode, disabled, readonly, or the virtualized path.
+   */
+  selectAll(): void;
+  /**
+   * Multi-select only (APG range keyboard, Ctrl+Shift+Home / End). Add every
+   * enabled option from the focused option to the first / last option to the
+   * selection and move focus to that edge, preserving any selection outside the
+   * span. No-op in single mode, disabled, or the virtualized path. Focus still
+   * moves under `readonly`; only the selection mutation is blocked.
+   */
+  selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void;
   /** Open-state typeahead: focus the first enabled option whose text matches the buffered prefix. */
   handleTypeahead(event: KeyboardEvent): void;
   /**

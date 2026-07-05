@@ -26,6 +26,7 @@ import {
   ListboxOverlayController,
   defaultItemToFormValue,
   isInArray,
+  nextEnabledHandle,
   singleSelected,
   toggleInArray,
   tryReadHandle,
@@ -162,8 +163,11 @@ export class ForSelect<T = string>
    * without closing the listbox. Single mode (default) keeps the value array at
    * 0 or 1 element and closes on select.
    *
-   * Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A,
-   * Ctrl+Shift+Home/End) is not supported together with virtualization
+   * In the default (non-virtualized) path the full APG range keyboard
+   * (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End) extends the
+   * selection, matching `ForListbox`.
+   *
+   * That range keyboard is not supported together with virtualization
    * (`totalCount` set): range selection needs the full set of enabled options
    * across the range, which is unavailable while the list is partially
    * unmounted. Pressing one of those combinations on a virtualized multi-select
@@ -335,6 +339,17 @@ export class ForSelect<T = string>
 
   readonly #virtualized = computed(() => this.totalCount() !== undefined);
   readonly #activeId = signal<string | null>(null);
+
+  /**
+   * Anchor value for APG range-selection actions (Shift+Space). Stored as the
+   * option's *value* (resolved to its current index at range time via
+   * {@link isItemEqualToValue}) rather than a DOM index, so reordering or
+   * removing options before the anchor can't silently shift the range to the
+   * wrong span. Set on every unmodified activation (click / Space / Enter); not
+   * affected by Shift+Arrow, which APG defines as per-option toggle. Only
+   * meaningful in the non-virtualized multi-select path.
+   */
+  readonly #anchorValue = signal<T | null>(null);
 
   /**
    * Shared overlay-listbox state machine: option collection, trigger / anchor /
@@ -627,13 +642,119 @@ export class ForSelect<T = string>
     }
     if (this.multiple()) {
       this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
+      this.#anchorValue.set(v);
       // Multi-select stays open — consumer closes via outside pointer / Escape / Tab.
       return;
     }
     // Single-mode: idempotent select + close. Skip the redundant set (and its
     // `valueChange` emission) when the same sole value is already selected.
     this.#setSingle(v);
+    this.#anchorValue.set(v);
     this.#controller.closeMenu('select');
+  }
+
+  extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
+    if (this.effectiveDisabled() || !this.multiple()) {
+      return;
+    }
+    const target = nextEnabledHandle(this.#controller.options(), currentOption, action, {
+      loop: false,
+    });
+    if (target === null) {
+      return;
+    }
+    target.host.focus();
+    if (this.readonly()) {
+      return;
+    }
+    this.value.set(toggleInArray(this.value(), target.value(), this.isItemEqualToValue()));
+  }
+
+  selectRangeToFocused(currentOption: HTMLElement): void {
+    if (this.effectiveDisabled() || this.readonly() || !this.multiple()) {
+      return;
+    }
+    const options = this.#controller.options();
+    const currentIndex = options.findIndex((o) => o.host === currentOption);
+    if (currentIndex < 0) {
+      return;
+    }
+    const anchorValue = this.#anchorValue();
+    const equals = this.isItemEqualToValue();
+    const anchorIndex =
+      anchorValue === null ? -1 : options.findIndex((o) => equals(o.value(), anchorValue));
+    const start = anchorIndex < 0 ? currentIndex : anchorIndex;
+    const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
+
+    const next = [...this.value()];
+    for (let i = lo; i <= hi; i++) {
+      const opt = options[i];
+      if (!opt || opt.disabled()) {
+        continue;
+      }
+      const v = opt.value();
+      if (!next.some((x) => equals(x, v))) {
+        next.push(v);
+      }
+    }
+    this.value.set(next);
+  }
+
+  selectAll(): void {
+    if (this.effectiveDisabled() || this.readonly() || !this.multiple()) {
+      return;
+    }
+    const enabled: T[] = [];
+    for (const opt of this.#controller.options()) {
+      if (opt.disabled()) {
+        continue;
+      }
+      enabled.push(opt.value());
+    }
+    if (enabled.length === 0) {
+      return;
+    }
+    const equals = this.isItemEqualToValue();
+    const current = this.value();
+    const allSelected = enabled.every((v) => current.some((x) => equals(x, v)));
+    this.value.set(allSelected ? [] : enabled);
+  }
+
+  selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
+    if (this.effectiveDisabled() || !this.multiple()) {
+      return;
+    }
+    const options = this.#controller.options();
+    const currentIndex = options.findIndex((o) => o.host === currentOption);
+    if (currentIndex < 0) {
+      return;
+    }
+    const [lo, hi] = edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
+
+    const equals = this.isItemEqualToValue();
+    const next = [...this.value()];
+    let firstEnabled: HTMLElement | null = null;
+    let lastEnabled: HTMLElement | null = null;
+    for (let i = lo; i <= hi; i++) {
+      const opt = options[i];
+      if (!opt || opt.disabled()) {
+        continue;
+      }
+      const v = opt.value();
+      if (!next.some((x) => equals(x, v))) {
+        next.push(v);
+      }
+      if (firstEnabled === null) {
+        firstEnabled = opt.host;
+      }
+      lastEnabled = opt.host;
+    }
+    const edgeFocusTarget = edge === 'first' ? firstEnabled : lastEnabled;
+    edgeFocusTarget?.focus();
+    if (this.readonly()) {
+      return;
+    }
+    this.value.set(next);
   }
 
   handleTypeahead(event: KeyboardEvent): void {
