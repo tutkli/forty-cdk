@@ -390,6 +390,7 @@ export class ForListbox<T = string>
     // Focus moves regardless of readonly — same contract as `navigate()`. Readonly
     // only blocks the selection mutation.
     target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
     if (this.readonly()) {
       return;
     }
@@ -480,6 +481,7 @@ export class ForListbox<T = string>
     // Focus moves regardless of readonly — same contract as `navigate()`. Readonly
     // only blocks the selection mutation.
     edgeFocusTarget?.focus();
+    edgeFocusTarget?.scrollIntoView?.({ block: 'nearest' });
     if (this.readonly()) {
       return;
     }

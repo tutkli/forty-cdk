@@ -837,6 +837,39 @@ describe('ForSelect', () => {
         expect(r.instance.value()).toEqual(['banana', 'cherry', 'date']);
       });
     });
+
+    describe('range navigation scrolls the focused option into view (#1284)', () => {
+      function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
+        const had = 'scrollIntoView' in Element.prototype;
+        const stub = vi.fn();
+        Element.prototype.scrollIntoView = stub;
+        return run(stub).finally(() => {
+          if (!had) {
+            delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+          }
+        });
+      }
+
+      it('Shift+ArrowDown reveals the extended option', () =>
+        withScrollStub(async (stub) => {
+          const r = await openMulti();
+          getOption('apple').focus();
+          pressKey(getOption('apple'), 'ArrowDown', { shiftKey: true });
+          await flush(r.fixture);
+          expect(activeTestId()).toBe('banana');
+          expect(stub.mock.contexts).toContain(getOption('banana'));
+        }));
+
+      it('Ctrl+Shift+End reveals the range edge option', () =>
+        withScrollStub(async (stub) => {
+          const r = await openMulti();
+          getOption('banana').focus();
+          pressKey(getOption('banana'), 'End', { ctrlKey: true, shiftKey: true });
+          await flush(r.fixture);
+          expect(activeTestId()).toBe('date');
+          expect(stub.mock.contexts).toContain(getOption('date'));
+        }));
+    });
   });
 
   describe('keyboard navigation (open)', () => {

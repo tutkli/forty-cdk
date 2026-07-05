@@ -998,6 +998,39 @@ describe('ForListbox', () => {
       });
     });
 
+    describe('range navigation scrolls the focused option into view (#1284)', () => {
+      function withScrollStub(run: (stub: ReturnType<typeof vi.fn>) => Promise<void>) {
+        const had = 'scrollIntoView' in Element.prototype;
+        const stub = vi.fn();
+        Element.prototype.scrollIntoView = stub;
+        return run(stub).finally(() => {
+          if (!had) {
+            delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+          }
+        });
+      }
+
+      it('Shift+ArrowDown reveals the extended option', () =>
+        withScrollStub(async (stub) => {
+          const { el, flush } = await setupMulti();
+          optOf(el, 'apple').focus();
+          pressKey(optOf(el, 'apple'), 'ArrowDown', { shiftKey: true });
+          await flush();
+          expect(document.activeElement).toBe(optOf(el, 'apricot'));
+          expect(stub.mock.contexts).toContain(optOf(el, 'apricot'));
+        }));
+
+      it('Ctrl+Shift+End reveals the range edge option', () =>
+        withScrollStub(async (stub) => {
+          const { el, flush } = await setupMulti();
+          optOf(el, 'banana').focus();
+          pressKey(optOf(el, 'banana'), 'End', { ctrlKey: true, shiftKey: true });
+          await flush();
+          expect(document.activeElement).toBe(optOf(el, 'cherry'));
+          expect(stub.mock.contexts).toContain(optOf(el, 'cherry'));
+        }));
+    });
+
     describe('anchor lifecycle', () => {
       it('is set on click activation', async () => {
         const { el, fixture, flush } = await setupMulti();

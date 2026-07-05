@@ -665,6 +665,7 @@ export class ForSelect<T = string>
       return;
     }
     target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
     if (this.readonly()) {
       return;
     }
@@ -752,6 +753,7 @@ export class ForSelect<T = string>
     }
     const edgeFocusTarget = edge === 'first' ? firstEnabled : lastEnabled;
     edgeFocusTarget?.focus();
+    edgeFocusTarget?.scrollIntoView?.({ block: 'nearest' });
     if (this.readonly()) {
       return;
     }

@@ -423,4 +423,48 @@ test.describe('Select', () => {
       await expect(el(page, 'opt-banana')).toHaveAttribute('aria-selected', 'false');
     });
   });
+
+  test.describe('multi-select range keyboard reveals the focused option (#1284)', () => {
+    async function openScrollableMulti(page: Page): Promise<void> {
+      await gotoFixture(page, 'select', { multiple: '1', many: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+      await expect(el(page, 'opt-item-0')).toBeFocused();
+      const overflowing = await el(page, 'content').evaluate(
+        (e) => e.scrollHeight > e.clientHeight,
+      );
+      expect(overflowing).toBe(true);
+    }
+
+    async function focusedOptionInViewport(page: Page, testid: string): Promise<boolean> {
+      const opt = await el(page, testid).boundingBox();
+      const content = await el(page, 'content').boundingBox();
+      if (!opt || !content) {
+        return false;
+      }
+      return opt.y >= content.y - 1 && opt.y + opt.height <= content.y + content.height + 1;
+    }
+
+    test('Ctrl+Shift+End extends to the last option and scrolls it into view', async ({ page }) => {
+      await openScrollableMulti(page);
+
+      await page.keyboard.press('Control+Shift+End');
+
+      await expectFocused(el(page, 'opt-item-59'));
+      await expect.poll(() => focusedOptionInViewport(page, 'opt-item-59')).toBe(true);
+      expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    });
+
+    test('Shift+ArrowDown reveals the extended option below the fold', async ({ page }) => {
+      await openScrollableMulti(page);
+
+      for (let i = 0; i < 30; i++) {
+        await page.keyboard.press('Shift+ArrowDown');
+      }
+
+      await expectFocused(el(page, 'opt-item-30'));
+      await expect.poll(() => focusedOptionInViewport(page, 'opt-item-30')).toBe(true);
+      expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    });
+  });
 });
