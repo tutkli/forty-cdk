@@ -3,6 +3,7 @@ import {
   inject,
   Injectable,
   InjectionToken,
+  type Injector,
   type Provider,
   type Type,
 } from '@angular/core';
@@ -13,7 +14,11 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { type ForDialogCloseReason, FOR_DIALOG_INSTANCE_ID } from './dialog-context';
+import {
+  FOR_DIALOG_CONTEXT,
+  type ForDialogCloseReason,
+  FOR_DIALOG_INSTANCE_ID,
+} from './dialog-context';
 import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
 import type { ForDialogEntry } from './dialog-outlet';
 import { ForDialogOutlet } from './dialog-outlet';
@@ -130,6 +135,19 @@ export interface ForDialogOpenConfig<D = unknown> {
   providers?: Provider[];
 
   /**
+   * Caller scope for this `open()`. When supplied, `ForDialogManager` resolves
+   * `provideForDialogDefaults` from this injector (instead of the root injector
+   * it was constructed in) and parents the opened component on it — so a scoped
+   * defaults configuration and any other scoped providers (a lazy route, a
+   * component `providers`) reach the programmatic dialog. Per-`open()` config
+   * values still win over the resolved scoped defaults. Omit it to keep today's
+   * root-scope behavior. Pass the ambient `inject(Injector)` from the caller —
+   * `open()` is normally invoked outside an injection context, so an explicit
+   * handle is the predictable contract.
+   */
+  injector?: Injector;
+
+  /**
    * Fires just before the dialog moves focus into itself on mount.
    * Call `event.preventDefault()` to skip the imperative focus move
    * — useful when opening a dialog from an input you want to keep
@@ -229,9 +247,13 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
   ): ForDialogRef<R> {
     const { id, remove } = this.nextId();
 
-    const animateEnter = config.animateEnter ?? this.#defaults.animateEnter;
-    const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
-    const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
+    const defaults = config.injector
+      ? config.injector.get(FOR_DIALOG_DEFAULTS, this.#defaults)
+      : this.#defaults;
+
+    const animateEnter = config.animateEnter ?? defaults.animateEnter;
+    const animateLeave = config.animateLeave ?? defaults.animateLeave;
+    const backdropAnimateLeave = config.backdropAnimateLeave ?? defaults.backdropAnimateLeave;
 
     const ref = new ForDialogRef<R>(
       () => this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
@@ -245,11 +267,11 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
       id,
       component: component as Type<unknown>,
       hostClass,
-      dismissible: config.dismissible ?? this.#defaults.dismissible,
-      modal: config.modal ?? this.#defaults.modal,
+      dismissible: config.dismissible ?? defaults.dismissible,
+      modal: config.modal ?? defaults.modal,
       alert: config.alert,
-      returnFocus: config.returnFocus ?? this.#defaults.returnFocus,
-      initialFocus: config.initialFocus ?? this.#defaults.initialFocus,
+      returnFocus: config.returnFocus ?? defaults.returnFocus,
+      initialFocus: config.initialFocus ?? defaults.initialFocus,
       ariaLabel: config.ariaLabel,
       container: config.container,
       animateEnter,
@@ -263,12 +285,17 @@ export class ForDialogManager extends OverlayManagerCore<ForDialogEntry> {
       handleClose(reason: ForDialogCloseReason, value: unknown): void {
         ref.close(value as R, reason);
       },
-      injectorFor: this.createInjectorFactory([
-        { provide: FOR_DIALOG_DATA, useValue: data },
-        { provide: FOR_DIALOG_INSTANCE_ID, useValue: id },
-        { provide: ForDialogRef, useValue: ref },
-        ...(config.providers ?? []),
-      ]),
+      injectorFor: this.createInjectorFactory(
+        [
+          { provide: FOR_DIALOG_DATA, useValue: data },
+          { provide: FOR_DIALOG_INSTANCE_ID, useValue: id },
+          { provide: ForDialogRef, useValue: ref },
+          ...(config.providers ?? []),
+        ],
+        config.injector
+          ? { injector: config.injector, contextToken: FOR_DIALOG_CONTEXT }
+          : undefined,
+      ),
     };
 
     this.register(entry);

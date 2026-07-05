@@ -1,4 +1,12 @@
-import { Component, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  effect,
+  inject,
+  Injector,
+  InjectionToken,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey } from '../../src/test-utils';
@@ -682,6 +690,95 @@ describe('ForDialogManager (programmatic)', () => {
       await ref.closed;
       TestBed.tick();
       expect(document.activeElement).not.toBe(trigger);
+    });
+  });
+
+  // ---- New coverage for #1232 — per-scope defaults + DI via open({ injector }) ----
+
+  describe('scoped defaults via open({ injector }) (#1232)', () => {
+    // The whole suite runs under `provideZonelessChangeDetection()` (see
+    // `setup()`), so this block doubles as the zoneless coverage for the
+    // scoped-vs-root resolution.
+    const SCOPED_TOKEN = new InjectionToken<string>('SCOPED_DIALOG_TEST_TOKEN');
+
+    @Component({
+      template: ``,
+      providers: [
+        provideForDialogDefaults({ modal: false }),
+        { provide: SCOPED_TOKEN, useValue: 'from-scope' },
+      ],
+    })
+    class ScopedHost {
+      readonly injector = inject(Injector);
+    }
+
+    @Component({ template: `<p id="scoped">{{ scoped }}</p>` })
+    class ScopeReadingDialog {
+      readonly scoped = inject(SCOPED_TOKEN, { optional: true }) ?? 'none';
+    }
+
+    function scopedInjector(): Injector {
+      return TestBed.createComponent(ScopedHost).componentInstance.injector;
+    }
+
+    it('resolves a scoped provideForDialogDefaults when injector is passed', () => {
+      document.body.style.overflow = 'auto';
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' }, injector: scopedInjector() });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.hasAttribute('aria-modal')).toBe(false);
+      expect(document.body.style.overflow).toBe('auto');
+    });
+
+    it('does NOT reach the scoped defaults without injector (root behavior unchanged)', () => {
+      const { dialogs } = setup();
+      // Build the scope so its provider exists, but do not hand it to open().
+      scopedInjector();
+      dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('aria-modal')).toBe('true');
+    });
+
+    it('per-open config still wins over the scoped default', () => {
+      const { dialogs } = setup();
+      dialogs.open(ConfirmDialog, {
+        data: { message: 'x' },
+        modal: true,
+        injector: scopedInjector(),
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('aria-modal')).toBe('true');
+    });
+
+    it('the opened component resolves DI from the passed scope injector', () => {
+      const { dialogs } = setup();
+      dialogs.open(ScopeReadingDialog, { injector: scopedInjector() });
+      expect(document.querySelector('#scoped')!.textContent).toBe('from-scope');
+    });
+
+    it('the opened component sees no scope DI without an injector', () => {
+      const { dialogs } = setup();
+      dialogs.open(ScopeReadingDialog);
+      expect(document.querySelector('#scoped')!.textContent).toBe('none');
+    });
+
+    it('child pieces still wire aria under a scope injector (context copied across)', () => {
+      @Component({
+        imports: [ForDialogTitle, ForDialogDescription],
+        template: `
+          <h2 data-testid="title" forDialogTitle>Title</h2>
+          <p data-testid="desc" forDialogDescription>Desc</p>
+        `,
+      })
+      class PiecesDialog {}
+
+      const { dialogs } = setup();
+      dialogs.open(PiecesDialog, { injector: scopedInjector() });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      const title = document.querySelector<HTMLElement>('[data-testid="title"]')!;
+      const desc = document.querySelector<HTMLElement>('[data-testid="desc"]')!;
+      expect(host.getAttribute('aria-labelledby')).toBe(title.id);
+      expect(host.getAttribute('aria-describedby')).toBe(desc.id);
     });
   });
 

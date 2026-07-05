@@ -1,4 +1,12 @@
-import { Component, effect, inject, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  effect,
+  inject,
+  Injector,
+  InjectionToken,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
@@ -345,6 +353,93 @@ describe('ForDrawerManager (programmatic)', () => {
       drawers.open(SheetDrawer, { data: { message: 'x' }, side: 'left' });
       const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
       expect(host.getAttribute('data-side')).toBe('left');
+    });
+  });
+
+  // ---- New coverage for #1232 — per-scope defaults + DI via open({ injector }) ----
+
+  describe('scoped defaults via open({ injector }) (#1232)', () => {
+    // The whole suite runs under `provideZonelessChangeDetection()` (see
+    // `setup()`), so this block doubles as the zoneless coverage for the
+    // scoped-vs-root resolution.
+    const SCOPED_TOKEN = new InjectionToken<string>('SCOPED_DRAWER_TEST_TOKEN');
+
+    @Component({
+      template: ``,
+      providers: [
+        provideForDrawerDefaults({ side: 'right' }),
+        { provide: SCOPED_TOKEN, useValue: 'from-scope' },
+      ],
+    })
+    class ScopedHost {
+      readonly injector = inject(Injector);
+    }
+
+    @Component({ template: `<p id="scoped">{{ scoped }}</p>` })
+    class ScopeReadingDrawer {
+      readonly scoped = inject(SCOPED_TOKEN, { optional: true }) ?? 'none';
+    }
+
+    function scopedInjector(): Injector {
+      return TestBed.createComponent(ScopedHost).componentInstance.injector;
+    }
+
+    it('resolves a scoped provideForDrawerDefaults when injector is passed', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, { data: { message: 'x' }, injector: scopedInjector() });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-side')).toBe('right');
+    });
+
+    it('does NOT reach the scoped defaults without injector (root behavior unchanged)', () => {
+      const { drawers } = setup();
+      // Build the scope so its provider exists, but do not hand it to open().
+      scopedInjector();
+      drawers.open(SheetDrawer, { data: { message: 'x' } });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-side')).toBe('bottom');
+    });
+
+    it('per-open config still wins over the scoped default', () => {
+      const { drawers } = setup();
+      drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        side: 'left',
+        injector: scopedInjector(),
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-side')).toBe('left');
+    });
+
+    it('the opened component resolves DI from the passed scope injector', () => {
+      const { drawers } = setup();
+      drawers.open(ScopeReadingDrawer, { injector: scopedInjector() });
+      expect(document.querySelector('#scoped')!.textContent).toBe('from-scope');
+    });
+
+    it('the opened component sees no scope DI without an injector', () => {
+      const { drawers } = setup();
+      drawers.open(ScopeReadingDrawer);
+      expect(document.querySelector('#scoped')!.textContent).toBe('none');
+    });
+
+    it('child pieces still wire aria under a scope injector (context copied across)', () => {
+      @Component({
+        imports: [ForDrawerTitle, ForDrawerDescription],
+        template: `
+          <h2 data-testid="title" forDrawerTitle>Title</h2>
+          <p data-testid="desc" forDrawerDescription>Desc</p>
+        `,
+      })
+      class PiecesDrawer {}
+
+      const { drawers } = setup();
+      drawers.open(PiecesDrawer, { injector: scopedInjector() });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      const title = document.querySelector<HTMLElement>('[data-testid="title"]')!;
+      const desc = document.querySelector<HTMLElement>('[data-testid="desc"]')!;
+      expect(host.getAttribute('aria-labelledby')).toBe(title.id);
+      expect(host.getAttribute('aria-describedby')).toBe(desc.id);
     });
   });
 

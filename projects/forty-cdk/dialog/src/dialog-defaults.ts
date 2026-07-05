@@ -13,11 +13,12 @@ import { createDefaults } from 'forty-cdk/core';
  * `provideForDialogDefaults` (a lazy route, a component `providers`) reaches
  * every dialog rendered under that scope. `ForDialogManager` is
  * `providedIn: 'root'` and resolves the token **once, from the root injector**,
- * so only application-root `provideForDialogDefaults` affects
- * `ForDialogManager.open()` — a scoped override does not. To customize a
- * programmatic dialog outside the root, pass the value on the `open()` config
- * (a per-`open()` value always wins). This asymmetry is shared with
- * `ForDrawerDefaults`.
+ * so by default only application-root `provideForDialogDefaults` affects
+ * `ForDialogManager.open()` — a scoped override does not. To honor a caller's
+ * scope, pass its injector on the `open()` config
+ * (`open(Cmp, { injector: inject(Injector) })`): the manager then resolves
+ * these defaults from that injector. Either way, a per-`open()` config value
+ * always wins. This asymmetry is shared with `ForDrawerDefaults`.
  */
 export interface ForDialogDefaults {
   /** Default `true`. Sets `aria-modal`, locks body scroll, traps focus. */
@@ -72,8 +73,9 @@ export const FOR_DIALOG_DEFAULTS = token;
  * defaults at the root).
  *
  * Declarative `[forDialog]` reads the nearest scope; `ForDialogManager.open()`
- * (root-provided) only sees an application-root configuration — see the
- * scope caveat on {@link ForDialogDefaults}.
+ * (root-provided) only sees an application-root configuration unless the caller
+ * passes its `injector` on the `open()` config — see the scope caveat on
+ * {@link ForDialogDefaults}.
  */
 export function provideForDialogDefaults(defaults: Partial<ForDialogDefaults> = {}): Provider[] {
   return provideDefaults(defaults);
