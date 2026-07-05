@@ -28,14 +28,15 @@ import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from '.
   exportAs: 'forMeter',
   host: {
     role: 'meter',
-    '[attr.aria-valuemin]': 'min()',
-    '[attr.aria-valuemax]': 'max()',
+    '[attr.aria-valuemin]': 'sanitizedMin()',
+    '[attr.aria-valuemax]': 'sanitizedMax()',
     '[attr.aria-valuenow]': 'clampedValue()',
     '[attr.aria-valuetext]': 'ariaValueText()',
+    '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.data-quality]': 'quality()',
     '[attr.data-value]': 'clampedValue()',
-    '[attr.data-min]': 'min()',
-    '[attr.data-max]': 'max()',
+    '[attr.data-min]': 'sanitizedMin()',
+    '[attr.data-max]': 'sanitizedMax()',
     '[attr.data-percentage]': 'percentageAttr()',
   },
   providers: [{ provide: FOR_METER_CONTEXT, useExisting: ForMeter }],
@@ -82,11 +83,24 @@ export class ForMeter implements ForMeterContext {
     null,
   );
 
+  /**
+   * Accessible name for the meter. Defaults to `null`, emitting no
+   * `aria-label`; prefer a visible label referenced via `aria-labelledby` when
+   * one exists.
+   */
+  readonly ariaLabel = input<string | null>(null);
+
   readonly #range = computed(() => {
     const min = this.min();
     const max = Math.max(this.max(), min);
     return { min, max };
   });
+
+  /** Sanitized lower bound (`min <= max`), reflected to ARIA / data-\*. */
+  readonly sanitizedMin = computed<number>(() => this.#range().min);
+
+  /** Sanitized upper bound (`min <= max`), reflected to ARIA / data-\*. */
+  readonly sanitizedMax = computed<number>(() => this.#range().max);
 
   readonly clampedValue = computed<number>(() => {
     const { min, max } = this.#range();

@@ -73,6 +73,7 @@ export class DemoDisk {
 | `high`          | `input<number \| null>`                    | Upper boundary of the "comfortable" range.<br>**Default:** `null` (= `max`)                                                                          |
 | `optimum`       | `input<number \| null>`                    | Ideal point. Drives the quality classification.<br>**Default:** `null` (= midpoint)                                                                  |
 | `getValueLabel` | `input<((v, min, max) => string) \| null>` | Override for `aria-valuetext`.<br>**Default:** —                                                                                                     |
+| `ariaLabel`     | `input<string \| null>`                    | Accessible name for the meter. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`                       |
 
 | Data attribute    | Values                                         |
 | ----------------- | ---------------------------------------------- |
@@ -113,7 +114,8 @@ The `data-quality` reflection follows the HTML5 spec:
 
 Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns/meter/).
 
-- **`role="meter"`** announces the current value as a fraction of the range. Pair with a visible label and `aria-labelledby` (or `aria-label`) for context — "Disk usage 72 of 100".
+- **`role="meter"`** announces the current value as a fraction of the range. Pair with a visible label and `aria-labelledby` (or set `ariaLabel`) for context — "Disk usage 72 of 100".
+- **Inverted bounds are sanitized.** If `max` is passed below `min`, the reflected range is collapsed to a coherent one (`min <= max`) so `aria-valuemin` / `aria-valuemax` never emit invalid ARIA. The raw `min` / `max` inputs read back unchanged.
 - **Always determinate.** Unlike `<progress>`, a meter must always have a known value. There is no indeterminate mode in HTML5 / ARIA.
 - **Don't use Meter as Progress.** Screen readers announce the two roles differently (and assistive guidance differs); pick the right primitive for the meaning.
 - **Quality is for CSS only.** `data-quality` is a styling hook; assistive tech reads `aria-valuenow` / `aria-valuetext`, not the quality bucket.

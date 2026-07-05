@@ -17,6 +17,7 @@ import { ForMeterIndicator } from './meter-indicator';
       [high]="high()"
       [optimum]="optimum()"
       [getValueLabel]="getLabel()"
+      [ariaLabel]="ariaLabel()"
     >
       <div forMeterIndicator></div>
     </div>
@@ -30,6 +31,7 @@ class MeterHost {
   readonly high = signal<number | null>(null);
   readonly optimum = signal<number | null>(null);
   readonly getLabel = signal<((v: number, lo: number, hi: number) => string) | null>(null);
+  readonly ariaLabel = signal<string | null>(null);
 }
 
 describe('ForMeter', () => {
@@ -67,6 +69,61 @@ describe('ForMeter', () => {
 
       const el = query<HTMLElement>('[forMeter]')!;
       expect(el.getAttribute('aria-valuetext')).toBe('60 (range 0-100)');
+    });
+
+    it('sanitizes inverted bounds to a coherent ARIA range on root and indicator', async () => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.min.set(50);
+      fixture.componentInstance.max.set(10);
+      fixture.componentInstance.value.set(30);
+      await flush();
+
+      const el = query<HTMLElement>('[forMeter]')!;
+      const valuemin = el.getAttribute('aria-valuemin')!;
+      const valuemax = el.getAttribute('aria-valuemax')!;
+      const valuenow = el.getAttribute('aria-valuenow')!;
+
+      expect(valuemin).toBe('50');
+      expect(valuemax).toBe('50');
+      expect(Number(valuenow)).toBeGreaterThanOrEqual(Number(valuemin));
+      expect(Number(valuenow)).toBeLessThanOrEqual(Number(valuemax));
+
+      expect(el.getAttribute('data-min')).toBe('50');
+      expect(el.getAttribute('data-max')).toBe('50');
+
+      const indicator = query<HTMLElement>('[forMeterIndicator]')!;
+      expect(indicator.getAttribute('data-min')).toBe('50');
+      expect(indicator.getAttribute('data-max')).toBe('50');
+    });
+
+    it('reflects the raw bounds unchanged when they are already coherent', async () => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.min.set(0);
+      fixture.componentInstance.max.set(100);
+      fixture.componentInstance.value.set(40);
+      await flush();
+
+      const el = query<HTMLElement>('[forMeter]')!;
+      expect(el.getAttribute('aria-valuemin')).toBe('0');
+      expect(el.getAttribute('aria-valuemax')).toBe('100');
+      expect(el.getAttribute('aria-valuenow')).toBe('40');
+    });
+
+    it('omits aria-label by default, reflects a set label, and drops an empty one', async () => {
+      const { fixture, query, flush } = renderHost(MeterHost);
+      fixture.componentInstance.value.set(40);
+      await flush();
+
+      const el = query<HTMLElement>('[forMeter]')!;
+      expect(el.hasAttribute('aria-label')).toBe(false);
+
+      fixture.componentInstance.ariaLabel.set('Disk usage');
+      await flush();
+      expect(el.getAttribute('aria-label')).toBe('Disk usage');
+
+      fixture.componentInstance.ariaLabel.set('');
+      await flush();
+      expect(el.hasAttribute('aria-label')).toBe(false);
     });
   });
 

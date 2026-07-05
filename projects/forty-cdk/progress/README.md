@@ -77,6 +77,7 @@ export class DemoUpload {
 | `max`                | `input<number>`                           | Upper bound. A non-positive `max` is clamped to `1` for ARIA so `aria-valuemax` always exceeds `aria-valuemin` (`0`).<br>**Default:** `100` |
 | `getValueLabel`      | `input<((value, max) => string) \| null>` | Override for `aria-valuetext` (e.g. "Step 3 of 5").<br>**Default:** —                                                                       |
 | `announceCompletion` | `input<boolean>`                          | Announce `Complete` (or the label) once via `aria-live` on the loading→complete transition.<br>**Default:** —                               |
+| `ariaLabel`          | `input<string \| null>`                   | Accessible name for the progressbar. Prefer a visible label referenced via `aria-labelledby` when one exists.<br>**Default:** `null`        |
 
 | Data attribute    | Values                                     |
 | ----------------- | ------------------------------------------ |

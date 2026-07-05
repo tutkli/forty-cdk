@@ -41,6 +41,7 @@ import { FOR_PROGRESS_DEFAULTS } from './progress-defaults';
     '[attr.aria-valuemax]': 'effectiveMax()',
     '[attr.aria-valuenow]': 'clampedValue() ?? null',
     '[attr.aria-valuetext]': 'ariaValueText()',
+    '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.data-state]': 'state()',
     '[attr.data-value]': 'clampedValue() ?? null',
     '[attr.data-min]': '0',
@@ -78,6 +79,13 @@ export class ForProgress implements ForProgressContext {
    * clamped value and current max.
    */
   readonly getValueLabel = input<((value: number, max: number) => string) | null>(null);
+
+  /**
+   * Accessible name for the progressbar. Defaults to `null`, emitting no
+   * `aria-label`; prefer a visible label referenced via `aria-labelledby` when
+   * one exists.
+   */
+  readonly ariaLabel = input<string | null>(null);
 
   /**
    * When true, transitions to `value === max` are announced once via the
