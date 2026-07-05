@@ -47,6 +47,11 @@ import {
   ForScrollAreaThumb,
   ForScrollAreaViewport,
 } from 'forty-cdk/scroll-area';
+import { ForMeter, ForMeterIndicator } from 'forty-cdk/meter';
+import { ForProgress, ForProgressIndicator } from 'forty-cdk/progress';
+import { ForToggle, ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
+import { ForSeparator } from 'forty-cdk/separator';
+import { ForAspectRatio } from 'forty-cdk/aspect-ratio';
 import { ForSearch, ForSearchClear, ForSearchGroup } from 'forty-cdk/search';
 import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty-cdk/slider';
 import { ForSwitch } from 'forty-cdk/switch';
@@ -1565,6 +1570,55 @@ class PaginationFixture {}
 class BreadcrumbsFixture {}
 
 @Component({
+  imports: [ForMeter, ForMeterIndicator],
+  template: `
+    <div forMeter [value]="40" [min]="0" [max]="100">
+      <div forMeterIndicator></div>
+    </div>
+  `,
+})
+class MeterFixture {}
+
+@Component({
+  imports: [ForProgress, ForProgressIndicator],
+  template: `
+    <div forProgress [value]="40">
+      <div forProgressIndicator></div>
+    </div>
+  `,
+})
+class ProgressFixture {}
+
+@Component({
+  imports: [ForToggle],
+  template: `<button forToggle>B</button>`,
+})
+class ToggleFixture {}
+
+@Component({
+  imports: [ForToggleGroup, ForToggleGroupItem],
+  template: `
+    <div forToggleGroup>
+      <button forToggleGroupItem value="a">A</button>
+      <button forToggleGroupItem value="b">B</button>
+    </div>
+  `,
+})
+class ToggleGroupFixture {}
+
+@Component({
+  imports: [ForSeparator],
+  template: `<hr forSeparator />`,
+})
+class SeparatorFixture {}
+
+@Component({
+  imports: [ForAspectRatio],
+  template: `<div forAspectRatio [ratio]="16 / 9"></div>`,
+})
+class AspectRatioFixture {}
+
+@Component({
   imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
   template: `
     <div forFileUpload>
@@ -1731,6 +1785,12 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   ToolbarFixture,
   PaginationFixture,
   BreadcrumbsFixture,
+  MeterFixture,
+  ProgressFixture,
+  ToggleFixture,
+  ToggleGroupFixture,
+  SeparatorFixture,
+  AspectRatioFixture,
   FileUploadFixture,
   VirtualizerFixture,
   VirtualViewportFixture,
@@ -2202,5 +2262,44 @@ describe('SSR smoke tests', () => {
       'button[aria-label="Clear search"]',
     ) as HTMLButtonElement;
     expect(clear.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('Meter renders role="meter" + coherent aria-value* server-side', () => {
+    const f = TestBed.createComponent(MeterFixture);
+    f.detectChanges();
+    const meter = f.nativeElement.querySelector('[forMeter]') as HTMLElement;
+    expect(meter.getAttribute('role')).toBe('meter');
+    expect(meter.getAttribute('aria-valuemin')).toBe('0');
+    expect(meter.getAttribute('aria-valuemax')).toBe('100');
+    expect(meter.getAttribute('aria-valuenow')).toBe('40');
+  });
+
+  it('Progress renders role="progressbar" + aria-value* server-side', () => {
+    const f = TestBed.createComponent(ProgressFixture);
+    f.detectChanges();
+    const progress = f.nativeElement.querySelector('[forProgress]') as HTMLElement;
+    expect(progress.getAttribute('role')).toBe('progressbar');
+    expect(progress.getAttribute('aria-valuemin')).toBe('0');
+    expect(progress.getAttribute('aria-valuemax')).toBe('100');
+    expect(progress.getAttribute('aria-valuenow')).toBe('40');
+  });
+
+  it('Separator renders role="separator" server-side', () => {
+    const f = TestBed.createComponent(SeparatorFixture);
+    f.detectChanges();
+    const separator = f.nativeElement.querySelector('[forSeparator]') as HTMLElement;
+    expect(separator.getAttribute('role')).toBe('separator');
+  });
+
+  it('Toggle group renders role="group" + toggle buttons with aria-pressed server-side', () => {
+    const f = TestBed.createComponent(ToggleGroupFixture);
+    f.detectChanges();
+    const group = f.nativeElement.querySelector('[forToggleGroup]') as HTMLElement;
+    expect(group.getAttribute('role')).toBe('group');
+    const items = Array.from(
+      f.nativeElement.querySelectorAll('[forToggleGroupItem]'),
+    ) as HTMLElement[];
+    expect(items.length).toBe(2);
+    items.forEach((item) => expect(item.getAttribute('aria-pressed')).toBe('false'));
   });
 });
