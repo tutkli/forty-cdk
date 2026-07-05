@@ -7,6 +7,7 @@ import {
   inject,
   Injector,
   type Provider,
+  type ProviderToken,
   type Signal,
   signal,
 } from '@angular/core';
@@ -186,8 +187,20 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    * Builds a parent-cached per-component `Injector`. The returned
    * factory recreates the injector only when its parent changes, so re-renders
    * with the same enclosing `[forDialog]` / `[forDrawer]` host reuse it.
+   *
+   * With no `scope`, the opened component's injector is parented on the
+   * declarative host's element injector (`parent`), matching the declarative
+   * path. When the caller passed an `injector` on the `open()` config, `scope`
+   * re-parents the opened component on that caller scope instead — so DI inside
+   * the opened component resolves the scope's providers (a lazy route, a
+   * component `providers`). The host's `contextToken` is copied across as a
+   * value provider so the primitive's own pieces still resolve
+   * `FOR_<PRIMITIVE>_CONTEXT` exactly as on the declarative path.
    */
-  protected createInjectorFactory(providers: readonly Provider[]): (parent: Injector) => Injector {
+  protected createInjectorFactory(
+    providers: readonly Provider[],
+    scope?: { readonly injector: Injector; readonly contextToken: ProviderToken<unknown> },
+  ): (parent: Injector) => Injector {
     let cachedInjector: Injector | null = null;
     let cachedParent: Injector | null = null;
     return (parent: Injector): Injector => {
@@ -195,7 +208,15 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
         return cachedInjector;
       }
       cachedParent = parent;
-      cachedInjector = Injector.create({ parent, providers: [...providers] });
+      cachedInjector = scope
+        ? Injector.create({
+            parent: scope.injector,
+            providers: [
+              { provide: scope.contextToken, useValue: parent.get(scope.contextToken) },
+              ...providers,
+            ],
+          })
+        : Injector.create({ parent, providers: [...providers] });
       return cachedInjector;
     };
   }

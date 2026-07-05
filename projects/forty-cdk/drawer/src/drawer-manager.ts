@@ -3,6 +3,7 @@ import {
   inject,
   Injectable,
   InjectionToken,
+  type Injector,
   type Provider,
   type Type,
 } from '@angular/core';
@@ -14,6 +15,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
+  FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
   FOR_DRAWER_INSTANCE_ID,
   type ForDrawerDragEvent,
@@ -173,6 +175,19 @@ export interface ForDrawerOpenConfig<D = unknown> {
   providers?: Provider[];
 
   /**
+   * Caller scope for this `open()`. When supplied, `ForDrawerManager` resolves
+   * `provideForDrawerDefaults` from this injector (instead of the root injector
+   * it was constructed in) and parents the opened component on it — so a scoped
+   * defaults configuration and any other scoped providers (a lazy route, a
+   * component `providers`) reach the programmatic drawer. Per-`open()` config
+   * values still win over the resolved scoped defaults. Omit it to keep today's
+   * root-scope behavior. Pass the ambient `inject(Injector)` from the caller —
+   * `open()` is normally invoked outside an injection context, so an explicit
+   * handle is the predictable contract.
+   */
+  injector?: Injector;
+
+  /**
    * Fires just before the drawer moves focus into itself on mount.
    * Call `event.preventDefault()` to skip the imperative focus move.
    */
@@ -298,9 +313,13 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
 
     const { id, remove } = this.nextId();
 
-    const animateEnter = config.animateEnter ?? this.#defaults.animateEnter;
-    const animateLeave = config.animateLeave ?? this.#defaults.animateLeave;
-    const backdropAnimateLeave = config.backdropAnimateLeave ?? this.#defaults.backdropAnimateLeave;
+    const defaults = config.injector
+      ? config.injector.get(FOR_DRAWER_DEFAULTS, this.#defaults)
+      : this.#defaults;
+
+    const animateEnter = config.animateEnter ?? defaults.animateEnter;
+    const animateLeave = config.animateLeave ?? defaults.animateLeave;
+    const backdropAnimateLeave = config.backdropAnimateLeave ?? defaults.backdropAnimateLeave;
 
     const ref = new ForDrawerRef<R>(
       () => this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
@@ -314,23 +333,23 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       id,
       component: component as Type<unknown>,
       hostClass,
-      side: config.side ?? this.#defaults.side,
-      dismissible: config.dismissible ?? this.#defaults.dismissible,
-      modal: config.modal ?? this.#defaults.modal,
+      side: config.side ?? defaults.side,
+      dismissible: config.dismissible ?? defaults.dismissible,
+      modal: config.modal ?? defaults.modal,
       alert: config.alert,
-      returnFocus: config.returnFocus ?? this.#defaults.returnFocus,
-      initialFocus: config.initialFocus ?? this.#defaults.initialFocus,
+      returnFocus: config.returnFocus ?? defaults.returnFocus,
+      initialFocus: config.initialFocus ?? defaults.initialFocus,
       ariaLabel: config.ariaLabel,
       container: config.container,
       animateEnter,
       autoFocusOnOpen: config.autoFocusOnOpen,
       autoFocusOnClose: config.autoFocusOnClose,
-      swipeToDismiss: config.swipeToDismiss ?? this.#defaults.swipeToDismiss,
-      closeThreshold: config.closeThreshold ?? this.#defaults.closeThreshold,
-      handleOnly: config.handleOnly ?? this.#defaults.handleOnly,
-      scaleBackground: config.scaleBackground ?? this.#defaults.scaleBackground,
+      swipeToDismiss: config.swipeToDismiss ?? defaults.swipeToDismiss,
+      closeThreshold: config.closeThreshold ?? defaults.closeThreshold,
+      handleOnly: config.handleOnly ?? defaults.handleOnly,
+      scaleBackground: config.scaleBackground ?? defaults.scaleBackground,
       setBackgroundColorOnScale:
-        config.setBackgroundColorOnScale ?? this.#defaults.setBackgroundColorOnScale,
+        config.setBackgroundColorOnScale ?? defaults.setBackgroundColorOnScale,
       snapPoints: config.snapPoints,
       activeSnapPoint: config.defaultSnapPoint,
       fadeFromIndex: config.fadeFromIndex,
@@ -345,12 +364,17 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       handleClose(reason: ForDrawerCloseReason, value: unknown): void {
         ref.close(value as R, reason);
       },
-      injectorFor: this.createInjectorFactory([
-        { provide: FOR_DRAWER_DATA, useValue: data },
-        { provide: FOR_DRAWER_INSTANCE_ID, useValue: id },
-        { provide: ForDrawerRef, useValue: ref },
-        ...(config.providers ?? []),
-      ]),
+      injectorFor: this.createInjectorFactory(
+        [
+          { provide: FOR_DRAWER_DATA, useValue: data },
+          { provide: FOR_DRAWER_INSTANCE_ID, useValue: id },
+          { provide: ForDrawerRef, useValue: ref },
+          ...(config.providers ?? []),
+        ],
+        config.injector
+          ? { injector: config.injector, contextToken: FOR_DRAWER_CONTEXT }
+          : undefined,
+      ),
     };
 
     this.register(entry);

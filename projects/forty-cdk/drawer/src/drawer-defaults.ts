@@ -14,10 +14,12 @@ import { type ForDrawerSide } from './drawer-context';
  * `provideForDrawerDefaults` (a lazy route, a component `providers`) reaches
  * every drawer rendered under that scope. `ForDrawerManager` is
  * `providedIn: 'root'` and resolves the token **once, from the root injector**,
- * so only application-root `provideForDrawerDefaults` affects
- * `ForDrawerManager.open()` — a scoped override does not. To customize a
- * programmatic drawer outside the root, pass the value on the `open()` config
- * (a per-`open()` value always wins).
+ * so by default only application-root `provideForDrawerDefaults` affects
+ * `ForDrawerManager.open()` — a scoped override does not. To honor a caller's
+ * scope, pass its injector on the `open()` config
+ * (`open(Cmp, { injector: inject(Injector) })`): the manager then resolves
+ * these defaults from that injector. Either way, a per-`open()` config value
+ * always wins.
  */
 export interface ForDrawerDefaults {
   /** Default `'bottom'`. */
@@ -141,8 +143,9 @@ export const FOR_DRAWER_DEFAULTS = token;
  * defaults at the root).
  *
  * Declarative `[forDrawer]` reads the nearest scope; `ForDrawerManager.open()`
- * (root-provided) only sees an application-root configuration — see the
- * scope caveat on {@link ForDrawerDefaults}.
+ * (root-provided) only sees an application-root configuration unless the caller
+ * passes its `injector` on the `open()` config — see the scope caveat on
+ * {@link ForDrawerDefaults}.
  */
 export function provideForDrawerDefaults(defaults: Partial<ForDrawerDefaults> = {}): Provider[] {
   return provideDefaults(defaults);
