@@ -19,8 +19,10 @@ import { injectPressed } from './pressed';
  * Works on a native `<button>` host and on any arbitrary host element (e.g. `<div>`, `<span>`).
  * On a native button the platform handles Enter/Space → click synthesis and no `role` or
  * `tabindex` is emitted (the platform owns those). On a non-button host, `role="button"` and
- * `tabindex="0"` are applied, and keydown for Enter/Space synthesizes a click so the directive's
- * single `onClick` path handles all activations.
+ * `tabindex="0"` are applied, and the directive synthesizes a click through its single `onClick`
+ * path: Enter activates on `keydown`, while Space activates on `keyup` (its `keydown` always
+ * calls `preventDefault()` to stop the page scrolling, even when disabled) — matching native
+ * button and APG behavior.
  *
  * Disabled stays focusable: per the APG a disabled button must remain reachable by assistive
  * technology, so the native `disabled` attribute is never set. Instead `aria-disabled="true"` and
@@ -56,6 +58,7 @@ import { injectPressed } from './pressed';
     '[attr.data-focus-visible]': "focusVisible() ? '' : null",
     '(click)': 'onClick($event)',
     '(keydown)': 'onKeydown($event)',
+    '(keyup)': 'onKeyup($event)',
     '(focusin)': 'onFocusIn()',
     '(focusout)': 'onFocusOut()',
   },
@@ -81,6 +84,7 @@ export class ForButton {
   readonly activate = output<void>();
 
   readonly #focused = signal(false);
+  #spaceHeld = false;
   readonly #keyboardModality = injectFocusVisible();
   protected readonly hovered = injectHovered({ disabled: this.disabled });
   protected readonly pressed = injectPressed({ disabled: this.disabled });
@@ -105,9 +109,34 @@ export class ForButton {
     if (this.#isNativeButton) {
       return;
     }
-    if (event.key !== 'Enter' && event.key !== ' ') {
+    if (event.key === 'Enter') {
+      if (this.disabled()) {
+        return;
+      }
+      event.preventDefault();
+      this.#host.click();
       return;
     }
+    if (event.key === ' ') {
+      event.preventDefault();
+      if (this.disabled()) {
+        return;
+      }
+      this.#spaceHeld = true;
+    }
+  }
+
+  protected onKeyup(event: KeyboardEvent): void {
+    if (this.#isNativeButton) {
+      return;
+    }
+    if (event.key !== ' ') {
+      return;
+    }
+    if (!this.#spaceHeld) {
+      return;
+    }
+    this.#spaceHeld = false;
     if (this.disabled()) {
       return;
     }
@@ -121,5 +150,6 @@ export class ForButton {
 
   protected onFocusOut(): void {
     this.#focused.set(false);
+    this.#spaceHeld = false;
   }
 }

@@ -49,6 +49,9 @@ export class ForAvatarImage {
     const parent = this.#parent;
     const host = this.#host;
 
+    let destroyed = false;
+    inject(DestroyRef).onDestroy(() => (destroyed = true));
+
     afterNextRender(() => {
       this.#syncFromAttr();
     });
@@ -69,6 +72,7 @@ export class ForAvatarImage {
     let last: ForAvatarStatus | null = null;
     let lastReportedToken = -1;
     const emit = (status: ForAvatarStatus): void => {
+      if (destroyed) return;
       if (last === status && lastReportedToken === this.#requestToken) return;
       last = status;
       lastReportedToken = this.#requestToken;

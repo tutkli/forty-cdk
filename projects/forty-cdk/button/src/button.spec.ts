@@ -136,22 +136,49 @@ describe('ForButton', () => {
   });
 
   describe('non-button Enter/Space synthesize activation', () => {
-    it('fires activate on Enter keydown on a <div> host', async () => {
+    it('fires activate on Enter keydown on a <div> host and calls preventDefault', async () => {
       const r = renderHost(CustomActivateHost);
       const div = r.query<HTMLElement>('[forButton]')!;
 
-      div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      div.dispatchEvent(event);
       await r.flush();
       expect(r.instance.count()).toBe(1);
+      expect(event.defaultPrevented).toBe(true);
     });
 
-    it('fires activate on Space keydown on a <div> host', async () => {
+    it('does not fire activate on Space keydown but calls preventDefault to block scroll', async () => {
       const r = renderHost(CustomActivateHost);
       const div = r.query<HTMLElement>('[forButton]')!;
 
-      div.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+      div.dispatchEvent(event);
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('fires activate exactly once on Space keyup after a keydown on a <div> host', async () => {
+      const r = renderHost(CustomActivateHost);
+      const div = r.query<HTMLElement>('[forButton]')!;
+
+      div.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      const up = new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true });
+      div.dispatchEvent(up);
       await r.flush();
       expect(r.instance.count()).toBe(1);
+      expect(up.defaultPrevented).toBe(true);
+    });
+
+    it('does not fire activate on a Space keyup without a preceding keydown', async () => {
+      const r = renderHost(CustomActivateHost);
+      const div = r.query<HTMLElement>('[forButton]')!;
+
+      div.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
     });
 
     it('does not fire activate on a non-activation key on a <div> host', async () => {
@@ -160,6 +187,50 @@ describe('ForButton', () => {
 
       div.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
       await r.flush();
+      expect(r.instance.count()).toBe(0);
+    });
+  });
+
+  describe('non-button disabled keyboard activation', () => {
+    it('preventDefaults Space keydown even when disabled and never activates on keydown or keyup', async () => {
+      const r = renderHost(CustomActivateHost);
+      r.instance.disabled.set(true);
+      await r.flush();
+
+      const div = r.query<HTMLElement>('[forButton]')!;
+      const down = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+      div.dispatchEvent(down);
+      await r.flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(r.instance.count()).toBe(0);
+
+      div.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+    });
+
+    it('does not activate on Enter keydown when disabled', async () => {
+      const r = renderHost(CustomActivateHost);
+      r.instance.disabled.set(true);
+      await r.flush();
+
+      const div = r.query<HTMLElement>('[forButton]')!;
+      div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+    });
+  });
+
+  describe('native button: directive does not synthesize keyboard activation', () => {
+    it('ignores keydown and keyup so the platform owns keyboard → click', async () => {
+      const r = renderHost(ActivateHost);
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      btn.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      btn.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true }));
+      await r.flush();
+
       expect(r.instance.count()).toBe(0);
     });
   });
