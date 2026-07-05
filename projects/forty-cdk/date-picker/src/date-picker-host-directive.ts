@@ -45,6 +45,7 @@ export const FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS = [
   'hourCycle',
   'invalid',
   'isDateUnavailable',
+  'locale',
   'maxDate',
   'minDate',
   'modal',

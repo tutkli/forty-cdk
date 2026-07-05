@@ -140,25 +140,28 @@ The library is styleless: presence in the DOM is the consumer's job (`@if (open(
 
 ### `ForDatePicker`
 
-| Property            | Type                                             | Description                                                                                                                       |
-| ------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<D \| null>`                               | Two-way bindable selected date. `(valueChange)` fires only on internal commits.<br>**Default:** `null`                            |
-| `open`              | `model<boolean>`                                 | Two-way bindable surface visibility. `(openChange)` fires only on internal transitions.<br>**Default:** `false`                   |
-| `minDate`           | `input<D \| null>`                               | Minimum selectable date (inclusive). Forward to the projected calendar's `[min]`.<br>**Default:** `null`                          |
-| `maxDate`           | `input<D \| null>`                               | Maximum selectable date (inclusive). Forward to the projected calendar's `[max]`.<br>**Default:** `null`                          |
-| `isDateUnavailable` | `input<(date: D) => boolean>`                    | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`.<br>**Default:** `() => false`                      |
-| `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured only at `granularity="day"`.<br>**Default:** `true`                            |
-| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field.<br>**Default:** `'day'` |
-| `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`).<br>**Default:** `null` → locale            |
-| `modal`             | `input<boolean>`                                 | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover.<br>**Default:** `false`             |
-| `dismissible`       | `input<boolean>`                                 | Escape / outside-pointer dismiss the surface.<br>**Default:** `true`                                                              |
-| `returnFocus`       | `input<boolean>`                                 | Return focus to the trigger on close.<br>**Default:** `true`                                                                      |
-| `formatOptions`     | `input<Intl.DateTimeFormatOptions>`              | Options for the text rendered by `[forDatePickerValue]`.<br>**Default:** `{ year: 'numeric', month: 'long', day: 'numeric' }`     |
-| `placeholder`       | `input<string>`                                  | Fallback text for `[forDatePickerValue]` when empty.<br>**Default:** `''`                                                         |
-| `side` / `align`    | `input`                                          | Anchored placement (popover mode only).<br>**Default:** `'bottom'` / `'start'`                                                    |
-| `dir`               | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir`                             |
+| Property            | Type                                             | Description                                                                                                                                                               |
+| ------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`             | `model<D \| null>`                               | Two-way bindable selected date. `(valueChange)` fires only on internal commits.<br>**Default:** `null`                                                                    |
+| `open`              | `model<boolean>`                                 | Two-way bindable surface visibility. `(openChange)` fires only on internal transitions.<br>**Default:** `false`                                                           |
+| `minDate`           | `input<D \| null>`                               | Minimum selectable date (inclusive). Forward to the projected calendar's `[min]`.<br>**Default:** `null`                                                                  |
+| `maxDate`           | `input<D \| null>`                               | Maximum selectable date (inclusive). Forward to the projected calendar's `[max]`.<br>**Default:** `null`                                                                  |
+| `isDateUnavailable` | `input<(date: D) => boolean>`                    | Per-date predicate. Forward to the projected calendar's `[isDateUnavailable]`.<br>**Default:** `() => false`                                                              |
+| `closeOnSelect`     | `input<boolean>`                                 | Close the surface after a date is picked. Honoured only at `granularity="day"`.<br>**Default:** `true`                                                                    |
+| `granularity`       | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` (default) is a pure date picker; coarser-than-day off composes a time field.<br>**Default:** `'day'`                                         |
+| `hourCycle`         | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the value display (and typically the projected `[forTimeField]`).<br>**Default:** `null` → locale                                                    |
+| `modal`             | `input<boolean>`                                 | Trap focus + inert background + scroll lock (centered dialog) instead of an anchored popover.<br>**Default:** `false`                                                     |
+| `dismissible`       | `input<boolean>`                                 | Escape / outside-pointer dismiss the surface.<br>**Default:** `true`                                                                                                      |
+| `returnFocus`       | `input<boolean>`                                 | Return focus to the trigger on close.<br>**Default:** `true`                                                                                                              |
+| `formatOptions`     | `input<Intl.DateTimeFormatOptions>`              | Options for the text rendered by `[forDatePickerValue]`.<br>**Default:** `{ year: 'numeric', month: 'long', day: 'numeric' }`                                             |
+| `locale`            | `input<string \| null>`                          | BCP 47 locale for the text rendered by `[forDatePickerValue]`. Not forwarded to the projected calendar — bind its `[locale]` too.<br>**Default:** `null` → runtime locale |
+| `placeholder`       | `input<string>`                                  | Fallback text for `[forDatePickerValue]` when empty.<br>**Default:** `''`                                                                                                 |
+| `side` / `align`    | `input`                                          | Anchored placement (popover mode only).<br>**Default:** `'bottom'` / `'start'`                                                                                            |
+| `dir`               | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir`                                                                     |
 
 Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `name`, `errors`, and the `touched` model) and the floating tunables (`sideOffset`, `alignOffset`, `avoidCollisions`, `collisionPadding`, `sticky`, `hideWhenDetached`).
+
+> **`locale` only styles the trigger display.** It drives the text rendered by `[forDatePickerValue]` (both here and on `ForDateRangePicker`); it is **not** forwarded to the projected `ForCalendar`. Bind the calendar's own `[locale]` to localize its heading / weekday / cell labels, exactly as you forward `[min]` / `[max]`.
 
 > **Why `minDate` / `maxDate`, not `min` / `max`?** `ForDatePicker` is a `FormValueControl`, and `FormUiControl` reserves `min` / `max` for numeric validators (`InputSignal<number | undefined>`). A date-typed `min` / `max` would break that contract, so the date bounds use the `*Date` suffix. (`ForCalendar` is not a form control, so it keeps `min` / `max`.)
 

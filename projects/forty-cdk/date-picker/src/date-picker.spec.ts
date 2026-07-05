@@ -71,6 +71,7 @@ const CALENDAR_PIECES = [ForCalendar, ForCalendarGrid, ForCalendarGridHeader, Fo
       [readonly]="readonly()"
       [closeOnSelect]="closeOnSelect()"
       [modal]="modal()"
+      [locale]="locale()"
       [ariaLabel]="ariaLabel()"
       name="dob"
       #picker="forDatePicker"
@@ -117,6 +118,7 @@ class Host {
   readonly readonly = signal(false);
   readonly closeOnSelect = signal(true);
   readonly modal = signal(false);
+  readonly locale = signal<string | null>(null);
   readonly ariaLabel = signal<string | null>('Choose date');
   readonly openChanges: boolean[] = [];
   interactOutsideCount = 0;
@@ -713,6 +715,34 @@ describe('ForDatePicker', () => {
       await flush(r.fixture);
       expect(value(r).getAttribute('data-placeholder')).toBeNull();
       expect(value(r).textContent).toContain('2026');
+    });
+
+    it('formats the value through [locale] (#1247)', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 0, 15));
+
+      r.instance.locale.set('en-US');
+      await flush(r.fixture);
+      const en = value(r).textContent!.trim();
+
+      r.instance.locale.set('fr-FR');
+      await flush(r.fixture);
+      const fr = value(r).textContent!.trim();
+
+      expect(en).toContain('January');
+      expect(fr).toContain('janvier');
+      expect(en).not.toBe(fr);
+    });
+
+    it('leaves the default (null locale) output identical to a locale-less adapter format (#1247)', async () => {
+      const r = renderHost(Host);
+      const date = new Date(2026, 0, 15);
+      r.instance.value.set(date);
+      await flush(r.fixture);
+
+      expect(value(r).textContent!.trim()).toBe(
+        adapter.format(date, { year: 'numeric', month: 'long', day: 'numeric' }),
+      );
     });
   });
 
