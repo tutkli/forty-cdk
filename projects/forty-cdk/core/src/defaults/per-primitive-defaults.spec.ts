@@ -12,6 +12,11 @@ import {
   provideForAvatarDefaults,
 } from '../../../avatar/src/avatar-defaults';
 import {
+  FOR_BREADCRUMBS_DEFAULTS,
+  FOR_BREADCRUMBS_FALLBACK_DEFAULTS,
+  provideForBreadcrumbsDefaults,
+} from '../../../breadcrumbs/src/breadcrumbs-defaults';
+import {
   FOR_CALENDAR_DEFAULTS,
   FOR_CALENDAR_FALLBACK_DEFAULTS,
   provideForCalendarDefaults,
@@ -384,6 +389,13 @@ const CASES: readonly DefaultsCase<object>[] = [
     fallback: FOR_PAGINATION_FALLBACK_DEFAULTS,
     provide: provideForPaginationDefaults,
     override: { siblingCount: 2 },
+  }),
+  defaultsCase({
+    name: 'provideForBreadcrumbsDefaults',
+    token: FOR_BREADCRUMBS_DEFAULTS,
+    fallback: FOR_BREADCRUMBS_FALLBACK_DEFAULTS,
+    provide: provideForBreadcrumbsDefaults,
+    override: { label: 'Ruta' },
   }),
 ];
 

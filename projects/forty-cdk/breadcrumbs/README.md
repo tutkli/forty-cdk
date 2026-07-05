@@ -40,6 +40,18 @@ export class DemoBreadcrumbs {}
 
 The root defaults its label to `Breadcrumb`. Override it with `ariaLabel="…"` (or point a native `aria-labelledby` at a visible heading) when a page hosts more than one breadcrumb trail.
 
+### Localizing the label
+
+`Breadcrumb` is verbalized by screen readers, so translate it per injector scope with `provideForBreadcrumbsDefaults`. Configure it at the application root, or in any component's `providers` to scope the translation to a subtree. A per-instance `[ariaLabel]` still wins over the scope default.
+
+```ts
+import { provideForBreadcrumbsDefaults } from 'forty-cdk/breadcrumbs';
+
+bootstrapApplication(App, {
+  providers: [provideForBreadcrumbsDefaults({ label: 'Ruta de navegación' })],
+});
+```
+
 ## API
 
 ### `ForBreadcrumbs`

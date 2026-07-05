@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { renderHost } from '../../src/test-utils';
 import { ForBreadcrumbItem } from './breadcrumb-item';
 import { ForBreadcrumbSeparator } from './breadcrumb-separator';
+import { provideForBreadcrumbsDefaults } from './breadcrumbs-defaults';
 import { ForBreadcrumbs } from './breadcrumbs';
 
 @Component({
@@ -32,29 +33,69 @@ class BreadcrumbsHost {
 describe('ForBreadcrumbs', () => {
   describe('landmark', () => {
     it('exposes role="navigation" and the default "Breadcrumb" label', () => {
-      const { query } = renderHost(BreadcrumbsHost);
+      @Component({
+        imports: [ForBreadcrumbs, ForBreadcrumbItem],
+        template: `<nav forBreadcrumbs><a forBreadcrumbItem href="/">Home</a></nav>`,
+      })
+      class BareHost {}
+
+      const { query } = renderHost(BareHost);
       const nav = query<HTMLElement>('[forBreadcrumbs]')!;
 
       expect(nav.getAttribute('role')).toBe('navigation');
       expect(nav.getAttribute('aria-label')).toBe('Breadcrumb');
     });
 
-    it('lets the consumer override the accessible label', async () => {
+    it('localizes the default label via provideForBreadcrumbsDefaults', () => {
+      @Component({
+        imports: [ForBreadcrumbs, ForBreadcrumbItem],
+        providers: [provideForBreadcrumbsDefaults({ label: 'Ruta' })],
+        template: `<nav forBreadcrumbs><a forBreadcrumbItem href="/">Home</a></nav>`,
+      })
+      class LocalizedHost {}
+
+      const { query } = renderHost(LocalizedHost);
+      expect(query<HTMLElement>('[forBreadcrumbs]')!.getAttribute('aria-label')).toBe('Ruta');
+    });
+
+    it('lets a per-instance [ariaLabel] win over the scope default', () => {
+      @Component({
+        imports: [ForBreadcrumbs, ForBreadcrumbItem],
+        providers: [provideForBreadcrumbsDefaults({ label: 'Ruta' })],
+        template: `
+          <nav forBreadcrumbs ariaLabel="Site sections">
+            <a forBreadcrumbItem href="/">Home</a>
+          </nav>
+        `,
+      })
+      class OverrideHost {}
+
+      const { query } = renderHost(OverrideHost);
+      expect(query<HTMLElement>('[forBreadcrumbs]')!.getAttribute('aria-label')).toBe(
+        'Site sections',
+      );
+    });
+
+    it('drops the attribute when [ariaLabel] is null', () => {
+      @Component({
+        imports: [ForBreadcrumbs, ForBreadcrumbItem],
+        template: `
+          <nav forBreadcrumbs [ariaLabel]="null"><a forBreadcrumbItem href="/">Home</a></nav>
+        `,
+      })
+      class NullLabelHost {}
+
+      const { query } = renderHost(NullLabelHost);
+      expect(query<HTMLElement>('[forBreadcrumbs]')!.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('lets the consumer override the accessible label reactively', async () => {
       const { fixture, query, flush } = renderHost(BreadcrumbsHost);
       fixture.componentInstance.ariaLabel.set('Migas');
       await flush();
 
       const nav = query<HTMLElement>('[forBreadcrumbs]')!;
       expect(nav.getAttribute('aria-label')).toBe('Migas');
-    });
-
-    it('falls back to the default label when the override is cleared to empty', async () => {
-      const { fixture, query, flush } = renderHost(BreadcrumbsHost);
-      fixture.componentInstance.ariaLabel.set('');
-      await flush();
-
-      const nav = query<HTMLElement>('[forBreadcrumbs]')!;
-      expect(nav.getAttribute('aria-label')).toBe('Breadcrumb');
     });
   });
 
@@ -126,7 +167,7 @@ describe('ForBreadcrumbs', () => {
         `,
       })
       class Host {
-        readonly label = signal<string | null>(null);
+        readonly label = signal('Breadcrumb');
         readonly current = signal(false);
       }
 
