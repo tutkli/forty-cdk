@@ -367,4 +367,60 @@ test.describe('Select', () => {
       expect(await el(page, 'content').evaluate((e) => e.scrollTop)).toBe(0);
     });
   });
+
+  // APG multi-select range keyboard on the default (non-virtualized) path
+  // (#1236). banana is `disabled` in the fixture, so every case also proves
+  // the disabled option is skipped.
+  test.describe('multi-select range keyboard (non-virtualized)', () => {
+    test('Ctrl/Cmd+A selects every enabled option and keeps the listbox open', async ({ page }) => {
+      await gotoFixture(page, 'select', { multiple: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'opt-apple')).toBeFocused();
+
+      await page.keyboard.press('Control+a');
+
+      await expect(el(page, 'opt-apple')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-cherry')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-date')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-banana')).toHaveAttribute('aria-selected', 'false');
+      await expect(el(page, 'content')).toBeVisible();
+    });
+
+    test('Shift+ArrowDown moves focus past the disabled option and toggles the destination', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { multiple: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'opt-apple')).toBeFocused();
+
+      await page.keyboard.press('Shift+ArrowDown');
+
+      await expect(el(page, 'opt-cherry')).toBeFocused();
+      await expect(el(page, 'opt-cherry')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-apple')).toHaveAttribute('aria-selected', 'false');
+    });
+
+    test('Shift+Space selects the contiguous range from the anchor to the focused option', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'select', { multiple: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'opt-apple')).toBeFocused();
+
+      // Space toggles apple on and sets it as the range anchor (stays open).
+      await page.keyboard.press('Space');
+      await expect(el(page, 'opt-apple')).toHaveAttribute('aria-selected', 'true');
+
+      // Move focus to the last option without disturbing the anchor.
+      await page.keyboard.press('End');
+      await expect(el(page, 'opt-date')).toBeFocused();
+
+      await page.keyboard.press('Shift+Space');
+
+      await expect(el(page, 'opt-apple')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-cherry')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-date')).toHaveAttribute('aria-selected', 'true');
+      await expect(el(page, 'opt-banana')).toHaveAttribute('aria-selected', 'false');
+    });
+  });
 });

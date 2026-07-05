@@ -63,6 +63,8 @@ Click an option to replace the selection and close. `[(value)]` keeps 0 or 1 ele
 
 Set `multiple` and bind `[(value)]` to a `string[]`. Click an option to toggle in/out — the listbox stays open. Tab, Escape, or outside-pointer close it.
 
+In the default (non-virtualized) path the full APG range keyboard works while the listbox is open, matching `ForListbox`: **Shift+Arrow** moves focus and toggles the destination option, **Shift+Space** selects the contiguous range from the anchor (the last clicked / activated option) to the focused option, **Ctrl/Cmd+A** selects all enabled options (toggling back to empty when all are already selected), and **Ctrl+Shift+Home / End** extends the selection to the first / last option. These range modifiers are not available in the [virtualized path](#virtualization).
+
 ```html
 <div forSelect #select="forSelect" multiple [(value)]="tags">
   <button forSelectTrigger class="select-trigger">
@@ -455,6 +457,10 @@ readonly v = injectVirtualizer({
 - **Home / End** — jump to first / last enabled option.
 - **PageUp / PageDown** — jump to first / last enabled option.
 - **Enter / Space** — activate the focused option (native `<button>` semantics): select + close in single mode, toggle (stay open) in multi mode.
+- **Shift+ArrowDown / Shift+ArrowUp** _(multi mode, non-virtualized)_ — move focus to the next / previous enabled option **and** toggle it. Non-wrapping. Does not move the range anchor.
+- **Shift+Space** _(multi mode, non-virtualized)_ — select the contiguous range from the anchor (last clicked / activated option) to the focused option, preserving selection outside the span. Falls back to selecting just the focused option when no anchor exists.
+- **Ctrl/Cmd+A** _(multi mode, non-virtualized)_ — select every enabled option, or clear the selection when all enabled options are already selected (toggle).
+- **Ctrl+Shift+Home / Ctrl+Shift+End** _(multi mode, non-virtualized)_ — extend the selection from the focused option to the first / last option and move focus to that edge.
 - **Escape** — close without changing selection. Returns focus to the trigger.
 - **Tab / Shift+Tab** — commit the focused option (single mode only — multi-mode keeps the existing selection) and let the browser advance focus to the next / previous focusable, mirroring native `<select>`. The directive does **not** `preventDefault`, so form workflows keep flowing through tab order.
 - **Typeahead** — single printable characters move focus to the first option whose text starts with the buffered string. Disabled options are skipped.

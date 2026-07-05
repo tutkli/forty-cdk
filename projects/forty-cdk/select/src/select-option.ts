@@ -41,6 +41,9 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
  * Keyboard while focused:
  * - **Enter / Space** — activate (via native button click).
  * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
+ * - **Shift+Arrow / Shift+Space / Ctrl+A / Ctrl+Shift+Home / Ctrl+Shift+End**
+ *   _(multi mode, non-virtualized)_ — APG range selection, matching
+ *   `ForListbox`.
  * - **Tab / Shift+Tab** — commit the focused option (single mode) and let
  *   the browser advance focus to the next / previous focusable, mirroring
  *   the WAI-ARIA select-only combobox pattern and native `<select>`.
@@ -182,6 +185,47 @@ export class ForSelectOption<T = string> {
       // moved to the trigger as the starting point.
       this.#ctx.commitOnTab(this.value());
       return;
+    }
+
+    if (this.#ctx.multiple()) {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey) {
+        if (event.key === 'a' || event.key === 'A') {
+          event.preventDefault();
+          this.#ctx.selectAll();
+          return;
+        }
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && !event.altKey) {
+        if (event.key === 'Home') {
+          event.preventDefault();
+          this.#ctx.selectFromCurrentToEdge(this.#host.nativeElement, 'first');
+          return;
+        }
+        if (event.key === 'End') {
+          event.preventDefault();
+          this.#ctx.selectFromCurrentToEdge(this.#host.nativeElement, 'last');
+          return;
+        }
+      }
+
+      if (event.shiftKey && event.key === ' ') {
+        event.preventDefault();
+        this.#ctx.selectRangeToFocused(this.#host.nativeElement);
+        return;
+      }
+
+      if (event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const rangeAction = resolveListNavigation(event, {
+          orientation: this.#ctx.orientation(),
+          dir: this.#ctx.dir(),
+        });
+        if (rangeAction === 'next' || rangeAction === 'prev') {
+          event.preventDefault();
+          this.#ctx.extendByArrow(this.#host.nativeElement, rangeAction);
+          return;
+        }
+      }
     }
 
     const action = resolveListNavigation(event, {
