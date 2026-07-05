@@ -28,6 +28,13 @@ export interface SelectVirtualizedNavigatorDeps<T> {
   readonly setActiveId: (id: string | null) => void;
   /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
   readonly emitScrollToIndex: (idx: number) => void;
+  /**
+   * Optional monotonic "the dataset changed" signal. When provided and its
+   * value changes, the position snapshot rebuilds from empty — the seam a
+   * consumer wires to `[dataVersion]` so a same-length re-sort / refresh purges
+   * stale off-window entries. See {@link SelectVirtualizedNavigator.invalidateSnapshot}.
+   */
+  readonly dataVersion?: Signal<unknown>;
 }
 
 /**
@@ -44,7 +51,7 @@ export class SelectVirtualizedNavigator<T> {
 
   constructor(deps: SelectVirtualizedNavigatorDeps<T>) {
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: deps.loop },
+      { ...deps, loop: deps.loop, dataVersion: deps.dataVersion },
       {
         posOf: (o) => o.posInSet(),
         idOf: (o) => o.id(),
@@ -87,5 +94,10 @@ export class SelectVirtualizedNavigator<T> {
   /** @see VirtualizedNavigator.resetPending */
   resetPending(): void {
     this.#core.resetPending();
+  }
+
+  /** @see VirtualizedNavigator.invalidateSnapshot */
+  invalidateSnapshot(): void {
+    this.#core.invalidateSnapshot();
   }
 }

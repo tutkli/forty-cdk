@@ -39,6 +39,7 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS = [
   'clipUntilPositioned',
   'collisionPadding',
   'commitOnSelect',
+  'dataVersion',
   'dir',
   'dirty',
   'disabled',

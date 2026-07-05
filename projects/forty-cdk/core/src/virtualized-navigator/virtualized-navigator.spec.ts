@@ -38,6 +38,7 @@ interface Harness {
   readonly setRange: (r: readonly [number, number] | undefined) => void;
   readonly setActive: (id: string | null) => void;
   readonly getActive: () => string | null;
+  readonly bumpDataVersion: () => void;
   readonly emitted: readonly number[];
   readonly resetEmitted: () => void;
 }
@@ -49,6 +50,7 @@ function createNavigator(
     loop?: boolean;
     scrollIntoView?: (host: HTMLElement) => void;
     deferFold?: boolean;
+    withDataVersion?: boolean;
   } = {},
 ): Harness {
   const items = signal<readonly FakeHandle[]>([]);
@@ -56,6 +58,7 @@ function createNavigator(
   const range = signal<readonly [number, number] | undefined>(initial.range);
   const loop = signal(initial.loop ?? true);
   const active = signal<string | null>(null);
+  const dataVersion = signal(0);
   const emitted: number[] = [];
 
   const navigator = new VirtualizedNavigator<FakeHandle, FakeEntry>(
@@ -69,6 +72,7 @@ function createNavigator(
       emitScrollToIndex: (idx) => {
         emitted.push(idx);
       },
+      dataVersion: initial.withDataVersion ? dataVersion : undefined,
     },
     {
       posOf: (h) => h.pos(),
@@ -88,6 +92,7 @@ function createNavigator(
     setRange: (r) => range.set(r),
     setActive: (id) => active.set(id),
     getActive: () => active(),
+    bumpDataVersion: () => dataVersion.update((v) => v + 1),
     emitted,
     resetEmitted: () => {
       emitted.length = 0;
@@ -181,6 +186,52 @@ describe('VirtualizedNavigator', () => {
       expect(h.navigator.snapshotByPos().has(50)).toBe(false);
     });
 
+    it('purges carried-over off-window entries on invalidateSnapshot() (no totalCount transition)', () => {
+      const h = createNavigator({ total: 1000 });
+      h.setItems([makeHandle({ id: 'a-0', pos: 0 }), makeHandle({ id: 'a-500', pos: 500 })]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().get(500)?.id).toBe('a-500');
+
+      h.setItems([makeHandle({ id: 'b-0', pos: 0 })]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().get(500)?.id).toBe('a-500');
+
+      h.navigator.invalidateSnapshot();
+      h.navigator.prime();
+      const snap = h.navigator.snapshotByPos();
+      expect(snap.has(500)).toBe(false);
+      expect(snap.get(0)?.id).toBe('b-0');
+    });
+
+    it('serves fresh entries for previously-stale positions after invalidateSnapshot()', () => {
+      const h = createNavigator({ total: 1000 });
+      h.setItems([makeHandle({ id: 'a-500', pos: 500, disabled: false, value: 'old' })]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().get(500)?.value).toBe('old');
+
+      h.navigator.invalidateSnapshot();
+      h.setItems([makeHandle({ id: 'z-500', pos: 500, disabled: true, value: 'new' })]);
+      h.navigator.prime();
+      const entry = h.navigator.snapshotByPos().get(500);
+      expect(entry?.id).toBe('z-500');
+      expect(entry?.value).toBe('new');
+      expect(entry?.disabled).toBe(true);
+    });
+
+    it('purges carried-over off-window entries when the consumer dataVersion bumps', () => {
+      const h = createNavigator({ total: 1000, withDataVersion: true });
+      h.setItems([makeHandle({ id: 'a-0', pos: 0 }), makeHandle({ id: 'a-500', pos: 500 })]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().get(500)?.id).toBe('a-500');
+
+      h.bumpDataVersion();
+      h.setItems([makeHandle({ id: 'b-0', pos: 0 })]);
+      h.navigator.prime();
+      const snap = h.navigator.snapshotByPos();
+      expect(snap.has(500)).toBe(false);
+      expect(snap.get(0)?.id).toBe('b-0');
+    });
+
     it('skips an option whose value read throws NG0950, folding it in on the re-run', () => {
       const h = createNavigator();
       const bound = signal(false);
@@ -248,6 +299,62 @@ describe('VirtualizedNavigator', () => {
       const resolved = h.navigator.tryResolvePending();
       expect(resolved).toBe(true);
       expect(h.getActive()).toBe('r-99');
+    });
+
+    it('continues in the pending direction when the resolved item is disabled (prev)', () => {
+      const h = createNavigator({ range: [0, 10] });
+      h.setItems(Array.from({ length: 10 }, (_, i) => makeHandle({ id: `r-${i}`, pos: i })));
+      h.navigator.prime();
+      h.setActive('r-0');
+      h.navigator.navigate('last');
+      expect(h.emitted).toContain(99);
+
+      h.setItems([
+        ...Array.from({ length: 9 }, (_, i) => makeHandle({ id: `r-${90 + i}`, pos: 90 + i })),
+        makeHandle({ id: 'r-99', pos: 99, disabled: true }),
+      ]);
+      h.setRange([90, 100]);
+      h.navigator.prime();
+      const resolved = h.navigator.tryResolvePending();
+      expect(resolved).toBe(true);
+      expect(h.getActive()).toBe('r-98');
+    });
+
+    it('continues in the pending direction when the resolved item is disabled (next)', () => {
+      const h = createNavigator({ total: 100, range: [0, 10] });
+      h.setItems([makeHandle({ id: 'r-50', pos: 50 })]);
+      h.setRange([50, 51]);
+      h.navigator.prime();
+      h.setActive('r-50');
+
+      h.navigator.navigate('next');
+      expect(h.emitted).toContain(51);
+
+      h.setItems([
+        makeHandle({ id: 'r-51', pos: 51, disabled: true }),
+        makeHandle({ id: 'r-52', pos: 52 }),
+      ]);
+      h.setRange([51, 53]);
+      h.navigator.prime();
+      const resolved = h.navigator.tryResolvePending();
+      expect(resolved).toBe(true);
+      expect(h.getActive()).toBe('r-52');
+    });
+
+    it('never settles activedescendant on a disabled entry id via pending resolution', () => {
+      const h = createNavigator({ range: [0, 10] });
+      h.setItems(Array.from({ length: 10 }, (_, i) => makeHandle({ id: `r-${i}`, pos: i })));
+      h.navigator.prime();
+      h.setActive('r-0');
+      h.navigator.navigate('last');
+
+      h.setItems([
+        ...Array.from({ length: 9 }, (_, i) => makeHandle({ id: `r-${90 + i}`, pos: 90 + i })),
+        makeHandle({ id: 'r-99', pos: 99, disabled: true }),
+      ]);
+      h.setRange([90, 100]);
+      h.navigator.tryResolvePending();
+      expect(h.getActive()).not.toBe('r-99');
     });
 
     it('skips disabled positions known via the indexed snapshot', () => {

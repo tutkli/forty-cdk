@@ -27,6 +27,13 @@ export interface ListboxVirtualizedNavigatorDeps<T> {
   readonly setActiveId: (id: string | null) => void;
   /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
   readonly emitScrollToIndex: (idx: number) => void;
+  /**
+   * Optional monotonic "the dataset changed" signal. When provided and its
+   * value changes, the position snapshot rebuilds from empty — the seam a
+   * consumer wires to `[dataVersion]` so a same-length re-sort / refresh purges
+   * stale off-window entries. See {@link ListboxVirtualizedNavigator.invalidateSnapshot}.
+   */
+  readonly dataVersion?: Signal<unknown>;
 }
 
 /**
@@ -42,7 +49,7 @@ export class ListboxVirtualizedNavigator<T> {
 
   constructor(deps: ListboxVirtualizedNavigatorDeps<T>) {
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: deps.loop },
+      { ...deps, loop: deps.loop, dataVersion: deps.dataVersion },
       {
         posOf: (o) => o.posInSet(),
         idOf: (o) => o.id(),
@@ -65,5 +72,10 @@ export class ListboxVirtualizedNavigator<T> {
   /** @see VirtualizedNavigator.navigate */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
     this.#core.navigate(direction);
+  }
+
+  /** @see VirtualizedNavigator.invalidateSnapshot */
+  invalidateSnapshot(): void {
+    this.#core.invalidateSnapshot();
   }
 }

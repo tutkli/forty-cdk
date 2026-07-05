@@ -39,6 +39,13 @@ export interface VirtualizedNavigatorDeps<T> {
    * activedescendant via a synthetic `pointermove`.
    */
   readonly scrollActiveIntoView: (host: HTMLElement) => void;
+  /**
+   * Optional monotonic "the dataset changed" signal. When provided and its
+   * value changes, the position snapshot rebuilds from empty — the seam a
+   * consumer wires to `[dataVersion]` so a same-length re-sort / refresh purges
+   * stale off-window entries. See {@link VirtualizedNavigator.invalidateSnapshot}.
+   */
+  readonly dataVersion?: Signal<unknown>;
 }
 
 /**
@@ -93,6 +100,11 @@ export class VirtualizedNavigator<T> {
   /** @see VirtualizedNavigator.tryResolvePending */
   tryResolvePending(): boolean {
     return this.#core.tryResolvePending();
+  }
+
+  /** @see VirtualizedNavigator.invalidateSnapshot */
+  invalidateSnapshot(): void {
+    this.#core.invalidateSnapshot();
   }
 
   /**

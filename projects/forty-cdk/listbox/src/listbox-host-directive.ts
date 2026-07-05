@@ -27,6 +27,7 @@
 export const FOR_LISTBOX_HOST_DIRECTIVE_INPUTS = [
   'value',
   'ariaLabel',
+  'dataVersion',
   'dir',
   'dirty',
   'disabled',

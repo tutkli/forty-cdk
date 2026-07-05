@@ -103,12 +103,16 @@ class AmbientDirection {
  * attribute on an ancestor (the standard `<html dir="rtl">` setup) rather than
  * relying on `direction` in a stylesheet.
  *
- * SSR-safe: with no browser platform the ambient value is `'ltr'` and the DOM
- * is never touched. Reactive: a single application-wide `MutationObserver`
- * (owned by the root `AmbientDirection` service) watches `dir` attribute
- * changes across the whole document and publishes them as a shared `revision`
- * tick; the ambient is a `computed` keyed on that tick that reads the host's
- * ancestor chain synchronously. A runtime flip (e.g. a locale switch toggling
+ * SSR-safe: the ancestor / `<html dir>` walk runs server-side too — `DOCUMENT`
+ * exists under Angular Universal (domino) and the walk is DOM-safe via optional
+ * chaining, so a server-rendered RTL app resolves `'rtl'` and hydration matches.
+ * No observer is created on the server (the `revision` tick stays `0`, which is
+ * correct for a single static render). Reactive in the browser: a single
+ * application-wide `MutationObserver` (owned by the root `AmbientDirection`
+ * service) watches `dir` attribute changes across the whole document and
+ * publishes them as a shared `revision` tick; the ambient is a `computed` keyed
+ * on that tick that reads the host's ancestor chain synchronously. A runtime
+ * flip (e.g. a locale switch toggling
  * `<html dir>`, or an ancestor wrapper toggling its `dir`) bumps the tick and
  * recomputes the returned signal — regardless of how many primitives are
  * mounted, there is exactly one observer.
@@ -124,23 +128,19 @@ class AmbientDirection {
  * the moved element or trigger any `dir` mutation to force a recompute.
  *
  * Must be called from an injection context (it injects `ElementRef`,
- * `DOCUMENT`, `PLATFORM_ID`, and `AmbientDirection`).
+ * `DOCUMENT`, and `AmbientDirection`).
  *
  * Internal — not re-exported from `public-api.ts`.
  */
 export function injectTextDirection(
   explicitDir: Signal<WritingDirection | null>,
 ): Signal<WritingDirection> {
-  const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   const doc = inject(DOCUMENT);
   const direction = inject(AmbientDirection);
 
   const ambient = computed<WritingDirection>(() => {
     direction.revision();
-    if (!isBrowser) {
-      return 'ltr';
-    }
     const ancestor = host.parentElement?.closest('[dir]');
     return normalizeDir(ancestor?.getAttribute('dir') ?? doc.documentElement?.dir);
   });

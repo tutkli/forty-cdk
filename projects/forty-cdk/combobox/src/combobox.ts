@@ -292,6 +292,18 @@ export class ForCombobox<T = string>
   readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
 
   /**
+   * Optional virtualized-only seam that tells the directive the source dataset
+   * changed **without** a `totalCount` transition — a same-length re-sort or
+   * refresh (e.g. sorting a 1000-row list). Bind any value that changes on such
+   * a refresh (a version counter, the array reference, a sort-key string); when
+   * it changes the position snapshot rebuilds from empty so navigation never
+   * resolves against a stale off-window entry. Leave unset (default) when the
+   * dataset only ever changes length. Equivalent to calling
+   * {@link ForCombobox.invalidateSnapshot} imperatively.
+   */
+  readonly dataVersion = input<unknown>();
+
+  /**
    * Emitted when keyboard navigation needs to land on an option whose
    * absolute index falls outside `visibleRange()`. Wire this to the
    * consumer's virtualizer (`scrollToIndex(idx)` on `@tanstack/virtual`,
@@ -419,7 +431,22 @@ export class ForCombobox<T = string>
       setActiveId: (id) => this.#activeId.set(id),
       emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
       scrollActiveIntoView: (host) => this.#scrollActiveIntoView(host),
+      dataVersion: this.dataVersion,
     }));
+  }
+
+  /**
+   * Force the virtualized position snapshot to rebuild from empty on the next
+   * fold, discarding stale off-window entries. Call after a same-length dataset
+   * refresh (a re-sort / reload that keeps `totalCount` unchanged) when you
+   * cannot express the change through the reactive `[dataVersion]` input. No-op
+   * when the combobox is not virtualized (`totalCount` unset).
+   */
+  invalidateSnapshot(): void {
+    if (this.totalCount() === undefined) {
+      return;
+    }
+    this.#requireNavigator().invalidateSnapshot();
   }
 
   readonly selected = computed<readonly { value: T; label: string }[]>(() => {

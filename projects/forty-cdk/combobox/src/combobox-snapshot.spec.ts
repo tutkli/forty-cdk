@@ -220,6 +220,26 @@ describe('VirtualizedNavigator', () => {
       expect(indexed.get(1)?.label).toBe('Row 1');
     });
 
+    it('purges carried-over off-window entries on invalidateSnapshot() (no totalCount transition)', () => {
+      const h = createNavigator({ total: 1000, range: [0, 1] });
+      const a = makeHandle({ id: 'r-0', value: 'a', label: 'Row 0', posInSet: 0 });
+      const b = makeHandle({ id: 'r-500', value: 'b', label: 'Row 500', posInSet: 500 });
+      h.setItems([a.handle, b.handle]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().get(500)?.id).toBe('r-500');
+
+      const a2 = makeHandle({ id: 'r-0b', value: 'a2', label: 'Row 0b', posInSet: 0 });
+      h.setItems([a2.handle]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().get(500)?.id).toBe('r-500');
+
+      h.navigator.invalidateSnapshot();
+      h.navigator.prime();
+      const snap = h.navigator.snapshotByPos();
+      expect(snap.has(500)).toBe(false);
+      expect(snap.get(0)?.id).toBe('r-0b');
+    });
+
     it('merges off-window entries when resolving labels (host merge replicated)', () => {
       const label = createLabelCache(100);
       const nav = createNavigator({ range: [0, 2] });

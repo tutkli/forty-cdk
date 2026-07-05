@@ -1,5 +1,6 @@
-import { linkedSignal, signal, type Signal, untracked } from '@angular/core';
+import { computed, signal, type Signal, untracked } from '@angular/core';
 
+import { foldSnapshotOnTotalCountTransition } from '../collection/fold-snapshot';
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 
 /**
@@ -92,6 +93,16 @@ export interface VirtualizedNavigatorDeps<H> {
    * when there is nothing to resume from.
    */
   readonly getResumePos?: () => number | null;
+  /**
+   * Optional monotonic "the dataset changed" signal. When provided and its
+   * value changes between folds, the position snapshot rebuilds from empty —
+   * exactly as a `totalCount` transition does — discarding carried-over
+   * off-window entries. This is the consumer-facing counterpart to
+   * {@link VirtualizedNavigator.invalidateSnapshot}: wire a signal that bumps on
+   * a same-length dataset refresh (a re-sort / reload that keeps `totalCount`
+   * unchanged) so navigation never resolves against a stale off-window entry.
+   */
+  readonly dataVersion?: Signal<unknown>;
 }
 
 /**
@@ -108,7 +119,9 @@ export interface VirtualizedNavigatorDeps<H> {
  *   boundaries it cannot see, and lets adapters resolve off-window entries
  *   (committed-index resolution, level-aware tree moves, label fallbacks). The
  *   prior map is carried over on every reactive trigger except a `totalCount`
- *   transition, which restarts from an empty map.
+ *   transition, which restarts from an empty map. A same-length dataset refresh
+ *   (invisible to the `totalCount` diff) can force the same reset through
+ *   {@link invalidateSnapshot} or the optional `deps.dataVersion` signal.
  * - **Pending active position** — when navigation lands outside the visible
  *   window, the engine emits `(scrollToIndex)` and remembers the target. The
  *   adapter's bridge effect calls `tryResolvePending` once the freshly-mounted
@@ -126,7 +139,28 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
 
   readonly #snapshotByPos: Signal<Map<number, E>>;
 
-  readonly #pendingActivePos = signal<number | null>(null);
+  /**
+   * Monotonic counter bumped by {@link invalidateSnapshot}. The snapshot fold
+   * tracks it as a `dataVersion` alongside the consumer's own optional
+   * `deps.dataVersion`, so an imperative call forces a from-empty rebuild on the
+   * next fold even when `totalCount` is unchanged.
+   */
+  readonly #invalidationVersion = signal(0);
+
+  /**
+   * The pending navigation slot. Carries the requested absolute position, the
+   * action that produced it, and whether a resolve landing on a disabled entry
+   * should continue the walk. Directional navigation (`navigate` / `#moveFrom`)
+   * sets `continueOnDisabled`, so it never settles activedescendant on a
+   * disabled id; a directionless `seedActive` (committed-index / enter-child /
+   * parent move — all targeting enabled positions in practice) settles on the
+   * resolved item as before.
+   */
+  readonly #pendingActivePos = signal<{
+    pos: number;
+    action: ListNavigationAction;
+    continueOnDisabled: boolean;
+  } | null>(null);
 
   constructor(
     deps: VirtualizedNavigatorDeps<H>,
@@ -136,21 +170,22 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     this.#deps = deps;
     this.#accessors = accessors;
 
-    const deferFold = options.deferFoldOnTotalTransition === true;
+    const consumerVersion = deps.dataVersion;
+    const version = computed(
+      () => ({
+        invalidation: this.#invalidationVersion(),
+        consumer: consumerVersion ? consumerVersion() : undefined,
+      }),
+      { equal: (a, b) => a.invalidation === b.invalidation && a.consumer === b.consumer },
+    );
 
-    this.#snapshotByPos = linkedSignal<
-      { total: number | undefined; items: readonly H[] },
-      Map<number, E>
-    >({
-      source: () => ({ total: deps.totalCount(), items: deps.items() }),
-      computation: (src, prev) => {
-        const totalChanged = prev !== undefined && prev.source.total !== src.total;
-        if (deferFold && totalChanged) {
-          return new Map<number, E>();
-        }
-        const next =
-          totalChanged || prev === undefined ? new Map<number, E>() : new Map(prev.value);
-        for (const item of src.items) {
+    this.#snapshotByPos = foldSnapshotOnTotalCountTransition<H, Map<number, E>>(
+      deps.items,
+      deps.totalCount,
+      () => new Map<number, E>(),
+      (prev, window) => {
+        const next = new Map(prev);
+        for (const item of window) {
           const pos = accessors.posOf(item);
           if (pos === null) continue;
           const entry = accessors.readEntry(item);
@@ -159,7 +194,11 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
         }
         return next;
       },
-    });
+      {
+        deferOnTotalTransition: options.deferFoldOnTotalTransition === true,
+        dataVersion: version,
+      },
+    );
   }
 
   /**
@@ -181,10 +220,26 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
   }
 
   /**
+   * Force the position snapshot to rebuild from empty on the next fold,
+   * discarding every carried-over off-window entry. Call this after a
+   * same-length dataset refresh — a re-sort / reload that keeps `totalCount`
+   * unchanged — so navigation never resolves against a stale `id` / `disabled` /
+   * `value` for a position outside the current `items()` window. Positions not
+   * in the current window are gone after the rebuild; the current window folds
+   * in as usual on the next `prime()`. The `deps.dataVersion` signal is the
+   * reactive counterpart when the consumer already models "the dataset changed".
+   */
+  invalidateSnapshot(): void {
+    this.#invalidationVersion.update((v) => v + 1);
+  }
+
+  /**
    * Try to resolve a pending virtualized navigation. Once an item carrying the
    * requested position mounts, seeds activedescendant to its id and scrolls it
-   * into view. Returns `true` if a pending request was resolved, `false`
-   * otherwise.
+   * into view. If the freshly-mounted entry turns out to be disabled, the walk
+   * continues from that position in the pending direction rather than settling
+   * activedescendant on a disabled id. Returns `true` if a pending request was
+   * resolved (or continued), `false` otherwise.
    *
    * Called from the adapter's bridge effect, whose documented reactive trigger
    * is `items()`. The pending slot is read **untracked**: this method writes it
@@ -193,13 +248,18 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * double-runs the prime / fold pass in every consuming primitive.
    */
   tryResolvePending(): boolean {
-    const pendingPos = untracked(this.#pendingActivePos);
-    if (pendingPos === null) {
+    const pending = untracked(this.#pendingActivePos);
+    if (pending === null) {
       return false;
     }
-    const match = this.#deps.items().find((it) => this.#accessors.posOf(it) === pendingPos);
+    const match = this.#deps.items().find((it) => this.#accessors.posOf(it) === pending.pos);
     if (!match) {
       return false;
+    }
+    if (pending.continueOnDisabled && this.#accessors.readEntry(match)?.disabled === true) {
+      this.#pendingActivePos.set(null);
+      this.#moveFrom(pending.pos, this.#continuationDirection(pending.action));
+      return true;
     }
     this.#deps.setActiveId(this.#accessors.idOf(match));
     this.#pendingActivePos.set(null);
@@ -208,11 +268,9 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
   }
 
   /**
-   * Virtualized arrow / Home / End navigation. Walks `moveIndex` against the
-   * absolute total, using the indexed snapshot to learn about disabled items
-   * outside the rendered window. When the target is in the visible range and a
-   * live item is present, seeds activedescendant directly; otherwise stashes the
-   * target in the pending slot and emits `(scrollToIndex)`.
+   * Virtualized arrow / Home / End navigation. Resolves the current absolute
+   * position from the active id (live item, else the snapshot) or the resume
+   * position, then delegates the `moveIndex` walk to {@link #moveFrom}.
    */
   navigate(direction: ListNavigationAction): void {
     const total = this.#deps.totalCount();
@@ -251,21 +309,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
       action = 'last';
     }
 
-    const isDisabled = (i: number) => indexed.get(i)?.disabled === true;
-
-    const next = moveIndex(currentPos, total, action, {
-      loop: this.#deps.loop(),
-      isDisabled,
-    });
-    if (next === null) {
-      return;
-    }
-
-    if (this.#seedIfRendered(next)) {
-      return;
-    }
-    this.#pendingActivePos.set(next);
-    this.#deps.emitScrollToIndex(next);
+    this.#moveFrom(currentPos, action);
   }
 
   /**
@@ -273,19 +317,51 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * on open, an enter-child / parent move, or a first / last fallback). If the
    * index is inside the rendered window and live, seeds activedescendant
    * directly; otherwise stashes it as pending and emits `(scrollToIndex)` so the
-   * consumer's virtualizer mounts it.
+   * consumer's virtualizer mounts it. A seed has no inherent direction, so its
+   * pending resolve settles on the resolved item even if disabled (callers
+   * target enabled positions) rather than continuing a directional walk.
    */
   seedActive(index: number): void {
     if (this.#seedIfRendered(index)) {
       return;
     }
-    this.#pendingActivePos.set(index);
+    this.#pendingActivePos.set({ pos: index, action: 'next', continueOnDisabled: false });
     this.#deps.emitScrollToIndex(index);
   }
 
   /** Clear any pending navigation (called by the adapter on close). */
   resetPending(): void {
     this.#pendingActivePos.set(null);
+  }
+
+  /**
+   * Walk `moveIndex` from `fromPos` in `action`, using the indexed snapshot to
+   * skip disabled items outside the rendered window. Seeds activedescendant when
+   * the target is rendered; otherwise stashes it (with the action, so a
+   * resolve-on-disabled can continue the walk) and emits `(scrollToIndex)`.
+   */
+  #moveFrom(fromPos: number, action: ListNavigationAction): void {
+    const total = this.#deps.totalCount();
+    if (total === undefined || total <= 0) {
+      return;
+    }
+    const indexed = this.#snapshotByPos();
+    const next = moveIndex(fromPos, total, action, {
+      loop: this.#deps.loop(),
+      isDisabled: (i) => indexed.get(i)?.disabled === true,
+    });
+    if (next === null) {
+      return;
+    }
+    if (this.#seedIfRendered(next)) {
+      return;
+    }
+    this.#pendingActivePos.set({ pos: next, action, continueOnDisabled: true });
+    this.#deps.emitScrollToIndex(next);
+  }
+
+  #continuationDirection(action: ListNavigationAction): ListNavigationAction {
+    return action === 'prev' || action === 'last' ? 'prev' : 'next';
   }
 
   #seedIfRendered(index: number): boolean {

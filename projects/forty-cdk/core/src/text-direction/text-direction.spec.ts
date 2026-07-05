@@ -203,7 +203,7 @@ describe('injectTextDirection', () => {
       });
     });
 
-    it('does not throw and defaults to ltr on the server even with an rtl ancestor', async () => {
+    it('resolves rtl from <html dir="rtl"> on the server', async () => {
       document.documentElement.setAttribute('dir', 'rtl');
       let host!: HTMLElement;
       expect(() => {
@@ -211,6 +211,21 @@ describe('injectTextDirection', () => {
         host = r.host;
         r.fixture.detectChanges();
       }).not.toThrow();
+      expect(host.getAttribute('dir')).toBe('rtl');
+    });
+
+    it('resolves rtl from an ancestor [dir="rtl"] on the server', async () => {
+      const fixture = TestBed.createComponent(Host);
+      fixture.componentInstance.ancestorDir.set('rtl');
+      const host = fixture.nativeElement.querySelector('[probeDir]') as HTMLElement;
+      expect(() => fixture.detectChanges()).not.toThrow();
+      expect(host.getAttribute('dir')).toBe('rtl');
+    });
+
+    it('defaults to ltr on the server with no ambient dir', async () => {
+      const fixture = TestBed.createComponent(Host);
+      const host = fixture.nativeElement.querySelector('[probeDir]') as HTMLElement;
+      expect(() => fixture.detectChanges()).not.toThrow();
       expect(host.getAttribute('dir')).toBe('ltr');
     });
   });

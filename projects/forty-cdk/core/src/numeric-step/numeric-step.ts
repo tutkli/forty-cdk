@@ -52,14 +52,20 @@ export function roundToStepPrecision(value: number, step: number): number {
 
 /**
  * Snaps `raw` onto the `[min, min + step, min + 2·step, …]` grid, then rounds the
- * result to the step's decimal precision (via {@link roundToStepPrecision}) so a
- * fractional step can't accumulate float noise. A non-positive `step` disables
- * snapping and returns `raw` unchanged. Clamping to an outer range is the
- * caller's responsibility — pass the snapped result to {@link clamp}.
+ * result to the greater of the step's and `min`'s decimal precision so a
+ * fractional step can't accumulate float noise and a `min` finer than `step`
+ * still lands exactly on the grid (e.g. `min=0.05, step=0.1` keeps `0.15`
+ * instead of rounding to the step's single decimal and drifting to `0.2`). A
+ * non-positive `step` disables snapping and returns `raw` unchanged. Clamping to
+ * an outer range is the caller's responsibility — pass the snapped result to
+ * {@link clamp}.
  */
 export function snapToStep(raw: number, step: number, min: number): number {
   if (step <= 0) {
     return raw;
   }
-  return roundToStepPrecision(Math.round((raw - min) / step) * step + min, step);
+  return roundToDecimals(
+    Math.round((raw - min) / step) * step + min,
+    Math.max(decimalPlaces(step), decimalPlaces(min)),
+  );
 }
