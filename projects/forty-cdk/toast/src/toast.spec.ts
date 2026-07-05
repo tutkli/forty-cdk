@@ -784,7 +784,6 @@ describe('ForToast (declarative)', () => {
     it('announces title + description via LiveAnnouncer without any altText', async () => {
       const r = renderHost(AltTextHost);
       await r.flush();
-      await Promise.resolve();
 
       expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Your changes are live.');
       expect($(r.el, 'alt-toast')!.textContent).toContain('Saved');
@@ -828,13 +827,11 @@ describe('ForToast (declarative)', () => {
       // title / description without re-mounting anything.
       const r = renderHost(AltTextHost);
       await r.flush();
-      await Promise.resolve();
       expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('off');
       expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Your changes are live.');
 
       r.instance.altText.set('Undo (Cmd+Z)');
       await r.flush();
-      await Promise.resolve();
 
       expect($(r.el, 'alt-toast')!.getAttribute('aria-live')).toBe('off');
       expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
@@ -849,14 +846,12 @@ describe('ForToast (declarative)', () => {
       const r = renderHost(AltTextHost);
       r.instance.altText.set('Undo (Cmd+Z)');
       await r.flush();
-      await Promise.resolve();
       expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
         'Saved. Your changes are live.. Undo (Cmd+Z)',
       );
 
       r.instance.title.set('Saved to cloud');
       await r.flush();
-      await Promise.resolve();
       expect(getLiveAnnouncerRegion('polite')!.textContent).toBe(
         'Saved to cloud. Your changes are live.. Undo (Cmd+Z)',
       );
@@ -1015,12 +1010,10 @@ describe('ForToastManager (programmatic)', () => {
       data: { label: 'Saving…', desc: 'Hang tight', altText: 'Undo (Cmd+Z)' },
     });
     await r.flush();
-    await Promise.resolve();
     expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saving…. Hang tight. Undo (Cmd+Z)');
 
     ref.update({ data: { label: 'Saved', desc: 'Hang tight', altText: 'Undo (Cmd+Z)' } });
     await r.flush();
-    await Promise.resolve();
     expect(getLiveAnnouncerRegion('polite')!.textContent).toBe('Saved. Hang tight. Undo (Cmd+Z)');
   });
 
