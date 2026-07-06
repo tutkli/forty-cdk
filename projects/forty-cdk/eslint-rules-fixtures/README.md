@@ -2,7 +2,7 @@
 
 Each `*.fixture.ts` file in this directory intentionally violates exactly one
 `forty-cdk/*` rule defined in [`eslint.config.js`](../../../eslint.config.js)
-(the six test-isolation rules in the `@forty-cdk-test-isolation-rules` block,
+(the seven test-isolation rules in the `@forty-cdk-test-isolation-rules` block,
 plus `no-effect-state-propagation`, `require-defaults-sibling`,
 `require-host-directive-sibling`, and `hidden-input-effective-disabled`). They
 are documentation-as-code: by linting them with the rule _enabled_ you can
@@ -33,6 +33,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `scoped-fake-timers.fixture.ts` — 1 warning (Rule 4 is `warn`, not `error`).
 - `no-directive-internal-signal-read.fixture.ts` — 1 error.
 - `no-floating-flush.fixture.ts` — 3 errors (the three floating `flush()` / `flushPositioning()` / `nextMacrotask()` statements; the three `await`ed calls that follow are the correct shape and are not flagged).
+- `require-overlay-cleanup.fixture.ts` — 1 error (imports a portaling overlay content directive with no `afterEachOverlayCleanup()` call in the file; the rule is file-level, so the compliant shape can't be shown in the same fixture).
 - `no-effect-state-propagation.fixture.ts` — 2 errors (the `.set` and `.update` read-and-write forms).
 - `require-defaults-sibling.fixture.ts` — 1 error (no `require-defaults-sibling.fixture-defaults.ts` sibling exists next to it).
 - `require-host-directive-sibling.fixture.ts` — 3 errors (direct `FormValueControl`, the `Omit<FormValueControl<…>, …>` slider shape, and `FormCheckboxControl`; the abstract base is allowed).

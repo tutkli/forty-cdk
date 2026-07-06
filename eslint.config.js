@@ -716,6 +716,129 @@ const fortyCdkPlugin = {
       },
     },
 
+    // Rule 7 — `forty-cdk/require-overlay-cleanup`.
+    //
+    // A spec that mounts a primitive which portals content to `document.body`
+    // must call `afterEachOverlayCleanup()` (from
+    // `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`) at least once in
+    // the file. That helper is a leak detector for the failing-mid-render
+    // path: if a test throws between `open.set(true)` and the
+    // `afterNextRender` that inserts/removes the portaled node, the orphan can
+    // survive into the next spec and bleed stale ARIA. The happy path never
+    // exercises it, so a silently-omitted call reads as "isolated" when it
+    // isn't (tooltip.spec had 22 portaling `describe` blocks missing the call
+    // before #1155).
+    //
+    // Detection is import-driven and file-level (the coarse, robust option
+    // recommended by #1256): if the file imports one of the maintained
+    // portaling symbols below as a value, it must call
+    // `afterEachOverlayCleanup()` somewhere in the file. Keying on the
+    // *content* directive (`ForPopoverContent`, …) or the imperative *manager*
+    // (`ForDialogManager`, …) — NOT the root coordinator (`ForPopover`,
+    // `ForSelect`, …) — is deliberate: contract specs import the root to reach
+    // the primitive WITHOUT opening the portaled surface (positioning inputs,
+    // disabled reflection, form-field wiring), so keying on roots would
+    // false-positive on them. Importing the content directive / manager is the
+    // unambiguous signal that the spec renders a surface that portals to the
+    // body.
+    //
+    // The SSR smoke suite (`src/lib/ssr/ssr.spec.ts`) is exempt: it forces
+    // `PLATFORM_ID` to the server id so `afterNextRender` never fires and
+    // nothing portals — asserting `<body>` is untouched IS its contract, so it
+    // imports every overlay piece yet must not call the cleanup helper.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 5
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Refs: tutkli/forty-cdk#1155, tutkli/forty-cdk#1256
+    'require-overlay-cleanup': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'A spec importing a portaling overlay primitive must call `afterEachOverlayCleanup()` (from `test-utils/overlay-cleanup.ts`).',
+        },
+        schema: [],
+        messages: {
+          missing:
+            'This spec imports the portaling overlay primitive `{{ symbol }}` but never calls `afterEachOverlayCleanup()`. A test that throws mid-render can orphan the portaled node and leak stale ARIA into the next spec. Call `afterEachOverlayCleanup()` (from `projects/forty-cdk/src/test-utils/overlay-cleanup.ts`) once at the top of each portaling `describe`. (CLAUDE.md § "Test isolation — non-negotiables" rule 5.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        // In specs the flush family / overlay pieces are unambiguous. The
+        // rule's own fixture (a `.fixture.ts`, linted via
+        // `pnpm lint:rule-fixtures`) is included so the rule is proven to fire.
+        const isSpec = filename.endsWith('.spec.ts');
+        const isOwnFixture = filename.endsWith(
+          '/eslint-rules-fixtures/require-overlay-cleanup.fixture.ts',
+        );
+        if (!isSpec && !isOwnFixture) {
+          return {};
+        }
+        // The SSR smoke suite renders server-side (`PLATFORM_ID` = server), so
+        // `afterNextRender` never fires and no overlay portals to the body —
+        // asserting `<body>` is untouched IS its contract. It imports every
+        // overlay piece yet must NOT call the cleanup helper.
+        if (filename.endsWith('/projects/forty-cdk/src/lib/ssr/ssr.spec.ts')) {
+          return {};
+        }
+        // Maintained allowlist of symbols whose import means the spec renders a
+        // surface that portals to `document.body`: the content directive of
+        // each anchored / free-floating overlay, plus the imperative managers
+        // (whose specs import the manager, not the directive). Keep in sync
+        // with the overlay primitives that portal (see
+        // `test-utils/overlay-cleanup.ts`).
+        const PORTALING_SYMBOLS = new Set([
+          'ForDialog',
+          'ForDialogManager',
+          'ForDrawer',
+          'ForDrawerManager',
+          'ForPopoverContent',
+          'ForTooltipContent',
+          'ForHoverCardContent',
+          'ForMenuContent',
+          'ForSelectContent',
+          'ForComboboxContent',
+          'ForDatePickerContent',
+          'ForTimePickerContent',
+          'ForToast',
+          'ForToastManager',
+        ]);
+        const imported = [];
+        let hasCleanupCall = false;
+        return {
+          ImportDeclaration(node) {
+            // Type-only imports mount nothing — `import type { ForDialog }`
+            // never renders the overlay, so it can't leak. Skip them.
+            if (node.importKind === 'type') return;
+            for (const spec of node.specifiers) {
+              if (spec.type !== 'ImportSpecifier') continue;
+              if (spec.importKind === 'type') continue;
+              const name = spec.imported.type === 'Identifier' ? spec.imported.name : null;
+              if (name && PORTALING_SYMBOLS.has(name)) {
+                imported.push({ symbol: name, node: spec });
+              }
+            }
+          },
+          CallExpression(node) {
+            const callee = node.callee;
+            if (callee.type === 'Identifier' && callee.name === 'afterEachOverlayCleanup') {
+              hasCleanupCall = true;
+            }
+          },
+          'Program:exit'() {
+            if (hasCleanupCall || imported.length === 0) return;
+            const first = imported[0];
+            context.report({
+              node: first.node,
+              messageId: 'missing',
+              data: { symbol: first.symbol },
+            });
+          },
+        };
+      },
+    },
+
     // Enforces CLAUDE.md § "Defaults providers": a primitive must ship a
     // sibling <name>-defaults.ts ONLY when it actually consumes scoped
     // defaults — i.e. some non-defaults source file in the entry's src/
@@ -1460,6 +1583,7 @@ module.exports = tseslint.config(
       'forty-cdk/scoped-fake-timers': 'warn',
       'forty-cdk/no-directive-internal-signal-read': 'error',
       'forty-cdk/no-floating-flush': 'error',
+      'forty-cdk/require-overlay-cleanup': 'error',
 
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the
