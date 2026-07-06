@@ -26,7 +26,8 @@ import { injectProgressContext } from './progress-context';
   host: {
     '[attr.data-state]': 'context.state()',
     '[attr.data-value]': 'context.clampedValue() ?? null',
-    '[attr.data-max]': 'context.max()',
+    '[attr.data-min]': '0',
+    '[attr.data-max]': 'context.effectiveMax()',
     '[attr.data-percentage]': 'context.percentageAttr()',
     '[style.--for-progress-percentage]': 'percentageStyle()',
   },

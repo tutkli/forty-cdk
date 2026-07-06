@@ -95,6 +95,7 @@ Visual fill paired with `[forProgress]`. Reflects the same state so width / tran
 | ----------------- | ------------------------------------------ |
 | `data-state`      | `indeterminate` \| `loading` \| `complete` |
 | `data-value`      | clamped value (absent while indeterminate) |
+| `data-min`        | `0`                                        |
 | `data-max`        | the `max` value                            |
 | `data-percentage` | `0`–`100` (absent while indeterminate)     |
 
