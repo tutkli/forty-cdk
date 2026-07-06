@@ -460,6 +460,8 @@ Apply `[forTableRowReorder]` on the rowgroup element that wraps the data rows (`
 
 `rowReorder` fires with `{ from, to }` — apply with `moveItemInArray`.
 
+In `mode="grid"` / `mode="treegrid"` the draggable rows **yield their tab stop** to the table's composite roving grid, so a keyboard-navigable, row-reorderable grid keeps the single tab stop the WAI-ARIA Data Grid pattern calls for (`Tab` enters the grid once). Because a row is a _container_, not a grid cell, keyboard reordering starts from a focused **cell**: press `Ctrl`/`Cmd`+`Space` on any cell to lift its enclosing row, then `ArrowUp` / `ArrowDown` (`Home` / `End`, `PageUp` / `PageDown`) move the target, `Space` / `Enter` drop, and `Escape` / `Tab` cancel. Idle Arrow keys stay grid navigation, and `Space` still selects the row when a `selectionMode` is set. In the static `mode="table"` the rowgroup keeps its own draggable-owned tab stop and the plain `Space` / `Enter` lift on a focused row.
+
 ```html
 <div role="rowgroup" forTableRowReorder (rowReorder)="onRowReorder($event)">
   @for (row of rows(); track row.id) {
@@ -496,12 +498,12 @@ Supported today:
   the last row — so one gesture drops the lifted row at any far row without waiting for auto-scroll
   to crawl there. Releasing Shift returns to normal in-window resolution; without Shift, pointer
   resolution is unchanged.
-- **Keyboard reorder across the entire dataset.** Space lifts the focused row; Arrow keys step
-  the target one row at a time; Home / Ctrl+Home jumps to the dataset start (index 0); End /
-  Ctrl+End jumps to the dataset end (last absolute index); PageUp / PageDown jump by one rendered
-  window; Space drops and emits absolute `from` / `to`. As the target steps past the rendered
-  window the target row is scrolled into view and the lifted row stays pinned mounted throughout.
-  `rowReorder` always emits absolute `from` / `to`.
+- **Keyboard reorder across the entire dataset.** In `mode="grid"`, `Ctrl`/`Cmd`+`Space` on a
+  focused cell lifts the enclosing row; Arrow keys step the target one row at a time; Home / End
+  jump to the dataset start (index 0) / end (last absolute index); PageUp / PageDown jump by one
+  rendered window; `Space` / `Enter` drop and emit absolute `from` / `to`; `Escape` / `Tab` cancel.
+  As the target steps past the rendered window the target row is scrolled into view and the lifted
+  row stays pinned mounted throughout. `rowReorder` always emits absolute `from` / `to`.
 
 ```html
 <div
@@ -625,9 +627,9 @@ host element:
 
 ### Caveats
 
-- `[forTableSortHeader]` and `[forDraggable]` (column reorder) **may** share the same header cell. When co-located, the draggable's roving tabindex owns the single tab stop and both the header cell and the sort header yield their own `[tabindex]`, so nothing collides on the host attribute (the draggable is detected by DOM marker — the `forDraggable` / `forFreeDrag` attribute — not by a drag-drop import). `aria-sort` / `data-sorted` stay on the cell and clicking it still cycles the sort. A column-reorder header row keeps its own drag roving tab stop and does not join the body's composite grid. Because both directives also handle Enter / Space, activating a focused co-located cell from the keyboard cycles the sort **and** starts a keyboard drag-lift — keep keyboard sorting and keyboard reorder on separate cells if you need the two interactions distinct.
+- `[forTableSortHeader]` and `[forDraggable]` (column reorder) **may** share the same header cell. When co-located, the draggable's roving tabindex owns the single tab stop and both the header cell and the sort header yield their own `[tabindex]`, so nothing collides on the host attribute (the draggable is detected by DOM marker — the `forDraggable` / `forFreeDrag` attribute — not by a drag-drop import). `aria-sort` / `data-sorted` stay on the cell and clicking it still cycles the sort. In `mode="grid"` / `mode="treegrid"` a column-reorder header row **joins** the body's composite grid ([#1223](https://github.com/tutkli/forty-cdk/issues/1223)), so it shares the single tab stop: idle Arrow keys navigate across header and body, while `Space` / `Enter` on a header cell still lifts it for keyboard reordering. Because both directives also handle Enter / Space, activating a focused co-located cell from the keyboard cycles the sort **and** starts a keyboard drag-lift — keep keyboard sorting and keyboard reorder on separate cells if you need the two interactions distinct.
 - Reorderable rows and cells must generate real boxes. Avoid `display: contents` on `[forTableRow]` or header cells used as drag targets — the drag-drop primitive needs a non-zero bounding box for pointer geometry.
-- In `mode="grid"`, both 2D cell roving and keyboard row dragging are keyboard-interactive. Reordering is the consumer's composition choice; the library provides affordances, not opinions about whether both should coexist.
+- In `mode="grid"`, both 2D cell roving and keyboard row reordering are keyboard-interactive from the same cells: idle Arrow keys navigate, and `Ctrl`/`Cmd`+`Space` lifts the enclosing row for reordering ([#1292](https://github.com/tutkli/forty-cdk/issues/1292)). The rows are not separate tab stops — they yield to the composite grid. Reordering is the consumer's composition choice; the library provides affordances, not opinions about whether both should coexist.
 - For all drag-drop CSS hooks (`data-dragging`, `data-drag-over`, `[forDragHandle]`, `[data-drag-preview]`, `data-settling`) see the [drag-drop README](../drag-drop/README.md).
 
 ### Inputs

@@ -61,15 +61,15 @@ test.describe('Table virtualized row reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${to}`);
   });
 
-  test('keyboard lift→ArrowDown→drop within the window emits ABSOLUTE indices', async ({
+  test('keyboard Ctrl+Space lift on a cell → ArrowDown → drop emits ABSOLUTE indices', async ({
     page,
   }) => {
     const indices = await scrollAndSettle(page);
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
-    await el(page, `row-${from}`).focus();
-    await page.keyboard.press('Space');
+    await el(page, `cell-${from}-id`).focus();
+    await page.keyboard.press('Control+Space');
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Space');
 
@@ -83,8 +83,8 @@ test.describe('Table virtualized row reorder', () => {
     const from = indices[Math.floor(indices.length / 2)]!;
     expect(from).toBeGreaterThan(50);
 
-    await el(page, `row-${from}`).focus();
-    await page.keyboard.press('Space');
+    await el(page, `cell-${from}-id`).focus();
+    await page.keyboard.press('Control+Space');
     await page.keyboard.press('End');
     await page.keyboard.press('Space');
 
