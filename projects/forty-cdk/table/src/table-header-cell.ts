@@ -21,10 +21,10 @@ import {
  * focused, and carries a 1-based `aria-colindex`.
  *
  * When a `[forDraggable]` shares the cell (a `[forTableColumnReorder]` row) the
- * cell still participates in that composite grid — `aria-colindex`,
- * `data-highlighted`, and focus activation stay on the cell — but it yields the
- * host `tabindex` and keydown to the draggable, so the grid keeps a single tab
- * stop and `[forTableColumnReorder]` routes idle Arrow navigation across it.
+ * cell still participates in that composite grid — `aria-colindex` and focus
+ * activation stay on the cell — but it yields the host `tabindex`, keydown, and
+ * `data-highlighted` to the draggable, so the grid keeps a single tab stop and
+ * `[forTableColumnReorder]` routes idle Arrow navigation across it.
  */
 @Directive({
   selector: '[forTableHeaderCell]',
@@ -122,9 +122,9 @@ export class ForTableHeaderCell {
   /**
    * `true` when this header row joins the body's composite roving grid (`grid` /
    * `treegrid` mode with a complete header row). A draggable header cell
-   * (`[forTableColumnReorder]`) still participates — it carries `aria-colindex` /
-   * `data-highlighted` and activates the roving cell on focus — even though it yields
-   * the host `tabindex` and keydown to its co-located `[forDraggable]`.
+   * (`[forTableColumnReorder]`) still participates — it carries `aria-colindex`
+   * and activates the roving cell on focus — even though it yields the host
+   * `tabindex`, keydown, and `data-highlighted` to its co-located `[forDraggable]`.
    */
   readonly #participates = computed(() => this.ctx.headerParticipatesInRoving());
 
@@ -146,7 +146,8 @@ export class ForTableHeaderCell {
   );
 
   protected readonly highlighted = computed(
-    () => this.#participates() && this.ctx.isCellHighlighted(this.#host),
+    () =>
+      !this.#yieldsToDraggable && this.#participates() && this.ctx.isCellHighlighted(this.#host),
   );
 
   constructor() {

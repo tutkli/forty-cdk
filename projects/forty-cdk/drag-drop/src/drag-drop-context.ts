@@ -85,15 +85,23 @@ export const FOR_DRAG_DROP_CONTEXT = new InjectionToken<ForDropListContext>(
  *
  * `ForTableColumnReorder` provides one backed by the table's composite grid roving so a
  * sortable + column-reorderable grid exposes a single tab stop across header and body,
- * per the WAI-ARIA Data Grid pattern.
+ * per the WAI-ARIA Data Grid pattern. The same composed roving can also govern each item's
+ * `data-highlighted` styling hook via {@link isItemHighlighted}.
  *
- * {@link itemTabindex} returns `null` to defer to the list's own roving — a wrapper hands
- * control back for states where the composed model does not apply (e.g. a `mode="table"`
- * header row that is not part of any composite grid).
+ * Both members return `null` to defer to the list's own roving — a wrapper hands control
+ * back for states where the composed model does not apply (e.g. a `mode="table"` header row
+ * that is not part of any composite grid).
  */
 export interface ForDropListRovingDelegate {
   /** Roving `tabindex` for `el` (`0` for the single tab stop, `-1` otherwise), or `null` to defer to the list's own roving. */
   itemTabindex(el: HTMLElement): -1 | 0 | null;
+  /**
+   * Whether `el` is the current keyboard-highlighted candidate — drives its `data-highlighted`
+   * styling hook — or `null` to defer to the list's own roving highlight. Optional: a delegate
+   * that governs only the tab order omits it, and each item's `data-highlighted` follows the
+   * list's own roving.
+   */
+  isItemHighlighted?(el: HTMLElement): boolean | null;
 }
 
 export const FOR_DROP_LIST_ROVING_DELEGATE = new InjectionToken<ForDropListRovingDelegate>(

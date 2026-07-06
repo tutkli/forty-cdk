@@ -64,6 +64,8 @@ export interface TableColumnReorderDescriptor {
         return {
           itemTabindex: (el) =>
             ctx.headerParticipatesInRoving() ? ctx.headerCellTabIndex(el) : null,
+          isItemHighlighted: (el) =>
+            ctx.headerParticipatesInRoving() ? ctx.isCellHighlighted(el) : null,
         };
       },
     },
