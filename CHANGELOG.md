@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-07-06
+
+### Added
+
+- **Breadcrumbs** — the navigation landmark `aria-label` is now localizable per scope, so `provideForBreadcrumbsDefaults` translates it in place.
+- **Calendar / Date Adapter** — `ForCalendar` gains a `locale` input and the date adapters format value labels locale-aware, so month/weekday labels and the displayed value follow the configured locale.
+- **Date Picker** — a `locale` input for the displayed value, matching `ForCalendar`.
+- **Dialog / Drawer** — `open()` accepts an opt-in `injector`, so a single programmatic open can resolve per-scope defaults and dependency injection from the caller's context.
+- **Search / Stepper** — the `[forSearchClear]` `aria-label` and the `[forStepperProgress]` `aria-valuetext` are now localizable through scope defaults, completing the accessible-string i18n rollout.
+- **Select** — multi-select range keyboard (Shift + Arrow, Shift + Home/End, Ctrl/Cmd + A) on the non-virtualized listbox.
+- **Select / Listbox / Combobox / Tree** — a new optional `[dataVersion]` input plus an `invalidateSnapshot()` method, so a same-length dataset re-sort or refresh purges stale off-window entries instead of misdirecting navigation.
+- **Time Range Field** — opt-in overnight ranges, where an end earlier than the start is treated as crossing midnight.
+- **Drag & Drop** — `[forDraggable]` reflects `data-highlighted` when it is the roving-active candidate (parity with every other roving-item primitive), and `FOR_DROP_LIST_ROVING_DELEGATE` gains an optional `isItemHighlighted` member so a composing widget can govern the highlight alongside the tab stop.
+- **Core** — `findFirstFocusable` and `FOCUSABLE_SELECTOR` are exported from `forty-cdk/core`, so a primitive whose focus-finding needs differ from `FocusTrap`'s can reuse the canonical contract instead of inlining a private copy.
+
+### Changed
+
+- **Radio Group** — **BREAKING.** `ForRadioGroup.value` is now `model<string | null>` defaulting to `null` (was `model<string>('')`) and implements `FormValueControl<string | null>`, so "nothing selected" is `null` and a form model can distinguish it from a real empty string. `ForRadioGroupContext.value` is retyped `Signal<string | null>`.
+- **Meter / Progress** — **BREAKING.** `value` is downgraded from a two-way `model()` to a one-way `input()`; the `[(value)]` binding and the implicit `valueChange` output are removed, since both are display-only. One-way `[value]` is unchanged.
+- **Avatar** — **BREAKING.** `ForAvatarImage`'s `(loadStatusChanged)` output is renamed to `(loadStatusChange)` (present tense, matching the rest of the library's outputs).
+- **Public contexts** — **BREAKING.** The writable `ModelSignal` members leaking through eight exported `*Context` interfaces (select, combobox, popover, menubar, navigation-menu, toggle-group, menu-radio-group, time-picker) are retyped to read-only `Signal`, so a custom piece can no longer bypass the root's guards via `ctx.value.set` / `ctx.open.set` / `ctx.query.set`. `ForPopoverContext` gains an explicit `close()` mutator for the one piece that wrote its model directly.
+- **Table** — **BREAKING.** `ForTable` is now generic (`ForTable<T>`) and its selection model is renamed `selection` → `value` for family consistency; the drag-drop `ForDragDropEvent<T>` drops its decorative generic, so a BYO-data `[forDropList]` types `item` as `unknown`.
+- **Search** — **BREAKING.** `[forSearchClear]` no longer takes the `[forSearch]` instance through a selector input. Wrap the field and the clear button in a new `[forSearchGroup]`, which bridges the two (mirroring `number-input`'s group token); the exported `ForSearchContext` surfaces read-only signals plus `clear()` / `focusInput()`.
+- **Date Picker** — **BREAKING.** The non-form range mode is retired: the `selectionMode` input, the `range` model, its `rangeChange` output, and the inherited `rangeSeparator` input are removed. Use `ForDateRangePicker` (which implements `FormValueControl<DateRange<D> | null>`) for date-range selection.
+- **Calendar** — **BREAKING.** A second range click before the anchor now commits the inverted range `[click, anchor]` — honouring the hover preview (WYSIWYG) — instead of discarding it and re-anchoring.
+
+### Fixed
+
+- **Core (state / collections / navigation)** — SSR resolves the ambient text direction server-side, so a `dir="rtl"` document hydrates without mismatch; `snapToStep` rounds to the finer of the step/min decimals; the virtualized navigator no longer settles `aria-activedescendant` on a freshly-mounted disabled option; the collection observer watches up to the hosts' deepest common ancestor, so intermediate-wrapper reorders are detected; and modifier keydowns (Meta/Ctrl/Alt) no longer flip input modality to keyboard.
+- **Core (overlay infrastructure)** — the listbox overlay bails when already closed, so a Tab-commit close reason survives a late `focusin`; the focus trap keys its Tab cycle off tabbable elements (skipping `tabindex="-1"` roving items), adds `iframe` / `summary`, skips return-focus to a disconnected target, and keeps focus in place on a surface with no tabbables; an item-aligned Select no longer flashes at the viewport origin during its exit animation; infinite host animations no longer strand overlay teardown; and the dismissable-layer `focusin` listener runs on the capture phase, so an app-level `stopPropagation` can't disable focus-outside dismissal.
+- **Date Field / Calendar** — `NativeDateAdapter` builds years 1–99 literally and preserves the wall-clock time across `addDays` / `addMonths` / `addYears` / `setTime`; flat keyboard moves (arrows, `Home`, `End`) clamp into `[min, max]`; a persistently mounted calendar's `today()` follows the clock across midnight; and a partially typed segment digit is dropped on blur instead of being left painted.
+- **Progress** — indicator `data-max` / `data-min` parity with the root, and a localizable completion announcement.
+- **Select / Listbox** — scroll the range-focused option into view, and guard the virtualized multi-select range keys.
+- **Calendar** — retain focus on bound-disabled prev / next / view-trigger buttons instead of ejecting it to the document.
+- **Table** — a single tab stop for a column-reorderable grid; `Enter` / `F2` cell-entry now shares the focus-trap finder, so it skips CSS-hidden widgets and recognizes the full focusable set.
+- **Combobox** — purge removed options from the inline completion.
+- **Number Input / Core** — keep incremental edits of grouped values, and parse spaced-literal number formats in fr-style locales.
+- **File Upload** — enforce `accept` on the dialog (browse) path, not only on drop.
+- **Button / Avatar** — Space activates on `keyup` rather than `keydown`, and the avatar image decode is guarded after destroy.
+- **Toggle / Toolbar** — drop the native `disabled` attribute on roving items and restrict the host selectors.
+- **Meter / Progress** — a coherent sanitized ARIA range and a uniform `ariaLabel`.
+- **Core** — read the navigator's pending slot untracked, so the adapter bridge effect no longer self-invalidates and double-runs across Select / Listbox / Tree / TableVirtualized.
+
+### Performance
+
+- **Virtualization** — memoize the computed virtual items, so an identical scroll window skips re-rendering the row set.
+- **Collection / Slider** — epoch-based membership tracking and a cached track rect.
+- **Drag & Drop** — cache the drag geometry once at lift instead of recomputing it on every pointer move.
+- **Virtualization / Table** — row and virtual reorder attach their `document` pointer listeners on drag start and detach on drag end, so there are none at rest.
+
 ## [0.7.0] - 2026-07-04
 
 ### Added
@@ -270,7 +320,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/tutkli/forty-cdk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/tutkli/forty-cdk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tutkli/forty-cdk/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/tutkli/forty-cdk/compare/v0.4.0...v0.5.0
