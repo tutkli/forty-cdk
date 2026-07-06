@@ -53,6 +53,7 @@ const POINTER_ARM_THRESHOLD_PX = 5;
     '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
     '[attr.data-dragging]': "lifted() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
+    '[attr.data-highlighted]': "highlighted() ? '' : null",
     '[style.touch-action]': 'touchAction()',
     '[style.display]': "placeholderActive() ? 'none' : null",
     '(dragstart)': 'onNativeDragStart($event)',
@@ -102,7 +103,7 @@ export class ForDraggable implements ForDraggableContext {
   /** `true` when this item is the currently lifted draggable. Reflected as `data-dragging`. */
   readonly lifted = computed(() => this.#list.isLifted(this.#host.nativeElement));
 
-  /** `true` when this item is the roving-tabindex active candidate. */
+  /** `true` when this item is the roving-tabindex active candidate. Reflected as `data-highlighted`. */
   protected readonly highlighted = computed(() =>
     this.#list.isItemHighlighted(this.#host.nativeElement),
   );

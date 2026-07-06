@@ -231,6 +231,27 @@ class DelegateGovernsHost {}
 })
 class DelegateDefersHost {}
 
+@Component({
+  imports: [...DND_IMPORTS],
+  template: `
+    <ul forDropList>
+      <li forDraggable [dragData]="1" data-test-id="1">Alpha</li>
+      <li forDraggable [dragData]="2" data-test-id="2" data-highlight>Beta</li>
+      <li forDraggable [dragData]="3" data-test-id="3">Gamma</li>
+    </ul>
+  `,
+  providers: [
+    {
+      provide: FOR_DROP_LIST_ROVING_DELEGATE,
+      useValue: {
+        itemTabindex: () => null,
+        isItemHighlighted: (el: HTMLElement) => el.hasAttribute('data-highlight'),
+      } satisfies ForDropListRovingDelegate,
+    },
+  ],
+})
+class DelegateHighlightHost {}
+
 function itemEl(host: HTMLElement, testId: string | number): HTMLElement {
   return host.querySelector<HTMLElement>(`[data-test-id="${testId}"]`)!;
 }
@@ -332,6 +353,45 @@ describe('ForDropList + ForDraggable', () => {
       const { el } = renderHost(DelegateDefersHost);
       expect(itemEl(el, 1).getAttribute('tabindex')).toBe('0');
       expect(itemEl(el, 2).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('defers each item data-highlighted to the delegate when it governs highlight', () => {
+      const { el } = renderHost(DelegateHighlightHost);
+      expect(itemEl(el, 1).hasAttribute('data-highlighted')).toBe(false);
+      expect(itemEl(el, 2).getAttribute('data-highlighted')).toBe('');
+      expect(itemEl(el, 3).hasAttribute('data-highlighted')).toBe(false);
+    });
+
+    it('falls back to the list own roving highlight when the delegate omits isItemHighlighted', async () => {
+      const { el, fixture } = renderHost(DelegateDefersHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      await flush(fixture);
+      expect(first.getAttribute('data-highlighted')).toBe('');
+      expect(itemEl(el, 2).hasAttribute('data-highlighted')).toBe(false);
+    });
+  });
+
+  describe('data-highlighted (roving-active item)', () => {
+    it('is absent on every item until one is focused', () => {
+      const { el } = renderHost(SingleListHost);
+      el.querySelectorAll('[forDraggable]').forEach((item) =>
+        expect(item.hasAttribute('data-highlighted')).toBe(false),
+      );
+    });
+
+    it('reflects data-highlighted on the roving-active item and clears the previous one', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const first = itemEl(el, 1);
+      first.focus();
+      await flush(fixture);
+      expect(first.getAttribute('data-highlighted')).toBe('');
+
+      pressKey(first, 'ArrowDown');
+      await flush(fixture);
+      const second = itemEl(el, 2);
+      expect(second.getAttribute('data-highlighted')).toBe('');
+      expect(first.hasAttribute('data-highlighted')).toBe(false);
     });
   });
 

@@ -278,6 +278,10 @@ export class ForDropList implements ForDropListContext {
   }
 
   isItemHighlighted(el: HTMLElement): boolean {
+    const delegated = this.#rovingDelegate?.isItemHighlighted?.(el);
+    if (delegated !== undefined && delegated !== null) {
+      return delegated;
+    }
     return this.roving.active() === el;
   }
 
