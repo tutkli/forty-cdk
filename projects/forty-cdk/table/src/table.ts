@@ -12,6 +12,7 @@ import {
 import {
   injectElementSize,
   Collection,
+  findFirstFocusable,
   firstEnabledHost,
   type GridNavigationAction,
   moveGridIndex,
@@ -448,7 +449,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   #handleCellEntryKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if ((event.key === 'Enter' || event.key === 'F2') && event.target === host) {
-      const target = firstFocusableInCell(host);
+      const target = findFirstFocusable(host);
       if (!target) {
         return false;
       }
@@ -569,28 +570,6 @@ export class ForTable<T = unknown> implements ForTableContext {
     return Math.max(1, this.#rows.items().length);
   }
 }
-
-/** Finds the first tabbable descendant of a grid cell for APG Enter / F2 cell entry. */
-function firstFocusableInCell(cell: HTMLElement): HTMLElement | null {
-  const candidates = cell.querySelectorAll<HTMLElement>(CELL_FOCUSABLE_SELECTOR);
-  for (const candidate of candidates) {
-    if (candidate === cell || candidate.hasAttribute('hidden')) {
-      continue;
-    }
-    return candidate;
-  }
-  return null;
-}
-
-const CELL_FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-  '[contenteditable="true"]',
-].join(',');
 
 /**
  * Resolves the absolute `(row, 0-based column)` target for a row-crossing grid

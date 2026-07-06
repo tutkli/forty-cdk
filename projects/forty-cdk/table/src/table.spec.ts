@@ -425,6 +425,23 @@ class CellEntryGridHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <table forTable mode="grid">
+      <tbody>
+        <tr forTableRow>
+          <td forTableCell name="a" data-testid="c-a-0">
+            <button type="button" style="display: none" data-testid="btn-hidden">hidden</button>
+            <button type="button" data-testid="btn-visible">visible</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  `,
+})
+class CellEntryHiddenWidgetHost {}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
   template: `
     <div
@@ -1434,6 +1451,17 @@ describe('ForTable', () => {
       press(btn, 'ArrowRight');
       await flush();
       expect(otherCell.getAttribute('data-highlighted')).toBe(null);
+    });
+
+    it('Enter skips a CSS-hidden widget and enters the next visible one', async () => {
+      const { el, flush } = renderHost(CellEntryHiddenWidgetHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="c-a-0"]')!;
+      const visible = el.querySelector<HTMLElement>('[data-testid="btn-visible"]')!;
+      cell.focus();
+      const ev = press(cell, 'Enter');
+      await flush();
+      expect(ev.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(visible);
     });
   });
 
