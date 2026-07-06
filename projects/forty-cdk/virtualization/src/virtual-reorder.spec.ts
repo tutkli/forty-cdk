@@ -39,6 +39,17 @@ function dispatchKey(el: HTMLElement, key: string): KeyboardEvent {
   return event;
 }
 
+function pointer(type: string, x: number, y: number): PointerEvent {
+  return new PointerEvent(type, {
+    clientX: x,
+    clientY: y,
+    button: 0,
+    pointerId: 1,
+    bubbles: true,
+    cancelable: true,
+  });
+}
+
 @Component({
   imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -259,6 +270,39 @@ describe('ForVirtualReorder — lifted-row pinning', () => {
     instance.viewport().setReorderingIndex(5000);
     await f();
     expect(query('[data-testid="row-5000"]')).toBeNull();
+  });
+});
+
+describe('ForVirtualReorder — pointer transport armed on drag start (#1252)', () => {
+  it('registers no document pointer listeners while idle', async () => {
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    try {
+      await mount();
+      const idle = addSpy.mock.calls.filter(
+        ([type]) => type === 'pointermove' || type === 'pointerup' || type === 'pointercancel',
+      );
+      expect(idle).toEqual([]);
+    } finally {
+      addSpy.mockRestore();
+    }
+  });
+
+  it('attaches document pointer listeners on drag start and detaches them on drag end', async () => {
+    const { query } = await mount();
+    const addSpy = vi.spyOn(document, 'addEventListener');
+    const removeSpy = vi.spyOn(document, 'removeEventListener');
+    try {
+      query('[data-testid="row-2"]')!.dispatchEvent(pointer('pointerdown', 0, 100));
+      const added = addSpy.mock.calls.filter(([type]) => type === 'pointermove').length;
+      expect(added).toBeGreaterThan(0);
+
+      document.dispatchEvent(pointer('pointerup', 0, 100));
+      const removed = removeSpy.mock.calls.filter(([type]) => type === 'pointermove').length;
+      expect(removed).toBe(added);
+    } finally {
+      addSpy.mockRestore();
+      removeSpy.mockRestore();
+    }
   });
 });
 

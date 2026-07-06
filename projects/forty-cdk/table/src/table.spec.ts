@@ -2439,6 +2439,46 @@ describe('ForTable', () => {
     });
   });
 
+  describe('row reorder pointer transport armed on drag start (#1252)', () => {
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('registers no document pointer listeners while idle', async () => {
+      const addSpy = vi.spyOn(document, 'addEventListener');
+      try {
+        const { flush } = renderHost(VirtualizedReorderTableHost);
+        await flush();
+        const idle = addSpy.mock.calls.filter(
+          ([type]) => type === 'pointermove' || type === 'pointerup' || type === 'pointercancel',
+        );
+        expect(idle).toEqual([]);
+      } finally {
+        addSpy.mockRestore();
+      }
+    });
+
+    it('attaches document pointer listeners on drag start and detaches them on drag end', async () => {
+      const { el, flush } = renderHost(VirtualizedReorderTableHost);
+      await flush();
+      const addSpy = vi.spyOn(document, 'addEventListener');
+      const removeSpy = vi.spyOn(document, 'removeEventListener');
+      try {
+        const row = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
+        row.dispatchEvent(pointerEvent('pointerdown', { clientY: 100 }));
+        const added = addSpy.mock.calls.filter(([type]) => type === 'pointermove').length;
+        expect(added).toBeGreaterThan(0);
+
+        document.dispatchEvent(pointerEvent('pointerup', { clientY: 100 }));
+        const removed = removeSpy.mock.calls.filter(([type]) => type === 'pointermove').length;
+        expect(removed).toBe(added);
+      } finally {
+        addSpy.mockRestore();
+        removeSpy.mockRestore();
+      }
+    });
+  });
+
   describe('column reorder zoneless', () => {
     afterEach(() => {
       document.querySelectorAll('[aria-live]').forEach((n) => n.remove());

@@ -12,12 +12,16 @@ import { isPlatformBrowser } from '@angular/common';
 import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
 import {
   createKeyboardDragMediator,
+  createPointerDragSession,
   LiveAnnouncer,
+  type PointerDragSession,
   resolveScrubReorder,
   translateWindowReorder,
 } from 'forty-cdk/core';
 
 import { ForVirtualViewport } from './virtual-viewport';
+
+const POINTER_ARM_THRESHOLD_PX = 5;
 
 /** Payload of `itemReorder`: the lifted item's previous and new absolute index. */
 export interface ForVirtualReorderEvent {
@@ -105,6 +109,7 @@ export class ForVirtualReorder {
   #kbTarget = 0;
   #pointerMain: number | null = null;
   #scrubEngaged = false;
+  #pointerSession: PointerDragSession | null = null;
 
   /** Fires once per committed reorder gesture with the previous / new absolute item index. */
   readonly itemReorder = output<ForVirtualReorderEvent>();
@@ -117,13 +122,16 @@ export class ForVirtualReorder {
     destroyRef.onDestroy(() => sub.unsubscribe());
 
     if (this.#isBrowser) {
-      const onPointerDown = (event: PointerEvent): void => this.#pinFromPointer(event);
-      const onPointerMove = (event: PointerEvent): void => this.#trackScrub(event);
-      const onPointerEnd = (): void => this.#viewport.setReorderingIndex(null);
-      this.#host.addEventListener('pointerdown', onPointerDown, { capture: true });
-      this.#document.addEventListener('pointermove', onPointerMove, { capture: true });
-      this.#document.addEventListener('pointerup', onPointerEnd, { capture: true });
-      this.#document.addEventListener('pointercancel', onPointerEnd, { capture: true });
+      this.#pointerSession = createPointerDragSession({
+        host: this.#host,
+        document: this.#document,
+        armThreshold: POINTER_ARM_THRESHOLD_PX,
+        canStart: (event) => this.#pinFromPointer(event),
+        onLift: () => {},
+        onMove: (event) => this.#trackScrub(event),
+        onCommit: () => this.#viewport.setReorderingIndex(null),
+        onCancel: () => this.#viewport.setReorderingIndex(null),
+      });
 
       createKeyboardDragMediator({
         host: this.#host,
@@ -140,10 +148,7 @@ export class ForVirtualReorder {
       });
 
       destroyRef.onDestroy(() => {
-        this.#host.removeEventListener('pointerdown', onPointerDown, { capture: true });
-        this.#document.removeEventListener('pointermove', onPointerMove, { capture: true });
-        this.#document.removeEventListener('pointerup', onPointerEnd, { capture: true });
-        this.#document.removeEventListener('pointercancel', onPointerEnd, { capture: true });
+        this.#pointerSession?.destroy();
         if (this.#kbLiftedHost !== null) {
           this.#kbCancel();
         }
@@ -269,14 +274,15 @@ export class ForVirtualReorder {
     this.#kbTarget = Math.max(0, Math.min(this.#count() - 1, value));
   }
 
-  #pinFromPointer(event: PointerEvent): void {
-    this.#pointerMain = event.clientY;
-    this.#scrubEngaged = event.shiftKey;
+  #pinFromPointer(event: PointerEvent): boolean {
     const host = this.#draggableHost(event.target);
     if (host === null) {
-      return;
+      return false;
     }
+    this.#pointerMain = event.clientY;
+    this.#scrubEngaged = event.shiftKey;
     this.#viewport.setReorderingIndex(this.#absoluteIndex(host));
+    return true;
   }
 
   #trackScrub(event: PointerEvent): void {
