@@ -7,6 +7,7 @@ export {
 } from './dropdown-menu-defaults';
 export type {
   FloatingAlign,
+  FloatingFallbackAxisSideDirection,
   FloatingSide,
   ForMenuContext,
   VetoableEvent,

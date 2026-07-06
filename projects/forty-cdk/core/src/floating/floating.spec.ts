@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { flushPositioning, installObserverPolyfills } from '../../../src/test-utils';
-import { injectFloating } from './floating';
+import { buildFlipOptions, injectFloating } from './floating';
 
 @Component({
   template: `
@@ -790,6 +790,62 @@ describe('injectFloating', () => {
       bubble.side.set('bottom');
       await flushPositioning(fixture);
       expect(bubble.firstPositionCount).toBe(2);
+    });
+  });
+
+  describe('buildFlipOptions', () => {
+    it('includes fallbackAxisSideDirection when set to a non-none value', () => {
+      const opts = buildFlipOptions({
+        padding: 0,
+        boundary: null,
+        fallbackAxisSideDirection: 'start',
+        fallbackPlacements: undefined,
+      });
+
+      expect(opts.fallbackAxisSideDirection).toBe('start');
+    });
+
+    it('omits fallbackAxisSideDirection when defaulted to "none" (matches floating-ui default)', () => {
+      const opts = buildFlipOptions({
+        padding: 0,
+        boundary: null,
+        fallbackAxisSideDirection: 'none',
+        fallbackPlacements: undefined,
+      });
+
+      expect(opts).not.toHaveProperty('fallbackAxisSideDirection');
+    });
+
+    it('includes a copy of fallbackPlacements when a non-empty list is provided', () => {
+      const placements = ['bottom', 'top'] as const;
+      const opts = buildFlipOptions({
+        padding: 0,
+        boundary: null,
+        fallbackAxisSideDirection: 'none',
+        fallbackPlacements: placements,
+      });
+
+      expect(opts.fallbackPlacements).toEqual(['bottom', 'top']);
+      expect(opts.fallbackPlacements).not.toBe(placements);
+    });
+
+    it('omits fallbackPlacements when the list is empty or unset', () => {
+      expect(
+        buildFlipOptions({
+          padding: 0,
+          boundary: null,
+          fallbackAxisSideDirection: 'none',
+          fallbackPlacements: [],
+        }),
+      ).not.toHaveProperty('fallbackPlacements');
+      expect(
+        buildFlipOptions({
+          padding: 0,
+          boundary: null,
+          fallbackAxisSideDirection: 'none',
+          fallbackPlacements: undefined,
+        }),
+      ).not.toHaveProperty('fallbackPlacements');
     });
   });
 });

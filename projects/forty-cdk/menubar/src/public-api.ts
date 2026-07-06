@@ -12,6 +12,7 @@ export {
 } from './menubar-defaults';
 export type {
   FloatingAlign,
+  FloatingFallbackAxisSideDirection,
   FloatingSide,
   ForMenuCloseReason,
   ForMenuContext,

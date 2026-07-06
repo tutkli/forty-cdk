@@ -88,6 +88,15 @@ export class MenubarMenuContext implements ForMenuContext {
     () =>
       this.#host.activeTrigger()?.avoidCollisions() ?? MENU_POSITIONING_DEFAULTS.avoidCollisions,
   );
+  /**
+   * The bar has no per-trigger `fallbackAxisSideDirection` input (that lever is
+   * exposed only on the three menu roots — #1306), so a bar-level menu keeps the
+   * shared default. A nested `[forMenuSub]` opened from a bar menu reads its own
+   * input, not this context, so vertical-fallback opt-in still works there.
+   */
+  readonly fallbackAxisSideDirection = signal(
+    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+  ).asReadonly();
   readonly collisionPadding = computed(() => this.#host.activeTrigger()?.collisionPadding() ?? 8);
   readonly arrowPadding = computed(
     () => this.#host.activeTrigger()?.arrowPadding() ?? MENU_POSITIONING_DEFAULTS.arrowPadding,

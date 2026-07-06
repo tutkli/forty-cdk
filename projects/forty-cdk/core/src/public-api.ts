@@ -194,6 +194,7 @@ export {
 export {
   type FloatingAlign,
   type FloatingConfig,
+  type FloatingFallbackAxisSideDirection,
   type FloatingSide,
   injectFloating,
 } from './floating/floating';

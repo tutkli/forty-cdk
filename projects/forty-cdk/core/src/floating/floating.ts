@@ -3,6 +3,7 @@ import {
   arrow,
   type ComputePositionReturn,
   flip,
+  type FlipOptions,
   hide,
   type Middleware,
   offset,
@@ -27,6 +28,16 @@ export type FloatingSide = 'top' | 'right' | 'bottom' | 'left';
 
 /** Alignment along the side axis: at the start edge, centered, or at the end edge. */
 export type FloatingAlign = 'start' | 'center' | 'end';
+
+/**
+ * Direction floating-ui's `flip` middleware falls back to on the *perpendicular*
+ * axis when no placement on the preferred axis fits. `'none'` (the default)
+ * keeps floating-ui's historical behavior — only the opposite same-axis
+ * placement is tried; `'start'` / `'end'` let the surface drop to a
+ * perpendicular side (e.g. a right-anchored submenu dropping to `top` / `bottom`)
+ * when both sides of the preferred axis overflow.
+ */
+export type FloatingFallbackAxisSideDirection = 'none' | 'start' | 'end';
 
 export interface FloatingConfig {
   /**
@@ -114,6 +125,23 @@ export interface FloatingConfig {
    */
   readonly collisionBoundary?: Signal<Element | Element[] | null>;
 
+  /**
+   * Direction floating-ui's `flip` falls back to on the *perpendicular* axis
+   * when no placement on the preferred axis fits. `'none'` (default) keeps the
+   * historical behavior — only the opposite same-axis placement is tried; set
+   * `'start'` / `'end'` to let a side-anchored surface (e.g. a submenu) drop to
+   * a perpendicular side when both sides of the preferred axis overflow. Only
+   * consulted when `avoidCollisions` is on.
+   */
+  readonly fallbackAxisSideDirection?: Signal<FloatingFallbackAxisSideDirection>;
+
+  /**
+   * Explicit ordered list of fallback placements handed to `flip`. Advanced
+   * control; overrides floating-ui's axis-side heuristic when provided. Only
+   * consulted when `avoidCollisions` is on.
+   */
+  readonly fallbackPlacements?: Signal<readonly Placement[] | undefined>;
+
   /** Padding (px) handed to the `arrow` middleware so the arrow stays inside the floating element's rounded corners. */
   readonly arrowPadding?: Signal<number>;
 
@@ -197,6 +225,35 @@ function transformOriginFor(side: FloatingSide, align: FloatingAlign): string {
 }
 
 /**
+ * Assemble the options handed to floating-ui's `flip` middleware. Kept as a
+ * pure function so the collision-fallback wiring (`fallbackAxisSideDirection`,
+ * `fallbackPlacements`) is unit-testable without a live DOM — jsdom returns
+ * zero rects, so `flip` never actually relocates there.
+ *
+ * `fallbackAxisSideDirection` is omitted (rather than passed as `'none'`) so the
+ * emitted options match floating-ui's own default exactly, and
+ * `fallbackPlacements` is omitted when empty / unset.
+ */
+export function buildFlipOptions(options: {
+  readonly padding: number | Padding;
+  readonly boundary: Element | Element[] | null;
+  readonly fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
+  readonly fallbackPlacements: readonly Placement[] | undefined;
+}): FlipOptions {
+  const flipOptions: FlipOptions = { padding: options.padding };
+  if (options.boundary) {
+    flipOptions.boundary = options.boundary;
+  }
+  if (options.fallbackAxisSideDirection !== 'none') {
+    flipOptions.fallbackAxisSideDirection = options.fallbackAxisSideDirection;
+  }
+  if (options.fallbackPlacements?.length) {
+    flipOptions.fallbackPlacements = [...options.fallbackPlacements];
+  }
+  return flipOptions;
+}
+
+/**
  * Wires a floating UI element (tooltip, popover, menu...) to its anchor.
  * Must be called from an injection context. Delegates the platform gate,
  * portal, anti-flash baseline, `autoUpdate` loop, and symmetric cleanup to
@@ -262,9 +319,16 @@ export function injectFloating(config: FloatingConfig): void {
       ];
 
       if (avoidCollisions) {
-        const flipOptions: Parameters<typeof flip>[0] = { padding: flipPaddingValue };
-        if (collisionBoundary) flipOptions.boundary = collisionBoundary;
-        middleware.push(flip(flipOptions));
+        middleware.push(
+          flip(
+            buildFlipOptions({
+              padding: flipPaddingValue,
+              boundary: collisionBoundary,
+              fallbackAxisSideDirection: config.fallbackAxisSideDirection?.() ?? 'none',
+              fallbackPlacements: config.fallbackPlacements?.(),
+            }),
+          ),
+        );
 
         if (stickyVal !== 'always') {
           const shiftOptions: Parameters<typeof shift>[0] = { padding: shiftPaddingValue };

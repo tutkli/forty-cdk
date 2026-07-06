@@ -1,4 +1,8 @@
-import type { FloatingAlign, FloatingSide } from '../floating/floating';
+import type {
+  FloatingAlign,
+  FloatingFallbackAxisSideDirection,
+  FloatingSide,
+} from '../floating/floating';
 
 /**
  * Single source of truth for the floating-ui positioning defaults shared by the
@@ -30,6 +34,8 @@ export const MENU_POSITIONING_DEFAULTS = {
   alignOffset: 0,
   /** `flip` / `shift` keep the surface inside the viewport by default. */
   avoidCollisions: true,
+  /** `flip` tries only the opposite same-axis placement by default (no perpendicular-axis fallback). */
+  fallbackAxisSideDirection: 'none' as FloatingFallbackAxisSideDirection,
   /** Default padding (px) for the `arrow` middleware. */
   arrowPadding: 0,
   /** Default stickiness behaviour for `shift`. */

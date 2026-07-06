@@ -2,7 +2,11 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../collection/collection';
-import type { FloatingAlign, FloatingSide } from '../floating/floating';
+import type {
+  FloatingAlign,
+  FloatingFallbackAxisSideDirection,
+  FloatingSide,
+} from '../floating/floating';
 import type { MenuActivationModality } from './menu-overlay';
 import type {
   ListNavigationAction,
@@ -97,6 +101,14 @@ export interface ForMenuContext {
   readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides of
+   * the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let a submenu drop to a vertical
+   * side on a narrow viewport. Threaded through to `injectOverlayShell`'s
+   * floating positioner.
+   */
+  readonly fallbackAxisSideDirection: Signal<FloatingFallbackAxisSideDirection>;
   readonly collisionPadding: Signal<number>;
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
