@@ -197,7 +197,7 @@ export {
   type FloatingSide,
   injectFloating,
 } from './floating/floating';
-export { findFirstFocusable } from './focus-trap/focus-trap';
+export { FOCUSABLE_SELECTOR, findFirstFocusable } from './focus-trap/focus-trap';
 export { injectHasFocusableContent } from './focusable-content/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
