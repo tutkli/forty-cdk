@@ -5,6 +5,7 @@ import { renderHost } from '../../src/test-utils/render';
 import { nextMacrotask } from '../../src/test-utils/flush';
 import { ForProgress } from './progress';
 import { ForProgressIndicator } from './progress-indicator';
+import { provideForProgressDefaults } from './progress-defaults';
 
 @Component({
   imports: [ForProgress, ForProgressIndicator],
@@ -27,6 +28,19 @@ class ProgressHost {
   readonly getLabel = signal<((v: number, m: number) => string) | null>(null);
   readonly announce = signal(false);
   readonly ariaLabel = signal<string | null>(null);
+}
+
+@Component({
+  imports: [ForProgress, ForProgressIndicator],
+  providers: [provideForProgressDefaults({ completeAnnouncement: 'All done' })],
+  template: `
+    <div forProgress [value]="value()" [announceCompletion]="true">
+      <div forProgressIndicator></div>
+    </div>
+  `,
+})
+class ProgressDefaultsHost {
+  readonly value = signal<number | null>(0);
 }
 
 // LiveAnnouncer (driven by [announceCompletion]) schedules every text write
@@ -192,6 +206,30 @@ describe('ForProgress', () => {
       expect(indicator.getAttribute('data-state')).toBe('indeterminate');
     });
 
+    it('emits data-min / data-max matching the root for every max, including max <= 0', async () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.value.set(40);
+      await flush();
+
+      const root = query<HTMLElement>('[forProgress]')!;
+      const indicator = query<HTMLElement>('[forProgressIndicator]')!;
+      expect(indicator.getAttribute('data-min')).toBe(root.getAttribute('data-min'));
+      expect(indicator.getAttribute('data-max')).toBe(root.getAttribute('data-max'));
+      expect(indicator.getAttribute('data-min')).toBe('0');
+      expect(indicator.getAttribute('data-max')).toBe('100');
+
+      fixture.componentInstance.max.set(0);
+      await flush();
+      expect(root.getAttribute('data-max')).toBe('1');
+      expect(indicator.getAttribute('data-max')).toBe('1');
+      expect(indicator.getAttribute('data-min')).toBe('0');
+
+      fixture.componentInstance.max.set(-10);
+      await flush();
+      expect(indicator.getAttribute('data-max')).toBe(root.getAttribute('data-max'));
+      expect(indicator.getAttribute('data-max')).toBe('1');
+    });
+
     it('throws a prefixed error when used outside [forProgress]', () => {
       @Component({
         imports: [ForProgressIndicator],
@@ -259,6 +297,20 @@ describe('ForProgress', () => {
 
       const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
       expect(region?.textContent ?? '').toBe('');
+    });
+
+    it('announces the scope-configured completeAnnouncement string when no valuetext exists', async () => {
+      const { fixture, flush } = renderHost(ProgressDefaultsHost);
+      fixture.componentInstance.value.set(50);
+      await flush();
+      await nextMacrotask();
+
+      fixture.componentInstance.value.set(100);
+      await flush();
+      await nextMacrotask();
+
+      const region = document.querySelector<HTMLElement>('[aria-live="polite"]');
+      expect(region!.textContent).toBe('All done');
     });
   });
 

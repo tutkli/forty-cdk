@@ -9,8 +9,14 @@ export interface ForProgressContext {
   readonly value: Signal<number | null>;
   /** Value clamped to `[0, max]`, or `null` when indeterminate. Use this for any visual / ARIA reflection. */
   readonly clampedValue: Signal<number | null>;
-  /** Current max. */
+  /** Current max as written by the consumer. */
   readonly max: Signal<number>;
+  /**
+   * `max` clamped to a strictly positive value, used for every ARIA / visual
+   * reflection. Descendant pieces mirror this instead of the raw {@link max}
+   * so root and indicator never diverge for a non-positive `max`.
+   */
+  readonly effectiveMax: Signal<number>;
   /** `null` when indeterminate; otherwise `0..100`. */
   readonly percentage: Signal<number | null>;
   /**

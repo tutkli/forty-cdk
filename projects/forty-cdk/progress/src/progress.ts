@@ -89,10 +89,10 @@ export class ForProgress implements ForProgressContext {
 
   /**
    * When true, transitions to `value === max` are announced once via the
-   * live announcer using the current `aria-valuetext` (or `"Complete"` if
-   * none). Repeated transitions to the same complete state do not re-fire.
-   * The default is read from `provideForProgressDefaults` for the
-   * surrounding scope.
+   * live announcer using the current `aria-valuetext` (or the scope's
+   * `completeAnnouncement` string when none). Repeated transitions to the
+   * same complete state do not re-fire. Both the enablement and the announced
+   * string default to `provideForProgressDefaults` for the surrounding scope.
    */
   readonly announceCompletion = input(this.#defaults.announceCompletion, {
     transform: booleanAttribute,
@@ -149,7 +149,10 @@ export class ForProgress implements ForProgressContext {
         return;
       }
       if (next === 'complete' && this.announceCompletion()) {
-        this.#announcer.announce(this.ariaValueText() ?? 'Complete', 'polite');
+        this.#announcer.announce(
+          this.ariaValueText() ?? this.#defaults.completeAnnouncement,
+          'polite',
+        );
       }
     });
   }

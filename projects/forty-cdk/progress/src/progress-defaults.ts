@@ -10,11 +10,18 @@ import { createDefaults } from 'forty-cdk/core';
  */
 export interface ForProgressDefaults {
   /**
-   * Whether to announce `Complete` (or the label) once via `aria-live` on
+   * Whether to announce completion (or the label) once via `aria-live` on
    * the loading→complete transition. Opt-in — useful on flows where the
    * user explicitly waits for completion (uploads, submissions).
    */
   announceCompletion: boolean;
+  /**
+   * String announced via `aria-live` on the loading→complete transition when
+   * no `aria-valuetext` is available. A screen reader verbalizes it, so
+   * override it per scope to localize the announcement; defaults to the
+   * English `'Complete'`.
+   */
+  completeAnnouncement: string;
 }
 
 /**
@@ -24,6 +31,7 @@ export interface ForProgressDefaults {
  */
 export const FOR_PROGRESS_FALLBACK_DEFAULTS: ForProgressDefaults = {
   announceCompletion: false,
+  completeAnnouncement: 'Complete',
 };
 
 const { token, provideDefaults } = createDefaults<ForProgressDefaults>(
