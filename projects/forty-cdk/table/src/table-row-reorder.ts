@@ -12,11 +12,15 @@ import { isPlatformBrowser } from '@angular/common';
 import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
 import {
   createKeyboardDragMediator,
+  createPointerDragSession,
   LiveAnnouncer,
+  type PointerDragSession,
   resolveScrubReorder,
   translateWindowReorder,
 } from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
+
+const POINTER_ARM_THRESHOLD_PX = 5;
 
 /** Payload of `rowReorder`: the previous and new row index. */
 export interface TableRowReorderDescriptor {
@@ -105,6 +109,7 @@ export class ForTableRowReorder {
   #kbTarget = 0;
   #pointerMain: number | null = null;
   #scrubEngaged = false;
+  #pointerSession: PointerDragSession | null = null;
 
   /** Fires once per committed reorder gesture with the previous / new row index. */
   readonly rowReorder = output<TableRowReorderDescriptor>();
@@ -117,13 +122,16 @@ export class ForTableRowReorder {
     destroyRef.onDestroy(() => sub.unsubscribe());
 
     if (this.#isBrowser) {
-      const onPointerDown = (event: PointerEvent): void => this.#pinFromPointer(event);
-      const onPointerMove = (event: PointerEvent): void => this.#trackScrub(event);
-      const onPointerEnd = (): void => this.ctx.setReorderingRow(null);
-      this.#host.addEventListener('pointerdown', onPointerDown, { capture: true });
-      this.#document.addEventListener('pointermove', onPointerMove, { capture: true });
-      this.#document.addEventListener('pointerup', onPointerEnd, { capture: true });
-      this.#document.addEventListener('pointercancel', onPointerEnd, { capture: true });
+      this.#pointerSession = createPointerDragSession({
+        host: this.#host,
+        document: this.#document,
+        armThreshold: POINTER_ARM_THRESHOLD_PX,
+        canStart: (event) => this.#pinFromPointer(event),
+        onLift: () => {},
+        onMove: (event) => this.#trackScrub(event),
+        onCommit: () => this.ctx.setReorderingRow(null),
+        onCancel: () => this.ctx.setReorderingRow(null),
+      });
 
       createKeyboardDragMediator({
         host: this.#host,
@@ -140,10 +148,7 @@ export class ForTableRowReorder {
       });
 
       destroyRef.onDestroy(() => {
-        this.#host.removeEventListener('pointerdown', onPointerDown, { capture: true });
-        this.#document.removeEventListener('pointermove', onPointerMove, { capture: true });
-        this.#document.removeEventListener('pointerup', onPointerEnd, { capture: true });
-        this.#document.removeEventListener('pointercancel', onPointerEnd, { capture: true });
+        this.#pointerSession?.destroy();
         if (this.#kbLiftedHost !== null) {
           this.#kbCancel();
         }
@@ -277,19 +282,20 @@ export class ForTableRowReorder {
     this.#kbTarget = Math.max(0, Math.min(this.#count() - 1, value));
   }
 
-  #pinFromPointer(event: PointerEvent): void {
-    this.#pointerMain = event.clientY;
-    this.#scrubEngaged = event.shiftKey;
+  #pinFromPointer(event: PointerEvent): boolean {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
-      return;
+      return false;
     }
     const rowHost = target.closest<HTMLElement>('[forTableRow]');
     if (rowHost === null) {
-      return;
+      return false;
     }
+    this.#pointerMain = event.clientY;
+    this.#scrubEngaged = event.shiftKey;
     const handle = this.ctx.rows().find((r) => r.host === rowHost);
     this.ctx.setReorderingRow(handle?.virtualIndex() ?? null);
+    return true;
   }
 
   #trackScrub(event: PointerEvent): void {
