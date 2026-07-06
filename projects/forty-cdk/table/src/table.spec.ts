@@ -791,6 +791,53 @@ class VirtualizedReorderTableHost {
   lastRow: TableRowReorderDescriptor | null = null;
 }
 
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable mode="grid" aria-label="Row reorder grid">
+      <div forTableHeaderRow>
+        @for (col of columns; track col) {
+          <div forTableHeaderCell [name]="col" [attr.data-testid]="'h-' + col">{{ col }}</div>
+        }
+      </div>
+      <div role="rowgroup" forTableRowReorder (rowReorder)="onRowReorder($event)">
+        @for (row of rows(); track row.id) {
+          <div
+            forTableRow
+            [value]="row.id"
+            forDraggable
+            [dragData]="row.id"
+            [attr.data-testid]="'row-' + row.id"
+          >
+            @for (col of columns; track col) {
+              <div forTableCell [name]="col" [attr.data-testid]="'c-' + row.id + '-' + col">
+                {{ row.id }}-{{ col }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class RowReorderGridHost {
+  readonly columns = ['a', 'b'] as const;
+  readonly rows = signal([{ id: 0 }, { id: 1 }, { id: 2 }]);
+  lastRow: TableRowReorderDescriptor | null = null;
+  onRowReorder(d: TableRowReorderDescriptor): void {
+    this.lastRow = d;
+    this.rows.update((r) => moveItemInArray(r, d.from, d.to));
+  }
+}
+
 const rootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
 const headerRowEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTableHeaderRow]')!;
 const headerCellEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTableHeaderCell]')!;
@@ -2290,20 +2337,14 @@ describe('ForTable', () => {
       document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
     });
 
-    it('keyboard lift→move→drop emits {from,to} and reindexes', async () => {
+    it('keyboard Ctrl+Space lift on a cell → move → drop emits {from,to} and reindexes', async () => {
       const { el, instance, flush } = renderHost(ReorderTableHost);
       await flush();
-      const row0 = el.querySelector<HTMLElement>('[data-testid="row-0"]')!;
-      row0.focus();
-      row0.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
-      row0.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
-      );
-      row0.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = el.querySelector<HTMLElement>('[data-testid="row-0"] [forTableCell]')!;
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      press(cell, 'ArrowDown');
+      press(cell, ' ');
       await flush();
       expect(instance.lastRow).toEqual({ from: 0, to: 1 });
       const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
@@ -2318,20 +2359,17 @@ describe('ForTable', () => {
       document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
     });
 
-    it('keyboard lift→move→drop emits ABSOLUTE {from,to} derived from virtualIndex', async () => {
+    const vCell = (el: HTMLElement, vi: number) =>
+      el.querySelector<HTMLElement>(`[data-testid="row-${vi}"] [forTableCell]`)!;
+
+    it('keyboard Ctrl+Space lift on a cell → move → drop emits ABSOLUTE {from,to} derived from virtualIndex', async () => {
       const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
       await flush();
-      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
-      row51.focus();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
-      );
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = vCell(el, 51);
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      press(cell, 'ArrowDown');
+      press(cell, ' ');
       await flush();
       expect(instance.lastRow).toEqual({ from: 51, to: 52 });
     });
@@ -2342,19 +2380,13 @@ describe('ForTable', () => {
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       const instance = fixture.componentInstance;
-      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
-      row51.focus();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = vCell(el, 51);
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
       fixture.detectChanges();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
-      );
+      press(cell, 'ArrowDown');
       fixture.detectChanges();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      press(cell, ' ');
       fixture.detectChanges();
       expect(instance.lastRow).toEqual({ from: 51, to: 52 });
     });
@@ -2362,17 +2394,11 @@ describe('ForTable', () => {
     it('End key jumps target to the dataset end (count-1)', async () => {
       const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
       await flush();
-      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
-      row51.focus();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }),
-      );
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = vCell(el, 51);
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      press(cell, 'End');
+      press(cell, ' ');
       await flush();
       expect(instance.lastRow).toEqual({ from: 51, to: 999 });
     });
@@ -2380,17 +2406,11 @@ describe('ForTable', () => {
     it('Home key jumps target to the dataset start (0)', async () => {
       const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
       await flush();
-      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
-      row51.focus();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }),
-      );
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = vCell(el, 51);
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      press(cell, 'Home');
+      press(cell, ' ');
       await flush();
       expect(instance.lastRow).toEqual({ from: 51, to: 0 });
     });
@@ -2398,19 +2418,13 @@ describe('ForTable', () => {
     it('multiple ArrowDown past the window count tracks absolute index', async () => {
       const { el, instance, flush } = renderHost(VirtualizedReorderTableHost);
       await flush();
-      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
-      row51.focus();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = vCell(el, 51);
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
       for (let i = 0; i < 10; i++) {
-        row51.dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }),
-        );
+        press(cell, 'ArrowDown');
       }
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      press(cell, ' ');
       await flush();
       expect(instance.lastRow).toEqual({ from: 51, to: 61 });
     });
@@ -2421,21 +2435,105 @@ describe('ForTable', () => {
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       const instance = fixture.componentInstance;
-      const row51 = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
-      row51.focus();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      const cell = vCell(el, 51);
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
       fixture.detectChanges();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }),
-      );
+      press(cell, 'End');
       fixture.detectChanges();
-      row51.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
+      press(cell, ' ');
       fixture.detectChanges();
       expect(instance.lastRow).toEqual({ from: 51, to: 999 });
+    });
+  });
+
+  describe('grid + row-reorder composite tab stop (#1292)', () => {
+    const headerCell = (el: HTMLElement, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
+    const dataCell = (el: HTMLElement, rowId: number, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="c-${rowId}-${col}"]`)!;
+    const rows = (el: HTMLElement) => Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+    const tabStops = (el: HTMLElement) =>
+      Array.from(
+        el.querySelectorAll<HTMLElement>('[forTableHeaderCell], [forTableCell], [forTableRow]'),
+      ).filter((c) => c.getAttribute('tabindex') === '0');
+
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    it('exposes exactly one tab stop across header + body + rows, on the first header cell', () => {
+      const { el } = renderHost(RowReorderGridHost);
+      const zeros = tabStops(el);
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(headerCell(el, 'a'));
+    });
+
+    it('draggable rows yield their tab stop to the composite grid (tabindex="-1")', () => {
+      const { el } = renderHost(RowReorderGridHost);
+      for (const row of rows(el)) {
+        expect(row.getAttribute('tabindex')).toBe('-1');
+      }
+    });
+
+    it('a grid with both column AND row reorder still exposes exactly one tab stop', () => {
+      const { el } = renderHost(ReorderTableHost);
+      const zeros = Array.from(
+        el.querySelectorAll<HTMLElement>('[forTableHeaderCell], [forTableCell], [forTableRow]'),
+      ).filter((c) => c.getAttribute('tabindex') === '0');
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(el.querySelector('[data-testid="h-name"]'));
+    });
+
+    it('Ctrl+Space on a cell lifts the enclosing row for keyboard reordering', async () => {
+      const { el, flush } = renderHost(RowReorderGridHost);
+      const cell = dataCell(el, 0, 'a');
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      await flush();
+      expect(el.querySelector('[data-testid="row-0"]')!.getAttribute('data-dragging')).toBe('');
+    });
+
+    it('Ctrl+Space lift → ArrowDown → Space drop emits {from,to} and reorders', async () => {
+      const { el, instance, flush } = renderHost(RowReorderGridHost);
+      const cell = dataCell(el, 0, 'a');
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      press(cell, 'ArrowDown');
+      press(cell, ' ');
+      await flush();
+      expect(instance.lastRow).toEqual({ from: 0, to: 1 });
+      expect(rows(el)[0]!.getAttribute('data-testid')).toBe('row-1');
+      expect(rows(el)[1]!.getAttribute('data-testid')).toBe('row-0');
+    });
+
+    it('Escape cancels a keyboard row reorder without emitting', async () => {
+      const { el, instance, flush } = renderHost(RowReorderGridHost);
+      const cell = dataCell(el, 0, 'a');
+      cell.focus();
+      press(cell, ' ', { ctrlKey: true });
+      press(cell, 'Escape');
+      await flush();
+      expect(instance.lastRow).toBeNull();
+      expect(el.querySelector('[data-testid="row-0"]')!.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('idle ArrowDown on a cell still navigates the composite grid (not swallowed by reorder)', async () => {
+      const { el, flush } = renderHost(RowReorderGridHost);
+      const cell = dataCell(el, 0, 'a');
+      press(cell, 'ArrowDown');
+      await flush();
+      expect(dataCell(el, 1, 'a').getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('keeps a single tab stop across header + body + rows without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(RowReorderGridHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const zeros = tabStops(el);
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(el.querySelector('[data-testid="h-a"]'));
     });
   });
 

@@ -134,6 +134,48 @@ test.describe('table column reorder — composite grid tab stop (#1223)', () => 
   });
 });
 
+test.describe('table row reorder — composite grid tab stop (#1292)', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoFixture(page, 'table-reorder');
+  });
+
+  test('a grid with both column and row reorder is a single tab stop', async ({ page }) => {
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'header-name')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(el(page, 'after')).toBeFocused();
+  });
+
+  test('idle Arrow keys still navigate the grid cells (row reorder does not swallow them)', async ({
+    page,
+  }) => {
+    await el(page, 'header-name').focus();
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'cell-0-name')).toBeFocused();
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'cell-1-name')).toBeFocused();
+  });
+
+  test('keyboard Ctrl+Space on a cell lifts the row, ArrowDown, Space drops it down', async ({
+    page,
+  }) => {
+    await expect(el(page, 'cell-0-name')).toHaveText('Ada');
+    await expect(el(page, 'cell-1-name')).toHaveText('Bob');
+
+    await el(page, 'cell-0-name').focus();
+    await page.keyboard.press('Control+Space');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'cell-0-name')).toHaveText('Bob');
+    await expect(el(page, 'cell-1-name')).toHaveText('Ada');
+  });
+});
+
 test.describe('table reorder boundary + lockAxis passthrough', () => {
   test('column lockAxis="x" — preview y stays at lift-time y while x tracks pointer', async ({
     page,

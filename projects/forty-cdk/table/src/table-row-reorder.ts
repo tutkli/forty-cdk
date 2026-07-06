@@ -9,18 +9,37 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'forty-cdk/drag-drop';
+import {
+  FOR_DRAG_DROP_DEFAULTS,
+  FOR_DROP_LIST_ROVING_DELEGATE,
+  ForDropList,
+  type ForDragDropEvent,
+  type ForDropListRovingDelegate,
+} from 'forty-cdk/drag-drop';
 import {
   createKeyboardDragMediator,
   createPointerDragSession,
+  isDragLiftKey,
   LiveAnnouncer,
   type PointerDragSession,
+  resolveLiftedDragControl,
   resolveScrubReorder,
   translateWindowReorder,
 } from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
+
+const LIFTED_NAV_KEYS: ReadonlySet<string> = new Set([
+  'ArrowDown',
+  'ArrowUp',
+  'ArrowLeft',
+  'ArrowRight',
+  'Home',
+  'End',
+  'PageDown',
+  'PageUp',
+]);
 
 /** Payload of `rowReorder`: the previous and new row index. */
 export interface TableRowReorderDescriptor {
@@ -57,6 +76,18 @@ export function translateRowReorderIndices(
  * emits the previous / new index; the consumer applies the move to their own row array
  * (e.g. `moveItemInArray`). **It never reorders rows itself** (BYO-data).
  *
+ * In `mode="grid"` / `mode="treegrid"` the data cells already form the table's composite
+ * roving grid, so the draggable rows **yield their tab stop to it**: a grid that is both
+ * keyboard-navigable and row-reorderable keeps the **single tab stop** the WAI-ARIA Data
+ * Grid pattern calls for (`Tab` enters the grid once). The row draggable is a container,
+ * not a grid cell, so keyboard reordering is initiated from a focused **cell**: press
+ * `Ctrl`/`Cmd`+`Space` on any cell to lift the enclosing row, then `ArrowUp` / `ArrowDown`
+ * (`Home` / `End`, `PageUp` / `PageDown`) move the target, `Space` / `Enter` drop, and
+ * `Escape` / `Tab` cancel. Idle Arrow keys stay grid navigation, and `Space` still selects
+ * the row when a selection mode is set. In the static `mode="table"` the rowgroup keeps its
+ * own draggable-owned tab stop and the plain `Space` / `Enter` lift on a focused row.
+ * The rowgroup hands its drop-list roving to the grid via `FOR_DROP_LIST_ROVING_DELEGATE`.
+ *
  * Under `[forTableVirtualized]`, `rowReorder` emits **absolute** dataset indices
  * (derived from each rendered row's `virtualIndex`) so `moveItemInArray` over the full
  * array moves the right row. Pointer drag works within the rendered window and reaches
@@ -80,6 +111,18 @@ export function translateRowReorderIndices(
 @Directive({
   selector: '[forTableRowReorder]',
   exportAs: 'forTableRowReorder',
+  providers: [
+    {
+      provide: FOR_DROP_LIST_ROVING_DELEGATE,
+      useFactory: (): ForDropListRovingDelegate => {
+        const ctx = injectTableContext('ForTableRowReorder');
+        return {
+          itemTabindex: () => (ctx.mode() !== 'table' ? -1 : null),
+          isItemHighlighted: () => (ctx.mode() !== 'table' ? false : null),
+        };
+      },
+    },
+  ],
   hostDirectives: [
     {
       directive: ForDropList,
@@ -105,6 +148,7 @@ export class ForTableRowReorder {
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
 
   #kbLiftedHost: HTMLElement | null = null;
+  #kbPath: 'virtual' | 'list' | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
   #pointerMain: number | null = null;
@@ -141,88 +185,175 @@ export class ForTableRowReorder {
         onIdleKeydown: (event) => this.#onIdleKeydown(event),
         onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
         onFocusOut: (event) => {
-          if (this.#kbLiftedHost !== null && event.target === this.#kbLiftedHost) {
-            this.#kbCancel();
+          if (this.#kbLiftedHost === null) {
+            return;
           }
+          const related = event.relatedTarget;
+          if (related instanceof Node && this.#host.contains(related)) {
+            return;
+          }
+          this.#cancelActive();
         },
       });
 
       destroyRef.onDestroy(() => {
         this.#pointerSession?.destroy();
         if (this.#kbLiftedHost !== null) {
-          this.#kbCancel();
+          this.#cancelActive();
         }
         this.ctx.setReorderingRow(null);
       });
     }
   }
 
-  #onLiftedKeydown(event: KeyboardEvent): void {
-    if (this.ctx.virtualRowNavigation() === null) {
-      return;
-    }
-    const key = event.key;
-    if (key === ' ' || key === 'Enter') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbCommit();
-    } else if (key === 'Escape') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbCancel();
-    } else if (key === 'ArrowDown') {
-      this.#setTarget(this.#kbTarget + 1);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'ArrowUp') {
-      this.#setTarget(this.#kbTarget - 1);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'Home') {
-      this.#setTarget(0);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'End') {
-      this.#setTarget(this.#count() - 1);
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'PageDown') {
-      this.#setTarget(this.#kbTarget + this.#page());
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    } else if (key === 'PageUp') {
-      this.#setTarget(this.#kbTarget - this.#page());
-      event.preventDefault();
-      event.stopPropagation();
-      this.#kbApplyTarget();
-    }
+  #gridMode(): boolean {
+    return this.ctx.mode() !== 'table';
+  }
+
+  #virtualized(): boolean {
+    return this.ctx.virtualRowNavigation() !== null;
   }
 
   #onIdleKeydown(event: KeyboardEvent): void {
-    if (this.ctx.virtualRowNavigation() === null) {
+    const lift = this.#gridMode()
+      ? isDragLiftKey(event)
+      : this.#virtualized() && (event.key === ' ' || event.key === 'Enter');
+    if (!lift) {
       return;
     }
-    const key = event.key;
-    if (key !== ' ' && key !== 'Enter') {
-      return;
-    }
-    const draggable = this.#list.items().find((h) => h.host === event.target);
-    if (draggable === undefined || draggable.disabled()) {
-      return;
-    }
-    const handle = this.ctx.rows().find((r) => r.host === event.target);
-    const vi = handle?.virtualIndex() ?? null;
-    if (vi === null) {
+    const rowHost = this.#resolveRow(event.target);
+    if (rowHost === null) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
-    this.#kbLift(event.target as HTMLElement, vi);
+    this.#lift(rowHost);
+  }
+
+  #onLiftedKeydown(event: KeyboardEvent): void {
+    const control = resolveLiftedDragControl(event);
+    if (control === 'commit') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.#commitActive();
+      return;
+    }
+    if (control === 'cancel') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.#cancelActive();
+      return;
+    }
+    if (!LIFTED_NAV_KEYS.has(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.#moveActive(event.key);
+  }
+
+  #resolveRow(target: EventTarget | null): HTMLElement | null {
+    if (!(target instanceof Node)) {
+      return null;
+    }
+    const row = this.ctx.rows().find((r) => r.host === target || r.host.contains(target));
+    if (row === undefined) {
+      return null;
+    }
+    const draggable = this.#list.items().find((h) => h.host === row.host);
+    if (draggable === undefined || draggable.disabled()) {
+      return null;
+    }
+    return row.host;
+  }
+
+  #lift(rowHost: HTMLElement): void {
+    const handle = this.ctx.rows().find((r) => r.host === rowHost);
+    if (handle === undefined) {
+      return;
+    }
+    if (this.#virtualized()) {
+      const vi = handle.virtualIndex();
+      if (vi === null) {
+        return;
+      }
+      this.#kbPath = 'virtual';
+      this.#kbLift(rowHost, vi);
+      return;
+    }
+    const from = this.#list.lift(rowHost);
+    if (from < 0) {
+      return;
+    }
+    this.#kbPath = 'list';
+    this.#kbLiftedHost = rowHost;
+  }
+
+  #moveActive(key: string): void {
+    if (this.#kbPath === 'virtual') {
+      switch (key) {
+        case 'ArrowDown':
+          this.#setTarget(this.#kbTarget + 1);
+          break;
+        case 'ArrowUp':
+          this.#setTarget(this.#kbTarget - 1);
+          break;
+        case 'Home':
+          this.#setTarget(0);
+          break;
+        case 'End':
+          this.#setTarget(this.#count() - 1);
+          break;
+        case 'PageDown':
+          this.#setTarget(this.#kbTarget + this.#page());
+          break;
+        case 'PageUp':
+          this.#setTarget(this.#kbTarget - this.#page());
+          break;
+        default:
+          return;
+      }
+      this.#kbApplyTarget();
+      return;
+    }
+    if (this.#kbPath === 'list') {
+      switch (key) {
+        case 'ArrowDown':
+          this.#list.moveLifted('next');
+          break;
+        case 'ArrowUp':
+          this.#list.moveLifted('prev');
+          break;
+        case 'Home':
+        case 'PageUp':
+          this.#list.moveLifted('first');
+          break;
+        case 'End':
+        case 'PageDown':
+          this.#list.moveLifted('last');
+          break;
+        default:
+          return;
+      }
+    }
+  }
+
+  #commitActive(): void {
+    if (this.#kbPath === 'virtual') {
+      this.#kbCommit();
+    } else if (this.#kbPath === 'list') {
+      this.#list.drop();
+      this.#kbTeardown();
+    }
+  }
+
+  #cancelActive(): void {
+    if (this.#kbPath === 'virtual') {
+      this.#kbCancel();
+    } else if (this.#kbPath === 'list') {
+      this.#list.cancel();
+      this.#kbTeardown();
+    }
   }
 
   #kbLift(host: HTMLElement, vi: number): void {
@@ -261,6 +392,7 @@ export class ForTableRowReorder {
 
   #kbTeardown(): void {
     this.#kbLiftedHost = null;
+    this.#kbPath = null;
     this.#kbFrom = 0;
     this.#kbTarget = 0;
     this.ctx.setReorderingRow(null);
