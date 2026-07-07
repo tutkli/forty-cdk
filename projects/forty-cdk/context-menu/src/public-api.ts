@@ -8,6 +8,7 @@ export {
 } from './context-menu-defaults';
 export type {
   FloatingAlign,
+  FloatingFallbackAxisSideDirection,
   FloatingSide,
   ForMenuContext,
   MenuActivationModality,

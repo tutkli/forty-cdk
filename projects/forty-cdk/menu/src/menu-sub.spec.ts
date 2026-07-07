@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import {
   afterEachOverlayCleanup,
@@ -1031,6 +1032,51 @@ describe('ForMenuSub', () => {
 
       expect(r.instance.subOpen()).toBe(true);
       expect(document.querySelector('[forMenuSubContent]')).not.toBeNull();
+    });
+  });
+
+  describe('fallbackAxisSideDirection input', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open">
+          <button forDropdownMenuTrigger>x</button>
+          @if (open()) {
+            <div forMenuContent>
+              <div forMenuSub [(open)]="subOpen" [fallbackAxisSideDirection]="axis()">
+                <button forMenuSubTrigger>More</button>
+                @if (subOpen()) {
+                  <div forMenuSubContent><button forMenuItem>A</button></div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class Host {
+      readonly open = signal(true);
+      readonly subOpen = signal(true);
+      readonly axis = signal<'none' | 'start' | 'end'>('start');
+    }
+
+    it('exposes the consumer value on the submenu ForMenuContext (fed to [forMenuSubContent])', async () => {
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const sub = r.fixture.debugElement.query(By.directive(ForMenuSub)).injector.get(ForMenuSub);
+      expect(sub.fallbackAxisSideDirection()).toBe('start');
+    });
+
+    it('reacts to a runtime input change without zone.js', async () => {
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const sub = r.fixture.debugElement.query(By.directive(ForMenuSub)).injector.get(ForMenuSub);
+      expect(sub.fallbackAxisSideDirection()).toBe('start');
+
+      r.instance.axis.set('end');
+      await flush(r.fixture);
+      expect(sub.fallbackAxisSideDirection()).toBe('end');
     });
   });
 });

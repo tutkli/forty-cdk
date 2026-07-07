@@ -140,6 +140,21 @@ bootstrapApplication(App, {
 
 Partial overrides inherit unspecified keys from the parent scope (or the library defaults at the root), so a component-level `providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })]` layers on top of an app-level configuration per key.
 
+### Narrow-viewport fallback
+
+A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in RTL). On a narrow / mobile viewport both horizontal sides can overflow — `flip` only tries the opposite same-axis placement by default, so the submenu ends up clipped or overlapping the parent. Opt a submenu into dropping to a **vertical** side (`top` / `bottom`) when both horizontal sides are blocked with `[fallbackAxisSideDirection]` (default `'none'`), typically bound to a media-query signal:
+
+```html
+<div forMenuSub #sub="forMenuSub" [fallbackAxisSideDirection]="isNarrow() ? 'start' : 'none'">
+  <button forMenuSubTrigger>More</button>
+  @if (sub.open()) {
+  <div forMenuSubContent>…</div>
+  }
+</div>
+```
+
+`'start'` prefers the top side when it falls back, `'end'` prefers the bottom. The lever is a pure opt-in — the default `'none'` reproduces today's beside-parent behaviour exactly. `[forDropdownMenu]` and `[forContextMenu]` expose the same input for their own content surface.
+
 ## API
 
 ### Data attributes

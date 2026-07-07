@@ -64,6 +64,7 @@ export class ForMenuContent {
         sideOffset: this.ctx.sideOffset,
         alignOffset: this.ctx.alignOffset,
         avoidCollisions: this.ctx.avoidCollisions,
+        fallbackAxisSideDirection: this.ctx.fallbackAxisSideDirection,
         collisionPadding: this.ctx.collisionPadding,
         arrowPadding: this.ctx.arrowPadding,
         sticky: this.ctx.sticky,

@@ -58,6 +58,9 @@ describe('menu positioning inputs drift guard', () => {
       expect(root.align()).toBe(MENU_POSITIONING_DEFAULTS.align);
       expect(root.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
       expect(root.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
+      expect(root.fallbackAxisSideDirection()).toBe(
+        MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+      );
       expect(root.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
       expect(root.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
       expect(root.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);
@@ -122,6 +125,9 @@ describe('menubar menu context positioning fallback drift guard', () => {
 
     expect(ctx.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
     expect(ctx.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
+    expect(ctx.fallbackAxisSideDirection()).toBe(
+      MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+    );
     expect(ctx.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
     expect(ctx.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
     expect(ctx.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);

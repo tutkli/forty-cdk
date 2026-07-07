@@ -12,6 +12,7 @@ import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 
 import {
   type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
   type FloatingSide,
   type WritingDirection,
   createMenuOverlay,
@@ -105,6 +106,17 @@ export class ForContextMenu
   readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
     transform: booleanAttribute,
   });
+
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides of
+   * the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let the menu drop to a
+   * perpendicular side on a narrow viewport. Only consulted when
+   * `avoidCollisions` is on.
+   */
+  readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
+    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+  );
 
   /**
    * Padding (px) applied uniformly to flip / shift / size. Default `8`.

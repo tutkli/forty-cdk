@@ -15,6 +15,7 @@ import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
   type FloatingSide,
   createDebouncedAction,
   type WritingDirection,
@@ -147,6 +148,22 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
     transform: booleanAttribute,
   });
+
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides of
+   * the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let the submenu drop to a vertical
+   * side (`top` / `bottom`) when both horizontal sides are blocked — the
+   * graceful-degradation lever for a submenu clipped on a narrow viewport. Only
+   * consulted when `avoidCollisions` is on.
+   *
+   * Shares the single `MENU_POSITIONING_DEFAULTS` source with the two top-level
+   * roots; `menu-positioning-inputs.spec.ts` guards the three roots against
+   * drift.
+   */
+  readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
+    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+  );
 
   /**
    * Padding (px) applied uniformly to flip / shift / size. Defaults to `8`

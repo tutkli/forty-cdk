@@ -24,6 +24,7 @@ export { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-c
 export { FOR_MENU_DEFAULTS, provideForMenuDefaults, type ForMenuDefaults } from './menu-defaults';
 export type {
   FloatingAlign,
+  FloatingFallbackAxisSideDirection,
   FloatingSide,
   Point,
   VetoableEvent,
