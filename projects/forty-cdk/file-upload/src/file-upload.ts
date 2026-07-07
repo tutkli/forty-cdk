@@ -77,7 +77,10 @@ export class ForFileUpload implements ForFileUploadContext {
    * `multiple`, syncs the registered input's `files` for native form submission,
    * then emits `filesChange` with the accepted set and `filesRejected` with the
    * rest. Shared by the drag&drop and dialog paths so `accept` is enforced
-   * identically through both entry points and they cannot diverge.
+   * identically through both entry points and they cannot diverge. When every
+   * file is rejected and `files` is the registered input's own `FileList` (the
+   * dialog path), the input is cleared so a native form submission cannot ship
+   * a file the primitive rejected.
    */
   acceptFiles(files: FileList): void {
     const all = Array.from(files);
@@ -95,6 +98,8 @@ export class ForFileUpload implements ForFileUploadContext {
       const list = keptAll ? files : this.#toFileList(limited);
       if (this.#input && this.#input.files !== list) this.#input.files = list;
       this.filesChange.emit(list);
+    } else if (this.#input && this.#input.files === files) {
+      this.#input.value = '';
     }
     if (rejected.length > 0) this.filesRejected.emit(rejected);
   }
