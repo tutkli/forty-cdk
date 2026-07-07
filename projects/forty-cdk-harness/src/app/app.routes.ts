@@ -86,6 +86,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/tooltip.fixture').then((m) => m.TooltipFixture),
   },
   {
+    path: 'tooltip-over-menu',
+    loadComponent: () =>
+      import('./fixtures/tooltip-over-menu.fixture').then((m) => m.TooltipOverMenuFixture),
+  },
+  {
     path: 'toolbar',
     loadComponent: () => import('./fixtures/toolbar.fixture').then((m) => m.ToolbarFixture),
   },

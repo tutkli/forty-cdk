@@ -94,13 +94,13 @@ export class DismissableLayerStack {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmost()?.handlePointerDown(event as PointerEvent);
+    this.#topmostFor((layer) => layer.handlesPointer)?.handlePointerDown(event as PointerEvent);
   };
   readonly #onFocusIn = (event: Event): void => {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmost()?.handleFocusIn(event as FocusEvent);
+    this.#topmostFor((layer) => layer.handlesFocus)?.handleFocusIn(event as FocusEvent);
   };
 
   constructor() {
@@ -150,6 +150,16 @@ export class DismissableLayerStack {
   #topmost(): DismissableLayer | undefined {
     return this.#stack[this.#stack.length - 1];
   }
+
+  #topmostFor(predicate: (layer: DismissableLayer) => boolean): DismissableLayer | undefined {
+    for (let i = this.#stack.length - 1; i >= 0; i--) {
+      const layer = this.#stack[i];
+      if (layer && predicate(layer)) {
+        return layer;
+      }
+    }
+    return undefined;
+  }
 }
 
 /**
@@ -170,11 +180,18 @@ function resolveEventTarget(event: Event): Node | null {
  * dialogs, popovers, dropdown menus, drawers, and any other transient
  * overlay: Escape, pointer-down outside, focus-outside.
  *
- * Only the topmost active layer responds to events — nested layers (e.g. a
- * popover inside a dialog) shadow their parents until they deactivate.
- * Dispatch goes through a single shared document listener that always
- * targets the layer at the top of the stack, so synchronous changes to the
- * stack from a handler don't leak into sibling listeners.
+ * Dispatch is per channel. Escape goes to the literal topmost active layer,
+ * preserving the bubble-phase `stopPropagation` single-layer-per-Escape
+ * contract. Pointer-down-outside and focus-outside instead go to the topmost
+ * layer that actually wired a handler for that channel: a layer that owns only
+ * Escape (e.g. a Tooltip) is transparent to outside-pointer / focus for the
+ * real dismissable layers beneath it, so a tooltip visible over an open menu
+ * never shadows the menu's outside-click dismissal (#1309). Nested real layers
+ * (a popover inside a dialog) still resolve to a single topmost handler per
+ * channel, so single-dismiss semantics hold.
+ *
+ * Dispatch goes through a single shared document listener, so synchronous
+ * changes to the stack from a handler don't leak into sibling listeners.
  *
  * Each event handler can call `preventDefault()` on the native event to
  * cancel the layer's `onDismiss` action.
@@ -196,6 +213,34 @@ export class DismissableLayer {
 
   get isActive(): boolean {
     return this.#active;
+  }
+
+  /**
+   * @internal Whether this layer wired a handler for the outside-`pointerdown`
+   * channel. Read by {@link DismissableLayerStack} so a layer that owns no
+   * pointer channel (e.g. an Escape-only Tooltip) is skipped when routing an
+   * outside pointer-down, instead of shadowing a real dismissable layer beneath
+   * it (#1309). Public only so the stack can read it, not part of the supported
+   * API.
+   */
+  get handlesPointer(): boolean {
+    return (
+      this.#options.onPointerDownOutside !== undefined ||
+      this.#options.onInteractOutside !== undefined ||
+      this.#options.onDismiss !== undefined
+    );
+  }
+
+  /**
+   * @internal Whether this layer wired a handler for the outside-`focusin`
+   * channel. See {@link handlesPointer}.
+   */
+  get handlesFocus(): boolean {
+    return (
+      this.#options.onFocusOutside !== undefined ||
+      this.#options.onInteractOutside !== undefined ||
+      this.#options.onDismiss !== undefined
+    );
   }
 
   /**
