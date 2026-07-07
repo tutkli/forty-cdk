@@ -163,6 +163,48 @@ test.describe('Submenu pointer hover — near-edge flip (#502)', () => {
   });
 });
 
+test.describe('Submenu fallback-axis flip in a narrow viewport (#1306)', () => {
+  test.use({ viewport: { width: 380, height: 700 } });
+
+  async function openFallbackSubmenu(page: Page): Promise<void> {
+    await el(page, 'fb-trigger').click();
+    await expect(el(page, 'fb-menu')).toBeVisible();
+    await el(page, 'fb-sub-trigger').hover();
+    await expect(el(page, 'fb-sub-menu')).toBeVisible();
+  }
+
+  test('by default the blocked submenu stays on the horizontal axis (clipped)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-sub');
+    await openFallbackSubmenu(page);
+
+    await expect(el(page, 'fb-sub-menu')).toHaveAttribute('data-side', 'right');
+
+    const trigger = await el(page, 'fb-sub-trigger').boundingBox();
+    const submenu = await el(page, 'fb-sub-menu').boundingBox();
+    expect(trigger).not.toBeNull();
+    expect(submenu).not.toBeNull();
+    expect(submenu!.x).toBeGreaterThan(trigger!.x);
+  });
+
+  test('fallbackAxisSideDirection="end" drops the submenu to a vertical side inside the viewport', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menu-sub', { fallbackAxis: 'end' });
+    await openFallbackSubmenu(page);
+
+    await expect(el(page, 'fb-sub-menu')).toHaveAttribute('data-side', 'bottom');
+
+    const submenu = await el(page, 'fb-sub-menu').boundingBox();
+    const viewport = page.viewportSize();
+    expect(submenu).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(submenu!.x).toBeGreaterThanOrEqual(0);
+    expect(submenu!.x + submenu!.width).toBeLessThanOrEqual(viewport!.width + 0.5);
+  });
+});
+
 test.describe('Submenu pointer hover — ContextMenu', () => {
   test('hovering the sub-trigger opens its submenu', async ({ page }) => {
     await gotoFixture(page, 'menu-sub');

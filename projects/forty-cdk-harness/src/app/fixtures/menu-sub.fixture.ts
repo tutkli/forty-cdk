@@ -1,7 +1,14 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+import {
+  type FloatingFallbackAxisSideDirection,
+  ForMenuContent,
+  ForMenuItem,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 
 /**
@@ -76,6 +83,15 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       position: fixed;
       top: 120px;
       right: 8px;
+    }
+    .fallback {
+      position: fixed;
+      top: 40px;
+      left: 70px;
+    }
+    .menu-narrow {
+      width: 200px;
+      box-sizing: border-box;
     }
   `,
   template: `
@@ -180,6 +196,29 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
         </div>
       }
     </div>
+
+    <div class="fallback" forDropdownMenu [(open)]="fbOpen" ariaLabel="Fallback dropdown">
+      <button data-testid="fb-trigger" forDropdownMenuTrigger>Fallback</button>
+      @if (fbOpen()) {
+        <div forMenuContent data-testid="fb-menu" class="menu menu-narrow">
+          <button data-testid="fb-item-1" forMenuItem class="item">Item one</button>
+          <div
+            forMenuSub
+            [(open)]="fbSubOpen"
+            side="right"
+            [sideOffset]="8"
+            [fallbackAxisSideDirection]="fbAxis()"
+          >
+            <button data-testid="fb-sub-trigger" forMenuSubTrigger class="item">More tools</button>
+            @if (fbSubOpen()) {
+              <div forMenuSubContent data-testid="fb-sub-menu" class="menu menu-narrow">
+                <button data-testid="fb-sub-item-1" forMenuItem class="item">Save page</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
   `,
 })
 export class MenuSubFixture {
@@ -195,4 +234,13 @@ export class MenuSubFixture {
 
   protected readonly edgeOpen = signal(false);
   protected readonly edgeSubOpen = signal(false);
+
+  readonly #route = inject(ActivatedRoute);
+
+  protected readonly fbOpen = signal(false);
+  protected readonly fbSubOpen = signal(false);
+  protected readonly fbAxis = signal<FloatingFallbackAxisSideDirection>(
+    (this.#route.snapshot.queryParamMap.get('fallbackAxis') as FloatingFallbackAxisSideDirection) ??
+      'none',
+  );
 }
