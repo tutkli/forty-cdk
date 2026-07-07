@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-07
+
+### Added
+
+- **Menu** — an opt-in `fallbackAxisSideDirection` input (default `'none'`) on the three menu roots, forwarded through `FloatingConfig` into `flip()`, so a side-anchored submenu whose preferred axis overflows on both sides can drop to a perpendicular axis to stay inside the viewport.
+
+### Changed
+
+- **Table** — **BREAKING.** In `mode="grid"` / `treegrid`, a row-reorderable table's rows no longer form independent tab stops — they yield to the composite grid's single tab stop (WAI-ARIA Data Grid contract), and keyboard reorder now starts from a focused **cell**: `Ctrl`/`Cmd` + `Space` lifts the enclosing row (was plain `Space` on a focused row). The static `mode="table"` and pointer reordering are unchanged.
+
+### Fixed
+
+- **Popover** — an outside-interaction close (pointer / focus outside) no longer returns focus to the trigger, so a stacked tooltip anchored to that trigger does not reopen.
+- **Dismissable-layer** — outside pointer, focus, and Escape events are routed per channel, so an Escape-only layer no longer swallows outside-pointer / focus dismissal meant for the layer below it.
+
+### Performance
+
+- **Calendar / Date Adapter** — `Intl.DateTimeFormat` is memoized per `(locale, options)` on each adapter instance, so repeated formatting reuses the same instance instead of re-resolving the ICU pattern on every `format()` — cutting the cost that dominates time-picker slot rebuilds and calendar grid rendering.
+
 ## [0.8.0] - 2026-07-06
 
 ### Added
@@ -320,7 +339,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/tutkli/forty-cdk/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/tutkli/forty-cdk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/tutkli/forty-cdk/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/tutkli/forty-cdk/compare/v0.5.0...v0.6.0
