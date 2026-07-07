@@ -6,7 +6,11 @@ export { ForPopoverTitle } from './popover-title';
 export { ForPopoverDescription } from './popover-description';
 export { ForPopoverClose } from './popover-close';
 export { ForPopoverArrow } from './popover-arrow';
-export { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
+export {
+  FOR_POPOVER_CONTEXT,
+  type ForPopoverCloseReason,
+  type ForPopoverContext,
+} from './popover-context';
 export {
   FOR_POPOVER_DEFAULTS,
   provideForPopoverDefaults,

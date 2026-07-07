@@ -61,6 +61,22 @@ test.describe('Popover', () => {
     await expect(el(page, 'popover')).toHaveCount(0);
   });
 
+  test('clicking an external input closes without stealing focus back to the trigger', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'popover');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'popover')).toBeVisible();
+    await expect(el(page, 'first')).toBeFocused();
+
+    const before = page.locator('#before');
+    await before.click();
+
+    await expect(el(page, 'popover')).toHaveCount(0);
+    await expect(before).toBeFocused();
+    await expect(el(page, 'trigger')).not.toBeFocused();
+  });
+
   test('(autoFocusOnOpen) preventDefault skips the imperative focus move', async ({ page }) => {
     await gotoFixture(page, 'popover', { vetoOpen: '1' });
     await el(page, 'trigger').click();

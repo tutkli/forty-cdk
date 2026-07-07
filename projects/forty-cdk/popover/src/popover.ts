@@ -15,6 +15,7 @@ import {
   type FloatingAlign,
   type FloatingSide,
   adoptHostId,
+  CloseReasonState,
   IdGenerator,
   injectPrefersReducedMotion,
   emitVetoableEvent,
@@ -22,7 +23,11 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
-import { FOR_POPOVER_CONTEXT, type ForPopoverContext } from './popover-context';
+import {
+  FOR_POPOVER_CONTEXT,
+  type ForPopoverCloseReason,
+  type ForPopoverContext,
+} from './popover-context';
 import { FOR_POPOVER_DEFAULTS } from './popover-defaults';
 
 /**
@@ -301,6 +306,15 @@ export class ForPopover implements ForPopoverContext {
     return ids.length === 0 ? null : ids.join(' ');
   });
 
+  readonly #closeReasonState = new CloseReasonState<ForPopoverCloseReason>();
+
+  /**
+   * Reason of the most recent close, or `null` while open / before any close.
+   * Reset on open, set on every close path — the content reads it to skip its
+   * trigger return-focus on an outside-interaction close.
+   */
+  readonly lastCloseReason = this.#closeReasonState.reason;
+
   registerTrigger(el: HTMLElement): void {
     adoptHostId(el, this.triggerId);
     this.#triggerEl.set(el);
@@ -355,7 +369,12 @@ export class ForPopover implements ForPopoverContext {
     if (this.disabled()) {
       return;
     }
-    this.open.update((v) => !v);
+    if (this.open()) {
+      this.#close('programmatic');
+    } else {
+      this.#closeReasonState.reset();
+      this.open.set(true);
+    }
   }
 
   /**
@@ -363,14 +382,14 @@ export class ForPopover implements ForPopoverContext {
    * is always applied. Used by `[forPopoverClose]`.
    */
   close(): void {
-    this.open.set(false);
+    this.#close('programmatic');
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
     const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
     if (!vetoed && this.dismissible()) {
       event.stopPropagation();
-      this.open.set(false);
+      this.#close('escape');
     }
   }
 
@@ -392,9 +411,23 @@ export class ForPopover implements ForPopoverContext {
 
   /**
    * Implicit close requested by the shell after an un-vetoed outside
-   * interaction. The directive only owns the close itself.
+   * interaction. Records the channel's reason so the content skips its trigger
+   * return-focus, then closes.
    */
-  requestClose(): void {
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
+    this.#close(reason);
+  }
+
+  /**
+   * Single close choke point: records the reason as `lastCloseReason`, then
+   * flips `open` to `false`. Guarded on `open()` so a stale late event can't
+   * clobber the reason of an already-closed popover.
+   */
+  #close(reason: ForPopoverCloseReason): void {
+    if (!this.open()) {
+      return;
+    }
+    this.#closeReasonState.set(reason);
     this.open.set(false);
   }
 

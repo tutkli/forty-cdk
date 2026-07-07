@@ -570,6 +570,59 @@ describe('ForPopover', () => {
     });
   });
 
+  describe('return-focus skip on outside-interaction close (#1310)', () => {
+    it('does NOT return focus to the trigger on an outside pointer-down close', async () => {
+      const r = renderHost(PopoverHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).not.toHaveBeenCalled();
+      outside.remove();
+    });
+
+    it('returns focus to the trigger on an Escape close (unchanged)', async () => {
+      const r = renderHost(PopoverHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalled();
+    });
+
+    it('returns focus to the trigger on a programmatic close-button close (unchanged)', async () => {
+      const r = renderHost(PopoverHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      document.querySelector<HTMLButtonElement>('#close-btn')!.click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalled();
+    });
+  });
+
   describe('used outside [forPopover]', () => {
     function expectThrows(host: new (...args: unknown[]) => unknown, regex: RegExp): void {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
