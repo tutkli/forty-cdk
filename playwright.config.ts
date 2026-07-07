@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4400;
+const PORT = Number(process.env['FORTY_HARNESS_PORT']) || 4400;
 const BASE_URL = `http://localhost:${PORT}`;
 const isCI = !!process.env['CI'];
 
