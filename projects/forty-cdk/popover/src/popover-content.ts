@@ -48,7 +48,7 @@ export class ForPopoverContent {
       positioner: toFloatingPositioner(this.ctx, this.ctx.reference),
       dismiss: {
         dismissible: this.ctx.dismissible,
-        requestClose: () => this.ctx.requestClose(),
+        requestClose: (reason) => this.ctx.requestClose(reason),
         emitEscapeKeyDown: (event) => this.ctx.emitEscapeKeyDown(event),
         emitPointerDownOutside: (veto) => this.ctx.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => this.ctx.emitFocusOutside(veto),
@@ -74,6 +74,10 @@ export class ForPopoverContent {
         target: () => this.ctx.trigger(),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
         veto: () => this.ctx.emitAutoFocusOnClose(),
+        skip: () => {
+          const reason = this.ctx.lastCloseReason();
+          return reason === 'pointerDownOutside' || reason === 'focusOutside';
+        },
       },
     });
   }

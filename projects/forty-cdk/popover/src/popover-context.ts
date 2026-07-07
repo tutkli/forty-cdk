@@ -3,6 +3,18 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import { type AnchoredPositioningContext, type VetoableNativeEvent } from 'forty-cdk/core';
 
 /**
+ * Why a popover requested close. The popover is non-modal, so there is no
+ * `'tab'` reason (Tab is allowed to leave the surface and surfaces as
+ * `'focusOutside'`) and no selection reason. `'programmatic'` covers
+ * `[forPopoverClose]` and the trigger toggle-close.
+ */
+export type ForPopoverCloseReason =
+  | 'escape'
+  | 'pointerDownOutside'
+  | 'focusOutside'
+  | 'programmatic';
+
+/**
  * Coordination contract owned by `ForPopover`. Trigger / Content register
  * their elements (for floating-ui positioning, dismissable-layer exemptions,
  * and focus return). Title / Description register their generated ids so
@@ -23,6 +35,16 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
   readonly dismissible: Signal<boolean>;
   readonly returnFocus: Signal<boolean>;
   readonly initialFocus: Signal<'first' | 'container'>;
+
+  /**
+   * Reason of the most recent close, or `null` while the popover is open / has
+   * never closed. Reset to `null` on open. `[forPopoverContent]` reads it to
+   * skip its trigger return-focus when the close came from an outside
+   * interaction (`'pointerDownOutside'` / `'focusOutside'`) — leaving focus
+   * where the user just clicked / focused instead of ripping it back to the
+   * trigger (matching `[forDropdownMenu]`).
+   */
+  readonly lastCloseReason: Signal<ForPopoverCloseReason | null>;
 
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
@@ -81,8 +103,12 @@ export interface ForPopoverContext extends AnchoredPositioningContext {
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
-  /** Implicit close requested by the shell after an un-vetoed outside interaction. */
-  requestClose(): void;
+  /**
+   * Implicit close requested by the shell after an un-vetoed outside
+   * interaction. Records the channel's reason as `lastCloseReason` so the
+   * content can skip its trigger return-focus, then closes.
+   */
+  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
 
   /**
    * Hooks into the auto-focus pipeline. Content fires these just before
