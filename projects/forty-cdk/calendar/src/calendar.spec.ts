@@ -1699,6 +1699,27 @@ describe('ForCalendar', () => {
         expect(dateAdapter.getMonth(afterDecember)).toBe(1);
       }
 
+      function assertFormatCaching<D>(dateAdapter: DateAdapter<D>): void {
+        const date = dateAdapter.createDate(2026, 3, 1);
+        const longMonth: Intl.DateTimeFormatOptions = { month: 'long' };
+        const twoDigitMonth: Intl.DateTimeFormatOptions = { month: '2-digit' };
+
+        expect(dateAdapter.format(date, longMonth, 'en-US')).toBe(
+          dateAdapter.format(date, longMonth, 'en-US'),
+        );
+
+        expect(dateAdapter.format(date, longMonth, 'en-US')).toBe('March');
+        expect(dateAdapter.format(date, longMonth, 'fr-FR')).toBe('mars');
+        expect(dateAdapter.format(date, longMonth, 'en-US')).not.toBe(
+          dateAdapter.format(date, longMonth, 'fr-FR'),
+        );
+
+        expect(dateAdapter.format(date, twoDigitMonth, 'en-US')).toBe('03');
+        expect(dateAdapter.format(date, longMonth, 'en-US')).not.toBe(
+          dateAdapter.format(date, twoDigitMonth, 'en-US'),
+        );
+      }
+
       function assertAddPreservesTime<D>(dateAdapter: TimeCapableDateAdapter<D>): void {
         const seed = dateAdapter.setTime(dateAdapter.createDate(2026, 6, 15), 14, 30, 45);
         for (const advanced of [
@@ -1727,6 +1748,12 @@ describe('ForCalendar', () => {
         assertGregorianYear(new NativeDateAdapter());
         assertGregorianYear(new InternationalizedDateAdapter());
         assertGregorianYear(new InternationalizedDateTimeAdapter());
+      });
+
+      it('memoizes Intl.DateTimeFormat by locale and options on every adapter', () => {
+        assertFormatCaching(new NativeDateAdapter());
+        assertFormatCaching(new InternationalizedDateAdapter());
+        assertFormatCaching(new InternationalizedDateTimeAdapter());
       });
     });
   });

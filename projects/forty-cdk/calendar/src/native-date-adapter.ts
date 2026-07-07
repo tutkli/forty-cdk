@@ -66,6 +66,18 @@ function clampDay(
  */
 @Injectable()
 export class NativeDateAdapter implements DateAdapter<Date> {
+  readonly #formatters = new Map<string, Intl.DateTimeFormat>();
+
+  #formatter(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+    const key = `${locale ?? ''}${JSON.stringify(options)}`;
+    let formatter = this.#formatters.get(key);
+    if (formatter === undefined) {
+      formatter = new Intl.DateTimeFormat(locale, options);
+      this.#formatters.set(key, formatter);
+    }
+    return formatter;
+  }
+
   /**
    * Today at local midnight in the runtime time zone. Subject to the
    * SSR/hydration caveat on {@link DateAdapter.today}.
@@ -163,7 +175,7 @@ export class NativeDateAdapter implements DateAdapter<Date> {
    * Subject to the SSR/hydration caveat on {@link DateAdapter.format}.
    */
   format(date: Date, options: Intl.DateTimeFormatOptions, locale?: string): string {
-    return new Intl.DateTimeFormat(locale, options).format(date);
+    return this.#formatter(locale, options).format(date);
   }
 
   supportsTime(): boolean {

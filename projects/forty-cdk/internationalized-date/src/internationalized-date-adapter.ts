@@ -22,6 +22,18 @@ import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
  */
 @Injectable()
 export class InternationalizedDateAdapter implements DateAdapter<CalendarDate> {
+  readonly #formatters = new Map<string, Intl.DateTimeFormat>();
+
+  #formatter(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+    const key = `${locale ?? ''}${JSON.stringify(options)}`;
+    let formatter = this.#formatters.get(key);
+    if (formatter === undefined) {
+      formatter = new Intl.DateTimeFormat(locale, options);
+      this.#formatters.set(key, formatter);
+    }
+    return formatter;
+  }
+
   /**
    * Today as a `CalendarDate` in the runtime time zone (`getLocalTimeZone()`).
    * Subject to the SSR/hydration caveat on {@link DateAdapter.today}.
@@ -88,7 +100,7 @@ export class InternationalizedDateAdapter implements DateAdapter<CalendarDate> {
    * {@link DateAdapter.format}.
    */
   format(date: CalendarDate, options: Intl.DateTimeFormatOptions, locale?: string): string {
-    return new Intl.DateTimeFormat(locale, options).format(date.toDate(getLocalTimeZone()));
+    return this.#formatter(locale, options).format(date.toDate(getLocalTimeZone()));
   }
 }
 
