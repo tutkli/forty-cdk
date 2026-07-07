@@ -283,6 +283,99 @@ describe('DismissableLayer', () => {
     });
   });
 
+  describe('per-channel dispatch — Escape-only layer transparency (#1309)', () => {
+    let inner: HTMLElement;
+
+    beforeEach(() => {
+      inner = document.createElement('div');
+      document.body.appendChild(inner);
+    });
+
+    afterEach(() => {
+      inner.remove();
+    });
+
+    it('an Escape-only top layer does not swallow pointer-down-outside for the layer below', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        onPointerDownOutside: () => calls.push('below-pointer'),
+        onInteractOutside: () => calls.push('below-interact'),
+        onDismiss: () => calls.push('below-dismiss'),
+      });
+      const escapeOnly = makeLayer(inner);
+      escapeOnly.activate({ onEscapeKeyDown: () => calls.push('escape-only-escape') });
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['below-pointer', 'below-interact', 'below-dismiss']);
+
+      escapeOnly.deactivate();
+      below.deactivate();
+    });
+
+    it('an Escape-only top layer does not swallow focus-outside for the layer below', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        onFocusOutside: () => calls.push('below-focus'),
+        onInteractOutside: () => calls.push('below-interact'),
+        onDismiss: () => calls.push('below-dismiss'),
+      });
+      const escapeOnly = makeLayer(inner);
+      escapeOnly.activate({ onEscapeKeyDown: () => calls.push('escape-only-escape') });
+
+      document.dispatchEvent(focusIn(outside));
+
+      expect(calls).toEqual(['below-focus', 'below-interact', 'below-dismiss']);
+
+      escapeOnly.deactivate();
+      below.deactivate();
+    });
+
+    it('the Escape-only top layer still owns Escape while the layer below is never consulted', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        onEscapeKeyDown: () => calls.push('below-escape'),
+        onPointerDownOutside: () => calls.push('below-pointer'),
+        onDismiss: () => calls.push('below-dismiss'),
+      });
+      const escapeOnly = makeLayer(inner);
+      escapeOnly.activate({ onEscapeKeyDown: () => calls.push('escape-only-escape') });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['escape-only-escape']);
+
+      escapeOnly.deactivate();
+      below.deactivate();
+    });
+
+    it('nested real layers keep single pointer-dismiss semantics (only the topmost handler responds)', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        onPointerDownOutside: () => calls.push('below-pointer'),
+        onInteractOutside: () => calls.push('below-interact'),
+        onDismiss: () => calls.push('below-dismiss'),
+      });
+      const above = makeLayer(inner);
+      above.activate({
+        onPointerDownOutside: () => calls.push('above-pointer'),
+        onInteractOutside: () => calls.push('above-interact'),
+        onDismiss: () => calls.push('above-dismiss'),
+      });
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['above-pointer', 'above-interact', 'above-dismiss']);
+
+      above.deactivate();
+      below.deactivate();
+    });
+  });
+
   it('is idempotent: activate twice has no extra effect', () => {
     const calls: string[] = [];
     layer = makeLayer(host);
