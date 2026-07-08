@@ -10,4 +10,4 @@ pre-commit:
       stage_fixed: true
     typecheck:
       glob: '*.ts'
-      run: pnpm typecheck
+      run: pnpm typecheck:lib
