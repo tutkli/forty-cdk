@@ -215,6 +215,7 @@ describe('ForDrawer (declarative)', () => {
 
       const handle = document.querySelector<HTMLElement>('[forDrawerHandle]')!;
       expect(handle.style.userSelect).toBe('none');
+      expect(handle.style.getPropertyValue('-webkit-user-select')).toBe('none');
     });
   });
 

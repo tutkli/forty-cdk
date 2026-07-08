@@ -28,6 +28,7 @@ import { injectDrawerContext } from './drawer-context';
     'data-for-drawer-handle': '',
     '[style.touch-action]': "'none'",
     '[style.user-select]': "'none'",
+    '[style.-webkit-user-select]': "'none'",
   },
 })
 export class ForDrawerHandle {
