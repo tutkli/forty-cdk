@@ -331,6 +331,58 @@ describe('ForFileUpload', () => {
     });
   });
 
+  describe('accept filtering on dialog change', () => {
+    it('clears the native input when an all-rejected dialog selection is made', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      instance.accept.set('image/*');
+      await f();
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+
+      Object.defineProperty(input, 'files', {
+        value: [
+          new File(['x'], 'a.exe', { type: 'application/octet-stream' }),
+        ] as unknown as FileList,
+        configurable: true,
+      });
+      const setValue = vi.spyOn(input, 'value', 'set');
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      await f();
+
+      expect(instance.rejectedFiles()?.map((file) => file.name)).toEqual(['a.exe']);
+      expect(instance.capturedFiles()).toBeNull();
+      expect(setValue).toHaveBeenCalledWith('');
+    });
+
+    it('does not clear a prior input selection when a drop is fully rejected', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      instance.accept.set('image/*');
+      await f();
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+
+      Object.defineProperty(input, 'files', {
+        value: [new File(['x'], 'photo.png', { type: 'image/png' })] as unknown as FileList,
+        configurable: true,
+      });
+      const setValue = vi.spyOn(input, 'value', 'set');
+
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+      const event = new Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'dataTransfer', {
+        value: {
+          files: [
+            new File(['x'], 'b.exe', { type: 'application/octet-stream' }),
+          ] as unknown as FileList,
+          dropEffect: 'none',
+        },
+      });
+      zone.dispatchEvent(event);
+      await f();
+
+      expect(instance.rejectedFiles()?.map((file) => file.name)).toEqual(['b.exe']);
+      expect(setValue).not.toHaveBeenCalled();
+    });
+  });
+
   describe('orphan guard', () => {
     it('throws a prefixed error when [forFileUploadTrigger] is used without [forFileUpload]', () => {
       @Component({

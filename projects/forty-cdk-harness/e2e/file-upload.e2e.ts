@@ -106,6 +106,24 @@ test.describe('FileUpload', () => {
     await expect(el(page, 'files')).toHaveText('');
   });
 
+  test('dialog: an all-rejected selection clears the native input', async ({ page }) => {
+    await gotoFixture(page, 'file-upload', { accept: '1' });
+
+    await el(page, 'input').setInputFiles({
+      name: 'notes.txt',
+      mimeType: 'text/plain',
+      buffer: Buffer.from('nope'),
+    });
+
+    await expect(el(page, 'rejected')).toHaveText('notes.txt');
+    await expect(el(page, 'count')).toHaveText('0');
+
+    const inputFileCount = await el(page, 'input').evaluate(
+      (node) => (node as HTMLInputElement).files!.length,
+    );
+    expect(inputFileCount).toBe(0);
+  });
+
   test('directory: input reflects webkitdirectory when enabled', async ({ page }) => {
     await gotoFixture(page, 'file-upload');
     await expect(el(page, 'input')).not.toHaveAttribute('webkitdirectory');
