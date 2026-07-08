@@ -198,6 +198,24 @@ describe('ForDrawer (declarative)', () => {
       const handle = document.querySelector<HTMLElement>('[forDrawerHandle]')!;
       expect(handle.getAttribute('aria-hidden')).toBe('true');
     });
+
+    it('sets touch-action:none on the handle so a touch drag is not stolen by scrolling', async () => {
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const handle = document.querySelector<HTMLElement>('[forDrawerHandle]')!;
+      expect(handle.style.touchAction).toBe('none');
+    });
+
+    it('sets user-select:none on the handle so a mouse drag does not start a text selection', async () => {
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const handle = document.querySelector<HTMLElement>('[forDrawerHandle]')!;
+      expect(handle.style.userSelect).toBe('none');
+    });
   });
 
   describe('data-* reflection', () => {
