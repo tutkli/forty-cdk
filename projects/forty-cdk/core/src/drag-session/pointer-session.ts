@@ -40,6 +40,13 @@
  * down on the first move instead of arming. The descendant's `preventDefault()` runs in the
  * bubble phase, after this capture-phase `pointerdown` listener, so the check is deferred to
  * the first `pointermove` — at `pointerdown` time `defaultPrevented` is still `false`.
+ *
+ * Self-prevention: a `canStart` that calls `preventDefault()` on its own `pointerdown` is
+ * signalling ancestor sessions to stand down (it owns the gesture), not itself. The session
+ * snapshots `defaultPrevented` immediately before and after `canStart`; when `canStart` flips
+ * it, the session records that it self-prevented and skips its own move-time stand-down check.
+ * A nested handle whose `canStart` prevents therefore still arms, while its ancestor sessions —
+ * whose `canStart` did not prevent — see `defaultPrevented === true` and stand down as before.
  */
 
 /** A live pointer-drag session. Call `destroy()` to remove every listener. */
@@ -101,6 +108,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
 
   let start: { x: number; y: number } | null = null;
   let armed = false;
+  let selfPrevented = false;
   let pointerId: number | null = null;
   let downEvent: PointerEvent | null = null;
 
@@ -153,6 +161,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     releaseCapture();
     start = null;
     armed = false;
+    selfPrevented = false;
     pointerId = null;
     downEvent = null;
     removeDocumentListeners();
@@ -168,7 +177,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
       if (Math.hypot(dx, dy) < opts.armThreshold) {
         return;
       }
-      if (downEvent?.defaultPrevented) {
+      if (downEvent?.defaultPrevented && !selfPrevented) {
         resetTracking();
         return;
       }
@@ -233,9 +242,11 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     if (start !== null) {
       return;
     }
+    const preventedBefore = event.defaultPrevented;
     if (!opts.canStart(event)) {
       return;
     }
+    selfPrevented = !preventedBefore && event.defaultPrevented;
     start = { x: event.clientX, y: event.clientY };
     armed = false;
     pointerId = event.pointerId;

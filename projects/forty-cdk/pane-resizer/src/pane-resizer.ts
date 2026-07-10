@@ -1,21 +1,26 @@
+import { isPlatformBrowser } from '@angular/common';
 import {
   booleanAttribute,
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   ElementRef,
   inject,
   input,
   model,
   output,
+  PLATFORM_ID,
 } from '@angular/core';
 
 import {
   type WritingDirection,
+  createPointerDragSession,
+  type PointerDragSession,
   injectTextDirection,
   clampToRange,
   roundToStepPrecision,
-  startPointerResize,
+  DRAG_DEAD_ZONE_PX,
 } from 'forty-cdk/core';
 
 /**
@@ -34,6 +39,8 @@ import {
  * Pointer drag arms only after the pointer travels past a small dead-zone (a
  * few px), so a plain click that fires a stray sub-threshold `pointermove`
  * never mutates the value — `(resizing)` won't fire on a jittery click.
+ * Pressing `Escape` (or a `pointercancel`) during a drag reverts the value to
+ * where the gesture started and emits no `(resizeCommit)`.
  *
  * @example
  * ```html
@@ -69,7 +76,6 @@ import {
     '[style.touch-action]': 'touchAction()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
-    '(pointerdown)': 'onPointerDown($event)',
   },
 })
 export class ForPaneResizer {
@@ -182,17 +188,40 @@ export class ForPaneResizer {
   readonly resizeCommit = output<number>();
 
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #document = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  readonly #destroyRef = inject(DestroyRef);
 
   /** Last value above `min` — used to restore size when `collapsible` Enter expands. */
   #lastNonMinValue = 0;
 
-  #disposePointer: (() => void) | null = null;
+  #pointerSession: PointerDragSession | null = null;
+
+  #dragAxis: 'x' | 'y' = 'x';
+  #dragStartCoord = 0;
+  #dragStartValue = 0;
+  #dragInvert = false;
+  #dragCurrent = 0;
 
   /** True between the first kbd-driven mutation and the next `keyup`. */
   #pendingKeyboardCommit = false;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.#disposePointer?.());
+    if (this.#isBrowser) {
+      this.#pointerSession = createPointerDragSession({
+        host: this.#host,
+        document: this.#document,
+        armThreshold: DRAG_DEAD_ZONE_PX,
+        capturePointer: true,
+        cancelOnEscape: true,
+        canStart: (event) => this.#onDragStart(event),
+        onLift: () => true,
+        onMove: (event) => this.#onDragMove(event),
+        onCommit: () => this.#onDragCommit(),
+        onCancel: () => this.#onDragCancel(),
+      });
+      this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
+    }
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -264,27 +293,49 @@ export class ForPaneResizer {
     this.resizeCommit.emit(this.value());
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  #onDragStart(event: PointerEvent): boolean {
     if (this.disabled()) {
-      return;
+      return false;
     }
     if (event.button !== 0) {
-      return;
+      return false;
     }
     event.preventDefault();
     const ltr = this.dir() !== 'rtl';
-    this.#disposePointer = startPointerResize(event, {
-      host: this.#host,
-      axis: this.orientation() === 'vertical' ? 'x' : 'y',
-      startValue: this.value(),
-      invert: this.orientation() === 'vertical' && !ltr,
-      constrain: (n) => this.#clamp(n),
-      onResize: (v) => {
-        this.value.set(v);
-        this.resizing.emit(v);
-      },
-      onCommit: (v) => this.resizeCommit.emit(v),
-    });
+    this.#dragAxis = this.orientation() === 'vertical' ? 'x' : 'y';
+    this.#dragInvert = this.orientation() === 'vertical' && !ltr;
+    this.#dragStartCoord = this.#dragAxis === 'x' ? event.clientX : event.clientY;
+    this.#dragStartValue = this.value();
+    this.#dragCurrent = this.#dragStartValue;
+    return true;
+  }
+
+  #onDragMove(event: PointerEvent): void {
+    const raw = this.#dragAxis === 'x' ? event.clientX : event.clientY;
+    let delta = raw - this.#dragStartCoord;
+    if (this.#dragInvert) {
+      delta = -delta;
+    }
+    const next = this.#clamp(this.#dragStartValue + delta);
+    if (next === this.#dragCurrent) {
+      return;
+    }
+    this.#dragCurrent = next;
+    this.value.set(next);
+    this.resizing.emit(next);
+  }
+
+  #onDragCommit(): void {
+    this.resizeCommit.emit(this.#dragCurrent);
+  }
+
+  #onDragCancel(): void {
+    if (this.#dragCurrent === this.#dragStartValue) {
+      return;
+    }
+    this.#dragCurrent = this.#dragStartValue;
+    this.value.set(this.#dragStartValue);
+    this.resizing.emit(this.#dragStartValue);
   }
 
   #toggleCollapsed(): void {

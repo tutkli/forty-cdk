@@ -337,7 +337,7 @@ describe('ForPaneResizer', () => {
     });
   });
 
-  describe('pointer drag (wiring guards)', () => {
+  describe('pointer drag', () => {
     function pointerEvent(
       type: string,
       init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
@@ -357,7 +357,7 @@ describe('ForPaneResizer', () => {
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
-      el.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
       await flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
@@ -368,7 +368,7 @@ describe('ForPaneResizer', () => {
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100, button: 2 }));
-      el.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
       await flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
@@ -377,23 +377,62 @@ describe('ForPaneResizer', () => {
     it('does not mutate the value on a stray sub-dead-zone pointermove (#590 F6)', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
-      // Pointer capture is mis-modeled in jsdom; stub the wiring (this is not a
-      // geometry assertion — the clientX deltas below are explicit, not measured).
-      el.setPointerCapture = () => {};
-      el.hasPointerCapture = () => false;
-      el.releasePointerCapture = () => {};
 
       el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
-      // 2px move — under the 3px dead-zone — must not arm the drag.
-      el.dispatchEvent(pointerEvent('pointermove', { clientX: 102 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 102 }));
       await flush();
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
       expect(fixture.componentInstance.value()).toBe(50);
 
-      // A move past the dead-zone arms and applies the delta.
-      el.dispatchEvent(pointerEvent('pointermove', { clientX: 110 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 110 }));
       await flush();
       expect(fixture.componentInstance.resizeEvents.length).toBeGreaterThan(0);
+    });
+
+    it('widens the value on an armed drag and commits once on pointerup', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      await flush();
+      expect(inst.value()).toBe(70);
+      expect(inst.commitEvents).toEqual([]);
+
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 120 }));
+      await flush();
+      expect(inst.commitEvents).toEqual([70]);
+    });
+
+    it('Escape mid-drag restores the pre-drag value and emits no resizeCommit', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      await flush();
+      expect(inst.value()).toBe(70);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(inst.value()).toBe(50);
+      expect(inst.commitEvents).toEqual([]);
+    });
+
+    it('suppresses the click that follows an armed pointer release', async () => {
+      const { query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 120 }));
+      await flush();
+
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      document.dispatchEvent(click);
+      expect(click.defaultPrevented).toBe(true);
     });
   });
 

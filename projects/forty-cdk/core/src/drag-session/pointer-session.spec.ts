@@ -195,6 +195,104 @@ describe('createPointerDragSession', () => {
     expect(rec.moves).toBe(1);
   });
 
+  it('a canStart that preventDefaults its own pointerdown still arms and lifts (self-prevention)', () => {
+    const { host, session, rec } = setup({
+      canStart: (event) => {
+        event.preventDefault();
+        return true;
+      },
+    });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.lifts).toBe(1);
+    expect(rec.moves).toBe(1);
+    expect(rec.commits).toBe(1);
+  });
+
+  it('stands down when the pointerdown was defaultPrevented before canStart (foreign prevention)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    const preventer = (event: PointerEvent): void => event.preventDefault();
+    document.addEventListener('pointerdown', preventer, { capture: true });
+    teardown.push(() => document.removeEventListener('pointerdown', preventer, { capture: true }));
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.lifts).toBe(0);
+    expect(rec.moves).toBe(0);
+    expect(rec.commits).toBe(0);
+  });
+
+  it('nested sessions: the inner self-preventing session lifts while the outer stands down', () => {
+    const outerHost = document.createElement('div');
+    const innerHost = document.createElement('div');
+    outerHost.appendChild(innerHost);
+    document.body.appendChild(outerHost);
+
+    const outer: Recorder = { lifts: 0, moves: 0, commits: 0, cancels: 0 };
+    const inner: Recorder = { lifts: 0, moves: 0, commits: 0, cancels: 0 };
+
+    const outerSession = createPointerDragSession({
+      host: outerHost,
+      document,
+      armThreshold: 5,
+      canStart: () => true,
+      onLift: () => {
+        outer.lifts++;
+      },
+      onMove: () => {
+        outer.moves++;
+      },
+      onCommit: () => {
+        outer.commits++;
+      },
+      onCancel: () => {
+        outer.cancels++;
+      },
+    });
+    const innerSession = createPointerDragSession({
+      host: innerHost,
+      document,
+      armThreshold: 5,
+      canStart: (event) => {
+        event.preventDefault();
+        return true;
+      },
+      onLift: () => {
+        inner.lifts++;
+      },
+      onMove: () => {
+        inner.moves++;
+      },
+      onCommit: () => {
+        inner.commits++;
+      },
+      onCancel: () => {
+        inner.cancels++;
+      },
+    });
+    teardown.push(() => {
+      outerSession.destroy();
+      innerSession.destroy();
+      outerHost.remove();
+    });
+
+    innerHost.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+
+    expect(inner.lifts).toBe(1);
+    expect(inner.moves).toBe(1);
+    expect(outer.lifts).toBe(0);
+    expect(outer.moves).toBe(0);
+  });
+
   it('ignores a second pointerdown while a press is already tracked', () => {
     const starts: number[] = [];
     const { host, session } = setup({
