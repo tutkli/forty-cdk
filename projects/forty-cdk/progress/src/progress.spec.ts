@@ -148,6 +148,18 @@ describe('ForProgress', () => {
       const el = query<HTMLElement>('[forProgress]')!;
       expect(el.getAttribute('aria-valuetext')).toBe('42 of 200 MB');
     });
+
+    it('feeds the label the sanitized effective max, not the raw non-positive max', async () => {
+      const { fixture, query, flush } = renderHost(ProgressHost);
+      fixture.componentInstance.getLabel.set((v, m) => `${v} of ${m}`);
+      fixture.componentInstance.max.set(0);
+      fixture.componentInstance.value.set(1);
+      await flush();
+
+      const el = query<HTMLElement>('[forProgress]')!;
+      expect(el.getAttribute('aria-valuemax')).toBe('1');
+      expect(el.getAttribute('aria-valuetext')).toBe('1 of 1');
+    });
   });
 
   describe('ariaLabel', () => {
