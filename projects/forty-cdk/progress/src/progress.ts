@@ -76,7 +76,8 @@ export class ForProgress implements ForProgressContext {
   /**
    * Optional override for `aria-valuetext`. Useful for non-percentage
    * progress (e.g. `"Step 3 of 5"`, `"42 MB of 200 MB"`). Receives the
-   * clamped value and current max.
+   * clamped value and the effective max (the configured max sanitized to
+   * `>= 1`).
    */
   readonly getValueLabel = input<((value: number, max: number) => string) | null>(null);
 
@@ -127,7 +128,7 @@ export class ForProgress implements ForProgressContext {
     }
     const label = this.getValueLabel();
     if (label) {
-      return label(v, this.max());
+      return label(v, this.effectiveMax());
     }
     return null;
   });
