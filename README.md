@@ -45,9 +45,10 @@ pnpm test:e2e    # playwright test (Chromium + WebKit; spins up the harness)
 
 A [lefthook](https://github.com/evilmartians/lefthook) `pre-commit` hook runs lint
 (`eslint`), auto-formats staged files (`prettier --write`, re-staging any fixes), and
-a project typecheck (`tsc --noEmit`) on each commit. Lint and format only inspect the
-**staged** files, so the hook stays fast; the typecheck runs project-wide but only when
-staged TypeScript files exist.
+a library typecheck (`pnpm typecheck:lib`, `tsc --noEmit`) on each commit. Lint and
+format only inspect the **staged** files, so the hook stays fast; the typecheck runs
+whenever staged TypeScript files exist, but is scoped to the library project — CI runs
+the full `pnpm typecheck` (library plus the dev-only apps) on every PR.
 
 The hook installs automatically — `pnpm install` runs the `prepare` script
 (`lefthook install`). Bypass it for a one-off commit with `git commit --no-verify`.
