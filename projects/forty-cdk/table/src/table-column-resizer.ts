@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  DOCUMENT,
   effect,
   ElementRef,
   inject,
@@ -15,7 +16,12 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { clampToRange, startPointerResize } from 'forty-cdk/core';
+import {
+  clampToRange,
+  createPointerDragSession,
+  type PointerDragSession,
+  DRAG_DEAD_ZONE_PX,
+} from 'forty-cdk/core';
 import { injectTableContext } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
@@ -29,6 +35,8 @@ export interface TableResizeDescriptor {
  * Turns a focusable element inside a `[forTableHeaderCell]` into a column-resize
  * handle. Supports pointer drag (with a dead-zone so a plain click is a no-op) and
  * `ArrowLeft` / `ArrowRight` keyboard resize, both constrained to `[min, max]`.
+ * Pressing `Escape` (or a `pointercancel`) during a drag reverts the width to where
+ * the gesture started and emits no `resizeCommit`.
  *
  * On every change it publishes the resolved width as the CSS custom property
  * `--for-table-col-<column>-width` on the table root, so the consumer can apply it
@@ -70,7 +78,6 @@ export interface TableResizeDescriptor {
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'ariaValueMax()',
     '[attr.data-resizing]': 'resizing() ? "" : null',
-    '(pointerdown)': 'onPointerDown($event)',
     '(keydown)': 'onKeyDown($event)',
     '(click)': 'onClick($event)',
     '(dblclick)': 'autoFit() && fitToContent()',
@@ -79,6 +86,7 @@ export interface TableResizeDescriptor {
 export class ForTableColumnResizer {
   protected readonly ctx = injectTableContext('ForTableColumnResizer');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly #document = inject(DOCUMENT);
   readonly #headerCell = inject(ForTableHeaderCell, { optional: true });
 
   /** Column identity; included in the `resizeCommit` payload and the published CSS var name. */
@@ -144,12 +152,17 @@ export class ForTableColumnResizer {
    */
   protected readonly measuredWidth = this.#measuredWidth.asReadonly();
 
-  #disposePointer: (() => void) | null = null;
+  #pointerSession: PointerDragSession | null = null;
+
+  #dragStartCoord = 0;
+  #dragStartValue = 0;
+  #dragInvert = false;
+  #dragCurrent = 0;
 
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.#disposePointer?.());
+    const destroyRef = inject(DestroyRef);
     effect(() => {
       const w = this.width();
       if (w != null) {
@@ -158,6 +171,19 @@ export class ForTableColumnResizer {
     });
     if (this.#isBrowser) {
       afterNextRender(() => this.#measuredWidth.set(this.#measureBaseWidth()));
+      this.#pointerSession = createPointerDragSession({
+        host: this.#host,
+        document: this.#document,
+        armThreshold: DRAG_DEAD_ZONE_PX,
+        capturePointer: true,
+        cancelOnEscape: true,
+        canStart: (event) => this.#onDragStart(event),
+        onLift: () => true,
+        onMove: (event) => this.#onDragMove(event),
+        onCommit: () => this.#onDragCommit(),
+        onCancel: () => this.#onDragCancel(),
+      });
+      destroyRef.onDestroy(() => this.#pointerSession?.destroy());
     }
   }
 
@@ -181,28 +207,46 @@ export class ForTableColumnResizer {
     return next;
   }
 
-  protected onPointerDown(event: PointerEvent): void {
+  #onDragStart(event: PointerEvent): boolean {
     if (event.button !== 0) {
-      return;
+      return false;
     }
     event.preventDefault();
     event.stopPropagation();
     const ltr = this.ctx.dir() !== 'rtl';
-    this.#disposePointer = startPointerResize(event, {
-      host: this.#host,
-      axis: 'x',
-      startValue: this.width() ?? this.#measureBaseWidth(),
-      invert: !ltr,
-      constrain: (n) => clampToRange(n, this.min(), this.max()),
-      onResize: (w) => {
-        this.#resizing.set(true);
-        this.width.set(w);
-      },
-      onCommit: (w) => {
-        this.#resizing.set(false);
-        this.resizeCommit.emit({ column: this.column(), width: w });
-      },
-    });
+    this.#dragInvert = !ltr;
+    this.#dragStartCoord = event.clientX;
+    this.#dragStartValue = this.width() ?? this.#measureBaseWidth();
+    this.#dragCurrent = this.#dragStartValue;
+    return true;
+  }
+
+  #onDragMove(event: PointerEvent): void {
+    let delta = event.clientX - this.#dragStartCoord;
+    if (this.#dragInvert) {
+      delta = -delta;
+    }
+    const next = clampToRange(this.#dragStartValue + delta, this.min(), this.max());
+    if (next === this.#dragCurrent) {
+      return;
+    }
+    this.#dragCurrent = next;
+    this.#resizing.set(true);
+    this.width.set(next);
+  }
+
+  #onDragCommit(): void {
+    this.#resizing.set(false);
+    this.resizeCommit.emit({ column: this.column(), width: this.#dragCurrent });
+  }
+
+  #onDragCancel(): void {
+    this.#resizing.set(false);
+    if (this.#dragCurrent === this.#dragStartValue) {
+      return;
+    }
+    this.#dragCurrent = this.#dragStartValue;
+    this.width.set(this.#dragStartValue);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

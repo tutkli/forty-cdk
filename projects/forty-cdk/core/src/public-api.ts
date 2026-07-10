@@ -346,12 +346,7 @@ export {
   type PointerSuppression,
 } from './pointer-suppression/pointer-suppression';
 export { injectPortal, type PortalConfig } from './portal/portal';
-export {
-  clampToRange,
-  DRAG_DEAD_ZONE_PX,
-  type PointerResizeConfig,
-  startPointerResize,
-} from './resize-geometry/resize-geometry';
+export { clampToRange, DRAG_DEAD_ZONE_PX } from './resize-geometry/resize-geometry';
 export {
   FOR_HOST_ROVING_CONTEXT,
   type HostRovingContext,

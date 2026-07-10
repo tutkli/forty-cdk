@@ -2125,17 +2125,14 @@ describe('ForTable', () => {
     it('pointer drag: widens the column and emits resizeCommit on pointerup; data-resizing is present during and absent after', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
-      r.setPointerCapture = () => {};
-      r.hasPointerCapture = () => false;
-      r.releasePointerCapture = () => {};
 
       r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
-      r.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
       await flush();
       expect(instance.width()).toBe(150);
       expect(r.getAttribute('data-resizing')).toBe('');
 
-      r.dispatchEvent(pointerEvent('pointerup', { clientX: 250 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 250 }));
       await flush();
       expect(r.hasAttribute('data-resizing')).toBe(false);
       expect(instance.lastResize).toEqual({ column: 'name', width: 150 });
@@ -2144,17 +2141,44 @@ describe('ForTable', () => {
     it('no-op click (dead-zone): 1px move does not change width, no resizeCommit, no data-resizing', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
-      r.setPointerCapture = () => {};
-      r.hasPointerCapture = () => false;
-      r.releasePointerCapture = () => {};
 
       r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
-      r.dispatchEvent(pointerEvent('pointermove', { clientX: 201 }));
-      r.dispatchEvent(pointerEvent('pointerup', { clientX: 201 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 201 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 201 }));
       await flush();
       expect(instance.width()).toBe(100);
       expect(instance.lastResize).toBeNull();
       expect(r.hasAttribute('data-resizing')).toBe(false);
+    });
+
+    it('Escape mid-drag restores the pre-drag width and emits no resizeCommit', async () => {
+      const { el, instance, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
+      await flush();
+      expect(instance.width()).toBe(150);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(instance.width()).toBe(100);
+      expect(instance.lastResize).toBeNull();
+      expect(r.hasAttribute('data-resizing')).toBe(false);
+    });
+
+    it('suppresses the click that follows an armed pointer release', async () => {
+      const { el, flush } = renderHost(ResizeTableHost);
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 250 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 250 }));
+      await flush();
+
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      document.dispatchEvent(click);
+      expect(click.defaultPrevented).toBe(true);
     });
 
     it('aria-valuenow updates after a resize', async () => {
