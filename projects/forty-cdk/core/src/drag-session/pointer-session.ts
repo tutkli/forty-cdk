@@ -23,7 +23,14 @@
  *   the document listeners are torn down and no further callback fires.
  * - `onMove(event)` fires on every armed move after the lift.
  * - `onCommit(event)` fires on `pointerup` while armed.
- * - `onCancel()` fires on `pointercancel`, and on `Escape` when `cancelOnEscape` is set.
+ * - `onCancel(event?)` fires on `pointercancel`, on `Escape` when `cancelOnEscape` is set, and on an
+ *   imperative `session.cancel(event?)`. It receives the triggering `PointerEvent` when one exists
+ *   (`pointercancel` or the event handed to `cancel`), `undefined` for an `Escape` abort.
+ *
+ * The returned handle also exposes `cancel(event?)`: an imperative abort that tears the in-flight
+ * drag down and fires `onCancel(event)` while keeping the host listener alive for the next press.
+ * A caller layering its own reactive guards on top of the transport (e.g. `attachSwipeDismiss`
+ * re-reading its allowed directions mid-gesture) uses it to cancel from inside `onMove`.
  *
  * Escape: with `cancelOnEscape`, a document `keydown` listener (alive only while a press is
  * tracked) aborts an armed drag on `Escape` — it tears the session down and fires `onCancel`,
@@ -53,6 +60,14 @@
 export interface PointerDragSession {
   /** Remove the host listener, any active document listeners, and any pending click trap. */
   destroy(): void;
+  /**
+   * Abort an in-flight drag imperatively, as if a `pointercancel` had arrived: release capture,
+   * tear down the active document listeners, and fire `onCancel(event)`. The host `pointerdown`
+   * listener stays attached, so a fresh press can still start a new session. A no-op when no
+   * press is currently tracked. `event`, when supplied, is forwarded to `onCancel` so the caller
+   * can build an event-accurate payload (e.g. the `pointermove` that triggered the abort).
+   */
+  cancel(event?: PointerEvent): void;
 }
 
 /** Configuration for {@link createPointerDragSession}. */
@@ -78,8 +93,13 @@ export interface PointerDragSessionOptions {
   readonly onMove: (event: PointerEvent) => void;
   /** Fires on `pointerup` while armed. */
   readonly onCommit: (event: PointerEvent) => void;
-  /** Fires on `pointercancel`, and on `Escape` while armed when {@link cancelOnEscape} is set. */
-  readonly onCancel: () => void;
+  /**
+   * Fires on `pointercancel`, on `Escape` while armed when {@link cancelOnEscape} is set, and on
+   * an imperative {@link PointerDragSession.cancel}. Receives the triggering `PointerEvent` when
+   * one exists (`pointercancel`, or the event passed to `cancel`); `undefined` for an `Escape`
+   * abort, which has no pointer event.
+   */
+  readonly onCancel: (event?: PointerEvent) => void;
   /**
    * When `true`, an `Escape` keydown aborts an armed drag (tears the session down and fires
    * `onCancel`). Defaults to `false` so callers owning their own `Escape` handling are unaffected.
@@ -226,16 +246,16 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     }
   };
 
-  const abort = (): void => {
+  const abort = (event?: PointerEvent): void => {
     resetTracking();
-    opts.onCancel();
+    opts.onCancel(event);
   };
 
   const cancel = (event: PointerEvent): void => {
     if (event.pointerId !== pointerId) {
       return;
     }
-    abort();
+    abort(event);
   };
 
   const down = (event: PointerEvent): void => {
@@ -278,6 +298,12 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
       releaseCapture();
       removeDocumentListeners();
       removeClickTrap();
+    },
+    cancel(event?: PointerEvent): void {
+      if (start === null) {
+        return;
+      }
+      abort(event);
     },
   };
 }
