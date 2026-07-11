@@ -347,6 +347,62 @@ describe('createPointerDragSession', () => {
     expect(rec.commits).toBe(0);
   });
 
+  it('cancel() aborts an armed drag: fires onCancel and stops further callbacks', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+
+    session.cancel();
+    expect(rec.cancels).toBe(1);
+
+    document.dispatchEvent(pointer('pointermove', 130, 100));
+    document.dispatchEvent(pointer('pointerup', 130, 100));
+    expect(rec.moves).toBe(1);
+    expect(rec.commits).toBe(0);
+  });
+
+  it('cancel(event) forwards the triggering event to onCancel', () => {
+    let received: PointerEvent | undefined = undefined;
+    const { host, session } = setup({
+      onCancel: (event) => {
+        received = event;
+      },
+    });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+
+    const move = pointer('pointermove', 120, 100);
+    session.cancel(move);
+    expect(received).toBe(move);
+  });
+
+  it('cancel() is a no-op when no press is being tracked', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    session.cancel();
+    expect(rec.cancels).toBe(0);
+  });
+
+  it('a fresh press still arms after cancel() (host listener stays attached)', () => {
+    const { host, session, rec } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    session.cancel();
+    expect(rec.cancels).toBe(1);
+
+    host.dispatchEvent(pointer('pointerdown', 200, 200));
+    document.dispatchEvent(pointer('pointermove', 210, 200));
+    expect(rec.lifts).toBe(2);
+  });
+
   it('suppresses the click that follows an armed release', () => {
     const { host, session } = setup();
     track(host, session);

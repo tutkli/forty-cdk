@@ -1,46 +1,45 @@
 /**
  * Pointer-based swipe-to-dismiss helper.
  *
- * Used by `ForToast` (and any future primitive that wants swipe-to-dismiss
- * semantics: a horizontal/vertical drag that, when released past
- * the configured threshold, triggers a dismissal).
+ * Used by `ForToast`, `ForDrawer` (via its drag engine), and `ForCarousel`
+ * (via its drag directive): a horizontal / vertical drag that, released past
+ * the configured threshold, triggers a dismissal.
  *
- * The helper keeps no Angular DI surface — it's a plain function that
- * attaches pointer listeners to an `HTMLElement` and returns a cleanup
- * function. Callers wire it through the directive's `DestroyRef`.
+ * The helper keeps no Angular DI surface — it's a plain function that attaches
+ * listeners to an `HTMLElement` and returns a cleanup function. Callers wire it
+ * through the directive's `DestroyRef`.
+ *
+ * It is a thin **domain layer over `createPointerDragSession`**: the session
+ * owns the transport (the host `pointerdown` capture, the document-level
+ * `pointermove` / `pointerup` / `pointercancel` capture listeners, the
+ * `pointerId` filter, pointer capture, and the post-drag click suppression),
+ * while this helper owns the swipe semantics on top of it — dominant-axis
+ * direction detection, the constrained delta, the release-threshold split, and
+ * the reactive mid-gesture directions abort.
  *
  * Behavior summary:
- * - On `pointerdown` the start position is recorded but no swipe is
- *   announced yet. This avoids fake start/cancel pairs on plain clicks.
- *   A second `pointerdown` while a pointer is already tracked is ignored,
- *   so the first pointer keeps its capture and its `pointerup` still ends
- *   the gesture (no orphaned capture on multi-touch).
- * - On `pointermove` the helper waits until the drag exceeds an internal
- *   "arm" distance (a few pixels), picks the dominant axis, and decides
- *   the candidate direction. If that direction is not in the allowed
- *   set the gesture is dropped silently. A mouse move seen with no button
- *   held (`buttons === 0`) before arming resets the stale tracking rather
- *   than arming a phantom swipe — this covers a press released outside the
- *   element, which never fires `pointerup` on it.
- * - Once armed, `onSwipeStart` fires (with the constrained delta) and
- *   `onSwipeMove` fires for every subsequent move including the arming
- *   one. Pointer capture is requested so events keep flowing if the
- *   pointer leaves the element. `getDirections()` is re-read on every
- *   armed move: if the active direction is toggled out of the allowed
- *   set mid-gesture, the swipe is aborted (`onSwipeCancel` fires and the
- *   captured pointer is released).
- * - On `pointerup`, if the projection along the active direction
- *   reaches `getThreshold()`, `onSwipeEnd` fires; otherwise
- *   `onSwipeCancel` fires.
- * - On `pointercancel`, `onSwipeCancel` always fires.
- * - `pointerup`, `pointercancel`, mid-gesture abort, and cleanup all
- *   release the requested pointer capture symmetrically.
+ * - The start position is recorded on `pointerdown` but no swipe is announced
+ *   yet, so a plain tap fires nothing. A press with no allowed direction, and a
+ *   non-primary mouse button, are rejected before tracking begins.
+ * - Once the drag travels past an internal arm distance the dominant axis picks
+ *   the candidate direction; if it is not in the allowed set the gesture is
+ *   dropped silently. A mouse move seen with no button held is a press released
+ *   off-element (no `pointerup` reached it) and does not arm a phantom swipe.
+ * - On arming, `onSwipeStart` fires (with the constrained delta) and
+ *   `onSwipeMove` fires for every move including the arming one. `getDirections()`
+ *   is re-read on every armed move: if the active direction is toggled out of the
+ *   allowed set mid-gesture the swipe aborts (`onSwipeCancel` fires).
+ * - On `pointerup`, if the projection along the active direction reaches
+ *   `getThreshold()`, `onSwipeEnd` fires; otherwise `onSwipeCancel` fires.
+ * - On `pointercancel`, `onSwipeCancel` fires when the gesture had armed.
  *
- * Movement perpendicular to the active direction is clamped to `0`,
- * and movement opposite to the direction is clamped to `0` as well —
- * the consumer's CSS only ever sees a non-negative push along the
- * dismissal axis, so animations stay simple.
+ * Movement perpendicular to the active direction is clamped to `0`, and movement
+ * opposite to the direction is clamped to `0` as well — the consumer's CSS only
+ * ever sees a non-negative push along the dismissal axis, so animations stay
+ * simple.
  */
+
+import { createPointerDragSession, type PointerDragSession } from '../drag-session/pointer-session';
 
 /** A single swipe direction, named after the pointer-travel direction. */
 export type SwipeDirection = 'left' | 'right' | 'up' | 'down';
@@ -123,166 +122,84 @@ function constrainedDelta(dx: number, dy: number, dir: SwipeDirection): { x: num
 
 /**
  * Attach swipe-dismiss listeners to `opts.element`. Returns a cleanup
- * function that removes every listener and releases pointer capture.
- *
- * @throws never. Capture / release calls are wrapped in try/catch so
- * environments without `PointerCapture` (jsdom) don't break.
+ * function that tears down the underlying pointer-drag session (every
+ * listener and any pending click trap).
  */
 export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
   const el = opts.element;
-  let active = false;
-  let direction: SwipeDirection | null = null;
-  let pointerId: number | null = null;
   let startX = 0;
   let startY = 0;
+  let direction: SwipeDirection | null = null;
 
-  const reset = (): void => {
-    active = false;
-    direction = null;
-    pointerId = null;
-  };
+  const detailFor = (event: PointerEvent, dir: SwipeDirection): SwipeEventDetail => ({
+    direction: dir,
+    delta: constrainedDelta(event.clientX - startX, event.clientY - startY, dir),
+    originalEvent: event,
+  });
 
-  const releaseCapture = (id: number): void => {
-    try {
-      if (el.hasPointerCapture?.(id)) {
-        el.releasePointerCapture?.(id);
+  const session: PointerDragSession = createPointerDragSession({
+    host: el,
+    document: el.ownerDocument,
+    armThreshold: ARM_DISTANCE_PX,
+    capturePointer: true,
+    canStart: (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) {
+        return false;
       }
-    } catch {
-      // Some environments (jsdom) reject release on detached nodes.
-    }
-  };
-
-  const onPointerDown = (event: PointerEvent): void => {
-    // Mouse: only the primary button arms a potential swipe.
-    if (event.pointerType === 'mouse' && event.button !== 0) {
-      return;
-    }
-    // A pointer is already being tracked (the gesture is armed, or pending
-    // arm): ignore the second pointerdown so its id/start don't overwrite the
-    // first pointer's state and orphan its capture. The first pointer's
-    // pointerup is then still honored.
-    if (pointerId !== null) {
-      return;
-    }
-    if (opts.getDirections().length === 0) {
-      return;
-    }
-    pointerId = event.pointerId;
-    startX = event.clientX;
-    startY = event.clientY;
-    active = false;
-    direction = null;
-  };
-
-  const onPointerMove = (event: PointerEvent): void => {
-    if (pointerId === null || event.pointerId !== pointerId) {
-      return;
-    }
-    const dx = event.clientX - startX;
-    const dy = event.clientY - startY;
-
-    if (!active) {
+      if (opts.getDirections().length === 0) {
+        return false;
+      }
+      startX = event.clientX;
+      startY = event.clientY;
+      direction = null;
+      return true;
+    },
+    onLift: (event) => {
       if (event.pointerType === 'mouse' && event.buttons === 0) {
-        reset();
+        return false;
+      }
+      const dir = detectDirection(
+        event.clientX - startX,
+        event.clientY - startY,
+        opts.getDirections(),
+      );
+      if (!dir) {
+        return false;
+      }
+      direction = dir;
+      opts.onSwipeStart?.(detailFor(event, dir));
+      return true;
+    },
+    onMove: (event) => {
+      if (!direction) {
         return;
       }
-      const detected = detectDirection(dx, dy, opts.getDirections());
-      if (!detected) {
+      if (!opts.getDirections().includes(direction)) {
+        session.cancel(event);
         return;
       }
-      active = true;
-      direction = detected;
-      try {
-        el.setPointerCapture?.(event.pointerId);
-      } catch {
-        // Some environments (jsdom) reject capture on detached nodes.
+      opts.onSwipeMove?.(detailFor(event, direction));
+    },
+    onCommit: (event) => {
+      if (!direction) {
+        return;
       }
-      const detail: SwipeEventDetail = {
-        direction: detected,
-        delta: constrainedDelta(dx, dy, detected),
-        originalEvent: event,
-      };
-      opts.onSwipeStart?.(detail);
-      opts.onSwipeMove?.(detail);
-      return;
-    }
-
-    if (!direction) {
-      return;
-    }
-    // The allowed set can toggle mid-gesture (the "off switch"). If the active
-    // direction is no longer allowed, abort the armed swipe: release capture
-    // and fire onSwipeCancel so the consumer can settle back.
-    if (!opts.getDirections().includes(direction)) {
-      const detail: SwipeEventDetail = {
-        direction,
-        delta: constrainedDelta(dx, dy, direction),
-        originalEvent: event,
-      };
-      releaseCapture(event.pointerId);
-      reset();
-      opts.onSwipeCancel?.(detail);
-      return;
-    }
-    opts.onSwipeMove?.({
-      direction,
-      delta: constrainedDelta(dx, dy, direction),
-      originalEvent: event,
-    });
-  };
-
-  const onPointerUp = (event: PointerEvent): void => {
-    if (pointerId === null || event.pointerId !== pointerId) {
-      return;
-    }
-    if (active && direction) {
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      const detail: SwipeEventDetail = {
-        direction,
-        delta: constrainedDelta(dx, dy, direction),
-        originalEvent: event,
-      };
-      const proj = projection(dx, dy, direction);
+      const dir = direction;
+      direction = null;
+      const proj = projection(event.clientX - startX, event.clientY - startY, dir);
       if (proj >= opts.getThreshold()) {
-        opts.onSwipeEnd?.(detail);
+        opts.onSwipeEnd?.(detailFor(event, dir));
       } else {
-        opts.onSwipeCancel?.(detail);
+        opts.onSwipeCancel?.(detailFor(event, dir));
       }
-      releaseCapture(event.pointerId);
-    }
-    reset();
-  };
+    },
+    onCancel: (event) => {
+      if (direction && event) {
+        opts.onSwipeCancel?.(detailFor(event, direction));
+      }
+      direction = null;
+    },
+  });
 
-  const onPointerCancel = (event: PointerEvent): void => {
-    if (pointerId === null || event.pointerId !== pointerId) {
-      return;
-    }
-    if (active && direction) {
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      opts.onSwipeCancel?.({
-        direction,
-        delta: constrainedDelta(dx, dy, direction),
-        originalEvent: event,
-      });
-      releaseCapture(event.pointerId);
-    }
-    reset();
-  };
-
-  el.addEventListener('pointerdown', onPointerDown);
-  el.addEventListener('pointermove', onPointerMove);
-  el.addEventListener('pointerup', onPointerUp);
-  el.addEventListener('pointercancel', onPointerCancel);
-
-  return () => {
-    el.removeEventListener('pointerdown', onPointerDown);
-    el.removeEventListener('pointermove', onPointerMove);
-    el.removeEventListener('pointerup', onPointerUp);
-    el.removeEventListener('pointercancel', onPointerCancel);
-    if (pointerId !== null) {
-      releaseCapture(pointerId);
-    }
-  };
+  return () => session.destroy();
 }
