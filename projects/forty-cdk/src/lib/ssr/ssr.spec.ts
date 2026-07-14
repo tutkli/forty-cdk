@@ -110,6 +110,7 @@ import {
 
 import {
   ForCombobox,
+  ForComboboxAction,
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxOption,
@@ -779,11 +780,18 @@ class SelectVirtualizedOpenFixture {
 }
 
 @Component({
-  imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+  imports: [
+    ForCombobox,
+    ForComboboxInput,
+    ForComboboxContent,
+    ForComboboxOption,
+    ForComboboxAction,
+  ],
   template: `
     <div forCombobox [open]="true">
       <input forComboboxInput />
       <div forComboboxContent>
+        <button forComboboxAction>Create new</button>
         <div forComboboxOption value="a" label="A">A</div>
       </div>
     </div>
@@ -2021,6 +2029,10 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forComboboxContent]')).toBeNull();
+    // A pinned [forComboboxAction] renders as a button server-side, out of the
+    // option collection, without touching the DOM globals.
+    const action = f.nativeElement.querySelector('[forComboboxAction]') as HTMLElement;
+    expect(action.getAttribute('role')).toBe('button');
   });
 
   it('an open NavigationMenu does not re-parent into a viewport or mutate <body> server-side', () => {

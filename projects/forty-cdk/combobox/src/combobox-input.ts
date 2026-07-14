@@ -23,10 +23,13 @@ import { injectComboboxContext } from './combobox-context';
  *   open→closed transition the input value is re-synced to `query()` even
  *   while focused, so a consumer restoring the committed label from an
  *   `(openChange)` handler renders without reaching for the DOM.
- * - **Tab** (when open) — close and let Tab flow to the next focusable. In the
- *   picker anatomy (input inside the body-portaled panel) focus is moved to the
- *   trigger first, so Tab advances from the trigger's position rather than the
- *   end of the document.
+ * - **Tab** (when open) — with a pinned `[forComboboxAction]` registered, move
+ *   focus into the actions ring instead of closing (model A: focus cycles among
+ *   the input and the actions, popup stays open, Escape / outside-pointer
+ *   dismiss). With no action, close and let Tab flow to the next focusable — in
+ *   the picker anatomy (input inside the body-portaled panel) focus is moved to
+ *   the trigger first, so Tab advances from the trigger's position rather than
+ *   the end of the document.
  * - Printable keys: update `query` and (if `autocompleteMode` includes `'inline'`)
  *   complete the rest of the first match in the input as selected text.
  * - During IME composition (`event.isComposing`) every keydown is ignored, so
@@ -310,10 +313,14 @@ export class ForComboboxInput {
 
       case 'Tab':
         if (this.ctx.open()) {
-          this.ctx.trigger()?.focus();
-          this.ctx.closeMenu('tab');
+          if (this.ctx.hasEnabledActions()) {
+            event.preventDefault();
+            this.ctx.moveActionFocus(null, event.shiftKey ? 'prev' : 'next');
+          } else {
+            this.ctx.trigger()?.focus();
+            this.ctx.closeMenu('tab');
+          }
         }
-        // Don't preventDefault — Tab still flows to the next focusable.
         break;
     }
   }

@@ -37,6 +37,7 @@ import {
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
   FOR_COMBOBOX_CONTEXT,
+  type ForComboboxActionHandle,
   type ForComboboxAutocomplete,
   type ForComboboxChipHandle,
   type ForComboboxCloseReason,
@@ -96,6 +97,7 @@ export class ForCombobox<T = string>
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
   readonly #items = new Collection<ForComboboxOptionHandle<T>>();
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
+  readonly #actions = new Collection<ForComboboxActionHandle>();
 
   /**
    * Two-way bindable. Visible input text. The `model()` change emitter
@@ -372,6 +374,8 @@ export class ForCombobox<T = string>
 
   readonly options = this.#items.items;
   readonly chips = this.#chips.items;
+  readonly actions = this.#actions.items;
+  readonly hasEnabledActions = computed(() => this.#actions.items().some((a) => !a.disabled()));
 
   readonly #initialFocusState = new InitialFocusState<ForComboboxInitialFocus>('first');
   readonly initialFocus = this.#initialFocusState.target;
@@ -585,6 +589,35 @@ export class ForCombobox<T = string>
   }
   unregisterChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.unregister(handle);
+  }
+
+  registerAction(handle: ForComboboxActionHandle): void {
+    this.#actions.register(handle);
+  }
+  unregisterAction(handle: ForComboboxActionHandle): void {
+    this.#actions.unregister(handle);
+  }
+
+  moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void {
+    const enabled = this.#actions.items().filter((a) => !a.disabled());
+    if (enabled.length === 0) {
+      return;
+    }
+    const ringLength = enabled.length + 1;
+    let current: number;
+    if (fromActionId === null) {
+      current = 0;
+    } else {
+      const idx = enabled.findIndex((a) => a.id() === fromActionId);
+      current = idx === -1 ? 0 : idx + 1;
+    }
+    const delta = direction === 'next' ? 1 : -1;
+    const next = (current + delta + ringLength) % ringLength;
+    if (next === 0) {
+      this.input()?.focus();
+    } else {
+      enabled[next - 1]!.host.focus();
+    }
   }
 
   isSelected(v: T): boolean {

@@ -226,4 +226,100 @@ test.describe('Combobox', () => {
       await expectFocused(el(page, 'after'));
     });
   });
+
+  // #1325 — a pinned, non-selecting `[forComboboxAction]` reachable by Tab
+  // (model A). Focus moves are real DOM moves inside the body-portaled panel,
+  // which jsdom mis-models, so the ring / dismissal contract lives here.
+  // `?action=1` pins the action; `?open=1` renders the panel up-front;
+  // `?long=1` renders a 60-item list to prove list-length-independent reach.
+  test.describe('action items (Tab into an action zone)', () => {
+    test('Tab from the input moves focus to the action and keeps the popup open', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1' });
+      await el(page, 'combo-input').click();
+
+      await el(page, 'combo-input').press('Tab');
+
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'action'));
+    });
+
+    test('reaches the action in one Tab from a deep scroll position', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1', long: '1' });
+      const input = el(page, 'combo-input');
+      await input.click();
+
+      for (let i = 0; i < 20; i++) {
+        await input.press('ArrowDown');
+      }
+
+      await input.press('Tab');
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'action'));
+    });
+
+    test('Tab cycles between the input and the action without dismissing', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1' });
+      await el(page, 'combo-input').click();
+
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      // With a single action the ring is [input, action]; Tab wraps back to the
+      // input, Shift+Tab too — focus never escapes the open popup.
+      await el(page, 'action').press('Tab');
+      await expect(el(page, 'content')).toBeVisible();
+      await expectFocused(el(page, 'combo-input'));
+
+      await el(page, 'combo-input').press('Shift+Tab');
+      await expectFocused(el(page, 'action'));
+    });
+
+    test('Enter on the action fires (action) and never mutates value', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1' });
+      await el(page, 'combo-input').click();
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      await el(page, 'action').press('Enter');
+
+      await expect(el(page, 'action-count')).toHaveText('1');
+      await expect(el(page, 'value')).toHaveText('');
+      await expect(el(page, 'content')).toBeVisible();
+    });
+
+    test('clicking the action fires (action) and keeps value empty', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1' });
+
+      await el(page, 'action').click();
+
+      await expect(el(page, 'action-count')).toHaveText('1');
+      await expect(el(page, 'value')).toHaveText('');
+    });
+
+    test('Escape from the action closes the popup and returns focus to the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1' });
+      await el(page, 'combo-input').click();
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      await el(page, 'action').press('Escape');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'combo-input'));
+    });
+
+    test('outside pointer still dismisses while focus is on the action', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { action: '1', open: '1' });
+      await el(page, 'combo-input').click();
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      await el(page, 'after').click();
+      await expect(el(page, 'content')).toHaveCount(0);
+    });
+  });
 });
