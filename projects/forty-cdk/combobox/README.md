@@ -76,7 +76,7 @@ A sentinel option (an "Add new…" action, a "No results" row, a pinned default)
 </div>
 ```
 
-Static and `@for`-rendered options share the same registry, navigation order (DOM order), filtering, and label cache.
+Static and `@for`-rendered options share the same registry, navigation order (DOM order), filtering, and label cache. This is right when the entry _selects_ (adds to `value` and commits). For a pinned entry that is a pure side-effect and must **not** land in `value` — "Create new…", "Manage tags…" — reach for [`[forComboboxAction]`](#action-items) instead.
 
 ### Signal Forms
 
@@ -109,6 +109,8 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forComboboxOption]`    | `data-state`       | `checked` \| `unchecked` (membership in `value()`, both modes)      |
 | `[forComboboxOption]`    | `data-highlighted` | present / absent (the current `aria-activedescendant`)              |
 | `[forComboboxOption]`    | `data-disabled`    | present / absent                                                    |
+| `[forComboboxAction]`    | `data-highlighted` | present / absent (the action currently holds DOM focus)             |
+| `[forComboboxAction]`    | `data-disabled`    | present / absent                                                    |
 | `[forComboboxIndicator]` | `data-state`       | `checked` \| `unchecked` (mirrors the parent option)                |
 | `[forComboboxChip]`      | `data-value`       | the chip's serialized value (verbatim string, or `itemToFormValue`) |
 | `[forComboboxChip]`      | `data-disabled`    | present / absent                                                    |
@@ -194,6 +196,77 @@ Why the list part is required, not optional: a `role="listbox"` may only own `op
   <button [forComboboxTrigger]="root">{{ selectedLabel() }}</button>
 </ng-template>
 ```
+
+## Action items
+
+A combobox popup often needs an entry that is an **action**, not a value —
+"Create new …", "Manage tags …", "Clear all". Semantically these are
+`role="button"` actions, not `role="option"` selections, so `[forComboboxAction]`
+renders one that stays out of the option/value collection entirely.
+
+```html
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
+  <input forComboboxInput placeholder="Search…" />
+  @if (combobox.open()) {
+  <div forComboboxContent>
+    <button forComboboxAction (action)="createNew(query())">Create "{{ query() }}"</button>
+    @for (it of filtered; track it.id) {
+    <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+    }
+  </div>
+  }
+</div>
+```
+
+An action:
+
+- **never touches `value` / `options()`.** It registers in a collection separate
+  from options, so `options()`, `aria-setsize`, and `aria-posinset` are
+  unaffected and activation emits `(action)` instead of mutating `[(value)]`. The
+  consumer decides what happens and whether to close the popup afterwards.
+- **is `role="button"`, not `role="option"`.** Assistive tech announces it as an
+  action, not as one of N choices.
+- **is reached by Tab, not the arrow keys** (see below), so it stays reachable no
+  matter how long — or how virtualized — the option list is.
+
+Use `[forComboboxAction]` for a pinned side-effect. For an entry that _does_
+select (an "Add new" row that adds an item and commits it to `value`), use a
+plain `[forComboboxOption]` — see [Static options alongside the `@for`](#static-options-alongside-the-for).
+
+### Focus & keyboard (model A)
+
+While the popup is open, **Tab / Shift+Tab** cycle DOM focus around the ring
+`[input, …enabled actions]` (in DOM order, wrapping both ways) **without
+dismissing** the popup. Options stay arrow-navigated via `aria-activedescendant`;
+actions stay Tab-focused — the two models never mix. This keeps a pinned action
+reachable in a bounded number of keypresses regardless of the option count, which
+a bottom-pinned option cannot guarantee under infinite scroll.
+
+Because focus is trapped in the input↔actions ring while open, **Escape** (or an
+outside pointer) is how you leave: Escape from an action closes the popup and
+returns focus to the input (editable anatomy) or the `[forComboboxTrigger]`
+(picker anatomy). Activation is **click / Enter / Space** and routes to `(action)`
+only. With no action registered, Tab keeps its default "close and let Tab flow on"
+behaviour, so existing comboboxes are unchanged.
+
+Actions live inside `[forComboboxContent]` (beside `[forComboboxList]` in the
+picker anatomy), so they are naturally "inside" the outside-pointer / outside-focus
+dismissal checks, exactly like the input.
+
+### API
+
+| Member       | Type           | Notes                                                                                                      |
+| ------------ | -------------- | ---------------------------------------------------------------------------------------------------------- |
+| `[disabled]` | `boolean`      | Drops the action out of the focus ring (`tabindex` removed), reflects `aria-disabled`, ignores activation. |
+| `(action)`   | `output<void>` | Fired on click / Enter / Space. Never mutates `[(value)]`.                                                 |
+
+`[forComboboxAction]` host-binds `role="button"`, `type="button"`, a
+primitive-managed `tabindex`, `aria-disabled` (when disabled), and reflects
+`data-highlighted` while it holds DOM focus + `data-disabled` when disabled.
+
+> **Out of scope (v1):** grouped action clusters / multiple action zones,
+> submenu-style nested actions, and actions that mutate `value` (use a plain
+> `[forComboboxOption]`).
 
 ## Self-hiding pieces
 
@@ -480,19 +553,20 @@ The native `<input>` handles caret movement and BiDi from the document's CSS `di
 
 Focus stays in the input throughout — arrow keys move the listbox's _active descendant_ (the highlighted option), they do not move DOM focus.
 
-| Key                                       | Action                                                                                                                         |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **ArrowDown**                             | Open listbox + move activedescendant to next enabled option (or first when none).                                              |
-| **ArrowUp**                               | Open listbox + move activedescendant to previous enabled option (or last when none).                                           |
-| **Home** _(open)_                         | Move activedescendant to first enabled option.                                                                                 |
-| **End** _(open)_                          | Move activedescendant to last enabled option.                                                                                  |
-| **PageUp** _(open)_                       | Move activedescendant to first enabled option.                                                                                 |
-| **PageDown** _(open)_                     | Move activedescendant to last enabled option.                                                                                  |
-| **Enter** _(open)_                        | Activate the activedescendant (single: replace + close; multi: toggle + stay open).                                            |
-| **Escape** _(open)_                       | Close the listbox. Focus stays in the input.                                                                                   |
-| **Tab** _(open)_                          | Close the listbox and let Tab flow to the next focusable.                                                                      |
-| **Backspace** _(empty input, multi only)_ | Focus the last chip; a second Backspace there removes it.                                                                      |
-| Printable keys                            | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text. |
+| Key                                          | Action                                                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **ArrowDown**                                | Open listbox + move activedescendant to next enabled option (or first when none).                                              |
+| **ArrowUp**                                  | Open listbox + move activedescendant to previous enabled option (or last when none).                                           |
+| **Home** _(open)_                            | Move activedescendant to first enabled option.                                                                                 |
+| **End** _(open)_                             | Move activedescendant to last enabled option.                                                                                  |
+| **PageUp** _(open)_                          | Move activedescendant to first enabled option.                                                                                 |
+| **PageDown** _(open)_                        | Move activedescendant to last enabled option.                                                                                  |
+| **Enter** _(open)_                           | Activate the activedescendant (single: replace + close; multi: toggle + stay open).                                            |
+| **Escape** _(open)_                          | Close the listbox. Focus stays in the input.                                                                                   |
+| **Tab** _(open, no action)_                  | Close the listbox and let Tab flow to the next focusable.                                                                      |
+| **Tab / Shift+Tab** _(open, action present)_ | Move focus around the input↔actions ring without dismissing — see [Action items](#action-items).                               |
+| **Backspace** _(empty input, multi only)_    | Focus the last chip; a second Backspace there removes it.                                                                      |
+| Printable keys                               | Update `query`. With `'inline'` / `'both'` autocomplete, complete the rest of the first match into the input as selected text. |
 
 Hovering an option also makes it the activedescendant, so mouse and keyboard intent stay synchronized.
 

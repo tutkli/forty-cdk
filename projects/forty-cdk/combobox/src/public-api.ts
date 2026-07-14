@@ -7,6 +7,7 @@ export { ForComboboxList } from './combobox-list';
 export { FOR_COMBOBOX_OPTION, ForComboboxOption } from './combobox-option';
 export { ForComboboxIndicator } from './combobox-indicator';
 export { ForComboboxEmpty } from './combobox-empty';
+export { ForComboboxAction } from './combobox-action';
 export { ForComboboxStatus } from './combobox-status';
 export { ForComboboxClear } from './combobox-clear';
 export { ForComboboxChips } from './combobox-chips';
@@ -17,6 +18,7 @@ export { ForComboboxGroupLabel } from './combobox-group-label';
 export { ForComboboxSeparator } from './combobox-separator';
 export {
   FOR_COMBOBOX_CONTEXT,
+  type ForComboboxActionHandle,
   type ForComboboxAutocomplete,
   type ForComboboxChipHandle,
   type ForComboboxCloseReason,

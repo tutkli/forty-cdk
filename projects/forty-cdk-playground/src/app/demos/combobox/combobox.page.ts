@@ -4,6 +4,7 @@ import { EXAMPLE_SOURCES } from '../../doc/example-source';
 import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { ComboboxAutocompleteExample } from './examples/autocomplete.example';
+import { ComboboxCreateActionExample } from './examples/create-action.example';
 import { ComboboxDefaultExample } from './examples/default.example';
 import { ComboboxMultiChipsExample } from './examples/multi-chips.example';
 import { ComboboxObjectValuesExample } from './examples/object-values.example';
@@ -21,6 +22,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
     ComboboxDefaultExample,
     ComboboxMultiChipsExample,
     ComboboxAutocompleteExample,
+    ComboboxCreateActionExample,
     ComboboxPickerExample,
     ComboboxObjectValuesExample,
     ComboboxVirtualizedExample,
@@ -46,6 +48,14 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
         sourcePath="combobox/examples/autocomplete.example.ts"
       >
         <app-combobox-autocomplete-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Action item (create on the fly)"
+        subtitle="A pinned <code>[forComboboxAction]</code> is a <code>role=button</code> affordance — not an option — so it never lands in <code>value()</code>, <code>aria-setsize</code> or <code>aria-posinset</code>. It emits <code>(action)</code> on click / <kbd>Enter</kbd> / <kbd>Space</kbd>, and <kbd>Tab</kbd> reaches it in one keypress regardless of list length; <kbd>Escape</kbd> or an outside click still dismiss."
+        sourcePath="combobox/examples/create-action.example.ts"
+      >
+        <app-combobox-create-action-example />
       </playground-demo>
 
       <playground-demo

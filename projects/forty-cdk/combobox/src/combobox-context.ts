@@ -62,6 +62,17 @@ export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
 }
 
 /**
+ * A registered `[forComboboxAction]` — a non-selecting action affordance
+ * (`role="button"`) pinned inside the popup. Tracked in a collection separate
+ * from options / chips so it never touches `value` / `options()` /
+ * `aria-setsize`.
+ */
+export interface ForComboboxActionHandle extends CollectionHandle {
+  readonly id: Signal<string>;
+  readonly disabled: Signal<boolean>;
+}
+
+/**
  * Coordination contract owned by `[forCombobox]`. Input, content, options,
  * groups, separators, the empty-state directive, the clear button, and the
  * multi-mode chip pieces all inject this token to read state and delegate
@@ -209,6 +220,31 @@ export interface ForComboboxContext<T = unknown> {
   registerChip(handle: ForComboboxChipHandle<T>): void;
   unregisterChip(handle: ForComboboxChipHandle<T>): void;
   readonly chips: Signal<readonly ForComboboxChipHandle<T>[]>;
+
+  /**
+   * Non-selecting action collection (`[forComboboxAction]`), kept separate from
+   * {@link options} so an action never appears in `value()`, `aria-setsize`, or
+   * `aria-posinset`. Order follows DOM.
+   */
+  registerAction(handle: ForComboboxActionHandle): void;
+  unregisterAction(handle: ForComboboxActionHandle): void;
+  readonly actions: Signal<readonly ForComboboxActionHandle[]>;
+  /**
+   * True when at least one registered action is enabled. Gates the input's
+   * Tab-into-actions behavior: with no enabled action, Tab keeps its default
+   * "close the listbox and let Tab flow on" semantics.
+   */
+  readonly hasEnabledActions: Signal<boolean>;
+  /**
+   * Move DOM focus within the input↔actions ring (model A). The ring is
+   * `[input, ...enabledActions]` in DOM order and wraps in both directions, so
+   * focus cycles among the input and the pinned actions without ever leaving
+   * (or dismissing) the open popup — Escape / outside-pointer remain the way
+   * out. `fromActionId === null` means the move originates from the input; pass
+   * the action's own id when moving from an action. No-op when no action is
+   * enabled.
+   */
+  moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void;
 
   /**
    * Selected entries paired with their resolved label (from the option
