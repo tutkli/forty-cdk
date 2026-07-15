@@ -36,289 +36,110 @@ Optional — install only if you use the matching entry point / primitives:
 
 ## Primitives
 
-Each primitive lives in its own folder under `projects/forty-cdk/` (e.g. [`accordion/`](accordion), [`dialog/`](dialog)) with its own `README.md` and a minimal styleless usage example.
+Every primitive ships as its own **secondary entry point** — import `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on — backed by the shared `forty-cdk/core` entry point. Each lives in its own folder under `projects/forty-cdk/` with its own `README.md` documenting its anatomy, API, keyboard interaction and styling hooks. The `@internationalized/date` adapters live in a dedicated `forty-cdk/internationalized-date` entry point so that optional peer stays truly optional. The main `forty-cdk` barrel is **intentionally empty** (it exports no symbols): always import from the specific `forty-cdk/<primitive>` entry point. Standalone directives plus `"sideEffects": false` mean your bundle only ever includes the primitives you import.
 
-Every primitive ships as its own **secondary entry point** — import `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on — backed by the shared `forty-cdk/core` entry point. The `@internationalized/date` adapters live in a dedicated `forty-cdk/internationalized-date` entry point so that optional peer stays truly optional. The main `forty-cdk` barrel is **intentionally empty** (it exports no symbols): always import from the specific `forty-cdk/<primitive>` entry point. Standalone directives plus `"sideEffects": false` mean your bundle only ever includes the primitives you import.
+The tables below group the primitives by purpose. The link on each name opens that primitive's README — the canonical reference for which HTML element each directive belongs on, its inputs / outputs, `data-*` attributes and keyboard map.
 
-## Directive → host element matrix
+### Overlays
 
-Quick reference for "which HTML element should I put this directive on?". Recommendations are derived from each primitive's WAI-ARIA pattern (e.g. focusable triggers as `<button type="button">`, the combobox input as a real `<input>` so caret/selection work) and from each primitive's README usage example. `any element` means the directive is element-agnostic — pick the tag that matches your semantics.
+| Primitive                | What it is                                                                                                                    |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| [Dialog](dialog)         | Modal window with a focus trap, scroll lock and Escape / dismiss handling. Also openable imperatively via `ForDialogManager`. |
+| [Drawer](drawer)         | Side or bottom sheet on the modal-dialog pattern, adding pointer-driven swipe-to-dismiss and snap points.                     |
+| [Popover](popover)       | Non-modal floating panel anchored to its trigger by floating-ui, dismissed on Escape or outside interaction.                  |
+| [Hover Card](hover-card) | Floating card that opens on hover to preview the content behind a link, with a pointer bridge.                                |
+| [Tooltip](tooltip)       | Small floating label that describes its trigger on hover or focus, without ever taking focus itself.                          |
+| [Toast](toast)           | Brief, auto-dismissing notifications stacked in a corner, opened programmatically via `ForToastManager`.                      |
 
-Selectors marked with `(element)` use an element selector instead of an attribute selector; everything else is `[attribute]`. Form-control hosts (`forSwitch`, `forCheckbox`, `forRadio`, `forToggle`) deliberately render as `<button type="button">` — the directive forces `type="button"` and provides `role="switch"` / `"checkbox"` / `"radio"` / `aria-pressed` so the consumer keeps full keyboard, focus, and form-state behaviour without an `<input>` whose chrome can't be styled.
+### Menus
 
-### Accordion
+| Primitive                      | What it is                                                                                                                          |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [Menu](menu)                   | The shared menu surface — items, checkbox / radio items, groups, separators and submenus — composed by every menu-family primitive. |
+| [Dropdown Menu](dropdown-menu) | A button that opens a menu of actions, with full keyboard navigation, typeahead and submenus.                                       |
+| [Context Menu](context-menu)   | A menu opened by right-click or long-press, anchored to the pointer position.                                                       |
+| [Menubar](menubar)             | A horizontal bar of menus, as in a desktop application, with roving tabindex across the triggers.                                   |
 
-| Selector                | Host                                           |
-| ----------------------- | ---------------------------------------------- |
-| `[forAccordion]`        | `<div>`                                        |
-| `[forAccordionItem]`    | `<div>`                                        |
-| `[forAccordionTrigger]` | `<button>` (wrapped in `<h2>`–`<h6>`, per APG) |
-| `[forAccordionContent]` | `<section>`                                    |
+### Navigation
 
-### Aspect Ratio
+| Primitive                          | What it is                                                                                                 |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| [Navigation Menu](navigation-menu) | A site-navigation header on the disclosure pattern: buttons expand panels of links into a shared viewport. |
+| [Breadcrumbs](breadcrumbs)         | A labelled navigation landmark for a breadcrumb trail, with `aria-current="page"` on the current page.     |
+| [Pagination](pagination)           | A navigation landmark that derives a page list with ellipsis gaps, plus previous / next buttons.           |
+| [Tabs](tabs)                       | A tablist that switches between panels of content.                                                         |
+| [Toolbar](toolbar)                 | A container that groups a set of controls under roving-tabindex navigation.                                |
+| [Stepper](stepper)                 | A multi-step wizard on the Tabs pattern: step list, per-step panels, linear gating and progress.           |
 
-| Selector           | Host    |
-| ------------------ | ------- |
-| `[forAspectRatio]` | `<div>` |
+### Forms & input
 
-### Avatar
+| Primitive                    | What it is                                                                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [Button](button)             | Turns any element into an accessible button with keyboard activation; disabled stays focusable and state is reflected as `data-*`.        |
+| [Field](field)               | Headless wiring that ties a label, description and error region to a control and reflects validation state as `data-*`.                   |
+| [Fieldset](fieldset)         | Headless grouping that gives related fields a shared accessible name plus an optional shared disabled state.                              |
+| [Input](input)               | Attribute directives for single- and multi-line text: a string `value()` that auto-wires with Signal Forms and reflects every form state. |
+| [Search](search)             | A `role="searchbox"` input mirrored to a signal, paired with a self-hiding clear button; reuses Input's form-value wiring.                |
+| [Number Input](number-input) | A numeric spinbutton with keyboard stepping, optional +/− buttons, min / max / step clamping and Intl formatting.                         |
+| [OTP Input](otp-input)       | A one-time-code / PIN field: typed and pasted characters fill styled slots, with masking and a complete event.                            |
+| [File Upload](file-upload)   | A headless drag-and-drop / dialog file-selection zone over a visually-hidden native `<input type="file">`.                                |
+| [Switch](switch)             | A binary on / off control toggled by click, Enter or Space.                                                                               |
+| [Checkbox](checkbox)         | A checkbox supporting the three states checked, unchecked and indeterminate.                                                              |
+| [Toggle](toggle)             | A two-state button that stays pressed or unpressed.                                                                                       |
+| [Radio Group](radio-group)   | A set of radio buttons where only one option can be selected, with arrow-key navigation.                                                  |
+| [Slider](slider)             | A draggable thumb that picks a numeric value along a track.                                                                               |
+| [Select](select)             | A trigger that opens a portaled listbox popup to pick one or many options, with groups and separators.                                    |
+| [Combobox](combobox)         | An editable input paired with a filterable listbox popup, single or multi selection with chips.                                           |
+| [Listbox](listbox)           | A scrollable list of selectable options with roving-tabindex navigation, single or multi selection.                                       |
 
-| Selector              | Host                           |
-| --------------------- | ------------------------------ |
-| `[forAvatar]`         | `<span>`                       |
-| `img[forAvatarImage]` | `<img>` (selector enforces it) |
-| `[forAvatarFallback]` | `<span>`                       |
+### Date & time
 
-### Checkbox
+| Primitive                            | What it is                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| [Calendar](calendar)                 | A single-date calendar grid (APG Grid) over a pluggable date adapter, with roving-tabindex navigation.     |
+| [Date Field](date-field)             | A segmented date (and optional time) input — each part a spinbutton with locale-driven order and clamping. |
+| [Date Picker](date-picker)           | A trigger that opens a floating calendar to pick a date, composing Calendar inside a dismissable popover.  |
+| [Date Range Field](date-range-field) | Two labelled spinbutton endpoints (start / end) sharing locale, granularity and bounds.                    |
+| [Time Field](time-field)             | A segmented time-of-day input with 12 / 24-hour cycles, optional seconds and min / max clamping.           |
+| [Time Picker](time-picker)           | A trigger that opens a floating listbox of generated time slots over a pluggable date adapter.             |
+| [Time Range Field](time-range-field) | Two time-of-day endpoints (start / end) sharing the hour cycle and min / max bounds.                       |
 
-| Selector                 | Host                              |
-| ------------------------ | --------------------------------- |
-| `[forCheckbox]`          | `<button type="button">` (forced) |
-| `[forCheckboxIndicator]` | `<span>`                          |
+### Disclosure & content
 
-### Combobox
+| Primitive                | What it is                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| [Accordion](accordion)   | A stack of collapsible sections, optionally allowing multiple panels open at once.                                   |
+| [Disclosure](disclosure) | A single trigger that shows or hides a related region of content.                                                    |
+| [Carousel](carousel)     | A slideshow of panels with previous / next controls, indicators, looping, multi-slide views and accessible autoplay. |
 
-| Selector                  | Host                                                                |
-| ------------------------- | ------------------------------------------------------------------- |
-| `[forCombobox]`           | `<div>`                                                             |
-| `[forComboboxInput]`      | `<input>` (a real text field — `role="combobox"` + caret semantics) |
-| `[forComboboxContent]`    | `<div>`                                                             |
-| `[forComboboxOption]`     | `<div>`                                                             |
-| `[forComboboxIndicator]`  | `<span>`                                                            |
-| `[forComboboxEmpty]`      | `<div>`                                                             |
-| `[forComboboxStatus]`     | `<div>`                                                             |
-| `[forComboboxClear]`      | `<button>`                                                          |
-| `[forComboboxChips]`      | `<div>`                                                             |
-| `[forComboboxChip]`       | `<span>`                                                            |
-| `[forComboboxChipRemove]` | `<button>`                                                          |
-| `[forComboboxGroup]`      | `<div>`                                                             |
-| `[forComboboxGroupLabel]` | `<div>`                                                             |
-| `[forComboboxSeparator]`  | `<div>`                                                             |
+### Data & layout
 
-### Context Menu
+| Primitive                    | What it is                                                                                                                                                              |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Table](table)               | A headless data table over a native `<table>` or `<div>` grid: sticky headers, 2D keyboard navigation, row selection, sortable headers, column resizing and reordering. |
+| [Tree](tree)                 | A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, selection and typeahead.                                                    |
+| [Scroll Area](scroll-area)   | A scrollable region with cross-browser, stylable synthetic scrollbars.                                                                                                  |
+| [Pane Resizer](pane-resizer) | A focusable divider that resizes the panes on either side — draggable and keyboard-operable.                                                                            |
+| [Separator](separator)       | A static, optionally semantic divider between groups of content, horizontal or vertical.                                                                                |
+| [Aspect Ratio](aspect-ratio) | A container that keeps its content at a fixed width-to-height ratio.                                                                                                    |
+| [Avatar](avatar)             | A user image with a graceful fallback across its loading lifecycle.                                                                                                     |
 
-| Selector                                                     | Host             |
-| ------------------------------------------------------------ | ---------------- |
-| `[forContextMenu]`                                           | `<div>`          |
-| `[forContextMenuTrigger]`                                    | any element      |
-| Menu surface pieces (`[forMenuContent]`, `[forMenuItem]`, …) | see _Menu_ below |
+### Feedback
 
-### Dialog
+| Primitive            | What it is                                                                   |
+| -------------------- | ---------------------------------------------------------------------------- |
+| [Progress](progress) | A bar that reflects the completion progress of a task.                       |
+| [Meter](meter)       | A gauge that shows a scalar value within a known range, bucketed into bands. |
 
-| Selector                 | Host                                                       |
-| ------------------------ | ---------------------------------------------------------- |
-| `[forDialog]`            | `<div>`                                                    |
-| `[forDialogTrigger]`     | `<button>`                                                 |
-| `[forDialogTitle]`       | `<h2>` (any heading level works; pick by document outline) |
-| `[forDialogDescription]` | `<p>`                                                      |
-| `[forDialogClose]`       | `<button>`                                                 |
-| `[forDialogBackdrop]`    | `<div>`                                                    |
+### Utilities
 
-### Disclosure
+Headless — no DOM or ARIA of their own; an `inject*` / provider API that other primitives compose.
 
-| Selector                 | Host                     |
-| ------------------------ | ------------------------ |
-| `[forDisclosure]`        | `<div>`                  |
-| `[forDisclosureTrigger]` | `<button>`               |
-| `[forDisclosureContent]` | `<div>` (or `<section>`) |
-
-### Dropdown Menu
-
-| Selector                                                     | Host             |
-| ------------------------------------------------------------ | ---------------- |
-| `[forDropdownMenu]`                                          | `<div>`          |
-| `[forDropdownMenuTrigger]`                                   | `<button>`       |
-| Menu surface pieces (`[forMenuContent]`, `[forMenuItem]`, …) | see _Menu_ below |
-
-### Hover Card
-
-| Selector                | Host        |
-| ----------------------- | ----------- |
-| `[forHoverCard]`        | `<div>`     |
-| `[forHoverCardTrigger]` | any element |
-| `[forHoverCardContent]` | `<div>`     |
-| `[forHoverCardArrow]`   | `<div>`     |
-
-### Listbox
-
-| Selector                      | Host     |
-| ----------------------------- | -------- |
-| `[forListbox]`                | `<div>`  |
-| `[forListboxOption]`          | `<div>`  |
-| `[forListboxOptionIndicator]` | `<span>` |
-| `[forListboxGroup]`           | `<div>`  |
-| `[forListboxGroupLabel]`      | `<div>`  |
-
-### Menu
-
-| Selector                   | Host     |
-| -------------------------- | -------- |
-| `[forMenu]`                | `<div>`  |
-| `[forMenuContent]`         | `<div>`  |
-| `[forMenuItem]`            | `<div>`  |
-| `[forMenuItemIndicator]`   | `<span>` |
-| `[forMenuCheckboxItem]`    | `<div>`  |
-| `[forMenuRadioItem]`       | `<div>`  |
-| `[forMenuRadioGroup]`      | `<div>`  |
-| `[forMenuSeparator]`       | `<div>`  |
-| `[forMenuGroup]`           | `<div>`  |
-| `[forMenuGroupLabel]`      | `<div>`  |
-| `[forMenuSub]`             | `<div>`  |
-| `[forMenuSubTrigger]`      | `<div>`  |
-| `[forMenuHorizontalArrow]` | `<span>` |
-
-### Menubar
-
-| Selector                                                     | Host             |
-| ------------------------------------------------------------ | ---------------- |
-| `[forMenubar]`                                               | `<div>`          |
-| `[forMenubarTrigger]`                                        | `<button>`       |
-| Menu surface pieces (`[forMenuContent]`, `[forMenuItem]`, …) | see _Menu_ above |
-
-### Meter
-
-| Selector              | Host    |
-| --------------------- | ------- |
-| `[forMeter]`          | `<div>` |
-| `[forMeterIndicator]` | `<div>` |
-
-### Navigation Menu
-
-| Selector                       | Host                                     |
-| ------------------------------ | ---------------------------------------- |
-| `[forNavigationMenu]`          | `<nav>`                                  |
-| `[forNavigationMenuList]`      | `<ul>` (or `<div>`)                      |
-| `[forNavigationMenuItem]`      | `<li>` (or `<div>`, matching the list)   |
-| `[forNavigationMenuTrigger]`   | `<button>`                               |
-| `[forNavigationMenuLink]`      | `<a>` (or `<button>` for in-app actions) |
-| `[forNavigationMenuContent]`   | `<div>`                                  |
-| `[forNavigationMenuViewport]`  | `<div>`                                  |
-| `[forNavigationMenuIndicator]` | `<div>`                                  |
-
-### Pane Resizer
-
-| Selector           | Host    |
-| ------------------ | ------- |
-| `[forPaneResizer]` | `<div>` |
-
-### Popover
-
-| Selector                  | Host                                  |
-| ------------------------- | ------------------------------------- |
-| `[forPopover]`            | `<div>`                               |
-| `[forPopoverTrigger]`     | `<button>`                            |
-| `[forPopoverContent]`     | `<div>`                               |
-| `[forPopoverTitle]`       | `<h2>` (any heading; pick by outline) |
-| `[forPopoverDescription]` | `<p>`                                 |
-| `[forPopoverClose]`       | `<button>`                            |
-| `[forPopoverArrow]`       | `<div>`                               |
-| `[forPopoverAnchor]`      | any element                           |
-
-### Progress
-
-| Selector                 | Host    |
-| ------------------------ | ------- |
-| `[forProgress]`          | `<div>` |
-| `[forProgressIndicator]` | `<div>` |
-
-### Radio Group
-
-| Selector          | Host                              |
-| ----------------- | --------------------------------- |
-| `[forRadioGroup]` | `<div>`                           |
-| `[forRadio]`      | `<button type="button">` (forced) |
-
-### Scroll Area
-
-| Selector                   | Host    |
-| -------------------------- | ------- |
-| `[forScrollArea]`          | `<div>` |
-| `[forScrollAreaViewport]`  | `<div>` |
-| `[forScrollAreaContent]`   | `<div>` |
-| `[forScrollAreaScrollbar]` | `<div>` |
-| `[forScrollAreaThumb]`     | `<div>` |
-| `[forScrollAreaCorner]`    | `<div>` |
-
-### Select
-
-| Selector                | Host       |
-| ----------------------- | ---------- |
-| `[forSelect]`           | `<div>`    |
-| `[forSelectTrigger]`    | `<button>` |
-| `[forSelectValue]`      | `<span>`   |
-| `[forSelectContent]`    | `<div>`    |
-| `[forSelectOption]`     | `<div>`    |
-| `[forSelectIndicator]`  | `<span>`   |
-| `[forSelectGroup]`      | `<div>`    |
-| `[forSelectGroupLabel]` | `<div>`    |
-| `[forSelectSeparator]`  | `<div>`    |
-
-### Separator
-
-| Selector         | Host                                                |
-| ---------------- | --------------------------------------------------- |
-| `[forSeparator]` | `<div>` (or `<hr>` for the static, decorative case) |
-
-### Slider
-
-| Selector           | Host    |
-| ------------------ | ------- |
-| `[forSlider]`      | `<div>` |
-| `[forSliderTrack]` | `<div>` |
-| `[forSliderRange]` | `<div>` |
-| `[forSliderThumb]` | `<div>` |
-
-### Switch
-
-| Selector      | Host                              |
-| ------------- | --------------------------------- |
-| `[forSwitch]` | `<button type="button">` (forced) |
-
-### Tabs
-
-| Selector           | Host       |
-| ------------------ | ---------- |
-| `[forTabs]`        | `<div>`    |
-| `[forTabsList]`    | `<div>`    |
-| `[forTabsTrigger]` | `<button>` |
-| `[forTabsContent]` | `<div>`    |
-
-### Toast
-
-| Selector                                               | Host       |
-| ------------------------------------------------------ | ---------- |
-| `for-toast-viewport` (element) or `[forToastViewport]` | `<div>`    |
-| `[forToast]`                                           | `<div>`    |
-| `[forToastTitle]`                                      | `<div>`    |
-| `[forToastDescription]`                                | `<div>`    |
-| `[forToastAction]`                                     | `<button>` |
-| `[forToastClose]`                                      | `<button>` |
-
-### Toggle
-
-| Selector               | Host                              |
-| ---------------------- | --------------------------------- |
-| `[forToggle]`          | `<button type="button">` (forced) |
-| `[forToggleGroup]`     | `<div>`                           |
-| `[forToggleGroupItem]` | `<button type="button">` (forced) |
-
-### Toolbar
-
-| Selector                | Host       |
-| ----------------------- | ---------- |
-| `[forToolbar]`          | `<div>`    |
-| `[forToolbarButton]`    | `<button>` |
-| `[forToolbarLink]`      | `<a>`      |
-| `[forToolbarSeparator]` | `<div>`    |
-
-### Tooltip
-
-| Selector              | Host        |
-| --------------------- | ----------- |
-| `[forTooltip]`        | `<div>`     |
-| `[forTooltipTrigger]` | any element |
-| `[forTooltipContent]` | `<div>`     |
-| `[forTooltipArrow]`   | `<div>`     |
+| Utility                          | What it is                                                                                                                             |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| [Breakpoints](breakpoints)       | A signal-first, zoneless, SSR-safe viewport breakpoint observer (`injectBreakpoints`).                                                 |
+| [Drag & Drop](drag-drop)         | Headless, accessible drag-and-drop for sortable lists and cross-list transfers, keyboard and pointer driven.                           |
+| [Virtualization](virtualization) | A headless windowing core (`injectVirtualizer`) plus a `[forVirtualViewport]` layer that renders only the visible slice of huge lists. |
 
 ## Building
 
