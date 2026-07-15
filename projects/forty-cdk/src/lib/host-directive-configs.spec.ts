@@ -81,6 +81,11 @@ import {
   FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS,
   ForRadioGroup,
 } from 'forty-cdk/radio-group';
+import {
+  FOR_SEARCH_HOST_DIRECTIVE_INPUTS,
+  FOR_SEARCH_HOST_DIRECTIVE_OUTPUTS,
+  ForSearch,
+} from 'forty-cdk/search';
 
 import {
   FOR_SLIDER_HOST_DIRECTIVE_INPUTS,
@@ -186,6 +191,12 @@ const cases: readonly ConfigCase[] = [
     directive: ForRadioGroup,
     inputs: FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS,
     outputs: FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS,
+  },
+  {
+    name: 'ForSearch',
+    directive: ForSearch,
+    inputs: FOR_SEARCH_HOST_DIRECTIVE_INPUTS,
+    outputs: FOR_SEARCH_HOST_DIRECTIVE_OUTPUTS,
   },
   {
     name: 'ForSelect',

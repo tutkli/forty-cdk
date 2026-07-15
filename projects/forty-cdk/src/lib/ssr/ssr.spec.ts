@@ -22,6 +22,14 @@ import { ForBreadcrumbItem, ForBreadcrumbSeparator, ForBreadcrumbs } from 'forty
 import { injectBreakpoints } from 'forty-cdk/breakpoints';
 import { ForCheckbox } from 'forty-cdk/checkbox';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import {
+  ForField,
+  ForFieldControl,
+  ForFieldDescription,
+  ForFieldError,
+  ForLabel,
+} from 'forty-cdk/field';
+import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
 import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
 import { ForTextarea } from 'forty-cdk/input';
 import {
@@ -1739,6 +1747,37 @@ class BreakpointsFixture {
   readonly wide = this.bp.up('lg');
 }
 
+@Component({
+  imports: [ForField, ForLabel, ForFieldDescription, ForFieldError, ForFieldControl],
+  template: `
+    <div forField #field="forField">
+      <label forLabel>Email address</label>
+      <input forFieldControl type="email" [invalid]="true" />
+      <p forFieldDescription>We'll only use this to send receipts.</p>
+      @if (field.invalid()) {
+        <p forFieldError #err="forFieldError">{{ err.messages().join(', ') }}</p>
+      }
+    </div>
+  `,
+})
+class FieldFixture {}
+
+@Component({
+  imports: [ForFieldset, ForFieldsetLegend, ForField, ForLabel, ForFieldControl],
+  template: `
+    <fieldset forFieldset [disabled]="locked()">
+      <legend forFieldsetLegend>Shipping address</legend>
+      <div forField>
+        <label forLabel>Street</label>
+        <input forFieldControl />
+      </div>
+    </fieldset>
+  `,
+})
+class FieldsetFixture {
+  readonly locked = signal(false);
+}
+
 const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DisclosureFixture,
   AccordionFixture,
@@ -1821,6 +1860,8 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   VirtualReorderFixture,
   BreakpointsFixture,
   VisuallyHiddenFixture,
+  FieldFixture,
+  FieldsetFixture,
 ];
 
 function configureServer(): void {
@@ -1879,6 +1920,24 @@ describe('SSR smoke tests', () => {
     const img = f.nativeElement.querySelector('[forAvatarImage]') as HTMLImageElement;
     expect(img).not.toBeNull();
     expect(img.hasAttribute('data-status')).toBe(true);
+  });
+
+  it('Field wires label/control aria association (aria-labelledby, aria-describedby, aria-errormessage) server-side', () => {
+    const f = TestBed.createComponent(FieldFixture);
+    f.detectChanges();
+    const label = f.nativeElement.querySelector('[forLabel]') as HTMLElement;
+    const control = f.nativeElement.querySelector('[forFieldControl]') as HTMLElement;
+    const description = f.nativeElement.querySelector('[forFieldDescription]') as HTMLElement;
+    const error = f.nativeElement.querySelector('[forFieldError]') as HTMLElement;
+    const labelId = label.getAttribute('id');
+    const descriptionId = description.getAttribute('id');
+    const errorId = error.getAttribute('id');
+    expect(labelId).toBeTruthy();
+    expect(label.getAttribute('for')).toBe(control.getAttribute('id'));
+    expect(control.getAttribute('aria-labelledby')).toBe(labelId);
+    expect(control.getAttribute('aria-describedby')).toContain(descriptionId);
+    expect(control.getAttribute('aria-describedby')).toContain(errorId);
+    expect(control.getAttribute('aria-errormessage')).toBe(errorId);
   });
 
   it('IdGenerator is salted with APP_ID — identical render orders produce identical ids across requests', () => {
