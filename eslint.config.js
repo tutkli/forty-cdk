@@ -953,6 +953,154 @@ const fortyCdkPlugin = {
       },
     },
 
+    // Companion (reverse direction) of `require-defaults-sibling`: flags a
+    // `<name>-defaults.ts` sibling whose exported defaults token is never
+    // injected by a non-defaults, non-spec source file in the same entry — a
+    // dead defaults file that still enlarges the public API (token + provider +
+    // interface) with nothing consuming it. `require-defaults-sibling` closes
+    // the "primitive injects the token but the file is missing" direction; this
+    // rule closes the "file ships but nothing injects the token" direction
+    // (#1258 inverted the former and left the latter unguarded).
+    //
+    // The token identifier is read from the defaults file's own exports (the
+    // `export const FOR_<X> = token;` shape from `createDefaults`, or a bare
+    // `= new InjectionToken(...)`) rather than derived from the primitive name,
+    // so it stays correct for entries whose token drops the `_DEFAULTS` suffix
+    // (`breakpoints` exports `FOR_BREAKPOINTS`) and for secondary defaults files
+    // that don't match the entry name (`date-picker/src/date-range-picker-defaults.ts`
+    // exports `FOR_DATE_RANGE_PICKER_DEFAULTS`). Recognises both library layouts:
+    //   - per-entry-point:  projects/forty-cdk/<entry>/src/<name>-defaults.ts
+    //   - legacy folder:    projects/forty-cdk/src/lib/<name>/<name>-defaults.ts
+    // The `core` entry holds the cross-cutting utilities and is exempt, as are
+    // `_internal` / `test-utils`. A file exporting no defaults token is out of
+    // scope (nothing to consume). The entry barrel (`public-api.ts`, or the
+    // legacy `index.ts`) is NOT counted as a consumer: every shipping entry
+    // re-exports its token there, but re-exporting is not injecting — counting
+    // it would neutralize the rule, since a dead-but-public defaults file is by
+    // definition re-exported from the barrel. The dedicated fixture
+    // (no-unused-defaults-sibling.fixture.ts) sits next to a support
+    // `public-api.ts` that re-exports its token, so `pnpm lint:rule-fixtures`
+    // proves the fixture still fires despite the barrel re-export (i.e. proves
+    // the carve-out). Fires once per orphaned defaults file via a Program-level
+    // filesystem check.
+    //
+    // Refs: tutkli/forty-cdk#1262 (reverse of #1258, part of #1157).
+    'no-unused-defaults-sibling': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'A `<name>-defaults.ts` sibling whose defaults token is never injected in its own entry is dead weight — remove it or inject the token (reverse of `require-defaults-sibling`; CLAUDE.md § "Defaults providers").',
+        },
+        schema: [],
+        messages: {
+          unused:
+            'The defaults file `{{ name }}-defaults.ts` exports `{{ token }}` but no non-defaults, non-spec sibling in its entry ever injects it — a dead defaults file that still enlarges the public API (token + provider + interface). Remove it, or inject the token where the scoped defaults are read (CLAUDE.md § "Defaults providers").',
+        },
+      },
+      create(context) {
+        const filename = context.filename || context.getFilename();
+        const normalized = filename.replace(/\\/g, '/');
+        const dir = path.dirname(filename);
+        // Skip cross-cutting helpers and test utilities.
+        if (normalized.includes('/_internal/') || normalized.includes('/test-utils/')) {
+          return {};
+        }
+        // Resolve the primitive name (for the message) and confirm this file is a
+        // `<name>-defaults.ts` sibling we must check. In the fixtures directory
+        // the check is scoped to the one fixture that exercises this rule so the
+        // other fixtures (which target other rules) don't trip it.
+        let name;
+        if (normalized.includes('/projects/forty-cdk/eslint-rules-fixtures/')) {
+          const base = path.basename(filename, '.ts');
+          if (base !== 'no-unused-defaults-sibling.fixture') return {};
+          name = base;
+        } else {
+          const entry = normalized.match(
+            /\/projects\/forty-cdk\/([^/]+)\/src\/([^/]+)-defaults\.ts$/,
+          );
+          const legacy = normalized.match(
+            /\/projects\/forty-cdk\/src\/lib\/[^/]+\/([^/]+)-defaults\.ts$/,
+          );
+          if (entry && entry[1] !== 'core') {
+            name = entry[2];
+          } else if (legacy) {
+            name = legacy[1];
+          } else {
+            return {};
+          }
+        }
+        // The exported defaults token(s) this file declares — read from the file
+        // itself so the check doesn't assume the `FOR_<PRIMITIVE>_DEFAULTS`
+        // naming convention.
+        const tokenNames = [];
+        function isTokenInit(init) {
+          if (!init) return false;
+          if (init.type === 'Identifier' && init.name === 'token') return true;
+          return (
+            init.type === 'NewExpression' &&
+            init.callee.type === 'Identifier' &&
+            init.callee.name === 'InjectionToken'
+          );
+        }
+        // True when a non-defaults, non-spec sibling `.ts` source references any
+        // of this file's exported tokens.
+        //
+        // The entry barrel (`public-api.ts`, or the legacy `index.ts`) is
+        // excluded: it re-exports `FOR_<PRIMITIVE>_DEFAULTS` by name in every
+        // shipping entry, but a re-export is not an injection — nothing consumes
+        // the token there, it is merely re-exposed. Counting the barrel would
+        // neutralize this rule entirely, because a dead-but-public defaults file
+        // (the exact case it targets — one that "still enlarges the public API")
+        // is by definition re-exported from the barrel. See #1262.
+        const BARRELS = new Set(['public-api.ts', 'index.ts']);
+        function anySiblingInjectsToken() {
+          let entries;
+          try {
+            entries = fs.readdirSync(dir);
+          } catch {
+            return false;
+          }
+          const self = path.basename(filename);
+          for (const entryName of entries) {
+            if (!entryName.endsWith('.ts')) continue;
+            if (entryName === self) continue;
+            if (entryName.endsWith('.spec.ts')) continue;
+            if (BARRELS.has(entryName)) continue;
+            let source;
+            try {
+              source = fs.readFileSync(path.join(dir, entryName), 'utf8');
+            } catch {
+              continue;
+            }
+            if (tokenNames.some((token) => source.includes(token))) return true;
+          }
+          return false;
+        }
+        return {
+          ExportNamedDeclaration(node) {
+            if (!node.declaration || node.declaration.type !== 'VariableDeclaration') return;
+            for (const decl of node.declaration.declarations) {
+              if (decl.id.type === 'Identifier' && isTokenInit(decl.init)) {
+                tokenNames.push(decl.id.name);
+              }
+            }
+          },
+          'Program:exit'(node) {
+            // No exported token → nothing to consume; out of this rule's scope.
+            if (tokenNames.length === 0) return;
+            if (anySiblingInjectsToken()) return;
+            context.report({
+              node,
+              loc: { line: 1, column: 0 },
+              messageId: 'unused',
+              data: { name, token: tokenNames.join(', ') },
+            });
+          },
+        };
+      },
+    },
+
     // Enforces CLAUDE.md § "Form primitives use Signal Forms": every concrete
     // class implementing `FormValueControl` or `FormCheckboxControl` must ship
     // a sibling `<name>-host-directive.ts` (the
@@ -1557,6 +1705,8 @@ module.exports = tseslint.config(
 
       // ---- Defaults stub convention (CLAUDE.md § "Defaults providers") ----
       'forty-cdk/require-defaults-sibling': 'error',
+      // ---- Reverse: no `<name>-defaults.ts` whose token nothing injects (#1262) ----
+      'forty-cdk/no-unused-defaults-sibling': 'error',
 
       // ---- Host-directive tuples for form primitives (tutkli/forty-cdk#645, #663) ----
       'forty-cdk/require-host-directive-sibling': 'error',
