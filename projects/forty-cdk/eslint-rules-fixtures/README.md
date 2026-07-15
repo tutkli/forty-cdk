@@ -36,7 +36,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `require-overlay-cleanup.fixture.ts` — 1 error (imports a portaling overlay content directive with no `afterEachOverlayCleanup()` call in the file; the rule is file-level, so the compliant shape can't be shown in the same fixture).
 - `no-effect-state-propagation.fixture.ts` — 2 errors (the `.set` and `.update` read-and-write forms).
 - `require-defaults-sibling.fixture.ts` — 1 error (no `require-defaults-sibling.fixture-defaults.ts` sibling exists next to it).
-- `no-unused-defaults-sibling.fixture.ts` — 1 error (exports a defaults token no non-defaults, non-spec sibling injects; the reverse direction of `require-defaults-sibling`).
+- `no-unused-defaults-sibling.fixture.ts` — 1 error (exports a defaults token no non-defaults, non-spec sibling injects; the reverse direction of `require-defaults-sibling`). A co-located support file [`public-api.ts`](public-api.ts) re-exports that token by name, modelling the entry barrel every real primitive has — the fixture must still fire despite it, proving the rule treats a barrel re-export as _not_ a consumer (re-exporting ≠ injecting).
 - `require-host-directive-sibling.fixture.ts` — 3 errors (direct `FormValueControl`, the `Omit<FormValueControl<…>, …>` slider shape, and `FormCheckboxControl`; the abstract base is allowed).
 - `hidden-input-effective-disabled.fixture.ts` — 2 errors (an in-body `effectiveDisabled` control and a control inheriting it from `FormUiControlBase`, both passing the raw `disabled` to `injectHiddenInput`; the `this.effectiveDisabled` case and the wrapped `computed(() => this.effectiveDisabled() || …)` case are allowed).
 

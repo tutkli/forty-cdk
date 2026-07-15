@@ -973,10 +973,16 @@ const fortyCdkPlugin = {
     //   - legacy folder:    projects/forty-cdk/src/lib/<name>/<name>-defaults.ts
     // The `core` entry holds the cross-cutting utilities and is exempt, as are
     // `_internal` / `test-utils`. A file exporting no defaults token is out of
-    // scope (nothing to consume). A dedicated fixture
-    // (no-unused-defaults-sibling.fixture.ts) exports a token no sibling injects,
-    // so it exercises the rule under `pnpm lint:rule-fixtures`. Fires once per
-    // orphaned defaults file via a Program-level filesystem check.
+    // scope (nothing to consume). The entry barrel (`public-api.ts`, or the
+    // legacy `index.ts`) is NOT counted as a consumer: every shipping entry
+    // re-exports its token there, but re-exporting is not injecting — counting
+    // it would neutralize the rule, since a dead-but-public defaults file is by
+    // definition re-exported from the barrel. The dedicated fixture
+    // (no-unused-defaults-sibling.fixture.ts) sits next to a support
+    // `public-api.ts` that re-exports its token, so `pnpm lint:rule-fixtures`
+    // proves the fixture still fires despite the barrel re-export (i.e. proves
+    // the carve-out). Fires once per orphaned defaults file via a Program-level
+    // filesystem check.
     //
     // Refs: tutkli/forty-cdk#1262 (reverse of #1258, part of #1157).
     'no-unused-defaults-sibling': {
@@ -1039,6 +1045,15 @@ const fortyCdkPlugin = {
         }
         // True when a non-defaults, non-spec sibling `.ts` source references any
         // of this file's exported tokens.
+        //
+        // The entry barrel (`public-api.ts`, or the legacy `index.ts`) is
+        // excluded: it re-exports `FOR_<PRIMITIVE>_DEFAULTS` by name in every
+        // shipping entry, but a re-export is not an injection — nothing consumes
+        // the token there, it is merely re-exposed. Counting the barrel would
+        // neutralize this rule entirely, because a dead-but-public defaults file
+        // (the exact case it targets — one that "still enlarges the public API")
+        // is by definition re-exported from the barrel. See #1262.
+        const BARRELS = new Set(['public-api.ts', 'index.ts']);
         function anySiblingInjectsToken() {
           let entries;
           try {
@@ -1051,6 +1066,7 @@ const fortyCdkPlugin = {
             if (!entryName.endsWith('.ts')) continue;
             if (entryName === self) continue;
             if (entryName.endsWith('.spec.ts')) continue;
+            if (BARRELS.has(entryName)) continue;
             let source;
             try {
               source = fs.readFileSync(path.join(dir, entryName), 'utf8');
