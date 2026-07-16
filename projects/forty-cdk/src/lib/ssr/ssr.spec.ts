@@ -195,7 +195,11 @@ import {
   ForStepperTrigger,
 } from 'forty-cdk/stepper';
 import {
+  ForColumnDef,
+  ForDataCell,
+  ForHeaderCell,
   ForTable,
+  ForTableBody,
   ForTableCell,
   ForTableColumnLabel,
   ForTableColumnReorder,
@@ -394,6 +398,31 @@ class TableFixture {}
   `,
 })
 class TableGridFixture {}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="grid" aria-label="People">
+      <for-table-body [rows]="rows" [rowKey]="rowKey">
+        <ng-container forColumnDef="name" sticky>
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableBodyFixture {
+  readonly rows = [
+    { id: 1, name: 'Ada', role: 'Engineer' },
+    { id: 2, name: 'Grace', role: 'Engineer' },
+  ];
+  readonly rowKey = (row: { id: number }): number => row.id;
+}
 
 @Component({
   imports: [ForTable, ForTableRow, ForTableCell],
@@ -1785,6 +1814,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TabsFixture,
   TableFixture,
   TableGridFixture,
+  TableBodyFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableVirtualizedReorderFixture,

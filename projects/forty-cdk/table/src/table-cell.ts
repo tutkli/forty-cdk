@@ -1,4 +1,12 @@
-import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+} from '@angular/core';
 
 import { registerHandle } from 'forty-cdk/core';
 import {
@@ -39,6 +47,14 @@ export class ForTableCell {
   protected readonly ctx = injectTableContext('ForTableCell');
   protected readonly rowCtx = injectTableRowContext('ForTableCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
+  /**
+   * This cell's element injector. Exposed so a declarative renderer stamping cell
+   * content from a projected `<ng-template>` (e.g. `ForTableBody`) can pass it as
+   * `[ngTemplateOutletInjector]`, letting row-context-dependent primitives inside
+   * that content (`[forTableRowSelector]`, …) resolve their `[forTableRow]`.
+   */
+  readonly injector = inject(Injector);
 
   protected readonly role = computed(() => (this.ctx.mode() === 'table' ? 'cell' : 'gridcell'));
 

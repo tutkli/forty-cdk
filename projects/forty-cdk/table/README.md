@@ -78,6 +78,64 @@ When you need virtual scrolling, use `<div role>` structure with `mode="grid"` o
 </div>
 ```
 
+## Declarative columns (`ForColumnDef` + `<for-table-body>`)
+
+Hand-writing every cell in the header row **and** the data row keeps the two in sync by hand and
+smears a single column across several places. The optional ergonomic layer lets you author one
+`[forColumnDef]` per column and have `<for-table-body>` stamp the header row and one data row per item
+out of the same cell primitives. Place it inside a `[forTable]` in `mode="grid"`; it is additive — the
+raw primitives above keep working unchanged, and a table that never imports `ForTableBody` never
+bundles it.
+
+```html
+<div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
+  <for-table-body [rows]="rows()" [rowKey]="rowKey" [sort]="sort()" (sortChange)="sort.set($event)">
+    <!-- selection column: drop the raw selector primitives into the cell templates -->
+    <ng-container forColumnDef="sel" sticky width="48px">
+      <ng-template forHeaderCell
+        ><span forTableSelectAll ariaLabel="Select all"></span
+      ></ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+        <span forTableRowSelector></span>
+      </ng-template>
+    </ng-container>
+
+    <ng-container forColumnDef="name" sticky sortable resizable resizeAriaLabel="Resize Name">
+      <ng-template forHeaderCell>Name</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row let-i="index"
+        >{{ row.name }}</ng-template
+      >
+    </ng-container>
+
+    <ng-container forColumnDef="status" width="140px">
+      <ng-template forHeaderCell>Status</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.status }}</ng-template>
+    </ng-container>
+  </for-table-body>
+</div>
+```
+
+- **`<for-table-body>`** takes `[rows]` (already sorted / filtered / paged by you — BYO-data),
+  optional `[rowKey]` (row identity used for `@for` tracking **and** each row's selection `[value]`),
+  optional `[displayedColumns]` (which columns render, in order; defaults to declaration order), and
+  `[loading]` / `[placeholderRows]` (render `forPlaceholderCell` skeletons). It **owns
+  `grid-template-columns`**: each column contributes its `[width]`, falling back to the published
+  `--for-table-col-<name>-width` resize var — so a resized column drives its own track with no glue.
+- **Auto-wired from per-column flags:** `sortable` wires `[forTableSortHeader]` (the body derives each
+  header's direction from its `[sort]` input and re-emits `(sortChange)`), and `resizable` wires
+  `[forTableColumnResizer]` with `autoFit` (re-emitted through `(resizeCommit)`; give `resizeAriaLabel`
+  so the handle is named). The sort and width descriptors stay yours to apply.
+- **Consumer-placed in templates:** selection (`[forTableRowSelector]` / `[forTableSelectAll]`) and any
+  interactive widget go straight into the cell templates. Row-context primitives resolve their
+  `[forTableRow]` because the body stamps content with the cell's own injector.
+- **Typing `let-row`:** bind `[forDataCellRow]` to the same array you pass to `[rows]` — it is read only
+  for type inference, so `let-row` is typed as your row type.
+
+`<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
+all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Column
+**reordering** and **virtualization** through the declarative layer are not part of this first cut —
+use the raw primitives for those today.
+
 ## Sticky header + CSS custom property
 
 `ForTable` measures the header row height with `ResizeObserver` and exposes it as `--for-table-header-height` on the root host (the header row must generate a box — use `display: grid` / `flex` on `[forTableHeaderRow]`, not `display: contents`). Use it to keep data cells stuck below the header row without hard-coding a pixel offset that drifts when the header content wraps:

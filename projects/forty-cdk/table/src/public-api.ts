@@ -1,4 +1,12 @@
 export { ForTable } from './table';
+export {
+  ForColumnDef,
+  ForHeaderCell,
+  ForDataCell,
+  ForPlaceholderCell,
+  type ForDataCellContext,
+} from './column-def';
+export { ForTableBody } from './table-body';
 export { ForTableHeaderRow } from './table-header-row';
 export { ForTableRow } from './table-row';
 export { ForTableHeaderCell } from './table-header-cell';

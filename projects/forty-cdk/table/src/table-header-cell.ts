@@ -1,4 +1,13 @@
-import { computed, Directive, ElementRef, inject, input, type Signal, signal } from '@angular/core';
+import {
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  type Signal,
+  signal,
+} from '@angular/core';
 
 import { registerHandle } from 'forty-cdk/core';
 import {
@@ -51,6 +60,14 @@ export class ForTableHeaderCell {
    */
   readonly el = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #host = this.el.nativeElement;
+
+  /**
+   * This header cell's element injector. Exposed so a declarative renderer stamping
+   * header content from a projected `<ng-template>` (e.g. `ForTableBody`) can pass it
+   * as `[ngTemplateOutletInjector]`, letting context-dependent primitives inside that
+   * content resolve this cell and the table.
+   */
+  readonly injector = inject(Injector);
 
   /** Column identifier, reflected as `data-column`. Required by later phases (sort, resize, reorder). */
   readonly name = input.required<string>();
