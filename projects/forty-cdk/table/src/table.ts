@@ -34,6 +34,7 @@ import {
   type TableSelectionBehavior,
   type TableSelectAllState,
   type TableVirtualRowNavigation,
+  type TableVirtualWindow,
 } from './table-context';
 import { TableRowSelection } from './table-row-selection';
 import { TableExpansion } from './table-expansion';
@@ -177,6 +178,10 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly reorderingRowIndex = this.#reorderingRow.asReadonly();
   readonly virtualRowNavigation = this.#virtualNav.asReadonly();
+  readonly #virtualWindow = signal<TableVirtualWindow | null>(null);
+
+  /** The virtual window published by `[forTableVirtualized]`, read by `<for-table-body>`; `null` when not virtualized. */
+  readonly virtualWindow = this.#virtualWindow.asReadonly();
 
   readonly #headerCellHosts = computed(() => this.#headerCells.items());
   readonly #dataCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
@@ -325,6 +330,10 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void {
     this.#virtualNav.set(navigation);
+  }
+
+  registerVirtualWindow(window: TableVirtualWindow | null): void {
+    this.#virtualWindow.set(window);
   }
 
   setReorderingRow(index: number | null): void {

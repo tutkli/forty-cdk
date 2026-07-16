@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 
@@ -74,6 +74,49 @@ class BodyHost {
   readonly loading = signal(false);
   readonly lastSort = signal<TableSortDescriptor | null>(null);
   readonly rowKey = (row: Row): number => row.id;
+}
+
+interface BigRow {
+  id: number;
+  name: string;
+}
+
+function buildBigRows(count: number): BigRow[] {
+  return Array.from({ length: count }, (_, i) => ({ id: i, name: `Row ${i}` }));
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="Big" [rowCount]="rows().length">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row let-i="index"
+            >{{ row.name }}#{{ i }}</ng-template
+          >
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class VirtualBodyHost {
+  readonly rows = signal<BigRow[]>(buildBigRows(20));
+  readonly rowKey = (row: BigRow): number => row.id;
+  readonly table = viewChild.required(ForTable);
+}
+
+/** Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a deterministic jsdom test. */
+function publishWindow(
+  table: ForTable,
+  indices: readonly number[],
+  totalSize: number,
+  rowSize = 44,
+): void {
+  table.registerVirtualWindow({
+    rows: signal(indices.map((index) => ({ index, start: index * rowSize }))),
+    totalSize: signal(totalSize),
+  });
 }
 
 describe('ForTableBody', () => {
@@ -194,5 +237,65 @@ describe('ForTableBody', () => {
     const rows = queryAll('[forTableRow]');
     expect(rows).toHaveLength(1);
     expect(rows[0]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Margaret#0');
+  });
+
+  describe('virtualized window seam', () => {
+    it('renders only the published window slice, indexed into rows', () => {
+      const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
+      publishWindow(instance.table(), [5, 6, 7], 880);
+      fixture.detectChanges();
+
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(3);
+      expect(rows.map((r) => r.getAttribute('data-index'))).toEqual(['5', '6', '7']);
+      expect(rows.map((r) => r.querySelector('[data-column="name"]')?.textContent?.trim())).toEqual(
+        ['Row 5#5', 'Row 6#6', 'Row 7#7'],
+      );
+    });
+
+    it('absolutely positions each windowed row at its pixel offset and sizes the rowgroup', () => {
+      const { instance, query, queryAll, fixture } = renderHost(VirtualBodyHost);
+      publishWindow(instance.table(), [5, 6], 880);
+      fixture.detectChanges();
+
+      const rowgroup = query('[role="rowgroup"]') as HTMLElement;
+      expect(rowgroup.style.height).toBe('880px');
+      expect(rowgroup.style.position).toBe('relative');
+
+      const rows = queryAll('[forTableRow]') as HTMLElement[];
+      expect(rows[0]!.style.position).toBe('absolute');
+      expect(rows[0]!.style.transform).toBe('translateY(220px)');
+      expect(rows[1]!.style.transform).toBe('translateY(264px)');
+    });
+
+    it('drives absolute aria-rowindex from the window index (counting the header row)', () => {
+      const { instance, query, fixture } = renderHost(VirtualBodyHost);
+      publishWindow(instance.table(), [5], 880);
+      fixture.detectChanges();
+      expect(query('[forTableRow]')?.getAttribute('aria-rowindex')).toBe('7');
+    });
+
+    it('mounts only window-size rows for a large dataset (bounded embedded-view cost)', () => {
+      const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
+      instance.rows.set(buildBigRows(10_000));
+      const windowIndices = Array.from({ length: 12 }, (_, i) => 4000 + i);
+      publishWindow(instance.table(), windowIndices, 440_000);
+      fixture.detectChanges();
+      expect(queryAll('[forTableRow]')).toHaveLength(12);
+    });
+
+    it('falls back to full flow rendering when the window is cleared', () => {
+      const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
+      publishWindow(instance.table(), [5, 6], 880);
+      fixture.detectChanges();
+      expect(queryAll('[forTableRow]')).toHaveLength(2);
+
+      instance.table().registerVirtualWindow(null);
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]') as HTMLElement[];
+      expect(rows).toHaveLength(20);
+      expect(rows[0]!.style.position).toBe('');
+      expect(rows[0]!.hasAttribute('data-index')).toBe(false);
+    });
   });
 });

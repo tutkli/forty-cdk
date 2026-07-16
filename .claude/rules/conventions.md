@@ -269,4 +269,9 @@ Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, 
   the `data-*` / role hooks. It stamps consumer `<ng-template>` content through `ngTemplateOutlet` with
   `[ngTemplateOutletInjector]` set to the stamped cell's injector, so row-context primitives placed in a
   cell template (`[forTableRowSelector]`, …) resolve their `[forTableRow]` despite the template being
-  declared outside any row. See [#1330](https://github.com/tutkli/forty-cdk/issues/1330).
+  declared outside any row. When `[forTableVirtualized]` is present it also owns the virtualization
+  **sizer**: it reads the window published on the table context (the additive `virtualWindow` /
+  `registerVirtualWindow` seam, symmetric with `registerVirtualNavigation` — so `forty-cdk/table` still
+  never imports `forty-cdk/virtualization`), sizes the data rowgroup to the full scroll height
+  (`position: relative` + `height`), renders only the windowed slice indexed into `rows`, and absolutely
+  positions each row (`translateY`). See [#1330](https://github.com/tutkli/forty-cdk/issues/1330).

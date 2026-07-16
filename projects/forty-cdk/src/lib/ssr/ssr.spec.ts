@@ -470,6 +470,23 @@ class TableTreegridFixture {
 class TableVirtualizedFixture {}
 
 @Component({
+  imports: [ForTable, ForTableVirtualized, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable forTableVirtualized mode="grid" aria-label="Big" [rowCount]="1000">
+      <for-table-body [rows]="rows">
+        <ng-container forColumnDef="a">
+          <ng-template forHeaderCell>#</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableBodyVirtualizedFixture {
+  readonly rows = Array.from({ length: 1000 }, (_, i) => i);
+}
+
+@Component({
   imports: [
     ForTable,
     ForTableVirtualized,
@@ -1817,6 +1834,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableBodyFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
+  TableBodyVirtualizedFixture,
   TableVirtualizedReorderFixture,
   StepperFixture,
   StepperCompletedFixture,
@@ -2311,6 +2329,20 @@ describe('SSR smoke tests', () => {
     const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
     expect(root.getAttribute('role')).toBe('grid');
     expect(root.getAttribute('aria-rowcount')).toBe('1000');
+    expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
+    const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
+    expect(body.style.height).toBe('44000px');
+  });
+
+  it('virtualized <for-table-body> stamps the header + empty window + estimate sizer server-side', () => {
+    const f = TestBed.createComponent(TableBodyVirtualizedFixture);
+    f.detectChanges();
+    const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
+    expect(root.getAttribute('role')).toBe('grid');
+    expect(root.getAttribute('aria-rowcount')).toBe('1001');
+    expect(f.nativeElement.querySelector('[forTableHeaderCell]')?.getAttribute('data-column')).toBe(
+      'a',
+    );
     expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
     const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
     expect(body.style.height).toBe('44000px');

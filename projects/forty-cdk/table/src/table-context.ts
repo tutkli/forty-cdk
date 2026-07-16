@@ -49,6 +49,41 @@ export interface ForTableRowHandle {
 }
 
 /**
+ * A single row in a {@link TableVirtualWindow}: its absolute dataset index and
+ * pixel offset from the start of the scroll range.
+ */
+export interface TableVirtualRow {
+  /** Absolute 0-based index of this row in the full dataset. */
+  readonly index: number;
+  /** Pixel offset of this row from the start of the scroll range. */
+  readonly start: number;
+}
+
+/**
+ * A rendered virtual window published by `[forTableVirtualized]` for the
+ * declarative `<for-table-body>` to render. It lets the body render only the
+ * windowed rows — each absolutely positioned inside a full-height sizer —
+ * instead of iterating the whole `rows` input, without `forty-cdk/table`
+ * importing the virtualization core. Mirrors {@link TableVirtualRowNavigation}:
+ * the virtualization companion owns the windowing math and publishes the result
+ * through the shared table context.
+ */
+export interface TableVirtualWindow {
+  /**
+   * The rows to render this frame — the visible window plus overscan and the
+   * retained focused / reordering rows, each carrying its absolute dataset
+   * `index` and pixel `start`. `<for-table-body>` indexes its `rows` input by
+   * `index` and positions each row at `translateY(start)`.
+   */
+  readonly rows: Signal<readonly TableVirtualRow[]>;
+  /**
+   * Total scroll height of the full dataset in px. Applied to the body's
+   * rowgroup so the scrollbar spans the whole set while only the window mounts.
+   */
+  readonly totalSize: Signal<number>;
+}
+
+/**
  * Cross-window row-navigation delegate registered by `[forTableVirtualized]`.
  * `ForTable` consults it when a grid keyboard action resolves a row outside the
  * rendered window, keeping the virtualization bridge out of `ForTable` itself.
@@ -192,6 +227,21 @@ export interface ForTableContext {
    * into view, without taking a direct dependency on `ForTableVirtualized`.
    */
   readonly virtualRowNavigation: Signal<TableVirtualRowNavigation | null>;
+  /**
+   * Registers (or clears, with `null`) the rendered virtual window.
+   * `[forTableVirtualized]` registers itself so the declarative
+   * `<for-table-body>` renders only the windowed rows without importing the
+   * virtualization core. No-op for tables built from the raw `[forTableRow]`
+   * primitives, which render their own window.
+   */
+  registerVirtualWindow(window: TableVirtualWindow | null): void;
+  /**
+   * The currently registered virtual window, or `null` when the table is not
+   * virtualized (or is built from the raw `[forTableRow]` primitives directly).
+   * `<for-table-body>` reads this to switch between rendering the full `rows`
+   * input and rendering only the window inside a full-height sizer.
+   */
+  readonly virtualWindow: Signal<TableVirtualWindow | null>;
   /**
    * Absolute index of the row currently being pointer-reordered (set by
    * `[forTableRowReorder]` on lift, cleared on release), or `null` when no row is

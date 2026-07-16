@@ -289,6 +289,13 @@ export const routes: Routes = [
       import('./fixtures/for-table-body.fixture').then((m) => m.ForTableBodyFixture),
   },
   {
+    path: 'for-table-body-virtualized',
+    loadComponent: () =>
+      import('./fixtures/for-table-body-virtualized.fixture').then(
+        (m) => m.ForTableBodyVirtualizedFixture,
+      ),
+  },
+  {
     path: 'table-virtualized-reorder',
     loadComponent: () =>
       import('./fixtures/table-virtualized-reorder.fixture').then(
