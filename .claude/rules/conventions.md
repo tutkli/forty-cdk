@@ -274,4 +274,10 @@ Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, 
   `registerVirtualWindow` seam, symmetric with `registerVirtualNavigation` — so `forty-cdk/table` still
   never imports `forty-cdk/virtualization`), sizes the data rowgroup to the full scroll height
   (`position: relative` + `height`), renders only the windowed slice indexed into `rows`, and absolutely
-  positions each row (`translateY`). See [#1330](https://github.com/tutkli/forty-cdk/issues/1330).
+  positions each row (`translateY`). Full-span **row variants** (`[forRowDef]` + `[forRowCell]`, matched
+  per datum by a `[when]` predicate — group headers / separators / summary rows) are stamped as a single
+  presentational cell spanning `grid-column: 1 / -1` with the row `role` + `aria-colindex="1"` +
+  `aria-colspan`; the spanning cell is deliberately **not** a `[forTableCell]` and registers no cell
+  handle, so the roving grid stays rectangular (arrow keys step over variant rows) — variant rows are
+  non-selectable but still count towards `aria-rowindex` / `aria-rowcount`.
+  See [#1330](https://github.com/tutkli/forty-cdk/issues/1330).

@@ -4,6 +4,7 @@ import {
   Directive,
   ElementRef,
   inject,
+  Injector,
   input,
   numberAttribute,
   type Signal,
@@ -46,6 +47,14 @@ export class ForTableRow implements ForTableRowContext {
   protected readonly ctx = injectTableContext('ForTableRow');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #cells = new Collection<ForTableCellHandle>();
+
+  /**
+   * This row's element injector. Exposed so a declarative renderer stamping
+   * full-span variant content from a projected `<ng-template>` (e.g.
+   * `ForTableBody`) can pass it as `[ngTemplateOutletInjector]`, letting
+   * row-context-dependent primitives inside that content resolve this row.
+   */
+  readonly injector = inject(Injector);
 
   /** This row's selection identity, written into the table's `[(value)]`. Leave unset for non-selectable rows. */
   readonly value = input<unknown>();
