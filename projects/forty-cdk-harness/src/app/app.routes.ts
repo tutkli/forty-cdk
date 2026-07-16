@@ -303,6 +303,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'for-table-body-variants-virtualized',
+    loadComponent: () =>
+      import('./fixtures/for-table-body-variants-virtualized.fixture').then(
+        (m) => m.ForTableBodyVariantsVirtualizedFixture,
+      ),
+  },
+  {
     path: 'table-virtualized-reorder',
     loadComponent: () =>
       import('./fixtures/table-virtualized-reorder.fixture').then(

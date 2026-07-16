@@ -552,7 +552,7 @@ export class ForTable<T = unknown> implements ForTableContext {
         this.#pageSize(),
       );
       if (target !== null) {
-        navigation.navigateTo(target.row, target.col);
+        navigation.navigateTo(target.row, target.col, target.direction);
       }
       return true;
     }
@@ -581,12 +581,14 @@ export class ForTable<T = unknown> implements ForTableContext {
 }
 
 /**
- * Resolves the absolute `(row, 0-based column)` target for a row-crossing grid
- * action against the true `total` row count. Arrow row-moves preserve the
- * current column; `page-up` / `page-down` move by `pageSize` rows (clamped to
- * the dataset bounds) preserving the column; `first` / `last` jump to the first
- * / last cell of the whole grid. Returns `null` when the move would not change
- * the focused row.
+ * Resolves the absolute `(row, 0-based column)` target and travel `direction`
+ * for a row-crossing grid action against the true `total` row count. Arrow
+ * row-moves preserve the current column; `page-up` / `page-down` move by
+ * `pageSize` rows (clamped to the dataset bounds) preserving the column;
+ * `first` / `last` jump to the first / last cell of the whole grid. The
+ * `direction` (`+1` for down / first, `-1` for up / last) is threaded to the
+ * virtualization bridge so it can step over full-span variant rows onto the
+ * adjacent data row. Returns `null` when the move would not change the focused row.
  */
 function resolveCrossWindowRowTarget(
   action: GridNavigationAction,
@@ -595,24 +597,24 @@ function resolveCrossWindowRowTarget(
   total: number,
   cols: number,
   pageSize: number,
-): { row: number; col: number } | null {
+): { row: number; col: number; direction: 1 | -1 } | null {
   switch (action) {
     case 'next-row':
-      return fromRow + 1 < total ? { row: fromRow + 1, col } : null;
+      return fromRow + 1 < total ? { row: fromRow + 1, col, direction: 1 } : null;
     case 'prev-row':
-      return fromRow - 1 >= 0 ? { row: fromRow - 1, col } : null;
+      return fromRow - 1 >= 0 ? { row: fromRow - 1, col, direction: -1 } : null;
     case 'page-down': {
       const row = Math.min(total - 1, fromRow + Math.max(1, pageSize));
-      return row > fromRow ? { row, col } : null;
+      return row > fromRow ? { row, col, direction: 1 } : null;
     }
     case 'page-up': {
       const row = Math.max(0, fromRow - Math.max(1, pageSize));
-      return row < fromRow ? { row, col } : null;
+      return row < fromRow ? { row, col, direction: -1 } : null;
     }
     case 'first':
-      return { row: 0, col: 0 };
+      return { row: 0, col: 0, direction: 1 };
     case 'last':
-      return { row: total - 1, col: cols - 1 };
+      return { row: total - 1, col: cols - 1, direction: -1 };
     default:
       return null;
   }
