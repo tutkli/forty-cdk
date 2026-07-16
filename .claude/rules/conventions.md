@@ -257,3 +257,16 @@ Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, 
   stays usable by keyboard); dragging is a pointer convenience, not the only way to use it. SSR-safe
   by gating all DOM resolution, transform writes and pointer-session setup on `isPlatformBrowser`.
   See [#1020](https://github.com/tutkli/forty-cdk/issues/1020).
+- **`<for-table-body>` (table) is an element-selector component that owns the column grid track.**
+  The declarative column layer over `[forTableCell]` / `[forTableHeaderCell]` ([#1330](https://github.com/tutkli/forty-cdk/issues/1330)):
+  it harvests `[forColumnDef]`s and stamps the header + data rows, so — like `[forVirtualViewport]` —
+  it uses an **element selector** (`<for-table-body>`, the documented "injects its own structure via
+  content projection" exception) and owns a slice of **layout** the headless core deliberately avoids:
+  it sets `display: grid` + the derived `grid-template-columns` track (from each def's `width` and the
+  published `--for-table-col-<name>-width` resize var) on the header row and every data row, because
+  owning the track string is the entire point of the ergonomic layer. Its own host is `display: contents`
+  so it introduces no box between `[forTable]` and its rows. All other styling stays the consumer's off
+  the `data-*` / role hooks. It stamps consumer `<ng-template>` content through `ngTemplateOutlet` with
+  `[ngTemplateOutletInjector]` set to the stamped cell's injector, so row-context primitives placed in a
+  cell template (`[forTableRowSelector]`, …) resolve their `[forTableRow]` despite the template being
+  declared outside any row. See [#1330](https://github.com/tutkli/forty-cdk/issues/1330).
