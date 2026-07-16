@@ -132,9 +132,10 @@ bundles it.
   for type inference, so `let-row` is typed as your row type.
 
 `<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
-all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Column
-**reordering** through the declarative layer is not part of this first cut — use the raw primitives for
-that today.
+all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Full-span
+**row variants** (group headers, separators, summary rows) are covered below via `[forRowDef]`. Column
+**reordering** through the declarative layer is not part of this cut — use the raw primitives for that
+today.
 
 ### Virtualized rows
 
@@ -181,6 +182,49 @@ Fixed-size rows only — set the row height in CSS; measured / dynamic heights s
 }
 .scroll-root [forTableRow] {
   height: 44px;
+}
+```
+
+### Row variants
+
+Declare one or more `[forRowDef]` alongside the columns to render a **full-span row** for the data it
+matches — group headers, section separators, full-width summary or empty-state rows. For each datum the
+body picks the first `[forRowDef]` whose `[when]` predicate returns `true` and stamps a row whose single
+cell spans every column and renders the `[forRowCell]` template; unmatched data renders the standard
+per-column row. Type `let-row` by binding `[forRowCellRow]` to the same array you pass to `[rows]`.
+
+Variant rows are **presentational**: the spanning cell carries the row `role` (`gridcell` in grid /
+treegrid mode), `aria-colindex="1"`, and `aria-colspan` equal to the column count, but it does **not**
+join the roving 2D navigation grid — arrow keys move between the regular data cells and step over variant
+rows — and variant rows are non-selectable. They still occupy a row slot and count towards
+`aria-rowindex` / `aria-rowcount` (reading order is preserved). Style them off the `data-row-variant`
+hook the spanning cell emits. Row variants compose with `[forTableVirtualized]` — a matched row inside
+the window renders full-span and positioned like any other.
+
+```html
+<div forTable mode="grid" ariaLabel="Grouped people">
+  <for-table-body [rows]="rows()" [rowKey]="rowKey">
+    <ng-container forColumnDef="name">
+      <ng-template forHeaderCell>Name</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    </ng-container>
+    <ng-container forColumnDef="role">
+      <ng-template forHeaderCell>Role</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+    </ng-container>
+
+    <ng-container forRowDef [when]="isGroupHeader">
+      <ng-template forRowCell [forRowCellRow]="rows()" let-row>{{ row.group }}</ng-template>
+    </ng-container>
+  </for-table-body>
+</div>
+```
+
+```css
+[data-row-variant] {
+  grid-column: 1 / -1; /* already applied inline; restate only to layer your own styles */
+  font-weight: 600;
+  background: var(--group-header-bg);
 }
 ```
 

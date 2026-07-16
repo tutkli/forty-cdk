@@ -209,6 +209,8 @@ import {
   ForTableRow,
   ForTableRowReorder,
   ForTableSortHeader,
+  ForRowCell,
+  ForRowDef,
 } from 'forty-cdk/table';
 import {
   ForTree,
@@ -422,6 +424,44 @@ class TableBodyFixture {
     { id: 2, name: 'Grace', role: 'Engineer' },
   ];
   readonly rowKey = (row: { id: number }): number => row.id;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable mode="grid" aria-label="Grouped">
+      <for-table-body [rows]="rows" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isGroup">
+          <ng-template forRowCell [forRowCellRow]="rows" let-row>Group: {{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableBodyRowVariantFixture {
+  readonly rows = [
+    { id: -1, name: 'Engineers', role: '', group: true },
+    { id: 1, name: 'Ada', role: 'Engineer' },
+    { id: 2, name: 'Grace', role: 'Engineer' },
+  ];
+  readonly rowKey = (row: { id: number }): number => row.id;
+  readonly isGroup = (row: { group?: boolean }): boolean => row.group === true;
 }
 
 @Component({
@@ -1832,6 +1872,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableFixture,
   TableGridFixture,
   TableBodyFixture,
+  TableBodyRowVariantFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableBodyVirtualizedFixture,
@@ -2346,6 +2387,18 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
     const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
     expect(body.style.height).toBe('44000px');
+  });
+
+  it('<for-table-body> stamps a full-span row variant server-side', () => {
+    const f = TestBed.createComponent(TableBodyRowVariantFixture);
+    f.detectChanges();
+    const rows = Array.from(f.nativeElement.querySelectorAll('[forTableRow]')) as HTMLElement[];
+    expect(rows.length).toBe(3);
+    const variantCell = rows[0]!.querySelector('[data-row-variant]') as HTMLElement;
+    expect(variantCell.getAttribute('role')).toBe('gridcell');
+    expect(variantCell.getAttribute('aria-colspan')).toBe('2');
+    expect(variantCell.textContent?.trim()).toBe('Group: Engineers');
+    expect(rows[1]!.querySelectorAll('[forTableCell]').length).toBe(2);
   });
 
   it('Pagination renders role="navigation" + aria-label + exactly one aria-current="page" server-side', () => {

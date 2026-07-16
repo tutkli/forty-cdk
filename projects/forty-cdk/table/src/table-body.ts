@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import { ForColumnDef } from './column-def';
+import { ForRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 import { injectTableContext } from './table-context';
@@ -32,10 +33,12 @@ interface RenderRow<T> {
   readonly virtualIndex: number | null;
   /** Pixel offset for `translateY` when virtualized, else `null` (static flow layout). */
   readonly start: number | null;
-  /** Selection identity from `rowKey`, or `undefined` when the row is not selectable. */
+  /** Selection identity from `rowKey`, or `undefined` when the row is not selectable (or a variant). */
   readonly value: unknown;
   /** `@for` tracking key: the selection identity, falling back to the dataset index. */
   readonly key: unknown;
+  /** The matched full-span row variant, or `null` for a standard per-column row. */
+  readonly variant: ForRowDef<unknown> | null;
 }
 
 /**
@@ -71,6 +74,16 @@ interface RenderRow<T> {
  * `[forTable]` — no `#v` reference, manual sizer, `@for` window, or
  * `[virtualIndex]` binding. Fixed-size rows only for now (drive row height in
  * CSS); measured / dynamic row heights stay on the raw `[forTableRow]` path.
+ *
+ * **Row variants.** Declare one or more `[forRowDef]` alongside the columns to
+ * render a full-span row for the data they match (group headers, section
+ * separators, summary / empty-state rows). For each datum the body picks the
+ * first `[forRowDef]` whose `[when]` predicate returns `true` and stamps a row
+ * whose single cell spans every column and renders the `[forRowCell]` template;
+ * unmatched data renders the standard per-column row. Variant rows are
+ * presentational — their spanning cell stays out of the roving 2D navigation
+ * grid (arrow keys step over them) and they are non-selectable — but they still
+ * occupy a row slot and count towards `aria-rowindex` / `aria-rowcount`.
  */
 @Component({
   selector: 'for-table-body',
@@ -138,6 +151,7 @@ interface RenderRow<T> {
       } @else {
         @for (r of renderRows(); track r.key) {
           <div
+            #rowRef="forTableRow"
             forTableRow
             [value]="r.value"
             [virtualIndex]="r.virtualIndex"
@@ -149,14 +163,30 @@ interface RenderRow<T> {
             [style.right]="r.start !== null ? '0' : null"
             [style.transform]="r.start !== null ? 'translateY(' + r.start + 'px)' : null"
           >
-            @for (col of orderedColumns(); track col.name()) {
-              <div #cell="forTableCell" forTableCell [name]="col.name()" [sticky]="col.sticky()">
+            @if (r.variant; as variant) {
+              <div
+                [attr.role]="cellRole()"
+                [attr.aria-colindex]="1"
+                [attr.aria-colspan]="orderedColumns().length"
+                [attr.data-row-variant]="''"
+                [style.grid-column]="'1 / -1'"
+              >
                 <ng-container
-                  [ngTemplateOutlet]="col.dataCell().template"
-                  [ngTemplateOutletInjector]="cell.injector"
+                  [ngTemplateOutlet]="variant.cell().template"
+                  [ngTemplateOutletInjector]="rowRef.injector"
                   [ngTemplateOutletContext]="{ $implicit: r.datum, index: r.index }"
                 />
               </div>
+            } @else {
+              @for (col of orderedColumns(); track col.name()) {
+                <div #cell="forTableCell" forTableCell [name]="col.name()" [sticky]="col.sticky()">
+                  <ng-container
+                    [ngTemplateOutlet]="col.dataCell().template"
+                    [ngTemplateOutletInjector]="cell.injector"
+                    [ngTemplateOutletContext]="{ $implicit: r.datum, index: r.index }"
+                  />
+                </div>
+              }
             }
           </div>
         }
@@ -205,6 +235,14 @@ export class ForTableBody<T = unknown> {
   /** Declared column definitions, in DOM order. */
   protected readonly columns = contentChildren(ForColumnDef);
 
+  /** Declared full-span row variants, in DOM order (first match wins per datum). */
+  protected readonly rowDefs = contentChildren(ForRowDef);
+
+  /** The role a stamped cell carries: `'cell'` in `table` mode, `'gridcell'` otherwise. */
+  protected readonly cellRole = computed(() =>
+    this.#ctx.mode() === 'table' ? 'cell' : 'gridcell',
+  );
+
   /** The columns to render, resolved from `displayedColumns` (or all defs, in order). */
   protected readonly orderedColumns = computed<readonly ForColumnDef[]>(() => {
     const defs = this.columns();
@@ -236,6 +274,9 @@ export class ForTableBody<T = unknown> {
     const window = this.#ctx.virtualWindow();
     const data = this.rows();
     const key = this.rowKey();
+    const variants = this.rowDefs();
+    const matchVariant = (datum: T, index: number): ForRowDef<unknown> | null =>
+      variants.find((def) => def.when()(datum, index)) ?? null;
     if (window) {
       const out: RenderRow<T>[] = [];
       for (const vrow of window.rows()) {
@@ -244,26 +285,30 @@ export class ForTableBody<T = unknown> {
           continue;
         }
         const identity = key?.(datum, vrow.index);
+        const variant = matchVariant(datum, vrow.index);
         out.push({
           datum,
           index: vrow.index,
           virtualIndex: vrow.index,
           start: vrow.start,
-          value: identity,
+          value: variant ? undefined : identity,
           key: identity ?? vrow.index,
+          variant,
         });
       }
       return out;
     }
     return data.map((datum, i) => {
       const identity = key?.(datum, i);
+      const variant = matchVariant(datum, i);
       return {
         datum,
         index: i,
         virtualIndex: null,
         start: null,
-        value: identity,
+        value: variant ? undefined : identity,
         key: identity ?? i,
+        variant,
       };
     });
   });

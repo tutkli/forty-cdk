@@ -3,6 +3,7 @@ import { Component, signal, viewChild } from '@angular/core';
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 
 import { ForColumnDef, ForDataCell, ForHeaderCell, ForPlaceholderCell } from './column-def';
+import { ForRowCell, ForRowDef } from './row-def';
 import { ForTable } from './table';
 import { ForTableBody } from './table-body';
 import { ForTableRowSelector } from './table-row-selector';
@@ -103,6 +104,93 @@ function buildBigRows(count: number): BigRow[] {
 class VirtualBodyHost {
   readonly rows = signal<BigRow[]>(buildBigRows(20));
   readonly rowKey = (row: BigRow): number => row.id;
+  readonly table = viewChild.required(ForTable);
+}
+
+interface GroupedRow {
+  id: number;
+  name: string;
+  role: string;
+  group?: boolean;
+}
+
+function buildGroupedRows(): GroupedRow[] {
+  return [
+    { id: -1, name: 'Engineers', role: '', group: true },
+    { id: 1, name: 'Ada', role: 'Engineer' },
+    { id: 2, name: 'Grace', role: 'Engineer' },
+  ];
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Grouped" selectionMode="multiple">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+
+        <ng-container forRowDef [when]="isGroup">
+          <ng-template forRowCell [forRowCellRow]="rows()" let-row let-i="index"
+            >Group: {{ row.name }}#{{ i }}</ng-template
+          >
+        </ng-container>
+        <ng-container forRowDef [when]="isGroup">
+          <ng-template forRowCell [forRowCellRow]="rows()">should-not-render</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class VariantBodyHost {
+  readonly rows = signal<GroupedRow[]>(buildGroupedRows());
+  readonly rowKey = (row: GroupedRow): number => row.id;
+  readonly isGroup = (row: GroupedRow): boolean => row.group === true;
+  readonly table = viewChild.required(ForTable);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Big grouped" [rowCount]="rows().length">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isGroup">
+          <ng-template forRowCell [forRowCellRow]="rows()" let-row>Group {{ row.id }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class VirtualVariantHost {
+  readonly rows = signal<BigRow[]>(buildBigRows(20));
+  readonly rowKey = (row: BigRow): number => row.id;
+  readonly isGroup = (row: BigRow): boolean => row.id === 5;
   readonly table = viewChild.required(ForTable);
 }
 
@@ -296,6 +384,63 @@ describe('ForTableBody', () => {
       expect(rows).toHaveLength(20);
       expect(rows[0]!.style.position).toBe('');
       expect(rows[0]!.hasAttribute('data-index')).toBe(false);
+    });
+  });
+
+  describe('row variants', () => {
+    it('stamps a full-span variant cell for matched rows and per-column cells otherwise', () => {
+      const { queryAll } = renderHost(VariantBodyHost);
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(3);
+
+      const variantCell = rows[0]!.querySelector('[data-row-variant]');
+      expect(variantCell?.getAttribute('role')).toBe('gridcell');
+      expect(variantCell?.getAttribute('aria-colindex')).toBe('1');
+      expect(variantCell?.getAttribute('aria-colspan')).toBe('2');
+      expect((variantCell as HTMLElement).style.gridColumn).toBe('1 / -1');
+      expect(variantCell?.textContent?.trim()).toBe('Group: Engineers#0');
+
+      expect(rows[1]!.querySelectorAll('[forTableCell]')).toHaveLength(2);
+      expect(rows[1]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Ada');
+    });
+
+    it('renders only the first matching row variant (first def in DOM order wins)', () => {
+      const { query } = renderHost(VariantBodyHost);
+      expect(query('[forTableRow]')?.textContent).not.toContain('should-not-render');
+    });
+
+    it('keeps the variant cell out of the roving grid so data cells stay a rectangular grid', () => {
+      const { queryAll } = renderHost(VariantBodyHost);
+      const rows = queryAll('[forTableRow]');
+      expect(rows[0]!.querySelectorAll('[forTableCell]')).toHaveLength(0);
+      const dataCells = Array.from(rows[1]!.querySelectorAll('[forTableCell]'));
+      expect(dataCells.map((c) => c.getAttribute('aria-colindex'))).toEqual(['1', '2']);
+    });
+
+    it('counts the variant row in aria-rowindex reading order', () => {
+      const { queryAll } = renderHost(VariantBodyHost);
+      const rows = queryAll('[forTableRow]');
+      expect(rows.map((r) => r.getAttribute('aria-rowindex'))).toEqual(['2', '3', '4']);
+    });
+
+    it('makes variant rows non-selectable (excluded from select-all)', () => {
+      const { instance, queryAll, fixture } = renderHost(VariantBodyHost);
+      instance.table().toggleSelectAll();
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows.map((r) => r.getAttribute('aria-selected'))).toEqual(['false', 'true', 'true']);
+    });
+
+    it('renders windowed variant rows full-span under the virtualization seam', () => {
+      const { instance, queryAll, fixture } = renderHost(VirtualVariantHost);
+      publishWindow(instance.table(), [4, 5, 6], 880);
+      fixture.detectChanges();
+
+      const rows = queryAll('[forTableRow]');
+      expect(rows.map((r) => r.getAttribute('data-index'))).toEqual(['4', '5', '6']);
+      expect(rows[1]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Group 5');
+      expect(rows[1]!.querySelectorAll('[forTableCell]')).toHaveLength(0);
+      expect(rows[0]!.querySelectorAll('[forTableCell]')).toHaveLength(1);
     });
   });
 });
