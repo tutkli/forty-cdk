@@ -423,12 +423,12 @@ describe('ForTableBody', () => {
       expect(rows.map((r) => r.getAttribute('aria-rowindex'))).toEqual(['2', '3', '4']);
     });
 
-    it('makes variant rows non-selectable (excluded from select-all)', () => {
+    it('makes variant rows non-selectable (excluded from select-all, no aria-selected)', () => {
       const { instance, queryAll, fixture } = renderHost(VariantBodyHost);
       instance.table().toggleSelectAll();
       fixture.detectChanges();
       const rows = queryAll('[forTableRow]');
-      expect(rows.map((r) => r.getAttribute('aria-selected'))).toEqual(['false', 'true', 'true']);
+      expect(rows.map((r) => r.getAttribute('aria-selected'))).toEqual([null, 'true', 'true']);
     });
 
     it('renders windowed variant rows full-span under the virtualization seam', () => {

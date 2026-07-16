@@ -1582,6 +1582,29 @@ describe('ForTable', () => {
       }
     });
 
+    it('selection-enabled: a row without [value] emits no aria-selected, a valued row keeps "false"', () => {
+      @Component({
+        imports: [ForTable, ForTableRow, ForTableCell],
+        template: `
+          <div forTable mode="grid" selectionMode="multiple">
+            <div role="rowgroup">
+              <div forTableRow data-testid="variant"><div forTableCell name="a">Group</div></div>
+              <div forTableRow [value]="1" data-testid="data">
+                <div forTableCell name="a">Ada</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class MixedSelectableHost {}
+
+      const { el } = renderHost(MixedSelectableHost);
+      const variant = el.querySelector<HTMLElement>('[data-testid="variant"]')!;
+      const data = el.querySelector<HTMLElement>('[data-testid="data"]')!;
+      expect(variant.hasAttribute('aria-selected')).toBe(false);
+      expect(data.getAttribute('aria-selected')).toBe('false');
+    });
+
     it('clicking a [forTableRowSelector] toggles its row: aria-selected, data-selected, and selector data-state update correctly; click again reverts', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
