@@ -133,8 +133,56 @@ bundles it.
 
 `<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
 all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Column
-**reordering** and **virtualization** through the declarative layer are not part of this first cut —
-use the raw primitives for those today.
+**reordering** through the declarative layer is not part of this first cut — use the raw primitives for
+that today.
+
+### Virtualized rows
+
+Add `[forTableVirtualized]` to the same `[forTable]` element and the body switches to windowed rendering
+automatically — it reads the published window off the table context (so `forty-cdk/table` still never
+imports the virtualization core), mounts only the visible slice, sizes its rowgroup to the full scroll
+height, and absolutely positions each row. Pass the **whole dataset** to `[rows]` and the true total to
+`[rowCount]`; there is no `#v` reference, manual sizer, `@for` window, or `[virtualIndex]` binding.
+Fixed-size rows only — set the row height in CSS; measured / dynamic heights stay on the raw
+`[forTableRow]` path.
+
+```html
+<div
+  class="scroll-root"
+  forTable
+  forTableVirtualized
+  mode="grid"
+  ariaLabel="People"
+  [rowCount]="rows().length"
+  [estimateRowSize]="44"
+>
+  <for-table-body [rows]="rows()" [rowKey]="rowKey">
+    <ng-container forColumnDef="id" width="80px">
+      <ng-template forHeaderCell>#</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.id }}</ng-template>
+    </ng-container>
+    <ng-container forColumnDef="name">
+      <ng-template forHeaderCell>Name</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    </ng-container>
+  </for-table-body>
+</div>
+```
+
+```css
+.scroll-root {
+  height: 400px;
+  overflow: auto;
+  position: relative;
+}
+.scroll-root [forTableHeaderRow] {
+  position: sticky;
+  top: 0;
+}
+.scroll-root [forTableRow] {
+  height: 44px;
+}
+```
 
 ## Sticky header + CSS custom property
 

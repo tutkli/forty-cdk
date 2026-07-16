@@ -22,6 +22,22 @@ import {
   type TableSortDirection,
 } from './table-sort-header';
 
+/** One row `<for-table-body>` renders, resolved from the static or virtualized path. */
+interface RenderRow<T> {
+  /** The row datum, passed to the data-cell template as `$implicit`. */
+  readonly datum: T;
+  /** Dataset index exposed to the data-cell template as `index` (absolute when virtualized). */
+  readonly index: number;
+  /** Absolute dataset index when virtualized (drives `[virtualIndex]`), else `null`. */
+  readonly virtualIndex: number | null;
+  /** Pixel offset for `translateY` when virtualized, else `null` (static flow layout). */
+  readonly start: number | null;
+  /** Selection identity from `rowKey`, or `undefined` when the row is not selectable. */
+  readonly value: unknown;
+  /** `@for` tracking key: the selection identity, falling back to the dataset index. */
+  readonly key: unknown;
+}
+
 /**
  * Ergonomic declarative renderer for `[forTable]` in `<div role>` grid mode.
  * Place `<for-table-body>` inside a `[forTable]` element and declare one
@@ -45,6 +61,16 @@ import {
  * and width descriptors stay consumer-applied (BYO-data). Selection stays
  * consumer-placed: drop `[forTableRowSelector]` / `[forTableSelectAll]` into the
  * cell templates and set `rowKey` so each row carries a selection identity.
+ *
+ * **Virtualization is transparent.** Adding `[forTableVirtualized]` to the same
+ * `[forTable]` element switches the body to windowed rendering automatically:
+ * it reads the published window off the table context (no cross-entry import),
+ * renders only the visible slice indexed into `rows`, sizes its rowgroup to the
+ * full scroll height, and absolutely positions each row at its offset. The
+ * consumer passes the whole dataset to `rows` and sets `[rowCount]` on
+ * `[forTable]` — no `#v` reference, manual sizer, `@for` window, or
+ * `[virtualIndex]` binding. Fixed-size rows only for now (drive row height in
+ * CSS); measured / dynamic row heights stay on the raw `[forTableRow]` path.
  */
 @Component({
   selector: 'for-table-body',
@@ -89,7 +115,11 @@ import {
         </div>
       }
     </div>
-    <div role="rowgroup">
+    <div
+      role="rowgroup"
+      [style.position]="sizerHeight() !== null ? 'relative' : null"
+      [style.height.px]="sizerHeight()"
+    >
       @if (loading()) {
         @for (placeholder of placeholderRange(); track placeholder) {
           <div forTableRow [style.display]="'grid'" [style.grid-template-columns]="track()">
@@ -106,19 +136,25 @@ import {
           </div>
         }
       } @else {
-        @for (row of rows(); track trackRow(row, $index); let i = $index) {
+        @for (r of renderRows(); track r.key) {
           <div
             forTableRow
-            [value]="valueFor(row, i)"
+            [value]="r.value"
+            [virtualIndex]="r.virtualIndex"
+            [attr.data-index]="r.virtualIndex"
             [style.display]="'grid'"
             [style.grid-template-columns]="track()"
+            [style.position]="r.start !== null ? 'absolute' : null"
+            [style.left]="r.start !== null ? '0' : null"
+            [style.right]="r.start !== null ? '0' : null"
+            [style.transform]="r.start !== null ? 'translateY(' + r.start + 'px)' : null"
           >
             @for (col of orderedColumns(); track col.name()) {
               <div #cell="forTableCell" forTableCell [name]="col.name()" [sticky]="col.sticky()">
                 <ng-container
                   [ngTemplateOutlet]="col.dataCell().template"
                   [ngTemplateOutletInjector]="cell.injector"
-                  [ngTemplateOutletContext]="{ $implicit: row, index: i }"
+                  [ngTemplateOutletContext]="{ $implicit: r.datum, index: r.index }"
                 />
               </div>
             }
@@ -130,6 +166,8 @@ import {
   `,
 })
 export class ForTableBody<T = unknown> {
+  readonly #ctx = injectTableContext('ForTableBody');
+
   /** The rows to render — already sorted / filtered / paged by the consumer (BYO-data). */
   readonly rows = input.required<readonly T[]>();
 
@@ -189,27 +227,60 @@ export class ForTableBody<T = unknown> {
       .join(' '),
   );
 
+  /**
+   * The rows to render this change-detection pass. When `[forTableVirtualized]`
+   * has published a window it maps the window's slice into `rows` (absolute
+   * index + pixel offset per row); otherwise it maps every row in flow order.
+   */
+  protected readonly renderRows = computed<readonly RenderRow<T>[]>(() => {
+    const window = this.#ctx.virtualWindow();
+    const data = this.rows();
+    const key = this.rowKey();
+    if (window) {
+      const out: RenderRow<T>[] = [];
+      for (const vrow of window.rows()) {
+        const datum = data[vrow.index];
+        if (datum === undefined) {
+          continue;
+        }
+        const identity = key?.(datum, vrow.index);
+        out.push({
+          datum,
+          index: vrow.index,
+          virtualIndex: vrow.index,
+          start: vrow.start,
+          value: identity,
+          key: identity ?? vrow.index,
+        });
+      }
+      return out;
+    }
+    return data.map((datum, i) => {
+      const identity = key?.(datum, i);
+      return {
+        datum,
+        index: i,
+        virtualIndex: null,
+        start: null,
+        value: identity,
+        key: identity ?? i,
+      };
+    });
+  });
+
+  /** Full scroll height (px) applied to the rowgroup when virtualized, else `null` (natural height). */
+  protected readonly sizerHeight = computed<number | null>(() => {
+    const window = this.#ctx.virtualWindow();
+    return window && !this.loading() ? window.totalSize() : null;
+  });
+
   protected readonly placeholderRange = computed(() =>
     Array.from({ length: Math.max(0, this.placeholderRows()) }, (_, i) => i),
   );
-
-  constructor() {
-    injectTableContext('ForTableBody');
-  }
 
   /** Resolves a `sortable` column's current direction from the single `sort` descriptor. */
   protected directionFor(column: string): TableSortDirection {
     const descriptor = this.sort();
     return descriptor && descriptor.column === column ? descriptor.direction : 'none';
-  }
-
-  /** Tracking identity for a row: the consumer's `rowKey`, else the index. */
-  protected trackRow(row: T, index: number): unknown {
-    return this.rowKey()?.(row, index) ?? index;
-  }
-
-  /** Selection identity for a row: the consumer's `rowKey`, else `undefined` (not selectable). */
-  protected valueFor(row: T, index: number): unknown {
-    return this.rowKey()?.(row, index);
   }
 }
