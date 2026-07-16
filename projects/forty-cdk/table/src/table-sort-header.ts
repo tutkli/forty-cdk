@@ -39,6 +39,12 @@ export interface TableSortDescriptor {
  * stop so the two never collide on the host attribute. The draggable is detected by DOM
  * marker (the `forDraggable` / `forFreeDrag` attribute), not by a drag-drop value-import.
  *
+ * While `sortable`, the directive reflects the `data-sortable` marker (a CSS styling
+ * hook, absent when `sortable` is `false`). In `grid` / `treegrid` mode the header cell
+ * reads that marker to defer APG cell entry on `Enter`: `Enter` toggles the sort and
+ * keeps focus on the cell, while `F2` remains the cell-entry key — so a sortable +
+ * resizable header does not both sort and drop focus onto the resize handle.
+ *
  * Cycle (default `firstClickDirection='ascending'`): `none → ascending → descending → none`.
  * With `disableClear`: `none → ascending → descending → ascending`.
  *
@@ -53,6 +59,7 @@ export interface TableSortDescriptor {
   host: {
     '[attr.aria-sort]': 'activeDirection()',
     '[attr.data-sorted]': 'activeDirection()',
+    '[attr.data-sortable]': "sortable() ? '' : null",
     '(click)': 'activate()',
     '(keydown)': 'onKeyDown($event)',
   },

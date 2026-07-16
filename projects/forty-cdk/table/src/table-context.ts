@@ -312,6 +312,18 @@ export function hostHasDraggable(el: HTMLElement): boolean {
   return el.hasAttribute('forDraggable') || el.hasAttribute('forFreeDrag');
 }
 
+/**
+ * Whether a header-cell host carries an active sort affordance — a
+ * `[forTableSortHeader]` with `sortable` currently `true`, reflected as the
+ * `data-sortable` marker. Detected by DOM marker rather than a value-import of
+ * the sort header, so the grid cell-entry handler can defer `Enter` to the sort
+ * activation (keeping focus on the cell) without a cross-piece value dependency.
+ * A non-sortable header (no marker) keeps `Enter` as its cell-entry key.
+ */
+export function hostHasSortActivation(el: HTMLElement): boolean {
+  return el.hasAttribute('data-sortable');
+}
+
 export function injectTableContext(piece: string): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
