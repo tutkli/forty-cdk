@@ -91,9 +91,12 @@ export class ForTableRow implements ForTableRowContext {
     return v !== undefined && this.ctx.isRowSelected(v);
   });
 
-  protected readonly ariaSelected = computed<'true' | 'false' | null>(() =>
-    this.ctx.selectionMode() === 'none' ? null : this.selected() ? 'true' : 'false',
-  );
+  protected readonly ariaSelected = computed<'true' | 'false' | null>(() => {
+    if (this.ctx.selectionMode() === 'none' || this.value() === undefined) {
+      return null;
+    }
+    return this.selected() ? 'true' : 'false';
+  });
 
   /** Whether this expandable row is currently open. False for non-expandable rows. */
   readonly expanded = computed(() => {
