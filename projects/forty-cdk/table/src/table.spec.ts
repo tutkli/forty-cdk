@@ -760,6 +760,34 @@ class CrossWindowTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
+  template: `
+    <div forTable forTableVirtualized mode="grid" [rowCount]="200" #v="forTableVirtualized">
+      <div role="rowgroup">
+        @for (vi of windowIndices(); track vi) {
+          @if (variantIndices().has(vi)) {
+            <div forTableRow [virtualIndex]="vi" [attr.data-testid]="'variant-' + vi">
+              <div role="gridcell" [attr.aria-colindex]="1" style="grid-column: 1 / -1">
+                group {{ vi }}
+              </div>
+            </div>
+          } @else {
+            <div forTableRow [virtualIndex]="vi">
+              <div forTableCell name="a" [attr.data-testid]="'cell-' + vi + '-a'">{{ vi }}a</div>
+              <div forTableCell name="b" [attr.data-testid]="'cell-' + vi + '-b'">{{ vi }}b</div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  `,
+})
+class CrossWindowVariantTableHost {
+  readonly windowIndices = signal<readonly number[]>([23, 24, 25, 26, 27]);
+  readonly variantIndices = signal<ReadonlySet<number>>(new Set([25]));
+}
+
+@Component({
   imports: [
     ForTable,
     ForTableVirtualized,
@@ -3023,6 +3051,36 @@ describe('ForTable', () => {
 
         // `first` jumps to the first cell of the whole grid (row 0, column 0).
         expect(document.activeElement).toBe(cell(el, 'cell-0-a'));
+      });
+    });
+
+    describe('cross-window keyboard navigation over full-span variant rows', () => {
+      const cell = (el: HTMLElement, id: string) =>
+        el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+
+      it('ArrowDown onto a variant row steps over it to the next data row, preserving the column', async () => {
+        const { el, flush } = renderHost(CrossWindowVariantTableHost);
+        const start = cell(el, 'cell-24-a')!;
+        start.focus();
+        await flush();
+
+        press(start, 'ArrowDown');
+        await flush();
+
+        expect(cell(el, 'variant-25')).not.toBeNull();
+        expect(document.activeElement).toBe(cell(el, 'cell-26-a'));
+      });
+
+      it('ArrowUp onto a variant row steps over it to the previous data row, preserving the column', async () => {
+        const { el, flush } = renderHost(CrossWindowVariantTableHost);
+        const start = cell(el, 'cell-26-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'ArrowUp');
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-24-b'));
       });
     });
   });

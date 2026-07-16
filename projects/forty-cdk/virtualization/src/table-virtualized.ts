@@ -74,6 +74,7 @@ export class ForTableVirtualized {
     rows: this.#ctx.rows,
     scrollToRow: (index) => this.scrollToRow(index),
     scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
+    rowCount: () => this.#ctx.rowCount() ?? 0,
   });
 
   constructor() {

@@ -92,8 +92,11 @@ export interface TableVirtualRowNavigation {
   /**
    * Move roving focus to the data cell at the absolute `(rowIndex, 0-based
    * column)`, scrolling that row into the window first when it is not mounted.
+   * `direction` (`+1` down / `-1` up) is the travel sense of the originating
+   * grid action, so the bridge can step over full-span variant rows — which
+   * register no cells — onto the adjacent data row.
    */
-  navigateTo(rowIndex: number, column: number): void;
+  navigateTo(rowIndex: number, column: number, direction: 1 | -1): void;
   /**
    * Scroll the virtualizer so the row at the absolute `index` is in the window.
    * Used by `[forTableRowReorder]` to follow a keyboard reorder target across
