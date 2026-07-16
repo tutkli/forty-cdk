@@ -26,6 +26,7 @@ import {
 } from 'forty-cdk/core';
 import {
   FOR_TABLE_CONTEXT,
+  hostHasSortActivation,
   type ForTableCellHandle,
   type ForTableContext,
   type ForTableRowHandle,
@@ -455,9 +456,18 @@ export class ForTable<T = unknown> implements ForTableContext {
    * APG grid cell-entry mode: Enter or F2 on a focused cell moves focus into the
    * cell's first interactive widget; Escape returns focus to the owning cell.
    * Returns `true` when the event was consumed.
+   *
+   * A cell whose host carries an active sort affordance (`[forTableSortHeader]`
+   * with `sortable`, marked by `data-sortable`) defers `Enter` to the sort
+   * activation — `Enter` toggles the sort and focus stays on the cell — while
+   * `F2` remains the cell-entry key, so a sortable + resizable header does not
+   * both sort and drop focus onto the resize handle.
    */
   #handleCellEntryKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if ((event.key === 'Enter' || event.key === 'F2') && event.target === host) {
+      if (event.key === 'Enter' && hostHasSortActivation(host)) {
+        return false;
+      }
       const target = findFirstFocusable(host);
       if (!target) {
         return false;

@@ -61,6 +61,47 @@ test.describe('ForTableBody — declarative columns', () => {
     await expect(dataCell(page, 0, 'role')).toHaveText('Designer');
   });
 
+  test('Enter on a sortable+resizable header sorts and keeps focus on the header cell', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'for-table-body');
+    const nameHeader = headerCell(page, 'name');
+    await nameHeader.focus();
+    await expectFocused(nameHeader);
+
+    await page.keyboard.press('Enter');
+
+    await expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
+    await expectFocused(nameHeader);
+    await expect(nameHeader.locator('[forTableColumnResizer]')).not.toBeFocused();
+    await expect(dataCell(page, 0, 'name')).toContainText('Ada Lovelace');
+  });
+
+  test('F2 on a sortable+resizable header enters the cell (focuses the resizer) without sorting', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'for-table-body');
+    const nameHeader = headerCell(page, 'name');
+    await nameHeader.focus();
+
+    await page.keyboard.press('F2');
+
+    await expectFocused(nameHeader.locator('[forTableColumnResizer]'));
+    await expect(nameHeader).not.toHaveAttribute('aria-sort');
+  });
+
+  test('Enter on a non-sortable header with focusable content enters the cell', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'for-table-body');
+    const selHeader = headerCell(page, 'sel');
+    await selHeader.focus();
+
+    await page.keyboard.press('Enter');
+
+    await expectFocused(el(page, 'select-all'));
+  });
+
   test('auto-fit on a resizable column measures the stamped cells and publishes the width var', async ({
     page,
   }) => {

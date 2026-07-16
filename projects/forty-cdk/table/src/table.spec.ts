@@ -442,6 +442,60 @@ class CellEntryGridHost {
 class CellEntryHiddenWidgetHost {}
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSortHeader,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div
+          forTableHeaderCell
+          name="sortable"
+          forTableSortHeader
+          column="sortable"
+          (sortChange)="lastSort = $event"
+          data-testid="h-sortable"
+        >
+          Sortable
+          <button type="button" data-testid="h-sortable-btn">resize</button>
+        </div>
+        <div
+          forTableHeaderCell
+          name="unsortable"
+          forTableSortHeader
+          column="unsortable"
+          [sortable]="false"
+          (sortChange)="lastSort = $event"
+          data-testid="h-unsortable"
+        >
+          Unsortable
+          <button type="button" data-testid="h-unsortable-btn">act</button>
+        </div>
+        <div forTableHeaderCell name="plain" data-testid="h-plain">
+          Plain
+          <button type="button" data-testid="h-plain-btn">act</button>
+        </div>
+      </div>
+      <div role="rowgroup">
+        <div forTableRow>
+          <div forTableCell name="sortable">a</div>
+          <div forTableCell name="unsortable">b</div>
+          <div forTableCell name="plain">c</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class SortEntryGridHost {
+  lastSort: TableSortDescriptor | null = null;
+}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
   template: `
     <div
@@ -1537,6 +1591,65 @@ describe('ForTable', () => {
       await flush();
       expect(ev.defaultPrevented).toBe(true);
       expect(document.activeElement).toBe(visible);
+    });
+  });
+
+  describe('sortable header cell-entry vs sort activation (#1336)', () => {
+    it('reflects data-sortable only while sortable', async () => {
+      const { el, flush } = renderHost(SortEntryGridHost);
+      await flush();
+      expect(el.querySelector('[data-testid="h-sortable"]')!.hasAttribute('data-sortable')).toBe(
+        true,
+      );
+      expect(el.querySelector('[data-testid="h-unsortable"]')!.hasAttribute('data-sortable')).toBe(
+        false,
+      );
+    });
+
+    it('Enter on a sortable+resizable header toggles the sort and keeps focus on the cell', async () => {
+      const { el, flush } = renderHost(SortEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-sortable"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="h-sortable-btn"]')!;
+      cell.focus();
+      const ev = press(cell, 'Enter');
+      await flush();
+      expect(cell.getAttribute('aria-sort')).toBe('ascending');
+      expect(document.activeElement).toBe(cell);
+      expect(document.activeElement).not.toBe(btn);
+      expect(ev.defaultPrevented).toBe(true);
+    });
+
+    it('F2 on a sortable+resizable header enters the cell (focuses the widget) without sorting', async () => {
+      const { el, flush } = renderHost(SortEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-sortable"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="h-sortable-btn"]')!;
+      cell.focus();
+      press(cell, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(btn);
+      expect(cell.hasAttribute('aria-sort')).toBe(false);
+    });
+
+    it('Enter on a non-sortable [forTableSortHeader] with focusable content enters the cell', async () => {
+      const { el, instance, flush } = renderHost(SortEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-unsortable"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="h-unsortable-btn"]')!;
+      cell.focus();
+      press(cell, 'Enter');
+      await flush();
+      expect(document.activeElement).toBe(btn);
+      expect(instance.lastSort).toBeNull();
+    });
+
+    it('Enter on a plain header (no sort header) with focusable content still enters the cell', async () => {
+      const { el, flush } = renderHost(SortEntryGridHost);
+      const cell = el.querySelector<HTMLElement>('[data-testid="h-plain"]')!;
+      const btn = el.querySelector<HTMLElement>('[data-testid="h-plain-btn"]')!;
+      cell.focus();
+      const ev = press(cell, 'Enter');
+      await flush();
+      expect(document.activeElement).toBe(btn);
+      expect(ev.defaultPrevented).toBe(true);
     });
   });
 
