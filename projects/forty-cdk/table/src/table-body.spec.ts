@@ -260,6 +260,93 @@ class DerivedRowCountHost {
   readonly virtualized = viewChild.required(ForTableVirtualized);
 }
 
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell, ForPlaceholderCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="Classy">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey" [loading]="loading()">
+        <ng-container forColumnDef="name" [headerClass]="headerClass()" [cellClass]="cellClass()">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class ClassHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly loading = signal(false);
+  readonly headerClass = signal<string | null>('name-header num');
+  readonly cellClass = signal<string | null>('name-cell text-right');
+}
+
+interface DataPerson {
+  kind: 'data';
+  name: string;
+  salary: number;
+}
+interface SeparatorPerson {
+  kind: 'separator';
+  label: string;
+}
+type MixedPerson = DataPerson | SeparatorPerson;
+
+type Equal<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+
+function buildMixed(): MixedPerson[] {
+  return [
+    { kind: 'separator', label: 'Section A' },
+    { kind: 'data', name: 'Ada', salary: 100 },
+  ];
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Narrowed">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template
+            forDataCell
+            [forDataCellRow]="rows()"
+            [forDataCellUnless]="isSeparator"
+            let-row
+            >{{ row.name }} ({{ row.salary }})</ng-template
+          >
+        </ng-container>
+
+        <ng-container forRowDef [when]="isSeparator">
+          <ng-template forRowCell [forRowCellRow]="rows()" [forRowCellWhen]="isSeparator" let-row>{{
+            row.label
+          }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class NarrowHost {
+  readonly rows = signal<MixedPerson[]>(buildMixed());
+  readonly rowKey = (row: MixedPerson): string => (row.kind === 'data' ? row.name : row.label);
+  readonly isSeparator = (row: MixedPerson): row is SeparatorPerson => row.kind === 'separator';
+}
+
 /** Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a deterministic jsdom test. */
 function publishWindow(
   table: ForTable,
@@ -581,6 +668,116 @@ describe('ForTableBody', () => {
       expect(rows[1]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Group 5');
       expect(rows[1]!.querySelectorAll('[forTableCell]')).toHaveLength(0);
       expect(rows[0]!.querySelectorAll('[forTableCell]')).toHaveLength(1);
+    });
+  });
+
+  describe('headerClass / cellClass (#1356)', () => {
+    it('applies headerClass to the stamped header cell', () => {
+      const { query } = renderHost(ClassHost);
+      const nameHeader = query('[forTableHeaderCell][data-column="name"]')!;
+      expect(nameHeader.classList.contains('name-header')).toBe(true);
+      expect(nameHeader.classList.contains('num')).toBe(true);
+    });
+
+    it('applies cellClass to every stamped data cell of the column', () => {
+      const { queryAll } = renderHost(ClassHost);
+      const nameCells = queryAll('[forTableRow] [data-column="name"]');
+      expect(nameCells).toHaveLength(3);
+      for (const cell of nameCells) {
+        expect(cell.classList.contains('name-cell')).toBe(true);
+        expect(cell.classList.contains('text-right')).toBe(true);
+      }
+    });
+
+    it('applies cellClass to placeholder cells while loading', () => {
+      const { instance, queryAll, fixture } = renderHost(ClassHost);
+      instance.loading.set(true);
+      fixture.detectChanges();
+      const nameCells = queryAll('[forTableRow] [data-column="name"]');
+      expect(nameCells).toHaveLength(3);
+      for (const cell of nameCells) {
+        expect(cell.classList.contains('name-cell')).toBe(true);
+        expect(cell.querySelector('.skeleton')).not.toBeNull();
+      }
+    });
+
+    it('adds no class attribute when headerClass / cellClass are unset', () => {
+      const { query, queryAll } = renderHost(ClassHost);
+      expect(query('[forTableHeaderCell][data-column="role"]')?.hasAttribute('class')).toBe(false);
+      for (const cell of queryAll('[forTableRow] [data-column="role"]')) {
+        expect(cell.hasAttribute('class')).toBe(false);
+      }
+    });
+
+    it('lets the classes coexist with the role / data-* host attributes', () => {
+      const { query } = renderHost(ClassHost);
+      const nameCell = query('[forTableRow] [data-column="name"]')!;
+      expect(nameCell.classList.contains('name-cell')).toBe(true);
+      expect(nameCell.getAttribute('role')).toBe('gridcell');
+      expect(nameCell.getAttribute('data-column')).toBe('name');
+    });
+
+    it('reacts to a class input change without Zone.js (zoneless change detection)', () => {
+      const { instance, query, fixture } = renderHost(ClassHost);
+      const nameHeader = query('[forTableHeaderCell][data-column="name"]')!;
+      expect(nameHeader.classList.contains('name-header')).toBe(true);
+
+      instance.headerClass.set('renamed-header');
+      fixture.detectChanges();
+      expect(nameHeader.classList.contains('name-header')).toBe(false);
+      expect(nameHeader.classList.contains('renamed-header')).toBe(true);
+    });
+  });
+
+  describe('type-guard narrowing (#1355)', () => {
+    it('narrows [forDataCell] let-row to Exclude<T, V> when forDataCellUnless is a guard', () => {
+      const dataCell = null as unknown as ForDataCell<MixedPerson, SeparatorPerson>;
+      const ctx: unknown = { $implicit: { kind: 'data', name: 'Ada', salary: 1 }, index: 0 };
+      if (ForDataCell.ngTemplateContextGuard(dataCell, ctx)) {
+        const row = ctx.$implicit;
+        const narrowed: Equal<typeof row, DataPerson> = true;
+        expect(narrowed).toBe(true);
+        expect(row.name).toBe('Ada');
+      }
+    });
+
+    it('leaves [forDataCell] let-row as the full T when forDataCellUnless is omitted', () => {
+      const dataCell = null as unknown as ForDataCell<MixedPerson>;
+      const ctx: unknown = { $implicit: { kind: 'data', name: 'Ada', salary: 1 }, index: 0 };
+      if (ForDataCell.ngTemplateContextGuard(dataCell, ctx)) {
+        const row = ctx.$implicit;
+        const unnarrowed: Equal<typeof row, MixedPerson> = true;
+        expect(unnarrowed).toBe(true);
+      }
+    });
+
+    it('narrows [forRowCell] let-row to the matched variant V when forRowCellWhen is a guard', () => {
+      const rowCell = null as unknown as ForRowCell<MixedPerson, SeparatorPerson>;
+      const ctx: unknown = { $implicit: { kind: 'separator', label: 'A' }, index: 0 };
+      if (ForRowCell.ngTemplateContextGuard(rowCell, ctx)) {
+        const row = ctx.$implicit;
+        const narrowed: Equal<typeof row, SeparatorPerson> = true;
+        expect(narrowed).toBe(true);
+        expect(row.label).toBe('A');
+      }
+    });
+
+    it('leaves [forRowCell] let-row as the full T when forRowCellWhen is omitted', () => {
+      const rowCell = null as unknown as ForRowCell<MixedPerson>;
+      const ctx: unknown = { $implicit: { kind: 'separator', label: 'A' }, index: 0 };
+      if (ForRowCell.ngTemplateContextGuard(rowCell, ctx)) {
+        const row = ctx.$implicit;
+        const unnarrowed: Equal<typeof row, MixedPerson> = true;
+        expect(unnarrowed).toBe(true);
+      }
+    });
+
+    it('renders the narrowed variant + data templates (compile-time asserted, runtime verified)', () => {
+      const { queryAll } = renderHost(NarrowHost);
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(2);
+      expect(rows[0]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Section A');
+      expect(rows[1]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Ada (100)');
     });
   });
 });

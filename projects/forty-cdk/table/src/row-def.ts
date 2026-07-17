@@ -16,9 +16,13 @@ import { type ForDataCellContext } from './column-def';
  *
  * Bind `[forRowCellRow]` to the same array passed to `ForTableBody`'s `rows` to
  * type `let-row` — the input is read only for type inference, never at runtime.
+ *
+ * When the row type is a discriminated union, also bind `[forRowCellWhen]` to
+ * the same type guard used on the def's `[when]` so `let-row` is narrowed to the
+ * matched variant member (`V`) instead of staying the full union.
  */
 @Directive({ selector: 'ng-template[forRowCell]' })
-export class ForRowCell<T> {
+export class ForRowCell<T, V extends T = T> {
   /** The captured row-variant template, typed with `ForDataCellContext<T>`. */
   readonly template = inject<TemplateRef<ForDataCellContext<T>>>(TemplateRef);
 
@@ -29,11 +33,21 @@ export class ForRowCell<T> {
    */
   readonly rowType = input<readonly T[]>([], { alias: 'forRowCellRow' });
 
+  /**
+   * Type-inference hint: bind the same type guard used on this def's `[when]`
+   * so `let-row` is narrowed to the matched variant member (`V`). Read only by
+   * the compiler; the directive never touches its value. Omitting it leaves
+   * `let-row` typed as the full `T`.
+   */
+  readonly narrowType = input<((row: T, index: number) => row is V) | null>(null, {
+    alias: 'forRowCellWhen',
+  });
+
   /** Narrows the template context type for `let-row` under strict template checking. */
-  static ngTemplateContextGuard<T>(
-    _directive: ForRowCell<T>,
+  static ngTemplateContextGuard<T, V extends T>(
+    _directive: ForRowCell<T, V>,
     _context: unknown,
-  ): _context is ForDataCellContext<T> {
+  ): _context is ForDataCellContext<V> {
     return true;
   }
 }
