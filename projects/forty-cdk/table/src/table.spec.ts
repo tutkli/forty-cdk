@@ -373,6 +373,32 @@ class GridTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <table forTable mode="grid">
+      <tbody>
+        <tr forTableRow>
+          <td role="cell" data-testid="group-header">Group</td>
+        </tr>
+        @for (row of rows(); track row.id) {
+          <tr forTableRow>
+            @for (col of cols; track col) {
+              <td forTableCell [name]="col" [attr.data-testid]="'c-' + col + row.id">
+                {{ col }}{{ row.id }}
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  `,
+})
+class GridLeadingCellLessRowHost {
+  readonly cols = ['a', 'b'] as const;
+  readonly rows = signal([{ id: 0 }, { id: 1 }]);
+}
+
+@Component({
   imports: [...TABLE_IMPORTS],
   template: `
     <table forTable [mode]="mode()">
@@ -1313,6 +1339,30 @@ describe('ForTable', () => {
       press(allCells[1]!, 'ArrowDown');
       await flush();
       expect(allCells[7]!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('derives a non-zero column count from the first non-empty row when the leading row is cell-less (#1340)', () => {
+      const { el } = renderHost(GridLeadingCellLessRowHost);
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('2');
+    });
+
+    it('resolves arrow / Home / End navigation across data cells when the leading row is cell-less (#1340)', async () => {
+      const { el, flush } = renderHost(GridLeadingCellLessRowHost);
+      const allCells = cells(el);
+
+      const right = press(allCells[0]!, 'ArrowRight');
+      await flush();
+      expect(right.defaultPrevented).toBe(true);
+      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
+      expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
+
+      press(allCells[1]!, 'ArrowDown');
+      await flush();
+      expect(allCells[3]!.getAttribute('data-highlighted')).toBe('');
+
+      press(allCells[3]!, 'Home');
+      await flush();
+      expect(allCells[2]!.getAttribute('data-highlighted')).toBe('');
     });
   });
 
