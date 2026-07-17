@@ -1,6 +1,12 @@
 import { signal } from '@angular/core';
 
-import { type ForTableCellHandle, type ForTableRowHandle } from 'forty-cdk/table';
+import {
+  type ForTableCellHandle,
+  type ForTableRowHandle,
+  type TableVirtualRow,
+  type TableVirtualRowNavigation,
+  type TableVirtualWindow,
+} from 'forty-cdk/table';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
 describe('TableVirtualizedNavigator', () => {
@@ -201,5 +207,33 @@ describe('TableVirtualizedNavigator', () => {
 
     expect(nav.tryResolvePending()).toBe(false);
     expect(focusSpy).not.toHaveBeenCalled();
+  });
+
+  describe('virtualization-seam contract types (forty-cdk/table barrel)', () => {
+    it('the navigator satisfies the exported TableVirtualRowNavigation seam', () => {
+      const nav = new TableVirtualizedNavigator({
+        rows: signal<readonly ForTableRowHandle[]>([]),
+        scrollToRow: vi.fn(),
+        scrollViewportRect: () => null,
+        rowCount: () => 0,
+      });
+      const seam: TableVirtualRowNavigation = nav;
+
+      expect(typeof seam.navigateTo).toBe('function');
+      expect(typeof seam.scrollToRow).toBe('function');
+      expect(typeof seam.scrollViewportRect).toBe('function');
+    });
+
+    it('a companion can name TableVirtualWindow / TableVirtualRow to publish a window', () => {
+      const rows = signal<readonly TableVirtualRow[]>([
+        { index: 0, start: 0 },
+        { index: 1, start: 44 },
+      ]);
+      const virtualWindow: TableVirtualWindow = { rows, totalSize: signal(88) };
+
+      expect(virtualWindow.rows()[1]!.index).toBe(1);
+      expect(virtualWindow.rows()[1]!.start).toBe(44);
+      expect(virtualWindow.totalSize()).toBe(88);
+    });
   });
 });
