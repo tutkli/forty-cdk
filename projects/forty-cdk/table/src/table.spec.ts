@@ -566,6 +566,53 @@ class SelectionTableHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector],
+  template: `
+    <div
+      forTable
+      mode="grid"
+      [selectionMode]="selectionMode()"
+      [selectionBehavior]="behavior()"
+      [(value)]="selection"
+    >
+      <div role="rowgroup">
+        @for (row of rows; track row.id) {
+          <div forTableRow [value]="row.id" [attr.data-testid]="'row-' + row.id">
+            <div forTableCell name="sel" [attr.data-testid]="'cell-sel-' + row.id">
+              <span forTableRowSelector [attr.data-testid]="'selector-' + row.id"></span>
+            </div>
+            <div forTableCell name="name" [attr.data-testid]="'cell-name-' + row.id">
+              {{ row.name }}
+            </div>
+            <div forTableCell name="actions" [attr.data-testid]="'cell-actions-' + row.id">
+              <button
+                type="button"
+                [attr.data-testid]="'action-' + row.id"
+                (click)="clicks.set(clicks() + 1)"
+              >
+                Edit
+              </button>
+              <input [attr.data-testid]="'field-' + row.id" />
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class SelectionInteractiveHost {
+  readonly selectionMode = signal<TableSelectionMode>('multiple');
+  readonly behavior = signal<TableSelectionBehavior>('toggle');
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly clicks = signal(0);
+  readonly rows = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+    { id: 3, name: 'Carol' },
+  ];
+}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector, ForTableSelectAll],
   template: `
     <div
@@ -1964,6 +2011,113 @@ describe('ForTable', () => {
 
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(row1.getAttribute('data-selected')).toBe('');
+    });
+  });
+
+  describe('interactive descendants (#1368)', () => {
+    it('does not toggle row selection when a click originates from a button descendant', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const button = el.querySelector<HTMLElement>('[data-testid="action-1"]')!;
+
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+      expect(instance.clicks()).toBe(1);
+    });
+
+    it('does not toggle row selection when a click originates from an input descendant', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const field = el.querySelector<HTMLElement>('[data-testid="field-1"]')!;
+
+      field.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+    });
+
+    it('still selects on a plain click elsewhere on the row despite interactive cells', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(instance.selection()).toEqual([1]);
+    });
+
+    it('preserves Shift-click range behaviour for plain clicks (replace behavior)', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      instance.behavior.set('replace');
+      await flush();
+
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+      const cell3 = el.querySelector<HTMLElement>('[data-testid="cell-name-3"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      cell3.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true }),
+      );
+      await flush();
+
+      expect([...instance.selection()].map(Number).sort()).toEqual([1, 2, 3]);
+    });
+
+    it('preserves Ctrl-click multi behaviour for plain clicks (replace behavior)', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      instance.behavior.set('replace');
+      await flush();
+
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+      const cell3 = el.querySelector<HTMLElement>('[data-testid="cell-name-3"]')!;
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      cell3.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }),
+      );
+      await flush();
+
+      expect([...instance.selection()].map(Number).sort()).toEqual([1, 3]);
+    });
+
+    it('leaves [forTableRowSelector] selection unregressed alongside interactive cells', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(instance.selection()).toEqual([1]);
+    });
+
+    it('keeps the interactive-descendant guard after a reactive selectionMode toggle (zoneless)', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      instance.selectionMode.set('single');
+      await flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const button = el.querySelector<HTMLElement>('[data-testid="action-1"]')!;
+      const cell1 = el.querySelector<HTMLElement>('[data-testid="cell-name-1"]')!;
+
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+
+      cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(instance.selection()).toEqual([1]);
     });
   });
 

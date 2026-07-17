@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 
 import { Collection, registerHandle } from 'forty-cdk/core';
+import { eventFromInteractiveDescendant } from './interactive-descendant';
 import {
   FOR_TABLE_ROW_CONTEXT,
   type ForTableCellHandle,
@@ -172,7 +173,11 @@ export class ForTableRow implements ForTableRowContext {
 
   protected onClick(event: MouseEvent): void {
     const v = this.value();
-    if (this.ctx.selectionMode() === 'none' || v === undefined) {
+    if (
+      this.ctx.selectionMode() === 'none' ||
+      v === undefined ||
+      eventFromInteractiveDescendant(event)
+    ) {
       return;
     }
     this.ctx.selectRow(v, {
