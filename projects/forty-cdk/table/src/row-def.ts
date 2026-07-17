@@ -8,6 +8,12 @@ import { type ForDataCellContext } from './column-def';
  * a single cell that spans every column of the matched row, with the row datum
  * and its index exposed through `ForDataCellContext`.
  *
+ * The spanning cell is presentational, so its template must **not** contain
+ * interactive content (buttons, links, form controls) — the variant row stays
+ * out of the grid's single-tab-stop roving order, so nested tabbables become
+ * unreachable — nor a `[forTableCell]`, which would register a cell handle on
+ * the variant row and make the roving grid ragged.
+ *
  * Bind `[forRowCellRow]` to the same array passed to `ForTableBody`'s `rows` to
  * type `let-row` — the input is read only for type inference, never at runtime.
  */
@@ -68,9 +74,11 @@ export class ForRowCell<T> {
 export class ForRowDef<T> {
   /**
    * Predicate selecting which data rows render this variant instead of the
-   * per-column row. Receives the datum and its 0-based index in the rendered
-   * list and returns `true` to render the variant. Evaluated for every datum on
-   * each change-detection pass, so keep it cheap and free of side effects.
+   * per-column row. Receives the datum and its 0-based dataset index and returns
+   * `true` to render the variant. In a non-virtualized table the index equals
+   * the row's rendered position; under `[forTableVirtualized]` it is the
+   * **absolute** index into the full dataset. Evaluated for every datum on each
+   * change-detection pass, so keep it cheap and free of side effects.
    */
   readonly when = input.required<(row: T, index: number) => boolean>();
 

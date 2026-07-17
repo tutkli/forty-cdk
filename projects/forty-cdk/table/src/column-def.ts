@@ -11,13 +11,17 @@ import { coerceSticky, type TableStickyValue } from './table-context';
 
 /**
  * Template context handed to each `[forDataCell]` stamped by `ForTableBody`:
- * the row datum (`let-row`) and its 0-based index in the rendered list
- * (`let-i="index"`).
+ * the row datum (`let-row`) and its 0-based dataset index (`let-i="index"`).
  */
 export interface ForDataCellContext<T> {
   /** The row datum for this cell (`let-row`). */
   $implicit: T;
-  /** 0-based index of the row in the rendered list (`let-i="index"`). */
+  /**
+   * 0-based dataset index of the row (`let-i="index"`). In a non-virtualized
+   * table this equals the row's rendered position; under `[forTableVirtualized]`
+   * it is the **absolute** index into the full dataset, not the position within
+   * the rendered window.
+   */
   index: number;
 }
 
