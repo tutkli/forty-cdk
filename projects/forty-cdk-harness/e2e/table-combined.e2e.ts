@@ -113,6 +113,27 @@ test.describe('Table combined composition', () => {
     await expect(headerName).toHaveAttribute('aria-sort', 'descending');
   });
 
+  test('co-located header splits keys: Space lifts for reorder without sorting, Enter sorts without lifting (#1343)', async ({
+    page,
+  }) => {
+    const headerName = el(page, 'header-name');
+
+    await headerName.focus();
+    await expectFocused(headerName);
+
+    await page.keyboard.press(' ');
+    await expect(headerName).toHaveAttribute('data-dragging', '');
+    expect(await headerName.getAttribute('aria-sort')).toBeNull();
+
+    await page.keyboard.press('Escape');
+    await expect(headerName).not.toHaveAttribute('data-dragging', '');
+    expect(await headerName.getAttribute('aria-sort')).toBeNull();
+
+    await page.keyboard.press('Enter');
+    await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
+    expect(await headerName.getAttribute('data-dragging')).toBeNull();
+  });
+
   test('row selection persists across virtualized recycling', async ({ page }) => {
     const selector0 = el(page, 'selector-0');
     await selector0.click();

@@ -36,8 +36,11 @@ export interface TableSortDescriptor {
  * emits no `tabindex`; `aria-sort` / `data-sorted` and click / keyboard activation stay
  * on the cell. When a `[forDraggable]` (column reorder) shares the same host cell — in
  * either mode — this directive also yields its `tabindex` to the draggable's roving tab
- * stop so the two never collide on the host attribute. The draggable is detected by DOM
- * marker (the `forDraggable` / `forFreeDrag` attribute), not by a drag-drop value-import.
+ * stop so the two never collide on the host attribute, and the keyboard activation splits
+ * along WAI-ARIA lines: `Space` lifts the column for reordering while `Enter` toggles the
+ * sort, so a single key press never both sorts and starts a drag-lift. The draggable is
+ * detected by DOM marker (the `forDraggable` / `forFreeDrag` attribute), not by a
+ * drag-drop value-import.
  *
  * While `sortable`, the directive reflects the `data-sortable` marker (a CSS styling
  * hook, absent when `sortable` is `false`). In `grid` / `treegrid` mode the header cell
@@ -140,12 +143,25 @@ export class ForTableSortHeader {
     this.sortChange.emit({ column: this.column(), direction: next });
   }
 
-  /** Handles Enter and Space keyboard events, forwarding to `activate()`. */
+  /**
+   * Handles Enter and Space keyboard activation, forwarding to `activate()`.
+   * When a `[forDraggable]` (column reorder) shares the host cell, the two
+   * activations split along WAI-ARIA lines: `Space` is reserved for the reorder
+   * lift, and `Enter` while a keyboard drag is in progress (`data-dragging`)
+   * for its drop, so this header only sorts on an idle `Enter`. A sort-only
+   * header (no draggable) still sorts on both keys.
+   */
   protected onKeyDown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this.activate();
+    const isEnter = event.key === 'Enter';
+    const isSpace = event.key === ' ';
+    if (!isEnter && !isSpace) {
+      return;
     }
+    if (this.#hasDraggable && (isSpace || this.#host.hasAttribute('data-dragging'))) {
+      return;
+    }
+    event.preventDefault();
+    this.activate();
   }
 
   #next(current: TableSortDirection): TableSortDirection {
