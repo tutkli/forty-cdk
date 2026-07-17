@@ -296,6 +296,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'for-table-body-reorder',
+    loadComponent: () =>
+      import('./fixtures/for-table-body-reorder.fixture').then((m) => m.ForTableBodyReorderFixture),
+  },
+  {
     path: 'for-table-body-variants',
     loadComponent: () =>
       import('./fixtures/for-table-body-variants.fixture').then(

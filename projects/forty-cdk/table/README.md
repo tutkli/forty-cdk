@@ -156,9 +156,16 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 
 `<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
 all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Full-span
-**row variants** (group headers, separators, summary rows) are covered below via `[forRowDef]`. Column
-**reordering** through the declarative layer is not part of this cut — use the raw primitives for that
-today.
+**row variants** (group headers, separators, summary rows) are covered below via `[forRowDef]`, and
+drag **column reordering** via the `reorderable` flag — see
+[Column reordering](#column-reordering-reorderable--columnreorder).
+
+> **Bundle note.** `<for-table-body>` statically imports `forty-cdk/drag-drop` (~14 KB gzipped) so a
+> `reorderable` column can auto-wire drag reordering, so every `<for-table-body>` consumer bundles it —
+> even one with no reorderable column. Per-entry-point tree-shaking is otherwise intact (a table that
+> never imports `ForTableBody` bundles neither it nor drag-drop). If a simple table is bundle-sensitive
+> and needs no declarative ergonomics, author it from the raw `[forTableHeaderCell]` / `[forTableCell]`
+> primitives instead — that path never touches drag-drop.
 
 #### Styling the stamped cells
 
@@ -242,6 +249,56 @@ remaining `1fr` columns re-split what's left. Reserve `[width]` for columns you 
 `48px` selection column, an `80px` id column); combining it with `resizable` on the same column pins the
 track and makes the handle's width purely advisory (`aria-valuenow` and `(resizeCommit)` still fire, but
 the column does not visually resize).
+
+### Column reordering (`reorderable` + `columnReorder`)
+
+Mark a column `reorderable` and `<for-table-body>` makes its header cell a drag-reorder handle. With at
+least one `reorderable` column the body applies `[forTableColumnReorder]` to the stamped header row and
+`[forDraggable]` (with `[dragData]` set to the column name) to each reorderable header cell, then
+re-emits every committed reorder — pointer drop **or** keyboard drop — through `(columnReorder)`. Like
+`sort`, reorder is **BYO-data**: the body never reorders the columns itself. Apply
+`$event.columns` to your own column order and feed it back through `[displayedColumns]`.
+
+```html
+<div forTable mode="grid" ariaLabel="People">
+  <for-table-body
+    [rows]="rows()"
+    [displayedColumns]="order()"
+    (columnReorder)="order.set($event.columns)"
+  >
+    <ng-container forColumnDef="name" sortable reorderable>
+      <ng-template forHeaderCell>Name</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    </ng-container>
+    <ng-container forColumnDef="role" reorderable>
+      <ng-template forHeaderCell>Role</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+    </ng-container>
+
+    <!-- Optional: one shared placeholder for the reordered column's slot during a pointer drag. -->
+    <ng-template forColumnDragPlaceholder>
+      <div class="col-ghost"></div>
+    </ng-template>
+  </for-table-body>
+</div>
+```
+
+```ts
+protected readonly order = signal<readonly string[]>(['name', 'role']);
+```
+
+- **Keyboard is inherited, not new:** the header row keeps its single composite tab stop, `Space` lifts
+  a header cell for reordering, and Arrow keys move the lifted column (`Escape` cancels). On a header
+  that is **both** `sortable` and `reorderable`, the two split along WAI-ARIA lines — `Space` lifts,
+  `Enter` toggles the sort — so a single key never both sorts and reorders.
+- **`(columnReorder)`** emits `{ from, to, columns }` (a `TableColumnReorderDescriptor`). Its `columns`
+  lists the **reorderable** columns in their new order — equal to the full displayed order when every
+  displayed column is `reorderable`. Non-reorderable columns stay static (not draggable) and keep their
+  slots, so a table that mixes them merges the reorderable subset back into its own full order.
+- **`forColumnDragPlaceholder`** is optional and declared **once per body**; it is stamped as every
+  reorderable column's pointer-drag placeholder. Omit it to keep drag-drop's default placeholder.
+- This is the declarative twin of the raw `[forTableColumnReorder]` / `[forDraggable]` composition; it
+  bundles `forty-cdk/drag-drop` (~14 KB gz) into every `<for-table-body>` — see the bundle note above.
 
 ### Virtualized rows
 

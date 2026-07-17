@@ -98,6 +98,20 @@ export class ForPlaceholderCell {
 }
 
 /**
+ * Marks the shared drag placeholder for the reorderable columns of a
+ * `<for-table-body>`. Optional and declared **once per body** (not per column);
+ * place on an `<ng-template forColumnDragPlaceholder>` among the `[forColumnDef]`s.
+ * `ForTableBody` stamps it as every reorderable header cell's
+ * `[forDragPlaceholder]`, so during a pointer reorder the dragged column's slot
+ * shows this template. Omit it to keep drag-drop's default placeholder behaviour.
+ */
+@Directive({ selector: 'ng-template[forColumnDragPlaceholder]' })
+export class ForColumnDragPlaceholder {
+  /** The captured placeholder template rendered in a reordered column's slot. */
+  readonly template = inject<TemplateRef<unknown>>(TemplateRef);
+}
+
+/**
  * Declarative definition of a single table column, co-locating its header,
  * data, and (optional) placeholder templates plus its per-column config in one
  * place. Place `[forColumnDef]` on an `<ng-container>` inside a `<for-table-body>`;
@@ -140,6 +154,16 @@ export class ForColumnDef {
    * seed / track its width through the body's `[(columnWidths)]`.
    */
   readonly resizable = input(false, { transform: booleanAttribute });
+
+  /**
+   * When set, the column's header cell becomes a drag-reorder handle: with at least
+   * one `reorderable` column, `ForTableBody` applies `[forTableColumnReorder]` to the
+   * stamped header row and `[forDraggable]` (with `[dragData]` set to this column's
+   * `name`) to this header cell, and re-emits committed reorders through the body's
+   * `columnReorder` output. Non-reorderable columns stay static (not draggable). Note
+   * that any `reorderable` column makes the body bundle `forty-cdk/drag-drop`.
+   */
+  readonly reorderable = input(false, { transform: booleanAttribute });
 
   /**
    * Accessible name for the auto-wired resize handle (only meaningful with

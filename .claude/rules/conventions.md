@@ -280,4 +280,14 @@ Form-value primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox` selection, 
   `aria-colspan`; the spanning cell is deliberately **not** a `[forTableCell]` and registers no cell
   handle, so the roving grid stays rectangular (arrow keys step over variant rows) — variant rows are
   non-selectable but still count towards `aria-rowindex` / `aria-rowcount`.
-  See [#1330](https://github.com/tutkli/forty-cdk/issues/1330).
+  See [#1330](https://github.com/tutkli/forty-cdk/issues/1330). When a `[forColumnDef]` is
+  `reorderable` ([#1350](https://github.com/tutkli/forty-cdk/issues/1350)) the body stamps
+  `[forTableColumnReorder]` on the header row and `[forDraggable]` on each reorderable header cell and
+  re-emits `columnReorder`; because a directive can only be applied from the template of the component
+  that lists it in `imports`, `ForTableBody` **statically imports `forty-cdk/drag-drop`** — so every
+  `<for-table-body>` consumer bundles it (~14 KB gz) even with no reorderable column. This is a
+  deliberate, documented coupling (the spike decision on #1350): the earlier `@defer` idea cannot
+  code-split a sibling directive out of a published ng-packagr FESM, so isolation is unachievable
+  together with the unified-def API. The raw `[forTableCell]` / `[forTableHeaderCell]` primitives stay
+  the drag-drop-free path. Per-entry-point tree-shaking is otherwise intact (a table that never imports
+  `ForTableBody` pulls neither it nor drag-drop).
