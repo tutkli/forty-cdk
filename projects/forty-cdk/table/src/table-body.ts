@@ -42,12 +42,23 @@ interface RenderRow<T> {
 }
 
 /**
- * Ergonomic declarative renderer for `[forTable]` in `<div role>` grid mode.
+ * Ergonomic declarative renderer for the columns of a `[forTable]`.
  * Place `<for-table-body>` inside a `[forTable]` element and declare one
  * `[forColumnDef]` per column; the body harvests the defs and stamps the header
  * row and one data row per item out of the raw cell primitives, so a column is
  * authored in a single block instead of being smeared across header, data, and
  * placeholder rows.
+ *
+ * **Supported modes: `table` and `grid`.** Nothing in the body is grid-specific
+ * — it derives each stamped cell's role from the table `mode` (`cell` in
+ * `table`, `gridcell` in `grid`) and applies no mode guard. Choose `mode="grid"`
+ * for interactive cells (roving 2D navigation, cell widgets, cell-entry); choose
+ * the default `mode="table"` for read-only or whole-row navigation lists, where
+ * `role="grid"` would announce an interaction model the list does not have. The
+ * table-mode row-interaction companion feature (whole-row activate / context
+ * menu) is tracked in
+ * [#1349](https://github.com/tutkli/forty-cdk/issues/1349). `mode="treegrid"` is
+ * out of scope — the body stamps no expansion affordances.
  *
  * It owns only the grid **structure** — it applies `display: grid` and the
  * derived `grid-template-columns` track (from each def's `width` and the

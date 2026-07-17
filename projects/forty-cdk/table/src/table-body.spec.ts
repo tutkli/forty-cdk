@@ -194,6 +194,49 @@ class VirtualVariantHost {
   readonly table = viewChild.required(ForTable);
 }
 
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="table" ariaLabel="People">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableModeBodyHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="table" ariaLabel="Big" [rowCount]="rows().length">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row let-i="index"
+            >{{ row.name }}#{{ i }}</ng-template
+          >
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableModeVirtualHost {
+  readonly rows = signal<BigRow[]>(buildBigRows(20));
+  readonly rowKey = (row: BigRow): number => row.id;
+  readonly table = viewChild.required(ForTable);
+}
+
 /** Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a deterministic jsdom test. */
 function publishWindow(
   table: ForTable,
@@ -325,6 +368,49 @@ describe('ForTableBody', () => {
     const rows = queryAll('[forTableRow]');
     expect(rows).toHaveLength(1);
     expect(rows[0]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Margaret#0');
+  });
+
+  describe('mode="table" (blessed combination)', () => {
+    it('renders the declarative layer under mode="table" with root role="table"', () => {
+      const { query } = renderHost(TableModeBodyHost);
+      expect(query('[forTable]')?.getAttribute('role')).toBe('table');
+    });
+
+    it('stamps header cells as columnheader and data cells as cell (not gridcell)', () => {
+      const { queryAll } = renderHost(TableModeBodyHost);
+      for (const header of queryAll('[forTableHeaderCell]')) {
+        expect(header.getAttribute('role')).toBe('columnheader');
+      }
+      const cells = queryAll('[forTableRow] [forTableCell]');
+      expect(cells).toHaveLength(6);
+      for (const cell of cells) {
+        expect(cell.getAttribute('role')).toBe('cell');
+      }
+    });
+
+    it('emits no grid roving indices or tab stops on stamped cells in table mode', () => {
+      const { queryAll } = renderHost(TableModeBodyHost);
+      for (const cell of queryAll('[forTableRow] [forTableCell]')) {
+        expect(cell.hasAttribute('aria-colindex')).toBe(false);
+        expect(cell.hasAttribute('tabindex')).toBe(false);
+      }
+    });
+
+    it('windows under [forTableVirtualized] while keeping table-mode roles', () => {
+      const { instance, query, queryAll, fixture } = renderHost(TableModeVirtualHost);
+      publishWindow(instance.table(), [5, 6, 7], 880);
+      fixture.detectChanges();
+
+      expect(query('[forTable]')?.getAttribute('role')).toBe('table');
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(3);
+      expect(rows.map((r) => r.getAttribute('data-index'))).toEqual(['5', '6', '7']);
+      const cells = queryAll('[forTableRow] [forTableCell]');
+      expect(cells).toHaveLength(3);
+      for (const cell of cells) {
+        expect(cell.getAttribute('role')).toBe('cell');
+      }
+    });
   });
 
   describe('virtualized window seam', () => {
