@@ -124,14 +124,19 @@ interface RenderRow<T> {
  * aligned after scroll.
  *
  * **Row variants.** Declare one or more `[forRowDef]` alongside the columns to
- * render a full-span row for the data they match (group headers, section
- * separators, summary / empty-state rows). For each datum the body picks the
- * first `[forRowDef]` whose `[when]` predicate returns `true` and stamps a row
- * whose single cell spans every column and renders the `[forRowCell]` template;
- * unmatched data renders the standard per-column row. Variant rows are
- * presentational — their spanning cell stays out of the roving 2D navigation
- * grid (arrow keys step over them) and they are non-selectable — but they still
- * occupy a row slot and count towards `aria-rowindex` / `aria-rowcount`.
+ * render a variant row for the data they match. For each datum the body picks the
+ * first `[forRowDef]` whose `[when]` predicate returns `true`; unmatched data
+ * renders the standard per-column row. Each def declares one of two shapes: a
+ * `[forRowCell]` template stamps a **full-span** row (group headers, section
+ * separators, summary / empty-state rows) whose single cell spans every column;
+ * the `placeholderCells` flag stamps **per-column placeholder cells** from each
+ * column's `[forPlaceholderCell]` (interleaved / trailing skeleton rows for
+ * infinite scroll). Either way variant rows are presentational and
+ * non-selectable, and still count towards `aria-rowindex` / `aria-rowcount`. A
+ * full-span cell stays out of the roving 2D navigation grid (registers no cell
+ * handle, so arrow keys step over the row); placeholder cells keep the grid
+ * rectangular (one cell per column) but are stamped disabled so grid navigation
+ * steps over them.
  */
 @Component({
   selector: 'for-table-body',
@@ -227,19 +232,39 @@ interface RenderRow<T> {
             (contextmenu)="onRowContextMenu(r, $event)"
           >
             @if (r.variant; as variant) {
-              <div
-                [attr.role]="cellRole()"
-                [attr.aria-colindex]="1"
-                [attr.aria-colspan]="orderedColumns().length"
-                [attr.data-row-variant]="''"
-                [style.grid-column]="'1 / -1'"
-              >
-                <ng-container
-                  [ngTemplateOutlet]="variant.cell().template"
-                  [ngTemplateOutletInjector]="rowRef.injector"
-                  [ngTemplateOutletContext]="{ $implicit: r.datum, index: r.index }"
-                />
-              </div>
+              @if (variant.placeholderCells()) {
+                @for (col of orderedColumns(); track col.name()) {
+                  <div
+                    #cell="forTableCell"
+                    forTableCell
+                    disabled
+                    [name]="col.name()"
+                    [sticky]="col.sticky()"
+                    [class]="col.cellClass()"
+                  >
+                    @if (col.placeholderCell(); as placeholderCell) {
+                      <ng-container
+                        [ngTemplateOutlet]="placeholderCell.template"
+                        [ngTemplateOutletInjector]="cell.injector"
+                      />
+                    }
+                  </div>
+                }
+              } @else {
+                <div
+                  [attr.role]="cellRole()"
+                  [attr.aria-colindex]="1"
+                  [attr.aria-colspan]="orderedColumns().length"
+                  [attr.data-row-variant]="''"
+                  [style.grid-column]="'1 / -1'"
+                >
+                  <ng-container
+                    [ngTemplateOutlet]="variant.cell()?.template ?? null"
+                    [ngTemplateOutletInjector]="rowRef.injector"
+                    [ngTemplateOutletContext]="{ $implicit: r.datum, index: r.index }"
+                  />
+                </div>
+              }
             } @else {
               @for (col of orderedColumns(); track col.name()) {
                 <div
@@ -428,6 +453,9 @@ export class ForTableBody<T = unknown> {
     const data = this.rows();
     const key = this.rowKey();
     const variants = this.rowDefs();
+    for (const def of variants) {
+      this.#assertRowDefConfig(def);
+    }
     const matchVariant = (datum: T, index: number): ForRowDef<unknown> | null =>
       variants.find((def) => def.when()(datum, index)) ?? null;
     if (window) {
@@ -465,6 +493,17 @@ export class ForTableBody<T = unknown> {
       };
     });
   });
+
+  /** Enforces that each `[forRowDef]` declares exactly one of `[forRowCell]` / `placeholderCells`. */
+  #assertRowDefConfig(def: ForRowDef<unknown>): void {
+    const hasCell = def.cell() != null;
+    const hasPlaceholder = def.placeholderCells();
+    if (hasCell === hasPlaceholder) {
+      throw new Error(
+        `[forty-cdk/table] A [forRowDef] must declare exactly one of a [forRowCell] template or the placeholderCells flag (this def declares ${hasCell ? 'both' : 'neither'}).`,
+      );
+    }
+  }
 
   /** Full scroll height (px) applied to the rowgroup when virtualized, else `null` (natural height). */
   protected readonly sizerHeight = computed<number | null>(() => {

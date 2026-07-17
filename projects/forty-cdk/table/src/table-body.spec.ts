@@ -437,6 +437,136 @@ class RowInteractionHost {
   readonly lastContextMenu = signal<TableRowContextMenuEvent<GroupedRow> | null>(null);
 }
 
+interface FeedRow {
+  id: number;
+  name: string;
+  role: string;
+  pending?: boolean;
+}
+
+function buildFeedRows(): FeedRow[] {
+  return [
+    { id: 1, name: 'Ada', role: 'Engineer' },
+    { id: -1, name: '', role: '', pending: true },
+    { id: 2, name: 'Grace', role: 'Engineer' },
+  ];
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForPlaceholderCell,
+    ForRowDef,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Feed" selectionMode="multiple">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton">loading</span></ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+
+        <ng-container forRowDef [when]="isPending" placeholderCells />
+      </for-table-body>
+    </div>
+  `,
+})
+class PlaceholderVariantHost {
+  readonly rows = signal<FeedRow[]>(buildFeedRows());
+  readonly rowKey = (row: FeedRow): number => row.id;
+  readonly isPending = (row: FeedRow): boolean => row.pending === true;
+  readonly table = viewChild.required(ForTable);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForPlaceholderCell,
+    ForRowDef,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Big feed" [rowCount]="rows().length">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton">loading</span></ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isPending" placeholderCells />
+      </for-table-body>
+    </div>
+  `,
+})
+class VirtualPlaceholderHost {
+  readonly rows = signal<BigRow[]>(buildBigRows(20));
+  readonly rowKey = (row: BigRow): number => row.id;
+  readonly isPending = (row: BigRow): boolean => row.id === 5;
+  readonly table = viewChild.required(ForTable);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Both">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isGroup" placeholderCells>
+          <ng-template forRowCell [forRowCellRow]="rows()">both</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class BothConfigHost {
+  readonly rows = signal<GroupedRow[]>(buildGroupedRows());
+  readonly rowKey = (row: GroupedRow): number => row.id;
+  readonly isGroup = (row: GroupedRow): boolean => row.group === true;
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell, ForRowDef],
+  template: `
+    <div forTable mode="grid" ariaLabel="Neither">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isGroup"></ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class NeitherConfigHost {
+  readonly rows = signal<GroupedRow[]>(buildGroupedRows());
+  readonly rowKey = (row: GroupedRow): number => row.id;
+  readonly isGroup = (row: GroupedRow): boolean => row.group === true;
+}
+
 /**
  * Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a
  * deterministic jsdom test. Returns the window's `measureRow` spy so tests can assert the
@@ -816,6 +946,110 @@ describe('ForTableBody', () => {
       expect(rows[1]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Group 5');
       expect(rows[1]!.querySelectorAll('[forTableCell]')).toHaveLength(0);
       expect(rows[0]!.querySelectorAll('[forTableCell]')).toHaveLength(1);
+    });
+  });
+
+  describe('placeholder-cell row variants (#1352)', () => {
+    it('stamps per-column cells from forPlaceholderCell for matched rows, data cells otherwise', () => {
+      const { queryAll } = renderHost(PlaceholderVariantHost);
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(3);
+
+      expect(rows[0]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Ada');
+      expect(rows[2]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Grace');
+
+      const placeholder = rows[1]!;
+      expect(placeholder.querySelector('[data-column="name"] .skeleton')?.textContent).toContain(
+        'loading',
+      );
+      expect(placeholder.querySelector('[data-column="name"]')?.textContent).not.toContain('Ada');
+      expect(placeholder.querySelector('[data-row-variant]')).toBeNull();
+    });
+
+    it('stamps one cell per column, keeping the roving grid rectangular', () => {
+      const { queryAll } = renderHost(PlaceholderVariantHost);
+      const rows = queryAll('[forTableRow]');
+      const placeholderCells = Array.from(rows[1]!.querySelectorAll('[forTableCell]'));
+      expect(placeholderCells.map((c) => c.getAttribute('data-column'))).toEqual(['name', 'role']);
+      expect(rows[0]!.querySelectorAll('[forTableCell]')).toHaveLength(2);
+    });
+
+    it('stamps an empty cell for a column without a forPlaceholderCell template', () => {
+      const { queryAll } = renderHost(PlaceholderVariantHost);
+      const roleCell = queryAll('[forTableRow]')[1]!.querySelector('[data-column="role"]')!;
+      expect(roleCell.querySelector('.skeleton')).toBeNull();
+      expect(roleCell.textContent?.trim()).toBe('');
+    });
+
+    it('disables the placeholder cells so grid-mode arrow navigation skips them', () => {
+      const { queryAll } = renderHost(PlaceholderVariantHost);
+      const placeholderCells = Array.from(
+        queryAll('[forTableRow]')[1]!.querySelectorAll('[forTableCell]'),
+      );
+      for (const cell of placeholderCells) {
+        expect(cell.getAttribute('aria-disabled')).toBe('true');
+        expect(cell.getAttribute('tabindex')).toBe('-1');
+        expect(cell.hasAttribute('data-disabled')).toBe(true);
+      }
+      const dataCell = queryAll('[forTableRow]')[0]!.querySelector('[data-column="name"]')!;
+      expect(dataCell.hasAttribute('aria-disabled')).toBe(false);
+    });
+
+    it('makes placeholder rows non-selectable (excluded from select-all, no aria-selected)', () => {
+      const { instance, queryAll, fixture } = renderHost(PlaceholderVariantHost);
+      instance.table().toggleSelectAll();
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows.map((r) => r.getAttribute('aria-selected'))).toEqual(['true', null, 'true']);
+    });
+
+    it('renders windowed placeholder rows as per-column disabled cells, positioned', () => {
+      const { instance, queryAll, fixture } = renderHost(VirtualPlaceholderHost);
+      publishWindow(instance.table(), [4, 5, 6], 880);
+      fixture.detectChanges();
+
+      const rows = queryAll('[forTableRow]');
+      expect(rows.map((r) => r.getAttribute('data-index'))).toEqual(['4', '5', '6']);
+
+      const placeholder = rows[1]! as HTMLElement;
+      expect(placeholder.querySelector('.skeleton')).not.toBeNull();
+      expect(placeholder.querySelector('[data-row-variant]')).toBeNull();
+      const cells = Array.from(placeholder.querySelectorAll('[forTableCell]'));
+      expect(cells).toHaveLength(1);
+      expect(cells[0]!.getAttribute('aria-disabled')).toBe('true');
+      expect(placeholder.style.transform).toBe('translateY(220px)');
+
+      expect(rows[0]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Row 4');
+    });
+
+    it('throws a [forty-cdk/table] error when a def declares both forRowCell and placeholderCells', () => {
+      expect(() => renderHost(BothConfigHost)).toThrowError(/\[forty-cdk\/table\][\s\S]*both/);
+    });
+
+    it('throws a [forty-cdk/table] error when a def declares neither forRowCell nor placeholderCells', () => {
+      expect(() => renderHost(NeitherConfigHost)).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*neither/,
+      );
+    });
+
+    it('reacts to placeholder rows resolving into real data without Zone.js (zoneless)', () => {
+      const { instance, queryAll, fixture } = renderHost(PlaceholderVariantHost);
+      expect(queryAll('[forTableRow]')[1]!.querySelector('.skeleton')).not.toBeNull();
+
+      instance.rows.set([
+        { id: 1, name: 'Ada', role: 'Engineer' },
+        { id: 2, name: 'Grace', role: 'Engineer' },
+        { id: 3, name: 'Linus', role: 'Designer' },
+      ]);
+      fixture.detectChanges();
+
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(3);
+      for (const r of rows) {
+        expect(r.querySelector('.skeleton')).toBeNull();
+        expect(r.querySelector('[data-row-variant]')).toBeNull();
+      }
+      expect(rows[1]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Grace');
     });
   });
 
