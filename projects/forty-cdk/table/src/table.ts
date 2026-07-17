@@ -112,7 +112,8 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   /**
    * True total number of columns for `aria-colcount`. Defaults to the rendered
-   * column count (the cells of the first data row). Ignored in `mode="table"`.
+   * column count (the cells of the first data row that has any). Ignored in
+   * `mode="table"`.
    */
   readonly colCount = input<number>();
 
@@ -186,7 +187,13 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   readonly #headerCellHosts = computed(() => this.#headerCells.items());
   readonly #dataCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
-  readonly #dataCols = computed(() => this.#rows.items()[0]?.cells().length ?? 0);
+  readonly #dataCols = computed(
+    () =>
+      this.#rows
+        .items()
+        .find((row) => row.cells().length > 0)
+        ?.cells().length ?? 0,
+  );
 
   /**
    * Whether the registered header cells form a complete grid row that joins the body's
