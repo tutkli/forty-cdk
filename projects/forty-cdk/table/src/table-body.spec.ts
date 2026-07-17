@@ -11,6 +11,8 @@ import {
   type TableRowActivateEvent,
   type TableRowContextMenuEvent,
 } from './table-body';
+import { ForTableColumnLabel } from './table-column-label';
+import { type TableResizeDescriptor } from './table-column-resizer';
 import { ForTableRowSelector } from './table-row-selector';
 import { type TableMode, type TableSelectionMode } from './table-context';
 import { type TableSortDescriptor } from './table-sort-header';
@@ -565,6 +567,49 @@ class NeitherConfigHost {
   readonly rows = signal<GroupedRow[]>(buildGroupedRows());
   readonly rowKey = (row: GroupedRow): number => row.id;
   readonly isGroup = (row: GroupedRow): boolean => row.group === true;
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell, ForTableColumnLabel],
+  template: `
+    <div forTable mode="grid" ariaLabel="Resizable">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [(columnWidths)]="widths"
+        (resizeCommit)="lastCommit.set($event)"
+      >
+        <ng-container
+          forColumnDef="name"
+          resizable
+          resizeAriaLabel="Resize name"
+          [resizeMin]="min()"
+          [resizeMax]="max()"
+          [resizeStep]="step()"
+          [autoFit]="autoFit()"
+          [fitIncludesHeader]="fitIncludesHeader()"
+        >
+          <ng-template forHeaderCell><span forTableColumnLabel>Name</span></ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class ResizeOptionsHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly widths = signal<Readonly<Record<string, number>>>({ name: 150 });
+  readonly min = signal(0);
+  readonly max = signal(Infinity);
+  readonly step = signal(25);
+  readonly autoFit = signal(true);
+  readonly fitIncludesHeader = signal(false);
+  readonly lastCommit = signal<TableResizeDescriptor | null>(null);
 }
 
 /**
@@ -1306,6 +1351,98 @@ describe('ForTableBody', () => {
       const row = queryAll('[forTableRow]')[1]!;
       expect(row.classList.contains('first')).toBe(false);
       expect(row.classList.contains('second')).toBe(true);
+    });
+  });
+
+  describe('per-column resize options + columnWidths (#1351)', () => {
+    it('forwards resizeMin / resizeMax to the stamped handle as aria-value bounds', () => {
+      const { instance, query, fixture } = renderHost(ResizeOptionsHost);
+      const handle = query('[forTableColumnResizer]')!;
+      expect(handle.getAttribute('aria-valuemin')).toBe('0');
+      expect(handle.hasAttribute('aria-valuemax')).toBe(false);
+
+      instance.min.set(60);
+      instance.max.set(800);
+      fixture.detectChanges();
+      expect(handle.getAttribute('aria-valuemin')).toBe('60');
+      expect(handle.getAttribute('aria-valuemax')).toBe('800');
+    });
+
+    it('seeds the handle aria-valuenow and the track var from columnWidths on first render', async () => {
+      const { query, flush } = renderHost(ResizeOptionsHost);
+      await flush();
+      expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('150');
+      const root = query('[forTable]') as HTMLElement;
+      expect(root.style.getPropertyValue('--for-table-col-name-width')).toBe('150px');
+    });
+
+    it('re-seeds the handle when the consumer writes columnWidths', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      await flush();
+      instance.widths.set({ name: 240 });
+      await flush();
+      expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('240');
+      expect(
+        (query('[forTable]') as HTMLElement).style.getPropertyValue('--for-table-col-name-width'),
+      ).toBe('240px');
+    });
+
+    it('folds a keyboard resize into columnWidths honouring resizeStep, emitting resizeCommit', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      const handle = query('[forTableColumnResizer]')!;
+      handle.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      await flush();
+
+      expect(instance.widths()['name']).toBe(175);
+      expect(instance.lastCommit()).toEqual({ column: 'name', width: 175 });
+      expect(handle.getAttribute('aria-valuenow')).toBe('175');
+    });
+
+    it('clamps a keyboard resize to resizeMax before folding it into columnWidths', async () => {
+      const { instance, query, fixture, flush } = renderHost(ResizeOptionsHost);
+      instance.max.set(160);
+      fixture.detectChanges();
+      query('[forTableColumnResizer]')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      await flush();
+
+      expect(instance.widths()['name']).toBe(160);
+      expect(instance.lastCommit()).toEqual({ column: 'name', width: 160 });
+    });
+
+    it('makes double-click auto-fit a no-op when autoFit is false', () => {
+      const { instance, query, fixture } = renderHost(ResizeOptionsHost);
+      instance.autoFit.set(false);
+      fixture.detectChanges();
+      query('[forTableColumnResizer]')!.dispatchEvent(
+        new MouseEvent('dblclick', { bubbles: true }),
+      );
+      expect(instance.lastCommit()).toBeNull();
+
+      instance.autoFit.set(true);
+      fixture.detectChanges();
+      query('[forTableColumnResizer]')!.dispatchEvent(
+        new MouseEvent('dblclick', { bubbles: true }),
+      );
+      expect(instance.lastCommit()?.column).toBe('name');
+    });
+
+    it('resolves a [forTableColumnLabel] in the header template through the stamped header injector', () => {
+      const { query } = renderHost(ResizeOptionsHost);
+      const label = query('[forTableHeaderCell][data-column="name"] [forTableColumnLabel]');
+      expect(label?.textContent?.trim()).toBe('Name');
+    });
+
+    it('reacts to a columnWidths write without Zone.js (zoneless change detection)', () => {
+      const { instance, query, fixture } = renderHost(ResizeOptionsHost);
+      expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('150');
+
+      instance.widths.set({ name: 320 });
+      fixture.detectChanges();
+      expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('320');
     });
   });
 });

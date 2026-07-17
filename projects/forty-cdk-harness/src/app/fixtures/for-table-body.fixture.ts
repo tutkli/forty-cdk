@@ -1,3 +1,4 @@
+import { JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
   ForColumnDef,
@@ -5,6 +6,7 @@ import {
   ForHeaderCell,
   ForTable,
   ForTableBody,
+  ForTableColumnLabel,
   ForTableRowSelector,
   ForTableSelectAll,
   type TableSortDescriptor,
@@ -14,24 +16,47 @@ interface Person {
   readonly id: number;
   readonly name: string;
   readonly role: string;
+  readonly dept: string;
 }
 
 const PEOPLE: readonly Person[] = [
-  { id: 1, name: 'Ada Lovelace — first programmer, long descriptive label', role: 'Engineer' },
-  { id: 2, name: 'Grace Hopper — compiler pioneer, long descriptive label', role: 'Engineer' },
-  { id: 3, name: 'Linus Torvalds — kernel maintainer, long descriptive label', role: 'Designer' },
-  { id: 4, name: 'Margaret Hamilton — flight software, long descriptive label', role: 'Manager' },
+  {
+    id: 1,
+    name: 'Ada Lovelace — first programmer, long descriptive label',
+    role: 'Engineer',
+    dept: 'R&D',
+  },
+  {
+    id: 2,
+    name: 'Grace Hopper — compiler pioneer, long descriptive label',
+    role: 'Engineer',
+    dept: 'R&D',
+  },
+  {
+    id: 3,
+    name: 'Linus Torvalds — kernel maintainer, long descriptive label',
+    role: 'Designer',
+    dept: 'OS',
+  },
+  {
+    id: 4,
+    name: 'Margaret Hamilton — flight software, long descriptive label',
+    role: 'Manager',
+    dept: 'Ops',
+  },
 ];
 
 @Component({
   selector: 'app-for-table-body-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    JsonPipe,
     ForTable,
     ForTableBody,
     ForColumnDef,
     ForHeaderCell,
     ForDataCell,
+    ForTableColumnLabel,
     ForTableRowSelector,
     ForTableSelectAll,
   ],
@@ -104,6 +129,7 @@ const PEOPLE: readonly Person[] = [
         [rows]="sortedRows()"
         [rowKey]="rowKey"
         [sort]="sort()"
+        [(columnWidths)]="widths"
         (sortChange)="onSort($event)"
       >
         <ng-container forColumnDef="sel" sticky width="48px">
@@ -122,7 +148,16 @@ const PEOPLE: readonly Person[] = [
           }}</ng-template>
         </ng-container>
 
-        <ng-container forColumnDef="name" sticky sortable resizable resizeAriaLabel="Resize Name">
+        <ng-container
+          forColumnDef="name"
+          sticky
+          sortable
+          resizable
+          resizeAriaLabel="Resize Name"
+          [resizeMin]="80"
+          [resizeMax]="600"
+          [resizeStep]="24"
+        >
           <ng-template forHeaderCell>Name</ng-template>
           <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>{{
             row.name
@@ -135,7 +170,23 @@ const PEOPLE: readonly Person[] = [
             row.role
           }}</ng-template>
         </ng-container>
+
+        <ng-container
+          forColumnDef="dept"
+          resizable
+          fitIncludesHeader
+          resizeAriaLabel="Resize Department"
+        >
+          <ng-template forHeaderCell>
+            <span forTableColumnLabel>Department of Engineering</span>
+          </ng-template>
+          <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>{{
+            row.dept
+          }}</ng-template>
+        </ng-container>
       </for-table-body>
+
+      <pre data-testid="widths">{{ widths() | json }}</pre>
     </div>
   `,
 })
@@ -143,6 +194,8 @@ export class ForTableBodyFixture {
   protected readonly rowKey = (row: Person): number => row.id;
 
   protected readonly sort = signal<TableSortDescriptor | null>(null);
+
+  protected readonly widths = signal<Readonly<Record<string, number>>>({ dept: 70 });
 
   protected readonly sortedRows = computed<readonly Person[]>(() => {
     const descriptor = this.sort();
