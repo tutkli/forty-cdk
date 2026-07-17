@@ -4,6 +4,8 @@ import {
   Component,
   computed,
   contentChildren,
+  DestroyRef,
+  inject,
   input,
   output,
   type Signal,
@@ -81,10 +83,12 @@ interface RenderRow<T> {
  * it reads the published window off the table context (no cross-entry import),
  * renders only the visible slice indexed into `rows`, sizes its rowgroup to the
  * full scroll height, and absolutely positions each row at its offset. The
- * consumer passes the whole dataset to `rows` and sets `[rowCount]` on
- * `[forTable]` — no `#v` reference, manual sizer, `@for` window, or
- * `[virtualIndex]` binding. Fixed-size rows only for now (drive row height in
- * CSS); measured / dynamic row heights stay on the raw `[forTableRow]` path.
+ * consumer passes the whole dataset to `rows` — the body derives the true total
+ * from its length, so `[rowCount]` on `[forTable]` is unnecessary (bind it only
+ * for a server-known total larger than the loaded rows). No `#v` reference,
+ * manual sizer, `@for` window, or `[virtualIndex]` binding. Fixed-size rows only
+ * for now (drive row height in CSS); measured / dynamic row heights stay on the
+ * raw `[forTableRow]` path.
  *
  * **Row variants.** Declare one or more `[forRowDef]` alongside the columns to
  * render a full-span row for the data they match (group headers, section
@@ -208,6 +212,12 @@ interface RenderRow<T> {
 })
 export class ForTableBody<T = unknown> {
   readonly #ctx = injectTableContext('ForTableBody');
+
+  constructor() {
+    const bodyRowCount = computed(() => this.rows().length);
+    this.#ctx.registerBodyRowCount(bodyRowCount);
+    inject(DestroyRef).onDestroy(() => this.#ctx.registerBodyRowCount(null));
+  }
 
   /** The rows to render — already sorted / filtered / paged by the consumer (BYO-data). */
   readonly rows = input.required<readonly T[]>();

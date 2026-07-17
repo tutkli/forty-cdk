@@ -204,8 +204,21 @@ export interface ForTableContext {
    * can apply it. Called by `[forTableColumnResizer]`.
    */
   setColumnWidth(column: string, width: number): void;
-  /** The consumer-declared true total row count (`aria-rowcount`); `undefined` when defaulted to the rendered count. */
+  /**
+   * The resolved true total data-row count for `aria-rowcount` and the virtualized
+   * scroll range, in resolution order: the explicit `[rowCount]` input when set,
+   * else the declarative `<for-table-body>`'s dataset length when a body has
+   * registered one, else `undefined` (readers fall back to the rendered row count).
+   */
   readonly rowCount: Signal<number | undefined>;
+  /**
+   * Registers (or clears, with `null`) the declarative `<for-table-body>`'s dataset
+   * length as the body-derived total row count. `ForTableBody` registers
+   * `computed(() => rows().length)` at construction and clears it on destroy, so a
+   * declarative table needs no `[rowCount]` binding; an explicit `[rowCount]` input
+   * still wins over it (for a server-known total larger than the loaded rows).
+   */
+  registerBodyRowCount(count: Signal<number> | null): void;
   /**
    * Absolute index of the row that owns the currently roving-focused cell, or `null`
    * when no cell is focused (or the focused row carries no `virtualIndex`). Used by

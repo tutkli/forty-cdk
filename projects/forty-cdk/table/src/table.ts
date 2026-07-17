@@ -104,11 +104,27 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * True total number of data rows for `aria-rowcount`, e.g. for a server-paged or
-   * (later) virtualized table that renders only a window of rows. Defaults to the
-   * rendered data-row count. Ignored in `mode="table"`.
+   * Explicit override for the true total data-row count (`aria-rowcount` and the
+   * virtualized scroll range). A declarative `<for-table-body>` supplies this
+   * automatically from its `rows` dataset length, so bind `[rowCount]` only for a
+   * server-known total larger than the loaded rows; when set it wins over the
+   * body-derived count. Defaults to the body count, else the rendered data-row
+   * count. Ignored in `mode="table"`.
    */
-  readonly rowCount = input<number>();
+  readonly _rowCountInput = input<number | undefined>(undefined, { alias: 'rowCount' });
+
+  /** The declarative body's dataset length, registered by `<for-table-body>`; `null` when none. */
+  readonly #bodyRowCount = signal<Signal<number> | null>(null);
+
+  /**
+   * Resolved true total data-row count: the explicit `[rowCount]` input when set,
+   * else the declarative `<for-table-body>`'s dataset length, else `undefined`
+   * (readers fall back to the rendered count). Feeds `aria-rowcount`, the
+   * cross-window navigation total, and the virtualizer's count.
+   */
+  readonly rowCount = computed<number | undefined>(
+    () => this._rowCountInput() ?? this.#bodyRowCount()?.(),
+  );
 
   /**
    * True total number of columns for `aria-colcount`. Defaults to the rendered
@@ -342,6 +358,10 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   registerVirtualWindow(window: TableVirtualWindow | null): void {
     this.#virtualWindow.set(window);
+  }
+
+  registerBodyRowCount(count: Signal<number> | null): void {
+    this.#bodyRowCount.set(count);
   }
 
   setReorderingRow(index: number | null): void {

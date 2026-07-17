@@ -1,6 +1,7 @@
 import { Component, signal, viewChild } from '@angular/core';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { ForTableVirtualized } from 'forty-cdk/virtualization';
 
 import { ForColumnDef, ForDataCell, ForHeaderCell, ForPlaceholderCell } from './column-def';
 import { ForRowCell, ForRowDef } from './row-def';
@@ -237,6 +238,28 @@ class TableModeVirtualHost {
   readonly table = viewChild.required(ForTable);
 }
 
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable forTableVirtualized mode="grid" ariaLabel="Derived total" [rowCount]="rowCount()">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row let-i="index"
+            >{{ row.name }}#{{ i }}</ng-template
+          >
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class DerivedRowCountHost {
+  readonly rows = signal<BigRow[]>(buildBigRows(20));
+  readonly rowCount = signal<number | undefined>(undefined);
+  readonly rowKey = (row: BigRow): number => row.id;
+  readonly virtualized = viewChild.required(ForTableVirtualized);
+}
+
 /** Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a deterministic jsdom test. */
 function publishWindow(
   table: ForTable,
@@ -470,6 +493,37 @@ describe('ForTableBody', () => {
       expect(rows).toHaveLength(20);
       expect(rows[0]!.style.position).toBe('');
       expect(rows[0]!.hasAttribute('data-index')).toBe(false);
+    });
+  });
+
+  describe('body-derived rowCount (#1354)', () => {
+    it('derives aria-rowcount and the virtualized total from the body dataset without [rowCount]', async () => {
+      const { instance, query, flush } = renderHost(DerivedRowCountHost);
+      await flush();
+
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('21');
+      expect(instance.virtualized().totalSize()).toBe(20 * 44);
+    });
+
+    it('lets an explicit [rowCount] override the body count (server-known total)', async () => {
+      const { instance, query, flush } = renderHost(DerivedRowCountHost);
+      instance.rowCount.set(500);
+      await flush();
+
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('501');
+      expect(instance.virtualized().totalSize()).toBe(500 * 44);
+    });
+
+    it('reacts to the body dataset changing without Zone.js', async () => {
+      const { instance, query, flush } = renderHost(DerivedRowCountHost);
+      await flush();
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('21');
+
+      instance.rows.set(buildBigRows(30));
+      await flush();
+
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('31');
+      expect(instance.virtualized().totalSize()).toBe(30 * 44);
     });
   });
 
