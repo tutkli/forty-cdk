@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-07-17
+
+### Added
+
+- **Table (declarative layer)** — a new `ForColumnDef` + `<for-table-body>` layer over the raw cell primitives: declare each column once and the body renders its header and data cells, auto-wiring sort and resize (selection stays consumer-placed via `rowKey`). Dropping `[forTableVirtualized]` on the same table now windows the rows automatically — no `#v` ref, manual sizer, `@for` window, or `[virtualIndex]` binding (fixed-size rows, height in CSS). `[forRowDef]` + `[forRowCell]` render a full-span variant row (group headers, section separators, summary / empty-state) for the data a `[when]` predicate matches: a presentational, non-selectable cell that still counts towards `aria-rowindex` / `aria-rowcount`, is stepped over by the roving 2D grid, and composes with virtualization.
+- **Table** — the virtualization-seam types (`TableVirtualWindow`, `TableVirtualRow`) are exported from the `forty-cdk/table` barrel, so a consumer can type against the window the body publishes.
+- **Combobox** — `[forComboboxAction]`, a `role="button"` affordance pinned inside the popup that never joins the option / value collection and is keyboard-reachable through a Tab-into-actions ring.
+
+### Changed
+
+- **Core** — **BREAKING.** The legacy `startPointerResize` transport (and its `PointerResizeConfig` type) is removed from `forty-cdk/core`. `ForPaneResizer` and `ForTableColumnResizer` now ride the shared `createPointerDragSession`, inheriting its post-drag click suppression and Escape-to-cancel. A consumer that imported `startPointerResize` directly should migrate to `createPointerDragSession`.
+
+### Fixed
+
+- **Table** — `Enter` on a sortable grid header cell commits the sort instead of also entering a co-located column resizer / reorder handle, and `Space` / `Enter` split correctly when sort and drag-reorder share the same header (`Space` lifts the column for reorder, `Enter` sorts).
+- **Table** — a row without a bound value no longer emits `aria-selected="false"`; the attribute is dropped entirely on non-selectable rows.
+- **Progress** — `getValueLabel` is fed the sanitized effective max, so a custom value label reflects the clamped range.
+- **Drawer** — the drag handle sets `touch-action` / `user-select` (with a `-webkit-user-select` fallback for older WebKit) so a mouse or touch drag on the handle no longer selects text.
+- **File Upload** — an all-rejected dialog (browse) selection now clears the native input, so a native form submission can't ship a file the primitive already rejected; a drop never wipes a prior valid dialog selection.
+
 ## [0.9.0] - 2026-07-07
 
 ### Added
@@ -339,7 +359,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/tutkli/forty-cdk/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/tutkli/forty-cdk/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/tutkli/forty-cdk/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/tutkli/forty-cdk/compare/v0.6.0...v0.7.0
