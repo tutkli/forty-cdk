@@ -189,7 +189,11 @@ export class ForColumnDef {
    * `grid-template-columns` track fragment for this column (e.g. `'160px'`,
    * `'minmax(160px, 1fr)'`). When unset, `ForTableBody` falls back to the
    * published `--for-table-col-<name>-width` resize var with a `minmax(0, 1fr)`
-   * default, so a resized column drives its own track.
+   * default, so a resized column drives its own track. A static `width`
+   * **takes precedence** over that resize var — so leave it unset on a
+   * `resizable` column whose width you drive through `resizeCommit` or the
+   * body's `[(columnWidths)]`, otherwise the pinned track ignores the resized
+   * width (the handle still reports `aria-valuenow` but the column won't move).
    */
   readonly width = input<string | null>(null);
 

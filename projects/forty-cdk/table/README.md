@@ -230,6 +230,19 @@ Only `resizable` columns participate; unknown names are ignored. Together with `
 `(resizeCommit)` when you only need the gesture-end event (e.g. to write a single column to a server)
 rather than the whole width map.
 
+#### `[width]` vs. a resized / seeded width (column track precedence)
+
+`<for-table-body>` resolves each column's `grid-template-columns` track as
+`[width]() ?? var(--for-table-col-<name>-width, minmax(0, 1fr))`, so a **static `[width]` on the def
+takes precedence** over the published resize var — a seeded or resized width would never reach the
+track. A column you resize (or seed through `[(columnWidths)]`) must therefore **leave `[width]`
+unset**: it then flexes as `minmax(0, 1fr)`, sharing the free space with the other unsized columns,
+until a width is seeded or committed — after which its track becomes that fixed pixel width and the
+remaining `1fr` columns re-split what's left. Reserve `[width]` for columns you never resize (a fixed
+`48px` selection column, an `80px` id column); combining it with `resizable` on the same column pins the
+track and makes the handle's width purely advisory (`aria-valuenow` and `(resizeCommit)` still fire, but
+the column does not visually resize).
+
 ### Virtualized rows
 
 Add `[forTableVirtualized]` to the same `[forTable]` element and the body switches to windowed rendering
