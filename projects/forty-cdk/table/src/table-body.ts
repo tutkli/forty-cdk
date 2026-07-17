@@ -1,15 +1,18 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
+  afterEveryRender,
   booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
   contentChildren,
   DestroyRef,
+  type ElementRef,
   inject,
   input,
   output,
   type Signal,
+  viewChildren,
 } from '@angular/core';
 
 import { ForColumnDef } from './column-def';
@@ -114,9 +117,11 @@ interface RenderRow<T> {
  * consumer passes the whole dataset to `rows` — the body derives the true total
  * from its length, so `[rowCount]` on `[forTable]` is unnecessary (bind it only
  * for a server-known total larger than the loaded rows). No `#v` reference,
- * manual sizer, `@for` window, or `[virtualIndex]` binding. Fixed-size rows only
- * for now (drive row height in CSS); measured / dynamic row heights stay on the
- * raw `[forTableRow]` path.
+ * manual sizer, `@for` window, or `[virtualIndex]` binding. Rows are fixed-size
+ * by default (drive row height in CSS); set `measureRows` for measured /
+ * variable row heights (denser variant rows, group separators) — the body feeds
+ * each rendered row's real height back to the virtualizer so the window stays
+ * aligned after scroll.
  *
  * **Row variants.** Declare one or more `[forRowDef]` alongside the columns to
  * render a full-span row for the data they match (group headers, section
@@ -203,6 +208,7 @@ interface RenderRow<T> {
         @for (r of renderRows(); track r.key) {
           <div
             #rowRef="forTableRow"
+            #rowEl
             forTableRow
             [value]="r.value"
             [virtualIndex]="r.virtualIndex"
@@ -261,10 +267,29 @@ interface RenderRow<T> {
 export class ForTableBody<T = unknown> {
   readonly #ctx = injectTableContext('ForTableBody');
 
+  private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('rowEl');
+  readonly #measuredAt = new WeakMap<HTMLElement, string>();
+
   constructor() {
     const bodyRowCount = computed(() => this.rows().length);
     this.#ctx.registerBodyRowCount(bodyRowCount);
     inject(DestroyRef).onDestroy(() => this.#ctx.registerBodyRowCount(null));
+
+    afterEveryRender(() => {
+      const window = this.#ctx.virtualWindow();
+      if (!window || !this.measureRows()) {
+        return;
+      }
+      for (const ref of this.rowEls()) {
+        const el = ref.nativeElement;
+        const index = el.getAttribute('data-index');
+        if (index === null || this.#measuredAt.get(el) === index) {
+          continue;
+        }
+        this.#measuredAt.set(el, index);
+        window.measureRow(el);
+      }
+    });
   }
 
   /** The rows to render — already sorted / filtered / paged by the consumer (BYO-data). */
@@ -294,6 +319,19 @@ export class ForTableBody<T = unknown> {
 
   /** Number of placeholder rows rendered while `loading`. Default `3`. */
   readonly placeholderRows = input(3);
+
+  /**
+   * Opt in to **measured (variable) row heights** under `[forTableVirtualized]`.
+   * When set, the body measures each stamped row after render and feeds its real
+   * height back to the virtualizer, which replaces the `estimateRowSize` estimate
+   * and re-aligns the offsets of the rows below — so a window mixing row shapes
+   * (denser variant rows, group separators) stays contiguous after scroll.
+   *
+   * Off by default: a uniform-height table keeps the pure `estimateRowSize` fast
+   * path with no per-row measurement work. Has no effect without
+   * `[forTableVirtualized]` (there is no window to measure against).
+   */
+  readonly measureRows = input(false, { transform: booleanAttribute });
 
   /** Fires when a `sortable` header is activated; forwarded from the internal `[forTableSortHeader]`. */
   readonly sortChange = output<TableSortDescriptor>();

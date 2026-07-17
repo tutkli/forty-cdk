@@ -229,7 +229,11 @@ describe('TableVirtualizedNavigator', () => {
         { index: 0, start: 0 },
         { index: 1, start: 44 },
       ]);
-      const virtualWindow: TableVirtualWindow = { rows, totalSize: signal(88) };
+      const virtualWindow: TableVirtualWindow = {
+        rows,
+        totalSize: signal(88),
+        measureRow: () => undefined,
+      };
 
       expect(virtualWindow.rows()[1]!.index).toBe(1);
       expect(virtualWindow.rows()[1]!.start).toBe(44);

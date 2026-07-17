@@ -200,6 +200,38 @@ class VirtualVariantHost {
 }
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Measured" [rowCount]="rows().length">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey" [measureRows]="measure()">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isGroup">
+          <ng-template forRowCell [forRowCellRow]="rows()" let-row>Group {{ row.id }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class MeasureRowsHost {
+  readonly rows = signal<BigRow[]>(buildBigRows(20));
+  readonly rowKey = (row: BigRow): number => row.id;
+  readonly isGroup = (row: BigRow): boolean => row.id === 6;
+  readonly measure = signal(true);
+  readonly table = viewChild.required(ForTable);
+}
+
+@Component({
   imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
   template: `
     <div forTable mode="table" ariaLabel="People">
@@ -405,17 +437,24 @@ class RowInteractionHost {
   readonly lastContextMenu = signal<TableRowContextMenuEvent<GroupedRow> | null>(null);
 }
 
-/** Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a deterministic jsdom test. */
+/**
+ * Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a
+ * deterministic jsdom test. Returns the window's `measureRow` spy so tests can assert the
+ * body's measured-rows pass.
+ */
 function publishWindow(
   table: ForTable,
   indices: readonly number[],
   totalSize: number,
   rowSize = 44,
-): void {
+): ReturnType<typeof vi.fn> {
+  const measureRow = vi.fn();
   table.registerVirtualWindow({
     rows: signal(indices.map((index) => ({ index, start: index * rowSize }))),
     totalSize: signal(totalSize),
+    measureRow,
   });
+  return measureRow;
 }
 
 describe('ForTableBody', () => {
@@ -638,6 +677,57 @@ describe('ForTableBody', () => {
       expect(rows).toHaveLength(20);
       expect(rows[0]!.style.position).toBe('');
       expect(rows[0]!.hasAttribute('data-index')).toBe(false);
+    });
+  });
+
+  describe('measured row heights (#1353)', () => {
+    it('calls the window measureRow once per stamped row (data + variant) when measureRows is set', async () => {
+      const { instance, queryAll, flush } = renderHost(MeasureRowsHost);
+      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      await flush();
+
+      const rows = queryAll('[forTableRow]') as HTMLElement[];
+      expect(rows).toHaveLength(3);
+      expect(rows[1]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Group 6');
+      expect(measureRow).toHaveBeenCalledTimes(3);
+      const measuredEls = measureRow.mock.calls.map((call) => call[0] as HTMLElement);
+      expect(measuredEls).toEqual(rows);
+    });
+
+    it('never calls measureRow when measureRows is unset', async () => {
+      const { instance, flush } = renderHost(MeasureRowsHost);
+      instance.measure.set(false);
+      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      await flush();
+      expect(measureRow).not.toHaveBeenCalled();
+    });
+
+    it('does not re-measure rows whose window index is unchanged across renders (guard)', async () => {
+      const { instance, flush } = renderHost(MeasureRowsHost);
+      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      await flush();
+      expect(measureRow).toHaveBeenCalledTimes(3);
+
+      await flush();
+      expect(measureRow).toHaveBeenCalledTimes(3);
+    });
+
+    it('re-measures a row host recycled to a new window index without Zone.js', async () => {
+      const { instance, flush } = renderHost(MeasureRowsHost);
+      const measureRow = vi.fn();
+      const windowRows = signal([5, 6, 7].map((index) => ({ index, start: index * 44 })));
+      instance.table().registerVirtualWindow({
+        rows: windowRows,
+        totalSize: signal(880),
+        measureRow,
+      });
+      await flush();
+      expect(measureRow).toHaveBeenCalledTimes(3);
+
+      measureRow.mockClear();
+      windowRows.set([8, 9, 10].map((index) => ({ index, start: index * 44 })));
+      await flush();
+      expect(measureRow).toHaveBeenCalledTimes(3);
     });
   });
 
