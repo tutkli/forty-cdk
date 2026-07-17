@@ -128,7 +128,9 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 - **`<for-table-body>`** takes `[rows]` (already sorted / filtered / paged by you — BYO-data),
   optional `[rowKey]` (row identity used for `@for` tracking **and** each row's selection `[value]`),
   optional `[displayedColumns]` (which columns render, in order; defaults to declaration order), and
-  `[loading]` / `[placeholderRows]` (render `forPlaceholderCell` skeletons). It **owns
+  `[loading]` / `[placeholderRows]` (render `forPlaceholderCell` skeletons for the initial full-replace
+  load; see [Interleaved placeholder rows](#interleaved-placeholder-rows) for the infinite-scroll shape
+  that keeps loaded rows and appends trailing skeletons). It **owns
   `grid-template-columns`**: each column contributes its `[width]`, falling back to the published
   `--for-table-col-<name>-width` resize var — so a resized column drives its own track with no glue.
 - **Auto-wired from per-column flags:** `sortable` wires `[forTableSortHeader]` (the body derives each
@@ -264,7 +266,10 @@ Declare one or more `[forRowDef]` alongside the columns to render a **full-span 
 matches — group headers, section separators, full-width summary or empty-state rows. For each datum the
 body picks the first `[forRowDef]` whose `[when]` predicate returns `true` and stamps a row whose single
 cell spans every column and renders the `[forRowCell]` template; unmatched data renders the standard
-per-column row. Type `let-row` by binding `[forRowCellRow]` to the same array you pass to `[rows]` — and,
+per-column row. (A `[forRowDef]` can instead carry the `placeholderCells` flag — no `[forRowCell]` — to
+stamp per-column skeleton cells rather than a full-span cell; see
+[Interleaved placeholder rows](#interleaved-placeholder-rows).) Type `let-row` by binding
+`[forRowCellRow]` to the same array you pass to `[rows]` — and,
 for a discriminated-union row type, narrow it with `[forRowCellWhen]` / `[forDataCellUnless]` (see
 [Typing a discriminated-union row](#typing-a-discriminated-union-row)).
 
@@ -343,6 +348,69 @@ protected readonly selectableIds = computed(() =>
   font-weight: 600;
   background: var(--group-header-bg);
 }
+```
+
+### Interleaved placeholder rows
+
+`[loading]` is the **full-replace** skeleton: it swaps the whole dataset for `[placeholderRows]`
+skeleton rows built from each column's `[forPlaceholderCell]` — the right shape for the _initial_ load,
+when there are no rows yet.
+
+Paginated / infinite-scroll tables load differently: they keep the rows already loaded and show a few
+**trailing** (or interleaved) skeleton rows while the next page fetches. Model that with a
+`placeholderCells` [row variant](#row-variants) — a `[forRowDef]` that matches your placeholder data and
+stamps one skeleton cell per column from the same `[forPlaceholderCell]` templates, in place among the
+real rows:
+
+- The matched rows are **non-selectable**, and their cells are stamped **disabled** — so grid-mode arrow
+  navigation steps over them while the roving grid stays rectangular (one cell per column, unlike a
+  full-span variant).
+- A column that omits `[forPlaceholderCell]` stamps an empty cell, so you mark only the columns whose
+  skeleton shape you care about (a circle for an avatar column, a bar for text).
+- It composes with `[forTableVirtualized]` for free: placeholder rows are ordinary data — they count in
+  the total and get windowed and positioned like any row.
+
+A `[forRowDef]` must declare **exactly one** of a `[forRowCell]` template (full-span variant) or the
+`placeholderCells` flag; declaring both or neither throws a `[forty-cdk/table]` error. `[loading]` /
+`[placeholderRows]` stay unchanged as the sugar for the initial full-replace state.
+
+```html
+<for-table-body [rows]="rows()" [rowKey]="rowKey">
+  <ng-container forColumnDef="avatar" width="48px">
+    <ng-template forHeaderCell></ng-template>
+    <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+      <img [src]="row.avatar" alt="" />
+    </ng-template>
+    <!-- circle skeleton for the avatar column -->
+    <ng-template forPlaceholderCell><span class="skeleton skeleton--circle"></span></ng-template>
+  </ng-container>
+
+  <ng-container forColumnDef="name">
+    <ng-template forHeaderCell>Name</ng-template>
+    <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    <!-- bar skeleton for the text column -->
+    <ng-template forPlaceholderCell><span class="skeleton skeleton--bar"></span></ng-template>
+  </ng-container>
+
+  <!-- trailing skeleton rows appended to rows() while the next page loads -->
+  <ng-container forRowDef [when]="isPlaceholder" placeholderCells />
+</for-table-body>
+```
+
+```ts
+interface Row {
+  id: number;
+  name?: string;
+  avatar?: string;
+  pending?: boolean;
+}
+
+// Match the placeholder rows you appended to rows() while fetching the next page.
+protected readonly isPlaceholder = (row: Row): boolean => row.pending === true;
+
+// A placeholder datum still needs a defined, unique rowKey (a negative-id namespace, say),
+// exactly like a full-span variant — see the Row variants requirements above.
+protected readonly rowKey = (row: Row): number => row.id;
 ```
 
 ### Whole-row navigation lists

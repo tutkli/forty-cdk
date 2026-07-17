@@ -209,6 +209,7 @@ import {
   ForTableRow,
   ForTableRowReorder,
   ForTableSortHeader,
+  ForPlaceholderCell,
   ForRowCell,
   ForRowDef,
 } from 'forty-cdk/table';
@@ -462,6 +463,42 @@ class TableBodyRowVariantFixture {
   ];
   readonly rowKey = (row: { id: number }): number => row.id;
   readonly isGroup = (row: { group?: boolean }): boolean => row.group === true;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForPlaceholderCell,
+    ForRowDef,
+  ],
+  template: `
+    <div forTable mode="grid" aria-label="Feed">
+      <for-table-body [rows]="rows" [rowKey]="rowKey">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+        <ng-container forRowDef [when]="isPending" placeholderCells />
+      </for-table-body>
+    </div>
+  `,
+})
+class TableBodyPlaceholderVariantFixture {
+  readonly rows = [
+    { id: 1, name: 'Ada', role: 'Engineer' },
+    { id: -1, name: '', role: '', pending: true },
+  ];
+  readonly rowKey = (row: { id: number }): number => row.id;
+  readonly isPending = (row: { pending?: boolean }): boolean => row.pending === true;
 }
 
 @Component({
@@ -1903,6 +1940,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableGridFixture,
   TableBodyFixture,
   TableBodyRowVariantFixture,
+  TableBodyPlaceholderVariantFixture,
   TableBodyRowInteractionFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
@@ -2430,6 +2468,19 @@ describe('SSR smoke tests', () => {
     expect(variantCell.getAttribute('aria-colspan')).toBe('2');
     expect(variantCell.textContent?.trim()).toBe('Group: Engineers');
     expect(rows[1]!.querySelectorAll('[forTableCell]').length).toBe(2);
+  });
+
+  it('<for-table-body> stamps a placeholder-cell row variant server-side', () => {
+    const f = TestBed.createComponent(TableBodyPlaceholderVariantFixture);
+    f.detectChanges();
+    const rows = Array.from(f.nativeElement.querySelectorAll('[forTableRow]')) as HTMLElement[];
+    expect(rows.length).toBe(2);
+    const placeholder = rows[1]!;
+    expect(placeholder.querySelector('[data-row-variant]')).toBeNull();
+    const cells = Array.from(placeholder.querySelectorAll('[forTableCell]'));
+    expect(cells.length).toBe(2);
+    expect(cells[0]!.getAttribute('aria-disabled')).toBe('true');
+    expect(placeholder.querySelector('.skeleton')).not.toBeNull();
   });
 
   it('<for-table-body> stamps interactive rows with tabindex + rowClass + rowAttrs server-side', () => {
