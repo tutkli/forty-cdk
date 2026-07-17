@@ -10,6 +10,7 @@ import {
   type ElementRef,
   inject,
   input,
+  model,
   output,
   type Signal,
   viewChildren,
@@ -104,10 +105,16 @@ interface RenderRow<T> {
  * raw `[forTableCell]` / `[forTableHeaderCell]` primitives directly.
  *
  * Sort and resize affordances are auto-wired from the per-column `sortable` /
- * `resizable` flags and surfaced through `sortChange` / `resizeCommit`; the sort
- * and width descriptors stay consumer-applied (BYO-data). Selection stays
- * consumer-placed: drop `[forTableRowSelector]` / `[forTableSelectAll]` into the
- * cell templates and set `rowKey` so each row carries a selection identity.
+ * `resizable` flags. Sort stays consumer-applied (BYO-data): the body derives each
+ * header's `aria-sort` from `sort` and re-emits activation through `sortChange`.
+ * Resize width state can be owned by the body instead — `[(columnWidths)]` seeds
+ * each `resizable` handle's width (keyed by column name) and tracks its live
+ * changes, so the resized track drives itself with no per-consumer plumbing; each
+ * `resizable` column is tuned per def via `resizeMin` / `resizeMax` / `resizeStep`
+ * / `autoFit` / `fitIncludesHeader`, and gesture-end commits still surface through
+ * `resizeCommit`. Selection stays consumer-placed: drop `[forTableRowSelector]` /
+ * `[forTableSelectAll]` into the cell templates and set `rowKey` so each row
+ * carries a selection identity.
  *
  * **Virtualization is transparent.** Adding `[forTableVirtualized]` to the same
  * `[forTable]` element switches the body to windowed rendering automatically:
@@ -174,9 +181,15 @@ interface RenderRow<T> {
           @if (col.resizable()) {
             <button
               forTableColumnResizer
-              autoFit
               [column]="col.name()"
+              [width]="columnWidths()[col.name()]"
+              [min]="col.resizeMin()"
+              [max]="col.resizeMax()"
+              [step]="col.resizeStep()"
+              [autoFit]="col.autoFit()"
+              [fitIncludesHeader]="col.fitIncludesHeader()"
               [attr.aria-label]="col.resizeAriaLabel()"
+              (widthChange)="onColumnWidthChange(col.name(), $event)"
               (resizeCommit)="resizeCommit.emit($event)"
             ></button>
           }
@@ -365,6 +378,22 @@ export class ForTableBody<T = unknown> {
   readonly resizeCommit = output<TableResizeDescriptor>();
 
   /**
+   * Two-way map of column widths (px), keyed by column `name`. It seeds each
+   * `resizable` column's stamped handle `[width]` — so the `role="separator"`
+   * handle exposes `aria-valuenow` from the first render and the column's grid
+   * track picks up the seeded width immediately — and is updated immutably on
+   * every live width change the handle reports (pointer drag, keyboard resize,
+   * auto-fit). Only `resizable` columns participate; other names are ignored.
+   *
+   * The map is JSON-serializable, so persisting a user's column layout is
+   * `[(columnWidths)]` plus one storage write. Together with `[displayedColumns]`
+   * and `[sort]` it makes the full user-configurable table state three bindings.
+   * Its implicit `columnWidthsChange` fires only on handle-driven updates, not on
+   * consumer writes through `[(columnWidths)]`.
+   */
+  readonly columnWidths = model<Readonly<Record<string, number>>>({});
+
+  /**
    * Opt-in whole-row interaction for **navigation lists**, active only in the
    * default `mode="table"`. When set, each data row becomes a focusable tab stop
    * (`tabindex="0"`) and a pointer click or `Enter` emits `rowActivate`, while a
@@ -539,6 +568,23 @@ export class ForTableBody<T = unknown> {
   /** Resolves the `rowAttrs` hook for a stamped row, or `undefined` when unset. */
   protected rowAttrsFor(row: RenderRow<T>): Record<string, string | null> | undefined {
     return this.rowAttrs()?.(row.datum, row.index);
+  }
+
+  /**
+   * Folds a stamped resizer's live width update into the `[(columnWidths)]` map
+   * immutably, keyed by the column name. Ignores the resizer's initial unset
+   * (`undefined`) emission and no-ops when the width is unchanged, so seeding the
+   * handle from `columnWidths` never loops back into a redundant model write.
+   */
+  protected onColumnWidthChange(column: string, width: number | undefined): void {
+    if (width === undefined) {
+      return;
+    }
+    const current = this.columnWidths();
+    if (current[column] === width) {
+      return;
+    }
+    this.columnWidths.set({ ...current, [column]: width });
   }
 
   protected onRowClick(row: RenderRow<T>, event: MouseEvent): void {

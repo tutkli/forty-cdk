@@ -7,6 +7,12 @@ const dataCell = (page: Page, row: number, column: string) =>
 const headerCell = (page: Page, column: string) =>
   page.locator(`[forTableHeaderCell][data-column="${column}"]`);
 
+const columnWidth = (page: Page, column: string): Promise<number | null> =>
+  el(page, 'widths').evaluate((node, col) => {
+    const map = JSON.parse(node.textContent ?? '{}');
+    return typeof map[col] === 'number' ? map[col] : null;
+  }, column);
+
 test.describe('ForTableBody — declarative columns', () => {
   test('stamps header cells with columnheader role + data-column in declared order', async ({
     page,
@@ -16,7 +22,7 @@ test.describe('ForTableBody — declarative columns', () => {
     const columns = await page
       .locator('[forTableHeaderCell]')
       .evaluateAll((cells) => cells.map((c) => c.getAttribute('data-column')));
-    expect(columns).toEqual(['sel', 'id', 'name', 'role']);
+    expect(columns).toEqual(['sel', 'id', 'name', 'role', 'dept']);
   });
 
   test('stamped data cells carry a 1-based aria-colindex', async ({ page }) => {
@@ -141,5 +147,45 @@ test.describe('ForTableBody — declarative columns', () => {
     for (let i = 0; i < count; i++) {
       await expect(rows.nth(i)).toHaveAttribute('aria-selected', 'true');
     }
+  });
+
+  test('seeds a resizable handle aria-valuenow from [(columnWidths)] on first render', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'for-table-body');
+    await expect(headerCell(page, 'dept').locator('[forTableColumnResizer]')).toHaveAttribute(
+      'aria-valuenow',
+      '70',
+    );
+  });
+
+  test('keyboard resize folds the new width into [(columnWidths)]', async ({ page }) => {
+    await gotoFixture(page, 'for-table-body');
+    expect(await columnWidth(page, 'name')).toBeNull();
+
+    await headerCell(page, 'name').locator('[forTableColumnResizer]').focus();
+    await page.keyboard.press('ArrowRight');
+
+    await expect.poll(() => columnWidth(page, 'name')).not.toBeNull();
+  });
+
+  test('auto-fit commit folds the fitted width into [(columnWidths)]', async ({ page }) => {
+    await gotoFixture(page, 'for-table-body');
+    await headerCell(page, 'name').locator('[forTableColumnResizer]').dblclick();
+    await expect.poll(() => columnWidth(page, 'name')).toBeGreaterThan(120);
+  });
+
+  test('fitIncludesHeader auto-fits to the [forTableColumnLabel] declared in the header template', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'for-table-body');
+    const deptHeader = headerCell(page, 'dept');
+
+    await deptHeader.locator('[forTableColumnResizer]').dblclick();
+
+    await expect.poll(() => columnWidth(page, 'dept')).toBeGreaterThan(100);
+    await expect
+      .poll(() => deptHeader.evaluate((e) => e.scrollWidth - e.clientWidth))
+      .toBeLessThanOrEqual(2);
   });
 });

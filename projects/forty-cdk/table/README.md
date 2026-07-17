@@ -135,8 +135,14 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
   `--for-table-col-<name>-width` resize var — so a resized column drives its own track with no glue.
 - **Auto-wired from per-column flags:** `sortable` wires `[forTableSortHeader]` (the body derives each
   header's direction from its `[sort]` input and re-emits `(sortChange)`), and `resizable` wires
-  `[forTableColumnResizer]` with `autoFit` (re-emitted through `(resizeCommit)`; give `resizeAriaLabel`
-  so the handle is named). The sort and width descriptors stay yours to apply.
+  `[forTableColumnResizer]` (re-emitted through `(resizeCommit)`; give `resizeAriaLabel` so the handle
+  is named). Tune the handle per column on `[forColumnDef]`: `[resizeMin]` / `[resizeMax]` (bounds,
+  driving `aria-valuemin` / `aria-valuemax`), `[resizeStep]` (arrow-key increment), `autoFit`
+  (double-click size-to-content, **on by default**; set `[autoFit]="false"` to disable), and
+  `fitIncludesHeader` (also account for the header label, isolated with a `[forTableColumnLabel]` inside
+  the `[forHeaderCell]` template). Let the body own width **state** with `[(columnWidths)]` — see
+  [Persisting column widths](#persisting-column-widths-columnwidths) — or keep applying widths yourself
+  from `(resizeCommit)`.
 - **Consumer-placed in templates:** selection (`[forTableRowSelector]` / `[forTableSelectAll]`) and any
   interactive widget go straight into the cell templates. Row-context primitives resolve their
   `[forTableRow]` because the body stamps content with the cell's own injector.
@@ -175,6 +181,67 @@ This is the seam a wrapping design system needs: it can key its stylesheet off c
 truncation, alignment, sticky backgrounds — rather than a wrapper node inside the template. Per-datum
 row styling (varying by the row's data, not just the column) is covered by
 [`[rowClass]` / `[rowAttrs]`](#styling-a-row-from-its-datum-rowclass--rowattrs) below.
+
+#### Persisting column widths (`[(columnWidths)]`)
+
+Instead of maintaining a widths signal, per-column seed / update handlers, and a hand-built
+`grid-template-columns` string, let `<for-table-body>` own the width **state**: bind `[(columnWidths)]`
+to a plain map keyed by column `name`. It seeds each `resizable` column's handle `[width]` — so the
+`role="separator"` handle exposes `aria-valuenow` from the first render and the column's track picks up
+the seeded width immediately — and folds every live change (pointer drag, keyboard resize, auto-fit)
+back into the map immutably. The map is JSON-serializable, so persisting a user's column layout is one
+two-way binding plus one storage write:
+
+```ts
+@Component({
+  /* … */
+  template: `
+    <div forTable mode="grid" ariaLabel="People">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey" [(columnWidths)]="widths">
+        <ng-container
+          forColumnDef="name"
+          resizable
+          resizeAriaLabel="Resize Name"
+          [resizeMin]="80"
+          [resizeMax]="480"
+        >
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <!-- … -->
+      </for-table-body>
+    </div>
+  `,
+})
+export class PeopleTable {
+  // Seed from storage; write back whenever it changes.
+  readonly widths = signal<Record<string, number>>(
+    JSON.parse(localStorage.getItem('people.widths') ?? '{}'),
+  );
+
+  constructor() {
+    effect(() => localStorage.setItem('people.widths', JSON.stringify(this.widths())));
+  }
+}
+```
+
+Only `resizable` columns participate; unknown names are ignored. Together with `[displayedColumns]` and
+`[sort]`, `[(columnWidths)]` makes the full user-configurable table state three bindings. Prefer
+`(resizeCommit)` when you only need the gesture-end event (e.g. to write a single column to a server)
+rather than the whole width map.
+
+#### `[width]` vs. a resized / seeded width (column track precedence)
+
+`<for-table-body>` resolves each column's `grid-template-columns` track as
+`[width]() ?? var(--for-table-col-<name>-width, minmax(0, 1fr))`, so a **static `[width]` on the def
+takes precedence** over the published resize var — a seeded or resized width would never reach the
+track. A column you resize (or seed through `[(columnWidths)]`) must therefore **leave `[width]`
+unset**: it then flexes as `minmax(0, 1fr)`, sharing the free space with the other unsized columns,
+until a width is seeded or committed — after which its track becomes that fixed pixel width and the
+remaining `1fr` columns re-split what's left. Reserve `[width]` for columns you never resize (a fixed
+`48px` selection column, an `80px` id column); combining it with `resizable` on the same column pins the
+track and makes the handle's width purely advisory (`aria-valuenow` and `(resizeCommit)` still fire, but
+the column does not visually resize).
 
 ### Virtualized rows
 

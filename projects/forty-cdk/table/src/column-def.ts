@@ -133,9 +133,11 @@ export class ForColumnDef {
   readonly sortable = input(false, { transform: booleanAttribute });
 
   /**
-   * When set, `ForTableBody` renders a `[forTableColumnResizer]` (with `autoFit`)
-   * inside the column's header cell and re-emits its commits through the body's
-   * `resizeCommit` output. Provide `resizeAriaLabel` so the handle is named.
+   * When set, `ForTableBody` renders a `[forTableColumnResizer]` inside the column's
+   * header cell and re-emits its commits through the body's `resizeCommit` output.
+   * Provide `resizeAriaLabel` so the handle is named. Tune the handle per column with
+   * `resizeMin` / `resizeMax` / `resizeStep` / `autoFit` / `fitIncludesHeader`, and
+   * seed / track its width through the body's `[(columnWidths)]`.
    */
   readonly resizable = input(false, { transform: booleanAttribute });
 
@@ -147,10 +149,51 @@ export class ForColumnDef {
   readonly resizeAriaLabel = input<string | null>(null);
 
   /**
+   * Minimum width (px) the auto-wired resize handle clamps to (only meaningful with
+   * `resizable`). Forwarded to the stamped `[forTableColumnResizer]`'s `min`; drives
+   * its `aria-valuemin`. Default `0`.
+   */
+  readonly resizeMin = input<number>(0);
+
+  /**
+   * Maximum width (px) the auto-wired resize handle clamps to (only meaningful with
+   * `resizable`). Forwarded to the stamped `[forTableColumnResizer]`'s `max`; drives
+   * its `aria-valuemax` (omitted when non-finite). Default `Infinity` (no upper bound).
+   */
+  readonly resizeMax = input<number>(Infinity);
+
+  /**
+   * Pixels applied per `ArrowLeft` / `ArrowRight` press on the auto-wired resize
+   * handle (only meaningful with `resizable`). Forwarded to the stamped
+   * `[forTableColumnResizer]`'s `step`. Default `10`.
+   */
+  readonly resizeStep = input<number>(10);
+
+  /**
+   * Whether double-clicking the auto-wired resize handle fits the column to its
+   * widest content (only meaningful with `resizable`). Forwarded to the stamped
+   * `[forTableColumnResizer]`'s `autoFit`. Default `true` — the historical
+   * hardcoded behaviour; set `false` to make the double-click a no-op.
+   */
+  readonly autoFit = input(true, { transform: booleanAttribute });
+
+  /**
+   * Whether header-inclusive auto-fit also accounts for the column header's label
+   * (only meaningful with `resizable` + `autoFit`). Forwarded to the stamped
+   * `[forTableColumnResizer]`'s `fitIncludesHeader`; isolate the header text with a
+   * `[forTableColumnLabel]` inside the `[forHeaderCell]` template. Default `false`.
+   */
+  readonly fitIncludesHeader = input(false, { transform: booleanAttribute });
+
+  /**
    * `grid-template-columns` track fragment for this column (e.g. `'160px'`,
    * `'minmax(160px, 1fr)'`). When unset, `ForTableBody` falls back to the
    * published `--for-table-col-<name>-width` resize var with a `minmax(0, 1fr)`
-   * default, so a resized column drives its own track.
+   * default, so a resized column drives its own track. A static `width`
+   * **takes precedence** over that resize var — so leave it unset on a
+   * `resizable` column whose width you drive through `resizeCommit` or the
+   * body's `[(columnWidths)]`, otherwise the pinned track ignores the resized
+   * width (the handle still reports `aria-valuenow` but the column won't move).
    */
   readonly width = input<string | null>(null);
 
