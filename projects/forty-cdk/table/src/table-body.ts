@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
+  booleanAttribute,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -19,11 +20,38 @@ import { injectTableContext } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 import { ForTableHeaderRow } from './table-header-row';
 import { ForTableRow } from './table-row';
+import { ForTableRowAttrs } from './table-row-attrs';
 import {
   ForTableSortHeader,
   type TableSortDescriptor,
   type TableSortDirection,
 } from './table-sort-header';
+
+/**
+ * Payload emitted by {@link ForTableBody.rowActivate} when a data row is
+ * activated by a pointer click or the `Enter` key (whole-row navigation lists).
+ */
+export interface TableRowActivateEvent<T> {
+  /** The activated row's datum. */
+  readonly row: T;
+  /** The activated row's 0-based dataset index (absolute when virtualized). */
+  readonly index: number;
+  /** The originating DOM event — a `MouseEvent` for a click, a `KeyboardEvent` for `Enter`. */
+  readonly event: Event;
+}
+
+/**
+ * Payload emitted by {@link ForTableBody.rowContextMenu} when a data row receives
+ * a `contextmenu` event (right-click or the context-menu key).
+ */
+export interface TableRowContextMenuEvent<T> {
+  /** The row's datum. */
+  readonly row: T;
+  /** The row's 0-based dataset index (absolute when virtualized). */
+  readonly index: number;
+  /** The originating `contextmenu` event; call `preventDefault()` to suppress the native menu. */
+  readonly event: MouseEvent;
+}
 
 /** One row `<for-table-body>` renders, resolved from the static or virtualized path. */
 interface RenderRow<T> {
@@ -110,6 +138,7 @@ interface RenderRow<T> {
     ForTableHeaderCell,
     ForTableCell,
     ForTableRow,
+    ForTableRowAttrs,
     ForTableSortHeader,
     ForTableColumnResizer,
   ],
@@ -178,12 +207,18 @@ interface RenderRow<T> {
             [value]="r.value"
             [virtualIndex]="r.virtualIndex"
             [attr.data-index]="r.virtualIndex"
+            [attr.tabindex]="rowTabIndex(r)"
+            [class]="rowClassFor(r)"
+            [forTableRowAttrs]="rowAttrsFor(r)"
             [style.display]="'grid'"
             [style.grid-template-columns]="track()"
             [style.position]="r.start !== null ? 'absolute' : null"
             [style.left]="r.start !== null ? '0' : null"
             [style.right]="r.start !== null ? '0' : null"
             [style.transform]="r.start !== null ? 'translateY(' + r.start + 'px)' : null"
+            (click)="onRowClick(r, $event)"
+            (keydown.enter)="onRowEnter(r, $event)"
+            (contextmenu)="onRowContextMenu(r, $event)"
           >
             @if (r.variant; as variant) {
               <div
@@ -265,6 +300,52 @@ export class ForTableBody<T = unknown> {
 
   /** Fires when a `resizable` column commits a width; forwarded from the internal `[forTableColumnResizer]`. */
   readonly resizeCommit = output<TableResizeDescriptor>();
+
+  /**
+   * Opt-in whole-row interaction for **navigation lists**, active only in the
+   * default `mode="table"`. When set, each data row becomes a focusable tab stop
+   * (`tabindex="0"`) and a pointer click or `Enter` emits `rowActivate`, while a
+   * `contextmenu` (right-click or the context-menu key) emits `rowContextMenu`.
+   * Full-span `[forRowDef]` variant rows stay non-interactive. Ignored in `grid`
+   * / `treegrid` mode, where roving 2D navigation and cell-entry own the keyboard
+   * and whole-row activation would conflict.
+   */
+  readonly interactiveRows = input(false, { transform: booleanAttribute });
+
+  /**
+   * Fires when a data row is activated by a pointer click or `Enter`, carrying
+   * the row datum, its dataset index, and the originating event. Requires
+   * `interactiveRows` and `mode="table"`.
+   */
+  readonly rowActivate = output<TableRowActivateEvent<T>>();
+
+  /**
+   * Fires when a data row receives a `contextmenu` event (right-click or the
+   * context-menu key), carrying the row datum, its dataset index, and the event —
+   * position your own overlay from it. Requires `interactiveRows` and
+   * `mode="table"`.
+   */
+  readonly rowContextMenu = output<TableRowContextMenuEvent<T>>();
+
+  /**
+   * Per-row class hook, applied to data **and** variant rows in **every** mode.
+   * Receives the row datum and its 0-based dataset index and returns the class(es)
+   * to apply — a string, a `{ className: boolean }` map, or `undefined` for none.
+   * This is the only seam for styling a body-owned row from its datum (an
+   * "active" / "menu-open" highlight, error or dimmed rows). Evaluated on every
+   * change-detection pass, so keep it cheap and free of side effects.
+   */
+  readonly rowClass =
+    input<(row: T, index: number) => string | Record<string, boolean> | undefined>();
+
+  /**
+   * Per-row attribute hook, applied to data **and** variant rows in **every**
+   * mode. Receives the row datum and its 0-based dataset index and returns an
+   * attribute map to reflect on the row host; a key mapped to `null` (or dropped
+   * from a later map) removes that attribute. Evaluated on every change-detection
+   * pass, so keep it cheap and free of side effects.
+   */
+  readonly rowAttrs = input<(row: T, index: number) => Record<string, string | null> | undefined>();
 
   /** Declared column definitions, in DOM order. */
   protected readonly columns = contentChildren(ForColumnDef);
@@ -361,5 +442,50 @@ export class ForTableBody<T = unknown> {
   protected directionFor(column: string): TableSortDirection {
     const descriptor = this.sort();
     return descriptor && descriptor.column === column ? descriptor.direction : 'none';
+  }
+
+  /** Whether whole-row interaction is active: opted in via `interactiveRows` and in `table` mode. */
+  protected readonly rowsInteractive = computed(
+    () => this.interactiveRows() && this.#ctx.mode() === 'table',
+  );
+
+  /** The `tabindex` for a stamped row: `0` for an interactive data row, `null` otherwise. */
+  protected rowTabIndex(row: RenderRow<T>): 0 | null {
+    return this.rowsInteractive() && !row.variant ? 0 : null;
+  }
+
+  /** Resolves the `rowClass` hook for a stamped row, or `undefined` when unset. */
+  protected rowClassFor(row: RenderRow<T>): string | Record<string, boolean> | undefined {
+    return this.rowClass()?.(row.datum, row.index);
+  }
+
+  /** Resolves the `rowAttrs` hook for a stamped row, or `undefined` when unset. */
+  protected rowAttrsFor(row: RenderRow<T>): Record<string, string | null> | undefined {
+    return this.rowAttrs()?.(row.datum, row.index);
+  }
+
+  protected onRowClick(row: RenderRow<T>, event: MouseEvent): void {
+    this.#activateRow(row, event);
+  }
+
+  protected onRowEnter(row: RenderRow<T>, event: Event): void {
+    if (this.#activateRow(row, event)) {
+      event.preventDefault();
+    }
+  }
+
+  protected onRowContextMenu(row: RenderRow<T>, event: MouseEvent): void {
+    if (!this.rowsInteractive() || row.variant) {
+      return;
+    }
+    this.rowContextMenu.emit({ row: row.datum, index: row.index, event });
+  }
+
+  #activateRow(row: RenderRow<T>, event: Event): boolean {
+    if (!this.rowsInteractive() || row.variant) {
+      return false;
+    }
+    this.rowActivate.emit({ row: row.datum, index: row.index, event });
+    return true;
   }
 }

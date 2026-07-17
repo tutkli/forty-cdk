@@ -465,6 +465,36 @@ class TableBodyRowVariantFixture {
 }
 
 @Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="table" aria-label="Nav">
+      <for-table-body
+        [rows]="rows"
+        [rowKey]="rowKey"
+        interactiveRows
+        [rowClass]="rowClass"
+        [rowAttrs]="rowAttrs"
+      >
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableBodyRowInteractionFixture {
+  readonly rows = [
+    { id: 1, name: 'Ada' },
+    { id: 2, name: 'Grace' },
+  ];
+  readonly rowKey = (row: { id: number }): number => row.id;
+  readonly rowClass = (row: { id: number }): string => (row.id === 1 ? 'active' : 'idle');
+  readonly rowAttrs = (row: { id: number }): Record<string, string | null> =>
+    row.id === 1 ? { 'data-open': '' } : {};
+}
+
+@Component({
   imports: [ForTable, ForTableRow, ForTableCell],
   template: `
     <div forTable mode="treegrid" [expanded]="expanded">
@@ -1873,6 +1903,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableGridFixture,
   TableBodyFixture,
   TableBodyRowVariantFixture,
+  TableBodyRowInteractionFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableBodyVirtualizedFixture,
@@ -2399,6 +2430,18 @@ describe('SSR smoke tests', () => {
     expect(variantCell.getAttribute('aria-colspan')).toBe('2');
     expect(variantCell.textContent?.trim()).toBe('Group: Engineers');
     expect(rows[1]!.querySelectorAll('[forTableCell]').length).toBe(2);
+  });
+
+  it('<for-table-body> stamps interactive rows with tabindex + rowClass + rowAttrs server-side', () => {
+    const f = TestBed.createComponent(TableBodyRowInteractionFixture);
+    f.detectChanges();
+    const rows = Array.from(f.nativeElement.querySelectorAll('[forTableRow]')) as HTMLElement[];
+    expect(rows.length).toBe(2);
+    expect(rows[0]!.getAttribute('tabindex')).toBe('0');
+    expect(rows[0]!.classList.contains('active')).toBe(true);
+    expect(rows[0]!.getAttribute('data-open')).toBe('');
+    expect(rows[1]!.classList.contains('idle')).toBe(true);
+    expect(rows[1]!.hasAttribute('data-open')).toBe(false);
   });
 
   it('Pagination renders role="navigation" + aria-label + exactly one aria-current="page" server-side', () => {

@@ -7,7 +7,11 @@ export {
   type ForDataCellContext,
 } from './column-def';
 export { ForRowDef, ForRowCell } from './row-def';
-export { ForTableBody } from './table-body';
+export {
+  ForTableBody,
+  type TableRowActivateEvent,
+  type TableRowContextMenuEvent,
+} from './table-body';
 export { ForTableHeaderRow } from './table-header-row';
 export { ForTableRow } from './table-row';
 export { ForTableHeaderCell } from './table-header-cell';
