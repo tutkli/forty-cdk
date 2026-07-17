@@ -45,9 +45,14 @@ export class ForHeaderCell {
  * Bind `[forDataCellRow]` to the same array passed to `ForTableBody`'s `rows`
  * to type `let-row` — the input is read only for type inference, never at
  * runtime.
+ *
+ * When the row type is a discriminated union whose variant members render
+ * through a `[forRowDef]` instead of the per-column cells, bind
+ * `[forDataCellUnless]` to the same type guard(s) used on those defs' `[when]`
+ * so `let-row` is narrowed to the variant-excluded members (`Exclude<T, V>`).
  */
 @Directive({ selector: 'ng-template[forDataCell]' })
-export class ForDataCell<T> {
+export class ForDataCell<T, V extends T = never> {
   /** The captured data-cell template, typed with `ForDataCellContext<T>`. */
   readonly template = inject<TemplateRef<ForDataCellContext<T>>>(TemplateRef);
 
@@ -58,11 +63,23 @@ export class ForDataCell<T> {
    */
   readonly rowType = input<readonly T[]>([], { alias: 'forDataCellRow' });
 
+  /**
+   * Type-inference hint: bind the type guard(s) that match the variant rows
+   * rendered by `[forRowDef]` (the same predicate used on their `[when]`) so
+   * `let-row` is narrowed to `Exclude<T, V>` — the members this per-column
+   * template actually receives. Compose several variants into one union guard
+   * (`(r): r is A | B => …`). Read only by the compiler; the directive never
+   * touches its value. Omitting it leaves `let-row` typed as the full `T`.
+   */
+  readonly excludeType = input<((row: T, index: number) => row is V) | null>(null, {
+    alias: 'forDataCellUnless',
+  });
+
   /** Narrows the template context type for `let-row` under strict template checking. */
-  static ngTemplateContextGuard<T>(
-    _directive: ForDataCell<T>,
+  static ngTemplateContextGuard<T, V extends T>(
+    _directive: ForDataCell<T, V>,
     _context: unknown,
-  ): _context is ForDataCellContext<T> {
+  ): _context is ForDataCellContext<Exclude<T, V>> {
     return true;
   }
 }
@@ -136,6 +153,23 @@ export class ForColumnDef {
    * default, so a resized column drives its own track.
    */
   readonly width = input<string | null>(null);
+
+  /**
+   * Static class(es) applied to this column's stamped `[forTableHeaderCell]`.
+   * `ForTableBody` owns the header cell element, so this is the styling seam a
+   * consumer (or wrapping design system) uses to reach it without scoping CSS to
+   * the body's template internals. `null` (default) adds no class attribute.
+   */
+  readonly headerClass = input<string | null>(null);
+
+  /**
+   * Static class(es) applied to this column's stamped `[forTableCell]` on every
+   * data **and** placeholder row. The styling seam for the cell box itself
+   * (padding, truncation, alignment, sticky backgrounds) that `ForTableBody`
+   * owns. Per-datum row styling is out of scope. `null` (default) adds no class
+   * attribute.
+   */
+  readonly cellClass = input<string | null>(null);
 
   /** The column's header-cell template. */
   readonly header = contentChild.required(ForHeaderCell);

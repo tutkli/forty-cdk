@@ -121,6 +121,7 @@ interface RenderRow<T> {
           forTableHeaderCell
           [name]="col.name()"
           [sticky]="col.sticky()"
+          [class]="col.headerClass()"
           forTableSortHeader
           [column]="col.name()"
           [sortable]="col.sortable()"
@@ -152,7 +153,13 @@ interface RenderRow<T> {
         @for (placeholder of placeholderRange(); track placeholder) {
           <div forTableRow [style.display]="'grid'" [style.grid-template-columns]="track()">
             @for (col of orderedColumns(); track col.name()) {
-              <div #cell="forTableCell" forTableCell [name]="col.name()" [sticky]="col.sticky()">
+              <div
+                #cell="forTableCell"
+                forTableCell
+                [name]="col.name()"
+                [sticky]="col.sticky()"
+                [class]="col.cellClass()"
+              >
                 @if (col.placeholderCell(); as placeholderCell) {
                   <ng-container
                     [ngTemplateOutlet]="placeholderCell.template"
@@ -194,7 +201,13 @@ interface RenderRow<T> {
               </div>
             } @else {
               @for (col of orderedColumns(); track col.name()) {
-                <div #cell="forTableCell" forTableCell [name]="col.name()" [sticky]="col.sticky()">
+                <div
+                  #cell="forTableCell"
+                  forTableCell
+                  [name]="col.name()"
+                  [sticky]="col.sticky()"
+                  [class]="col.cellClass()"
+                >
                   <ng-container
                     [ngTemplateOutlet]="col.dataCell().template"
                     [ngTemplateOutletInjector]="cell.injector"

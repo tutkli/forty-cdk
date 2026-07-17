@@ -138,14 +138,40 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 - **Consumer-placed in templates:** selection (`[forTableRowSelector]` / `[forTableSelectAll]`) and any
   interactive widget go straight into the cell templates. Row-context primitives resolve their
   `[forTableRow]` because the body stamps content with the cell's own injector.
+- **Styling the stamped cells:** the body owns the header / data cell elements, so add a class to them
+  per column with `[headerClass]` / `[cellClass]` on `[forColumnDef]` (see
+  [Styling the stamped cells](#styling-the-stamped-cells) below).
 - **Typing `let-row`:** bind `[forDataCellRow]` to the same array you pass to `[rows]` — it is read only
-  for type inference, so `let-row` is typed as your row type.
+  for type inference, so `let-row` is typed as your row type. With a discriminated-union row type,
+  bind `[forDataCellUnless]` (and `[forRowCellWhen]` on variants) to narrow it further — see
+  [Typing a discriminated-union row](#typing-a-discriminated-union-row) below.
 
 `<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
 all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Full-span
 **row variants** (group headers, separators, summary rows) are covered below via `[forRowDef]`. Column
 **reordering** through the declarative layer is not part of this cut — use the raw primitives for that
 today.
+
+#### Styling the stamped cells
+
+Because `<for-table-body>` stamps the header and data cell elements itself, a consumer cannot put a
+class on them from the template. Add one per column with `[headerClass]` (on the stamped
+`[forTableHeaderCell]`) and `[cellClass]` (on the stamped `[forTableCell]` of every data **and**
+placeholder row). Both are static strings applied alongside the cells' existing `data-*` / role hooks;
+leaving them unset adds no `class` attribute at all.
+
+```html
+<ng-container forColumnDef="amount" headerClass="num-header" cellClass="num-cell text-right">
+  <ng-template forHeaderCell>Amount</ng-template>
+  <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.amount }}</ng-template>
+</ng-container>
+```
+
+This is the seam a wrapping design system needs: it can key its stylesheet off classes it owns (a
+`.num-cell` it applies here) instead of scoping CSS to the body's template internals
+(`for-table-body [forTableCell]`, role selectors), and it reaches the cell box itself — padding,
+truncation, alignment, sticky backgrounds — rather than a wrapper node inside the template. Per-datum
+row styling (varying by the row's data, not just the column) stays out of scope here.
 
 ### Virtualized rows
 
@@ -206,7 +232,9 @@ Declare one or more `[forRowDef]` alongside the columns to render a **full-span 
 matches — group headers, section separators, full-width summary or empty-state rows. For each datum the
 body picks the first `[forRowDef]` whose `[when]` predicate returns `true` and stamps a row whose single
 cell spans every column and renders the `[forRowCell]` template; unmatched data renders the standard
-per-column row. Type `let-row` by binding `[forRowCellRow]` to the same array you pass to `[rows]`.
+per-column row. Type `let-row` by binding `[forRowCellRow]` to the same array you pass to `[rows]` — and,
+for a discriminated-union row type, narrow it with `[forRowCellWhen]` / `[forDataCellUnless]` (see
+[Typing a discriminated-union row](#typing-a-discriminated-union-row)).
 
 Variant rows are **presentational**: the spanning cell carries the row `role` (`gridcell` in grid /
 treegrid mode), `aria-colindex="1"`, and `aria-colspan` equal to the column count, but it does **not**
@@ -283,6 +311,57 @@ protected readonly selectableIds = computed(() =>
   font-weight: 600;
   background: var(--group-header-bg);
 }
+```
+
+### Typing a discriminated-union row
+
+When rows are a discriminated union whose variant members render through a `[forRowDef]`, `let-row`
+would otherwise type as the full union in every template — a per-column `[forDataCell]` only ever
+receives the non-variant members, and a `[forRowCell]` only ever receives its matched variant. Bind
+the **same type guard** you use on the def's `[when]` to the compiler-only inference inputs so each
+`let-row` is narrowed to exactly what it receives:
+
+- **`[forDataCellUnless]`** on a `[forDataCell]` narrows `let-row` to `Exclude<Row, V>` — the members
+  _not_ rendered as a variant. Compose several variants into one union guard.
+- **`[forRowCellWhen]`** on a `[forRowCell]` narrows `let-row` to the matched variant `V`.
+
+Both are read only by the compiler, exactly like `[forDataCellRow]` / `[forRowCellRow]`; omitting them
+leaves `let-row` as the full row type (no behavioural or type change for existing tables). This
+replaces the filtered-computed-per-template workaround (`dataRows()` / `separatorRows()` copies of
+`rows()` kept only to satisfy the compiler) — bind `rows()` directly and let the guard narrow.
+
+```ts
+interface DataRow {
+  kind: 'data';
+  name: string;
+  amount: number;
+}
+interface SeparatorRow {
+  kind: 'separator';
+  label: string;
+}
+type Row = DataRow | SeparatorRow;
+
+protected readonly isSeparator = (row: Row): row is SeparatorRow => row.kind === 'separator';
+```
+
+```html
+<for-table-body [rows]="rows()">
+  <ng-container forColumnDef="name">
+    <ng-template forHeaderCell>Name</ng-template>
+    <!-- row: DataRow -->
+    <ng-template forDataCell [forDataCellRow]="rows()" [forDataCellUnless]="isSeparator" let-row>
+      {{ row.name }} — {{ row.amount }}
+    </ng-template>
+  </ng-container>
+
+  <ng-container forRowDef [when]="isSeparator">
+    <!-- row: SeparatorRow -->
+    <ng-template forRowCell [forRowCellRow]="rows()" [forRowCellWhen]="isSeparator" let-row>
+      {{ row.label }}
+    </ng-template>
+  </ng-container>
+</for-table-body>
 ```
 
 ## Sticky header + CSS custom property
