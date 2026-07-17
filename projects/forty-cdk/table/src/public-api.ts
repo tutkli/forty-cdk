@@ -33,5 +33,8 @@ export {
   type TableSelectionMode,
   type TableSelectionBehavior,
   type TableSelectAllState,
+  type TableVirtualRow,
+  type TableVirtualWindow,
+  type TableVirtualRowNavigation,
 } from './table-context';
 export type { WritingDirection } from 'forty-cdk/core';
