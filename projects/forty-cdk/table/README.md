@@ -83,9 +83,19 @@ When you need virtual scrolling, use `<div role>` structure with `mode="grid"` o
 Hand-writing every cell in the header row **and** the data row keeps the two in sync by hand and
 smears a single column across several places. The optional ergonomic layer lets you author one
 `[forColumnDef]` per column and have `<for-table-body>` stamp the header row and one data row per item
-out of the same cell primitives. Place it inside a `[forTable]` in `mode="grid"`; it is additive — the
+out of the same cell primitives. Place it inside a `[forTable]`; it is additive — the
 raw primitives above keep working unchanged, and a table that never imports `ForTableBody` never
 bundles it.
+
+**Supported modes: `table` and `grid`.** Nothing in `<for-table-body>` is grid-specific — it derives
+each stamped cell's role from the table `mode` and applies no mode guard, so it works under the default
+`mode="table"` and under `mode="grid"` alike. Choose `mode="grid"` for **interactive** cells: roving 2D
+keyboard navigation, cell widgets, and cell-entry. Choose `mode="table"` for **read-only** or
+**whole-row navigation** lists, where `role="grid"` would announce an interaction model the list does
+not have — the row-interaction hooks that make whole-row navigation lists ergonomic are tracked in
+[#1349](https://github.com/tutkli/forty-cdk/issues/1349). `mode="treegrid"` is out of scope: the body
+stamps no expansion affordances. The examples below use `mode="grid"`, but each stamps identically under
+`mode="table"` (only the emitted roles change — `role="table"` with `role="cell"` cells).
 
 ```html
 <div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
@@ -146,6 +156,11 @@ height, and absolutely positions each row. Pass the **whole dataset** to `[rows]
 `[rowCount]`; there is no `#v` reference, manual sizer, `@for` window, or `[virtualIndex]` binding.
 Fixed-size rows only — set the row height in CSS; measured / dynamic heights stay on the raw
 `[forTableRow]` path.
+
+The `mode="grid"` in the example below is a **convention, not a requirement** of the layer. Windowing is
+driven by the `<div>` structure `<for-table-body>` always renders — not by the ARIA mode — so
+`mode="table"` windows the same way: the root keeps `role="table"`, stamped cells stay `role="cell"`,
+and only the visible slice mounts.
 
 ```html
 <div
