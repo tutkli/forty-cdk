@@ -448,6 +448,42 @@ class RowInteractionHost {
   readonly lastContextMenu = signal<TableRowContextMenuEvent<GroupedRow> | null>(null);
 }
 
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="table" ariaLabel="Nav">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [interactiveRows]="interactive()"
+        (rowActivate)="lastActivate.set($event)"
+        (rowContextMenu)="lastContextMenu.set($event)"
+      >
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="actions">
+          <ng-template forHeaderCell>Actions</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+            <button type="button" class="row-action" (click)="clicks.set(clicks() + 1)">
+              Edit {{ row.name }}
+            </button>
+          </ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class InteractiveDescendantHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly interactive = signal(true);
+  readonly lastActivate = signal<TableRowActivateEvent<Row> | null>(null);
+  readonly lastContextMenu = signal<TableRowContextMenuEvent<Row> | null>(null);
+  readonly clicks = signal(0);
+}
+
 interface FeedRow {
   id: number;
   name: string;
@@ -1460,6 +1496,64 @@ describe('ForTableBody', () => {
       const row = queryAll('[forTableRow]')[1]!;
       expect(row.classList.contains('first')).toBe(false);
       expect(row.classList.contains('second')).toBe(true);
+    });
+  });
+
+  describe('interactive descendants (#1366)', () => {
+    it('does not activate the row when a click originates from an interactive descendant', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      const button = queryAll('button.row-action')[0]!;
+      button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+      expect(instance.clicks()).toBe(1);
+    });
+
+    it('leaves Enter on an interactive descendant un-prevented and does not activate the row', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      const button = queryAll('button.row-action')[0]!;
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      button.dispatchEvent(enter);
+      expect(instance.lastActivate()).toBeNull();
+      expect(enter.defaultPrevented).toBe(false);
+    });
+
+    it('still emits rowContextMenu for a contextmenu on an interactive descendant', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      const button = queryAll('button.row-action')[1]!;
+      const menu = new MouseEvent('contextmenu', { bubbles: true });
+      button.dispatchEvent(menu);
+      expect(instance.lastContextMenu()?.index).toBe(1);
+      expect(instance.lastContextMenu()?.event).toBe(menu);
+    });
+
+    it('activates the row from the focused row host itself despite interactive cells', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      const row = queryAll('[forTableRow]')[0]!;
+      row.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()?.index).toBe(0);
+
+      instance.lastActivate.set(null);
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      row.dispatchEvent(enter);
+      expect(instance.lastActivate()?.index).toBe(0);
+      expect(enter.defaultPrevented).toBe(true);
+    });
+
+    it('keeps the interactive-descendant guard after a reactive toggle (zoneless)', () => {
+      const { instance, queryAll, fixture } = renderHost(InteractiveDescendantHost);
+      instance.interactive.set(false);
+      fixture.detectChanges();
+      expect(queryAll('[forTableRow]')[0]!.hasAttribute('tabindex')).toBe(false);
+
+      instance.interactive.set(true);
+      fixture.detectChanges();
+      expect(queryAll('[forTableRow]')[0]!.getAttribute('tabindex')).toBe('0');
+
+      queryAll('button.row-action')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+
+      queryAll('[forTableRow]')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()?.index).toBe(0);
     });
   });
 

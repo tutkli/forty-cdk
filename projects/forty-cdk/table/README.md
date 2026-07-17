@@ -593,6 +593,24 @@ unlike a click handler on each cell. A row context menu opened with the keyboard
 or `Shift+F10`) fires on the focused element, so gating both hooks behind `interactiveRows` keeps the
 menu keyboard-reachable.
 
+**Interactive content in a data cell owns its own events.** A per-row action `<button>` (or `<a href>`,
+`<input>`, `<select>`, `<textarea>`, `<summary>`, or `contenteditable` element) in a trailing column is
+the common navigation-list shape — clicking it runs the control, and pressing `Enter` on it keeps its
+native action, without _also_ firing `(rowActivate)`. The row still activates from everywhere else: cell
+text, the gaps between cells, and the focused row itself. `(rowContextMenu)` is the deliberate exception
+— a right-click anywhere on the row, including over an inner control, still offers the row's context
+menu, matching native list UIs.
+
+```html
+<ng-container forColumnDef="actions">
+  <ng-template forHeaderCell>Actions</ng-template>
+  <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+    <!-- Click / Enter here runs the button; the row is not activated. -->
+    <button type="button" (click)="editRow(row)">Edit</button>
+  </ng-template>
+</ng-container>
+```
+
 #### Styling a row from its datum (`[rowClass]` / `[rowAttrs]`)
 
 `[headerClass]` / `[cellClass]` on `[forColumnDef]` style a stamped **cell** by column, but a row's

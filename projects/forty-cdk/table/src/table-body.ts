@@ -35,6 +35,9 @@ import {
   type TableSortDirection,
 } from './table-sort-header';
 
+const INTERACTIVE_DESCENDANT_SELECTOR =
+  'button, a[href], input, select, textarea, summary, [contenteditable="true"]';
+
 /**
  * Payload emitted by {@link ForTableBody.rowActivate} when a data row is
  * activated by a pointer click or the `Enter` key (whole-row navigation lists).
@@ -485,6 +488,16 @@ export class ForTableBody<T = unknown> {
    * Full-span `[forRowDef]` variant rows stay non-interactive. Ignored in `grid`
    * / `treegrid` mode, where roving 2D navigation and cell-entry own the keyboard
    * and whole-row activation would conflict.
+   *
+   * Interactive content inside a data cell owns its own events: a click or
+   * `Enter` originating from a `button`, `a[href]`, `input`, `select`,
+   * `textarea`, `summary`, or `contenteditable` descendant does **not** emit
+   * `rowActivate`, and its native default action is left intact — a trailing
+   * per-row action button keeps working, and `Enter` on it is not
+   * `preventDefault`ed. The row still activates from anywhere else: cell text,
+   * the gaps between cells, or the focused row host itself. `rowContextMenu` is
+   * deliberately unguarded — a right-click anywhere on the row, including over an
+   * inner control, still offers the row's context menu, matching native lists.
    */
   readonly interactiveRows = input(false, { transform: booleanAttribute });
 
@@ -701,10 +714,20 @@ export class ForTableBody<T = unknown> {
   }
 
   #activateRow(row: RenderRow<T>, event: Event): boolean {
-    if (!this.rowsInteractive() || row.variant) {
+    if (!this.rowsInteractive() || row.variant || this.#eventFromInteractiveDescendant(event)) {
       return false;
     }
     this.rowActivate.emit({ row: row.datum, index: row.index, event });
     return true;
+  }
+
+  #eventFromInteractiveDescendant(event: Event): boolean {
+    const target = event.target;
+    const rowEl = event.currentTarget;
+    if (!(target instanceof HTMLElement) || !(rowEl instanceof HTMLElement)) {
+      return false;
+    }
+    const interactive = target.closest(INTERACTIVE_DESCENDANT_SELECTOR);
+    return interactive !== null && interactive !== rowEl && rowEl.contains(interactive);
   }
 }
