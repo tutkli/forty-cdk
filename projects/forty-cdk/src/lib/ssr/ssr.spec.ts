@@ -196,6 +196,7 @@ import {
 } from 'forty-cdk/stepper';
 import {
   ForColumnDef,
+  ForColumnDragPlaceholder,
   ForDataCell,
   ForHeaderCell,
   ForTable,
@@ -529,6 +530,42 @@ class TableBodyRowInteractionFixture {
   readonly rowClass = (row: { id: number }): string => (row.id === 1 ? 'active' : 'idle');
   readonly rowAttrs = (row: { id: number }): Record<string, string | null> =>
     row.id === 1 ? { 'data-open': '' } : {};
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForColumnDragPlaceholder,
+  ],
+  template: `
+    <div forTable mode="grid" aria-label="Reorderable">
+      <for-table-body [rows]="rows" [rowKey]="rowKey">
+        <ng-container forColumnDef="name" sortable reorderable>
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role" reorderable>
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+
+        <ng-template forColumnDragPlaceholder>
+          <span class="col-ghost"></span>
+        </ng-template>
+      </for-table-body>
+    </div>
+  `,
+})
+class TableBodyReorderFixture {
+  readonly rows = [
+    { id: 1, name: 'Ada', role: 'Engineer' },
+    { id: 2, name: 'Grace', role: 'Engineer' },
+  ];
+  readonly rowKey = (row: { id: number }): number => row.id;
 }
 
 @Component({
@@ -1942,6 +1979,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableBodyRowVariantFixture,
   TableBodyPlaceholderVariantFixture,
   TableBodyRowInteractionFixture,
+  TableBodyReorderFixture,
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableBodyVirtualizedFixture,
@@ -2481,6 +2519,18 @@ describe('SSR smoke tests', () => {
     expect(cells.length).toBe(2);
     expect(cells[0]!.getAttribute('aria-disabled')).toBe('true');
     expect(placeholder.querySelector('.skeleton')).not.toBeNull();
+  });
+
+  it('<for-table-body> stamps draggable reorder header cells server-side without a drag preview in <body>', () => {
+    const f = TestBed.createComponent(TableBodyReorderFixture);
+    f.detectChanges();
+    const headerRow = f.nativeElement.querySelector('[forTableHeaderRow]') as HTMLElement;
+    expect(headerRow.hasAttribute('forTableColumnReorder')).toBe(true);
+    const draggables = Array.from(
+      f.nativeElement.querySelectorAll('[forTableHeaderCell][forDraggable]'),
+    ) as HTMLElement[];
+    expect(draggables.map((h) => h.getAttribute('data-column'))).toEqual(['name', 'role']);
+    expect(document.body.querySelector('[data-drag-preview]')).toBeNull();
   });
 
   it('<for-table-body> stamps interactive rows with tabindex + rowClass + rowAttrs server-side', () => {

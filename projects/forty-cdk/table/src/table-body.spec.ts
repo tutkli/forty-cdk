@@ -1,9 +1,17 @@
 import { Component, signal, viewChild } from '@angular/core';
+import { By } from '@angular/platform-browser';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
-import { ForColumnDef, ForDataCell, ForHeaderCell, ForPlaceholderCell } from './column-def';
+import {
+  ForColumnDef,
+  ForColumnDragPlaceholder,
+  ForDataCell,
+  ForHeaderCell,
+  ForPlaceholderCell,
+} from './column-def';
 import { ForRowCell, ForRowDef } from './row-def';
 import { ForTable } from './table';
 import {
@@ -13,6 +21,7 @@ import {
 } from './table-body';
 import { ForTableColumnLabel } from './table-column-label';
 import { type TableResizeDescriptor } from './table-column-resizer';
+import { type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowSelector } from './table-row-selector';
 import { type TableMode, type TableSelectionMode } from './table-context';
 import { type TableSortDescriptor } from './table-sort-header';
@@ -610,6 +619,106 @@ class ResizeOptionsHost {
   readonly autoFit = signal(true);
   readonly fitIncludesHeader = signal(false);
   readonly lastCommit = signal<TableResizeDescriptor | null>(null);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForColumnDragPlaceholder,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Reorderable">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [displayedColumns]="order()"
+        [sort]="sort()"
+        (sortChange)="sort.set($event)"
+        (columnReorder)="onReorder($event)"
+      >
+        <ng-container forColumnDef="name" sortable reorderable>
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role" reorderable>
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="dept" reorderable>
+          <ng-template forHeaderCell>Dept</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+
+        <ng-template forColumnDragPlaceholder>
+          <div class="col-ghost">ghost</div>
+        </ng-template>
+      </for-table-body>
+    </div>
+  `,
+})
+class ReorderBodyHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly order = signal<readonly string[] | null>(null);
+  readonly sort = signal<TableSortDescriptor | null>(null);
+  readonly lastReorder = signal<TableColumnReorderDescriptor | null>(null);
+  onReorder(descriptor: TableColumnReorderDescriptor): void {
+    this.lastReorder.set(descriptor);
+    this.order.set(descriptor.columns);
+  }
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="Mixed reorder">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name" reorderable>
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="dept" reorderable>
+          <ng-template forHeaderCell>Dept</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class MixedReorderHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="Toggle reorder">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey">
+        <ng-container forColumnDef="name" [reorderable]="reorderable()">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class ToggleReorderHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly reorderable = signal(false);
 }
 
 /**
@@ -1443,6 +1552,130 @@ describe('ForTableBody', () => {
       instance.widths.set({ name: 320 });
       fixture.detectChanges();
       expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('320');
+    });
+  });
+
+  describe('column reorder (#1350)', () => {
+    afterEach(() => {
+      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+    });
+
+    function keyboardReorderNameRight(host: HTMLElement): void {
+      const nameHeader = host.querySelector<HTMLElement>(
+        '[forTableHeaderCell][data-column="name"]',
+      )!;
+      nameHeader.focus();
+      for (const key of [' ', 'ArrowRight', ' ']) {
+        nameHeader.dispatchEvent(
+          new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+        );
+      }
+    }
+
+    it('applies [forTableColumnReorder] to the header row when a column is reorderable', () => {
+      const { query } = renderHost(ReorderBodyHost);
+      const reorder = query('[forTableColumnReorder]');
+      expect(reorder).not.toBeNull();
+      expect(reorder?.hasAttribute('forTableHeaderRow')).toBe(true);
+      expect(reorder?.getAttribute('data-orientation')).toBe('horizontal');
+    });
+
+    it('stamps [forDraggable] on every reorderable header cell', () => {
+      const { queryAll } = renderHost(ReorderBodyHost);
+      const draggables = queryAll('[forTableHeaderCell][forDraggable]');
+      expect(draggables.map((h) => h.getAttribute('data-column'))).toEqual([
+        'name',
+        'role',
+        'dept',
+      ]);
+    });
+
+    it('leaves the header row static with no reorderable column', () => {
+      const { query, queryAll } = renderHost(BodyHost);
+      expect(query('[forTableColumnReorder]')).toBeNull();
+      expect(queryAll('[forTableHeaderCell][forDraggable]')).toHaveLength(0);
+    });
+
+    it('does not stamp [forDraggable] on non-reorderable columns in a mixed body', () => {
+      const { query, queryAll } = renderHost(MixedReorderHost);
+      expect(query('[forTableColumnReorder]')).not.toBeNull();
+      const draggables = queryAll('[forTableHeaderCell][forDraggable]');
+      expect(draggables.map((h) => h.getAttribute('data-column'))).toEqual(['name', 'dept']);
+      expect(query('[forTableHeaderCell][data-column="role"]')?.hasAttribute('forDraggable')).toBe(
+        false,
+      );
+    });
+
+    it('re-emits columnReorder with the new column order on a keyboard drop', async () => {
+      const { instance, el, flush } = renderHost(ReorderBodyHost);
+      await flush();
+      keyboardReorderNameRight(el);
+      await flush();
+      expect(instance.lastReorder()).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
+    });
+
+    it('re-stamps the header order after the consumer feeds the new order back (BYO-data loop)', async () => {
+      const { el, queryAll, fixture, flush } = renderHost(ReorderBodyHost);
+      await flush();
+      keyboardReorderNameRight(el);
+      await flush();
+      fixture.detectChanges();
+      expect(queryAll('[forTableHeaderCell]').map((h) => h.getAttribute('data-column'))).toEqual([
+        'role',
+        'name',
+        'dept',
+      ]);
+    });
+
+    it('splits keys on a co-located sortable + reorderable header: Space lifts, Enter sorts (#1343)', async () => {
+      const { instance, query, flush } = renderHost(ReorderBodyHost);
+      await flush();
+      const nameHeader = query('[forTableHeaderCell][data-column="name"]') as HTMLElement;
+
+      nameHeader.focus();
+      nameHeader.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(nameHeader.hasAttribute('data-dragging')).toBe(true);
+      expect(instance.sort()).toBeNull();
+
+      nameHeader.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(nameHeader.hasAttribute('data-dragging')).toBe(false);
+
+      nameHeader.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.sort()).toEqual({ column: 'name', direction: 'ascending' });
+      expect(nameHeader.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('stamps the single shared forColumnDragPlaceholder as a forDragPlaceholder per draggable', () => {
+      const { fixture } = renderHost(ReorderBodyHost);
+      const de = fixture.debugElement;
+      expect(de.queryAllNodes(By.directive(ForColumnDragPlaceholder))).toHaveLength(1);
+      expect(de.queryAllNodes(By.directive(ForDragPlaceholder))).toHaveLength(3);
+    });
+
+    it('stamps no forDragPlaceholder when no forColumnDragPlaceholder is declared', () => {
+      const { fixture } = renderHost(MixedReorderHost);
+      expect(fixture.debugElement.queryAllNodes(By.directive(ForDragPlaceholder))).toHaveLength(0);
+    });
+
+    it('switches the header row to the reorder path when a column becomes reorderable (zoneless)', () => {
+      const { instance, query, fixture } = renderHost(ToggleReorderHost);
+      expect(query('[forTableColumnReorder]')).toBeNull();
+
+      instance.reorderable.set(true);
+      fixture.detectChanges();
+      expect(query('[forTableColumnReorder]')).not.toBeNull();
+      expect(query('[forTableHeaderCell][data-column="name"]')?.hasAttribute('forDraggable')).toBe(
+        true,
+      );
     });
   });
 });

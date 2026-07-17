@@ -5,6 +5,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  contentChild,
   contentChildren,
   DestroyRef,
   type ElementRef,
@@ -16,9 +17,12 @@ import {
   viewChildren,
 } from '@angular/core';
 
-import { ForColumnDef } from './column-def';
+import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
+
+import { ForColumnDef, ForColumnDragPlaceholder } from './column-def';
 import { ForRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
+import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
 import { injectTableContext } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
@@ -158,44 +162,114 @@ interface RenderRow<T> {
     ForTableRowAttrs,
     ForTableSortHeader,
     ForTableColumnResizer,
+    ForTableColumnReorder,
+    ForDraggable,
+    ForDragPlaceholder,
   ],
   template: `
-    <div forTableHeaderRow [style.display]="'grid'" [style.grid-template-columns]="track()">
-      @for (col of orderedColumns(); track col.name()) {
-        <div
-          #headerCell="forTableHeaderCell"
-          forTableHeaderCell
-          [name]="col.name()"
-          [sticky]="col.sticky()"
-          [class]="col.headerClass()"
-          forTableSortHeader
+    <ng-template #headerCellContent let-col let-cell="cell">
+      <ng-container
+        [ngTemplateOutlet]="col.header().template"
+        [ngTemplateOutletInjector]="cell.injector"
+      />
+      @if (col.resizable()) {
+        <button
+          forTableColumnResizer
           [column]="col.name()"
-          [sortable]="col.sortable()"
-          [direction]="directionFor(col.name())"
-          (sortChange)="sortChange.emit($event)"
-        >
-          <ng-container
-            [ngTemplateOutlet]="col.header().template"
-            [ngTemplateOutletInjector]="headerCell.injector"
-          />
-          @if (col.resizable()) {
-            <button
-              forTableColumnResizer
-              [column]="col.name()"
-              [width]="columnWidths()[col.name()]"
-              [min]="col.resizeMin()"
-              [max]="col.resizeMax()"
-              [step]="col.resizeStep()"
-              [autoFit]="col.autoFit()"
-              [fitIncludesHeader]="col.fitIncludesHeader()"
-              [attr.aria-label]="col.resizeAriaLabel()"
-              (widthChange)="onColumnWidthChange(col.name(), $event)"
-              (resizeCommit)="resizeCommit.emit($event)"
-            ></button>
-          }
-        </div>
+          [width]="columnWidths()[col.name()]"
+          [min]="col.resizeMin()"
+          [max]="col.resizeMax()"
+          [step]="col.resizeStep()"
+          [autoFit]="col.autoFit()"
+          [fitIncludesHeader]="col.fitIncludesHeader()"
+          [attr.aria-label]="col.resizeAriaLabel()"
+          (widthChange)="onColumnWidthChange(col.name(), $event)"
+          (resizeCommit)="resizeCommit.emit($event)"
+        ></button>
       }
-    </div>
+    </ng-template>
+
+    @if (hasReorderable()) {
+      <div
+        forTableHeaderRow
+        forTableColumnReorder
+        [style.display]="'grid'"
+        [style.grid-template-columns]="track()"
+        (columnReorder)="columnReorder.emit($event)"
+      >
+        @for (col of orderedColumns(); track col.name()) {
+          @if (col.reorderable()) {
+            <div
+              #headerCell="forTableHeaderCell"
+              forTableHeaderCell
+              [name]="col.name()"
+              [sticky]="col.sticky()"
+              [class]="col.headerClass()"
+              forTableSortHeader
+              [column]="col.name()"
+              [sortable]="col.sortable()"
+              [direction]="directionFor(col.name())"
+              (sortChange)="sortChange.emit($event)"
+              forDraggable
+              [dragData]="col.name()"
+            >
+              <ng-container
+                [ngTemplateOutlet]="headerCellContent"
+                [ngTemplateOutletInjector]="headerCell.injector"
+                [ngTemplateOutletContext]="{ $implicit: col, cell: headerCell }"
+              />
+              @if (columnDragPlaceholder(); as placeholder) {
+                <ng-template forDragPlaceholder>
+                  <ng-container [ngTemplateOutlet]="placeholder.template" />
+                </ng-template>
+              }
+            </div>
+          } @else {
+            <div
+              #headerCell="forTableHeaderCell"
+              forTableHeaderCell
+              [name]="col.name()"
+              [sticky]="col.sticky()"
+              [class]="col.headerClass()"
+              forTableSortHeader
+              [column]="col.name()"
+              [sortable]="col.sortable()"
+              [direction]="directionFor(col.name())"
+              (sortChange)="sortChange.emit($event)"
+            >
+              <ng-container
+                [ngTemplateOutlet]="headerCellContent"
+                [ngTemplateOutletInjector]="headerCell.injector"
+                [ngTemplateOutletContext]="{ $implicit: col, cell: headerCell }"
+              />
+            </div>
+          }
+        }
+      </div>
+    } @else {
+      <div forTableHeaderRow [style.display]="'grid'" [style.grid-template-columns]="track()">
+        @for (col of orderedColumns(); track col.name()) {
+          <div
+            #headerCell="forTableHeaderCell"
+            forTableHeaderCell
+            [name]="col.name()"
+            [sticky]="col.sticky()"
+            [class]="col.headerClass()"
+            forTableSortHeader
+            [column]="col.name()"
+            [sortable]="col.sortable()"
+            [direction]="directionFor(col.name())"
+            (sortChange)="sortChange.emit($event)"
+          >
+            <ng-container
+              [ngTemplateOutlet]="headerCellContent"
+              [ngTemplateOutletInjector]="headerCell.injector"
+              [ngTemplateOutletContext]="{ $implicit: col, cell: headerCell }"
+            />
+          </div>
+        }
+      </div>
+    }
     <div
       role="rowgroup"
       [style.position]="sizerHeight() !== null ? 'relative' : null"
@@ -378,6 +452,16 @@ export class ForTableBody<T = unknown> {
   readonly resizeCommit = output<TableResizeDescriptor>();
 
   /**
+   * Fires once per committed column reorder gesture (pointer drop or keyboard drop),
+   * forwarded unchanged from the internal `[forTableColumnReorder]`. Its `columns`
+   * lists the reorderable columns in their new order (equal to the full displayed
+   * order when every displayed column is `reorderable`); apply it to your own column
+   * order and feed it back through `displayedColumns` (BYO-data). Only present when at
+   * least one `[forColumnDef]` is `reorderable`.
+   */
+  readonly columnReorder = output<TableColumnReorderDescriptor>();
+
+  /**
    * Two-way map of column widths (px), keyed by column `name`. It seeds each
    * `resizable` column's stamped handle `[width]` — so the `role="separator"`
    * handle exposes `aria-valuenow` from the first render and the column's grid
@@ -445,6 +529,9 @@ export class ForTableBody<T = unknown> {
   /** Declared full-span row variants, in DOM order (first match wins per datum). */
   protected readonly rowDefs = contentChildren(ForRowDef);
 
+  /** The optional shared drag placeholder for reorderable columns, or `undefined`. */
+  protected readonly columnDragPlaceholder = contentChild(ForColumnDragPlaceholder);
+
   /** The role a stamped cell carries: `'cell'` in `table` mode, `'gridcell'` otherwise. */
   protected readonly cellRole = computed(() =>
     this.#ctx.mode() === 'table' ? 'cell' : 'gridcell',
@@ -460,6 +547,15 @@ export class ForTableBody<T = unknown> {
     const byName = new Map(defs.map((def) => [def.name(), def]));
     return order.map((name) => byName.get(name)).filter((def): def is ForColumnDef => def != null);
   });
+
+  /**
+   * `true` when at least one displayed column is `reorderable`, switching the stamped
+   * header row to the drag-reorder path (`[forTableColumnReorder]` + per-cell
+   * `[forDraggable]`). A body with no reorderable column keeps the plain header row.
+   */
+  protected readonly hasReorderable = computed(() =>
+    this.orderedColumns().some((col) => col.reorderable()),
+  );
 
   /**
    * The derived `grid-template-columns` track, applied to the header row and every
