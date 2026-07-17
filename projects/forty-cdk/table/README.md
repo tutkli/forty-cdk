@@ -152,10 +152,11 @@ today.
 Add `[forTableVirtualized]` to the same `[forTable]` element and the body switches to windowed rendering
 automatically — it reads the published window off the table context (so `forty-cdk/table` still never
 imports the virtualization core), mounts only the visible slice, sizes its rowgroup to the full scroll
-height, and absolutely positions each row. Pass the **whole dataset** to `[rows]` and the true total to
-`[rowCount]`; there is no `#v` reference, manual sizer, `@for` window, or `[virtualIndex]` binding.
-Fixed-size rows only — set the row height in CSS; measured / dynamic heights stay on the raw
-`[forTableRow]` path.
+height, and absolutely positions each row. Pass the **whole dataset** to `[rows]` — the body derives the
+true total from its length, so `[rowCount]` on `[forTable]` is unnecessary (bind it only for a
+server-known total larger than the loaded rows). There is no `#v` reference, manual sizer, `@for`
+window, or `[virtualIndex]` binding. Fixed-size rows only — set the row height in CSS; measured /
+dynamic heights stay on the raw `[forTableRow]` path.
 
 The `mode="grid"` in the example below is a **convention, not a requirement** of the layer. Windowing is
 driven by the `<div>` structure `<for-table-body>` always renders — not by the ARIA mode — so
@@ -169,7 +170,6 @@ and only the visible slice mounts.
   forTableVirtualized
   mode="grid"
   ariaLabel="People"
-  [rowCount]="rows().length"
   [estimateRowSize]="44"
 >
   <for-table-body [rows]="rows()" [rowKey]="rowKey">
@@ -995,19 +995,19 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 
 ### `ForTable`
 
-| Property            | Type                               | Description                                                                                                                                  |
-| ------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`              | `'table' \| 'grid' \| 'treegrid'`  | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                     |
-| `ariaLabel`         | `string \| null`                   | Reactive accessible label.<br>**Default:** `null`                                                                                            |
-| `dir`               | `'ltr' \| 'rtl' \| null`           | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                       |
-| `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Ignored in `table` mode.<br>**Default:** rendered count                                       |
-| `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count                                         |
-| `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                 |
-| `selectionBehavior` | `'toggle' \| 'replace'`            | How a row click mutates selection (modifier-aware in `replace` mode).<br>**Default:** `'toggle'`                                             |
-| `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                    |
-| `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                          |
-| `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null` |
-| `expanded`          | `model<readonly T[]>([])`          | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                  |
+| Property            | Type                               | Description                                                                                                                                                                                                                                                        |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `mode`              | `'table' \| 'grid' \| 'treegrid'`  | ARIA role emitted on the host.<br>**Default:** `'table'`                                                                                                                                                                                                           |
+| `ariaLabel`         | `string \| null`                   | Reactive accessible label.<br>**Default:** `null`                                                                                                                                                                                                                  |
+| `dir`               | `'ltr' \| 'rtl' \| null`           | Writing direction; resolves ambient when unset.<br>**Default:** `null`                                                                                                                                                                                             |
+| `rowCount`          | `number`                           | True total data-row count for `aria-rowcount`. Optional with `<for-table-body>` (its dataset length is used); bind it only for a server-known total larger than the loaded rows. Ignored in `table` mode.<br>**Default:** body dataset length, else rendered count |
+| `colCount`          | `number`                           | True total column count for `aria-colcount`. Ignored in `table` mode.<br>**Default:** rendered count                                                                                                                                                               |
+| `selectionMode`     | `'none' \| 'single' \| 'multiple'` | Row selection mode.<br>**Default:** `'none'`                                                                                                                                                                                                                       |
+| `selectionBehavior` | `'toggle' \| 'replace'`            | How a row click mutates selection (modifier-aware in `replace` mode).<br>**Default:** `'toggle'`                                                                                                                                                                   |
+| `value`             | `model<readonly T[]>([])`          | Two-way bindable selected row values. Infers the row-value type `T`.<br>**Default:** `[]`                                                                                                                                                                          |
+| `compareWith`       | `(a: T, b: T) => boolean`          | Equality comparator for row values. Override for object rows.<br>**Default:** `===`                                                                                                                                                                                |
+| `selectableValues`  | `readonly T[] \| null`             | Full ordered set of selectable values for total-aware aggregates under virtualization; `null` uses the rendered rows.<br>**Default:** `null`                                                                                                                       |
+| `expanded`          | `model<readonly T[]>([])`          | Two-way bindable open parent-row values for `mode="treegrid"`. Ignored in other modes.<br>**Default:** `[]`                                                                                                                                                        |
 
 ### `ForTableHeaderCell`
 
