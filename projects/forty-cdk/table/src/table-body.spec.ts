@@ -6,9 +6,13 @@ import { ForTableVirtualized } from 'forty-cdk/virtualization';
 import { ForColumnDef, ForDataCell, ForHeaderCell, ForPlaceholderCell } from './column-def';
 import { ForRowCell, ForRowDef } from './row-def';
 import { ForTable } from './table';
-import { ForTableBody } from './table-body';
+import {
+  ForTableBody,
+  type TableRowActivateEvent,
+  type TableRowContextMenuEvent,
+} from './table-body';
 import { ForTableRowSelector } from './table-row-selector';
-import { type TableSelectionMode } from './table-context';
+import { type TableMode, type TableSelectionMode } from './table-context';
 import { type TableSortDescriptor } from './table-sort-header';
 
 interface Row {
@@ -345,6 +349,60 @@ class NarrowHost {
   readonly rows = signal<MixedPerson[]>(buildMixed());
   readonly rowKey = (row: MixedPerson): string => (row.kind === 'data' ? row.name : row.label);
   readonly isSeparator = (row: MixedPerson): row is SeparatorPerson => row.kind === 'separator';
+}
+
+type RowClassFn = (row: GroupedRow, index: number) => string | Record<string, boolean> | undefined;
+type RowAttrsFn = (row: GroupedRow, index: number) => Record<string, string | null> | undefined;
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForRowDef,
+    ForRowCell,
+  ],
+  template: `
+    <div forTable [mode]="mode()" ariaLabel="Nav">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [interactiveRows]="interactive()"
+        [rowClass]="rowClass()"
+        [rowAttrs]="rowAttrs()"
+        (rowActivate)="lastActivate.set($event)"
+        (rowContextMenu)="lastContextMenu.set($event)"
+      >
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+
+        <ng-container forRowDef [when]="isGroup">
+          <ng-template forRowCell [forRowCellRow]="rows()" let-row
+            >Group {{ row.name }}</ng-template
+          >
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class RowInteractionHost {
+  readonly rows = signal<GroupedRow[]>(buildGroupedRows());
+  readonly rowKey = (row: GroupedRow): number => row.id;
+  readonly isGroup = (row: GroupedRow): boolean => row.group === true;
+  readonly mode = signal<TableMode>('table');
+  readonly interactive = signal(true);
+  readonly rowClass = signal<RowClassFn | undefined>(undefined);
+  readonly rowAttrs = signal<RowAttrsFn | undefined>(undefined);
+  readonly lastActivate = signal<TableRowActivateEvent<GroupedRow> | null>(null);
+  readonly lastContextMenu = signal<TableRowContextMenuEvent<GroupedRow> | null>(null);
 }
 
 /** Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a deterministic jsdom test. */
@@ -778,6 +836,152 @@ describe('ForTableBody', () => {
       expect(rows).toHaveLength(2);
       expect(rows[0]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Section A');
       expect(rows[1]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Ada (100)');
+    });
+  });
+
+  describe('row interaction (#1349)', () => {
+    it('makes data rows focusable in table mode, leaving variant rows non-focusable', () => {
+      const { queryAll } = renderHost(RowInteractionHost);
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(3);
+      expect(rows[0]!.hasAttribute('tabindex')).toBe(false);
+      expect(rows[1]!.getAttribute('tabindex')).toBe('0');
+      expect(rows[2]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('emits rowActivate with the datum, index, and event on a pointer click', () => {
+      const { instance, queryAll } = renderHost(RowInteractionHost);
+      const rows = queryAll('[forTableRow]');
+      rows[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      const event = instance.lastActivate();
+      expect(event?.row.name).toBe('Ada');
+      expect(event?.index).toBe(1);
+      expect(event?.event).toBeInstanceOf(MouseEvent);
+    });
+
+    it('emits rowActivate on Enter and prevents the default action', () => {
+      const { instance, queryAll } = renderHost(RowInteractionHost);
+      const rows = queryAll('[forTableRow]');
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      rows[1]!.dispatchEvent(enter);
+      expect(instance.lastActivate()?.index).toBe(1);
+      expect(enter.defaultPrevented).toBe(true);
+    });
+
+    it('emits rowContextMenu with the datum, index, and event on contextmenu', () => {
+      const { instance, queryAll } = renderHost(RowInteractionHost);
+      const rows = queryAll('[forTableRow]');
+      const menu = new MouseEvent('contextmenu', { bubbles: true });
+      rows[2]!.dispatchEvent(menu);
+      const event = instance.lastContextMenu();
+      expect(event?.row.name).toBe('Grace');
+      expect(event?.index).toBe(2);
+      expect(event?.event).toBe(menu);
+    });
+
+    it('does not activate or context-menu variant rows', () => {
+      const { instance, queryAll } = renderHost(RowInteractionHost);
+      const variant = queryAll('[forTableRow]')[0]!;
+      variant.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      variant.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+      expect(instance.lastContextMenu()).toBeNull();
+    });
+
+    it('leaves rows non-interactive when interactiveRows is unset', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.interactive.set(false);
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows[1]!.hasAttribute('tabindex')).toBe(false);
+      rows[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      rows[1]!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+      expect(instance.lastContextMenu()).toBeNull();
+    });
+
+    it('scopes row activation to table mode (inert in grid mode)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows[1]!.hasAttribute('tabindex')).toBe(false);
+      rows[1]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      rows[1]!.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+      expect(instance.lastContextMenu()).toBeNull();
+    });
+
+    it('applies a string rowClass to data and variant rows in table mode', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.rowClass.set((row) => (row.group ? 'group-row' : 'data-row'));
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows[0]!.classList.contains('group-row')).toBe(true);
+      expect(rows[1]!.classList.contains('data-row')).toBe(true);
+      expect(rows[2]!.classList.contains('data-row')).toBe(true);
+    });
+
+    it('applies a record rowClass keyed off the row index', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.rowClass.set((_row, index) => ({ active: index === 1 }));
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows[1]!.classList.contains('active')).toBe(true);
+      expect(rows[2]!.classList.contains('active')).toBe(false);
+    });
+
+    it('applies rowClass in grid mode too (not scoped to table mode)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      instance.rowClass.set((row) => (row.group ? 'group-row' : 'data-row'));
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows[1]!.classList.contains('data-row')).toBe(true);
+    });
+
+    it('applies rowAttrs and removes attributes dropped from a later map', async () => {
+      const { instance, queryAll, fixture, flush } = renderHost(RowInteractionHost);
+      instance.rowAttrs.set(
+        (row): Record<string, string | null> =>
+          row.id === 1 ? { 'data-open': '', 'aria-current': 'true' } : {},
+      );
+      await flush();
+      let rows = queryAll('[forTableRow]');
+      expect(rows[1]!.getAttribute('data-open')).toBe('');
+      expect(rows[1]!.getAttribute('aria-current')).toBe('true');
+      expect(rows[2]!.hasAttribute('data-open')).toBe(false);
+
+      instance.rowAttrs.set(() => ({}));
+      await flush();
+      fixture.detectChanges();
+      rows = queryAll('[forTableRow]');
+      expect(rows[1]!.hasAttribute('data-open')).toBe(false);
+      expect(rows[1]!.hasAttribute('aria-current')).toBe(false);
+    });
+
+    it('applies rowAttrs in grid mode too (not scoped to table mode)', async () => {
+      const { instance, queryAll, flush } = renderHost(RowInteractionHost);
+      instance.mode.set('grid');
+      instance.rowAttrs.set(
+        (row): Record<string, string | null> => (row.id === 1 ? { 'data-open': '' } : {}),
+      );
+      await flush();
+      const rows = queryAll('[forTableRow]');
+      expect(rows[1]!.getAttribute('data-open')).toBe('');
+    });
+
+    it('reacts to a rowClass change without Zone.js (zoneless change detection)', () => {
+      const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
+      instance.rowClass.set(() => 'first');
+      fixture.detectChanges();
+      expect(queryAll('[forTableRow]')[1]!.classList.contains('first')).toBe(true);
+
+      instance.rowClass.set(() => 'second');
+      fixture.detectChanges();
+      const row = queryAll('[forTableRow]')[1]!;
+      expect(row.classList.contains('first')).toBe(false);
+      expect(row.classList.contains('second')).toBe(true);
     });
   });
 });

@@ -92,8 +92,8 @@ each stamped cell's role from the table `mode` and applies no mode guard, so it 
 `mode="table"` and under `mode="grid"` alike. Choose `mode="grid"` for **interactive** cells: roving 2D
 keyboard navigation, cell widgets, and cell-entry. Choose `mode="table"` for **read-only** or
 **whole-row navigation** lists, where `role="grid"` would announce an interaction model the list does
-not have — the row-interaction hooks that make whole-row navigation lists ergonomic are tracked in
-[#1349](https://github.com/tutkli/forty-cdk/issues/1349). `mode="treegrid"` is out of scope: the body
+not have — see [Whole-row navigation lists](#whole-row-navigation-lists) for the row-interaction hooks
+(`interactiveRows` / `rowActivate` / `rowContextMenu`). `mode="treegrid"` is out of scope: the body
 stamps no expansion affordances. The examples below use `mode="grid"`, but each stamps identically under
 `mode="table"` (only the emitted roles change — `role="table"` with `role="cell"` cells).
 
@@ -171,7 +171,8 @@ This is the seam a wrapping design system needs: it can key its stylesheet off c
 `.num-cell` it applies here) instead of scoping CSS to the body's template internals
 (`for-table-body [forTableCell]`, role selectors), and it reaches the cell box itself — padding,
 truncation, alignment, sticky backgrounds — rather than a wrapper node inside the template. Per-datum
-row styling (varying by the row's data, not just the column) stays out of scope here.
+row styling (varying by the row's data, not just the column) is covered by
+[`[rowClass]` / `[rowAttrs]`](#styling-a-row-from-its-datum-rowclass--rowattrs) below.
 
 ### Virtualized rows
 
@@ -311,6 +312,90 @@ protected readonly selectableIds = computed(() =>
   font-weight: 600;
   background: var(--group-header-bg);
 }
+```
+
+### Whole-row navigation lists
+
+Some tables are navigation lists: the **whole row** is the interactive target — click or `Enter` opens
+a detail view, an optional right-click opens a context menu. Because `<for-table-body>` owns the
+`[forTableRow]` element, it exposes the row-level interaction as inputs / outputs rather than letting
+you attach handlers to a row you don't author. Set `interactiveRows` and bind `(rowActivate)` — each
+data row becomes a focusable tab stop (`tabindex="0"`), and a pointer click or `Enter` emits the row
+datum, its dataset index, and the originating event. Bind `(rowContextMenu)` for the right-click / menu
+key. These are **scoped to the default `mode="table"`**: `role="grid"` announces a cell-interaction
+model a navigation list does not have, and whole-row activation would clash with grid roving navigation
+and cell-entry. Full-span `[forRowDef]` variant rows stay non-interactive.
+
+```html
+<div forTable mode="table" ariaLabel="Requests">
+  <for-table-body
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    interactiveRows
+    [rowClass]="rowClass"
+    (rowActivate)="openDetail($event.row)"
+    (rowContextMenu)="openRowMenu($event)"
+  >
+    <ng-container forColumnDef="name">
+      <ng-template forHeaderCell>Name</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    </ng-container>
+    <ng-container forColumnDef="status">
+      <ng-template forHeaderCell>Status</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.status }}</ng-template>
+    </ng-container>
+  </for-table-body>
+</div>
+```
+
+```ts
+protected openDetail(row: Row): void {
+  this.router.navigate(['/requests', row.id]);
+}
+
+protected openRowMenu(event: TableRowContextMenuEvent<Row>): void {
+  event.event.preventDefault();
+  this.menu.openAt(event.event, event.row);
+}
+
+// Highlight the row whose context menu is open (see [rowClass] below).
+protected readonly menuRow = signal<Row | null>(null);
+protected readonly rowClass = (row: Row): Record<string, boolean> => ({
+  'row-menu-open': row.id === this.menuRow()?.id,
+});
+```
+
+The full-row hit target includes the gaps between cells — clicking anywhere on the row activates it,
+unlike a click handler on each cell. A row context menu opened with the keyboard (the context-menu key
+or `Shift+F10`) fires on the focused element, so gating both hooks behind `interactiveRows` keeps the
+menu keyboard-reachable.
+
+#### Styling a row from its datum (`[rowClass]` / `[rowAttrs]`)
+
+`[headerClass]` / `[cellClass]` on `[forColumnDef]` style a stamped **cell** by column, but a row's
+appearance often depends on its **data** — an error row, a dimmed row, the "menu-open" highlight above.
+`[rowClass]` and `[rowAttrs]` are the seam for that: both take a `(row, index) => …` function the body
+calls per stamped row, and — unlike the activation hooks — apply in **every** mode (grid tables need
+per-datum row styling just as much) and to **both** data and variant rows.
+
+- **`[rowClass]`** returns a class string or a `{ className: boolean }` map, applied to the row host.
+- **`[rowAttrs]`** returns an attribute map applied to the row host; a key mapped to `null` (or dropped
+  from a later map) removes that attribute — useful for `aria-current`, `data-*` state, etc.
+
+```html
+<for-table-body [rows]="rows()" [rowKey]="rowKey" [rowClass]="rowClass" [rowAttrs]="rowAttrs">
+  …
+</for-table-body>
+```
+
+```ts
+protected readonly rowClass = (row: Row): Record<string, boolean> => ({
+  'row-error': row.status === 'error',
+  'row-dimmed': row.archived,
+});
+protected readonly rowAttrs = (row: Row): Record<string, string | null> => ({
+  'aria-current': row.id === this.activeId() ? 'true' : null,
+});
 ```
 
 ### Typing a discriminated-union row
