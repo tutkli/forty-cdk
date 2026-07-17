@@ -81,6 +81,16 @@ export interface TableVirtualWindow {
    * rowgroup so the scrollbar spans the whole set while only the window mounts.
    */
   readonly totalSize: Signal<number>;
+  /**
+   * Record a stamped row element's real measured height, so the virtualizer
+   * replaces the `estimateRowSize` estimate with it and re-aligns the offsets of
+   * the rows below. Implemented by `[forTableVirtualized]`; `<for-table-body>`
+   * calls it once per stamped row (browser-only, after render) when its
+   * `measureRows` input is set, so a window mixing row shapes (denser variant
+   * rows, group separators) stays contiguous after scroll. The element must
+   * carry the `data-index` attribute the body stamps.
+   */
+  measureRow(element: HTMLElement): void;
 }
 
 /**

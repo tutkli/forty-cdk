@@ -182,8 +182,9 @@ imports the virtualization core), mounts only the visible slice, sizes its rowgr
 height, and absolutely positions each row. Pass the **whole dataset** to `[rows]` — the body derives the
 true total from its length, so `[rowCount]` on `[forTable]` is unnecessary (bind it only for a
 server-known total larger than the loaded rows). There is no `#v` reference, manual sizer, `@for`
-window, or `[virtualIndex]` binding. Fixed-size rows only — set the row height in CSS; measured /
-dynamic heights stay on the raw `[forTableRow]` path.
+window, or `[virtualIndex]` binding. Rows are fixed-size by default — set the row height in CSS. For
+tables that mix row shapes (denser variant rows, group separators), opt in to
+[measured row heights](#measured-variable-row-heights) with `measureRows`.
 
 The `mode="grid"` in the example below is a **convention, not a requirement** of the layer. Windowing is
 driven by the `<div>` structure `<for-table-body>` always renders — not by the ARIA mode — so
@@ -226,6 +227,36 @@ and only the visible slice mounts.
   height: 44px;
 }
 ```
+
+#### Measured (variable) row heights
+
+The fixed-size fast path positions every row at `estimateRowSize` intervals — perfect when all rows are
+the same height, but a table mixing row shapes (denser variant rows, group separators, summary rows)
+would show overlaps or gaps after scroll, because the estimate is wrong for the odd-sized rows. Set
+`measureRows` to opt in to measured heights: the body measures each stamped row after render and feeds
+its real height back to the virtualizer, which replaces the estimate and re-aligns the offsets of the
+rows below — so the window stays contiguous no matter how the row heights vary.
+
+```html
+<div class="scroll-root" forTable forTableVirtualized mode="grid" ariaLabel="People">
+  <for-table-body [rows]="rows()" [rowKey]="rowKey" measureRows>
+    <ng-container forColumnDef="name">
+      <ng-template forHeaderCell>Name</ng-template>
+      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    </ng-container>
+
+    <ng-container forRowDef [when]="isGroupHeader">
+      <ng-template forRowCell [forRowCellRow]="rows()" let-row>{{ row.group }}</ng-template>
+    </ng-container>
+  </for-table-body>
+</div>
+```
+
+`estimateRowSize` still seeds the initial estimate (keep it close to the common row height for the least
+scroll-position shift on first measure). `measureRows` is off by default and has no effect without
+`[forTableVirtualized]`; a uniform-height table should leave it unset to keep the zero-measurement fast
+path. This mirrors the raw `[forTableRow]` path's `v.measureRow(el)` — the declarative layer just wires
+it up for you.
 
 ### Row variants
 

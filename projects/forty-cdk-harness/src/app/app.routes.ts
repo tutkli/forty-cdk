@@ -303,6 +303,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'for-table-body-measured',
+    loadComponent: () =>
+      import('./fixtures/for-table-body-measured.fixture').then(
+        (m) => m.ForTableBodyMeasuredFixture,
+      ),
+  },
+  {
     path: 'for-table-body-variants-virtualized',
     loadComponent: () =>
       import('./fixtures/for-table-body-variants-virtualized.fixture').then(

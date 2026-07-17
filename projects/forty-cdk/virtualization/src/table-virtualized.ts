@@ -79,7 +79,11 @@ export class ForTableVirtualized {
 
   constructor() {
     this.#ctx.registerVirtualNavigation(this.#navigator);
-    this.#ctx.registerVirtualWindow({ rows: this.virtualRows, totalSize: this.totalSize });
+    this.#ctx.registerVirtualWindow({
+      rows: this.virtualRows,
+      totalSize: this.totalSize,
+      measureRow: (element) => this.measureRow(element),
+    });
     inject(DestroyRef).onDestroy(() => {
       this.#ctx.registerVirtualNavigation(null);
       this.#ctx.registerVirtualWindow(null);
