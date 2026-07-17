@@ -201,6 +201,26 @@ rows — and variant rows are non-selectable. They still occupy a row slot and c
 hook the spanning cell emits. Row variants compose with `[forTableVirtualized]` — a matched row inside
 the window renders full-span and positioned like any other.
 
+Three requirements when a table mixes row variants with selection or virtualization:
+
+- **`rowKey` must return a defined, unique key for variant data too.** The body tracks each rendered
+  row by its `rowKey` identity, falling back to the dataset index only when `rowKey` is unset or returns
+  `undefined`. A variant datum that yields `undefined` therefore tracks by index, which can collide with
+  a numeric identity from a regular row and trip Angular's `NG0955` duplicate-track-key error. Give
+  group-header / separator data their own stable keys — the simplest scheme is a **negative-id**
+  namespace reserved for variant data, disjoint from the positive ids the real rows carry (see the `ts`
+  block below).
+- **Exclude variant-matched data from `[selectableValues]`.** The
+  [total-aware select-all pattern](#total-aware-aggregates-under-virtualization-selectablevalues) passes
+  the whole dataset as `[selectableValues]`. Variant rows are non-selectable, so leaving their data in
+  makes them phantom selectable values: the select-all tri-state never reaches `'all'` and `[(value)]`
+  accumulates values no row reflects. Filter them out with the same predicate the `[forRowDef]` matches
+  on (e.g. `rows().filter((r) => !isGroupHeader(r))`).
+- **Keep the `[forRowCell]` template presentational.** Its content spans the row but stays out of the
+  grid's single tab stop, so it must contain no interactive content (buttons, links, form controls —
+  they become keyboard-unreachable) and no `[forTableCell]` (it would register a cell handle on the
+  variant row and make the roving grid ragged).
+
 ```html
 <div forTable mode="grid" ariaLabel="Grouped people">
   <for-table-body [rows]="rows()" [rowKey]="rowKey">
@@ -218,6 +238,28 @@ the window renders full-span and positioned like any other.
     </ng-container>
   </for-table-body>
 </div>
+```
+
+```ts
+interface Row {
+  id: number;
+  name?: string;
+  group?: string;
+  header?: boolean;
+}
+
+protected readonly isGroupHeader = (row: Row): boolean => row.header === true;
+
+// Group-header data carry negative ids, disjoint from the real rows' positive ids,
+// so every datum — variant or not — has a defined, unique tracking key.
+protected readonly rowKey = (row: Row): number => row.id;
+
+// Total-aware select-all excludes the non-selectable variant rows.
+protected readonly selectableIds = computed(() =>
+  this.rows()
+    .filter((r) => !this.isGroupHeader(r))
+    .map((r) => r.id),
+);
 ```
 
 ```css
