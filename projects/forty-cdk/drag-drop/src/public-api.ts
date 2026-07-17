@@ -8,10 +8,12 @@ export { ForDropListGroup, FOR_DROP_LIST_GROUP } from './drop-list-group';
 export {
   FOR_DRAG_DROP_CONTEXT,
   FOR_DRAGGABLE_CONTEXT,
+  FOR_DRAGGABLE_LIFT_GUARD,
   FOR_DROP_LIST_ROVING_DELEGATE,
   type ForDropListContext,
   type ForDropListRovingDelegate,
   type ForDraggableContext,
+  type ForDraggableLiftGuard,
   type ForDraggableHandle,
   type ForDragDropEvent,
   type ForDragStartEvent,

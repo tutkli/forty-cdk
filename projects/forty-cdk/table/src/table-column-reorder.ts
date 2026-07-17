@@ -2,14 +2,16 @@ import { DestroyRef, Directive, ElementRef, inject, output, PLATFORM_ID } from '
 import { isPlatformBrowser } from '@angular/common';
 
 import {
+  FOR_DRAGGABLE_LIFT_GUARD,
   FOR_DROP_LIST_DEFAULT_ORIENTATION,
   FOR_DROP_LIST_ROVING_DELEGATE,
   ForDropList,
   type ForDragDropEvent,
+  type ForDraggableLiftGuard,
   type ForDropListRovingDelegate,
   moveItemInArray,
 } from 'forty-cdk/drag-drop';
-import { injectTableContext } from './table-context';
+import { hostHasSortActivation, injectTableContext } from './table-context';
 
 /** Payload of `columnReorder`: the move's indices and the resulting column-name order. */
 export interface TableColumnReorderDescriptor {
@@ -39,9 +41,16 @@ export interface TableColumnReorderDescriptor {
  * In `mode="grid"` / `mode="treegrid"` the draggable header cells join the table's composite
  * roving grid as its first row, so a sortable + column-reorderable grid keeps the **single
  * tab stop** the WAI-ARIA Data Grid pattern calls for: `Tab` enters the grid once, Arrow keys
- * cross between header and body, and Space / Enter on a header cell still lifts it for keyboard
- * reordering. It hands its drop-list roving to the grid via `FOR_DROP_LIST_ROVING_DELEGATE` and
- * routes idle header navigation through the table's grid keyboard handler.
+ * cross between header and body, and `Space` on a header cell lifts it for keyboard reordering.
+ * It hands its drop-list roving to the grid via `FOR_DROP_LIST_ROVING_DELEGATE` and routes idle
+ * header navigation through the table's grid keyboard handler.
+ *
+ * When a header cell is both sortable (`[forTableSortHeader]`) and reorderable, the two
+ * keyboard activations split along WAI-ARIA lines so a single key never both sorts and lifts:
+ * `Space` lifts the column, `Enter` toggles the sort. The split is enforced via a
+ * `FOR_DRAGGABLE_LIFT_GUARD` that defers `Enter` to the sort header on cells carrying the
+ * `data-sortable` marker — detected by DOM marker, so `forty-cdk/drag-drop` needs no table
+ * import. A reorder-only header (no sort header) still lifts on both `Enter` and `Space`.
  *
  * @example
  * ```html
@@ -68,6 +77,12 @@ export interface TableColumnReorderDescriptor {
             ctx.headerParticipatesInRoving() ? ctx.isCellHighlighted(el) : null,
         };
       },
+    },
+    {
+      provide: FOR_DRAGGABLE_LIFT_GUARD,
+      useValue: {
+        canLiftOnKey: (event, host) => !(event.key === 'Enter' && hostHasSortActivation(host)),
+      } satisfies ForDraggableLiftGuard,
     },
   ],
   hostDirectives: [

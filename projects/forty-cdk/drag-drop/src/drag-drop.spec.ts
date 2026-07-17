@@ -19,8 +19,10 @@ import { ForDropList } from './drop-list';
 import { ForDropListGroup } from './drop-list-group';
 import { moveItemInArray } from './move-item-in-array';
 import {
+  FOR_DRAGGABLE_LIFT_GUARD,
   FOR_DROP_LIST_ROVING_DELEGATE,
   type ForDragDropEvent,
+  type ForDraggableLiftGuard,
   type ForDropListRovingDelegate,
 } from './drag-drop-context';
 
@@ -252,6 +254,26 @@ class DelegateDefersHost {}
 })
 class DelegateHighlightHost {}
 
+@Component({
+  imports: [...DND_IMPORTS],
+  template: `
+    <ul forDropList>
+      <li forDraggable [dragData]="1" data-test-id="1" data-no-enter>Alpha</li>
+      <li forDraggable [dragData]="2" data-test-id="2">Beta</li>
+    </ul>
+  `,
+  providers: [
+    {
+      provide: FOR_DRAGGABLE_LIFT_GUARD,
+      useValue: {
+        canLiftOnKey: (event: KeyboardEvent, host: HTMLElement) =>
+          !(event.key === 'Enter' && host.hasAttribute('data-no-enter')),
+      } satisfies ForDraggableLiftGuard,
+    },
+  ],
+})
+class LiftGuardHost {}
+
 function itemEl(host: HTMLElement, testId: string | number): HTMLElement {
   return host.querySelector<HTMLElement>(`[data-test-id="${testId}"]`)!;
 }
@@ -369,6 +391,37 @@ describe('ForDropList + ForDraggable', () => {
       await flush(fixture);
       expect(first.getAttribute('data-highlighted')).toBe('');
       expect(itemEl(el, 2).hasAttribute('data-highlighted')).toBe(false);
+    });
+  });
+
+  describe('keyboard lift guard (FOR_DRAGGABLE_LIFT_GUARD)', () => {
+    it('skips the lift for a key the guard rejects, leaving it to a co-located affordance', () => {
+      const { el, fixture } = renderHost(LiftGuardHost);
+      const guarded = itemEl(el, 1);
+      guarded.focus();
+      const event = pressKey(guarded, 'Enter');
+      fixture.detectChanges();
+      expect(guarded.hasAttribute('data-dragging')).toBe(false);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('still lifts on a key the guard allows', () => {
+      const { el, fixture } = renderHost(LiftGuardHost);
+      const guarded = itemEl(el, 1);
+      guarded.focus();
+      const event = pressKey(guarded, ' ');
+      fixture.detectChanges();
+      expect(guarded.getAttribute('data-dragging')).toBe('');
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('applies the guard per item host, so an unguarded item still lifts on the rejected key', () => {
+      const { el, fixture } = renderHost(LiftGuardHost);
+      const free = itemEl(el, 2);
+      free.focus();
+      pressKey(free, 'Enter');
+      fixture.detectChanges();
+      expect(free.getAttribute('data-dragging')).toBe('');
     });
   });
 

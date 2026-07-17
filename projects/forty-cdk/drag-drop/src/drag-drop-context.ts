@@ -108,6 +108,30 @@ export const FOR_DROP_LIST_ROVING_DELEGATE = new InjectionToken<ForDropListRovin
   'FOR_DROP_LIST_ROVING_DELEGATE',
 );
 
+/**
+ * Optional DI seam, provided on an ancestor of the draggables, that restricts
+ * which keys may start a keyboard lift on a `[forDraggable]`. When present,
+ * `ForDraggable` consults it before lifting on Enter / Space and skips the lift
+ * for any key the guard rejects, leaving that key to a co-located affordance
+ * that owns it. Absent for a plain `[forDropList]`, where both keys lift.
+ *
+ * `ForTableColumnReorder` provides one so a header cell that is both sortable and
+ * column-reorderable splits the two keyboard activations along WAI-ARIA lines —
+ * `Space` lifts the column for reordering, `Enter` is left to the sort header —
+ * detecting the co-location by DOM marker rather than importing any table symbol.
+ */
+export interface ForDraggableLiftGuard {
+  /**
+   * Whether a keyboard `Enter` / `Space` on `host` may start a lift. Return
+   * `false` to defer that key to a co-located affordance; `true` to lift.
+   */
+  canLiftOnKey(event: KeyboardEvent, host: HTMLElement): boolean;
+}
+
+export const FOR_DRAGGABLE_LIFT_GUARD = new InjectionToken<ForDraggableLiftGuard>(
+  'FOR_DRAGGABLE_LIFT_GUARD',
+);
+
 export function injectDropListContext(piece: string): ForDropListContext {
   const ctx = inject(FOR_DRAG_DROP_CONTEXT, { optional: true });
   if (!ctx) {

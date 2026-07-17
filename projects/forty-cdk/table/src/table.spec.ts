@@ -2244,6 +2244,95 @@ describe('ForTable', () => {
     });
   });
 
+  describe('co-located sort + reorder keyboard split (#1343)', () => {
+    const headerCell = (el: HTMLElement, col: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
+
+    it('Space on a co-located sortable + reorderable header lifts it for reordering and does not sort', async () => {
+      const { el, instance, flush } = renderHost(SortReorderTableHost);
+      const h = headerCell(el, 'name');
+      h.focus();
+      const ev = press(h, ' ');
+      await flush();
+      expect(h.getAttribute('data-dragging')).toBe('');
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+      expect(instance.lastSort).toBeNull();
+      expect(ev.defaultPrevented).toBe(true);
+    });
+
+    it('Enter on a co-located sortable + reorderable header toggles the sort and does not lift', async () => {
+      const { el, instance, flush } = renderHost(SortReorderTableHost);
+      const h = headerCell(el, 'name');
+      h.focus();
+      const ev = press(h, 'Enter');
+      await flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+      expect(h.hasAttribute('data-dragging')).toBe(false);
+      expect(ev.defaultPrevented).toBe(true);
+    });
+
+    it('Enter while a keyboard drag is in progress drops the column and does not sort', async () => {
+      const { el, instance, flush } = renderHost(SortReorderTableHost);
+      const h = headerCell(el, 'name');
+      h.focus();
+      press(h, ' ');
+      await flush();
+      expect(h.getAttribute('data-dragging')).toBe('');
+      press(h, 'Enter');
+      await flush();
+      expect(h.hasAttribute('data-dragging')).toBe(false);
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+      expect(instance.lastSort).toBeNull();
+    });
+
+    it('a sort-only header (no draggable) still sorts on both Enter and Space', async () => {
+      const { el, instance, flush } = renderHost(SortTableHost);
+      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+      h.focus();
+      press(h, ' ');
+      await flush();
+      expect(h.getAttribute('aria-sort')).toBe('ascending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+
+      press(h, 'Enter');
+      await flush();
+      expect(h.getAttribute('aria-sort')).toBe('descending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
+    });
+
+    it('a reorder-only header (no sort header) still lifts on both Enter and Space', async () => {
+      const { el, flush } = renderHost(ReorderTableHost);
+      const nameCell = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+
+      nameCell.focus();
+      press(nameCell, 'Enter');
+      await flush();
+      expect(nameCell.getAttribute('data-dragging')).toBe('');
+
+      press(nameCell, 'Escape');
+      await flush();
+      expect(nameCell.hasAttribute('data-dragging')).toBe(false);
+
+      press(nameCell, ' ');
+      await flush();
+      expect(nameCell.getAttribute('data-dragging')).toBe('');
+    });
+
+    it('splits the keys without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SortReorderTableHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const h = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      h.focus();
+      press(h, ' ');
+      fixture.detectChanges();
+      expect(h.getAttribute('data-dragging')).toBe('');
+      expect(h.hasAttribute('aria-sort')).toBe(false);
+    });
+  });
+
   describe('sort header in grid mode', () => {
     it('emits no tabindex in grid mode: the header cell owns the composite tab stop', () => {
       const { el } = renderHost(GridSortHost);

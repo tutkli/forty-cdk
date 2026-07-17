@@ -27,6 +27,7 @@ import {
 } from 'forty-cdk/core';
 import {
   FOR_DRAGGABLE_CONTEXT,
+  FOR_DRAGGABLE_LIFT_GUARD,
   injectDropListContext,
   type ForDragEndEvent,
   type ForDragStartEvent,
@@ -70,6 +71,7 @@ export class ForDraggable implements ForDraggableContext {
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly #document = inject(DOCUMENT);
   readonly #vcr = inject(ViewContainerRef);
+  readonly #liftGuard = inject(FOR_DRAGGABLE_LIFT_GUARD, { optional: true });
   protected readonly previewTpl = contentChild(ForDragPreview);
   protected readonly placeholderTpl = contentChild(ForDragPlaceholder);
   #placeholderView: EmbeddedViewRef<unknown> | null = null;
@@ -284,6 +286,9 @@ export class ForDraggable implements ForDraggableContext {
       return;
     }
     if (event.key === ' ' || event.key === 'Enter') {
+      if (this.#liftGuard && !this.#liftGuard.canLiftOnKey(event, host)) {
+        return;
+      }
       event.preventDefault();
       const index = this.#list.lift(host);
       if (index >= 0) {
