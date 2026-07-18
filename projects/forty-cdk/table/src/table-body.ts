@@ -20,6 +20,7 @@ import {
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
 import { ForColumnDef, ForColumnDragPlaceholder } from './column-def';
+import { eventFromInteractiveDescendant } from './interactive-descendant';
 import { ForRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
@@ -34,9 +35,6 @@ import {
   type TableSortDescriptor,
   type TableSortDirection,
 } from './table-sort-header';
-
-const INTERACTIVE_DESCENDANT_SELECTOR =
-  'button, a[href], input, select, textarea, summary, [contenteditable="true"]';
 
 /**
  * Payload emitted by {@link ForTableBody.rowActivate} when a data row is
@@ -714,20 +712,10 @@ export class ForTableBody<T = unknown> {
   }
 
   #activateRow(row: RenderRow<T>, event: Event): boolean {
-    if (!this.rowsInteractive() || row.variant || this.#eventFromInteractiveDescendant(event)) {
+    if (!this.rowsInteractive() || row.variant || eventFromInteractiveDescendant(event)) {
       return false;
     }
     this.rowActivate.emit({ row: row.datum, index: row.index, event });
     return true;
-  }
-
-  #eventFromInteractiveDescendant(event: Event): boolean {
-    const target = event.target;
-    const rowEl = event.currentTarget;
-    if (!(target instanceof HTMLElement) || !(rowEl instanceof HTMLElement)) {
-      return false;
-    }
-    const interactive = target.closest(INTERACTIVE_DESCENDANT_SELECTOR);
-    return interactive !== null && interactive !== rowEl && rowEl.contains(interactive);
   }
 }
