@@ -832,6 +832,8 @@ Controls how a row click (on the row or on a cell) mutates the selection:
 - `'toggle'` (default) — clicking a row always flips its selected state.
 - `'replace'` — clicking a row replaces the selection with that single row. Modifier keys in `'multiple'` mode: **Ctrl/Cmd-click** toggles the clicked row without clearing others; **Shift-click** extends a range from the last anchor to the clicked row.
 
+**Interactive content in a data cell owns its click.** A click on a per-row action `<button>` (or an `<a href>`, `<input>`, `<select>`, `<textarea>`, `<summary>`, or `contenteditable` descendant) runs that control **without also** changing the row's selection — so a selectable table with a trailing actions column behaves as expected, and you never have to `stopPropagation()` on every control. A plain click anywhere else on the row — cell text, the gaps between cells, the row itself — still selects, including the `Ctrl`/`Cmd`/`Shift` modifier behaviour above. `[forTableRowSelector]` is unaffected. This mirrors the whole-row-activation guard in [Whole-row navigation lists](#whole-row-navigation-lists).
+
 ### `[(value)]`
 
 A two-way-bindable `model<readonly T[]>()`. `ForTable<T>` infers the row-value type `T` from this binding (`unknown` when unbound), so `compareWith`, `selectableValues`, and the selection methods specialize accordingly. Single mode keeps 0–1 entries. The implicit `valueChange` output fires only on internal mutations (selector / row click / Space / select-all). Consumer writes to the bound signal are reflected on the next change-detection cycle.
