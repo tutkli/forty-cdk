@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-07-18
+
+### Added
+
+- **Table (declarative layer)** — declarative **column reordering** through `<for-table-body>`: mark a
+  column `reorderable` on its `ForColumnDef`, drop a `[forColumnDragPlaceholder]` template, and the body
+  wires the drag-reorder header (single grid tab stop, inherited keyboard lift) and emits `(columnReorder)`.
+- **Table (declarative layer)** — **per-column resize** options forwarded from each `ForColumnDef`
+  (`resizeMin` / `resizeMax` / `resizeStep`, `autoFit`, `fitIncludesHeader`), plus a `[(columnWidths)]`
+  two-way model on the body that seeds the resize handles and collects width changes in one serializable
+  binding.
+- **Table (declarative layer)** — **column-shaped placeholder rows**: a `placeholderCells` flag on
+  `[forRowDef]` stamps one disabled skeleton cell per column (each from the def's `[forPlaceholderCell]`),
+  keeping the grid rectangular and stepped over by roving navigation — for interleaved / trailing loading
+  states, alongside the existing full-span variant rows.
+- **Table (declarative layer)** — **variable row heights** in the virtualized body via a `measureRows`
+  input; the `TableVirtualWindow` seam gains `measureRow(el)` so measured heights feed the virtualizer
+  instead of a fixed row size.
+- **Table (declarative layer)** — **whole-row interaction hooks** for navigation-list tables: an
+  `interactiveRows` opt-in surfaces `(rowActivate)` / `(rowContextMenu)`, and `[rowClass]` / `[rowAttrs]`
+  apply per-datum styling and attributes to the stamped rows. Interactive descendants (a per-row actions
+  button or link) own their own events and do not trigger row activation.
+- **Table (declarative layer)** — cell-template **type narrowing** and styling seams: `[forRowCellWhen]` /
+  `[forDataCellUnless]` type-guard inputs narrow the `let-row` context, and `headerClass` / `cellClass` on
+  `ForColumnDef` add a class to the stamped header and data cells.
+- **Table (declarative layer)** — `<for-table-body>` registers its own `rows().length`, so the table's
+  `rowCount` is derived automatically; the root `[rowCount]` becomes an optional override instead of a
+  required duplicate binding.
+
+### Fixed
+
+- **Table** — a click on consumer-placed interactive content (a per-row action `<button>`, an `<a href>`,
+  an `<input>`) inside a selectable row's data cell no longer also toggles the row's selection; the click's
+  origin is checked so the inner control owns its event.
+
 ## [0.10.0] - 2026-07-17
 
 ### Added
@@ -359,7 +394,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/tutkli/forty-cdk/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tutkli/forty-cdk/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/tutkli/forty-cdk/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/tutkli/forty-cdk/compare/v0.7.0...v0.8.0
