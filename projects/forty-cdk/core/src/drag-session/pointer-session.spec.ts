@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 
 import { createPointerDragSession, type PointerDragSession } from './pointer-session';
+import { DismissableLayer, DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
 
 function pointer(type: string, x: number, y: number, button = 0, pointerId = 1): PointerEvent {
   return new PointerEvent(type, {
@@ -483,6 +484,101 @@ describe('createPointerDragSession', () => {
 
     document.dispatchEvent(pointer('pointerup', 110, 100));
     expect(rec.commits).toBe(1);
+  });
+
+  it('an armed-drag Escape consumes the event so an ancestor keydown listener never sees it', () => {
+    const { host, session, rec } = setup({ cancelOnEscape: true });
+    track(host, session);
+
+    let ancestorSaw = false;
+    const ancestor = (): void => {
+      ancestorSaw = true;
+    };
+    document.addEventListener('keydown', ancestor);
+    teardown.push(() => document.removeEventListener('keydown', ancestor));
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    host.dispatchEvent(escape);
+
+    expect(rec.cancels).toBe(1);
+    expect(escape.defaultPrevented).toBe(true);
+    expect(ancestorSaw).toBe(false);
+  });
+
+  it('leaves Escape untouched before the drag arms, so a plain Escape still reaches ancestors', () => {
+    const { host, session, rec } = setup({ cancelOnEscape: true });
+    track(host, session);
+
+    let ancestorSaw = false;
+    const ancestor = (): void => {
+      ancestorSaw = true;
+    };
+    document.addEventListener('keydown', ancestor);
+    teardown.push(() => document.removeEventListener('keydown', ancestor));
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    host.dispatchEvent(escape);
+
+    expect(rec.cancels).toBe(0);
+    expect(escape.defaultPrevented).toBe(false);
+    expect(ancestorSaw).toBe(true);
+  });
+
+  it('an armed-drag Escape cancels the drag without dismissing an enclosing dismissable layer', () => {
+    const stack = TestBed.inject(DismissableLayerStack);
+    const overlayHost = document.createElement('div');
+    document.body.appendChild(overlayHost);
+    const layer = new DismissableLayer(overlayHost, stack);
+    let dismissed = 0;
+    layer.activate({ onDismiss: () => dismissed++ });
+
+    const host = document.createElement('div');
+    overlayHost.appendChild(host);
+    const rec: Recorder = { lifts: 0, moves: 0, commits: 0, cancels: 0 };
+    const session = createPointerDragSession({
+      host,
+      document,
+      armThreshold: 5,
+      cancelOnEscape: true,
+      canStart: () => true,
+      onLift: () => {
+        rec.lifts++;
+      },
+      onMove: () => {
+        rec.moves++;
+      },
+      onCommit: () => {
+        rec.commits++;
+      },
+      onCancel: () => {
+        rec.cancels++;
+      },
+    });
+    teardown.push(() => {
+      session.destroy();
+      layer.deactivate();
+      overlayHost.remove();
+    });
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+
+    host.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    expect(rec.cancels).toBe(1);
+    expect(dismissed).toBe(0);
+
+    host.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    expect(dismissed).toBe(1);
   });
 
   it('lift → move → commit still works with capturePointer set (capture no-ops in jsdom)', () => {

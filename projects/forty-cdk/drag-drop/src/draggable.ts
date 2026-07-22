@@ -268,6 +268,7 @@ export class ForDraggable implements ForDraggableContext {
       }
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         this.#list.cancel();
         this.dragEnd.emit({ dropped: false });
         return;

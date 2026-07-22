@@ -35,7 +35,12 @@
  * Escape: with `cancelOnEscape`, a document `keydown` listener (alive only while a press is
  * tracked) aborts an armed drag on `Escape` — it tears the session down and fires `onCancel`,
  * just like a `pointercancel`. It is opt-in so callers that run their own keyboard-drag mode and
- * own the `Escape` handling themselves (e.g. `ForTreeNodeDrag`) stay unaffected.
+ * own the `Escape` handling themselves (e.g. `ForTreeNodeDrag`) stay unaffected. The listener is
+ * registered in the **capture** phase and, while armed, consumes the event (`preventDefault` +
+ * `stopPropagation`) so the `Escape` that cancels a drag inside an overlay never reaches the
+ * enclosing dismissable layer's bubble-phase `keydown` handler — cancelling the drag no longer
+ * also dismisses the surrounding dialog / popover / drawer. A non-armed press stays transparent:
+ * the event is left untouched so a plain `Escape` still dismisses the overlay as usual.
  *
  * Click suppression: when a `pointerup` ends an armed drag, the next capture-phase `click`
  * on the document is swallowed (`stopPropagation` + `preventDefault`). The listener removes
@@ -152,7 +157,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
       onDocumentCancel = null;
     }
     if (onDocumentKeydown) {
-      document.removeEventListener('keydown', onDocumentKeydown);
+      document.removeEventListener('keydown', onDocumentKeydown, { capture: true });
       onDocumentKeydown = null;
     }
   };
@@ -282,11 +287,13 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     if (opts.cancelOnEscape) {
       const escape = (event: KeyboardEvent): void => {
         if (armed && event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
           abort();
         }
       };
       onDocumentKeydown = escape;
-      document.addEventListener('keydown', escape);
+      document.addEventListener('keydown', escape, { capture: true });
     }
   };
 
