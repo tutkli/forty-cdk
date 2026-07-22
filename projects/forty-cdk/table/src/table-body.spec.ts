@@ -467,6 +467,9 @@ class RowInteractionHost {
           <ng-template forHeaderCell>Actions</ng-template>
           <ng-template forDataCell [forDataCellRow]="rows()" let-row>
             <button type="button" class="row-action" (click)="clicks.set(clicks() + 1)">
+              <svg class="row-action-icon" viewBox="0 0 16 16">
+                <path class="row-action-glyph" d="M0 0h16v16H0z" />
+              </svg>
               Edit {{ row.name }}
             </button>
           </ng-template>
@@ -1504,6 +1507,14 @@ describe('ForTableBody', () => {
       const { instance, queryAll } = renderHost(InteractiveDescendantHost);
       const button = queryAll('button.row-action')[0]!;
       button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+      expect(instance.clicks()).toBe(1);
+    });
+
+    it('does not activate the row when a click originates from an SVG glyph inside the button', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      const glyph = queryAll('path.row-action-glyph')[0]!;
+      glyph.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       expect(instance.lastActivate()).toBeNull();
       expect(instance.clicks()).toBe(1);
     });

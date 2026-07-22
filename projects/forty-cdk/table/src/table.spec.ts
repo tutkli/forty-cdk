@@ -590,6 +590,9 @@ class SelectionTableHost {
                 [attr.data-testid]="'action-' + row.id"
                 (click)="clicks.set(clicks() + 1)"
               >
+                <svg viewBox="0 0 16 16">
+                  <path [attr.data-testid]="'glyph-' + row.id" d="M0 0h16v16H0z" />
+                </svg>
                 Edit
               </button>
               <input [attr.data-testid]="'field-' + row.id" />
@@ -2021,6 +2024,19 @@ describe('ForTable', () => {
       const button = el.querySelector<HTMLElement>('[data-testid="action-1"]')!;
 
       button.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+      expect(instance.clicks()).toBe(1);
+    });
+
+    it('does not toggle row selection when a click originates from an SVG glyph inside the button', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const glyph = el.querySelector<Element>('[data-testid="glyph-1"]')!;
+
+      glyph.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       await flush();
 
       expect(row1.getAttribute('aria-selected')).toBe('false');
