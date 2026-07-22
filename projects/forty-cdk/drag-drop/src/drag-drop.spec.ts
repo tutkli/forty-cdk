@@ -649,6 +649,35 @@ describe('ForDropList + ForDraggable', () => {
       expect(listEl(el).hasAttribute('data-drag-over')).toBe(false);
     });
 
+    it('Escape while keyboard-lifted does not propagate to an enclosing dismissable layer', () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      const comp = fixture.componentInstance;
+      const item1 = itemEl(el, 1);
+
+      let ancestorSaw = false;
+      const ancestor = (): void => {
+        ancestorSaw = true;
+      };
+      document.addEventListener('keydown', ancestor);
+      try {
+        item1.focus();
+        pressKey(item1, ' ');
+        fixture.detectChanges();
+        expect(item1.hasAttribute('data-dragging')).toBe(true);
+
+        ancestorSaw = false;
+        const escape = pressKey(item1, 'Escape');
+        fixture.detectChanges();
+
+        expect(comp.lastDrop()).toBeNull();
+        expect(item1.hasAttribute('data-dragging')).toBe(false);
+        expect(escape.defaultPrevented).toBe(true);
+        expect(ancestorSaw).toBe(false);
+      } finally {
+        document.removeEventListener('keydown', ancestor);
+      }
+    });
+
     it('blurring a lifted item cancels the drag — no dragDrop, state cleared', () => {
       const { el, fixture } = renderHost(SingleListHost);
       const comp = fixture.componentInstance;
