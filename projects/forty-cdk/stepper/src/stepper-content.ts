@@ -69,7 +69,6 @@ export class ForStepperContent {
       handle,
       (h) => this.ctx.registerContent(h),
       (h) => this.ctx.unregisterContent(h),
-      'afterNextRender',
     );
   }
 }

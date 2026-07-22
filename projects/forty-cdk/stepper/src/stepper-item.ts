@@ -159,7 +159,6 @@ export class ForStepperItem implements ForStepperItemContext, ForStepperItemHand
       this,
       (h) => this.ctx.registerItem(h),
       (h) => this.ctx.unregisterItem(h),
-      'afterNextRender',
     );
   }
 

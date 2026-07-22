@@ -89,7 +89,6 @@ export class ForStepperTrigger {
       handle,
       (h) => this.ctx.registerTrigger(h),
       (h) => this.ctx.unregisterTrigger(h),
-      'afterNextRender',
     );
   }
 

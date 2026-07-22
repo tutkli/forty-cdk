@@ -1636,6 +1636,37 @@ class StepperFixture {}
 class StepperCompletedFixture {}
 
 @Component({
+  imports: [
+    ForStepper,
+    ForStepperList,
+    ForStepperItem,
+    ForStepperTrigger,
+    ForStepperContent,
+    ForStepperCompletedContent,
+    ForStepperProgress,
+    ForStepperNext,
+  ],
+  template: `
+    <div forStepper [selectedIndex]="0">
+      <div forStepperProgress ariaLabel="Checkout progress"></div>
+      <ol forStepperList ariaLabel="Checkout">
+        <li forStepperItem>
+          <button forStepperTrigger>One</button>
+        </li>
+        <li forStepperItem>
+          <button forStepperTrigger>Two</button>
+        </li>
+      </ol>
+      <section forStepperContent>One body</section>
+      <section forStepperContent>Two body</section>
+      <section forStepperCompletedContent>All steps complete</section>
+      <button forStepperNext>Next</button>
+    </div>
+  `,
+})
+class StepperServerFixture {}
+
+@Component({
   imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
   template: `
     <div forDropdownMenu [open]="true">
@@ -1986,6 +2017,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   TableVirtualizedReorderFixture,
   StepperFixture,
   StepperCompletedFixture,
+  StepperServerFixture,
   CarouselFixture,
   CarouselAutoplayFixture,
   SwitchFixture,
@@ -2654,5 +2686,54 @@ describe('SSR smoke tests', () => {
     ) as HTMLElement[];
     expect(items.length).toBe(2);
     items.forEach((item) => expect(item.getAttribute('aria-pressed')).toBe('false'));
+  });
+
+  describe('ForStepper under real server mode (afterNextRender never fires)', () => {
+    const serverModeGlobal = globalThis as unknown as { ngServerMode?: boolean };
+
+    beforeEach(() => {
+      serverModeGlobal.ngServerMode = true;
+    });
+
+    afterEach(() => {
+      delete serverModeGlobal.ngServerMode;
+    });
+
+    it('renders step 1 active — not the completed state — when item registration never flushes', () => {
+      const f = TestBed.createComponent(StepperServerFixture);
+      f.detectChanges();
+      const root = f.nativeElement as HTMLElement;
+
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[forStepperContent]'));
+      const completed = root.querySelector<HTMLElement>('[forStepperCompletedContent]')!;
+      const next = root.querySelector<HTMLElement>('[forStepperNext]')!;
+      const progress = root.querySelector<HTMLElement>('[forStepperProgress]')!;
+      const items = Array.from(root.querySelectorAll<HTMLElement>('[forStepperItem]'));
+
+      expect(panels[0]!.hasAttribute('aria-hidden')).toBe(false);
+      expect(panels[0]!.hasAttribute('inert')).toBe(false);
+      expect(panels[0]!.getAttribute('data-state')).toBe('active');
+      expect(panels[1]!.getAttribute('data-state')).toBe('inactive');
+
+      expect(items[0]!.getAttribute('data-state')).toBe('active');
+
+      expect(completed.getAttribute('data-state')).toBe('inactive');
+      expect(completed.getAttribute('aria-hidden')).toBe('true');
+      expect(next.hasAttribute('aria-disabled')).toBe(false);
+
+      expect(progress.getAttribute('aria-valuetext')).toBe('Step 1 of 2');
+    });
+
+    it('wires the current trigger/panel aria pairing server-side (aria-labelledby / aria-controls)', () => {
+      const f = TestBed.createComponent(StepperServerFixture);
+      f.detectChanges();
+      const root = f.nativeElement as HTMLElement;
+
+      const triggers = Array.from(root.querySelectorAll<HTMLElement>('[forStepperTrigger]'));
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[forStepperContent]'));
+
+      expect(panels[0]!.getAttribute('aria-labelledby')).toBe(triggers[0]!.getAttribute('id'));
+      expect(triggers[0]!.getAttribute('aria-controls')).toBe(panels[0]!.getAttribute('id'));
+    });
   });
 });
