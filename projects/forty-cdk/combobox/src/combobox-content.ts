@@ -27,13 +27,19 @@ import { injectComboboxContext } from './combobox-context';
  * trigger are exempt from outside checks.
  *
  * Focus:
- * - **Editable anatomy** — focus stays in the input across the whole open
- *   lifecycle; the directive never moves DOM focus and exposes no focus hooks.
- *   Active-option highlighting is `aria-activedescendant`-driven.
+ * - **Editable anatomy** — focus normally stays in the input across the whole
+ *   open lifecycle and active-option highlighting is `aria-activedescendant`-
+ *   driven, so the directive exposes no focus hooks. The surface itself is
+ *   focusable (`tabindex="-1"`), so a click on non-option padding can move focus
+ *   onto it; the input's inline Escape handler then never sees the key, so the
+ *   shell wires a fallback Escape channel that closes the popup and returns focus
+ *   to the input.
  * - **Picker anatomy** — on open, focus moves into the input (the search field
  *   inside the panel); on close it returns to the trigger. Both moves are
  *   vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`,
- *   and the return is gated by `[returnFocus]`. Escape stays owned by the input.
+ *   and the return is gated by `[returnFocus]`. Escape from the input is owned by
+ *   the input directive; the shell's fallback channel covers presses that land on
+ *   the surface or list instead.
  *
  * The lifecycle (positioner + dismissable layer, plus the picker anatomy's
  * focus bundles) is owned by the shared `injectOverlayShell` helper.
@@ -93,9 +99,12 @@ export class ForComboboxContent {
       dismiss: {
         dismissible: ctx.dismissible,
         requestClose: (reason) => ctx.requestClose(reason),
-        // Escape is handled by the input directive (focus stays in the
-        // input, so Escape there shouldn't bubble through nested layers
-        // before the input sees it). Omitted here intentionally.
+        emitEscapeKeyDown: (event) => {
+          ctx.emitEscapeKeyDown(event);
+          if (!hasTrigger && !ctx.open()) {
+            ctx.input()?.focus();
+          }
+        },
         emitPointerDownOutside: (veto) => ctx.emitPointerDownOutside(veto),
         emitFocusOutside: (veto) => ctx.emitFocusOutside(veto),
         emitInteractOutside: (veto) => ctx.emitInteractOutside(veto),

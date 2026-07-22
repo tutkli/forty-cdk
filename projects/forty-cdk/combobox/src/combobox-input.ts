@@ -307,6 +307,7 @@ export class ForComboboxInput {
         // and shouldn't bubble through nested layers before it sees it.
         if (this.ctx.open()) {
           event.preventDefault();
+          event.stopPropagation();
           this.ctx.emitEscapeKeyDown(event);
         }
         break;

@@ -22,6 +22,7 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
+import { ForDialog } from 'forty-cdk/dialog';
 import { ForCombobox } from './combobox';
 import { ForComboboxAnchor } from './combobox-anchor';
 import { ForComboboxChip } from './combobox-chip';
@@ -521,6 +522,134 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
+    });
+
+    it('closes and returns focus to the input on Escape from the focused surface', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      content.focus();
+      expect(document.activeElement).toBe(content);
+
+      content.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('keeps open and leaves focus on the surface when surface Escape is vetoed', async () => {
+      @Component({
+        imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
+        template: `
+          <div forCombobox [(open)]="open" (escapeKeyDown)="$event.preventDefault()" ariaLabel="t">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      content.focus();
+      content.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(content);
+    });
+
+    it('emits (escapeKeyDown) exactly once from the input, even when vetoed', async () => {
+      @Component({
+        imports: [ForCombobox, ForComboboxInput, ForComboboxContent],
+        template: `
+          <div forCombobox [(open)]="open" (escapeKeyDown)="onEscape($event)" ariaLabel="t">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent></div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        count = 0;
+        onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+          this.count++;
+          event.preventDefault();
+        }
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      const input = getInput();
+      input.focus();
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.count).toBe(1);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('surface Escape closes the combobox, not the surrounding dialog; a second Escape closes the dialog', async () => {
+      @Component({
+        imports: [ForDialog, ForCombobox, ForComboboxInput, ForComboboxContent],
+        template: `
+          @if (dialogOpen()) {
+            <div forDialog ariaLabel="dlg" (dismiss)="dialogOpen.set(false)">
+              <div forCombobox [(open)]="open" ariaLabel="cb">
+                <input forComboboxInput />
+                @if (open()) {
+                  <div forComboboxContent></div>
+                }
+              </div>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly dialogOpen = signal(true);
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
+      content.focus();
+      content.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(r.instance.dialogOpen()).toBe(true);
+      expect(document.activeElement).toBe(input);
+
+      input.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+      await flush(r.fixture);
+
+      expect(r.instance.dialogOpen()).toBe(false);
     });
   });
 

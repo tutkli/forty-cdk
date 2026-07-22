@@ -134,6 +134,7 @@ export class ForComboboxAction {
 
       case 'Escape':
         event.preventDefault();
+        event.stopPropagation();
         this.#ctx.emitEscapeKeyDown(event);
         if (!this.#ctx.open() && this.#ctx.trigger() === null) {
           this.#ctx.input()?.focus();
