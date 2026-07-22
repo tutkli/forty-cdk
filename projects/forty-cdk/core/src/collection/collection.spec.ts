@@ -257,6 +257,36 @@ describe('Collection', () => {
     expect(col.indexOfHost(buttons[1]!)).toBe(2);
   });
 
+  it('re-anchors the observer after a host re-parents, so later reorders still update items()', async () => {
+    const container = document.createElement('div');
+    const branch1 = document.createElement('div');
+    const branch2 = document.createElement('div');
+    branch1.append(a, b, c);
+    container.append(branch1, branch2);
+    host.appendChild(container);
+
+    const col = new Collection<Handle>();
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+    col.register(handle('c', c));
+    await waitForMutationObserver();
+
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
+
+    branch2.appendChild(a);
+    await waitForMutationObserver();
+
+    expect(col.items().map((h) => h.id)).toEqual(['b', 'c', 'a']);
+    expect(col.indexOfHost(a)).toBe(2);
+
+    container.insertBefore(branch2, branch1);
+    await waitForMutationObserver();
+
+    expect(col.items().map((h) => h.id)).toEqual(['a', 'b', 'c']);
+    expect(col.indexOfHost(a)).toBe(0);
+    expect(col.indexOfHost(c)).toBe(2);
+  });
+
   it('does not invalidate when a sibling wrapper subtree below the common ancestor mutates', async () => {
     const ul = document.createElement('ul');
     const buttons: HTMLButtonElement[] = [];
