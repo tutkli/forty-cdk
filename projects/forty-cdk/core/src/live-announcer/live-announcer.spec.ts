@@ -127,14 +127,41 @@ describe('LiveAnnouncer', () => {
     expect(region.textContent).toBe('');
   });
 
-  it('a new announce supersedes the pending write of the prior one', async () => {
+  it('coalesces same-region announces raised in one tick to the latest', async () => {
     const announcer = TestBed.inject(LiveAnnouncer);
-    announcer.announce('stale');
-    announcer.announce('fresh');
+    announcer.announce('first toast');
+    announcer.announce('second toast');
     await drain();
 
     const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
-    expect(region.textContent).toBe('fresh');
+    expect(region.textContent).toBe('second toast');
+  });
+
+  it('writes an assertive and a polite announcement raised in one handler to both regions', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    const polite = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+    const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]')!;
+
+    announcer.announce('Item dropped in position 3', 'assertive');
+    announcer.announce('Changes saved', 'polite');
+    await drain();
+
+    expect(assertive.textContent).toBe('Item dropped in position 3');
+    expect(polite.textContent).toBe('Changes saved');
+  });
+
+  it('a same-region announce does not cancel the other region pending write', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    const polite = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+    const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]')!;
+
+    announcer.announce('drop lifted', 'assertive');
+    announcer.announce('toast one', 'polite');
+    announcer.announce('toast two', 'polite');
+    await drain();
+
+    expect(assertive.textContent).toBe('drop lifted');
+    expect(polite.textContent).toBe('toast two');
   });
 
   it('keeps live regions visually hidden (accessible but not visible)', () => {
@@ -159,6 +186,19 @@ describe('LiveAnnouncer', () => {
     // detaches both regions from document.body.
     TestBed.resetTestingModule();
 
+    expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+  });
+
+  it('cancels a pending announce on injector destroy so no write outlives it', async () => {
+    const announcer = TestBed.inject(LiveAnnouncer);
+    const region = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+    announcer.announce('should never paint');
+    expect(region.textContent).toBe('');
+
+    TestBed.resetTestingModule();
+    await drain();
+
+    expect(region.textContent).toBe('');
     expect(document.querySelectorAll('[aria-live]').length).toBe(0);
   });
 

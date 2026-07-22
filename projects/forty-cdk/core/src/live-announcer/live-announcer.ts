@@ -6,6 +6,12 @@ import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
 
 type Politeness = 'polite' | 'assertive';
 
+interface LiveRegion {
+  readonly element: HTMLElement;
+  generation: number;
+  timer: ReturnType<typeof setTimeout> | null;
+}
+
 /**
  * Tiny ARIA live-region helper. Injects two persistent off-screen regions
  * (`polite` and `assertive`) into `document.body` at construction, then
@@ -18,15 +24,22 @@ type Politeness = 'polite' | 'assertive';
  * node insertion and the text write land too close together for many screen
  * readers to register the mutation.
  *
- * Sequential identical announcements are flushed through a deferred write
- * (`setTimeout(…, 0)`) so the region is briefly emptied — without that, screen
+ * Every message is flushed through a deferred write (`setTimeout(…, 0)`) so the
+ * region is briefly emptied before the text lands — without that, screen
  * readers ignore repeated text that hasn't actually changed. A macrotask (not a
  * microtask) is used deliberately: many screen readers (NVDA, VoiceOver) miss
  * the clear→repopulate cycle on repeat messages when both writes land in the
  * same microtask drain, because the empty state never reaches the
- * accessibility tree between them. Each write carries a generation token, so a
- * superseding `announce()` or a `clear()` cancels the prior pending write
- * before it can paint a stale message.
+ * accessibility tree between them.
+ *
+ * Each politeness region owns an **independent generation counter and timer**,
+ * so the two regions never interfere: a `polite` announce cannot cancel a
+ * pending `assertive` write (the keyboard-drop-plus-confirmation-toast case,
+ * where a drop and its confirmation toast fire in the same handler). Within a
+ * single region a superseding `announce()` still coalesces — the latest message
+ * wins — so an announcement that evolves across a change-detection pass (e.g. a
+ * toast whose composed text grows as its parts register) is read out once, in
+ * full, instead of voicing every intermediate value.
  *
  * Each region carries the `MODAL_EXEMPT_ATTRIBUTE` so it stays out of the
  * modal inert pass: `InertSiblingsStack` inerts and `aria-hidden`s every
@@ -37,11 +50,12 @@ type Politeness = 'polite' | 'assertive';
  * is appended, so the stack's late-sibling `MutationObserver` also skips a
  * region created while a modal is already open.
  *
- * The regions are detached again when the service's injector is destroyed
- * (one bootstrap per SSR request, or `TestBed.resetTestingModule()`), so a
- * torn-down application leaves no orphaned `[aria-live]` nodes behind. DOM
- * access is gated on `isPlatformBrowser`, so `announce()` / `clear()` are
- * no-ops on the server.
+ * The regions are detached — and every pending write cancelled — when the
+ * service's injector is destroyed (one bootstrap per SSR request, or
+ * `TestBed.resetTestingModule()`), so a torn-down application leaves no
+ * orphaned `[aria-live]` nodes behind and no timer fires against a destroyed
+ * context. DOM access is gated on `isPlatformBrowser`, so `announce()` /
+ * `clear()` are no-ops on the server.
  *
  * @example
  * ```ts
@@ -56,8 +70,7 @@ type Politeness = 'polite' | 'assertive';
 export class LiveAnnouncer {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
-  readonly #regions = new Map<Politeness, HTMLElement>();
-  #generation = 0;
+  readonly #regions = new Map<Politeness, LiveRegion>();
 
   constructor() {
     if (this.#isBrowser) {
@@ -67,7 +80,8 @@ export class LiveAnnouncer {
     }
     inject(DestroyRef).onDestroy(() => {
       for (const region of this.#regions.values()) {
-        region.remove();
+        this.#cancel(region);
+        region.element.remove();
       }
       this.#regions.clear();
     });
@@ -78,24 +92,25 @@ export class LiveAnnouncer {
    * `polite`, which lets the screen reader finish what it is currently
    * reading; `assertive` interrupts immediately.
    *
-   * Pass an empty string (or call `clear()`) to silence pending announcements.
-   * No-op on a non-browser platform.
+   * A superseding announce to the same region coalesces (the latest message
+   * wins); the two regions are independent, so a `polite` announce never
+   * cancels a pending `assertive` one. Pass an empty string (or call `clear()`)
+   * to silence a pending announcement. No-op on a non-browser platform.
    */
   announce(message: string, politeness: Politeness = 'polite'): void {
     if (!this.#isBrowser) {
       return;
     }
     const region = this.#regions.get(politeness)!;
-    // Reset first so identical consecutive messages still trigger the reader.
-    region.textContent = '';
-    // Bump the generation so a superseding announce (or a clear) cancels this
-    // pending write before it paints.
-    const generation = ++this.#generation;
-    setTimeout(() => {
-      if (generation !== this.#generation) {
+    region.element.textContent = '';
+    this.#cancel(region);
+    const generation = region.generation;
+    region.timer = setTimeout(() => {
+      region.timer = null;
+      if (generation !== region.generation) {
         return;
       }
-      region.textContent = message;
+      region.element.textContent = message;
     }, 0);
   }
 
@@ -104,9 +119,17 @@ export class LiveAnnouncer {
     if (!this.#isBrowser) {
       return;
     }
-    this.#generation++;
     for (const region of this.#regions.values()) {
-      region.textContent = '';
+      this.#cancel(region);
+      region.element.textContent = '';
+    }
+  }
+
+  #cancel(region: LiveRegion): void {
+    region.generation++;
+    if (region.timer !== null) {
+      clearTimeout(region.timer);
+      region.timer = null;
     }
   }
 
@@ -119,6 +142,6 @@ export class LiveAnnouncer {
     // Visually hidden but kept in the accessibility tree.
     region.style.cssText = VISUALLY_HIDDEN_STYLE;
     this.#document.body.appendChild(region);
-    this.#regions.set(politeness, region);
+    this.#regions.set(politeness, { element: region, generation: 0, timer: null });
   }
 }
