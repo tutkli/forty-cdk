@@ -70,10 +70,12 @@ export interface DateFieldEngineConfig<D> {
 
 /**
  * Year used to resolve day ranges (Feb length) while the year segment is empty.
- * Deliberately a common (non-leap) year so an empty-year February reports
- * `aria-valuemax="28"` rather than briefly jumping to 29.
+ * Deliberately a leap year so an empty-year February admits day 29: the day
+ * segment reports `aria-valuemax="29"`, and February 29 can be typed in the
+ * natural year-last locale order (`M/d/y`, `d.M.y`) before the year settles. The
+ * clamp down to 28 happens only once an actually-non-leap year is committed.
  */
-const RESOLVER_YEAR = 2001;
+const RESOLVER_YEAR = 2000;
 
 /**
  * The shared date(-time) field engine backing `ForDateField` and each endpoint
@@ -128,6 +130,9 @@ export class DateFieldEngine<D> {
     source: () => this.#config.source(),
     computation: (current, previous) => {
       if (current !== null) {
+        if (current === this.#transientEmission && previous) {
+          return previous.value;
+        }
         const adapter = this.#config.adapter;
         const parts: DateTimeParts = {
           day: adapter.getDate(current),
@@ -163,6 +168,8 @@ export class DateFieldEngine<D> {
    * restore it to `true`.
    */
   readonly #clampComposed = signal(true);
+
+  #transientEmission: D | null = null;
 
   /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
@@ -448,9 +455,11 @@ export class DateFieldEngine<D> {
   }
 
   #commitParts(rawNext: DateTimeParts, transient: boolean): void {
-    const next = this.#clampDay(rawNext);
+    const next = transient ? rawNext : this.#clampDay(rawNext);
     this.#clampComposed.set(!transient);
     this.#parts.set(next);
-    this.#config.onCommit(this.#composeFrom(next, !transient));
+    const composed = this.#composeFrom(next, !transient);
+    this.#transientEmission = transient ? composed : null;
+    this.#config.onCommit(composed);
   }
 }
