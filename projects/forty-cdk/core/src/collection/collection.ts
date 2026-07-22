@@ -56,7 +56,12 @@ export interface CollectionHandle {
  * order actually changes, so reads stay O(1) and a single mutation is
  * O(N log N) (the sort) in the current size. The `MutationObserver` resync is
  * deferred to a microtask so a burst of same-turn registrations coalesces into
- * one wiring pass rather than one per member.
+ * one wiring pass rather than one per member. The observer callback both bumps
+ * the DOM epoch (recomputing `items()`) and reschedules that resync, so an
+ * observed mutation that re-parents a registered host — moved to a different
+ * branch without re-registering — re-anchors the watched ancestor chain to the
+ * hosts' new positions on the next microtask; `#sameNodes` keeps this a no-op
+ * whenever the chain is unchanged, so steady-state cost stays nil.
  */
 export class Collection<H extends CollectionHandle> {
   readonly #membersSet = new Set<H>();
@@ -195,7 +200,10 @@ export class Collection<H extends CollectionHandle> {
     if (this.#sameNodes(nodes)) {
       return;
     }
-    this.#observer ??= new MutationObserver(() => this.#domEpoch.update((e) => e + 1));
+    this.#observer ??= new MutationObserver(() => {
+      this.#domEpoch.update((e) => e + 1);
+      this.#scheduleSync();
+    });
     this.#observer.disconnect();
     this.#observedNodes.clear();
     for (const node of nodes) {
