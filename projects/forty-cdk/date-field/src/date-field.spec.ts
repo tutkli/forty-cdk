@@ -210,11 +210,11 @@ describe('ForDateField', () => {
       expect(seg(r, 'year').getAttribute('aria-valuemax')).toBe('9999');
     });
 
-    it('reports a February day max of 28 while the year is empty', async () => {
+    it('reports a February day max of 29 while the year is empty (#1374)', async () => {
       const r = renderHost(Host);
       await type(r, 'month', '02');
       expect(seg(r, 'year').getAttribute('aria-valuenow')).toBeNull();
-      expect(seg(r, 'day').getAttribute('aria-valuemax')).toBe('28');
+      expect(seg(r, 'day').getAttribute('aria-valuemax')).toBe('29');
     });
 
     it('marks literals aria-hidden and keeps them out of the tab order', () => {
@@ -330,15 +330,15 @@ describe('ForDateField', () => {
       await type(r, 'month', '01'); // 31 Jan
       expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('31');
 
-      await key(r, 'month', 'ArrowUp'); // → February (28 days, empty year)
+      await key(r, 'month', 'ArrowUp'); // → February (29 days, empty leap-resolver year)
 
       const day = seg(r, 'day');
       const now = Number(day.getAttribute('aria-valuenow'));
       const max = Number(day.getAttribute('aria-valuemax'));
-      expect(max).toBe(28);
-      expect(now).toBe(28);
+      expect(max).toBe(29);
+      expect(now).toBe(29);
       expect(now).toBeLessThanOrEqual(max);
-      expect(day.textContent?.trim()).toBe('28');
+      expect(day.textContent?.trim()).toBe('29');
       // Field is still incomplete, so no value is composed.
       expect(r.instance.value()).toBeNull();
     });
@@ -351,12 +351,59 @@ describe('ForDateField', () => {
       await key(r, 'month', 'End'); // → December (31 days)
       expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('31');
 
-      await type(r, 'month', '02'); // February (28 days, empty year)
+      await type(r, 'month', '02'); // February (29 days, empty leap-resolver year)
       const day = seg(r, 'day');
       expect(Number(day.getAttribute('aria-valuenow'))).toBeLessThanOrEqual(
         Number(day.getAttribute('aria-valuemax')),
       );
-      expect(day.getAttribute('aria-valuenow')).toBe('28');
+      expect(day.getAttribute('aria-valuenow')).toBe('29');
+    });
+
+    describe('February 29 in natural locale order (#1374)', () => {
+      it('composes February 29 when the leap year is typed last (en-US, month-first)', async () => {
+        const r = renderHost(Host);
+        await type(r, 'month', '2');
+        await type(r, 'day', '29');
+        await type(r, 'year', '2024');
+        const value = r.instance.value()!;
+        expect(adapter.getYear(value)).toBe(2024);
+        expect(adapter.getMonth(value)).toBe(2);
+        expect(adapter.getDate(value)).toBe(29);
+      });
+
+      it('composes February 29 when the day is typed first (de-DE, day-first)', async () => {
+        const r = renderHost(Host);
+        r.instance.locale.set('de-DE');
+        await flush(r.fixture);
+        await type(r, 'day', '29');
+        await type(r, 'month', '2');
+        await type(r, 'year', '2024');
+        const value = r.instance.value()!;
+        expect(adapter.getYear(value)).toBe(2024);
+        expect(adapter.getMonth(value)).toBe(2);
+        expect(adapter.getDate(value)).toBe(29);
+      });
+
+      it('clamps the day to 28 once a non-leap year settles', async () => {
+        const r = renderHost(Host);
+        r.instance.locale.set('de-DE');
+        await flush(r.fixture);
+        await type(r, 'day', '29');
+        await type(r, 'month', '2');
+        await type(r, 'year', '2023');
+        const value = r.instance.value()!;
+        expect(adapter.getYear(value)).toBe(2023);
+        expect(adapter.getMonth(value)).toBe(2);
+        expect(adapter.getDate(value)).toBe(28);
+      });
+
+      it('keeps the entered day 29 while a still-incomplete non-leap year is being typed', async () => {
+        const r = renderHost(Host);
+        await type(r, 'month', '2');
+        await type(r, 'day', '29');
+        await type(r, 'year', '202');
+        expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('29');
+      });
     });
 
     it('clamps a composed value down to maxDate', async () => {
