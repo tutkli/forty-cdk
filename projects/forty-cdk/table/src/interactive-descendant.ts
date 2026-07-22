@@ -14,7 +14,7 @@ const INTERACTIVE_DESCENDANT_SELECTOR =
 export function eventFromInteractiveDescendant(event: Event): boolean {
   const target = event.target;
   const rowEl = event.currentTarget;
-  if (!(target instanceof HTMLElement) || !(rowEl instanceof HTMLElement)) {
+  if (!(target instanceof Element) || !(rowEl instanceof HTMLElement)) {
     return false;
   }
   const interactive = target.closest(INTERACTIVE_DESCENDANT_SELECTOR);
