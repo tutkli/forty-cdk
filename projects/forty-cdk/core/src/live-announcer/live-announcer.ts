@@ -1,6 +1,7 @@
 import { DOCUMENT, DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
+import { MODAL_EXEMPT_ATTRIBUTE } from '../inert-siblings/inert-siblings';
 import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
 
 type Politeness = 'polite' | 'assertive';
@@ -26,6 +27,15 @@ type Politeness = 'polite' | 'assertive';
  * accessibility tree between them. Each write carries a generation token, so a
  * superseding `announce()` or a `clear()` cancels the prior pending write
  * before it can paint a stale message.
+ *
+ * Each region carries the `MODAL_EXEMPT_ATTRIBUTE` so it stays out of the
+ * modal inert pass: `InertSiblingsStack` inerts and `aria-hidden`s every
+ * unmarked `document.body` child while a modal dialog / drawer is open, which
+ * would otherwise swallow every announcement routed through the announcer
+ * (e.g. a `ForToast` shown over an open modal) — a WCAG 4.1.3 status-message
+ * failure invisible to sighted users. The marker is stamped before the region
+ * is appended, so the stack's late-sibling `MutationObserver` also skips a
+ * region created while a modal is already open.
  *
  * The regions are detached again when the service's injector is destroyed
  * (one bootstrap per SSR request, or `TestBed.resetTestingModule()`), so a
@@ -105,6 +115,7 @@ export class LiveAnnouncer {
     region.setAttribute('aria-live', politeness);
     region.setAttribute('aria-atomic', 'true');
     region.setAttribute('role', politeness === 'assertive' ? 'alert' : 'status');
+    region.setAttribute(MODAL_EXEMPT_ATTRIBUTE, '');
     // Visually hidden but kept in the accessibility tree.
     region.style.cssText = VISUALLY_HIDDEN_STYLE;
     this.#document.body.appendChild(region);

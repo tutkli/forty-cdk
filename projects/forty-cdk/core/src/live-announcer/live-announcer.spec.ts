@@ -1,6 +1,11 @@
 import { PLATFORM_ID, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import {
+  type InertSiblingsHandle,
+  InertSiblingsStack,
+  MODAL_EXEMPT_ATTRIBUTE,
+} from '../inert-siblings/inert-siblings';
 import { LiveAnnouncer } from './live-announcer';
 
 // LiveAnnouncer schedules every text write through `setTimeout(…, 0)` (a
@@ -192,5 +197,58 @@ describe('LiveAnnouncer', () => {
     // announce() — it must not throw or touch the DOM on the server.
     expect(() => announcer.clear()).not.toThrow();
     expect(document.querySelectorAll('[aria-live]').length).toBe(0);
+  });
+
+  describe('modal-exempt (toast-over-modal announcement contract)', () => {
+    let owner: HTMLElement | null = null;
+    let handle: InertSiblingsHandle | null = null;
+
+    afterEach(() => {
+      handle?.deactivate();
+      handle = null;
+      owner?.remove();
+      owner = null;
+    });
+
+    it('stamps the modal-exempt marker on every region at construction', () => {
+      TestBed.inject(LiveAnnouncer);
+
+      const polite = document.querySelector<HTMLElement>('[aria-live="polite"]')!;
+      const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]')!;
+      expect(polite.hasAttribute(MODAL_EXEMPT_ATTRIBUTE)).toBe(true);
+      expect(assertive.hasAttribute(MODAL_EXEMPT_ATTRIBUTE)).toBe(true);
+    });
+
+    it('leaves existing regions non-inerted when a modal opens', () => {
+      TestBed.inject(LiveAnnouncer);
+      owner = document.createElement('div');
+      document.body.appendChild(owner);
+
+      handle = TestBed.inject(InertSiblingsStack).activate(owner);
+
+      const regions = document.querySelectorAll<HTMLElement>('[aria-live]');
+      expect(regions.length).toBe(2);
+      for (const region of regions) {
+        expect(region.hasAttribute('inert')).toBe(false);
+        expect(region.getAttribute('aria-hidden')).not.toBe('true');
+      }
+    });
+
+    it('leaves a region created while a modal is already open non-inerted', async () => {
+      owner = document.createElement('div');
+      document.body.appendChild(owner);
+      handle = TestBed.inject(InertSiblingsStack).activate(owner);
+
+      const announcer = TestBed.inject(LiveAnnouncer);
+      announcer.announce('shown over an open modal');
+      await Promise.resolve();
+
+      const regions = document.querySelectorAll<HTMLElement>('[aria-live]');
+      expect(regions.length).toBe(2);
+      for (const region of regions) {
+        expect(region.hasAttribute('inert')).toBe(false);
+        expect(region.getAttribute('aria-hidden')).not.toBe('true');
+      }
+    });
   });
 });
