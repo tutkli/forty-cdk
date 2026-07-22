@@ -61,6 +61,7 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+*.stackdump
 
 # Generated example-source manifests (built by scripts/gen-example-sources.mjs)
 projects/forty-cdk-playground/src/app/demos/**/sources.generated.ts
