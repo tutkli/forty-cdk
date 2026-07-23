@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-07-23
+
+### Fixed
+
+- **Core (focus)** — CSS-hidden elements no longer count as focusable. `FocusTrap` and the
+  focusable-descendant check now share one candidate filter, so a tab panel whose only focusable child
+  is CSS-hidden is reported empty and `ForTabsContent` gives it `tabindex="0"` again.
+- **Core (positioning)** — changing an overlay's positioning config while it stays open cancels the
+  in-flight positioning run, so a superseded run no longer writes stale `translate` / `data-side` /
+  arrow position. `onFirstPosition` now fires once per open cycle rather than once per positioning run.
+- **Core (number parsing)** — the numeric-keypad `.` is treated as the decimal separator in locales
+  whose decimal separator isn't `.` (e.g. `1.5` typed on the numpad in `de-DE` parses as `1.5`, not
+  `15`).
+- **Collection** — the collection observer re-anchors after its host is re-parented in the DOM, so
+  registration order stays correct when a host element moves.
+- **Live announcer** — live regions are exempt from the modal `inert` pass, so toasts and other
+  announcements are still spoken over an open modal instead of being silenced.
+- **Live announcer** — the announcement generation counter is scoped per region, so a rapid burst in
+  one region no longer cancels a concurrent announcement in another.
+- **Stepper** — server-side rendering renders the active step. The item, trigger and content register
+  synchronously instead of in `afterNextRender`, so the initial SSR markup reflects the active step
+  rather than the completed state.
+- **Combobox** — `Escape` on a focused combobox surface closes the popup instead of falling through to
+  an enclosing dismissable layer.
+- **Combobox** — removing a selected chip no longer dismisses the open panel.
+- **Drag & drop** — pressing `Escape` mid-drag cancels the drag while keeping the enclosing overlay
+  (dialog / popover) open; the key is consumed at capture phase instead of bubbling to the dismissable
+  layer.
+- **Dialog & drawer** — return focus survives a close→open modal swap in a single change-detection
+  pass. The return-focus target is resolved at close time — with an optional `returnFocusTarget`
+  override threaded through the dialog and drawer managers — so focus no longer falls to `<body>` after
+  a confirm-step or wizard hand-off.
+- **Date field** — February 29 can be typed in natural locale order again; the leap-day resolver no
+  longer re-clamps the day against a non-leap reference year.
+- **Table** — a click that lands on an SVG icon (or its `<path>`) inside a consumer-placed control (an
+  icon `<button>` or `<a>`) in a selectable row's data cell no longer also toggles the row's selection;
+  the inner-control guard now matches SVG click targets.
+- **Signal forms** — the `forSingleValueField` proxy is introspection-coherent: `in`, `Object.keys`,
+  spread and `getOwnPropertyDescriptor` delegate to the wrapped field instead of reporting no members,
+  and delegated members keep their signal brand.
+
 ## [0.11.0] - 2026-07-18
 
 ### Added
@@ -394,7 +435,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/tutkli/forty-cdk/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/tutkli/forty-cdk/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tutkli/forty-cdk/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/tutkli/forty-cdk/compare/v0.8.0...v0.9.0
