@@ -44,6 +44,7 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly modal: boolean | undefined;
   readonly alert: boolean | undefined;
   readonly returnFocus: boolean | undefined;
+  readonly returnFocusTarget: HTMLElement | null | undefined;
   readonly initialFocus: 'first' | 'container' | undefined;
   readonly ariaLabel: string | undefined;
   readonly container: HTMLElement | null | undefined;
@@ -117,6 +118,7 @@ export class ForDrawerContextInjector {
         [modal]="entry.modal ?? true"
         [alert]="entry.alert ?? false"
         [returnFocus]="entry.returnFocus ?? true"
+        [returnFocusTarget]="entry.returnFocusTarget ?? null"
         [initialFocus]="entry.initialFocus ?? 'first'"
         [ariaLabel]="entry.ariaLabel ?? null"
         [container]="entry.container ?? null"

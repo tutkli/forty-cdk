@@ -19,16 +19,17 @@ import type { OverlayRef } from './overlay-ref';
  * Minimal shape every overlay entry must satisfy so the shared core can index,
  * render, and tear it down. Per-primitive entries (`ForDialogEntry`,
  * `ForDrawerEntry`) extend this with their own directive-input fields and
- * narrow `ref` to their concrete `For<Primitive>Ref`. The core only ever
- * closes an entry's ref, so the base requires just `close` — this also keeps
- * the base reason-agnostic (`OverlayRef` is invariant over its close-reason
- * union, so a narrowed ref would not otherwise assign to a fixed one here).
+ * narrow `ref` to their concrete `For<Primitive>Ref`. The core closes an
+ * entry's ref and reads its `isClosed` flag (to tell a still-open parent apart
+ * from one being swapped out during return-focus origin resolution), so the
+ * base requires just those two members — both reason-agnostic, so the base
+ * stays independent of each ref's close-reason union.
  *
  * Internal — not re-exported from `public-api.ts`.
  */
 export interface OverlayManagerEntry {
   readonly id: string;
-  readonly ref: Pick<OverlayRef, 'close'>;
+  readonly ref: Pick<OverlayRef, 'close' | 'isClosed'>;
 }
 
 /**
@@ -106,9 +107,62 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
 
   #outletRef: ComponentRef<OverlayManagerOutlet<TEntry>> | null = null;
   #destroying = false;
+  #lastReturnFocusOrigin: HTMLElement | null = null;
 
   constructor(config: OverlayManagerConfig<TEntry>) {
     this.#config = config;
+  }
+
+  /**
+   * Resolves the element focus should return to when the overlay this `open()`
+   * is about to register later closes — the "true origin". Threaded to the
+   * directive's `returnFocusTarget` so `injectModalShell` restores focus there
+   * instead of to whatever it happened to capture at construction (which breaks
+   * on a close→open swap, where the incoming surface is built while focus still
+   * lives inside the outgoing, doomed one — see #1385).
+   *
+   * Read the currently-focused element **synchronously at `open()` time**,
+   * before the render tick mounts the new overlay and swaps the DOM, and
+   * classify it:
+   *
+   * - **Genuine outside element** (focus is on the trigger, not inside any
+   *   managed overlay host) → that element is the origin.
+   * - **Inside a still-live managed overlay** (a stacked open on top of an open
+   *   overlay) → return focus into that live parent, so the origin is the
+   *   focused element itself.
+   * - **Inside an overlay that is closing / already gone** (a close→open swap:
+   *   its ref is closed, or it has left the entries list but its DOM host is
+   *   still mounted for this tick) → inherit the chain's origin, i.e. the
+   *   origin resolved for the most recent open.
+   * - **No usable focus** (`<body>` / `documentElement` / none) → inherit the
+   *   chain's origin too.
+   *
+   * The resolved origin is remembered so the next swap in the chain can inherit
+   * it. Callers may bypass this and thread a caller-chosen element instead.
+   */
+  protected resolveReturnFocusTarget(): HTMLElement | null {
+    const active = this.#document.activeElement;
+    const captured = active instanceof HTMLElement ? active : null;
+    const origin = this.#computeReturnFocusOrigin(captured);
+    this.#lastReturnFocusOrigin = origin;
+    return origin;
+  }
+
+  #computeReturnFocusOrigin(captured: HTMLElement | null): HTMLElement | null {
+    const { body, documentElement } = this.#document;
+    if (captured === null || captured === body || captured === documentElement) {
+      return this.#lastReturnFocusOrigin;
+    }
+    const { idAttribute, backdropAttribute } = this.#config;
+    const host = captured.closest<HTMLElement>(`[${idAttribute}]:not([${backdropAttribute}])`);
+    if (host === null) {
+      return captured;
+    }
+    const hostId = host.getAttribute(idAttribute);
+    const parentStillOpen = this.#entries().some(
+      (entry) => entry.id === hostId && !entry.ref.isClosed(),
+    );
+    return parentStillOpen ? captured : this.#lastReturnFocusOrigin;
   }
 
   /**

@@ -69,6 +69,17 @@ export interface ForDrawerOpenConfig<D = unknown> {
   /** When true (default), focus returns to the previously focused element on close. */
   returnFocus?: boolean;
 
+  /**
+   * Explicit element focus returns to on close. Omit it (the default) and the
+   * manager resolves the true origin automatically — the trigger that opened
+   * the drawer chain, threaded across a close→open swap so a drawer replacing
+   * another restores focus to the original trigger rather than dropping it to
+   * `<body>` (#1385). Pass an element to override that resolution, or `null` to
+   * opt out entirely and fall back to the element the drawer captures at
+   * construction.
+   */
+  returnFocusTarget?: HTMLElement | null;
+
   /** Where to send focus on open. Default `'first'`. */
   initialFocus?: 'first' | 'container';
 
@@ -313,6 +324,11 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
 
     const { id, remove } = this.nextId();
 
+    const returnFocusTarget =
+      config.returnFocusTarget !== undefined
+        ? config.returnFocusTarget
+        : this.resolveReturnFocusTarget();
+
     const defaults = config.injector
       ? config.injector.get(FOR_DRAWER_DEFAULTS, this.#defaults)
       : this.#defaults;
@@ -338,6 +354,7 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       modal: config.modal ?? defaults.modal,
       alert: config.alert,
       returnFocus: config.returnFocus ?? defaults.returnFocus,
+      returnFocusTarget,
       initialFocus: config.initialFocus ?? defaults.initialFocus,
       ariaLabel: config.ariaLabel,
       container: config.container,
