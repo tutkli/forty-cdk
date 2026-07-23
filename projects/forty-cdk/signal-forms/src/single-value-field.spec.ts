@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, isSignal, signal } from '@angular/core';
 import {
   disabled,
   type FieldTree,
@@ -140,6 +140,60 @@ describe('forSingleValueField', () => {
       const { instance } = renderHost(Host);
       expect(instance.tree.country().touched()).toBe(false);
       instance.bridged().markAsTouched();
+      expect(instance.tree.country().touched()).toBe(true);
+    });
+  });
+
+  describe('delegated signal getters preserve their brand and identity', () => {
+    @Component({ template: '' })
+    class Host {
+      readonly model = signal<{ country: string | null }>({ country: null });
+      readonly tree = form(this.model, (s) => required(s.country));
+      readonly bridged = forSingleValueField(this.tree.country);
+    }
+
+    const signalMembers = [
+      'errors',
+      'disabled',
+      'dirty',
+      'touched',
+      'invalid',
+      'pending',
+      'readonly',
+      'required',
+      'name',
+    ] as const;
+
+    it('keeps delegated members recognizable as signals via `isSignal`', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged() as unknown as Record<string, unknown>;
+      for (const member of signalMembers) {
+        expect(isSignal(control[member])).toBe(true);
+      }
+    });
+
+    it('returns the underlying fields own signal reference (identity preserved)', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged() as unknown as Record<string, unknown>;
+      const real = instance.tree.country() as unknown as Record<string, unknown>;
+      for (const member of signalMembers) {
+        expect(control[member]).toBe(real[member]);
+      }
+    });
+
+    it('exposes the writable signal API on a delegated signal (no `.bind` stripping)', () => {
+      const { instance } = renderHost(Host);
+      const errors = instance.bridged().errors;
+      expect(isSignal(errors)).toBe(true);
+      expect(errors).toBe(instance.tree.country().errors);
+    });
+
+    it('still binds genuine methods to the original field', () => {
+      const { instance } = renderHost(Host);
+      const markAsTouched = instance.bridged().markAsTouched;
+      expect(isSignal(markAsTouched)).toBe(false);
+      expect(typeof markAsTouched).toBe('function');
+      markAsTouched();
       expect(instance.tree.country().touched()).toBe(true);
     });
   });

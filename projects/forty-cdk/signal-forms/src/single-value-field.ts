@@ -1,4 +1,4 @@
-import { computed, type WritableSignal } from '@angular/core';
+import { computed, isSignal, type WritableSignal } from '@angular/core';
 import type { FieldState, FieldTree } from '@angular/forms/signals';
 
 /**
@@ -20,6 +20,9 @@ import type { FieldState, FieldTree } from '@angular/forms/signals';
  *   `errors`, `touched`, `dirty`, `pending`, `name`, validation, touch
  *   tracking, focus) delegates to the original field state, so `[formField]`
  *   pushes the same UI state into the control it would for any other field.
+ *   Delegated signal getters pass through unbound, so their signal brand
+ *   (`isSignal`) and reference identity survive the view; only genuine methods
+ *   are bound to the original field.
  *
  * The view is also **introspection-coherent**: property presence checks
  * (`in`, `Reflect.has`), key enumeration (`Object.keys`, spread) and
@@ -93,6 +96,9 @@ export function forSingleValueField<T>(field: FieldTree<T | null>): FieldTree<re
       }
       const real = field() as unknown as Record<string | symbol, unknown>;
       const member = real[property];
+      if (isSignal(member)) {
+        return member;
+      }
       if (typeof member === 'function' && typeof member.bind === 'function') {
         return member.bind(real);
       }
