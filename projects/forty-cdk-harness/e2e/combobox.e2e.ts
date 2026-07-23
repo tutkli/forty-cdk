@@ -322,4 +322,27 @@ test.describe('Combobox', () => {
       await expect(el(page, 'content')).toHaveCount(0);
     });
   });
+
+  test.describe('editable multi-select (chips)', () => {
+    test('removing a chip with the listbox open keeps it open', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { multi: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+      await expect(el(page, 'chip-apple')).toBeVisible();
+      await expect(el(page, 'chip-banana')).toBeVisible();
+
+      await el(page, 'remove-apple').click();
+
+      await expect(el(page, 'chip-apple')).toHaveCount(0);
+      await expect(el(page, 'chip-banana')).toBeVisible();
+      await expect(el(page, 'content')).toBeVisible();
+    });
+
+    test('a genuine outside pointer still dismisses in multi mode', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { multi: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+
+      await el(page, 'after').click();
+      await expect(el(page, 'content')).toHaveCount(0);
+    });
+  });
 });
