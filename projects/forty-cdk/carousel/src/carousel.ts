@@ -26,7 +26,6 @@ import {
   injectPrefersReducedMotion,
   injectPauseController,
   type PauseController,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
 } from 'forty-cdk/core';
@@ -160,7 +159,7 @@ export class ForCarousel implements ForCarouselContext {
   readonly dir = injectTextDirection(this._dirInput);
 
   /** Roving tabindex tracker for the indicator group. */
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#indicators.items());
 
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -225,8 +224,6 @@ export class ForCarousel implements ForCarouselContext {
   });
 
   constructor() {
-    reconcileRovingActive(this.roving, this.#indicators.items);
-
     effect(() => {
       const rotating = this.rotating();
       const interval = this.autoplayInterval();

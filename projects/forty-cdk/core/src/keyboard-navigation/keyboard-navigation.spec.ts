@@ -153,6 +153,24 @@ describe('moveIndex', () => {
     expect(moveIndex(0, 5, 'prev', { loop: true })).toBe(4);
   });
 
+  it('resolves the -1 sentinel to the list edges when looping', () => {
+    expect(moveIndex(-1, 5, 'next', { loop: true })).toBe(0);
+    expect(moveIndex(-1, 5, 'prev', { loop: true })).toBe(4);
+  });
+
+  it('sentinel backward move skips a disabled last item', () => {
+    const isDisabled = (i: number) => i === 4;
+    expect(moveIndex(-1, 5, 'prev', { loop: true, isDisabled })).toBe(3);
+  });
+
+  it('sentinel backward move on a single-item loop lands on index 0', () => {
+    expect(moveIndex(-1, 1, 'prev', { loop: true })).toBe(0);
+  });
+
+  it('leaves the no-loop sentinel backward path returning null', () => {
+    expect(moveIndex(-1, 5, 'prev')).toBe(null);
+  });
+
   it('first / last respect disabled', () => {
     const isDisabled = (i: number) => i === 0 || i === 4;
     expect(moveIndex(2, 5, 'first', { isDisabled })).toBe(1);

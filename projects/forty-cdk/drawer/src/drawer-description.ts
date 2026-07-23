@@ -13,7 +13,7 @@ import { injectDrawerContext } from './drawer-context';
   selector: '[forDrawerDescription]',
   exportAs: 'forDrawerDescription',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForDrawerDescription {

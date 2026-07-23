@@ -9,6 +9,21 @@ export interface CollectionHandle {
   readonly host: HTMLElement;
 }
 
+function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a === b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * Generic, signal-backed registry of handles for a primitive's children
  * (e.g. tab triggers, radios, listbox options, dialog titles). Items are
@@ -97,11 +112,14 @@ export class Collection<H extends CollectionHandle> {
    * memoized cache backing this `computed`, so callers must treat it as
    * read-only (copy before sorting / splicing).
    */
-  readonly items: Signal<readonly H[]> = computed(() => {
-    this.#membersEpoch();
-    this.#domEpoch();
-    return Object.freeze(this.#sortByDomOrder([...this.#membersSet]));
-  });
+  readonly items: Signal<readonly H[]> = computed(
+    () => {
+      this.#membersEpoch();
+      this.#domEpoch();
+      return Object.freeze(this.#sortByDomOrder([...this.#membersSet]));
+    },
+    { equal: sameSequence },
+  );
 
   register(handle: H): void {
     if (this.#destroyed || this.#membersSet.has(handle)) {

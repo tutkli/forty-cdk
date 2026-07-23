@@ -52,8 +52,8 @@ export interface ForStepperTriggerHandle {
    */
   readonly selectable: Signal<boolean>;
   /**
-   * Inverse of `selectable`. Required by `firstEnabledHost` and
-   * `reconcileRovingActive`, which read a `disabled` signal per handle.
+   * Inverse of `selectable`. Required by `firstEnabledHost` and the roving
+   * tracker's reconciliation, which read a `disabled` signal per handle.
    */
   readonly disabled: Signal<boolean>;
 }

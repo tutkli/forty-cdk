@@ -21,7 +21,6 @@ import {
   type WritingDirection,
   computeFlatHierarchy,
   injectTextDirection,
-  reconcileRovingActive,
   RovingTabindex,
 } from 'forty-cdk/core';
 import {
@@ -192,7 +191,7 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   readonly #rows = new Collection<ForTableRowHandle>();
   readonly #headerCells = new Collection<ForTableCellHandle>();
-  readonly #roving = new RovingTabindex();
+  readonly #roving = new RovingTabindex(() => this.#flatCells());
   readonly #enteredCell = signal<HTMLElement | null>(null);
 
   /** Live registered data rows, exposed to `[forTableVirtualized]`'s cross-window navigation bridge. */
@@ -326,10 +325,6 @@ export class ForTable<T = unknown> implements ForTableContext {
   protected readonly colCountAttr = computed<number | null>(() =>
     this.mode() === 'table' ? null : (this.colCount() ?? this.#cols()),
   );
-
-  constructor() {
-    reconcileRovingActive(this.#roving, this.#flatCells);
-  }
 
   registerHeaderRow(el: HTMLElement): void {
     this.#headerRowEl.set(el);

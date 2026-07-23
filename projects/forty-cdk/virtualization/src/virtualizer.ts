@@ -19,7 +19,7 @@ import type {
   VirtualizerOptions as CoreVirtualizerOptions,
 } from '@tanstack/virtual-core';
 
-import { afterNextRenderCancellable } from './after-next-render-cancellable';
+import { afterNextRenderCancellable } from 'forty-cdk/core';
 
 /** Default number of items rendered beyond the visible window on each side. */
 const DEFAULT_OVERSCAN = 5;

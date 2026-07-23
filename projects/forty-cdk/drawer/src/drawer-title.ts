@@ -15,7 +15,7 @@ import { injectDrawerContext } from './drawer-context';
   selector: '[forDrawerTitle]',
   exportAs: 'forDrawerTitle',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForDrawerTitle {

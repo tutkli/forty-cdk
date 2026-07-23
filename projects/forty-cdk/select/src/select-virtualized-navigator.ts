@@ -1,6 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { readEntryGuarded, VirtualizedNavigator } from 'forty-cdk/core';
+import { tryReadHandle, VirtualizedNavigator } from 'forty-cdk/core';
 import type { ForSelectOptionHandle } from './select-context';
 
 interface PositionEntry<T> {
@@ -57,7 +57,7 @@ export class SelectVirtualizedNavigator<T> {
         idOf: (o) => o.id(),
         hostOf: (o) => o.host,
         readEntry: (o) =>
-          readEntryGuarded(() => ({ id: o.id(), value: o.value(), disabled: o.disabled() })),
+          tryReadHandle(() => ({ id: o.id(), value: o.value(), disabled: o.disabled() })),
       },
     );
   }

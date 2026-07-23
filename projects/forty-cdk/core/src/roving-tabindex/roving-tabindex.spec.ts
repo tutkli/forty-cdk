@@ -1,6 +1,11 @@
-import { computed } from '@angular/core';
+import { computed, signal } from '@angular/core';
 
+import type { HostRovingItemHandle } from './host-roving-context';
 import { RovingTabindex } from './roving-tabindex';
+
+function makeHandle(host: HTMLElement, disabled = false): HostRovingItemHandle {
+  return { host, disabled: signal(disabled) };
+}
 
 describe('RovingTabindex', () => {
   it('starts with no active element', () => {
@@ -180,6 +185,142 @@ describe('RovingTabindex', () => {
       r.setActive(a);
       r.unregister(b);
       expect(r.active()).toBe(a);
+    });
+  });
+
+  describe('reconciling active', () => {
+    it('nulls active when the active host unregisters', () => {
+      const a = document.createElement('button');
+      const b = document.createElement('button');
+      document.body.append(a, b);
+      try {
+        const items = signal<readonly HostRovingItemHandle[]>([makeHandle(a), makeHandle(b)]);
+        const r = new RovingTabindex(() => items());
+        r.setActive(a);
+        expect(r.active()).toBe(a);
+
+        items.set([makeHandle(b)]);
+        expect(r.active()).toBe(null);
+      } finally {
+        a.remove();
+        b.remove();
+      }
+    });
+
+    it('nulls active when the active host becomes disabled', () => {
+      const a = document.createElement('button');
+      document.body.append(a);
+      try {
+        const dis = signal(false);
+        const items = signal<readonly HostRovingItemHandle[]>([{ host: a, disabled: dis }]);
+        const r = new RovingTabindex(() => items());
+        r.setActive(a);
+        expect(r.active()).toBe(a);
+
+        dis.set(true);
+        expect(r.active()).toBe(null);
+      } finally {
+        a.remove();
+      }
+    });
+
+    it('leaves an enabled, registered active untouched', () => {
+      const a = document.createElement('button');
+      document.body.append(a);
+      try {
+        const items = signal<readonly HostRovingItemHandle[]>([makeHandle(a)]);
+        const r = new RovingTabindex(() => items());
+        r.setActive(a);
+        expect(r.active()).toBe(a);
+      } finally {
+        a.remove();
+      }
+    });
+
+    describe("fallback: 'first-enabled'", () => {
+      it('promotes the first enabled handle when the active unregisters', () => {
+        const a = document.createElement('button');
+        const b = document.createElement('button');
+        document.body.append(a, b);
+        try {
+          const items = signal<readonly HostRovingItemHandle[]>([makeHandle(a), makeHandle(b)]);
+          const r = new RovingTabindex(() => items(), { fallback: 'first-enabled' });
+          r.setActive(a);
+
+          items.set([makeHandle(b)]);
+          expect(r.active()).toBe(b);
+        } finally {
+          a.remove();
+          b.remove();
+        }
+      });
+
+      it('skips a disabled leading handle to the first enabled one', () => {
+        const a = document.createElement('button');
+        const b = document.createElement('button');
+        const c = document.createElement('button');
+        document.body.append(a, b, c);
+        try {
+          const items = signal<readonly HostRovingItemHandle[]>([
+            makeHandle(a),
+            makeHandle(b, true),
+            makeHandle(c),
+          ]);
+          const r = new RovingTabindex(() => items(), { fallback: 'first-enabled' });
+          r.setActive(a);
+
+          items.set([makeHandle(b, true), makeHandle(c)]);
+          expect(r.active()).toBe(c);
+        } finally {
+          a.remove();
+          b.remove();
+          c.remove();
+        }
+      });
+
+      it('nulls active when no enabled handle remains', () => {
+        const a = document.createElement('button');
+        document.body.append(a);
+        try {
+          const dis = signal(false);
+          const items = signal<readonly HostRovingItemHandle[]>([{ host: a, disabled: dis }]);
+          const r = new RovingTabindex(() => items(), { fallback: 'first-enabled' });
+          r.setActive(a);
+
+          dis.set(true);
+          expect(r.active()).toBe(null);
+        } finally {
+          a.remove();
+        }
+      });
+    });
+
+    it('is a pass-through of the raw pointer with no items producer', () => {
+      const r = new RovingTabindex();
+      const a = document.createElement('button');
+      r.setActive(a);
+      expect(r.active()).toBe(a);
+    });
+
+    it('reflects a disconnected active element without any dependency change', () => {
+      const a = document.createElement('button');
+      document.body.append(a);
+      try {
+        const items = signal<readonly HostRovingItemHandle[]>([makeHandle(a)]);
+        const r = new RovingTabindex(() => items());
+        r.setActive(a);
+        expect(r.hasActive()).toBe(true);
+        expect(r.tabindexFor(a)).toBe(0);
+
+        a.remove();
+        expect(r.tabindexFor(a)).toBe(-1);
+
+        items.set([]);
+        expect(r.active()).toBe(null);
+        expect(r.hasActive()).toBe(false);
+      } finally {
+        a.remove();
+      }
     });
   });
 });

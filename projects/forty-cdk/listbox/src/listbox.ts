@@ -23,7 +23,6 @@ import {
   resolveListNavigation,
   type WritingDirection,
   nextEnabledHandle,
-  reconcileRovingActive,
   RovingTabindex,
   defaultItemToFormValue,
   isInArray,
@@ -232,7 +231,7 @@ export class ForListbox<T = string>
     transform: booleanAttribute,
   });
 
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#options.items());
   readonly #typeahead = injectTypeahead();
 
   readonly #options = new Collection<ForListboxOptionHandle<T>>();
@@ -343,7 +342,6 @@ export class ForListbox<T = string>
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.effectiveDisabled,
     });
-    reconcileRovingActive(this.roving, this.#options.items);
     effect(() => {
       this.#options.items();
       if (!this.#virtualized()) {

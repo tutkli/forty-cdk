@@ -1,8 +1,8 @@
 import { type Signal } from '@angular/core';
 
 import { Collection, type CollectionHandle } from '../collection/collection';
+import { nextEnabledHandle } from '../collection/enabled-handle-navigation';
 import { type ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../keyboard-navigation/move-in-collection';
 import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
 
 /**

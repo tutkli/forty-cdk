@@ -19,7 +19,6 @@ import {
   type WritingDirection,
   nextEnabledHandle,
   type MenuActivationModality,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
   injectTypeahead,
@@ -184,7 +183,7 @@ export class ForMenubar implements ForMenubarContext {
    * stop falls back to the first enabled trigger. The active pointer is
    * self-healing (a detached / disabled trigger no longer owns the stop).
    */
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#triggerCollection.items());
 
   readonly #triggerTypeahead = injectTypeahead();
 
@@ -192,7 +191,6 @@ export class ForMenubar implements ForMenubarContext {
   #detachContentPointerFn: (() => void) | null = null;
 
   constructor() {
-    reconcileRovingActive(this.roving, this.#triggerCollection.items);
     inject(DestroyRef).onDestroy(() => {
       this.#closeAction.cancel();
       this.detachContentPointer();

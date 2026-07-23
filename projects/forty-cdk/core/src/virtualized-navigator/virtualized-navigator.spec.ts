@@ -1,7 +1,8 @@
 import { ApplicationRef, effect, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { readEntryGuarded, VirtualizedNavigator } from './virtualized-navigator';
+import { tryReadHandle } from '../signal-graph/read-handle';
+import { VirtualizedNavigator } from './virtualized-navigator';
 
 interface FakeHandle {
   readonly id: () => string;
@@ -79,7 +80,7 @@ function createNavigator(
       idOf: (h) => h.id(),
       hostOf: (h) => h.host,
       readEntry: (h) =>
-        readEntryGuarded(() => ({ id: h.id(), disabled: h.disabled(), value: h.value() })),
+        tryReadHandle(() => ({ id: h.id(), disabled: h.disabled(), value: h.value() })),
       scrollIntoView: initial.scrollIntoView,
     },
     { deferFoldOnTotalTransition: initial.deferFold ?? false },
@@ -99,37 +100,6 @@ function createNavigator(
     },
   };
 }
-
-describe('readEntryGuarded', () => {
-  it('returns the value when the read succeeds', () => {
-    expect(readEntryGuarded(() => 42)).toBe(42);
-  });
-
-  it('returns null on an NG0950 (RuntimeError -950) read', () => {
-    const result = readEntryGuarded(() => {
-      const error = new Error('required input not set') as Error & { code?: number };
-      error.code = -950;
-      throw error;
-    });
-    expect(result).toBeNull();
-  });
-
-  it('rethrows a non-NG0950 error unchanged', () => {
-    expect(() =>
-      readEntryGuarded(() => {
-        throw new Error('boom');
-      }),
-    ).toThrow('boom');
-  });
-
-  it('rethrows a non-Error throw', () => {
-    expect(() =>
-      readEntryGuarded(() => {
-        throw 'not-an-error';
-      }),
-    ).toThrow();
-  });
-});
 
 describe('VirtualizedNavigator', () => {
   describe('snapshotByPos', () => {

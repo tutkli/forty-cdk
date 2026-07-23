@@ -12,7 +12,7 @@ import { injectPopoverContext } from './popover-context';
   selector: '[forPopoverDescription]',
   exportAs: 'forPopoverDescription',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForPopoverDescription {

@@ -2,10 +2,9 @@ import { type OutputEmitterRef, type Signal, signal, type WritableSignal } from 
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../collection/collection';
-import { firstEnabledHost } from '../collection/first-enabled-host';
+import { firstEnabledHost, nextEnabledHandle } from '../collection/enabled-handle-navigation';
 import type { IdGenerator } from '../id-generator/id-generator';
 import { type ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
-import { nextEnabledHandle } from '../keyboard-navigation/move-in-collection';
 import { AnchorSlot, IdentifiedElementSlot } from '../overlay-controller/element-registry';
 import { CloseReasonState } from '../overlay-controller/close-reason-state';
 import { InitialFocusState } from '../overlay-controller/initial-focus-state';

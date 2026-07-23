@@ -1,4 +1,6 @@
-import { computed, type Signal, signal } from '@angular/core';
+import { computed, linkedSignal, type Signal, signal } from '@angular/core';
+
+import type { HostRovingItemHandle } from './host-roving-context';
 
 /**
  * Tracks the single "active" element of a roving-tabindex group: the one
@@ -10,28 +12,43 @@ import { computed, type Signal, signal } from '@angular/core';
  * a reactive `tabindexFor(el)` for host bindings on each item, plus
  * `setActive` / `focusActive` for the consumer.
  *
- * The active pointer is **self-healing**: a stale active element — one that
- * has detached from the document, or carries `disabled` / `aria-disabled`
- * (every primitive reflects its disabled state to one of those attributes) —
- * is treated as "no active", so the consumer's first-enabled fallback
- * re-engages and the group keeps exactly one tab stop. This guards the
- * single-frame window before the container's reconciliation nulls the
- * pointer; containers should still call {@link unregister} on teardown and
- * reconcile against their visible set for a clean, reactive reset.
+ * The active pointer is **self-healing** on read: a stale active element —
+ * one that has detached from the document, or carries `disabled` /
+ * `aria-disabled` (every primitive reflects its disabled state to one of
+ * those attributes) — is discounted by `hasActive` / `tabindexFor`, so the
+ * consumer's first-enabled fallback re-engages and the group keeps exactly
+ * one tab stop even before reconciliation settles.
+ *
+ * When constructed with an `items` producer, the active pointer is also
+ * **reconciled reactively**: whenever the active host leaves the group's
+ * usable set (unregisters, becomes disabled, or detaches), `active()` is
+ * re-seeded. The `fallback` option chooses how: `'none'` (default) nulls it
+ * so each item's first-enabled fallback re-engages (pull-based, for a
+ * container whose item tabindex derives from {@link hasActive}), while
+ * `'first-enabled'` promotes the first enabled handle directly (push-based,
+ * for a container whose item tabindex reads {@link active} and needs a
+ * concrete owner rather than a null pointer, e.g. Tree). Omitting `items`
+ * yields a pass-through of the raw pointer for consumers that own no roving
+ * collection (date-field / time-field).
  *
  * Construct directly with `new RovingTabindex()` — there is no internal
- * state requiring an injection context or `DestroyRef` cleanup.
+ * state requiring an injection context or `DestroyRef` cleanup (the
+ * reconciliation is a `linkedSignal`, not an `effect`).
  */
 export class RovingTabindex {
-  readonly #active = signal<HTMLElement | null>(null);
+  readonly #rawActive = signal<HTMLElement | null>(null);
+
+  readonly #active: Signal<HTMLElement | null>;
 
   /**
-   * The raw active element, or `null`. Reflects the last {@link setActive}
-   * call verbatim, including a now-stale element — use it for "is this the
+   * The active element, or `null`. Follows the last {@link setActive} call,
+   * reconciled away from a host that has left the usable set when an `items`
+   * producer is supplied (otherwise verbatim). Use it for "is this the
    * focused candidate" styling (`data-highlighted`). For the tab-stop gate,
-   * prefer {@link hasActive}, which discounts a stale active.
+   * prefer {@link hasActive}, which additionally discounts a stale active on
+   * read.
    */
-  readonly active: Signal<HTMLElement | null> = this.#active.asReadonly();
+  readonly active: Signal<HTMLElement | null>;
 
   /**
    * Whether a usable active element currently owns the tab stop. `false`
@@ -40,10 +57,34 @@ export class RovingTabindex {
    * entry point. Reactive — wire the per-item `tabindex` gate to this rather
    * than `active() !== null`.
    */
-  readonly hasActive: Signal<boolean> = computed(() => {
-    const el = this.#active();
-    return el !== null && !isStale(el);
-  });
+  readonly hasActive: Signal<boolean>;
+
+  constructor(
+    items?: () => readonly HostRovingItemHandle[],
+    options: { fallback?: 'none' | 'first-enabled' } = {},
+  ) {
+    const fallback = options.fallback ?? 'none';
+    this.#active = linkedSignal({
+      source: () => ({ items: items ? items() : null, raw: this.#rawActive() }),
+      computation: ({ items: list, raw }) => {
+        if (list === null || raw === null) {
+          return raw;
+        }
+        const handle = list.find((item) => item.host === raw);
+        if (handle && !handle.disabled() && raw.isConnected) {
+          return raw;
+        }
+        return fallback === 'first-enabled'
+          ? (list.find((item) => !item.disabled())?.host ?? null)
+          : null;
+      },
+    });
+    this.active = this.#active;
+    this.hasActive = computed(() => {
+      const el = this.#active();
+      return el !== null && !isStale(el);
+    });
+  }
 
   /**
    * Returns the tabindex value for `el`: `0` if it is the active element,
@@ -62,7 +103,7 @@ export class RovingTabindex {
   }
 
   setActive(el: HTMLElement | null): void {
-    this.#active.set(el);
+    this.#rawActive.set(el);
   }
 
   /**
@@ -74,7 +115,7 @@ export class RovingTabindex {
    */
   unregister(el: HTMLElement): void {
     if (this.#active() === el) {
-      this.#active.set(null);
+      this.#rawActive.set(null);
     }
   }
 
@@ -88,7 +129,7 @@ export class RovingTabindex {
       return;
     }
     if (target !== this.#active()) {
-      this.#active.set(target);
+      this.#rawActive.set(target);
     }
     target.focus();
   }

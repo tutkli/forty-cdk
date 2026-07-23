@@ -15,7 +15,6 @@ import {
   type ListNavigationAction,
   rovingListTarget,
   type WritingDirection,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
 } from 'forty-cdk/core';
@@ -127,7 +126,7 @@ export class ForStepper implements ForStepperContext {
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#triggers.items());
 
   readonly #items = new Collection<ForStepperItemHandle>();
   readonly #triggers = new Collection<ForStepperTriggerHandle>();
@@ -146,8 +145,6 @@ export class ForStepper implements ForStepperContext {
   readonly #firstSelectableTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
 
   constructor() {
-    reconcileRovingActive(this.roving, this.#triggers.items);
-
     let wasCompleted = this.isCompleted();
     effect(() => {
       const completed = this.isCompleted();

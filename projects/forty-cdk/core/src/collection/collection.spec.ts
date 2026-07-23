@@ -200,6 +200,25 @@ describe('Collection', () => {
     expect(col.items()).toBe(before);
   });
 
+  it('returns the same reference across a childList mutation that leaves order unchanged', async () => {
+    const col = new Collection<Handle>();
+    col.register(handle('a', a));
+    col.register(handle('b', b));
+    col.register(handle('c', c));
+    await waitForMutationObserver();
+
+    const before = col.items();
+    expect(before.map((h) => h.id)).toEqual(['a', 'b', 'c']);
+
+    const extra = document.createElement('div');
+    host.appendChild(extra);
+    await waitForMutationObserver();
+
+    const after = col.items();
+    expect(Object.is(before, after)).toBe(true);
+    expect(after.map((h) => h.id)).toEqual(['a', 'b', 'c']);
+  });
+
   it('invalidates only the owning collection when sibling subtrees mutate', async () => {
     const outer = new Collection<Handle>();
     const innerHost = document.createElement('div');

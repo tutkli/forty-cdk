@@ -21,7 +21,6 @@ import {
   resolveListNavigation,
   resolveTreeExpandCollapse,
   type WritingDirection,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
   injectTypeahead,
@@ -226,7 +225,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   /** Root container hosts level-1 items. */
   readonly level = signal(1);
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#visibleHandles(), { fallback: 'first-enabled' });
 
   readonly #typeahead = injectTypeahead();
   readonly #items = new Collection<ForTreeItemHandle>();
@@ -376,7 +375,6 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   }
 
   constructor() {
-    reconcileRovingActive(this.roving, this.#visibleHandles, { fallback: 'first-enabled' });
     effect(() => {
       this.#items.items();
       if (!this.#virtualized()) return;
