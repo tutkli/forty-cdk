@@ -9,7 +9,7 @@ import {
   InertSiblingsStack,
   MODAL_EXEMPT_ATTRIBUTE,
 } from '../inert-siblings/inert-siblings';
-import { buildOutsideVetoOptions } from '../overlay-controller/outside-veto';
+import { buildOutsideVetoOptions, outsideVetoChannels } from '../overlay-controller/outside-veto';
 import { injectPortal } from '../portal/portal';
 import {
   createVetoableEvent,
@@ -325,6 +325,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     const dismissCfg = config.dismiss;
     if (dismissCfg !== undefined) {
       dismissable.activate({
+        channels: outsideVetoChannels(dismissCfg),
         exemptElements: () => [
           ...(dismissCfg.exemptElements?.() ?? []),
           ...resolveModalExemptOverlays(document),

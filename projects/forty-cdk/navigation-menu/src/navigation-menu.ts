@@ -208,6 +208,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.#recordMotion(this.value(), value);
     this.value.set(value);
     this.#dismiss.activate({
+      channels: ['pointer'],
       onEscapeKeyDown: () => {
         const active = this.#document.activeElement;
         const content = this.activeContentHost();
