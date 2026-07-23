@@ -21,6 +21,14 @@ import type { FieldState, FieldTree } from '@angular/forms/signals';
  *   tracking, focus) delegates to the original field state, so `[formField]`
  *   pushes the same UI state into the control it would for any other field.
  *
+ * The view is also **introspection-coherent**: property presence checks
+ * (`in`, `Reflect.has`), key enumeration (`Object.keys`, spread) and
+ * `Object.getOwnPropertyDescriptor` delegate to the original field the same
+ * way property reads do, so however `[formField]` probes the returned control
+ * it gets answers consistent with the `get` view. This guards against a future
+ * `@angular/forms/signals` release switching an internal from a property read
+ * to a membership check and silently mis-wiring the field.
+ *
  * Single source of truth: the value view is `computed` from the original
  * field, never mirrored into a separate signal — there is no second copy of
  * the value to drift.
@@ -85,9 +93,32 @@ export function forSingleValueField<T>(field: FieldTree<T | null>): FieldTree<re
       }
       const real = field() as unknown as Record<string | symbol, unknown>;
       const member = real[property];
-      return typeof member === 'function'
-        ? (member as (...args: unknown[]) => unknown).bind(real)
-        : member;
+      if (typeof member === 'function' && typeof member.bind === 'function') {
+        return member.bind(real);
+      }
+      return member;
+    },
+    has(_target, property) {
+      return Reflect.has(field() as object, property);
+    },
+    ownKeys(_target) {
+      return Reflect.ownKeys(field() as object);
+    },
+    getOwnPropertyDescriptor(_target, property) {
+      const descriptor = Reflect.getOwnPropertyDescriptor(field() as object, property);
+      if (descriptor === undefined) {
+        return undefined;
+      }
+      if (property === 'controlValue' || property === 'value') {
+        return {
+          configurable: true,
+          enumerable: descriptor.enumerable,
+          writable: true,
+          value: property === 'controlValue' ? controlValue : value,
+        };
+      }
+      descriptor.configurable = true;
+      return descriptor;
     },
   });
 

@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import {
   disabled,
+  type FieldTree,
   FormField,
   form,
   required,
@@ -313,6 +314,173 @@ describe('forSingleValueField', () => {
       const inputs = hiddenInputs(el);
       expect(inputs).toHaveLength(1);
       expect(inputs[0]!.value).toBe('fr');
+    });
+  });
+
+  describe('introspection coherence (the returned control answers consistently)', () => {
+    @Component({ template: '' })
+    class Host {
+      readonly model = signal<{ country: string | null }>({ country: null });
+      readonly tree = form(this.model);
+      readonly bridged = forSingleValueField(this.tree.country);
+    }
+
+    it('reports `value` and `controlValue` as present via `in` and `Reflect.has`', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged();
+      expect('value' in control).toBe(true);
+      expect('controlValue' in control).toBe(true);
+      expect(Reflect.has(control, 'value')).toBe(true);
+      expect(Reflect.has(control, 'controlValue')).toBe(true);
+    });
+
+    it('reports delegated members as present and unknown members as absent', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged();
+      expect('errors' in control).toBe(true);
+      expect('disabled' in control).toBe(true);
+      expect('markAsTouched' in control).toBe(true);
+      expect('definitelyNotAMember' in control).toBe(false);
+      expect(Reflect.has(control, 'definitelyNotAMember')).toBe(false);
+    });
+
+    it('enumerates `controlValue` as an own key (Object.keys, Reflect.ownKeys)', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged();
+      expect(Object.keys(control)).toContain('controlValue');
+      expect(Reflect.ownKeys(control)).toContain('controlValue');
+    });
+
+    it('exposes `controlValue` through spread as the same array view the `get` view returns', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged();
+      const spread = { ...control } as Record<string, unknown>;
+      expect(spread['controlValue']).toBe(control.controlValue);
+    });
+
+    it('describes `controlValue` with a descriptor that agrees with the `get` view', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged();
+      const descriptor = Object.getOwnPropertyDescriptor(control, 'controlValue');
+      expect(descriptor?.value).toBe(control.controlValue);
+      expect(descriptor?.configurable).toBe(true);
+      expect(descriptor?.enumerable).toBe(true);
+    });
+
+    it('returns no descriptor for an unknown member', () => {
+      const { instance } = renderHost(Host);
+      const control = instance.bridged();
+      expect(Object.getOwnPropertyDescriptor(control, 'definitelyNotAMember')).toBeUndefined();
+    });
+  });
+
+  describe('[formField] control-access contract (tripwire for Signal Forms internals)', () => {
+    type TrapOp = 'get' | 'has' | 'ownKeys' | 'getOwnPropertyDescriptor';
+    interface Access {
+      op: TrapOp;
+      key: string;
+    }
+
+    const recordingField = <T>(
+      field: FieldTree<readonly T[]>,
+      accesses: Access[],
+    ): FieldTree<readonly T[]> => {
+      const control = field() as object;
+      const recorder = new Proxy(control, {
+        get(target, property) {
+          if (typeof property === 'string') {
+            accesses.push({ op: 'get', key: property });
+          }
+          return Reflect.get(target, property);
+        },
+        has(target, property) {
+          if (typeof property === 'string') {
+            accesses.push({ op: 'has', key: property });
+          }
+          return Reflect.has(target, property);
+        },
+        ownKeys(target) {
+          accesses.push({ op: 'ownKeys', key: '*' });
+          return Reflect.ownKeys(target);
+        },
+        getOwnPropertyDescriptor(target, property) {
+          if (typeof property === 'string') {
+            accesses.push({ op: 'getOwnPropertyDescriptor', key: property });
+          }
+          return Reflect.getOwnPropertyDescriptor(target, property);
+        },
+      });
+      return (() => recorder) as unknown as FieldTree<readonly T[]>;
+    };
+
+    @Component({
+      imports: [ForListbox, ForListboxOption, FormField],
+      template: `
+        <ul forListbox [formField]="fruit">
+          <li>
+            <button type="button" forListboxOption value="apple" data-test-id="apple">Apple</button>
+          </li>
+          <li>
+            <button type="button" forListboxOption value="banana" data-test-id="banana">
+              Banana
+            </button>
+          </li>
+        </ul>
+      `,
+    })
+    class Host {
+      readonly model = signal<{ fruit: string | null }>({ fruit: null });
+      readonly tree = form(this.model);
+      readonly accesses: Access[] = [];
+      readonly fruit = recordingField(forSingleValueField(this.tree.fruit), this.accesses);
+    }
+
+    const exerciseLifecycle = async (): Promise<Access[]> => {
+      const { el, instance, fixture } = renderHost(Host);
+      await flush(fixture);
+      instance.model.set({ fruit: 'apple' });
+      await flush(fixture);
+      optOf(el, 'banana').click();
+      await flush(fixture);
+      listboxOf(el).dispatchEvent(
+        new FocusEvent('focusout', { relatedTarget: document.body, bubbles: true }),
+      );
+      await flush(fixture);
+      return instance.accesses;
+    };
+
+    it('accesses the control only through property reads, never membership or enumeration checks', async () => {
+      const accesses = await exerciseLifecycle();
+      const introspection = accesses.filter((a) => a.op !== 'get');
+      expect(introspection).toEqual([]);
+    });
+
+    it('reads exactly the documented member set on the control', async () => {
+      const accesses = await exerciseLifecycle();
+      const readMembers = [
+        ...new Set(accesses.filter((a) => a.op === 'get').map((a) => a.key)),
+      ].sort();
+      expect(readMembers).toEqual([
+        'controlValue',
+        'dirty',
+        'disabled',
+        'disabledReasons',
+        'errors',
+        'hidden',
+        'invalid',
+        'markAsTouched',
+        'max',
+        'maxLength',
+        'min',
+        'minLength',
+        'name',
+        'nodeState',
+        'pattern',
+        'pending',
+        'readonly',
+        'required',
+        'touched',
+      ]);
     });
   });
 });
