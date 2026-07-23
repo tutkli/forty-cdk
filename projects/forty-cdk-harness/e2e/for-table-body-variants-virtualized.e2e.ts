@@ -11,6 +11,9 @@ const dataCell = (page: Page, index: number, column: string) =>
 const variantCell = (page: Page, index: number) =>
   page.locator(`[data-index="${index}"] [data-row-variant]`);
 
+const headerCell = (page: Page, column: string) =>
+  page.locator(`[forTableHeaderCell][data-column="${column}"]`);
+
 test.describe('ForTableBody — row variants + virtualization cross-window navigation', () => {
   test('ArrowDown steps over a group-header variant onto the next data row, preserving the column', async ({
     page,
@@ -70,7 +73,7 @@ test.describe('ForTableBody — row variants + virtualization cross-window navig
     await expectFocused(dataCell(page, LAST - 1, 'name'));
   });
 
-  test('Ctrl+Home with a leading group-header variant focuses the first data cell', async ({
+  test('Ctrl+Home lands on the first header cell when the header participates in roving', async ({
     page,
   }) => {
     await gotoFixture(page, 'for-table-body-variants-virtualized');
@@ -86,7 +89,6 @@ test.describe('ForTableBody — row variants + virtualization cross-window navig
 
     await page.keyboard.press('Control+Home');
 
-    await expect(dataCell(page, 1, 'id')).toBeAttached();
-    await expectFocused(dataCell(page, 1, 'id'));
+    await expectFocused(headerCell(page, 'id'));
   });
 });

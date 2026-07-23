@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
-import { ForDragPlaceholder } from 'forty-cdk/drag-drop';
+import { ForDragPlaceholder, moveItemInArray } from 'forty-cdk/drag-drop';
 
 import {
   ForColumnDef,
@@ -23,7 +23,7 @@ import { ForTableColumnLabel } from './table-column-label';
 import { type TableResizeDescriptor } from './table-column-resizer';
 import { type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowSelector } from './table-row-selector';
-import { type TableMode, type TableSelectionMode } from './table-context';
+import { assertColumnName, type TableMode, type TableSelectionMode } from './table-context';
 import { type TableSortDescriptor } from './table-sort-header';
 
 interface Row {
@@ -472,6 +472,17 @@ class RowInteractionHost {
               </svg>
               Edit {{ row.name }}
             </button>
+            <label class="row-label"><input type="checkbox" class="row-checkbox" /> Flag</label>
+            <div class="row-editable" contenteditable></div>
+            <div class="row-editable-plain" contenteditable="plaintext-only"></div>
+            <div class="row-noneditable" contenteditable="false">x</div>
+            <audio class="row-audio" controls></audio>
+            <video class="row-video" controls></video>
+            <div class="row-role-button" role="button" tabindex="0">Menu</div>
+            <div class="row-role-checkbox" role="checkbox" tabindex="0" aria-checked="false">
+              Star
+            </div>
+            <div class="row-role-note" role="note">note</div>
           </ng-template>
         </ng-container>
       </for-table-body>
@@ -618,6 +629,23 @@ class NeitherConfigHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable>
+      <for-table-body [rows]="rows">
+        <ng-container forColumnDef="first name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell let-row>{{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class BadColumnNameHost {
+  readonly rows = [{ name: 'Ada' }];
+}
+
+@Component({
   imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell, ForTableColumnLabel],
   template: `
     <div forTable mode="grid" ariaLabel="Resizable">
@@ -760,6 +788,74 @@ class ToggleReorderHost {
   readonly reorderable = signal(false);
 }
 
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell, ForPlaceholderCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="Loading" [rowCount]="rowCount()">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [loading]="loading()"
+        [placeholderRows]="placeholderRows()"
+      >
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton">loading</span></ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class LoadingSkeletonHost {
+  readonly rows = signal<Row[]>([]);
+  readonly rowKey = (row: Row): number => row.id;
+  readonly loading = signal(true);
+  readonly placeholderRows = signal(3);
+  readonly rowCount = signal<number | undefined>(undefined);
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable mode="grid" ariaLabel="Mixed apply">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [displayedColumns]="order()"
+        (columnReorder)="onReorder($event)"
+      >
+        <ng-container forColumnDef="name" reorderable>
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="dept" reorderable>
+          <ng-template forHeaderCell>Dept</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class MixedReorderApplyHost {
+  readonly rows = signal<Row[]>(buildRows());
+  readonly rowKey = (row: Row): number => row.id;
+  readonly order = signal<readonly string[]>(['name', 'role', 'dept']);
+  readonly lastReorder = signal<TableColumnReorderDescriptor | null>(null);
+  onReorder(descriptor: TableColumnReorderDescriptor): void {
+    this.lastReorder.set(descriptor);
+    this.order.update((current) => moveItemInArray(current, descriptor.from, descriptor.to));
+  }
+}
+
 /**
  * Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a
  * deterministic jsdom test. Returns the window's `measureRow` spy so tests can assert the
@@ -900,6 +996,60 @@ describe('ForTableBody', () => {
     expect(rows[0]!.querySelector('[data-column="name"]')?.textContent?.trim()).toBe('Margaret#0');
   });
 
+  describe('loading skeleton rows (#1387)', () => {
+    it('disables the skeleton cells so grid navigation skips them', () => {
+      const { queryAll } = renderHost(LoadingSkeletonHost);
+      const cells = queryAll('[forTableRow] [forTableCell]');
+      expect(cells).toHaveLength(6);
+      for (const cell of cells) {
+        expect(cell.getAttribute('aria-disabled')).toBe('true');
+        expect(cell.getAttribute('tabindex')).toBe('-1');
+        expect(cell.hasAttribute('data-disabled')).toBe(true);
+      }
+    });
+
+    it('derives aria-rowcount from the rendered skeleton rows while loading', () => {
+      const { query, queryAll } = renderHost(LoadingSkeletonHost);
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('4');
+      expect(queryAll('[forTableRow]').map((r) => r.getAttribute('aria-rowindex'))).toEqual([
+        '2',
+        '3',
+        '4',
+      ]);
+    });
+
+    it('matches aria-rowcount to a custom placeholderRows count', () => {
+      const { instance, query, queryAll, fixture } = renderHost(LoadingSkeletonHost);
+      instance.placeholderRows.set(5);
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(5);
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('6');
+      expect(rows[4]!.getAttribute('aria-rowindex')).toBe('6');
+    });
+
+    it('lets an explicit [rowCount] win over the skeleton count while loading', () => {
+      const { instance, query, fixture } = renderHost(LoadingSkeletonHost);
+      instance.rowCount.set(100);
+      fixture.detectChanges();
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('101');
+    });
+
+    it('restores the data-row count and drops disabled when loading resolves (zoneless)', () => {
+      const { instance, query, fixture } = renderHost(LoadingSkeletonHost);
+      instance.rows.set([
+        { id: 1, name: 'Ada', role: 'Engineer' },
+        { id: 2, name: 'Grace', role: 'Engineer' },
+      ]);
+      instance.loading.set(false);
+      fixture.detectChanges();
+      expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('3');
+      expect(query('[forTableRow] [data-column="name"]')?.hasAttribute('aria-disabled')).toBe(
+        false,
+      );
+    });
+  });
+
   describe('mode="table" (blessed combination)', () => {
     it('renders the declarative layer under mode="table" with root role="table"', () => {
       const { query } = renderHost(TableModeBodyHost);
@@ -1004,6 +1154,11 @@ describe('ForTableBody', () => {
   });
 
   describe('measured row heights (#1353)', () => {
+    const elementCallsOf = (measureRow: ReturnType<typeof vi.fn>): HTMLElement[] =>
+      measureRow.mock.calls.map((c) => c[0]).filter((a): a is HTMLElement => a !== null);
+    const nullCallsOf = (measureRow: ReturnType<typeof vi.fn>): number =>
+      measureRow.mock.calls.filter((c) => c[0] === null).length;
+
     it('calls the window measureRow once per stamped row (data + variant) when measureRows is set', async () => {
       const { instance, queryAll, flush } = renderHost(MeasureRowsHost);
       const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
@@ -1012,9 +1167,7 @@ describe('ForTableBody', () => {
       const rows = queryAll('[forTableRow]') as HTMLElement[];
       expect(rows).toHaveLength(3);
       expect(rows[1]!.querySelector('[data-row-variant]')?.textContent?.trim()).toBe('Group 6');
-      expect(measureRow).toHaveBeenCalledTimes(3);
-      const measuredEls = measureRow.mock.calls.map((call) => call[0] as HTMLElement);
-      expect(measuredEls).toEqual(rows);
+      expect(elementCallsOf(measureRow)).toEqual(rows);
     });
 
     it('never calls measureRow when measureRows is unset', async () => {
@@ -1029,10 +1182,10 @@ describe('ForTableBody', () => {
       const { instance, flush } = renderHost(MeasureRowsHost);
       const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
       await flush();
-      expect(measureRow).toHaveBeenCalledTimes(3);
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
 
       await flush();
-      expect(measureRow).toHaveBeenCalledTimes(3);
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
     });
 
     it('re-measures a row host recycled to a new window index without Zone.js', async () => {
@@ -1045,12 +1198,51 @@ describe('ForTableBody', () => {
         measureRow,
       });
       await flush();
-      expect(measureRow).toHaveBeenCalledTimes(3);
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
 
       measureRow.mockClear();
       windowRows.set([8, 9, 10].map((index) => ({ index, start: index * 44 })));
       await flush();
-      expect(measureRow).toHaveBeenCalledTimes(3);
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
+    });
+
+    it('sweeps detached rows by calling measureRow(null) after the measure loop', async () => {
+      const { instance, flush } = renderHost(MeasureRowsHost);
+      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      await flush();
+
+      expect(measureRow).toHaveBeenCalledWith(null);
+      const calls = measureRow.mock.calls.map((c) => c[0]);
+      expect(calls[calls.length - 1]).toBeNull();
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
+    });
+
+    it('sweeps on every measured render even when no row needs re-measuring (guard render)', async () => {
+      const { instance, flush } = renderHost(MeasureRowsHost);
+      const measureRow = vi.fn();
+      const windowRows = signal([5, 6, 7].map((index) => ({ index, start: index * 44 })));
+      instance.table().registerVirtualWindow({
+        rows: windowRows,
+        totalSize: signal(880),
+        measureRow,
+      });
+      await flush();
+      const before = nullCallsOf(measureRow);
+      expect(before).toBeGreaterThan(0);
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
+
+      windowRows.set([5, 6, 7].map((index) => ({ index, start: index * 44 })));
+      await flush();
+      expect(nullCallsOf(measureRow)).toBeGreaterThan(before);
+      expect(elementCallsOf(measureRow)).toHaveLength(3);
+    });
+
+    it('does not sweep when measureRows is unset', async () => {
+      const { instance, flush } = renderHost(MeasureRowsHost);
+      instance.measure.set(false);
+      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      await flush();
+      expect(measureRow).not.toHaveBeenCalled();
     });
   });
 
@@ -1566,6 +1758,73 @@ describe('ForTableBody', () => {
       queryAll('[forTableRow]')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       expect(instance.lastActivate()?.index).toBe(0);
     });
+
+    it('does not activate the row when a click originates from a label descendant', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('label.row-label')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('does not activate the row when a click originates from a contenteditable="" region', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('div.row-editable')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('does not activate the row when a click originates from a contenteditable="plaintext-only" region', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('div.row-editable-plain')[0]!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('does not activate the row when a click originates from audio[controls]', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('audio.row-audio')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('does not activate the row when a click originates from video[controls]', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('video.row-video')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('does not activate the row when a click originates from a [role="button"] widget', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('div.row-role-button')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('does not activate the row when a click originates from a [role="checkbox"] widget', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('div.row-role-checkbox')[0]!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      );
+      expect(instance.lastActivate()).toBeNull();
+    });
+
+    it('leaves Enter on a label descendant un-prevented and does not activate the row', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      const label = queryAll('label.row-label')[0]!;
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      label.dispatchEvent(enter);
+      expect(instance.lastActivate()).toBeNull();
+      expect(enter.defaultPrevented).toBe(false);
+    });
+
+    it('still activates the row from a contenteditable="false" island (not over-matched)', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('div.row-noneditable')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()?.index).toBe(0);
+    });
+
+    it('still activates the row from a non-interactive [role="note"] element (enumerated roles only)', () => {
+      const { instance, queryAll } = renderHost(InteractiveDescendantHost);
+      queryAll('div.row-role-note')[0]!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(instance.lastActivate()?.index).toBe(0);
+    });
   });
 
   describe('per-column resize options + columnWidths (#1351)', () => {
@@ -1658,6 +1917,49 @@ describe('ForTableBody', () => {
       fixture.detectChanges();
       expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('320');
     });
+
+    it('clears the track var when a column width is removed from columnWidths', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      await flush();
+      const root = query('[forTable]') as HTMLElement;
+      expect(root.style.getPropertyValue('--for-table-col-name-width')).toBe('150px');
+      instance.widths.set({});
+      await flush();
+      expect(root.style.getPropertyValue('--for-table-col-name-width')).toBe('');
+    });
+  });
+
+  describe('column name validation (#1387)', () => {
+    it('throws a prefixed error for a name containing a space', () => {
+      expect(() => assertColumnName('first name', 'ForColumnDef')).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*first name/,
+      );
+    });
+
+    it('throws for a name containing a closing paren', () => {
+      expect(() => assertColumnName('a)', 'ForColumnDef')).toThrowError(/\[forty-cdk\/table\]/);
+    });
+
+    it('throws for a name containing a semicolon', () => {
+      expect(() => assertColumnName('a;b', 'ForColumnDef')).toThrowError(/\[forty-cdk\/table\]/);
+    });
+
+    it('throws for an empty name', () => {
+      expect(() => assertColumnName('', 'ForColumnDef')).toThrowError(/\[forty-cdk\/table\]/);
+    });
+
+    it('does not throw for letters, digits, hyphens, and underscores', () => {
+      expect(() => assertColumnName('name', 'x')).not.toThrow();
+      expect(() => assertColumnName('first-name', 'x')).not.toThrow();
+      expect(() => assertColumnName('first_name', 'x')).not.toThrow();
+      expect(() => assertColumnName('col2', 'x')).not.toThrow();
+    });
+
+    it('throws from a forColumnDef declaring a CSS-unsafe name', () => {
+      expect(() => renderHost(BadColumnNameHost)).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*first name/,
+      );
+    });
   });
 
   describe('column reorder (#1350)', () => {
@@ -1717,6 +2019,20 @@ describe('ForTableBody', () => {
       keyboardReorderNameRight(el);
       await flush();
       expect(instance.lastReorder()).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
+    });
+
+    it('emits full-displayed-order indices and preserves the interleaved fixed column via moveItemInArray', async () => {
+      const { instance, el, queryAll, fixture, flush } = renderHost(MixedReorderApplyHost);
+      await flush();
+      keyboardReorderNameRight(el);
+      await flush();
+      expect(instance.lastReorder()).toEqual({ from: 0, to: 2, columns: ['dept', 'name'] });
+      fixture.detectChanges();
+      expect(queryAll('[forTableHeaderCell]').map((h) => h.getAttribute('data-column'))).toEqual([
+        'role',
+        'dept',
+        'name',
+      ]);
     });
 
     it('re-stamps the header order after the consumer feeds the new order back (BYO-data loop)', async () => {

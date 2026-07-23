@@ -1,4 +1,4 @@
-import { booleanAttribute, inject, InjectionToken, type Signal } from '@angular/core';
+import { booleanAttribute, inject, InjectionToken, isDevMode, type Signal } from '@angular/core';
 
 import { type WritingDirection } from 'forty-cdk/core';
 
@@ -89,8 +89,13 @@ export interface TableVirtualWindow {
    * `measureRows` input is set, so a window mixing row shapes (denser variant
    * rows, group separators) stays contiguous after scroll. The element must
    * carry the `data-index` attribute the body stamps.
+   *
+   * `<for-table-body>` also calls it with `null` after measuring the rendered
+   * rows to sweep detached rows recycled out of the window, evicting them from
+   * the virtualizer's measurement cache so they are not retained/observed until
+   * the directive is destroyed.
    */
-  measureRow(element: HTMLElement): void;
+  measureRow(element: HTMLElement | null): void;
 }
 
 /**
@@ -120,6 +125,13 @@ export interface TableVirtualRowNavigation {
    * drop to a far row), without depending on `ForTableVirtualized` directly.
    */
   scrollViewportRect(): DOMRect | null;
+  /**
+   * Drop any stashed cross-window target. `ForTable` calls this on the next
+   * keyboard interaction that reaches the grid, so a pending move set by an
+   * earlier Ctrl+End / Page / Arrow is superseded rather than teleporting focus
+   * when a far page later mounts.
+   */
+  clearPending(): void;
 }
 
 /** Coordination contract owned by `ForTable`, injected by every descendant piece. */
@@ -215,12 +227,28 @@ export interface ForTableContext {
    */
   setColumnWidth(column: string, width: number): void;
   /**
+   * Removes a column's published `--for-table-col-<column>-width` custom property
+   * from the table root. Called by `[forTableColumnResizer]` when its width resets
+   * to `undefined` or the handle is destroyed, so a stale track var cannot survive
+   * a width reset or resurrect when the column is re-added.
+   */
+  removeColumnWidth(column: string): void;
+  /**
    * The resolved true total data-row count for `aria-rowcount` and the virtualized
    * scroll range, in resolution order: the explicit `[rowCount]` input when set,
    * else the declarative `<for-table-body>`'s dataset length when a body has
    * registered one, else `undefined` (readers fall back to the rendered row count).
    */
   readonly rowCount: Signal<number | undefined>;
+  /**
+   * The count of currently loaded data rows (the declarative `<for-table-body>`
+   * dataset length), or `undefined` when no body has registered one (raw-primitive
+   * rendering). Distinct from `rowCount`, which an explicit `[rowCount]` raises to a
+   * server-known total larger than the loaded rows; cross-window navigation clamps
+   * unmounted targets to this so a target beyond the loaded prefix cannot stash a
+   * pending focus move that resolves only when a far page later loads.
+   */
+  readonly loadedRowCount: Signal<number | undefined>;
   /**
    * Registers (or clears, with `null`) the declarative `<for-table-body>`'s dataset
    * length as the body-derived total row count. `ForTableBody` registers
@@ -322,6 +350,27 @@ export const FOR_TABLE_ROW_CONTEXT = new InjectionToken<ForTableRowContext>(
  */
 export function coerceSticky(value: boolean | string): TableStickyValue {
   return value === 'end' ? 'end' : booleanAttribute(value);
+}
+
+const COLUMN_NAME_PATTERN = /^[-_A-Za-z0-9]+$/;
+
+/**
+ * Dev-mode guard for a column name before it is interpolated into CSS. Column
+ * names flow into the `--for-table-col-<name>-width` custom property and the
+ * `grid-template-columns` track string, where a space, `)`, `;`, or quote would
+ * silently produce an invalid declaration and collapse the layout with no error.
+ * Rejects any name outside letters, digits, hyphens, and underscores. No-op in
+ * production builds.
+ */
+export function assertColumnName(name: string, piece: string): void {
+  if (isDevMode() && !COLUMN_NAME_PATTERN.test(name)) {
+    throw new Error(
+      `[forty-cdk/table] Invalid column name ${JSON.stringify(name)} declared on ${piece}. ` +
+        `Column names are interpolated into CSS custom-property names ` +
+        `(--for-table-col-<name>-width) and grid-template-columns, so they may contain ` +
+        `only letters, digits, hyphens, and underscores.`,
+    );
+  }
 }
 
 /**

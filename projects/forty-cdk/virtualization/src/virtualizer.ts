@@ -88,8 +88,13 @@ export interface ForVirtualizer {
   scrollToIndex(index: number, options?: { align?: 'start' | 'center' | 'end' | 'auto' }): void;
   /** Scroll the container to an absolute pixel offset. */
   scrollToOffset(offset: number): void;
-  /** Record the measured size of a rendered item element (dynamic sizes). */
-  measureElement(element: HTMLElement): void;
+  /**
+   * Record the measured size of a rendered item element (dynamic sizes).
+   * Passing `null` sweeps detached (evicted) elements from the measurement
+   * cache and stops observing them, so recycled rows scrolled out of the window
+   * are not retained/observed until the directive is destroyed.
+   */
+  measureElement(element: HTMLElement | null): void;
   /**
    * The item at `index` as computed from the core's measurement cache — its
    * `start` reflects measured sizes and `scrollMargin`, not pure estimate math.
@@ -193,6 +198,12 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     buildCoreOptions(options.count(), options.scrollElement()),
   );
 
+  // Sanctioned signal write from an effect (external imperative API → signal, not state
+  // propagation): `notify` is a change-notification bridge from the imperative
+  // `@tanstack/virtual-core` core into the signal graph. When `count` / `scrollElement`
+  // change the core is reconfigured imperatively (`setOptions` + `_willUpdate`), so
+  // `notify.set(0)` forces the `virtualItems` / `totalSize` computeds to re-read the core.
+  // The effect never reads `notify`, so there is no self-cycle.
   effect(() => {
     virtualizer.setOptions(buildCoreOptions(options.count(), options.scrollElement()));
     virtualizer._willUpdate();

@@ -118,6 +118,41 @@ class ReorderTableHost {
 }
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableRow,
+    ForTableHeaderCell,
+    ForTableCell,
+    ForTableColumnReorder,
+    ForDraggable,
+  ],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow forTableColumnReorder (columnReorder)="last = $event">
+        <div forTableHeaderCell name="name" forDraggable [dragData]="'name'" data-testid="h-name">
+          Name
+        </div>
+        <div forTableHeaderCell name="sel" data-testid="h-sel">Sel</div>
+        <div forTableHeaderCell name="role" forDraggable [dragData]="'role'" data-testid="h-role">
+          Role
+        </div>
+      </div>
+      <div role="rowgroup">
+        <div forTableRow [value]="1">
+          <div forTableCell name="name">n</div>
+          <div forTableCell name="sel">s</div>
+          <div forTableCell name="role">r</div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class MixedColumnReorderHost {
+  last: TableColumnReorderDescriptor | null = null;
+}
+
+@Component({
   imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
   template: `
     <div forTable mode="grid" [dir]="dir()">
@@ -151,6 +186,23 @@ class ResizeTableHost {
 @Component({
   imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
   template: `
+    <div forTable [mode]="mode()">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name" data-testid="header">
+          Name
+          <button forTableColumnResizer column="name" [width]="100" data-testid="resizer"></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class ResizerTabindexHost {
+  readonly mode = signal<TableMode>('table');
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
+  template: `
     <div forTable mode="grid">
       <div forTableHeaderRow>
         <div forTableHeaderCell name="name">
@@ -162,6 +214,46 @@ class ResizeTableHost {
   `,
 })
 class UnseededResizeTableHost {}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">
+          Name
+          @if (show()) {
+            <button
+              forTableColumnResizer
+              column="name"
+              [(width)]="width"
+              data-testid="resizer"
+            ></button>
+          }
+        </div>
+      </div>
+    </div>
+  `,
+})
+class RemovableResizeTableHost {
+  readonly show = signal(true);
+  readonly width = signal<number | undefined>(100);
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableColumnResizer],
+  template: `
+    <div forTable mode="grid">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="name">
+          Name
+          <button forTableColumnResizer column="na me" data-testid="resizer"></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class BadResizerColumnHost {}
 
 @Directive({
   selector: '[wrappedHeaderCell]',
@@ -568,6 +660,58 @@ class SelectionTableHost {
 @Component({
   imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector],
   template: `
+    <div forTable mode="table" selectionMode="multiple" [(value)]="selection">
+      <div role="rowgroup">
+        @for (row of rows; track row.id) {
+          <div forTableRow [value]="row.id" [attr.data-testid]="'row-' + row.id">
+            <div forTableCell name="sel" [attr.data-testid]="'cell-sel-' + row.id">
+              <span
+                forTableRowSelector
+                [ariaLabel]="'Select ' + row.name"
+                [attr.data-testid]="'selector-' + row.id"
+              ></span>
+            </div>
+            <div forTableCell name="name" [attr.data-testid]="'cell-name-' + row.id">
+              {{ row.name }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class TableModeSelectionHost {
+  readonly selection = signal<readonly unknown[]>([]);
+  readonly rows = [
+    { id: 1, name: 'Alice' },
+    { id: 2, name: 'Bob' },
+  ];
+}
+
+@Component({
+  imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableSelectAll],
+  template: `
+    <div forTable [mode]="mode()" selectionMode="multiple">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="sel">
+          <button
+            type="button"
+            forTableSelectAll
+            ariaLabel="Select all"
+            data-testid="select-all"
+          ></button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class SelectAllTabindexHost {
+  readonly mode = signal<TableMode>('table');
+}
+
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowSelector],
+  template: `
     <div
       forTable
       mode="grid"
@@ -596,6 +740,13 @@ class SelectionTableHost {
                 Edit
               </button>
               <input [attr.data-testid]="'field-' + row.id" />
+              <label [attr.data-testid]="'label-' + row.id">
+                <input type="checkbox" [attr.data-testid]="'lc-' + row.id" /> Flag
+              </label>
+              <div [attr.data-testid]="'editable-' + row.id" contenteditable></div>
+              <div [attr.data-testid]="'noneditable-' + row.id" contenteditable="false">x</div>
+              <div [attr.data-testid]="'role-btn-' + row.id" role="button" tabindex="0">M</div>
+              <div [attr.data-testid]="'role-note-' + row.id" role="note">n</div>
             </div>
           </div>
         }
@@ -719,6 +870,50 @@ class SortTableHost {
   readonly firstClickDirection = signal<'ascending' | 'descending'>('ascending');
   readonly sortable = signal(true);
   lastSort: TableSortDescriptor | null = null;
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableSortHeader,
+    ForTableColumnResizer,
+  ],
+  template: `
+    <div forTable>
+      <div forTableHeaderRow>
+        <div
+          forTableHeaderCell
+          name="name"
+          forTableSortHeader
+          column="name"
+          (sortChange)="lastSort = $event"
+          data-testid="sort-name"
+        >
+          <span data-testid="label">Name</span>
+          <button
+            forTableColumnResizer
+            column="name"
+            [(width)]="width"
+            data-testid="resizer"
+          ></button>
+          <button
+            type="button"
+            data-testid="header-action"
+            (click)="actionClicks = actionClicks + 1"
+          >
+            Menu
+          </button>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class SortInteractiveHeaderHost {
+  readonly width = signal<number>(100);
+  lastSort: TableSortDescriptor | null = null;
+  actionClicks = 0;
 }
 
 @Component({
@@ -886,6 +1081,38 @@ class VirtualizedTableHost {
   `,
 })
 class CrossWindowTableHost {
+  readonly windowIndices = signal<readonly number[]>([20, 21, 22, 23, 24]);
+}
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div forTable forTableVirtualized mode="grid" [rowCount]="200" #v="forTableVirtualized">
+      <div forTableHeaderRow>
+        @for (col of cols; track col) {
+          <div forTableHeaderCell [name]="col" [attr.data-testid]="'h-' + col">{{ col }}</div>
+        }
+      </div>
+      <div role="rowgroup">
+        @for (vi of windowIndices(); track vi) {
+          <div forTableRow [virtualIndex]="vi">
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vi + '-a'">{{ vi }}a</div>
+            <div forTableCell name="b" [attr.data-testid]="'cell-' + vi + '-b'">{{ vi }}b</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedGridWithHeaderHost {
+  readonly cols = ['a', 'b'] as const;
   readonly windowIndices = signal<readonly number[]>([20, 21, 22, 23, 24]);
 }
 
@@ -1818,6 +2045,73 @@ describe('ForTable', () => {
       expect(data.getAttribute('aria-selected')).toBe('false');
     });
 
+    it('mode="table" with selection enabled emits no aria-selected, but data-selected still reflects', async () => {
+      @Component({
+        imports: [ForTable, ForTableRow, ForTableCell],
+        template: `
+          <div forTable mode="table" selectionMode="multiple" [(value)]="selection">
+            <div role="rowgroup">
+              <div forTableRow [value]="1" data-testid="row-1">
+                <div forTableCell name="a">Ada</div>
+              </div>
+              <div forTableRow [value]="2" data-testid="row-2">
+                <div forTableCell name="a">Bob</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class TableModeSelectedHost {
+        readonly selection = signal<readonly unknown[]>([]);
+      }
+
+      const { el, instance, flush } = renderHost(TableModeSelectedHost);
+      const allRows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
+      for (const row of allRows) {
+        expect(row.hasAttribute('aria-selected')).toBe(false);
+      }
+
+      instance.selection.set([1]);
+      await flush();
+
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const row2 = el.querySelector<HTMLElement>('[data-testid="row-2"]')!;
+      expect(row1.hasAttribute('aria-selected')).toBe(false);
+      expect(row1.getAttribute('data-selected')).toBe('');
+      expect(row2.hasAttribute('aria-selected')).toBe(false);
+      expect(row2.hasAttribute('data-selected')).toBe(false);
+    });
+
+    it('reactively drops/re-adds aria-selected when mode toggles between grid and table (zoneless)', async () => {
+      @Component({
+        imports: [ForTable, ForTableRow, ForTableCell],
+        template: `
+          <div forTable [mode]="mode()" selectionMode="multiple">
+            <div role="rowgroup">
+              <div forTableRow [value]="1" data-testid="row-1">
+                <div forTableCell name="a">Ada</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class ModeToggleSelectionHost {
+        readonly mode = signal<TableMode>('grid');
+      }
+
+      const { el, instance, flush } = renderHost(ModeToggleSelectionHost);
+      const row = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      expect(row.getAttribute('aria-selected')).toBe('false');
+
+      instance.mode.set('table');
+      await flush();
+      expect(row.hasAttribute('aria-selected')).toBe(false);
+
+      instance.mode.set('grid');
+      await flush();
+      expect(row.getAttribute('aria-selected')).toBe('false');
+    });
+
     it('clicking a [forTableRowSelector] toggles its row: aria-selected, data-selected, and selector data-state update correctly; click again reverts', async () => {
       const { el, flush } = renderHost(SelectionTableHost);
       const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
@@ -1840,6 +2134,50 @@ describe('ForTable', () => {
       expect(row1.getAttribute('aria-selected')).toBe('false');
       expect(row1.hasAttribute('data-selected')).toBe(false);
       expect(selector1.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('row selector is an accessible checkbox in grid mode: role=checkbox, tabindex=-1, not aria-hidden, aria-checked tracks selection (#1387)', async () => {
+      const { el, flush } = renderHost(SelectionTableHost);
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      expect(selector1.getAttribute('role')).toBe('checkbox');
+      expect(selector1.getAttribute('tabindex')).toBe('-1');
+      expect(selector1.hasAttribute('aria-hidden')).toBe(false);
+      expect(selector1.getAttribute('aria-checked')).toBe('false');
+
+      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(selector1.getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('row selector is a focusable accessible checkbox in table mode: role=checkbox, tabindex=0, aria-label, not aria-hidden (#1387)', () => {
+      const { el } = renderHost(TableModeSelectionHost);
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      expect(selector1.getAttribute('role')).toBe('checkbox');
+      expect(selector1.getAttribute('tabindex')).toBe('0');
+      expect(selector1.hasAttribute('aria-hidden')).toBe(false);
+      expect(selector1.getAttribute('aria-label')).toBe('Select Alice');
+      expect(selector1.getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('table mode keyboard selection path: Space then Enter on the selector toggle selection and prevent default (#1387)', async () => {
+      const { el, flush } = renderHost(TableModeSelectionHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
+
+      const spaceEv = press(selector1, ' ');
+      await flush();
+      expect(spaceEv.defaultPrevented).toBe(true);
+      expect(selector1.getAttribute('aria-checked')).toBe('true');
+      expect(row1.getAttribute('data-selected')).toBe('');
+      expect(row1.hasAttribute('aria-selected')).toBe(false);
+
+      const enterEv = press(selector1, 'Enter');
+      await flush();
+      expect(enterEv.defaultPrevented).toBe(true);
+      expect(selector1.getAttribute('aria-checked')).toBe('false');
+      expect(row1.hasAttribute('data-selected')).toBe(false);
     });
 
     it('single mode: selecting row 2 after row 1 leaves only row 2 selected', async () => {
@@ -1984,6 +2322,20 @@ describe('ForTable', () => {
       for (const row of allRows) {
         expect(row.getAttribute('aria-selected')).toBe('false');
       }
+    });
+
+    it('select-all is a standalone tab stop (tabindex=0) in table mode, yields to the roving grid (tabindex=-1) in grid/treegrid', async () => {
+      const { el, instance, flush } = renderHost(SelectAllTabindexHost);
+      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
+      expect(selectAll.getAttribute('tabindex')).toBe('0');
+
+      instance.mode.set('grid');
+      await flush();
+      expect(selectAll.getAttribute('tabindex')).toBe('-1');
+
+      instance.mode.set('treegrid');
+      await flush();
+      expect(selectAll.getAttribute('tabindex')).toBe('-1');
     });
 
     it('Space on a focused cell toggles its row and prevents default; Space from an inner element does not toggle', async () => {
@@ -2132,6 +2484,66 @@ describe('ForTable', () => {
 
       cell1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
       await flush();
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(instance.selection()).toEqual([1]);
+    });
+
+    it('does not toggle row selection when a click originates from a label descendant', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const label = el.querySelector<HTMLElement>('[data-testid="label-1"]')!;
+
+      label.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+    });
+
+    it('does not toggle row selection when a click originates from a contenteditable="" region', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const editable = el.querySelector<HTMLElement>('[data-testid="editable-1"]')!;
+
+      editable.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+    });
+
+    it('does not toggle row selection when a click originates from a [role="button"] widget', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const roleBtn = el.querySelector<HTMLElement>('[data-testid="role-btn-1"]')!;
+
+      roleBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('false');
+      expect(instance.selection()).toEqual([]);
+    });
+
+    it('still selects on a click over a contenteditable="false" island (not over-matched)', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const noneditable = el.querySelector<HTMLElement>('[data-testid="noneditable-1"]')!;
+
+      noneditable.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
+      expect(row1.getAttribute('aria-selected')).toBe('true');
+      expect(instance.selection()).toEqual([1]);
+    });
+
+    it('still selects on a click over a non-interactive [role="note"] element (enumerated roles only)', async () => {
+      const { el, instance, flush } = renderHost(SelectionInteractiveHost);
+      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
+      const roleNote = el.querySelector<HTMLElement>('[data-testid="role-note-1"]')!;
+
+      roleNote.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+
       expect(row1.getAttribute('aria-selected')).toBe('true');
       expect(instance.selection()).toEqual([1]);
     });
@@ -2373,6 +2785,89 @@ describe('ForTable', () => {
     });
   });
 
+  describe('sort activation guarded from interactive descendants (#1387)', () => {
+    const sortHeader = (el: HTMLElement) =>
+      el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
+    const byTestId = (el: HTMLElement, id: string) =>
+      el.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+
+    it('Space on the resize handle does not sort and does not prevent default', async () => {
+      const { el, instance, flush } = renderHost(SortInteractiveHeaderHost);
+      const ev = press(byTestId(el, 'resizer'), ' ');
+      await flush();
+      expect(instance.lastSort).toBeNull();
+      expect(sortHeader(el).hasAttribute('aria-sort')).toBe(false);
+      expect(ev.defaultPrevented).toBe(false);
+    });
+
+    it('Enter on the resize handle does not sort and does not prevent default', async () => {
+      const { el, instance, flush } = renderHost(SortInteractiveHeaderHost);
+      const ev = press(byTestId(el, 'resizer'), 'Enter');
+      await flush();
+      expect(instance.lastSort).toBeNull();
+      expect(sortHeader(el).hasAttribute('aria-sort')).toBe(false);
+      expect(ev.defaultPrevented).toBe(false);
+    });
+
+    it('click on a consumer interactive control does not sort but runs the control handler', async () => {
+      const { el, instance, flush } = renderHost(SortInteractiveHeaderHost);
+      byTestId(el, 'header-action').dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.lastSort).toBeNull();
+      expect(sortHeader(el).hasAttribute('aria-sort')).toBe(false);
+      expect(instance.actionClicks).toBe(1);
+    });
+
+    it('click directly on the header cell still sorts', async () => {
+      const { el, instance, flush } = renderHost(SortInteractiveHeaderHost);
+      sortHeader(el).dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      await flush();
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+      expect(sortHeader(el).getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('click on a non-interactive label span inside the cell still sorts', async () => {
+      const { el, flush } = renderHost(SortInteractiveHeaderHost);
+      byTestId(el, 'label').dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(sortHeader(el).getAttribute('aria-sort')).toBe('ascending');
+    });
+
+    it('Space on the header cell still sorts and prevents default', async () => {
+      const { el, instance, flush } = renderHost(SortInteractiveHeaderHost);
+      const ev = press(sortHeader(el), ' ');
+      await flush();
+      expect(ev.defaultPrevented).toBe(true);
+      expect(sortHeader(el).getAttribute('aria-sort')).toBe('ascending');
+      expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
+    });
+
+    it('descendant guard holds without Zone.js', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(SortInteractiveHeaderHost);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      press(byTestId(el, 'resizer'), 'Enter');
+      fixture.detectChanges();
+      expect(sortHeader(el).hasAttribute('aria-sort')).toBe(false);
+      expect(fixture.componentInstance.lastSort).toBeNull();
+    });
+
+    it('grid mode: Enter on a descendant button of a sortable header does not sort', async () => {
+      const { el, instance, flush } = renderHost(SortEntryGridHost);
+      const btn = byTestId(el, 'h-sortable-btn');
+      btn.focus();
+      press(btn, 'Enter');
+      await flush();
+      expect(instance.lastSort).toBeNull();
+      expect(byTestId(el, 'h-sortable').hasAttribute('aria-sort')).toBe(false);
+    });
+  });
+
   describe('sort header + column-reorder co-location', () => {
     const headerCell = (el: HTMLElement, col: string) =>
       el.querySelector<HTMLElement>(`[data-testid="h-${col}"]`)!;
@@ -2526,14 +3021,47 @@ describe('ForTable', () => {
       el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
     const tableRootEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[forTable]')!;
 
-    it('ARIA: role=separator, aria-orientation=vertical, tabindex=0, aria-valuemin=0, aria-valuenow=100', () => {
+    it('ARIA: role=separator, aria-orientation=vertical, tabindex=-1 in grid mode, aria-valuemin=0, aria-valuenow=100', () => {
       const { el } = renderHost(ResizeTableHost);
       const r = resizerEl(el);
       expect(r.getAttribute('role')).toBe('separator');
       expect(r.getAttribute('aria-orientation')).toBe('vertical');
-      expect(r.getAttribute('tabindex')).toBe('0');
+      expect(r.getAttribute('tabindex')).toBe('-1');
       expect(r.getAttribute('aria-valuemin')).toBe('0');
       expect(r.getAttribute('aria-valuenow')).toBe('100');
+    });
+
+    it('standalone tab stop (tabindex=0) in table mode, yields to the roving grid (tabindex=-1) in grid/treegrid', async () => {
+      const { el, instance, flush } = renderHost(ResizerTabindexHost);
+      expect(resizerEl(el).getAttribute('tabindex')).toBe('0');
+
+      instance.mode.set('grid');
+      await flush();
+      expect(resizerEl(el).getAttribute('tabindex')).toBe('-1');
+
+      instance.mode.set('treegrid');
+      await flush();
+      expect(resizerEl(el).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('in grid mode the header cell owns the single tab stop, not the resizer', async () => {
+      const { el, instance, flush } = renderHost(ResizerTabindexHost);
+      instance.mode.set('grid');
+      await flush();
+      const tabbable = Array.from(tableRootEl(el).querySelectorAll<HTMLElement>('[tabindex="0"]'));
+      expect(tabbable).toHaveLength(1);
+      expect(tabbable[0]).toBe(el.querySelector<HTMLElement>('[data-testid="header"]'));
+    });
+
+    it('cell-entry (F2) focuses the resizer button inside the grid header cell despite tabindex=-1', async () => {
+      const { el, instance, flush } = renderHost(ResizerTabindexHost);
+      instance.mode.set('grid');
+      await flush();
+      const header = el.querySelector<HTMLElement>('[data-testid="header"]')!;
+      header.focus();
+      press(header, 'F2');
+      await flush();
+      expect(document.activeElement).toBe(resizerEl(el));
     });
 
     it('no aria-valuemax attribute when max is Infinity (default)', () => {
@@ -2764,6 +3292,34 @@ describe('ForTable', () => {
         /\[forty-cdk\/table\] ForTableColumnLabel must be used inside a \[forTableHeaderCell\]/,
       );
     });
+
+    it('clears the published CSS var when [width] resets to undefined', async () => {
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      await flush();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('100px');
+      instance.width.set(undefined);
+      await flush();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+    });
+
+    it('clears the var on unmount and does not resurrect on re-add', async () => {
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      await flush();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('100px');
+      instance.show.set(false);
+      await flush();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+      instance.width.set(undefined);
+      instance.show.set(true);
+      await flush();
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+    });
+
+    it('throws a prefixed error for a CSS-unsafe resizer column name', () => {
+      expect(() => renderHost(BadResizerColumnHost)).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*na me/,
+      );
+    });
   });
 
   describe('column reorder', () => {
@@ -2787,6 +3343,24 @@ describe('ForTable', () => {
       );
       await flush();
       expect(instance.lastColumn).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
+    });
+
+    it('emits full-displayed-order from/to across an interleaved non-reorderable column', async () => {
+      const { el, instance, flush } = renderHost(MixedColumnReorderHost);
+      await flush();
+      const header = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
+      header.focus();
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+      );
+      header.dispatchEvent(
+        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
+      );
+      await flush();
+      expect(instance.last).toEqual({ from: 0, to: 2, columns: ['role', 'name'] });
     });
 
     it('aria-colindex recomputes after the move', async () => {
@@ -3496,6 +4070,57 @@ describe('ForTable', () => {
 
         // `first` jumps to the first cell of the whole grid (row 0, column 0).
         expect(document.activeElement).toBe(cell(el, 'cell-0-a'));
+      });
+
+      it('Ctrl+Home lands on the first header cell (grid row 1) when the header participates, rather than jumping to data row 0', async () => {
+        const { el, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        const start = cell(el, 'cell-24-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'Home', { ctrlKey: true });
+        await flush();
+
+        const headerA = cell(el, 'h-a')!;
+        expect(document.activeElement).toBe(headerA);
+        expect(headerA.getAttribute('data-highlighted')).toBe('');
+        expect(cell(el, 'cell-0-a')).toBeNull();
+      });
+
+      it('Ctrl+End still reaches the last data cell of the dataset, even with a participating header', async () => {
+        const { el, instance, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        const start = cell(el, 'cell-20-a')!;
+        start.focus();
+        await flush();
+
+        press(start, 'End', { ctrlKey: true });
+        await flush();
+
+        instance.windowIndices.set([197, 198, 199]);
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-199-b'));
+      });
+
+      it('a subsequent grid key drops a pending cross-window target so a late mount cannot steal focus', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        const start = cell(el, 'cell-24-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'ArrowDown');
+        await flush();
+        expect(cell(el, 'cell-25-b')).toBeNull();
+        expect(document.activeElement).toBe(start);
+
+        press(start, 'ArrowLeft');
+        await flush();
+        expect(document.activeElement).toBe(cell(el, 'cell-24-a'));
+
+        instance.windowIndices.set([23, 24, 25, 26]);
+        await flush();
+        expect(document.activeElement).toBe(cell(el, 'cell-24-a'));
+        expect(document.activeElement).not.toBe(cell(el, 'cell-25-b'));
       });
     });
 

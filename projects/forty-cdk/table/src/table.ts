@@ -127,6 +127,17 @@ export class ForTable<T = unknown> implements ForTableContext {
   );
 
   /**
+   * The count of currently loaded data rows (the declarative `<for-table-body>`
+   * dataset length), or `undefined` when no body has registered one (raw-primitive
+   * rendering). Distinct from `rowCount`, which an explicit `[rowCount]` raises to a
+   * server-known total larger than the loaded rows; cross-window navigation clamps
+   * unmounted targets to this so a target beyond the loaded prefix cannot stash a
+   * pending focus move that resolves — and steals focus — only when a far page later
+   * loads.
+   */
+  readonly loadedRowCount = computed<number | undefined>(() => this.#bodyRowCount()?.());
+
+  /**
    * True total number of columns for `aria-colcount`. Defaults to the rendered
    * column count (the cells of the first data row that has any). Ignored in
    * `mode="table"`.
@@ -328,6 +339,10 @@ export class ForTable<T = unknown> implements ForTableContext {
     this.#rootEl.style.setProperty(`--for-table-col-${column}-width`, `${width}px`);
   }
 
+  removeColumnWidth(column: string): void {
+    this.#rootEl.style.removeProperty(`--for-table-col-${column}-width`);
+  }
+
   isRowExpanded(value: T): boolean {
     return this.#expansion.isExpanded(value);
   }
@@ -448,6 +463,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
+    this.#virtualNav()?.clearPending();
     if (this.#handleCellEntryKeydown(event, host)) {
       return;
     }
@@ -476,6 +492,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table' || !this.#headerParticipates()) {
       return false;
     }
+    this.#virtualNav()?.clearPending();
     return this.#handleGridNavigationKeydown(event, host);
   }
 
@@ -577,7 +594,8 @@ export class ForTable<T = unknown> implements ForTableContext {
       navigation !== null &&
       total !== undefined &&
       fromRow !== null &&
-      ROW_CROSSING_ACTIONS.has(action)
+      ROW_CROSSING_ACTIONS.has(action) &&
+      !(action === 'first' && this.#headerParticipates())
     ) {
       const col = currentIndex < 0 ? 0 : currentIndex % cols;
       const target = resolveCrossWindowRowTarget(
@@ -622,10 +640,13 @@ export class ForTable<T = unknown> implements ForTableContext {
  * for a row-crossing grid action against the true `total` row count. Arrow
  * row-moves preserve the current column; `page-up` / `page-down` move by
  * `pageSize` rows (clamped to the dataset bounds) preserving the column;
- * `first` / `last` jump to the first / last cell of the whole grid. The
- * `direction` (`+1` for down / first, `-1` for up / last) is threaded to the
- * virtualization bridge so it can step over full-span variant rows onto the
- * adjacent data row. Returns `null` when the move would not change the focused row.
+ * `last` jumps to the last cell of the whole grid. The `direction` (`+1` for
+ * down / first, `-1` for up / last) is threaded to the virtualization bridge so
+ * it can step over full-span variant rows onto the adjacent data row. Returns
+ * `null` when the move would not change the focused row. `first` is routed
+ * through the non-virtualized `moveGridIndex` path (to the first header cell)
+ * when the header participates in roving, so this resolver's `first` case
+ * applies only to a header-less grid.
  */
 function resolveCrossWindowRowTarget(
   action: GridNavigationAction,

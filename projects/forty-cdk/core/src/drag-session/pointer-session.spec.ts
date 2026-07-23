@@ -662,6 +662,54 @@ describe('createPointerDragSession', () => {
     expect(rec.lifts).toBe(0);
   });
 
+  it('destroy() aborts an in-flight armed drag and fires onCancel when cancelOnDestroy is set', () => {
+    const { host, session, rec } = setup({ cancelOnDestroy: true });
+    teardown.push(() => host.remove());
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+
+    session.destroy();
+    expect(rec.cancels).toBe(1);
+  });
+
+  it('destroy() does not fire onCancel by default (cancelOnDestroy unset)', () => {
+    const { host, session, rec } = setup();
+    teardown.push(() => host.remove());
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+
+    session.destroy();
+    expect(rec.cancels).toBe(0);
+  });
+
+  it('destroy() fires onCancel for a tracked-but-not-armed press when cancelOnDestroy is set', () => {
+    const { host, session, rec } = setup({ cancelOnDestroy: true });
+    teardown.push(() => host.remove());
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+
+    session.destroy();
+    expect(rec.cancels).toBe(1);
+    expect(rec.lifts).toBe(0);
+  });
+
+  it('destroy() after a completed drag fires no onCancel even with cancelOnDestroy set', () => {
+    const { host, session, rec } = setup({ cancelOnDestroy: true });
+    teardown.push(() => host.remove());
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    document.dispatchEvent(pointer('pointerup', 110, 100));
+    expect(rec.commits).toBe(1);
+
+    session.destroy();
+    expect(rec.cancels).toBe(0);
+  });
+
   it('works under provideZonelessChangeDetection', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 

@@ -22,7 +22,7 @@ import {
   type PointerDragSession,
   DRAG_DEAD_ZONE_PX,
 } from 'forty-cdk/core';
-import { injectTableContext } from './table-context';
+import { assertColumnName, injectTableContext } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
 /** Payload of `resizeCommit`: which column was resized and its committed width (px). */
@@ -51,6 +51,12 @@ export interface TableResizeDescriptor {
  * (browser-only), so a separator with no `[width]` is never announced without a
  * current value; an explicit `[width]` always takes precedence.
  *
+ * In `mode="grid"` / `"treegrid"` it yields its tab stop to the composite roving grid
+ * (`tabindex="-1"`) and is reached via cell-entry (Enter / F2 focuses the first focusable
+ * inside the header cell), so it must sit on a natively-focusable element (a `<button>`)
+ * to stay cell-entry-reachable. In `mode="table"` it is a standalone tab stop
+ * (`tabindex="0"`).
+ *
  * Opt in to size-to-content with `[autoFit]`: double-clicking the handle then fits the
  * column to its widest data-cell content via `fitToContent()` (also callable imperatively
  * through `exportAs="forTableColumnResizer"`, e.g. from a column menu). Unset (default),
@@ -73,7 +79,7 @@ export interface TableResizeDescriptor {
   host: {
     role: 'separator',
     'aria-orientation': 'vertical',
-    '[attr.tabindex]': '"0"',
+    '[attr.tabindex]': 'tabindex()',
     '[attr.aria-valuenow]': 'width() ?? measuredWidth() ?? null',
     '[attr.aria-valuemin]': 'min()',
     '[attr.aria-valuemax]': 'ariaValueMax()',
@@ -138,6 +144,8 @@ export class ForTableColumnResizer {
     Number.isFinite(this.max()) ? this.max() : null,
   );
 
+  protected readonly tabindex = computed<0 | -1>(() => (this.ctx.mode() === 'table' ? 0 : -1));
+
   readonly #resizing = signal(false);
 
   /** Whether a pointer drag is currently active (drives `data-resizing`). */
@@ -159,16 +167,28 @@ export class ForTableColumnResizer {
   #dragInvert = false;
   #dragCurrent = 0;
 
+  #publishedColumn: string | null = null;
+
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
     const destroyRef = inject(DestroyRef);
     effect(() => {
+      const column = this.column();
+      assertColumnName(column, 'ForTableColumnResizer');
       const w = this.width();
+      if (this.#publishedColumn !== null && this.#publishedColumn !== column) {
+        this.ctx.removeColumnWidth(this.#publishedColumn);
+      }
       if (w != null) {
-        this.ctx.setColumnWidth(this.column(), w);
+        this.ctx.setColumnWidth(column, w);
+        this.#publishedColumn = column;
+      } else {
+        this.ctx.removeColumnWidth(column);
+        this.#publishedColumn = null;
       }
     });
+    destroyRef.onDestroy(() => this.ctx.removeColumnWidth(this.column()));
     if (this.#isBrowser) {
       afterNextRender(() => this.#measuredWidth.set(this.#measureBaseWidth()));
       this.#pointerSession = createPointerDragSession({

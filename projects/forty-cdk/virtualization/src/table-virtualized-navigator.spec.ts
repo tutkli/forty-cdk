@@ -29,6 +29,21 @@ describe('TableVirtualizedNavigator', () => {
     return fakeRow(virtualIndex, 0);
   }
 
+  function fakeSkeletonRow(virtualIndex: number, columns: number): ForTableRowHandle {
+    const cells: ForTableCellHandle[] = Array.from({ length: columns }, () => ({
+      host: document.createElement('div'),
+      disabled: signal(true),
+    }));
+    return {
+      host: document.createElement('div'),
+      cells: signal(cells),
+      value: signal(undefined),
+      level: signal(1),
+      expandable: signal(false),
+      virtualIndex: signal(virtualIndex),
+    };
+  }
+
   it('navigateTo focuses an already-rendered target cell immediately, without scrolling', () => {
     const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2), fakeRow(11, 2)]);
     const scrollToRow = vi.fn();
@@ -209,6 +224,200 @@ describe('TableVirtualizedNavigator', () => {
     expect(focusSpy).not.toHaveBeenCalled();
   });
 
+  it('steps over a mounted disabled placeholder row onto the next data row when travelling down', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([
+      fakeRow(10, 2),
+      fakeSkeletonRow(11, 2),
+      fakeRow(12, 2),
+    ]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+    const skeletonSpy = vi.spyOn(rows()[1]!.cells()[0]!.host, 'focus');
+    const nextRowSpy = vi.spyOn(rows()[2]!.cells()[0]!.host, 'focus');
+
+    nav.navigateTo(11, 0, 1);
+
+    expect(skeletonSpy).not.toHaveBeenCalled();
+    expect(nextRowSpy).toHaveBeenCalledTimes(1);
+    expect(scrollToRow).not.toHaveBeenCalled();
+  });
+
+  it('steps over a mounted disabled placeholder row onto the previous data row when travelling up', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([
+      fakeRow(10, 2),
+      fakeSkeletonRow(11, 2),
+      fakeRow(12, 2),
+    ]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+    const skeletonSpy = vi.spyOn(rows()[1]!.cells()[1]!.host, 'focus');
+    const prevRowSpy = vi.spyOn(rows()[0]!.cells()[1]!.host, 'focus');
+
+    nav.navigateTo(11, 1, -1);
+
+    expect(skeletonSpy).not.toHaveBeenCalled();
+    expect(prevRowSpy).toHaveBeenCalledTimes(1);
+    expect(scrollToRow).not.toHaveBeenCalled();
+  });
+
+  it('steps over a disabled placeholder row then scrolls when the adjacent data row is outside the window', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeSkeletonRow(50, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+
+    nav.navigateTo(50, 0, 1);
+
+    expect(scrollToRow).toHaveBeenCalledWith(51);
+
+    const mounted = fakeRow(51, 2);
+    const focusSpy = vi.spyOn(mounted.cells()[0]!.host, 'focus');
+    rows.set([fakeSkeletonRow(50, 2), mounted]);
+
+    expect(nav.tryResolvePending()).toBe(true);
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the pending target (no later focus steal) when stepping over a disabled placeholder hits the dataset bound', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeSkeletonRow(2, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 3,
+    });
+
+    nav.navigateTo(2, 0, 1);
+
+    expect(scrollToRow).not.toHaveBeenCalled();
+    expect(nav.tryResolvePending()).toBe(false);
+
+    const remounted = fakeRow(2, 2);
+    const focusSpy = vi.spyOn(remounted.cells()[0]!.host, 'focus');
+    rows.set([remounted]);
+
+    expect(nav.tryResolvePending()).toBe(false);
+    expect(focusSpy).not.toHaveBeenCalled();
+  });
+
+  it('tryResolvePending steps over a disabled placeholder that mounts and focuses the next data row', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2)]);
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow: vi.fn(),
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+
+    nav.navigateTo(50, 0, 1);
+
+    const skeleton = fakeSkeletonRow(50, 2);
+    const nextRow = fakeRow(51, 2);
+    const skeletonSpy = vi.spyOn(skeleton.cells()[0]!.host, 'focus');
+    const nextRowSpy = vi.spyOn(nextRow.cells()[0]!.host, 'focus');
+    rows.set([skeleton, nextRow]);
+
+    expect(nav.tryResolvePending()).toBe(true);
+    expect(skeletonSpy).not.toHaveBeenCalled();
+    expect(nextRowSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('clamps a Ctrl+End target beyond the loaded prefix to the last loaded row', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(29, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      loadedRowCount: () => 30,
+    });
+    const focusSpy = vi.spyOn(rows()[0]!.cells()[1]!.host, 'focus');
+
+    nav.navigateTo(99, 1, -1);
+
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+    expect(scrollToRow).not.toHaveBeenCalled();
+    expect(nav.tryResolvePending()).toBe(false);
+  });
+
+  it('clamps a beyond-prefix target and scrolls to the last loaded row when it is outside the window', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(5, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      loadedRowCount: () => 30,
+    });
+
+    nav.navigateTo(99, 0, -1);
+
+    expect(scrollToRow).toHaveBeenCalledWith(29);
+
+    const mounted = fakeRow(29, 2);
+    const focusSpy = vi.spyOn(mounted.cells()[0]!.host, 'focus');
+    rows.set([fakeRow(28, 2), mounted]);
+
+    expect(nav.tryResolvePending()).toBe(true);
+    expect(focusSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not clamp when the loaded prefix already covers the dataset', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(50, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+      loadedRowCount: () => 100,
+    });
+
+    nav.navigateTo(99, 0, -1);
+
+    expect(scrollToRow).toHaveBeenCalledWith(99);
+  });
+
+  it('clearPending drops a stashed target so a later mount cannot steal focus', () => {
+    const rows = signal<readonly ForTableRowHandle[]>([fakeRow(10, 2)]);
+    const scrollToRow = vi.fn();
+    const nav = new TableVirtualizedNavigator({
+      rows,
+      scrollToRow,
+      scrollViewportRect: () => null,
+      rowCount: () => 100,
+    });
+
+    nav.navigateTo(50, 1, 1);
+    expect(scrollToRow).toHaveBeenCalledWith(50);
+
+    nav.clearPending();
+
+    const mounted = fakeRow(50, 2);
+    const focusSpy = vi.spyOn(mounted.cells()[1]!.host, 'focus');
+    rows.set([mounted]);
+
+    expect(nav.tryResolvePending()).toBe(false);
+    expect(focusSpy).not.toHaveBeenCalled();
+  });
+
   describe('virtualization-seam contract types (forty-cdk/table barrel)', () => {
     it('the navigator satisfies the exported TableVirtualRowNavigation seam', () => {
       const nav = new TableVirtualizedNavigator({
@@ -222,6 +431,7 @@ describe('TableVirtualizedNavigator', () => {
       expect(typeof seam.navigateTo).toBe('function');
       expect(typeof seam.scrollToRow).toBe('function');
       expect(typeof seam.scrollViewportRect).toBe('function');
+      expect(typeof seam.clearPending).toBe('function');
     });
 
     it('a companion can name TableVirtualWindow / TableVirtualRow to publish a window', () => {

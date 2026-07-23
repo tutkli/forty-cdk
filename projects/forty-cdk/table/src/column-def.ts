@@ -2,12 +2,13 @@ import {
   booleanAttribute,
   contentChild,
   Directive,
+  effect,
   inject,
   input,
   TemplateRef,
 } from '@angular/core';
 
-import { coerceSticky, type TableStickyValue } from './table-context';
+import { assertColumnName, coerceSticky, type TableStickyValue } from './table-context';
 
 /**
  * Template context handed to each `[forDataCell]` stamped by `ForTableBody`:
@@ -244,4 +245,8 @@ export class ForColumnDef {
   readonly dataCell = contentChild.required(ForDataCell);
   /** The column's optional placeholder-cell template. */
   readonly placeholderCell = contentChild(ForPlaceholderCell);
+
+  constructor() {
+    effect(() => assertColumnName(this.name(), 'ForColumnDef'));
+  }
 }

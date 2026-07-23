@@ -13,7 +13,7 @@ interface PendingTarget {
   readonly direction: 1 | -1;
 }
 
-type ProbeResult = 'focused' | 'variant' | 'unmounted';
+type ProbeResult = 'focused' | 'variant' | 'disabled' | 'unmounted';
 
 /**
  * Dependencies for `TableVirtualizedNavigator`. Wires the bridge to the table's
@@ -28,6 +28,8 @@ export interface TableVirtualizedNavigatorDeps {
   readonly scrollViewportRect: () => DOMRect | null;
   /** The true total data-row count, used to clamp when stepping over variant rows. */
   readonly rowCount: () => number;
+  /** The count of currently loaded data rows (the body dataset length), or `undefined` when unknown (raw-primitive rendering). Cross-window targets are clamped to this so an out-of-prefix row never stashes a pending focus move that can only resolve when a far page later loads. */
+  readonly loadedRowCount?: () => number | undefined;
 }
 
 /**
@@ -46,11 +48,20 @@ export interface TableVirtualizedNavigatorDeps {
  *
  * Full-span **variant rows** (group headers / separators / summary rows) mount
  * as a single presentational cell and register no cell handles, so they cannot
- * hold roving focus. When a target lands on one, the bridge steps `row` by
- * `direction` (clamped to `[0, rowCount)`) to the adjacent data row — scrolling
- * it in when it is outside the window — and clears the target if the dataset
- * bound is reached with no data row in that direction, so a stale target can
- * never later steal focus.
+ * hold roving focus; likewise a mounted row whose target-column cell is
+ * `disabled` (e.g. skeleton / placeholder rows) cannot receive focus. When a
+ * target lands on either, the bridge steps `row` by `direction` (clamped to the
+ * loaded prefix) to the adjacent enabled data cell — scrolling it in when it is
+ * outside the window — and clears the target if the dataset bound is reached
+ * with no landable data row in that direction, so a stale target can never
+ * later steal focus.
+ *
+ * Off-prefix targets are clamped to the last loaded row: when `loadedRowCount`
+ * is smaller than the total `rowCount` (a server-paged grid whose far pages are
+ * not yet loaded), a target beyond the loaded prefix restarts at the last loaded
+ * row searching upward, so a Ctrl+End / Page / Arrow move can never stash a
+ * pending focus that only resolves — and steals focus — when a far page later
+ * mounts.
  *
  * Mirrors the 1D `ListboxVirtualizedNavigator` precedent, adapted to the table's
  * roving + focused-row-retention model. Internal — not re-exported from
@@ -100,10 +111,27 @@ export class TableVirtualizedNavigator {
     return this.#resolve(pending.row, pending.col, pending.direction);
   }
 
+  /**
+   * Drop any stashed cross-window target. `ForTable` calls this on the next
+   * keyboard interaction that reaches the grid, so a pending move set by an
+   * earlier Ctrl+End / Page / Arrow is superseded rather than teleporting focus
+   * when a far page later mounts.
+   */
+  clearPending(): void {
+    this.#pending.set(null);
+  }
+
   #resolve(row: number, col: number, direction: 1 | -1): boolean {
     const count = this.#deps.rowCount();
+    const loaded = this.#deps.loadedRowCount?.();
+    const bound = loaded !== undefined && loaded < count ? loaded : count;
     let target = row;
-    while (target >= 0 && target < count) {
+    let dir = direction;
+    if (bound > 0 && target >= bound) {
+      target = bound - 1;
+      dir = -1;
+    }
+    while (target >= 0 && target < bound) {
       const result = this.#probeCell(target, col);
       if (result === 'focused') {
         this.#pending.set(null);
@@ -115,14 +143,14 @@ export class TableVirtualizedNavigator {
           current !== null &&
           current.row === target &&
           current.col === col &&
-          current.direction === direction;
+          current.direction === dir;
         if (!unchanged) {
-          this.#pending.set({ row: target, col, direction });
+          this.#pending.set({ row: target, col, direction: dir });
           this.#deps.scrollToRow(target);
         }
         return false;
       }
-      target += direction;
+      target += dir;
     }
     this.#pending.set(null);
     return false;
@@ -137,6 +165,9 @@ export class TableVirtualizedNavigator {
     const cell = cells[col] ?? cells[cells.length - 1];
     if (!cell) {
       return 'variant';
+    }
+    if (cell.disabled()) {
+      return 'disabled';
     }
     cell.host.focus();
     return 'focused';
