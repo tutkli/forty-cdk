@@ -318,6 +318,7 @@ export {
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
+  type OverlaySurface,
 } from './overlay-manager/overlay-manager';
 export { type OverlayCloseEvent, OverlayRef } from './overlay-manager/overlay-ref';
 export {

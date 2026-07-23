@@ -33,6 +33,24 @@ export interface OverlayManagerEntry {
 }
 
 /**
+ * A rendered overlay's exit-animation surface, registered with the core at
+ * attach time so `beginLeave` targets the exact host (and its backdrop) by
+ * direct reference instead of re-querying the whole document on every close.
+ *
+ * `host` is the overlay root — the `[forDialog]` / `[forDrawer]` element the
+ * outlet stamps. `backdrop()` reads the currently-registered
+ * `[for<Primitive>Backdrop]` element **live at close time** (`null` when none
+ * is rendered), preserving the "read the backdrop when it closes" semantics a
+ * registration-time snapshot would lose.
+ *
+ * Part of the shared core composition surface; carries no semver guarantees.
+ */
+export interface OverlaySurface {
+  readonly host: HTMLElement;
+  backdrop(): HTMLElement | null;
+}
+
+/**
  * The reactive surface a manager's outlet component is wired with on first
  * `open()`. Mirrors `ForDialogOutletHost` / `ForDrawerOutletHost`.
  *
@@ -41,6 +59,14 @@ export interface OverlayManagerEntry {
 export interface OverlayManagerOutletHost<TEntry extends OverlayManagerEntry> {
   readonly entries: Signal<readonly TEntry[]>;
   closeAllForDestroy(): void;
+  /**
+   * Registers a rendered entry's exit-animation surface under its id so
+   * `beginLeave` can drive the leave classes by direct reference. Called from
+   * the per-row surface-registrar directive's `afterNextRender` (so it also
+   * runs for an entry whose mount was deferred to a later render). The core
+   * drops the surface when the entry is removed.
+   */
+  registerSurface(id: string, surface: OverlaySurface): void;
 }
 
 /**
@@ -68,12 +94,13 @@ export interface OverlayManagerConfig<TEntry extends OverlayManagerEntry> {
   readonly idPrefix: string;
   /**
    * Attribute the overlay root + backdrop reflect their per-instance id on
-   * (e.g. `'data-for-dialog-id'`), matched during exit animation.
+   * (e.g. `'data-for-dialog-id'`), read during return-focus origin resolution.
    */
   readonly idAttribute: string;
   /**
    * Attribute marking the portaled backdrop element (e.g.
-   * `'data-for-dialog-backdrop'`), matched during exit animation.
+   * `'data-for-dialog-backdrop'`), used to exclude the backdrop during
+   * return-focus origin resolution.
    */
   readonly backdropAttribute: string;
   /** Creates the manager-owned outlet component (e.g. `ForDialogOutlet`). */
@@ -100,6 +127,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
   protected readonly idGen = inject(IdGenerator);
 
   readonly #entries = signal<readonly TEntry[]>([]);
+  readonly #surfaces = new Map<string, OverlaySurface>();
   readonly #config: OverlayManagerConfig<TEntry>;
 
   /** Reactive count of currently open programmatic overlays. */
@@ -178,6 +206,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
         return;
       }
       removed = true;
+      this.#surfaces.delete(id);
       this.#entries.update((arr) => arr.filter((e) => e.id !== id));
     };
     return { id, remove };
@@ -185,11 +214,12 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
 
   /**
    * Drives the exit animation on the overlay root and, in lockstep,
-   * on the portaled backdrop (matched by the same per-instance id, because the
-   * backdrop's template `animate.leave` never fires under the manager's
-   * `ngComponentOutlet` mount), then calls `remove`. Runs `remove` immediately
-   * when destroying, when `requestAnimationFrame` is unavailable, or when there
-   * is nothing to animate.
+   * on the portaled backdrop (both resolved from the `OverlaySurface` stored at
+   * attach time — the backdrop's template `animate.leave` never fires under the
+   * manager's `ngComponentOutlet` mount), then calls `remove`. Runs `remove`
+   * immediately when destroying, when `requestAnimationFrame` is unavailable,
+   * when no surface was registered (nothing rendered), or when there is nothing
+   * to animate.
    */
   protected beginLeave(
     id: string,
@@ -201,21 +231,14 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
       remove();
       return;
     }
-    const { idAttribute, backdropAttribute } = this.#config;
+    const surface = this.#surfaces.get(id);
     const targets: HTMLElement[] = [];
-    if (leaveClass) {
-      const host = this.#document.querySelector<HTMLElement>(
-        `[${idAttribute}="${id}"]:not([${backdropAttribute}])`,
-      );
-      if (host && typeof host.getAnimations === 'function') {
-        host.classList.add(leaveClass);
-        targets.push(host);
-      }
+    if (surface && leaveClass && typeof surface.host.getAnimations === 'function') {
+      surface.host.classList.add(leaveClass);
+      targets.push(surface.host);
     }
-    if (backdropLeaveClass) {
-      const backdrop = this.#document.querySelector<HTMLElement>(
-        `[${backdropAttribute}][${idAttribute}="${id}"]`,
-      );
+    if (surface && backdropLeaveClass) {
+      const backdrop = surface.backdrop();
       if (backdrop && typeof backdrop.getAnimations === 'function') {
         backdrop.classList.add(backdropLeaveClass);
         targets.push(backdrop);
@@ -323,6 +346,9 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
     outletRef.instance.init({
       entries: this.#entries.asReadonly(),
       closeAllForDestroy: () => this.#closeAllForDestroy(),
+      registerSurface: (id, surface) => {
+        this.#surfaces.set(id, surface);
+      },
     });
     this.#outletRef = outletRef;
   }

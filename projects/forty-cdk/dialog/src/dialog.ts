@@ -267,4 +267,14 @@ export class ForDialog implements ForDialogContext {
    * @internal
    */
   readonly lastCloseValue = this.#lastCloseValue.asReadonly();
+
+  /**
+   * The registered `[forDialogBackdrop]` element, or `null` when none is
+   * rendered. Read by `ForDialogManager`'s surface registrar so `beginLeave`
+   * drives the backdrop's exit animation by direct reference instead of a
+   * document query. Declarative consumers never need this.
+   *
+   * @internal
+   */
+  readonly backdropElement = this.#backdropEl.asReadonly();
 }

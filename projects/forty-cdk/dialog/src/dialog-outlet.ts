@@ -1,10 +1,13 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   Directive,
+  ElementRef,
   Injector,
   inject,
+  input,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
@@ -13,6 +16,7 @@ import {
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
+  type OverlaySurface,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -76,6 +80,37 @@ export class ForDialogContextInjector {
 }
 
 /**
+ * @internal Per-row registrar that stores each rendered dialog's exit-animation
+ * surface with the shared overlay core at attach time, so
+ * `OverlayManagerCore.beginLeave` drives the leave classes by direct reference
+ * instead of re-querying the document on every close. Applied on the same
+ * `<div forDialog>` the outlet stamps; registers in `afterNextRender`, so it
+ * also runs for a dialog whose mount was deferred to a later render (e.g. opened
+ * from inside `effect()`).
+ *
+ * Declared before `ForDialogOutlet` so the component's `imports` can reference
+ * it. Not exported from `public-api.ts`.
+ */
+@Directive({ selector: '[forDialogSurface]' })
+export class ForDialogSurface {
+  /** Per-instance dialog id this surface is keyed under. */
+  readonly id = input.required<string>({ alias: 'forDialogSurface' });
+
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #dialog = inject(ForDialog);
+  readonly #outlet = inject(ForDialogOutlet);
+
+  constructor() {
+    afterNextRender(() => {
+      this.#outlet.registerSurface(this.id(), {
+        host: this.#host.nativeElement,
+        backdrop: () => this.#dialog.backdropElement(),
+      });
+    });
+  }
+}
+
+/**
  * @internal Outlet component created once by `ForDialogManager` on the first
  * `open()` call. Renders every live entry from the manager's entries signal
  * with `@for`, so Angular's control-flow unmount triggers `animate.leave` on
@@ -87,11 +122,12 @@ export class ForDialogContextInjector {
 @Component({
   selector: 'for-dialog-outlet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDialog, NgComponentOutlet, ForDialogContextInjector],
+  imports: [ForDialog, NgComponentOutlet, ForDialogContextInjector, ForDialogSurface],
   template: `
     @for (entry of entries(); track entry.id) {
       <div
         forDialog
+        [forDialogSurface]="entry.id"
         [attr.data-for-dialog-id]="entry.id"
         [animate.enter]="entry.animateEnter ?? ''"
         [class]="entry.hostClass"
@@ -137,5 +173,13 @@ export class ForDialogOutlet implements OverlayManagerOutlet<ForDialogEntry> {
 
   entries(): readonly ForDialogEntry[] {
     return this.#host?.entries() ?? [];
+  }
+
+  /**
+   * @internal Forwards a per-row surface registration from `ForDialogSurface`
+   * to the manager core.
+   */
+  registerSurface(id: string, surface: OverlaySurface): void {
+    this.#host?.registerSurface(id, surface);
   }
 }

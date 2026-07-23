@@ -1,10 +1,13 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
   Directive,
+  ElementRef,
   Injector,
   inject,
+  input,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
@@ -13,6 +16,7 @@ import {
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
+  type OverlaySurface,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -94,6 +98,37 @@ export class ForDrawerContextInjector {
 }
 
 /**
+ * @internal Per-row registrar that stores each rendered drawer's exit-animation
+ * surface with the shared overlay core at attach time, so
+ * `OverlayManagerCore.beginLeave` drives the leave classes by direct reference
+ * instead of re-querying the document on every close. Applied on the same
+ * `<div forDrawer>` the outlet stamps; registers in `afterNextRender`, so it
+ * also runs for a drawer whose mount was deferred to a later render (e.g. opened
+ * from inside `effect()`).
+ *
+ * Declared before `ForDrawerOutlet` so the component's `imports` can reference
+ * it. Not exported from `public-api.ts`.
+ */
+@Directive({ selector: '[forDrawerSurface]' })
+export class ForDrawerSurface {
+  /** Per-instance drawer id this surface is keyed under. */
+  readonly id = input.required<string>({ alias: 'forDrawerSurface' });
+
+  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #drawer = inject(ForDrawer);
+  readonly #outlet = inject(ForDrawerOutlet);
+
+  constructor() {
+    afterNextRender(() => {
+      this.#outlet.registerSurface(this.id(), {
+        host: this.#host.nativeElement,
+        backdrop: () => this.#drawer.backdropElement(),
+      });
+    });
+  }
+}
+
+/**
  * @internal Outlet component created once by `ForDrawerManager` on the first
  * `open()` call. Renders every live entry from the manager's entries signal
  * with `@for`, so Angular's control-flow unmount triggers `animate.leave` on
@@ -105,11 +140,12 @@ export class ForDrawerContextInjector {
 @Component({
   selector: 'for-drawer-outlet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForDrawer, NgComponentOutlet, ForDrawerContextInjector],
+  imports: [ForDrawer, NgComponentOutlet, ForDrawerContextInjector, ForDrawerSurface],
   template: `
     @for (entry of entries(); track entry.id) {
       <div
         forDrawer
+        [forDrawerSurface]="entry.id"
         [attr.data-for-drawer-id]="entry.id"
         [animate.enter]="entry.animateEnter ?? ''"
         [class]="entry.hostClass"
@@ -167,5 +203,13 @@ export class ForDrawerOutlet implements OverlayManagerOutlet<ForDrawerEntry> {
 
   entries(): readonly ForDrawerEntry[] {
     return this.#host?.entries() ?? [];
+  }
+
+  /**
+   * @internal Forwards a per-row surface registration from `ForDrawerSurface`
+   * to the manager core.
+   */
+  registerSurface(id: string, surface: OverlaySurface): void {
+    this.#host?.registerSurface(id, surface);
   }
 }

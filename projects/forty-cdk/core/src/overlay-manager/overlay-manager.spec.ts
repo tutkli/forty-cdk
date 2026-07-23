@@ -181,6 +181,7 @@ describe('OverlayManagerCore', () => {
       const host = document.createElement('div');
       host.setAttribute('data-test-overlay-id', id);
       document.body.appendChild(host);
+      manager.lastOutlet!.host!.registerSurface(id, { host, backdrop: () => null });
       return { host, ref };
     }
 
