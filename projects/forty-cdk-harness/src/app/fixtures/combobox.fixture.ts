@@ -4,6 +4,9 @@ import {
   ForComboboxAction,
   ForComboboxAnchor,
   type ForComboboxAutocomplete,
+  ForComboboxChip,
+  ForComboboxChipRemove,
+  ForComboboxChips,
   ForComboboxContent,
   ForComboboxInput,
   ForComboboxList,
@@ -31,6 +34,9 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
     ForComboboxContent,
     ForComboboxList,
     ForComboboxOption,
+    ForComboboxChips,
+    ForComboboxChip,
+    ForComboboxChipRemove,
   ],
   styles: [
     `
@@ -56,50 +62,26 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
   ],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
-    <div
-      forCombobox
-      [(query)]="query"
-      [(value)]="value"
-      [(open)]="open"
-      [autocompleteMode]="autocompleteMode"
-      ariaLabel="Fruit search"
-      (autoFocusOnOpen)="onAutoFocusOnOpen($event)"
-      (autoFocusOnClose)="onAutoFocusOnClose($event)"
-    >
-      @if (picker) {
-        <button data-testid="trigger" forComboboxTrigger>
-          {{ value().at(0) ?? 'Pick a fruit' }}
-        </button>
-      } @else if (anchor) {
-        <div data-testid="anchor" forComboboxAnchor>
-          <span aria-hidden="true">🔎</span>
+    @if (multi) {
+      <div
+        forCombobox
+        multiple
+        [(query)]="query"
+        [(value)]="value"
+        [(open)]="open"
+        ariaLabel="Fruit search"
+      >
+        <div forComboboxChips>
+          @for (chip of selected(); track chip.value) {
+            <span forComboboxChip [value]="chip.value" [attr.data-testid]="'chip-' + chip.value">
+              {{ chip.label }}
+              <button forComboboxChipRemove [attr.data-testid]="'remove-' + chip.value">×</button>
+            </span>
+          }
           <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
         </div>
-      } @else {
-        <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
-      }
-      @if (open()) {
-        <div forComboboxContent data-testid="content">
-          @if (showAction) {
-            <button data-testid="action" forComboboxAction (action)="onAction()">
-              Create "{{ query() }}"
-            </button>
-          }
-          @if (picker) {
-            <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
-            <div data-testid="list" forComboboxList>
-              @for (opt of filtered(); track opt) {
-                <div
-                  forComboboxOption
-                  [attr.data-testid]="'opt-' + opt"
-                  [value]="opt"
-                  [disabled]="opt === 'cherry'"
-                >
-                  {{ opt }}
-                </div>
-              }
-            </div>
-          } @else {
+        @if (open()) {
+          <div forComboboxContent data-testid="content">
             @for (opt of filtered(); track opt) {
               <div
                 forComboboxOption
@@ -110,10 +92,69 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
                 {{ opt }}
               </div>
             }
-          }
-        </div>
-      }
-    </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div
+        forCombobox
+        [(query)]="query"
+        [(value)]="value"
+        [(open)]="open"
+        [autocompleteMode]="autocompleteMode"
+        ariaLabel="Fruit search"
+        (autoFocusOnOpen)="onAutoFocusOnOpen($event)"
+        (autoFocusOnClose)="onAutoFocusOnClose($event)"
+      >
+        @if (picker) {
+          <button data-testid="trigger" forComboboxTrigger>
+            {{ value().at(0) ?? 'Pick a fruit' }}
+          </button>
+        } @else if (anchor) {
+          <div data-testid="anchor" forComboboxAnchor>
+            <span aria-hidden="true">🔎</span>
+            <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+          </div>
+        } @else {
+          <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+        }
+        @if (open()) {
+          <div forComboboxContent data-testid="content">
+            @if (showAction) {
+              <button data-testid="action" forComboboxAction (action)="onAction()">
+                Create "{{ query() }}"
+              </button>
+            }
+            @if (picker) {
+              <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+              <div data-testid="list" forComboboxList>
+                @for (opt of filtered(); track opt) {
+                  <div
+                    forComboboxOption
+                    [attr.data-testid]="'opt-' + opt"
+                    [value]="opt"
+                    [disabled]="opt === 'cherry'"
+                  >
+                    {{ opt }}
+                  </div>
+                }
+              </div>
+            } @else {
+              @for (opt of filtered(); track opt) {
+                <div
+                  forComboboxOption
+                  [attr.data-testid]="'opt-' + opt"
+                  [value]="opt"
+                  [disabled]="opt === 'cherry'"
+                >
+                  {{ opt }}
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+    }
     <input data-testid="after" placeholder="after-trigger" />
     <div data-testid="action-count">{{ actionCount() }}</div>
     <div data-testid="value">{{ value().join(',') }}</div>
@@ -121,7 +162,9 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
 })
 export class ComboboxFixture {
   protected readonly query = signal('');
-  protected readonly value = signal<readonly string[]>([]);
+  protected readonly value = signal<readonly string[]>(
+    queryFlag('multi') ? ['apple', 'banana'] : [],
+  );
   // `?open=1` starts the listbox open so options render and the inline-autocomplete
   // snapshot is populated before a spec drives input (used by the IME case).
   protected readonly open = signal(queryFlag('open'));
@@ -146,6 +189,7 @@ export class ComboboxFixture {
   // `?action=1` pins a `[forComboboxAction]` ("Create …") at the top of the
   // popup so the action-item focus / activation specs (#1325) can drive it.
   protected readonly showAction = queryFlag('action');
+  protected readonly multi = queryFlag('multi');
   // `?long=1` renders a 60-item list that scrolls past the viewport, so the
   // action's keyboard reachability can be asserted from a deep scroll position.
   protected readonly source: readonly string[] = queryFlag('long') ? LONG_FRUITS : [...ALL_FRUITS];
@@ -157,6 +201,8 @@ export class ComboboxFixture {
     const q = this.query().toLowerCase();
     return q === '' ? this.source : this.source.filter((f) => f.includes(q));
   });
+
+  protected readonly selected = computed(() => this.value().map((v) => ({ value: v, label: v })));
 
   protected onAction(): void {
     this.actionCount.update((n) => n + 1);

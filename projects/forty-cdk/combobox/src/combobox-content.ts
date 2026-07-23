@@ -118,6 +118,7 @@ export class ForComboboxContent {
           if (input) els.push(input);
           const trigger = ctx.trigger();
           if (trigger) els.push(trigger);
+          for (const chip of ctx.chips()) els.push(chip.host);
           return els;
         },
       },

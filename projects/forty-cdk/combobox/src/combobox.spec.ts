@@ -1668,6 +1668,79 @@ describe('ForCombobox', () => {
       expect(document.activeElement).toBe(getInput());
     });
 
+    describe('chip is inside the dismiss boundary (#1415)', () => {
+      it('pointer-down on a chip remove button does not dismiss the open panel', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const remove = getRemove('apple');
+        const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'target', { value: remove, configurable: true });
+        Object.defineProperty(event, 'composedPath', { value: () => [remove], configurable: true });
+        document.dispatchEvent(event);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(true);
+      });
+
+      it('pointer-down on a chip body does not dismiss the open panel', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const chip = getChip('apple');
+        const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'target', { value: chip, configurable: true });
+        Object.defineProperty(event, 'composedPath', { value: () => [chip], configurable: true });
+        document.dispatchEvent(event);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(true);
+      });
+
+      it('removing a chip via its remove button keeps the panel open', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const remove = getRemove('apple');
+        const down = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(down, 'target', { value: remove, configurable: true });
+        Object.defineProperty(down, 'composedPath', { value: () => [remove], configurable: true });
+        document.dispatchEvent(down);
+        remove.click();
+        await flush(r.fixture);
+
+        expect(r.instance.value()).toEqual(['banana']);
+        expect(r.instance.open()).toBe(true);
+      });
+
+      it('a genuine outside pointer-down still dismisses in multi mode', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple', 'banana']);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const outside = document.createElement('button');
+        document.body.appendChild(outside);
+        const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'target', { value: outside, configurable: true });
+        Object.defineProperty(event, 'composedPath', {
+          value: () => [outside],
+          configurable: true,
+        });
+        document.dispatchEvent(event);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        outside.remove();
+      });
+    });
+
     it('ChipRemove generates aria-label="Remove <label>" derived from the option cache', async () => {
       const r = renderHost(MultiHost);
       // Pre-warm option cache by opening the listbox once.
