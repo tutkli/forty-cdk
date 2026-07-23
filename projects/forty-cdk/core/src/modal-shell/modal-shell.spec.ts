@@ -723,6 +723,82 @@ describe('injectModalShell', () => {
     });
   });
 
+  describe('returnFocusTarget override', () => {
+    it('restores focus to the override target when the construction-time capture is disconnected (close→open swap)', async () => {
+      const origin = document.createElement('button');
+      origin.id = 'origin';
+      document.body.appendChild(origin);
+
+      const doomedSurface = document.createElement('div');
+      const doomedFocusable = document.createElement('button');
+      doomedSurface.appendChild(doomedFocusable);
+      document.body.appendChild(doomedSurface);
+
+      doomedFocusable.focus();
+      expect(document.activeElement).toBe(doomedFocusable);
+
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+        returnFocusTarget: signal(origin),
+      }));
+      await flush(ctx.fixture);
+
+      doomedSurface.remove();
+      expect(doomedFocusable.isConnected).toBe(false);
+
+      ctx.close();
+
+      expect(document.activeElement).toBe(origin);
+      ctx.destroy();
+    });
+
+    it('falls back to the construction-time capture when returnFocusTarget yields null', async () => {
+      const origin = document.createElement('button');
+      origin.id = 'origin';
+      document.body.appendChild(origin);
+      origin.focus();
+      expect(document.activeElement).toBe(origin);
+
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+        returnFocusTarget: signal<HTMLElement | null>(null),
+      }));
+      await flush(ctx.fixture);
+
+      ctx.close();
+
+      expect(document.activeElement).toBe(origin);
+      ctx.destroy();
+    });
+
+    it('ignores the override when returnFocus() is false', async () => {
+      const origin = document.createElement('button');
+      origin.id = 'origin';
+      document.body.appendChild(origin);
+      const elsewhere = document.createElement('button');
+      elsewhere.id = 'elsewhere';
+      document.body.appendChild(elsewhere);
+      elsewhere.focus();
+
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(false),
+        initialFocus: signal('first'),
+        returnFocusTarget: signal(origin),
+      }));
+      await flush(ctx.fixture);
+
+      ctx.close();
+
+      expect(document.activeElement).not.toBe(origin);
+      ctx.destroy();
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('runs the full lifecycle under provideZonelessChangeDetection', async () => {
       TestBed.resetTestingModule();
