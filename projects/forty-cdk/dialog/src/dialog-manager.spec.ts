@@ -1012,6 +1012,70 @@ describe('ForDialogManager (programmatic)', () => {
     });
   });
 
+  describe('surface-targeted exit animation (#1431)', () => {
+    it('applies the leave class only to the closed host, leaving other open hosts untouched', async () => {
+      const { dialogs } = setup();
+      const running = () => [{ finished: Promise.resolve() }] as unknown as Animation[];
+
+      const first = dialogs.open(ConfirmDialog, {
+        data: { message: 'first' },
+        animateLeave: 'first-out',
+      });
+      dialogs.open(ConfirmDialog, { data: { message: 'second' }, animateLeave: 'second-out' });
+
+      const hosts = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')];
+      expect(hosts.length).toBe(2);
+      const firstHost = hosts.find((h) => h.textContent?.includes('first'))!;
+      const secondHost = hosts.find((h) => h.textContent?.includes('second'))!;
+      firstHost.getAnimations = running;
+      secondHost.getAnimations = running;
+
+      first.close();
+
+      expect(firstHost.classList.contains('first-out')).toBe(true);
+      expect(secondHost.classList.contains('first-out')).toBe(false);
+      expect(secondHost.classList.contains('second-out')).toBe(false);
+
+      await first.closed;
+    });
+
+    it('applies the leave class on close for a dialog opened from inside effect()', async () => {
+      @Component({ template: `` })
+      class EffectLeaveOpener {
+        readonly #dialogs = inject(ForDialogManager);
+        readonly openNow = signal(false);
+        ref: ForDialogRef<unknown> | null = null;
+        constructor() {
+          effect(() => {
+            if (this.openNow()) {
+              this.ref = this.#dialogs.open(ConfirmDialog, {
+                data: { message: 'from effect' },
+                animateLeave: 'effect-out',
+              });
+            }
+          });
+        }
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(EffectLeaveOpener);
+      fixture.detectChanges();
+
+      fixture.componentInstance.openNow.set(true);
+      await flush(fixture);
+
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      host.getAnimations = () => [{ finished: Promise.resolve() }] as unknown as Animation[];
+
+      const ref = fixture.componentInstance.ref!;
+      ref.close();
+
+      expect(host.classList.contains('effect-out')).toBe(true);
+
+      await ref.closed;
+    });
+  });
+
   describe('container (scoped programmatic dialog)', () => {
     @Component({
       imports: [ForDialogBackdrop],

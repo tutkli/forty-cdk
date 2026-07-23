@@ -949,6 +949,70 @@ describe('ForDrawerManager (programmatic)', () => {
     });
   });
 
+  describe('surface-targeted exit animation (#1431)', () => {
+    it('applies the leave class only to the closed host, leaving other open hosts untouched', async () => {
+      const { drawers } = setup();
+      const running = () => [{ finished: Promise.resolve() }] as unknown as Animation[];
+
+      const first = drawers.open(SheetDrawer, {
+        data: { message: 'first' },
+        animateLeave: 'first-out',
+      });
+      drawers.open(SheetDrawer, { data: { message: 'second' }, animateLeave: 'second-out' });
+
+      const hosts = [...document.querySelectorAll<HTMLElement>('[role="dialog"]')];
+      expect(hosts.length).toBe(2);
+      const firstHost = hosts.find((h) => h.textContent?.includes('first'))!;
+      const secondHost = hosts.find((h) => h.textContent?.includes('second'))!;
+      firstHost.getAnimations = running;
+      secondHost.getAnimations = running;
+
+      first.close();
+
+      expect(firstHost.classList.contains('first-out')).toBe(true);
+      expect(secondHost.classList.contains('first-out')).toBe(false);
+      expect(secondHost.classList.contains('second-out')).toBe(false);
+
+      await first.closed;
+    });
+
+    it('applies the leave class on close for a drawer opened from inside effect()', async () => {
+      @Component({ template: `` })
+      class EffectLeaveOpener {
+        readonly #drawers = inject(ForDrawerManager);
+        readonly openNow = signal(false);
+        ref: ForDrawerRef<unknown> | null = null;
+        constructor() {
+          effect(() => {
+            if (this.openNow()) {
+              this.ref = this.#drawers.open(SheetDrawer, {
+                data: { message: 'from effect' },
+                animateLeave: 'effect-out',
+              });
+            }
+          });
+        }
+      }
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(EffectLeaveOpener);
+      fixture.detectChanges();
+
+      fixture.componentInstance.openNow.set(true);
+      await flush(fixture);
+
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      host.getAnimations = () => [{ finished: Promise.resolve() }] as unknown as Animation[];
+
+      const ref = fixture.componentInstance.ref!;
+      ref.close();
+
+      expect(host.classList.contains('effect-out')).toBe(true);
+
+      await ref.closed;
+    });
+  });
+
   describe('container (scoped programmatic drawer)', () => {
     it('portals the host into the container element when modal: false', () => {
       const boxEl = document.createElement('div');
