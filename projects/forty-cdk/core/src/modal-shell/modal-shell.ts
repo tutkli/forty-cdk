@@ -99,6 +99,28 @@ export interface ModalShellConfig {
    */
   readonly returnFocus: Signal<boolean>;
   /**
+   * Optional override for the return-focus target, read at **close time**
+   * rather than captured synchronously in the constructor. When it yields a
+   * connected element, the modal teardown restores focus there instead of to
+   * the construction-time capture; a `null` value — or omitting the member —
+   * falls back to that capture, so default behaviour is unchanged.
+   *
+   * Supply this when the surface can be constructed while focus lives inside a
+   * *different, doomed* surface. The canonical case is a close→open modal swap
+   * in a single change-detection pass (a confirm step replacing a form dialog,
+   * a wizard hand-off): the incoming shell would otherwise capture an element
+   * inside the outgoing surface, which is then destroyed, so on close the
+   * captured target is disconnected, focus falls back to `<body>`, and
+   * restoration is lost for the whole chain. Thread the true origin element
+   * through this signal (the programmatic Dialog / Drawer managers own that
+   * origin) so return-focus survives the swap.
+   *
+   * Read only in modal mode and only when {@link returnFocus} is `true` and
+   * the `(autoFocusOnClose)` veto did not fire — the same gate as the
+   * construction-time capture.
+   */
+  readonly returnFocusTarget?: Signal<HTMLElement | null>;
+  /**
    * Where to send focus on mount. Two shapes:
    * - `Signal<'first' | 'container'>` — `'first'` = first focusable descendant
    *   (falls back to host); `'container'` = host element. Same vocabulary as
@@ -166,7 +188,10 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
  *    an ancestor receives `inert`, so by the time `afterNextRender` runs
  *    (where inert is activated) reading `document.activeElement` from the
  *    focus trap would yield `<body>`. Capturing it now locks the trigger
- *    in as the return target before any side effect mutates focus.
+ *    in as the return target before any side effect mutates focus. A
+ *    consumer that knows the true origin (the programmatic managers, across a
+ *    close→open swap) can override this with the `returnFocusTarget` signal,
+ *    read at close time instead of construction time.
  *
  * 2. Portal. `injectPortal()` moves the host to `document.body` after the
  *    first render and removes it on destroy.
@@ -211,7 +236,9 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
  *      is not blocked by an inert ancestor) →
  *      `dismissable.suppress(focusTrap.deactivate)` (so the synthetic
  *      `focusin` from `.focus()`-ing the previous element doesn't
- *      cascade-dismiss whatever layer is now topmost) →
+ *      cascade-dismiss whatever layer is now topmost). Focus returns to a
+ *      connected `returnFocusTarget()` override when supplied, else to the
+ *      construction-time capture held by the focus trap. Then
  *      `bodyScrollLock.unlock()`.
  *
  * Must be called from an injection context (typically the directive
@@ -407,14 +434,19 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       // needs to be live again first.
       inertHandle?.deactivate();
       inertHandle = null;
+      const shouldReturnFocus = config.returnFocus() && !skipReturnFocus;
+      const overrideTarget = config.returnFocusTarget?.() ?? null;
       // Suppress the dismissable-layer dispatcher across focus-return so the
       // synthetic `focusin` triggered by `.focus()`-ing the previous element
       // does not cascade-dismiss whatever modal is now topmost (a stacked
       // dialog opened above this one).
       dismissable.suppress(() => {
-        focusTrap.deactivate({
-          returnFocus: config.returnFocus() && !skipReturnFocus,
-        });
+        if (shouldReturnFocus && overrideTarget?.isConnected) {
+          focusTrap.deactivate({ returnFocus: false });
+          overrideTarget.focus();
+        } else {
+          focusTrap.deactivate({ returnFocus: shouldReturnFocus });
+        }
       });
       scrollLock.unlock(activatedContainer ?? undefined);
     }

@@ -107,6 +107,19 @@ export class ForDrawer implements ForDrawerContext {
   });
 
   /**
+   * Explicit element focus returns to on close, read at close time. Overrides
+   * the element the directive captures at construction — supply it when this
+   * drawer can be constructed while focus lives inside a *different, doomed*
+   * surface, the canonical case being a close→open swap in one change-detection
+   * pass. `ForDrawerManager` threads the true origin through this input
+   * automatically; declarative consumers driving such a swap by hand can bind
+   * it too. `null` (default) keeps the construction-time capture, so ordinary
+   * usage is unaffected. Has no effect in non-modal mode (the directive never
+   * moves focus on close then).
+   */
+  readonly returnFocusTarget = input<HTMLElement | null>(null);
+
+  /**
    * Where to send focus on mount. `'first'` (default) finds the first
    * focusable descendant; `'container'` focuses the drawer surface itself
    * (useful when there's nothing focusable inside).
@@ -428,6 +441,7 @@ export class ForDrawer implements ForDrawerContext {
     injectModalShell({
       modal: this.modal,
       returnFocus: this.returnFocus,
+      returnFocusTarget: this.returnFocusTarget,
       initialFocus: this.initialFocus,
       container: this.container,
       autoFocusOnOpen: () => this.autoFocusOnOpen(),

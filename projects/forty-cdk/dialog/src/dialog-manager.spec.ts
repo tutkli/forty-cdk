@@ -298,6 +298,52 @@ describe('ForDialogManager (programmatic)', () => {
     });
   });
 
+  describe('return-focus origin threading (#1385)', () => {
+    it('threads an explicit returnFocusTarget so close restores focus there, not the construction capture', async () => {
+      const { dialogs } = setup();
+      const custom = document.createElement('button');
+      custom.id = 'custom-origin';
+      document.body.appendChild(custom);
+      try {
+        const ref = dialogs.open(ConfirmDialog, {
+          data: { message: 'x' },
+          returnFocusTarget: custom,
+        });
+        expect(document.activeElement?.id).toBe('ok');
+
+        ref.close();
+        await ref.closed;
+        TestBed.tick();
+
+        expect(document.activeElement).toBe(custom);
+      } finally {
+        custom.remove();
+      }
+    });
+
+    it('auto-resolves the focused trigger as the origin when returnFocusTarget is omitted', async () => {
+      const { dialogs, trigger } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
+
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.activeElement).toBe(trigger);
+    });
+
+    it('opts out with returnFocusTarget: null, falling back to the construction capture', async () => {
+      const { dialogs, trigger } = setup();
+      const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' }, returnFocusTarget: null });
+
+      ref.close();
+      await ref.closed;
+      TestBed.tick();
+
+      expect(document.activeElement).toBe(trigger);
+    });
+  });
+
   describe('Escape key', () => {
     it('closes a dismissible dialog and resolves with undefined', async () => {
       const { dialogs } = setup();

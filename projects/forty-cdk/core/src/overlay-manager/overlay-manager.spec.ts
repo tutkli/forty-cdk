@@ -98,6 +98,10 @@ class TestManager extends OverlayManagerCore<TestEntry> {
   exposeInjectorFactory(providers: readonly Provider[]): (parent: Injector) => Injector {
     return this.createInjectorFactory(providers);
   }
+
+  exposeResolveReturnFocusTarget(): HTMLElement | null {
+    return this.resolveReturnFocusTarget();
+  }
 }
 
 function makeManager(): TestManager {
@@ -324,6 +328,95 @@ describe('OverlayManagerCore', () => {
       const { handler, manager } = await openIn(AfterRenderOpener);
       expect(handler.errors).toEqual([]);
       expect(manager.openCount()).toBe(1);
+    });
+  });
+
+  describe('resolveReturnFocusTarget (return-focus origin — #1385)', () => {
+    it('returns the focused element when it is a genuine outside trigger', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      try {
+        trigger.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+      } finally {
+        trigger.remove();
+      }
+    });
+
+    it('returns the focused element when it sits inside a still-open overlay (stacked open)', () => {
+      const manager = makeManager();
+      const { id } = manager.openWithLeave('x');
+      const host = document.createElement('div');
+      host.setAttribute('data-test-overlay-id', id);
+      const inner = document.createElement('button');
+      host.appendChild(inner);
+      document.body.appendChild(host);
+      try {
+        inner.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(inner);
+      } finally {
+        host.remove();
+      }
+    });
+
+    it('inherits the chain origin when focus sits inside an overlay with no live entry (swap)', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      const orphanHost = document.createElement('div');
+      orphanHost.setAttribute('data-test-overlay-id', 'gone');
+      const inner = document.createElement('button');
+      orphanHost.appendChild(inner);
+      document.body.appendChild(orphanHost);
+      try {
+        trigger.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+
+        inner.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+      } finally {
+        orphanHost.remove();
+        trigger.remove();
+      }
+    });
+
+    it('inherits the chain origin when a closing overlay still holds focus (animated swap)', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      const { ref, id } = manager.openWithLeave('x');
+      const host = document.createElement('div');
+      host.setAttribute('data-test-overlay-id', id);
+      const inner = document.createElement('button');
+      host.appendChild(inner);
+      document.body.appendChild(host);
+      try {
+        trigger.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+
+        ref.close();
+        inner.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+      } finally {
+        host.remove();
+        trigger.remove();
+      }
+    });
+
+    it('inherits the chain origin when nothing is focused (body)', () => {
+      const manager = makeManager();
+      const trigger = document.createElement('button');
+      document.body.appendChild(trigger);
+      try {
+        trigger.focus();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+
+        trigger.blur();
+        expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+      } finally {
+        trigger.remove();
+      }
     });
   });
 
