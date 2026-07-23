@@ -17,7 +17,6 @@ import {
   type ListNavigationAction,
   moveIndex,
   type WritingDirection,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
 } from 'forty-cdk/core';
@@ -128,7 +127,7 @@ export class ForToggleGroup
    * Tree. Before any focus, `active()` is `null` and the tabindex falls back
    * to the first-selected / first-enabled entry point.
    */
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#items.items());
 
   readonly #items = new Collection<ForToggleGroupItemHandle>();
 
@@ -154,7 +153,6 @@ export class ForToggleGroup
       values: this.value,
       disabled: this.effectiveDisabled,
     });
-    reconcileRovingActive(this.roving, this.#items.items);
   }
 
   /**

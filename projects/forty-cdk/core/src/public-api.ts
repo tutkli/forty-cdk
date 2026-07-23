@@ -19,17 +19,22 @@
  * barrel is intentionally empty — see the package README).
  */
 
+export { afterNextRenderCancellable } from './after-next-render-cancellable/after-next-render-cancellable';
 export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';
 export { resolveConfigClass } from './class-list/resolve-config-class';
 export { Collection, type CollectionHandle } from './collection/collection';
-export { type DisableableHandle, firstEnabledHost } from './collection/first-enabled-host';
+export {
+  type DisableableHandle,
+  firstEnabledHost,
+  nextEnabledHandle,
+  type NextEnabledHandleOptions,
+} from './collection/enabled-handle-navigation';
 export { foldSnapshotOnTotalCountTransition } from './collection/fold-snapshot';
 export {
   type A11yDescriptionOwner,
   type A11yLabelOwner,
   registerA11yDescription,
   registerA11yName,
-  registerCollectionHandle,
   registerHandle,
   type RegistrationScheduling,
 } from './collection/register-handle';
@@ -248,10 +253,6 @@ export {
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export {
-  nextEnabledHandle,
-  type NextEnabledHandleOptions,
-} from './keyboard-navigation/move-in-collection';
-export {
   type ListboxOverlayContext,
   ListboxOverlayController,
   type ListboxOverlayControllerDeps,
@@ -355,10 +356,6 @@ export {
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
 export {
-  reconcileRovingActive,
-  type ReconcileRovingActiveOptions,
-} from './roving-tabindex/reconcile-roving-active';
-export {
   rovingListTarget,
   rovingTabStop,
   type RovingListTargetOptions,
@@ -407,7 +404,6 @@ export {
   type VetoableNativeEvent,
 } from './vetoable-event/vetoable-event';
 export {
-  readEntryGuarded,
   VirtualizedNavigator,
   type VirtualizedNavigatorAccessors,
   type VirtualizedNavigatorDeps,

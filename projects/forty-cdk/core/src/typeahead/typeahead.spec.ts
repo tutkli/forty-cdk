@@ -72,6 +72,19 @@ describe('Typeahead', () => {
     expect(t.buffer()).toBe('');
   });
 
+  it('ignores keydowns during IME composition (isComposing)', () => {
+    const t = new Typeahead();
+    expect(t.handle(key('a', { isComposing: true }))).toBe(false);
+    expect(t.buffer()).toBe('');
+  });
+
+  it('does not append a composing key to a non-empty buffer', () => {
+    const t = new Typeahead();
+    expect(t.handle(key('a'))).toBe(true);
+    expect(t.handle(key('b', { isComposing: true }))).toBe(false);
+    expect(t.buffer()).toBe('a');
+  });
+
   it('resets the buffer after debounceMs of no keypresses', () => {
     const t = new Typeahead({ debounceMs: 300 });
     t.handle(key('a'));

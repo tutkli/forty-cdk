@@ -43,6 +43,9 @@ export class Typeahead {
    * mid-buffer `keydown` Space accumulates here without blocking activation.
    */
   handle(event: KeyboardEvent): boolean {
+    if (event.isComposing) {
+      return false;
+    }
     if (event.ctrlKey || event.altKey || event.metaKey) {
       return false;
     }

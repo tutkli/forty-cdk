@@ -1,14 +1,6 @@
-import {
-  afterNextRender,
-  DestroyRef,
-  ElementRef,
-  inject,
-  signal,
-  type Signal,
-} from '@angular/core';
+import { afterNextRender, DestroyRef, ElementRef, inject } from '@angular/core';
 
 import { resolveHostId } from '../host-id/host-id';
-import type { Collection } from './collection';
 
 /**
  * Scheduling for the `register` call.
@@ -78,31 +70,6 @@ export function registerHandle<T>(
 }
 
 /**
- * Convenience overload of {@link registerHandle} for parents that expose
- * a raw `Collection<H>`. The handle is registered immediately and
- * unregistered on `DestroyRef.onDestroy`.
- *
- * Most parents wrap their `Collection` behind named methods (e.g.
- * `registerOption` / `unregisterOption`) — those callsites should use
- * {@link registerHandle} with the named methods. Reach for this helper only
- * when the parent exposes the bare `Collection` instance.
- *
- * Must be invoked in an injection context.
- */
-export function registerCollectionHandle<H extends { readonly host: HTMLElement }>(
-  collection: Collection<H>,
-  handle: H,
-  scheduling: RegistrationScheduling = 'sync',
-): void {
-  registerHandle(
-    handle,
-    (h) => collection.register(h),
-    (h) => collection.unregister(h),
-    scheduling,
-  );
-}
-
-/**
  * Owner contract for {@link registerA11yName}. The owner is typically the
  * primitive's context object (e.g. `injectDialogContext('ForDialogTitle')`)
  * or the parent directive instance — duck-typed so cross-primitive code
@@ -125,8 +92,8 @@ export interface A11yDescriptionOwner {
 /**
  * Generates a stable `id` for the host element and registers it with the
  * `owner`'s `aria-labelledby` collection (`registerLabel` /
- * `unregisterLabel`). Returns the id as a `Signal<string>` so the caller
- * can host-bind it via `'[id]': 'id()'` exactly like every other primitive.
+ * `unregisterLabel`). Returns the id as a plain `string`; host-bind it via
+ * `'[id]': 'id'` (the id never changes, so a signal added nothing).
  *
  * Replaces:
  *
@@ -154,7 +121,7 @@ export interface A11yDescriptionOwner {
  * Must be invoked in an injection context — internally calls `inject` for
  * `ElementRef`, `IdGenerator`, and `DestroyRef`.
  */
-export function registerA11yName(owner: A11yLabelOwner, prefix: string): Signal<string> {
+export function registerA11yName(owner: A11yLabelOwner, prefix: string): string {
   const host =
     inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
   const id = resolveHostId(host, prefix);
@@ -163,7 +130,7 @@ export function registerA11yName(owner: A11yLabelOwner, prefix: string): Signal<
     (myId) => owner.registerLabel(myId),
     (myId) => owner.unregisterLabel(myId),
   );
-  return signal(id).asReadonly();
+  return id;
 }
 
 /**
@@ -171,10 +138,7 @@ export function registerA11yName(owner: A11yLabelOwner, prefix: string): Signal<
  * function for the rationale and usage — including the consumer-set static
  * `id` adoption.
  */
-export function registerA11yDescription(
-  owner: A11yDescriptionOwner,
-  prefix: string,
-): Signal<string> {
+export function registerA11yDescription(owner: A11yDescriptionOwner, prefix: string): string {
   const host =
     inject<ElementRef<HTMLElement>>(ElementRef, { optional: true })?.nativeElement ?? null;
   const id = resolveHostId(host, prefix);
@@ -183,5 +147,5 @@ export function registerA11yDescription(
     (myId) => owner.registerDescription(myId),
     (myId) => owner.unregisterDescription(myId),
   );
-  return signal(id).asReadonly();
+  return id;
 }

@@ -6,7 +6,6 @@ import {
   type ListNavigationAction,
   rovingListTarget,
   type WritingDirection,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
 } from 'forty-cdk/core';
@@ -76,16 +75,12 @@ export class ForTabs implements ForTabsContext {
    */
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
 
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#triggers.items());
 
   readonly #triggers = new Collection<ForTabsTriggerHandle>();
   readonly #contents = new Collection<ForTabsContentHandle>();
 
   readonly #firstEnabledTriggerHost = computed(() => firstEnabledHost(this.#triggers.items()));
-
-  constructor() {
-    reconcileRovingActive(this.roving, this.#triggers.items);
-  }
 
   isSelected(v: string): boolean {
     return this.value() === v;

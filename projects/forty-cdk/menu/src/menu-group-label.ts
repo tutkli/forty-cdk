@@ -11,7 +11,7 @@ import { injectMenuGroupContext } from './menu-group-context';
 @Directive({
   selector: '[forMenuGroupLabel]',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForMenuGroupLabel {

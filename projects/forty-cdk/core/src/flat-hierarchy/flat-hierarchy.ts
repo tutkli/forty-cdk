@@ -13,19 +13,34 @@
 export function computeFlatHierarchy(
   levels: readonly number[],
 ): { posinset: number; setsize: number }[] {
-  return levels.map((level, index) => {
-    let before = 0;
-    for (let i = index - 1; i >= 0; i--) {
-      const l = levels[i]!;
-      if (l < level) break;
-      if (l === level) before++;
+  const result: { posinset: number; setsize: number }[] = new Array(levels.length);
+  const stack: { level: number; members: number[] }[] = [];
+
+  const close = (group: { level: number; members: number[] }): void => {
+    const setsize = group.members.length;
+    for (const i of group.members) {
+      result[i]!.setsize = setsize;
     }
-    let after = 0;
-    for (let i = index + 1; i < levels.length; i++) {
-      const l = levels[i]!;
-      if (l < level) break;
-      if (l === level) after++;
+  };
+
+  for (let index = 0; index < levels.length; index++) {
+    const level = levels[index]!;
+    while (stack.length > 0 && stack[stack.length - 1]!.level > level) {
+      close(stack.pop()!);
     }
-    return { posinset: before + 1, setsize: before + 1 + after };
-  });
+    const top = stack[stack.length - 1];
+    if (top && top.level === level) {
+      top.members.push(index);
+      result[index] = { posinset: top.members.length, setsize: 0 };
+    } else {
+      stack.push({ level, members: [index] });
+      result[index] = { posinset: 1, setsize: 0 };
+    }
+  }
+
+  while (stack.length > 0) {
+    close(stack.pop()!);
+  }
+
+  return result;
 }

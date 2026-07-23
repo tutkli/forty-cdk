@@ -5,21 +5,15 @@ import {
   inject,
   Injectable,
   Injector,
+  isSignal,
   provideZonelessChangeDetection,
   runInInjectionContext,
   signal,
-  type Type,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../../src/test-utils';
-import { Collection } from './collection';
-import {
-  registerA11yDescription,
-  registerA11yName,
-  registerCollectionHandle,
-  registerHandle,
-} from './register-handle';
+import { registerA11yDescription, registerA11yName, registerHandle } from './register-handle';
 
 interface Handle {
   readonly id: string;
@@ -234,76 +228,6 @@ describe('registerHandle', () => {
   });
 });
 
-describe('registerCollectionHandle', () => {
-  function withInjector<T>(fn: () => T): T {
-    TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection()],
-    });
-    const injector = TestBed.inject(Injector);
-    return runInInjectionContext(injector, fn);
-  }
-
-  function makeHost(id: string): { host: HTMLElement; id: string } {
-    const host = document.createElement('div');
-    host.id = id;
-    return { host, id };
-  }
-
-  it('registers a handle on a Collection on construction', () => {
-    type H = { host: HTMLElement; id: string };
-    const collection = new Collection<H>();
-
-    withInjector(() => {
-      registerCollectionHandle(collection, makeHost('a'));
-      registerCollectionHandle(collection, makeHost('b'));
-    });
-
-    expect(collection.items().map((h) => h.id)).toEqual(['a', 'b']);
-  });
-
-  it('unregisters on destroy via the rendered directive lifecycle', () => {
-    type H = { host: HTMLElement; id: string };
-    const collection = new Collection<H>();
-
-    let lastHandle: H | null = null;
-
-    @Directive({ selector: '[child]' })
-    class ChildDir {
-      constructor() {
-        const handle = makeHost(`h-${collection.items().length}`);
-        lastHandle = handle;
-        registerCollectionHandle(collection, handle);
-      }
-    }
-
-    @Component({
-      selector: 'host-cmp',
-      imports: [ChildDir],
-      changeDetection: ChangeDetectionStrategy.OnPush,
-      template: `@if (mounted()) {
-        <div child></div>
-      }`,
-    })
-    class HostCmp {
-      readonly mounted = signal(true);
-    }
-
-    TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection()],
-    });
-    const fixture = TestBed.createComponent(HostCmp as Type<HostCmp>);
-    fixture.detectChanges();
-    expect(collection.items().length).toBe(1);
-    const registeredHandle = lastHandle!;
-
-    fixture.componentInstance.mounted.set(false);
-    fixture.detectChanges();
-    expect(collection.items().length).toBe(0);
-    // No leaked references — the same identity that went in came out.
-    expect(registeredHandle).toBe(lastHandle);
-  });
-});
-
 describe('registerA11yName / registerA11yDescription', () => {
   function setupOwner(): { owner: FakeOwner; injector: Injector } {
     TestBed.configureTestingModule({
@@ -315,13 +239,15 @@ describe('registerA11yName / registerA11yDescription', () => {
     };
   }
 
-  it('returns a Signal carrying the generated id and registers it on the owner', () => {
+  it('returns the generated id string and registers it on the owner', () => {
     const { owner, injector } = setupOwner();
 
     const id = runInInjectionContext(injector, () => registerA11yName(owner, 'for-dialog-title'));
 
-    expect(id()).toMatch(/^for-dialog-title-[A-Za-z0-9]+-\d+$/);
-    expect(owner.registered).toEqual([id()]);
+    expect(typeof id).toBe('string');
+    expect(isSignal(id)).toBe(false);
+    expect(id).toMatch(/^for-dialog-title-[A-Za-z0-9]+-\d+$/);
+    expect(owner.registered).toEqual([id]);
   });
 
   it('unregisters the same id on destroy (label)', () => {
@@ -332,7 +258,7 @@ describe('registerA11yName / registerA11yDescription', () => {
     class LabelDir {
       readonly id = registerA11yName(owner, 'for-x-label');
       constructor() {
-        captured = this.id();
+        captured = this.id;
       }
     }
 
@@ -365,7 +291,7 @@ describe('registerA11yName / registerA11yDescription', () => {
     class DescDir {
       readonly id = registerA11yDescription(owner, 'for-x-desc');
       constructor() {
-        captured = this.id();
+        captured = this.id;
       }
     }
 
@@ -396,8 +322,8 @@ describe('registerA11yName / registerA11yDescription', () => {
     const a = runInInjectionContext(injector, () => registerA11yName(owner, 'for-x'));
     const b = runInInjectionContext(injector, () => registerA11yName(owner, 'for-x'));
 
-    expect(a()).not.toBe(b());
-    expect(owner.registered).toEqual([a(), b()]);
+    expect(a).not.toBe(b);
+    expect(owner.registered).toEqual([a, b]);
   });
 
   // Demonstrate that the helpers are usable independently of the application's
@@ -411,6 +337,6 @@ describe('registerA11yName / registerA11yDescription', () => {
     const injector = TestBed.inject(Injector);
 
     const id = runInInjectionContext(injector, () => registerA11yName(owner, 'for-x'));
-    expect(owner.registered).toEqual([id()]);
+    expect(owner.registered).toEqual([id]);
   });
 });

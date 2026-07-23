@@ -368,6 +368,9 @@ function scanNextEnabled(
   loop: boolean,
   isDisabled: ((i: number) => boolean) | undefined,
 ): number | null {
+  if (loop && current < 0 && step < 0) {
+    current = count;
+  }
   for (let visited = 1; visited <= count; visited++) {
     let candidate = current + step * visited;
     if (candidate < 0 || candidate >= count) {

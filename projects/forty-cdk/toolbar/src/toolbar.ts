@@ -7,7 +7,6 @@ import {
   type WritingDirection,
   nextEnabledHandle,
   FOR_HOST_ROVING_CONTEXT,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
 } from 'forty-cdk/core';
@@ -102,15 +101,11 @@ export class ForToolbar implements ForToolbarContext {
    * matching Tabs / Tree. Before any focus, `active()` is `null` and the
    * tabindex falls back to the first-enabled entry point.
    */
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#items.items());
 
   readonly #items = new Collection<ForToolbarItemHandle>();
 
   readonly #firstEnabledHost = computed(() => firstEnabledHost(this.#items.items()));
-
-  constructor() {
-    reconcileRovingActive(this.roving, this.#items.items);
-  }
 
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     if (this.disabled()) {

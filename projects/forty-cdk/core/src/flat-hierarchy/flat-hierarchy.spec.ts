@@ -58,4 +58,34 @@ describe('computeFlatHierarchy', () => {
       { posinset: 1, setsize: 1 },
     ]);
   });
+
+  it('non-contiguous siblings back-fill setsize across interleaved children [1,2,1,2,1]', () => {
+    const result = computeFlatHierarchy([1, 2, 1, 2, 1]);
+    expect(result).toEqual([
+      { posinset: 1, setsize: 3 },
+      { posinset: 1, setsize: 1 },
+      { posinset: 2, setsize: 3 },
+      { posinset: 1, setsize: 1 },
+      { posinset: 3, setsize: 3 },
+    ]);
+  });
+
+  it('level jump skips an intermediate level [1,3,3,1]', () => {
+    const result = computeFlatHierarchy([1, 3, 3, 1]);
+    expect(result).toEqual([
+      { posinset: 1, setsize: 2 },
+      { posinset: 1, setsize: 2 },
+      { posinset: 2, setsize: 2 },
+      { posinset: 2, setsize: 2 },
+    ]);
+  });
+
+  it('deeper-then-shallower start does not underflow the stack [2,1,2]', () => {
+    const result = computeFlatHierarchy([2, 1, 2]);
+    expect(result).toEqual([
+      { posinset: 1, setsize: 1 },
+      { posinset: 1, setsize: 1 },
+      { posinset: 1, setsize: 1 },
+    ]);
+  });
 });

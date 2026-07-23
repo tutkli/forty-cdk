@@ -1,7 +1,10 @@
 import { signal } from '@angular/core';
 
-import type { DisableableHandle } from '../collection/first-enabled-host';
-import { nextEnabledHandle } from './move-in-collection';
+import {
+  type DisableableHandle,
+  firstEnabledHost,
+  nextEnabledHandle,
+} from './enabled-handle-navigation';
 
 interface TestHandle extends DisableableHandle {
   readonly value: string;
@@ -78,5 +81,33 @@ describe('nextEnabledHandle', () => {
       expect(nextEnabledHandle(items, 1, 'next')).toBe(items[2]);
       expect(nextEnabledHandle(items, 1, 'prev')).toBe(items[0]);
     });
+  });
+});
+
+describe('firstEnabledHost', () => {
+  it('returns null on an empty list', () => {
+    expect(firstEnabledHost([])).toBeNull();
+  });
+
+  it('returns null when every handle is disabled', () => {
+    const items = makeItems([
+      { value: 'a', disabled: true },
+      { value: 'b', disabled: true },
+    ]);
+    expect(firstEnabledHost(items)).toBeNull();
+  });
+
+  it('returns the host of the first non-disabled handle', () => {
+    const items = makeItems([{ value: 'a' }, { value: 'b' }, { value: 'c' }]);
+    expect(firstEnabledHost(items)).toBe(items[0]!.host);
+  });
+
+  it('skips leading disabled handles', () => {
+    const items = makeItems([
+      { value: 'a', disabled: true },
+      { value: 'b', disabled: true },
+      { value: 'c' },
+    ]);
+    expect(firstEnabledHost(items)).toBe(items[2]!.host);
   });
 });

@@ -31,7 +31,6 @@ import {
   moveIndex,
   type WritingDirection,
   LiveAnnouncer,
-  reconcileRovingActive,
   RovingTabindex,
   injectTextDirection,
   createAutoScroller,
@@ -204,7 +203,7 @@ export class ForDropList implements ForDropListContext {
   /** Effective disabled — the list's own `disabled` input (fieldset wiring deferred to v2). */
   readonly effectiveDisabled = computed(() => this.disabled());
 
-  readonly roving = new RovingTabindex();
+  readonly roving = new RovingTabindex(() => this.#items.items());
   readonly #items = new Collection<ForDraggableHandle>();
   readonly items = this.#items.items;
 
@@ -226,7 +225,6 @@ export class ForDropList implements ForDropListContext {
   readonly isDragging = computed(() => this.#liftedHost() !== null);
 
   constructor() {
-    reconcileRovingActive(this.roving, this.#items.items);
     const group = this.#group;
     if (group) {
       registerHandle(

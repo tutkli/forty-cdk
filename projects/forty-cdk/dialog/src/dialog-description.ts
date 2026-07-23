@@ -14,7 +14,7 @@ import { injectDialogContext } from './dialog-context';
   selector: '[forDialogDescription]',
   exportAs: 'forDialogDescription',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForDialogDescription {

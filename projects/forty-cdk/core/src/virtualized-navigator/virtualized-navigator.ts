@@ -4,13 +4,6 @@ import { foldSnapshotOnTotalCountTransition } from '../collection/fold-snapshot'
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 
 /**
- * Re-export of the shared NG0950 read guard under the navigator's historical
- * name. The single source lives in `_internal/signal-graph/read-handle.ts`;
- * adapters wiring `readEntry` keep importing it from here.
- */
-export { tryReadHandle as readEntryGuarded } from '../signal-graph/read-handle';
-
-/**
  * Minimal shape every position-snapshot entry must expose so the engine can
  * resolve the current absolute position from `aria-activedescendant` and skip
  * disabled positions outside the rendered window. Primitive adapters widen this
@@ -38,7 +31,7 @@ export interface VirtualizedNavigatorAccessors<H, E extends VirtualizedNavigator
   readonly hostOf: (item: H) => HTMLElement;
   /**
    * Build the position-snapshot entry for a live handle, or `null` to skip it
-   * this fold. The single NG0950 read guard (`readEntryGuarded`) is injected
+   * this fold. The single NG0950 read guard (`tryReadHandle`) is injected
    * here: a statically-rendered option that registers before its
    * `input.required` binding is written returns `null` and is folded in on the
    * binding's re-run.
@@ -271,6 +264,18 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * Virtualized arrow / Home / End navigation. Resolves the current absolute
    * position from the active id (live item, else the snapshot) or the resume
    * position, then delegates the `moveIndex` walk to {@link #moveFrom}.
+   *
+   * Resolving the current position when the active item is unmounted (scrolled
+   * off the rendered window) is an **O(total)** linear scan of the position
+   * snapshot: the active id is matched against every snapshot entry. This is
+   * deliberate and acceptable -- the scan runs only on that off-window branch
+   * (an active item still in the rendered window resolves in O(window) via
+   * `items`) and only once per keypress. The escape hatch, should profiling
+   * ever flag it at very large datasets (10k+ entries), is a companion
+   * `id -> position` map maintained alongside `#snapshotByPos` to make the
+   * lookup O(1); it is intentionally not built today because inverting the
+   * snapshot on every fold would trade this rare per-keypress cost for an
+   * O(total) rebuild on every scroll tick.
    */
   navigate(direction: ListNavigationAction): void {
     const total = this.#deps.totalCount();

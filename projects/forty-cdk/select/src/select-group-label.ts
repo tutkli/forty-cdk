@@ -1,4 +1,4 @@
-import { Directive, inject, type Signal } from '@angular/core';
+import { Directive, inject } from '@angular/core';
 
 import { registerA11yName } from 'forty-cdk/core';
 import { ForSelectGroup } from './select-group';
@@ -13,12 +13,12 @@ import { ForSelectGroup } from './select-group';
   selector: '[forSelectGroupLabel]',
   exportAs: 'forSelectGroupLabel',
   host: {
-    '[id]': 'id()',
+    '[id]': 'id',
   },
 })
 export class ForSelectGroupLabel {
   /** Stable host id used by the parent group's `aria-labelledby`. */
-  readonly id: Signal<string>;
+  readonly id: string;
 
   constructor() {
     const group = inject(ForSelectGroup, { optional: true });
