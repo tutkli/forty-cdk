@@ -20,7 +20,7 @@ import type { ForAvatarStatus } from './avatar-context';
 })
 class AvatarHost {
   readonly src = signal<string>('');
-  readonly delay = signal(0);
+  readonly delay = signal<number | string>(0);
   readonly emitted: ForAvatarStatus[] = [];
 }
 
@@ -58,6 +58,7 @@ describe('ForAvatar', () => {
 
       expect(root.getAttribute('data-status')).toBe('loading');
 
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
       img.dispatchEvent(new Event('load'));
       await flush();
 
@@ -74,6 +75,7 @@ describe('ForAvatar', () => {
       const img = query<HTMLImageElement>('img')!;
       const root = query<HTMLElement>('[forAvatar]')!;
 
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
       img.dispatchEvent(new Event('error'));
       await flush();
 
@@ -194,6 +196,55 @@ describe('ForAvatar', () => {
       expect(fixture.componentInstance.emitted).toEqual([]);
     });
 
+    it('does not mark the second request loaded when a late load from the previous src fires (#1394)', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      const root = query<HTMLElement>('[forAvatar]')!;
+
+      fixture.componentInstance.src.set('https://example.test/first.png');
+      await flush();
+      expect(root.getAttribute('data-status')).toBe('loading');
+
+      fixture.componentInstance.src.set('https://example.test/second.png');
+      await flush();
+      expect(root.getAttribute('data-status')).toBe('loading');
+      fixture.componentInstance.emitted.length = 0;
+
+      img.dispatchEvent(new Event('load'));
+      expect(root.getAttribute('data-status')).toBe('loading');
+      expect(fixture.componentInstance.emitted).toEqual([]);
+
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      img.dispatchEvent(new Event('load'));
+      await flush();
+
+      expect(root.getAttribute('data-status')).toBe('loaded');
+      expect(fixture.componentInstance.emitted).toEqual(['loaded']);
+    });
+
+    it('ignores a late error from the previous src while the current request is still loading (#1394)', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      const img = query<HTMLImageElement>('img')!;
+      const root = query<HTMLElement>('[forAvatar]')!;
+
+      fixture.componentInstance.src.set('https://example.test/first.png');
+      await flush();
+      fixture.componentInstance.src.set('https://example.test/second.png');
+      await flush();
+      expect(root.getAttribute('data-status')).toBe('loading');
+      fixture.componentInstance.emitted.length = 0;
+
+      img.dispatchEvent(new Event('error'));
+      expect(root.getAttribute('data-status')).toBe('loading');
+      expect(fixture.componentInstance.emitted).toEqual([]);
+
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      img.dispatchEvent(new Event('error'));
+      await flush();
+
+      expect(root.getAttribute('data-status')).toBe('error');
+    });
+
     it('throws a prefixed error when [forAvatarImage] is used without [forAvatar]', () => {
       @Component({
         imports: [ForAvatarImage],
@@ -219,6 +270,32 @@ describe('ForAvatar', () => {
       expect(query<HTMLElement>('[forAvatarFallback]')).not.toBeNull();
     });
 
+    it('coerces a non-numeric fallbackDelayMs to the default and shows the fallback during idle', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      fixture.componentInstance.delay.set('not-a-number');
+      await flush();
+
+      expect(query<HTMLElement>('[forAvatarFallback]')).not.toBeNull();
+    });
+
+    it('coerces a non-numeric fallbackDelayMs to the default while loading', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      fixture.componentInstance.delay.set('abc');
+      fixture.componentInstance.src.set('https://example.test/slow.png');
+      await flush();
+
+      const fallback = query<HTMLElement>('[forAvatarFallback]')!;
+      expect(fallback.getAttribute('data-status')).toBe('loading');
+    });
+
+    it('coerces Infinity to the default rather than arming an unbounded timer', async () => {
+      const { fixture, query, flush } = renderHost(AvatarHost);
+      fixture.componentInstance.delay.set(Infinity as unknown as number);
+      await flush();
+
+      expect(query<HTMLElement>('[forAvatarFallback]')).not.toBeNull();
+    });
+
     it('honors fallbackDelayMs while loading and skips when load resolves first', async () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       fixture.componentInstance.delay.set(500);
@@ -229,7 +306,9 @@ describe('ForAvatar', () => {
       await flush();
       expect(query<HTMLElement>('[forAvatarFallback]')).toBeNull();
 
-      query<HTMLImageElement>('img')!.dispatchEvent(new Event('load'));
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      img.dispatchEvent(new Event('load'));
       await flush();
       vi.advanceTimersByTime(500);
       await flush();
@@ -259,7 +338,9 @@ describe('ForAvatar', () => {
       fixture.componentInstance.src.set('https://example.test/missing.png');
       await flush();
 
-      query<HTMLImageElement>('img')!.dispatchEvent(new Event('error'));
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      img.dispatchEvent(new Event('error'));
       await flush();
 
       const fallback = query<HTMLElement>('[forAvatarFallback]')!;
@@ -294,7 +375,9 @@ describe('ForAvatar', () => {
 
       expect(root.getAttribute('data-status')).toBe('loading');
 
-      query<HTMLImageElement>('img')!.dispatchEvent(new Event('load'));
+      const img = query<HTMLImageElement>('img')!;
+      Object.defineProperty(img, 'complete', { configurable: true, get: () => true });
+      img.dispatchEvent(new Event('load'));
       await flush();
       expect(root.getAttribute('data-status')).toBe('loaded');
     });

@@ -70,6 +70,8 @@ describe('computePaginationItems (pure algorithm)', () => {
       forPagination
       [(page)]="page"
       [count]="count()"
+      [siblingCount]="sibling()"
+      [boundaryCount]="boundary()"
       [disabled]="isDisabled()"
       [ariaLabel]="label()"
       #pg="forPagination"
@@ -91,6 +93,8 @@ describe('computePaginationItems (pure algorithm)', () => {
 class TestHost {
   readonly page = signal(1);
   readonly count = signal(11);
+  readonly sibling = signal(1);
+  readonly boundary = signal(1);
   readonly isDisabled = signal(false);
   readonly label = signal<string | null>('Pagination');
 }
@@ -280,6 +284,85 @@ describe('ForPagination directive', () => {
     });
   });
 
+  describe('data-disabled reflection (item / previous / next)', () => {
+    it('reflects data-disabled on every piece under root [disabled]', async () => {
+      const fixture = setup();
+      fixture.componentInstance.page.set(5);
+      fixture.componentInstance.isDisabled.set(true);
+      await flush(fixture);
+
+      expect(prev(fixture).getAttribute('data-disabled')).toBe('');
+      expect(next(fixture).getAttribute('data-disabled')).toBe('');
+      pageButtons(fixture).forEach((b) => {
+        expect(b.getAttribute('data-disabled')).toBe('');
+      });
+    });
+
+    it('reflects data-disabled on previous at the first page and not on next', async () => {
+      const fixture = setup();
+      fixture.componentInstance.page.set(1);
+      await flush(fixture);
+
+      expect(prev(fixture).getAttribute('data-disabled')).toBe('');
+      expect(next(fixture).hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('reflects data-disabled on next at the last page and not on previous', async () => {
+      const fixture = setup();
+      fixture.componentInstance.page.set(11);
+      await flush(fixture);
+
+      expect(next(fixture).getAttribute('data-disabled')).toBe('');
+      expect(prev(fixture).hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('omits data-disabled on both boundaries mid-range (truthy-only, never "false")', async () => {
+      const fixture = setup();
+      fixture.componentInstance.page.set(5);
+      await flush(fixture);
+
+      expect(prev(fixture).hasAttribute('data-disabled')).toBe(false);
+      expect(next(fixture).hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('reflects data-disabled on a per-item [disabled] item only', async () => {
+      @Component({
+        imports: [ForPagination, ForPaginationItem],
+        template: `
+          <nav forPagination [count]="3" [page]="2">
+            <button forPaginationItem [page]="1" data-testid="p1">1</button>
+            <button forPaginationItem [page]="2" [disabled]="true" data-testid="p2">2</button>
+            <button forPaginationItem [page]="3" data-testid="p3">3</button>
+          </nav>
+        `,
+      })
+      class PerItemHost {}
+
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(PerItemHost);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const item = (id: string) =>
+        fixture.nativeElement.querySelector(`[data-testid="${id}"]`) as HTMLButtonElement;
+
+      expect(item('p2').getAttribute('data-disabled')).toBe('');
+      expect(item('p1').hasAttribute('data-disabled')).toBe(false);
+      expect(item('p3').hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('reflects data-disabled on the boundary pieces without Zone.js', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(TestHost);
+      fixture.componentInstance.page.set(1);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      expect(prev(fixture).getAttribute('data-disabled')).toBe('');
+      expect(next(fixture).hasAttribute('data-disabled')).toBe(false);
+    });
+  });
+
   describe('orphan errors', () => {
     it('ForPaginationItem outside [forPagination] throws prefixed error', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -380,9 +463,105 @@ describe('ForPagination — effective page reconciliation', () => {
     const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
     expect(current?.getAttribute('data-testid')).toBe('page-4');
   });
+
+  it('effectivePage exposes no writer (it is a read-only computed)', () => {
+    const fixture = setup();
+    const pg = directive(fixture);
+    expect((pg.effectivePage as unknown as { set?: unknown }).set).toBeUndefined();
+    expect((pg.effectivePage as unknown as { update?: unknown }).update).toBeUndefined();
+  });
+});
+
+describe('ForPagination — numeric input sanitization', () => {
+  function textValues(fixture: ReturnType<typeof setup>): string[] {
+    return pageButtons(fixture).map((b) => (b.textContent ?? '').trim());
+  }
+
+  it('a NaN siblingCount does not collapse the list into NaN entries', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(11);
+    fixture.componentInstance.page.set(6);
+    fixture.componentInstance.sibling.set(NaN);
+    await flush(fixture);
+    const values = textValues(fixture);
+    values.forEach((v) => {
+      expect(Number.isInteger(Number(v))).toBe(true);
+    });
+    expect(values).toContain('1');
+    expect(values).toContain('11');
+    expect(values).toContain('6');
+  });
+
+  it('a negative boundaryCount is clamped and does not distort the window', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(11);
+    fixture.componentInstance.page.set(6);
+    fixture.componentInstance.boundary.set(-3);
+    await flush(fixture);
+    const numbers = textValues(fixture).map((v) => Number(v));
+    numbers.forEach((n) => {
+      expect(Number.isInteger(n)).toBe(true);
+      expect(n).toBeGreaterThanOrEqual(1);
+      expect(n).toBeLessThanOrEqual(11);
+    });
+  });
+
+  it('a fractional count renders no fractional page buttons and truncates the max', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10.5);
+    fixture.componentInstance.page.set(11);
+    await flush(fixture);
+    const values = textValues(fixture);
+    values.forEach((v) => {
+      expect(v).not.toContain('.');
+    });
+    expect(values[values.length - 1]).toBe('10');
+    expect(next(fixture).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('a NaN count renders an empty page list', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(NaN);
+    await flush(fixture);
+    expect(pageButtons(fixture).length).toBe(0);
+  });
+
+  it('a fractional siblingCount truncates to an integer window', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(11);
+    fixture.componentInstance.page.set(6);
+    fixture.componentInstance.sibling.set(1.9);
+    await flush(fixture);
+    expect(textValues(fixture)).toEqual(['1', '5', '6', '7', '11']);
+  });
+
+  it('a non-finite page reconciles to effective page 1', async () => {
+    const fixture = setup();
+    fixture.componentInstance.count.set(10);
+    fixture.componentInstance.page.set(NaN);
+    await flush(fixture);
+    const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
+    expect(current?.getAttribute('data-testid')).toBe('page-1');
+    expect(prev(fixture).hasAttribute('disabled')).toBe(true);
+  });
 });
 
 describe('ForPagination — zoneless', () => {
+  it('a fractional count is sanitized without Zone.js', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(TestHost);
+    fixture.componentInstance.count.set(10.5);
+    fixture.componentInstance.page.set(11);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    const values = pageButtons(fixture).map((b) => (b.textContent ?? '').trim());
+    values.forEach((v) => {
+      expect(v).not.toContain('.');
+    });
+    expect(values[values.length - 1]).toBe('10');
+  });
+
   it('click-driven page change reflects in aria-current without Zone.js', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(TestHost);

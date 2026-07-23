@@ -56,7 +56,10 @@ export class ForAvatar implements ForAvatarContext {
    * surrounding scope.
    */
   readonly fallbackDelayMs = input(this.#defaults.fallbackDelayMs, {
-    transform: numberAttribute,
+    transform: (value: unknown) => {
+      const parsed = numberAttribute(value);
+      return Number.isFinite(parsed) ? parsed : this.#defaults.fallbackDelayMs;
+    },
   });
 
   readonly #status = signal<ForAvatarStatus>('idle');

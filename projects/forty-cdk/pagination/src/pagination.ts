@@ -4,7 +4,6 @@ import {
   Directive,
   inject,
   input,
-  linkedSignal,
   model,
   numberAttribute,
 } from '@angular/core';
@@ -105,6 +104,23 @@ export class ForPagination implements ForPaginationContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
+   * `count` coerced to a non-negative integer. A non-finite (`NaN` /
+   * `±Infinity`), fractional, or negative `count` is sanitized here (dropped
+   * fractional part, floored at `0`) so the visible list, reconciliation, and
+   * navigation math never propagate invalid values. The raw `count` input stays
+   * public and unchanged for consumers reading it back.
+   */
+  readonly effectiveCount = computed<number>(() => this.#sanitizeInt(this.count(), 0));
+
+  readonly #effectiveSiblingCount = computed<number>(() =>
+    this.#sanitizeInt(this.siblingCount(), 0),
+  );
+
+  readonly #effectiveBoundaryCount = computed<number>(() =>
+    this.#sanitizeInt(this.boundaryCount(), 0),
+  );
+
+  /**
    * The current page reconciled against `count`, clamped to `[1, max(1,
    * count)]`. A consumer-written out-of-range `page` (e.g. `50` while `count`
    * is `10`) reads through as a real page here, so `aria-current`, the visible
@@ -112,17 +128,19 @@ export class ForPagination implements ForPaginationContext {
    * stays the writable source of truth; navigation writes the reconciled value
    * back into it via `goToPage`.
    */
-  readonly effectivePage = linkedSignal<number>(() =>
-    clamp(this.page(), 1, Math.max(1, this.count())),
-  );
+  readonly effectivePage = computed<number>(() => {
+    const p = this.page();
+    const page = Number.isFinite(p) ? Math.trunc(p) : 1;
+    return clamp(page, 1, Math.max(1, this.effectiveCount()));
+  });
 
   /** The computed visible-page list (page numbers + ellipsis gaps). */
   readonly items = computed<readonly PaginationItem[]>(() =>
     computePaginationItems({
       page: this.effectivePage(),
-      count: this.count(),
-      siblingCount: this.siblingCount(),
-      boundaryCount: this.boundaryCount(),
+      count: this.effectiveCount(),
+      siblingCount: this.#effectiveSiblingCount(),
+      boundaryCount: this.#effectiveBoundaryCount(),
     }),
   );
 
@@ -130,7 +148,7 @@ export class ForPagination implements ForPaginationContext {
   readonly isFirst = computed(() => this.effectivePage() <= 1);
 
   /** Whether the current page is the last (no next page). */
-  readonly isLast = computed(() => this.effectivePage() >= this.count());
+  readonly isLast = computed(() => this.effectivePage() >= this.effectiveCount());
 
   /**
    * Navigate to `page`, clamped to `[1, count]`, and write the reconciled value
@@ -141,10 +159,14 @@ export class ForPagination implements ForPaginationContext {
     if (this.disabled()) {
       return;
     }
-    const clamped = clamp(page, 1, Math.max(1, this.count()));
+    const clamped = clamp(page, 1, Math.max(1, this.effectiveCount()));
     if (clamped !== this.page()) {
       this.page.set(clamped);
     }
+  }
+
+  #sanitizeInt(raw: number, floor: number): number {
+    return Number.isFinite(raw) ? Math.max(floor, Math.trunc(raw)) : floor;
   }
 
   /** Navigate to the previous page. No-op at the first page or when disabled. */

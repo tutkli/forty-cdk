@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import { registerHandle, hostId, resolveListNavigation, rovingTabStop } from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
 /**
@@ -11,9 +11,11 @@ import { injectTabsContext } from './tabs-context';
  * by `RovingTabindex`); before any interaction, the selected trigger (or
  * first enabled, when nothing is selected) is the tab entry.
  *
- * `aria-controls` is emitted only while the tab is selected — mirroring the
- * overlay triggers' open-only gating — so the reference never dangles at an
- * unmounted panel under the `@if (selected())` mount pattern.
+ * `aria-controls` is emitted whenever a matching panel is registered — APG
+ * emits it on every tab, which for the keep-mounted default means every
+ * trigger. For consumers who unmount inactive panels via `@if (selected())`
+ * it collapses to only the mounted trigger, so the reference never dangles at
+ * an absent panel either way.
  */
 @Directive({
   selector: '[forTabsTrigger]',
@@ -23,7 +25,7 @@ import { injectTabsContext } from './tabs-context';
     type: 'button',
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
-    '[attr.aria-controls]': 'selected() ? controlsId() : null',
+    '[attr.aria-controls]': 'controlsId()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'selected() ? "active" : "inactive"',
@@ -52,21 +54,16 @@ export class ForTabsTrigger {
    * APG tabindex: user-driven roving owns it once any trigger has been
    * focused. Before that, fall back to "selected, else first enabled".
    */
-  protected readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
-    if (this.group.roving.hasActive()) {
-      return this.group.roving.tabindexFor(this.#host.nativeElement);
-    }
-    if (this.selected()) {
-      return 0;
-    }
-    if (this.group.hasSelectedTrigger()) {
-      return -1;
-    }
-    return this.group.isFirstEnabledTrigger(this.#host.nativeElement) ? 0 : -1;
-  });
+  protected readonly tabindex = computed<-1 | 0>(() =>
+    rovingTabStop({
+      disabled: this.effectiveDisabled(),
+      selected: this.selected(),
+      hasSelected: this.group.hasSelectedTrigger(),
+      isFirstEnabled: this.group.isFirstEnabledTrigger(this.#host.nativeElement),
+      roving: this.group.roving,
+      host: this.#host.nativeElement,
+    }),
+  );
 
   constructor() {
     const handle = {
@@ -107,9 +104,6 @@ export class ForTabsTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
     const action = resolveListNavigation(event, {
       orientation: this.group.orientation(),
       dir: this.group.dir(),

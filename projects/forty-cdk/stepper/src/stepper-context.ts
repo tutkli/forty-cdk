@@ -38,6 +38,12 @@ export interface ForStepperItemHandle {
 export interface ForStepperTriggerHandle {
   /** Host element, used for DOM-order sorting and focus moves. */
   readonly host: HTMLElement;
+  /**
+   * DOM-order index of the step this trigger belongs to (from the item
+   * context), used to map a trigger position back to its step index for
+   * selection.
+   */
+  readonly index: Signal<number>;
   /** The trigger's own host id, for `aria-labelledby` on content panels. */
   readonly id: Signal<string>;
   /**
@@ -136,8 +142,11 @@ export interface ForStepperContext {
   canRetreat(): boolean;
   /**
    * Moves focus from `currentTrigger` according to `action` (interactive mode
-   * only). In automatic activation mode, also selects the target step.
-   * Disabled / unreachable triggers are skipped.
+   * only). Arrow navigation lands on disabled / linear-unreachable triggers
+   * too (they stay focusable per the APG); automatic-mode selection is guarded
+   * so it never activates a non-selectable step. Selection resolves the target
+   * step by its item index (carried on the trigger handle), not by the trigger's
+   * position in the trigger collection.
    */
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void;
 

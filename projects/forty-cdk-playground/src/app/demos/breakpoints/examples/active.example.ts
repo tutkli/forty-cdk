@@ -6,9 +6,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { breakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
+import { forBreakpointsTailwind, injectBreakpoints } from 'forty-cdk/breakpoints';
 
-type TailwindName = keyof typeof breakpointsTailwind;
+type TailwindName = keyof typeof forBreakpointsTailwind;
 
 @Component({
   selector: 'app-breakpoints-active-example',
@@ -152,9 +152,9 @@ export class BreakpointsActiveExample {
   protected readonly bp = injectBreakpoints();
   protected readonly active = this.bp.active;
 
-  protected readonly rows = (Object.keys(breakpointsTailwind) as TailwindName[]).map((name) => ({
+  protected readonly rows = (Object.keys(forBreakpointsTailwind) as TailwindName[]).map((name) => ({
     name,
-    min: breakpointsTailwind[name],
+    min: forBreakpointsTailwind[name],
     up: this.bp.up(name),
     only: this.bp.only(name),
   }));

@@ -4,10 +4,10 @@ import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
 /**
  * Real-browser coverage for the Tabs roving-tabindex keyboard journey. The
  * Vitest contract layer asserts ARIA wiring and the `data-state` reflection,
- * but the full sequence — Tab into the roving stop, ArrowRight/Left with
- * disabled-skip, Home/End, manual vs auto activation, and Tab-into-panel —
- * only behaves correctly when a real `focus` event runs and Playwright
- * advances through the tab order.
+ * but the full sequence — Tab into the roving stop, ArrowRight/Left landing on
+ * a disabled trigger without activating it, Home/End, manual vs auto
+ * activation, and Tab-into-panel — only behaves correctly when a real `focus`
+ * event runs and Playwright advances through the tab order.
  */
 test.describe('Tabs (roving tabindex)', () => {
   test('Tab into the tablist focuses the currently active trigger', async ({ page }) => {
@@ -36,21 +36,26 @@ test.describe('Tabs (automatic activation, default)', () => {
     await expect(el(page, 'trigger-a')).toHaveAttribute('data-state', 'inactive');
   });
 
-  test('ArrowRight / ArrowLeft skip a disabled trigger', async ({ page }) => {
-    // Default disabled value is `b`, so ArrowRight from `a` must land on `c`.
+  test('ArrowRight lands on a disabled trigger without activating it', async ({ page }) => {
+    // Default disabled value is `b`. Per the APG a disabled tab stays
+    // arrow-reachable, so ArrowRight from `a` lands focus on `b` while leaving
+    // the selection on `a` (disabled tabs are never activated).
     await gotoFixture(page, 'tabs');
     await el(page, 'trigger-a').focus();
     await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'trigger-b'));
+    await expect(el(page, 'trigger-b')).toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'trigger-b')).toHaveAttribute('aria-selected', 'false');
+    await expect(el(page, 'trigger-a')).toHaveAttribute('aria-selected', 'true');
+
+    // A second ArrowRight moves onto the next enabled trigger `c` and activates
+    // it — driving selection past the disabled tab from the disabled tab.
+    await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'trigger-c'));
     await expect(el(page, 'trigger-c')).toHaveAttribute('aria-selected', 'true');
-
-    // And ArrowLeft from `c` must jump back to `a`, skipping `b` again.
-    await page.keyboard.press('ArrowLeft');
-    await expectFocused(el(page, 'trigger-a'));
-    await expect(el(page, 'trigger-a')).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('Home / End jump to the first / last enabled trigger', async ({ page }) => {
+  test('Home / End jump to the first / last trigger', async ({ page }) => {
     await gotoFixture(page, 'tabs');
     await el(page, 'trigger-a').focus();
 

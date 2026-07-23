@@ -1,7 +1,7 @@
 export {
-  FOR_BREAKPOINTS,
-  provideForBreakpoints,
-  breakpointsTailwind,
+  FOR_BREAKPOINTS_DEFAULTS,
+  provideForBreakpointsDefaults,
+  forBreakpointsTailwind,
   type BreakpointMap,
   type ForBreakpointsDefaults,
 } from './breakpoints-defaults';

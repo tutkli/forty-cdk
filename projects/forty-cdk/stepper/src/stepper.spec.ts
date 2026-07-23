@@ -153,6 +153,32 @@ const completedEl = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-co
 const triggers = (el: HTMLElement): HTMLElement[] =>
   Array.from(el.querySelectorAll<HTMLElement>('[forStepperTrigger]'));
 
+@Component({
+  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+  template: `
+    <div forStepper [(selectedIndex)]="selectedIndex" [activationMode]="activationMode()">
+      <ol forStepperList>
+        @for (s of steps(); track $index) {
+          <li forStepperItem [attr.data-step]="$index">
+            @if ($index !== 1 || !hideMiddleTrigger()) {
+              <button type="button" forStepperTrigger [attr.data-trigger]="$index">{{ s }}</button>
+            }
+          </li>
+        }
+      </ol>
+      @for (s of steps(); track $index) {
+        <section forStepperContent [attr.data-content]="$index">Panel {{ $index }}</section>
+      }
+    </div>
+  `,
+})
+class HiddenTriggerHost {
+  readonly selectedIndex = signal(0);
+  readonly activationMode = signal<'automatic' | 'manual'>('manual');
+  readonly hideMiddleTrigger = signal(false);
+  readonly steps = signal(['A', 'B', 'C']);
+}
+
 describe('ForStepper', () => {
   describe('static accessibility — interactive mode', () => {
     it('list has role=tablist and aria-orientation', () => {
@@ -440,13 +466,6 @@ describe('ForStepper', () => {
       await r.flush();
       return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
     },
-    mountWithDisabledMiddle: async () => {
-      const r = renderHost(StepperHost);
-      r.instance.steps.update((ss) => ss.map((s, i) => (i === 1 ? { ...s, disabled: true } : s)));
-      r.fixture.detectChanges();
-      await r.flush();
-      return { items: triggers(r.el), enabledIndices: [0, 2], flush: r.flush };
-    },
     mountRtl: async () => {
       const r = renderHost(StepperHost);
       r.instance.dir.set('rtl');
@@ -515,6 +534,96 @@ describe('ForStepper', () => {
       pressKey(triggerAt(el, 2), 'ArrowRight');
       await flush();
       expect(document.activeElement).toBe(triggerAt(el, 2));
+    });
+  });
+
+  describe('disabled steps stay keyboard-reachable (APG)', () => {
+    const withDisabledStep1 = async (activation: 'manual' | 'automatic' = 'automatic') => {
+      const r = renderHost(StepperHost);
+      r.instance.activationMode.set(activation);
+      r.instance.steps.update((ss) => ss.map((s, i) => (i === 1 ? { ...s, disabled: true } : s)));
+      r.fixture.detectChanges();
+      await r.flush();
+      return r;
+    };
+
+    it('interactive: a disabled step trigger keeps aria-disabled="true" and tabindex="-1"', async () => {
+      const { el } = await withDisabledStep1('manual');
+      expect(triggerAt(el, 1).getAttribute('aria-disabled')).toBe('true');
+      expect(triggerAt(el, 1).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('automatic mode: ArrowRight onto a disabled step reaches it without selecting it', async () => {
+      const { el, instance, flush } = await withDisabledStep1();
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(triggerAt(el, 1));
+      expect(instance.selectedIndex()).toBe(0);
+    });
+
+    it('automatic mode: ArrowRight dispatched on the disabled step advances selection past it', async () => {
+      const { el, instance, flush } = await withDisabledStep1();
+      triggerAt(el, 1).focus();
+      await flush();
+      pressKey(triggerAt(el, 1), 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(triggerAt(el, 2));
+      expect(instance.selectedIndex()).toBe(2);
+    });
+
+    it('zoneless: arrow-over-disabled reaches the disabled step without selecting it', async () => {
+      const { el, instance, flush } = await withDisabledStep1();
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(triggerAt(el, 1));
+      expect(instance.selectedIndex()).toBe(0);
+    });
+  });
+
+  describe('navigate() with structurally hidden triggers (#1394 item 6)', () => {
+    const withHiddenMiddle = async (activation: 'manual' | 'automatic') => {
+      const r = renderHost(HiddenTriggerHost);
+      r.instance.activationMode.set(activation);
+      r.instance.hideMiddleTrigger.set(true);
+      r.fixture.detectChanges();
+      await r.flush();
+      return r;
+    };
+
+    it('automatic mode: ArrowRight from a trigger before a hidden trigger selects the correct STEP index, not the trigger position', async () => {
+      const { el, instance, flush } = await withHiddenMiddle('automatic');
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(instance.selectedIndex()).toBe(2);
+      expect(document.activeElement).toBe(triggerAt(el, 2));
+    });
+
+    it('automatic mode with hidden trigger: aria-selected/data-state land on the navigated step', async () => {
+      const { el, flush } = await withHiddenMiddle('automatic');
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(triggerAt(el, 2).getAttribute('aria-selected')).toBe('true');
+      expect(triggerAt(el, 0).getAttribute('aria-selected')).toBe('false');
+      expect(itemAt(el, 2).getAttribute('data-state')).toBe('active');
+      expect(itemAt(el, 1).getAttribute('data-state')).not.toBe('active');
+    });
+
+    it('manual mode with hidden trigger: focus still moves to the next visible trigger and selection is untouched', async () => {
+      const { el, instance, flush } = await withHiddenMiddle('manual');
+      triggerAt(el, 0).focus();
+      await flush();
+      pressKey(triggerAt(el, 0), 'ArrowRight');
+      await flush();
+      expect(document.activeElement).toBe(triggerAt(el, 2));
+      expect(instance.selectedIndex()).toBe(0);
     });
   });
 
@@ -987,16 +1096,27 @@ describe('ForStepperProgress', () => {
     expect(progressEl(el).getAttribute('aria-valuenow')).toBe('0');
   });
 
-  it('index basis: selectedIndex=1 of 3 → aria-valuenow="50"', () => {
+  it('index basis: selectedIndex=1 of 3 → aria-valuenow="33"', () => {
     const { el, instance, fixture } = renderHost(ProgressHost);
     instance.selectedIndex.set(1);
     fixture.detectChanges();
-    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('50');
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('33');
   });
 
-  it('index basis: selectedIndex=2 of 3 (last) → aria-valuenow="100"', () => {
+  it('index basis: selectedIndex=2 of 3 (last, not completed) → aria-valuenow="67" (< 100)', () => {
     const { el, instance, fixture } = renderHost(ProgressHost);
     instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('67');
+    expect(Number(progressEl(el).getAttribute('aria-valuenow'))).toBeLessThan(100);
+  });
+
+  it('index basis: last step reports < 100, terminal reports 100', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('67');
+    instance.selectedIndex.set(3);
     fixture.detectChanges();
     expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
   });
@@ -1008,21 +1128,31 @@ describe('ForStepperProgress', () => {
     expect(progressEl(el).getAttribute('aria-valuetext')).toBe('Step 2 of 3');
   });
 
-  it('completed basis: 1 completed step of 3 → aria-valuenow="50", aria-valuetext="50% complete"', () => {
+  it('completed basis: 1 completed step of 3 → aria-valuenow="33", aria-valuetext="33% complete"', () => {
     const { el, instance, fixture } = renderHost(ProgressHost);
     instance.valueBy.set('completed');
     instance.steps.set([{ completed: true }, { completed: false }, { completed: false }]);
     instance.selectedIndex.set(1);
     fixture.detectChanges();
-    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('50');
-    expect(progressEl(el).getAttribute('aria-valuetext')).toBe('50% complete');
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('33');
+    expect(progressEl(el).getAttribute('aria-valuetext')).toBe('33% complete');
+  });
+
+  it('completed basis: 2 of 3 completed → aria-valuenow="67" (< 100)', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.valueBy.set('completed');
+    instance.steps.set([{ completed: true }, { completed: true }, { completed: false }]);
+    instance.selectedIndex.set(2);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('67');
+    expect(Number(progressEl(el).getAttribute('aria-valuenow'))).toBeLessThan(100);
   });
 
   it('completed basis: all-completed → aria-valuenow="100"', () => {
     const { el, instance, fixture } = renderHost(ProgressHost);
     instance.valueBy.set('completed');
-    instance.steps.set([{ completed: true }, { completed: true }, { completed: false }]);
-    instance.selectedIndex.set(2);
+    instance.steps.set([{ completed: true }, { completed: true }, { completed: true }]);
+    instance.selectedIndex.set(3);
     fixture.detectChanges();
     expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
   });
@@ -1051,6 +1181,14 @@ describe('ForStepperProgress', () => {
     expect(progressEl(el).getAttribute('aria-valuenow')).toBe('0');
   });
 
+  it('edge — single step terminal: aria-valuenow="100"', () => {
+    const { el, instance, fixture } = renderHost(ProgressHost);
+    instance.steps.set([{ completed: false }]);
+    instance.selectedIndex.set(1);
+    fixture.detectChanges();
+    expect(progressEl(el).getAttribute('aria-valuenow')).toBe('100');
+  });
+
   it('edge — zero steps: aria-valuenow="0", role="progressbar" present, no throw', () => {
     const { el, instance, fixture } = renderHost(ProgressHost);
     instance.steps.set([]);
@@ -1062,7 +1200,13 @@ describe('ForStepperProgress', () => {
 
   it('--for-stepper-progress custom property is 0.5 at 50%', () => {
     const { el, instance, fixture } = renderHost(ProgressHost);
-    instance.selectedIndex.set(1);
+    instance.steps.set([
+      { completed: false },
+      { completed: false },
+      { completed: false },
+      { completed: false },
+    ]);
+    instance.selectedIndex.set(2);
     fixture.detectChanges();
     const p = progressEl(el);
     const inlineStyle = p.getAttribute('style') ?? '';
@@ -1128,7 +1272,7 @@ describe('ForStepperProgress', () => {
 
     expect(
       el.querySelector<HTMLElement>('[data-testid="zl-progress"]')!.getAttribute('aria-valuenow'),
-    ).toBe('50');
+    ).toBe('33');
   });
 
   describe('aria-valuetext localization (issue #1159)', () => {
@@ -1172,7 +1316,7 @@ describe('ForStepperProgress', () => {
       instance.steps.set([{ completed: true }, { completed: false }, { completed: false }]);
       instance.selectedIndex.set(1);
       fixture.detectChanges();
-      expect(progressEl(el).getAttribute('aria-valuetext')).toBe('50% completado');
+      expect(progressEl(el).getAttribute('aria-valuetext')).toBe('33% completado');
     });
   });
 
