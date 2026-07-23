@@ -535,7 +535,7 @@ describe('createPointerDragSession', () => {
     document.body.appendChild(overlayHost);
     const layer = new DismissableLayer(overlayHost, stack);
     let dismissed = 0;
-    layer.activate({ onDismiss: () => dismissed++ });
+    layer.activate({ channels: [], onEscapeKeyDown: () => dismissed++ });
 
     const host = document.createElement('div');
     overlayHost.appendChild(host);

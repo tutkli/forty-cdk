@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
-import { buildOutsideVetoOptions } from './outside-veto';
+import { buildOutsideVetoOptions, outsideVetoChannels } from './outside-veto';
 
 function pointerEvent(): PointerEvent {
   return new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
@@ -125,5 +125,23 @@ describe('buildOutsideVetoOptions', () => {
 
     expect(() => options.onInteractOutside!(pointerEvent())).not.toThrow();
     expect(interactVetoes).toHaveLength(1);
+  });
+});
+
+describe('outsideVetoChannels', () => {
+  it('declares both channels when the composite interactOutside is wired', () => {
+    expect(outsideVetoChannels({ emitInteractOutside: () => {} })).toEqual(['pointer', 'focus']);
+  });
+
+  it('declares only pointer when the specific pointer channel alone is wired', () => {
+    expect(outsideVetoChannels({ emitPointerDownOutside: () => {} })).toEqual(['pointer']);
+  });
+
+  it('declares only focus when the specific focus channel alone is wired', () => {
+    expect(outsideVetoChannels({ emitFocusOutside: () => {} })).toEqual(['focus']);
+  });
+
+  it('declares no channels for an Escape-only surface that forwards nothing outside', () => {
+    expect(outsideVetoChannels({ dismissible: signal(true), requestClose: () => {} })).toEqual([]);
   });
 });

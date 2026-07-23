@@ -96,6 +96,7 @@ export { reflectDisabled } from './disabled-reflection/disabled-reflection';
 export {
   DismissableLayer,
   type DismissableLayerActivateOptions,
+  type DismissableLayerChannel,
   DismissableLayerStack,
   injectDismissableLayer,
 } from './dismissable-layer/dismissable-layer';

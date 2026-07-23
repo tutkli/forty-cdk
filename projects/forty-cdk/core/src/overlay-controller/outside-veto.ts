@@ -1,6 +1,9 @@
 import type { Signal } from '@angular/core';
 
-import type { DismissableLayerActivateOptions } from '../dismissable-layer/dismissable-layer';
+import type {
+  DismissableLayerActivateOptions,
+  DismissableLayerChannel,
+} from '../dismissable-layer/dismissable-layer';
 import {
   createVetoableNativeEvent,
   type VetoableNativeEvent,
@@ -102,4 +105,25 @@ export function buildOutsideVetoOptions(
   }
 
   return options;
+}
+
+/**
+ * Derives the outside-interaction channels a shell must declare at
+ * `dismissable.activate({ channels })` from the same {@link OutsideVetoConfig}
+ * passed to {@link buildOutsideVetoOptions}. A layer owns `'pointer'` when it
+ * forwards either the specific pointer-down-outside channel or the composite
+ * interact-outside channel (which fires for pointer-downs too), and likewise
+ * `'focus'` for focus-outside / interact-outside. A shell that forwards no
+ * outside channel (an Escape-only surface) gets `[]` and stays transparent to
+ * the real dismissable layers beneath it.
+ */
+export function outsideVetoChannels(config: OutsideVetoConfig): DismissableLayerChannel[] {
+  const channels: DismissableLayerChannel[] = [];
+  if (config.emitPointerDownOutside || config.emitInteractOutside) {
+    channels.push('pointer');
+  }
+  if (config.emitFocusOutside || config.emitInteractOutside) {
+    channels.push('focus');
+  }
+  return channels;
 }

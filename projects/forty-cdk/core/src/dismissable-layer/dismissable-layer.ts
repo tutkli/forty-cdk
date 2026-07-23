@@ -2,11 +2,31 @@ import { DOCUMENT, DestroyRef, ElementRef, Injectable, PLATFORM_ID, inject } fro
 import { isPlatformBrowser } from '@angular/common';
 
 /**
+ * The outside-interaction channels a {@link DismissableLayer} can own. A layer
+ * declares the channels it wants routed to it at {@link DismissableLayer.activate};
+ * {@link DismissableLayerStack} dispatches an outside `pointerdown` / `focusin`
+ * to the topmost layer that declared the matching channel. Escape is not a
+ * channel — it is always dispatched to the literal topmost active layer (see
+ * {@link DismissableLayerStack}).
+ */
+export type DismissableLayerChannel = 'pointer' | 'focus';
+
+/**
  * Options passed to `DismissableLayer.activate`. Each handler receives the
- * native event and can call `preventDefault()` to veto the layer's
- * `onDismiss` callback. Handlers themselves are always invoked.
+ * native event; the consumer owns the close decision inside its own handler
+ * (there is no separate default-dismiss callback).
  */
 export interface DismissableLayerActivateOptions {
+  /**
+   * The outside-interaction channels this layer owns. The stack routes an
+   * outside `pointerdown` to the topmost layer declaring `'pointer'` and an
+   * outside `focusin` to the topmost layer declaring `'focus'`, so an
+   * Escape-only surface (Tooltip, HoverCard) declares `[]` and stays
+   * transparent to the real dismissable layers beneath it. Escape is dispatched
+   * to the literal topmost layer regardless of this declaration.
+   */
+  channels: readonly DismissableLayerChannel[];
+
   /** Fired when the user presses `Escape` while this is the topmost layer. */
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
 
@@ -23,20 +43,14 @@ export interface DismissableLayerActivateOptions {
   onInteractOutside?: (event: PointerEvent | FocusEvent) => void;
 
   /**
-   * Default action invoked after each of the above fires when its event was
-   * not `preventDefault()`-ed by the specific handler. This is where the
-   * consumer wires "close" so the contract `preventDefault → stay open`
-   * holds without manual flag-checking.
-   */
-  onDismiss?: () => void;
-
-  /**
    * Extra elements whose subtrees count as "inside" for outside-pointer /
    * outside-focus checks (e.g. a portaled popover content owned by this
    * layer). Recomputed on every event so that DOM mutations are picked up.
    */
   exemptElements?: () => readonly Element[];
 }
+
+const EMPTY_ACTIVATE_OPTIONS: DismissableLayerActivateOptions = { channels: [] };
 
 /**
  * Application-scoped registry that owns the document listeners used by
@@ -50,13 +64,15 @@ export interface DismissableLayerActivateOptions {
  *   instantiated per application injector.
  * - Bootstrap-safety: `TestBed.resetTestingModule()`, micro-frontend
  *   reloads and any other code that destroys `ApplicationRef` should not
- *   leave stale `document` listeners behind. The service registers its
- *   listeners in the constructor and removes them via `DestroyRef` so
- *   every bootstrap has exactly one set of listeners.
- * - SSR safety: `document` is inaccessible on the server. The service is a
- *   no-op when `PLATFORM_ID` is not the browser; nothing about this code
- *   path is reachable until an overlay calls `activate()`, which only
- *   happens from `afterNextRender`.
+ *   leave stale `document` listeners behind. Listeners are installed on the
+ *   first layer activation (`0 → 1`) and removed with the last deactivation
+ *   (`1 → 0`), mirroring `ScrollDismissDispatcher`; a `DestroyRef` hook
+ *   removes any still-attached listeners and clears the stack, so no bootstrap
+ *   leaves listeners behind.
+ * - SSR safety: `document` is inaccessible on the server. Listener install is
+ *   a no-op when `PLATFORM_ID` is not the browser; nothing about this code
+ *   path is reachable until an overlay calls `activate()`, which only happens
+ *   from `afterNextRender`.
  *
  * Listener phases — intentional asymmetry: `pointerdown` and `focusin`
  * register on the **capture** phase so outside-interaction is detected even
@@ -80,9 +96,13 @@ export class DismissableLayerStack {
 
   readonly #stack: DismissableLayer[] = [];
   #suppressDepth = 0;
+  #listening = false;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== 'Escape') {
+      return;
+    }
+    if (event.defaultPrevented) {
       return;
     }
     if (this.#suppressDepth > 0) {
@@ -94,27 +114,18 @@ export class DismissableLayerStack {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmostFor((layer) => layer.handlesPointer)?.handlePointerDown(event as PointerEvent);
+    this.#topmostForChannel('pointer')?.handlePointerDown(event as PointerEvent);
   };
   readonly #onFocusIn = (event: Event): void => {
     if (this.#suppressDepth > 0) {
       return;
     }
-    this.#topmostFor((layer) => layer.handlesFocus)?.handleFocusIn(event as FocusEvent);
+    this.#topmostForChannel('focus')?.handleFocusIn(event as FocusEvent);
   };
 
   constructor() {
-    if (!this.#isBrowser) {
-      return;
-    }
-    this.#document.addEventListener('keydown', this.#onKeyDown);
-    this.#document.addEventListener('pointerdown', this.#onPointerDown, true);
-    this.#document.addEventListener('focusin', this.#onFocusIn, true);
-
     inject(DestroyRef).onDestroy(() => {
-      this.#document.removeEventListener('keydown', this.#onKeyDown);
-      this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
-      this.#document.removeEventListener('focusin', this.#onFocusIn, true);
+      this.#removeListeners();
       this.#stack.length = 0;
       this.#suppressDepth = 0;
     });
@@ -123,6 +134,9 @@ export class DismissableLayerStack {
   /** @internal */
   push(layer: DismissableLayer): void {
     this.#stack.push(layer);
+    if (this.#stack.length === 1) {
+      this.#installListeners();
+    }
   }
 
   /** @internal */
@@ -130,7 +144,30 @@ export class DismissableLayerStack {
     const idx = this.#stack.indexOf(layer);
     if (idx >= 0) {
       this.#stack.splice(idx, 1);
+      if (this.#stack.length === 0) {
+        this.#removeListeners();
+      }
     }
+  }
+
+  /**
+   * @internal Whether `target` is inside `layer` or inside any layer stacked
+   * above it. A layer stacked above the chosen channel handler (e.g. an
+   * interactive Escape-only HoverCard over a Popover) counts as "inside", so an
+   * interaction within it never leaks an "outside" dismissal to the layer below.
+   */
+  containsFromLayer(layer: DismissableLayer, target: Node): boolean {
+    const idx = this.#stack.indexOf(layer);
+    if (idx < 0) {
+      return layer.contains(target);
+    }
+    for (let i = idx; i < this.#stack.length; i++) {
+      const above = this.#stack[i];
+      if (above && above.contains(target)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -147,14 +184,34 @@ export class DismissableLayerStack {
     }
   }
 
+  #installListeners(): void {
+    if (!this.#isBrowser || this.#listening) {
+      return;
+    }
+    this.#listening = true;
+    this.#document.addEventListener('keydown', this.#onKeyDown);
+    this.#document.addEventListener('pointerdown', this.#onPointerDown, true);
+    this.#document.addEventListener('focusin', this.#onFocusIn, true);
+  }
+
+  #removeListeners(): void {
+    if (!this.#listening) {
+      return;
+    }
+    this.#listening = false;
+    this.#document.removeEventListener('keydown', this.#onKeyDown);
+    this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
+    this.#document.removeEventListener('focusin', this.#onFocusIn, true);
+  }
+
   #topmost(): DismissableLayer | undefined {
     return this.#stack[this.#stack.length - 1];
   }
 
-  #topmostFor(predicate: (layer: DismissableLayer) => boolean): DismissableLayer | undefined {
+  #topmostForChannel(channel: DismissableLayerChannel): DismissableLayer | undefined {
     for (let i = this.#stack.length - 1; i >= 0; i--) {
       const layer = this.#stack[i];
-      if (layer && predicate(layer)) {
+      if (layer && layer.ownsChannel(channel)) {
         return layer;
       }
     }
@@ -183,23 +240,26 @@ function resolveEventTarget(event: Event): Node | null {
  * Dispatch is per channel. Escape goes to the literal topmost active layer,
  * preserving the bubble-phase `stopPropagation` single-layer-per-Escape
  * contract. Pointer-down-outside and focus-outside instead go to the topmost
- * layer that actually wired a handler for that channel: a layer that owns only
- * Escape (e.g. a Tooltip) is transparent to outside-pointer / focus for the
- * real dismissable layers beneath it, so a tooltip visible over an open menu
- * never shadows the menu's outside-click dismissal (#1309). Nested real layers
- * (a popover inside a dialog) still resolve to a single topmost handler per
- * channel, so single-dismiss semantics hold.
+ * layer that declared the matching channel: a layer that owns only Escape (e.g.
+ * a Tooltip, declaring `channels: []`) is transparent to outside-pointer /
+ * focus for the real dismissable layers beneath it, so a tooltip visible over
+ * an open menu never shadows the menu's outside-click dismissal (#1309). Nested
+ * real layers (a popover inside a dialog) still resolve to a single topmost
+ * handler per channel, so single-dismiss semantics hold.
+ *
+ * Containment is stack-aware: an interaction inside a layer stacked *above* the
+ * chosen handler counts as "inside", so an interactive Escape-only surface (a
+ * HoverCard over a Popover) never leaks an outside dismissal to the layer below
+ * (#1379).
  *
  * Dispatch goes through a single shared document listener, so synchronous
  * changes to the stack from a handler don't leak into sibling listeners.
- *
- * Each event handler can call `preventDefault()` on the native event to
- * cancel the layer's `onDismiss` action.
  */
 export class DismissableLayer {
   readonly #host: HTMLElement;
   readonly #stack: DismissableLayerStack;
-  #options: DismissableLayerActivateOptions = {};
+  #options: DismissableLayerActivateOptions = EMPTY_ACTIVATE_OPTIONS;
+  #channels: ReadonlySet<DismissableLayerChannel> = new Set();
   #active = false;
 
   constructor(host: HTMLElement, stack: DismissableLayerStack) {
@@ -216,43 +276,16 @@ export class DismissableLayer {
   }
 
   /**
-   * @internal Whether this layer wired a handler for the outside-`pointerdown`
-   * channel. Read by {@link DismissableLayerStack} so a layer that owns no
-   * pointer channel (e.g. an Escape-only Tooltip) is skipped when routing an
-   * outside pointer-down, instead of shadowing a real dismissable layer beneath
-   * it (#1309). Public only so the stack can read it, not part of the supported
-   * API.
-   */
-  get handlesPointer(): boolean {
-    return (
-      this.#options.onPointerDownOutside !== undefined ||
-      this.#options.onInteractOutside !== undefined ||
-      this.#options.onDismiss !== undefined
-    );
-  }
-
-  /**
-   * @internal Whether this layer wired a handler for the outside-`focusin`
-   * channel. See {@link handlesPointer}.
-   */
-  get handlesFocus(): boolean {
-    return (
-      this.#options.onFocusOutside !== undefined ||
-      this.#options.onInteractOutside !== undefined ||
-      this.#options.onDismiss !== undefined
-    );
-  }
-
-  /**
    * Pushes this layer onto the dispatch stack. Calling `activate` twice
    * without an intervening `deactivate` is a no-op.
    */
-  activate(options: DismissableLayerActivateOptions = {}): void {
+  activate(options: DismissableLayerActivateOptions): void {
     if (this.#active) {
       return;
     }
     this.#active = true;
     this.#options = options;
+    this.#channels = new Set(options.channels);
     this.#stack.push(this);
   }
 
@@ -263,7 +296,8 @@ export class DismissableLayer {
     }
     this.#active = false;
     this.#stack.remove(this);
-    this.#options = {};
+    this.#options = EMPTY_ACTIVATE_OPTIONS;
+    this.#channels = new Set();
   }
 
   /**
@@ -276,50 +310,21 @@ export class DismissableLayer {
   }
 
   /**
-   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
-   * on `Escape`. Public only so the stack can call it without exploiting a TS
-   * visibility loophole; not part of the supported API (stripped from `.d.ts`).
+   * @internal Whether this layer declared ownership of `channel`. Read by
+   * {@link DismissableLayerStack} to route an outside pointer-down / focus to
+   * the topmost owning layer. Public only so the stack can read it, not part of
+   * the supported API.
    */
-  handleEscape(event: KeyboardEvent): void {
-    this.#options.onEscapeKeyDown?.(event);
-    if (!event.defaultPrevented) {
-      this.#options.onDismiss?.();
-    }
+  ownsChannel(channel: DismissableLayerChannel): boolean {
+    return this.#channels.has(channel);
   }
 
   /**
-   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
-   * on an outside `pointerdown`. See {@link handleEscape}.
+   * @internal Whether `target` is inside this layer's host or its exempt
+   * elements. Read by {@link DismissableLayerStack} when walking the stack for
+   * stack-aware containment. Public only so the stack can read it.
    */
-  handlePointerDown(event: PointerEvent): void {
-    const target = resolveEventTarget(event);
-    if (!target || this.#contains(target)) {
-      return;
-    }
-    this.#options.onPointerDownOutside?.(event);
-    this.#options.onInteractOutside?.(event);
-    if (!event.defaultPrevented) {
-      this.#options.onDismiss?.();
-    }
-  }
-
-  /**
-   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
-   * on an outside `focusin`. See {@link handleEscape}.
-   */
-  handleFocusIn(event: FocusEvent): void {
-    const target = resolveEventTarget(event);
-    if (!target || this.#contains(target)) {
-      return;
-    }
-    this.#options.onFocusOutside?.(event);
-    this.#options.onInteractOutside?.(event);
-    if (!event.defaultPrevented) {
-      this.#options.onDismiss?.();
-    }
-  }
-
-  #contains(target: Node): boolean {
+  contains(target: Node): boolean {
     if (this.#host.contains(target)) {
       return true;
     }
@@ -333,6 +338,43 @@ export class DismissableLayer {
       }
     }
     return false;
+  }
+
+  /**
+   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * on `Escape`. Public only so the stack can call it without exploiting a TS
+   * visibility loophole; not part of the supported API (stripped from `.d.ts`).
+   */
+  handleEscape(event: KeyboardEvent): void {
+    this.#options.onEscapeKeyDown?.(event);
+  }
+
+  /**
+   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * declaring the `'pointer'` channel on an outside `pointerdown`. See
+   * {@link handleEscape}.
+   */
+  handlePointerDown(event: PointerEvent): void {
+    const target = resolveEventTarget(event);
+    if (!target || this.#stack.containsFromLayer(this, target)) {
+      return;
+    }
+    this.#options.onPointerDownOutside?.(event);
+    this.#options.onInteractOutside?.(event);
+  }
+
+  /**
+   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * declaring the `'focus'` channel on an outside `focusin`. See
+   * {@link handleEscape}.
+   */
+  handleFocusIn(event: FocusEvent): void {
+    const target = resolveEventTarget(event);
+    if (!target || this.#stack.containsFromLayer(this, target)) {
+      return;
+    }
+    this.#options.onFocusOutside?.(event);
+    this.#options.onInteractOutside?.(event);
   }
 }
 

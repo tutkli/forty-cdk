@@ -9,7 +9,7 @@ import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
 import { InertSiblingsStack, MODAL_PEER_ATTRIBUTE } from '../inert-siblings/inert-siblings';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
-import { buildOutsideVetoOptions } from '../overlay-controller/outside-veto';
+import { buildOutsideVetoOptions, outsideVetoChannels } from '../overlay-controller/outside-veto';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
 /**
@@ -289,6 +289,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
 
     if (layer && dismissCfg) {
       const options: DismissableLayerActivateOptions = {
+        channels: outsideVetoChannels(dismissCfg),
         ...buildOutsideVetoOptions(dismissCfg),
       };
 

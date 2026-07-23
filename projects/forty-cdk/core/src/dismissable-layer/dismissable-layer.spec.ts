@@ -59,29 +59,10 @@ describe('DismissableLayer', () => {
   });
 
   describe('escape', () => {
-    it('invokes onEscapeKeyDown then onDismiss when Escape is pressed', () => {
+    it('invokes onEscapeKeyDown when Escape is pressed', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
-      layer.activate({
-        onEscapeKeyDown: () => calls.push('escape'),
-        onDismiss: () => calls.push('dismiss'),
-      });
-
-      pressKey(document, 'Escape');
-
-      expect(calls).toEqual(['escape', 'dismiss']);
-    });
-
-    it('skips onDismiss when the handler calls preventDefault', () => {
-      const calls: string[] = [];
-      layer = makeLayer(host);
-      layer.activate({
-        onEscapeKeyDown: (event) => {
-          calls.push('escape');
-          event.preventDefault();
-        },
-        onDismiss: () => calls.push('dismiss'),
-      });
+      layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
 
       pressKey(document, 'Escape');
 
@@ -91,35 +72,69 @@ describe('DismissableLayer', () => {
     it('ignores other keys', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
-      layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
+      layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
 
       pressKey(document, 'Enter');
 
       expect(calls).toEqual([]);
     });
+
+    it('does not dispatch Escape when an inner widget already called preventDefault (cooperative opt-out)', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
+
+      // An inner widget claims Escape by preventing default before the keydown
+      // bubbles up to the stack's document listener.
+      const inside = host.querySelector('#inside')!;
+      const claim = (event: Event): void => event.preventDefault();
+      inside.addEventListener('keydown', claim);
+      try {
+        inside.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        );
+      } finally {
+        inside.removeEventListener('keydown', claim);
+      }
+
+      expect(calls).toEqual([]);
+    });
+
+    it('dispatches Escape normally when no inner widget claims it (positive control)', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
+
+      const inside = host.querySelector('#inside')!;
+      inside.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+      );
+
+      expect(calls).toEqual(['escape']);
+    });
   });
 
   describe('pointer-down outside', () => {
-    it('invokes onPointerDownOutside, onInteractOutside, onDismiss for pointers outside the host', () => {
+    it('invokes onPointerDownOutside then onInteractOutside for pointers outside the host', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('pointer'),
         onInteractOutside: () => calls.push('interact'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       document.dispatchEvent(pointerDown(outside));
 
-      expect(calls).toEqual(['pointer', 'interact', 'dismiss']);
+      expect(calls).toEqual(['pointer', 'interact']);
     });
 
     it('does not fire when the pointer goes down inside the host', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('pointer'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       document.dispatchEvent(pointerDown(host.querySelector('#inside')!));
@@ -131,9 +146,9 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['pointer'],
         exemptElements: () => [outside],
         onPointerDownOutside: () => calls.push('pointer'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       document.dispatchEvent(pointerDown(outside.querySelector('#out')!));
@@ -141,28 +156,12 @@ describe('DismissableLayer', () => {
       expect(calls).toEqual([]);
     });
 
-    it('skips onDismiss when the handler calls preventDefault', () => {
-      const calls: string[] = [];
-      layer = makeLayer(host);
-      layer.activate({
-        onPointerDownOutside: (event) => {
-          calls.push('pointer');
-          event.preventDefault();
-        },
-        onDismiss: () => calls.push('dismiss'),
-      });
-
-      document.dispatchEvent(pointerDown(outside));
-
-      expect(calls).toEqual(['pointer']);
-    });
-
     it('uses composedPath()[0] over a retargeted target so a shadow-DOM pointer inside the host counts as inside', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('pointer'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       const inside = host.querySelector('#inside')!;
@@ -177,37 +176,37 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('pointer'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       document.dispatchEvent(pointerDownComposed(outside, []));
 
-      expect(calls).toEqual(['pointer', 'dismiss']);
+      expect(calls).toEqual(['pointer']);
     });
   });
 
   describe('focus outside', () => {
-    it('invokes onFocusOutside, onInteractOutside, onDismiss when focus moves outside', () => {
+    it('invokes onFocusOutside then onInteractOutside when focus moves outside', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['focus'],
         onFocusOutside: () => calls.push('focus'),
         onInteractOutside: () => calls.push('interact'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       document.dispatchEvent(focusIn(outside));
 
-      expect(calls).toEqual(['focus', 'interact', 'dismiss']);
+      expect(calls).toEqual(['focus', 'interact']);
     });
 
     it('does not fire when focus moves to a descendant of the host', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['focus'],
         onFocusOutside: () => calls.push('focus'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       document.dispatchEvent(focusIn(host.querySelector('#inside')!));
@@ -219,8 +218,8 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       layer = makeLayer(host);
       layer.activate({
+        channels: ['focus'],
         onFocusOutside: () => calls.push('focus'),
-        onDismiss: () => calls.push('dismiss'),
       });
 
       const target = outside.querySelector('#out')!;
@@ -232,7 +231,7 @@ describe('DismissableLayer', () => {
         outside.removeEventListener('focusin', stop);
       }
 
-      expect(calls).toEqual(['focus', 'dismiss']);
+      expect(calls).toEqual(['focus']);
     });
   });
 
@@ -244,11 +243,13 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       const outerLayer = makeLayer(host);
       outerLayer.activate({
+        channels: ['pointer'],
         onEscapeKeyDown: () => calls.push('outer-escape'),
         onPointerDownOutside: () => calls.push('outer-pointer'),
       });
       const innerLayer = makeLayer(inner);
       innerLayer.activate({
+        channels: ['pointer'],
         onEscapeKeyDown: () => calls.push('inner-escape'),
         onPointerDownOutside: () => calls.push('inner-pointer'),
       });
@@ -269,9 +270,9 @@ describe('DismissableLayer', () => {
 
       const calls: string[] = [];
       const outerLayer = makeLayer(host);
-      outerLayer.activate({ onEscapeKeyDown: () => calls.push('outer') });
+      outerLayer.activate({ channels: [], onEscapeKeyDown: () => calls.push('outer') });
       const innerLayer = makeLayer(inner);
-      innerLayer.activate({ onEscapeKeyDown: () => calls.push('inner') });
+      innerLayer.activate({ channels: [], onEscapeKeyDown: () => calls.push('inner') });
 
       innerLayer.deactivate();
       pressKey(document, 'Escape');
@@ -280,6 +281,65 @@ describe('DismissableLayer', () => {
 
       outerLayer.deactivate();
       inner.remove();
+    });
+  });
+
+  describe('channel ownership is declared, not inferred from handler presence', () => {
+    let inner: HTMLElement;
+
+    beforeEach(() => {
+      inner = document.createElement('div');
+      document.body.appendChild(inner);
+    });
+
+    afterEach(() => {
+      inner.remove();
+    });
+
+    it('a top layer with an onPointerDownOutside handler but no declared pointer channel is transparent to pointer routing', () => {
+      const calls: string[] = [];
+      const declaresPointer = makeLayer(host);
+      declaresPointer.activate({
+        channels: ['pointer'],
+        onPointerDownOutside: () => calls.push('declared'),
+      });
+      // Handler wired, but `'pointer'` NOT declared → the stack must skip it and
+      // route to the layer below that actually declared the channel. Under the
+      // old handler-presence inference this layer would have shadowed the one
+      // below.
+      const undeclared = makeLayer(inner);
+      undeclared.activate({
+        channels: [],
+        onPointerDownOutside: () => calls.push('undeclared'),
+      });
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['declared']);
+
+      undeclared.deactivate();
+      declaresPointer.deactivate();
+    });
+
+    it('a top layer with an onFocusOutside handler but no declared focus channel is transparent to focus routing', () => {
+      const calls: string[] = [];
+      const declaresFocus = makeLayer(host);
+      declaresFocus.activate({
+        channels: ['focus'],
+        onFocusOutside: () => calls.push('declared'),
+      });
+      const undeclared = makeLayer(inner);
+      undeclared.activate({
+        channels: [],
+        onFocusOutside: () => calls.push('undeclared'),
+      });
+
+      document.dispatchEvent(focusIn(outside));
+
+      expect(calls).toEqual(['declared']);
+
+      undeclared.deactivate();
+      declaresFocus.deactivate();
     });
   });
 
@@ -299,16 +359,19 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       const below = makeLayer(host);
       below.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('below-pointer'),
         onInteractOutside: () => calls.push('below-interact'),
-        onDismiss: () => calls.push('below-dismiss'),
       });
       const escapeOnly = makeLayer(inner);
-      escapeOnly.activate({ onEscapeKeyDown: () => calls.push('escape-only-escape') });
+      escapeOnly.activate({
+        channels: [],
+        onEscapeKeyDown: () => calls.push('escape-only-escape'),
+      });
 
       document.dispatchEvent(pointerDown(outside));
 
-      expect(calls).toEqual(['below-pointer', 'below-interact', 'below-dismiss']);
+      expect(calls).toEqual(['below-pointer', 'below-interact']);
 
       escapeOnly.deactivate();
       below.deactivate();
@@ -318,16 +381,19 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       const below = makeLayer(host);
       below.activate({
+        channels: ['focus'],
         onFocusOutside: () => calls.push('below-focus'),
         onInteractOutside: () => calls.push('below-interact'),
-        onDismiss: () => calls.push('below-dismiss'),
       });
       const escapeOnly = makeLayer(inner);
-      escapeOnly.activate({ onEscapeKeyDown: () => calls.push('escape-only-escape') });
+      escapeOnly.activate({
+        channels: [],
+        onEscapeKeyDown: () => calls.push('escape-only-escape'),
+      });
 
       document.dispatchEvent(focusIn(outside));
 
-      expect(calls).toEqual(['below-focus', 'below-interact', 'below-dismiss']);
+      expect(calls).toEqual(['below-focus', 'below-interact']);
 
       escapeOnly.deactivate();
       below.deactivate();
@@ -337,12 +403,15 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       const below = makeLayer(host);
       below.activate({
+        channels: ['pointer'],
         onEscapeKeyDown: () => calls.push('below-escape'),
         onPointerDownOutside: () => calls.push('below-pointer'),
-        onDismiss: () => calls.push('below-dismiss'),
       });
       const escapeOnly = makeLayer(inner);
-      escapeOnly.activate({ onEscapeKeyDown: () => calls.push('escape-only-escape') });
+      escapeOnly.activate({
+        channels: [],
+        onEscapeKeyDown: () => calls.push('escape-only-escape'),
+      });
 
       pressKey(document, 'Escape');
 
@@ -356,31 +425,160 @@ describe('DismissableLayer', () => {
       const calls: string[] = [];
       const below = makeLayer(host);
       below.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('below-pointer'),
         onInteractOutside: () => calls.push('below-interact'),
-        onDismiss: () => calls.push('below-dismiss'),
       });
       const above = makeLayer(inner);
       above.activate({
+        channels: ['pointer'],
         onPointerDownOutside: () => calls.push('above-pointer'),
         onInteractOutside: () => calls.push('above-interact'),
-        onDismiss: () => calls.push('above-dismiss'),
       });
 
       document.dispatchEvent(pointerDown(outside));
 
-      expect(calls).toEqual(['above-pointer', 'above-interact', 'above-dismiss']);
+      expect(calls).toEqual(['above-pointer', 'above-interact']);
 
       above.deactivate();
       below.deactivate();
     });
   });
 
+  describe('stack-aware containment (#1379)', () => {
+    let aboveHost: HTMLElement;
+
+    beforeEach(() => {
+      // A separately-portaled, interactive Escape-only surface (a HoverCard),
+      // stacked above a real dismissable layer (a Popover / Menu). Its host is
+      // NOT a DOM descendant of the layer below, so DOM containment alone would
+      // treat an interaction inside it as "outside".
+      aboveHost = document.createElement('div');
+      aboveHost.id = 'above';
+      aboveHost.innerHTML = `<button id="above-btn">hover-card action</button>`;
+      document.body.appendChild(aboveHost);
+    });
+
+    afterEach(() => {
+      aboveHost.remove();
+    });
+
+    it('a pointer-down inside an Escape-only layer stacked above does not dismiss the layer below', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        channels: ['pointer'],
+        onPointerDownOutside: () => calls.push('below-pointer'),
+        onInteractOutside: () => calls.push('below-interact'),
+      });
+      const above = makeLayer(aboveHost);
+      above.activate({ channels: [], onEscapeKeyDown: () => calls.push('above-escape') });
+
+      document.dispatchEvent(pointerDown(aboveHost.querySelector('#above-btn')!));
+
+      expect(calls).toEqual([]);
+
+      above.deactivate();
+      below.deactivate();
+    });
+
+    it('a focus-in inside an Escape-only layer stacked above does not dismiss the layer below', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        channels: ['focus'],
+        onFocusOutside: () => calls.push('below-focus'),
+        onInteractOutside: () => calls.push('below-interact'),
+      });
+      const above = makeLayer(aboveHost);
+      above.activate({ channels: [], onEscapeKeyDown: () => calls.push('above-escape') });
+
+      document.dispatchEvent(focusIn(aboveHost.querySelector('#above-btn')!));
+
+      expect(calls).toEqual([]);
+
+      above.deactivate();
+      below.deactivate();
+    });
+
+    it('a pointer-down genuinely outside every stacked layer still dismisses the layer below', () => {
+      const calls: string[] = [];
+      const below = makeLayer(host);
+      below.activate({
+        channels: ['pointer'],
+        onPointerDownOutside: () => calls.push('below-pointer'),
+        onInteractOutside: () => calls.push('below-interact'),
+      });
+      const above = makeLayer(aboveHost);
+      above.activate({ channels: [], onEscapeKeyDown: () => calls.push('above-escape') });
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['below-pointer', 'below-interact']);
+
+      above.deactivate();
+      below.deactivate();
+    });
+  });
+
+  describe('document listener refcounting (#1379)', () => {
+    const isLayerEvent = (name: unknown): boolean =>
+      name === 'keydown' || name === 'pointerdown' || name === 'focusin';
+
+    it('installs listeners on the first activation and removes them after the last deactivation', () => {
+      const added = vi.spyOn(document, 'addEventListener');
+      const removed = vi.spyOn(document, 'removeEventListener');
+      const layerAdds = (): number => added.mock.calls.filter((c) => isLayerEvent(c[0])).length;
+      const layerRemoves = (): number =>
+        removed.mock.calls.filter((c) => isLayerEvent(c[0])).length;
+
+      // Constructing the stack (first inject) must not attach any listener.
+      const first = makeLayer(host);
+      expect(layerAdds()).toBe(0);
+
+      // 0 → 1: install all three.
+      first.activate({ channels: [], onEscapeKeyDown: () => {} });
+      expect(layerAdds()).toBe(3);
+
+      // 1 → 2: no additional install.
+      const inner = document.createElement('div');
+      document.body.appendChild(inner);
+      const second = makeLayer(inner);
+      second.activate({ channels: [], onEscapeKeyDown: () => {} });
+      expect(layerAdds()).toBe(3);
+
+      // 2 → 1: no removal yet.
+      second.deactivate();
+      expect(layerRemoves()).toBe(0);
+
+      // 1 → 0: remove all three.
+      first.deactivate();
+      expect(layerRemoves()).toBe(3);
+
+      inner.remove();
+    });
+
+    it('re-installs listeners on a fresh 0 → 1 activation after the stack has emptied', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('first') });
+      layer.deactivate();
+
+      const again = makeLayer(host);
+      again.activate({ channels: [], onEscapeKeyDown: () => calls.push('second') });
+      pressKey(document, 'Escape');
+      expect(calls).toEqual(['second']);
+
+      again.deactivate();
+      layer = null;
+    });
+  });
+
   it('is idempotent: activate twice has no extra effect', () => {
     const calls: string[] = [];
     layer = makeLayer(host);
-    layer.activate({ onEscapeKeyDown: () => calls.push('once') });
-    layer.activate({ onEscapeKeyDown: () => calls.push('twice') });
+    layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('once') });
+    layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('twice') });
 
     pressKey(document, 'Escape');
 
@@ -388,10 +586,10 @@ describe('DismissableLayer', () => {
     expect(layer.isActive).toBe(true);
   });
 
-  it('detaches all listeners on deactivate', () => {
+  it('detaches from dispatch on deactivate', () => {
     const calls: string[] = [];
     layer = makeLayer(host);
-    layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
+    layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
     layer.deactivate();
 
     pressKey(document, 'Escape');
@@ -403,7 +601,7 @@ describe('DismissableLayer', () => {
   it('document listeners are removed when the application injector is destroyed', () => {
     layer = makeLayer(host);
     const calls: string[] = [];
-    layer.activate({ onEscapeKeyDown: () => calls.push('escape') });
+    layer.activate({ channels: [], onEscapeKeyDown: () => calls.push('escape') });
     pressKey(document, 'Escape');
     expect(calls).toEqual(['escape']);
 
@@ -417,7 +615,7 @@ describe('DismissableLayer', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const newLayer = makeLayer(host);
     const calls2: string[] = [];
-    newLayer.activate({ onEscapeKeyDown: () => calls2.push('escape2') });
+    newLayer.activate({ channels: [], onEscapeKeyDown: () => calls2.push('escape2') });
 
     pressKey(document, 'Escape');
     // Exactly one set of listeners after the rebootstrap.
