@@ -300,3 +300,107 @@ describe('ForVirtualViewport (endReached) output', () => {
     expect(fixture.componentInstance.endCount()).toBe(0);
   });
 });
+
+describe('ForVirtualViewport — detached-row sweep (#1424)', () => {
+  class RecordingResizeObserver {
+    static observed: Element[] = [];
+    static unobserved: Element[] = [];
+    observe(el: Element): void {
+      RecordingResizeObserver.observed.push(el);
+    }
+    unobserve(el: Element): void {
+      RecordingResizeObserver.unobserved.push(el);
+    }
+    disconnect(): void {}
+  }
+
+  @Component({
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()">{{ row.label }}</div>
+      </div>
+    `,
+  })
+  class SweepHost {
+    readonly rows = signal<Row[]>(makeRows(1000));
+    readonly viewport = viewChild.required(ForVirtualViewport);
+  }
+
+  let priorResizeObserver: unknown;
+  const appended: HTMLElement[] = [];
+
+  beforeEach(() => {
+    RecordingResizeObserver.observed = [];
+    RecordingResizeObserver.unobserved = [];
+    priorResizeObserver = (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver;
+    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = RecordingResizeObserver;
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  afterEach(() => {
+    (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = priorResizeObserver;
+    for (const el of appended.splice(0)) {
+      el.remove();
+    }
+  });
+
+  function measuredRow(index: number, height = 40): HTMLElement {
+    const row = document.createElement('div');
+    row.setAttribute('data-index', String(index));
+    Object.defineProperty(row, 'offsetHeight', { configurable: true, value: height });
+    Object.defineProperty(row, 'offsetWidth', { configurable: true, value: height });
+    document.body.appendChild(row);
+    appended.push(row);
+    return row;
+  }
+
+  async function mount(): Promise<ReturnType<typeof TestBed.createComponent<SweepHost>>> {
+    const fixture = TestBed.createComponent(SweepHost);
+    fakeLayout(viewportEl(fixture), 200);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  it('evicts and unobserves a detached measured row on the next render — no manual null call', async () => {
+    const fixture = await mount();
+    const viewport = fixture.componentInstance.viewport();
+
+    const recycled = measuredRow(0);
+    viewport.measureElement(recycled);
+    expect(RecordingResizeObserver.observed).toContain(recycled);
+
+    document.body.removeChild(recycled);
+    expect(recycled.isConnected).toBe(false);
+
+    fixture.componentInstance.rows.set(makeRows(500));
+    await flush(fixture);
+
+    expect(RecordingResizeObserver.unobserved).toContain(recycled);
+  });
+
+  it('keeps observing a still-connected measured row across renders (bounded, not over-swept)', async () => {
+    const fixture = await mount();
+    const viewport = fixture.componentInstance.viewport();
+
+    const live = measuredRow(1);
+    viewport.measureElement(live);
+    expect(RecordingResizeObserver.observed).toContain(live);
+
+    fixture.componentInstance.rows.set(makeRows(500));
+    await flush(fixture);
+
+    expect(RecordingResizeObserver.unobserved).not.toContain(live);
+  });
+
+  it('accepts a manual measureElement(null) sweep without throwing', async () => {
+    const fixture = await mount();
+    expect(() => fixture.componentInstance.viewport().measureElement(null)).not.toThrow();
+  });
+});
