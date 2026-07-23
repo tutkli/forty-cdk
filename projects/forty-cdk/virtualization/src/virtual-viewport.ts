@@ -5,6 +5,7 @@ import {
   Injector,
   type OnInit,
   type Signal,
+  afterEveryRender,
   computed,
   inject,
   input,
@@ -141,6 +142,10 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     this.orientation() === 'horizontal' ? '100%' : `${this.totalSize()}px`,
   );
 
+  constructor() {
+    afterEveryRender(() => this.#virtualizer()?.measureElement(null));
+  }
+
   ngOnInit(): void {
     runInInjectionContext(this.#injector, () => {
       this.#virtualizer.set(
@@ -182,8 +187,14 @@ export class ForVirtualViewport implements ForVirtualViewportContext, OnInit {
     this.#virtualizer()?.scrollToOffset(offset);
   }
 
-  /** Record the measured size of a rendered item element. No-op until initialized. */
-  measureElement(element: HTMLElement): void {
+  /**
+   * Record the measured size of a rendered item element. Passing `null` sweeps
+   * detached (recycled) rows from the measurement cache and stops observing
+   * them — the viewport already performs this sweep after every render, so a
+   * monotonically scrolling list never retains one detached element per row
+   * scrolled past. No-op until initialized.
+   */
+  measureElement(element: HTMLElement | null): void {
     this.#virtualizer()?.measureElement(element);
   }
 
