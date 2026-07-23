@@ -129,6 +129,39 @@ describe('injectPortal', () => {
     }
   });
 
+  it('defers removal until a DESCENDANT exit animation finishes (subtree)', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(PortalHost);
+    await flush(fixture);
+
+    const portaled = document.querySelector<HTMLElement>('portaled-bubble')!;
+
+    let resolveFinished!: () => void;
+    const finished = new Promise<void>((resolve) => {
+      resolveFinished = resolve;
+    });
+    portaled.getAnimations = ((opts?: GetAnimationsOptions) =>
+      opts?.subtree ? [{ finished } as unknown as Animation] : []) as HTMLElement['getAnimations'];
+    const rafSpy = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((cb: FrameRequestCallback) => {
+        cb(0);
+        return 0;
+      });
+
+    try {
+      fixture.destroy();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(1);
+
+      resolveFinished();
+      await nextMacrotask();
+      expect(document.querySelectorAll('portaled-bubble')).toHaveLength(0);
+    } finally {
+      rafSpy.mockRestore();
+      document.querySelectorAll('portaled-bubble').forEach((n) => n.remove());
+    }
+  });
+
   it('removes the element despite an infinite (never-finishing) animation', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(PortalHost);

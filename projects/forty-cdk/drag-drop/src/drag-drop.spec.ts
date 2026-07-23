@@ -1394,7 +1394,12 @@ describe('ForDropList + ForDraggable', () => {
         firePointer(first, 'pointermove', 20, 0);
         firePointer(first, 'pointerup', 20, 0);
 
-        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        const click = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 20,
+          clientY: 0,
+        });
         first.dispatchEvent(click);
         expect(click.defaultPrevented).toBe(true);
         expect(hostClick).not.toHaveBeenCalled();
@@ -1413,7 +1418,9 @@ describe('ForDropList + ForDraggable', () => {
         firePointer(first, 'pointermove', 20, 0);
         firePointer(first, 'pointerup', 20, 0);
 
-        first.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        first.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 20, clientY: 0 }),
+        );
         expect(hostClick).not.toHaveBeenCalled();
 
         const second = new MouseEvent('click', { bubbles: true, cancelable: true });
@@ -1457,7 +1464,12 @@ describe('ForDropList + ForDraggable', () => {
         firePointer(first, 'pointermove', 20, 0);
         firePointer(first, 'pointerup', 20, 0);
 
-        const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+        const click = new MouseEvent('click', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 20,
+          clientY: 0,
+        });
         first.dispatchEvent(click);
         expect(click.defaultPrevented).toBe(true);
         expect(hostClick).not.toHaveBeenCalled();

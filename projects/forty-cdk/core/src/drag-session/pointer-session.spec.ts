@@ -348,6 +348,89 @@ describe('createPointerDragSession', () => {
     expect(rec.commits).toBe(0);
   });
 
+  it('onLift returning "skip" declines the lift but keeps the press tracked and unarmed', () => {
+    const rec: Recorder = { lifts: 0, moves: 0, commits: 0, cancels: 0 };
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    let liftCalls = 0;
+    const session = createPointerDragSession({
+      host,
+      document,
+      armThreshold: 5,
+      canStart: () => true,
+      onLift: () => {
+        rec.lifts++;
+        liftCalls++;
+        return liftCalls === 1 ? 'skip' : undefined;
+      },
+      onMove: () => {
+        rec.moves++;
+      },
+      onCommit: () => {
+        rec.commits++;
+      },
+      onCancel: () => {
+        rec.cancels++;
+      },
+    });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    expect(rec.lifts).toBe(1);
+    expect(rec.moves).toBe(0);
+
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    expect(rec.lifts).toBe(2);
+    expect(rec.moves).toBe(1);
+
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+    expect(rec.commits).toBe(1);
+  });
+
+  it('a press whose onLift only ever returns "skip" never arms, commits, or traps a click', () => {
+    const rec: Recorder = { lifts: 0, moves: 0, commits: 0, cancels: 0 };
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const session = createPointerDragSession({
+      host,
+      document,
+      armThreshold: 5,
+      canStart: () => true,
+      onLift: () => {
+        rec.lifts++;
+        return 'skip';
+      },
+      onMove: () => {
+        rec.moves++;
+      },
+      onCommit: () => {
+        rec.commits++;
+      },
+      onCancel: () => {
+        rec.cancels++;
+      },
+    });
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    document.dispatchEvent(pointer('pointermove', 120, 100));
+    document.dispatchEvent(pointer('pointerup', 120, 100));
+
+    expect(rec.commits).toBe(0);
+    expect(rec.cancels).toBe(0);
+
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 120,
+      clientY: 100,
+    });
+    document.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(false);
+  });
+
   it('cancel() aborts an armed drag: fires onCancel and stops further callbacks', () => {
     const { host, session, rec } = setup();
     track(host, session);
@@ -412,7 +495,12 @@ describe('createPointerDragSession', () => {
     document.dispatchEvent(pointer('pointermove', 110, 100));
     document.dispatchEvent(pointer('pointerup', 110, 100));
 
-    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 110,
+      clientY: 100,
+    });
     document.dispatchEvent(click);
 
     expect(click.defaultPrevented).toBe(true);
@@ -426,11 +514,59 @@ describe('createPointerDragSession', () => {
     document.dispatchEvent(pointer('pointermove', 110, 100));
     document.dispatchEvent(pointer('pointerup', 110, 100));
 
-    document.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    document.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 110, clientY: 100 }),
+    );
     const second = new MouseEvent('click', { bubbles: true, cancelable: true });
     document.dispatchEvent(second);
 
     expect(second.defaultPrevented).toBe(false);
+  });
+
+  it('does not suppress a click away from the release point (release produced no synthetic click)', () => {
+    const { host, session } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    document.dispatchEvent(pointer('pointerup', 110, 100));
+
+    const click = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 300,
+      clientY: 300,
+    });
+    document.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(false);
+  });
+
+  it('the first post-release click disarms the trap regardless of where it lands', () => {
+    const { host, session } = setup();
+    track(host, session);
+
+    host.dispatchEvent(pointer('pointerdown', 100, 100));
+    document.dispatchEvent(pointer('pointermove', 110, 100));
+    document.dispatchEvent(pointer('pointerup', 110, 100));
+
+    const away = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 300,
+      clientY: 300,
+    });
+    document.dispatchEvent(away);
+    expect(away.defaultPrevented).toBe(false);
+
+    const atRelease = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 110,
+      clientY: 100,
+    });
+    document.dispatchEvent(atRelease);
+    expect(atRelease.defaultPrevented).toBe(false);
   });
 
   it('does not suppress a click after a non-armed release', () => {

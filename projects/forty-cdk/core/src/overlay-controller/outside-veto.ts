@@ -10,10 +10,13 @@ import {
 } from '../vetoable-event/vetoable-event';
 
 /**
- * Emit forwarders + implicit-close wiring for the three outside-interaction
- * channels that {@link buildOutsideVetoOptions} shares one veto across. Escape
- * is intentionally absent: it never participates in the shared veto reuse (it
- * is a one-shot channel whose close behaviour differs per shell), so each shell
+ * Emit forwarders + implicit-close wiring for the outside-interaction channels
+ * that {@link buildOutsideVetoOptions} folds into self-closing layer handlers.
+ * Each wired outside channel builds one veto, emits it through the specific
+ * output (if wired) and the composite `interactOutside` output (if wired), then
+ * closes itself when un-vetoed and `dismissible()` is `true`. Escape is
+ * intentionally absent: it never participates in the outside-close (it is a
+ * one-shot channel whose close behaviour differs per shell), so each shell
  * wires its own `onEscapeKeyDown` alongside the object this returns.
  *
  * Every field is optional so a shell can register a layer listener only for the
@@ -24,12 +27,13 @@ import {
 export interface OutsideVetoConfig {
   /**
    * Whether an un-vetoed outside interaction fires the implicit
-   * `requestClose`. Read fresh on every composite `interactOutside`.
+   * `requestClose`. Read fresh on every outside interaction.
    */
   readonly dismissible?: Signal<boolean>;
   /**
-   * Called with the matching reason from the composite `interactOutside`
-   * channel when the consumer doesn't veto and `dismissible()` is `true`.
+   * Called with the matching reason (`'pointerDownOutside'` / `'focusOutside'`)
+   * when the consumer doesn't veto the outside interaction and `dismissible()`
+   * is `true`. Each wired outside channel fires its own close.
    */
   readonly requestClose?: (reason: 'pointerDownOutside' | 'focusOutside') => void;
   /** Forwards the pointer-down-outside veto to the directive's `(pointerDownOutside)` output. */
@@ -41,65 +45,58 @@ export interface OutsideVetoConfig {
 }
 
 /**
- * Builds the pointer-down-outside / focus-outside / composite-interact-outside
- * entries of a {@link DismissableLayerActivateOptions}, encapsulating the
- * triple-veto reuse both `injectModalShell` and `injectOverlayShell` used to
- * hand-roll verbatim as a per-shell `pendingOutsideVeto` field.
+ * Builds the pointer-down-outside / focus-outside entries of a
+ * {@link DismissableLayerActivateOptions}, folding the composite
+ * `interactOutside` emit and the implicit close into each specific channel so
+ * every wired outside channel closes itself.
  *
- * The protocol: pointer-down-outside and focus-outside fire on the same
- * physical interaction as the composite `interactOutside`, and the dismissable
- * layer always invokes the specific listener before the composite one. A single
- * {@link VetoableNativeEvent} is built on the specific call, handed to the
- * consumer's emitter, and reused for the immediately-following composite call,
- * so a `preventDefault()` in either handler vetoes the close. When no specific
- * channel is wired the composite handler builds a fresh veto for its own event.
- * After an un-vetoed composite interaction the shell calls `requestClose(reason)`
- * (`'pointerDownOutside'` / `'focusOutside'`) when `dismissible()` is `true`.
+ * The protocol: each handler builds a single {@link VetoableNativeEvent} for
+ * its physical interaction, hands it to the specific emitter (if wired) and
+ * then to the composite `interactOutside` emitter (if wired), and — when
+ * neither subscriber vetoed and `dismissible()` is `true` — calls
+ * `requestClose(reason)` with the channel's reason (`'pointerDownOutside'` /
+ * `'focusOutside'`). A `preventDefault()` from either the specific or the
+ * composite subscriber suppresses the close, since both observe the same veto.
  *
+ * `onPointerDownOutside` is registered when either the specific
+ * `emitPointerDownOutside` or the composite `emitInteractOutside` is wired, and
+ * `onFocusOutside` likewise — matching what {@link outsideVetoChannels}
+ * declares — so an interact-only wiring still gets both self-closing handlers.
  * Returns only the channels whose emitter is present, so the caller can spread
  * the result into its `dismissable.activate({...})` call alongside the pieces
- * that stay shell-specific (`exemptElements`, `onEscapeKeyDown`). The shared
- * `pendingOutsideVeto` is captured per call, so a fresh options object must be
- * built for every layer activation.
+ * that stay shell-specific (`exemptElements`, `onEscapeKeyDown`).
  */
 export function buildOutsideVetoOptions(
   config: OutsideVetoConfig,
-): Pick<
-  DismissableLayerActivateOptions,
-  'onPointerDownOutside' | 'onFocusOutside' | 'onInteractOutside'
-> {
-  let pendingOutsideVeto: VetoableNativeEvent<PointerEvent | FocusEvent> | null = null;
-  const options: Pick<
-    DismissableLayerActivateOptions,
-    'onPointerDownOutside' | 'onFocusOutside' | 'onInteractOutside'
-  > = {};
+): Pick<DismissableLayerActivateOptions, 'onPointerDownOutside' | 'onFocusOutside'> {
+  const options: Pick<DismissableLayerActivateOptions, 'onPointerDownOutside' | 'onFocusOutside'> =
+    {};
+  const {
+    dismissible,
+    requestClose,
+    emitPointerDownOutside,
+    emitFocusOutside,
+    emitInteractOutside,
+  } = config;
 
-  const emitPointerDownOutside = config.emitPointerDownOutside;
-  if (emitPointerDownOutside) {
+  if (emitPointerDownOutside || emitInteractOutside) {
     options.onPointerDownOutside = (event) => {
-      pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-      emitPointerDownOutside(pendingOutsideVeto as VetoableNativeEvent<PointerEvent>);
-    };
-  }
-
-  const emitFocusOutside = config.emitFocusOutside;
-  if (emitFocusOutside) {
-    options.onFocusOutside = (event) => {
-      pendingOutsideVeto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-      emitFocusOutside(pendingOutsideVeto as VetoableNativeEvent<FocusEvent>);
-    };
-  }
-
-  const emitInteractOutside = config.emitInteractOutside;
-  if (emitInteractOutside) {
-    const { dismissible, requestClose } = config;
-    options.onInteractOutside = (event) => {
-      const veto =
-        pendingOutsideVeto ?? createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
-      pendingOutsideVeto = null;
-      emitInteractOutside(veto);
+      const veto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+      emitPointerDownOutside?.(veto as VetoableNativeEvent<PointerEvent>);
+      emitInteractOutside?.(veto);
       if (!veto.defaultPrevented && dismissible?.() && requestClose) {
-        requestClose(event.type === 'pointerdown' ? 'pointerDownOutside' : 'focusOutside');
+        requestClose('pointerDownOutside');
+      }
+    };
+  }
+
+  if (emitFocusOutside || emitInteractOutside) {
+    options.onFocusOutside = (event) => {
+      const veto = createVetoableNativeEvent<PointerEvent | FocusEvent>(event);
+      emitFocusOutside?.(veto as VetoableNativeEvent<FocusEvent>);
+      emitInteractOutside?.(veto);
+      if (!veto.defaultPrevented && dismissible?.() && requestClose) {
+        requestClose('focusOutside');
       }
     };
   }

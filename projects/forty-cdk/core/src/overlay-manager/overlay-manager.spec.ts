@@ -247,6 +247,40 @@ describe('OverlayManagerCore', () => {
         host.remove();
       }
     });
+
+    it('awaits a DESCENDANT exit animation before removing (subtree)', async () => {
+      const manager = makeManager();
+      const { host, ref } = mountHost(manager);
+
+      let resolveFinished!: () => void;
+      const finished = new Promise<void>((resolve) => {
+        resolveFinished = resolve;
+      });
+      const finite = {
+        finished,
+        effect: { getComputedTiming: () => ({ iterations: 1 }) },
+      } as unknown as Animation;
+      host.getAnimations = ((opts?: GetAnimationsOptions) =>
+        opts?.subtree ? [finite] : []) as HTMLElement['getAnimations'];
+      const rafSpy = vi
+        .spyOn(globalThis, 'requestAnimationFrame')
+        .mockImplementation((cb: FrameRequestCallback) => {
+          cb(0);
+          return 0;
+        });
+
+      try {
+        ref.close();
+        expect(manager.openCount()).toBe(1);
+
+        resolveFinished();
+        await nextMacrotask();
+        expect(manager.openCount()).toBe(0);
+      } finally {
+        rafSpy.mockRestore();
+        host.remove();
+      }
+    });
   });
 
   describe('open() from within change detection (NG0101 — #1138)', () => {

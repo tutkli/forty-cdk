@@ -127,6 +127,31 @@ describe('attachSwipeDismiss', () => {
     cleanup();
   });
 
+  it('a wobble at the arm point does not kill the press — the same press lifts after it', () => {
+    const { el, rec, cleanup } = setup({ directions: ['down'], threshold: 50 });
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0 });
+    pointer(el, 'pointermove', { clientX: 5, clientY: 2 });
+    expect(rec.starts).toEqual([]);
+    pointer(el, 'pointermove', { clientX: 5, clientY: 60 });
+    expect(rec.starts).toHaveLength(1);
+    expect(rec.starts[0]!.direction).toBe('down');
+    expect(rec.moves).toHaveLength(1);
+    pointer(el, 'pointerup', { clientX: 5, clientY: 60 });
+    expect(rec.ends).toHaveLength(1);
+    cleanup();
+  });
+
+  it('a diagonal wobble under the per-axis arm distance keeps the press alive until an on-axis move', () => {
+    const { el, rec, cleanup } = setup({ directions: ['down'], threshold: 50 });
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0 });
+    pointer(el, 'pointermove', { clientX: 3, clientY: 3 });
+    expect(rec.starts).toEqual([]);
+    pointer(el, 'pointermove', { clientX: 0, clientY: 60 });
+    expect(rec.starts).toHaveLength(1);
+    expect(rec.starts[0]!.direction).toBe('down');
+    cleanup();
+  });
+
   it('left direction sees negative-x movement and threshold is checked on absolute projection', () => {
     const { el, rec, cleanup } = setup({ directions: ['left'], threshold: 40 });
     pointer(el, 'pointerdown', { clientX: 100, clientY: 0 });

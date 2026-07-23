@@ -23,11 +23,10 @@ import {
  * `interactOutside` orchestration that Dialog and Drawer used to duplicate
  * verbatim:
  *
- * - Each "specific" channel (Escape / pointer-down-outside / focus-outside)
- *   builds a `VetoableNativeEvent`, hands it to the consumer's emitter, and —
- *   for pointer / focus — stores it so the immediately-following composite
- *   `onInteractOutside` reuses the same veto state. A `preventDefault()` from
- *   either the specific or the composite handler suppresses the implicit
+ * - Each channel builds a `VetoableNativeEvent` and hands it to the consumer's
+ *   emitter; the pointer-down-outside / focus-outside channels also hand the
+ *   same veto to the composite `interactOutside` emitter. A `preventDefault()`
+ *   from either the specific or the composite handler suppresses the implicit
  *   close.
  * - When the consumer doesn't veto AND `dismissible()` is `true`, the shell
  *   calls `requestClose(reason)` with the reason that matches the channel
@@ -316,12 +315,11 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     //     focusin events triggered by our own focus management land on this
     //     layer, not on whatever lower layer was previously topmost.
     //
-    //     Triple-veto + composite `interactOutside`: pointer-down-outside
-    //     and focus-outside both fire on the same physical interaction. The
-    //     dismissable layer always invokes the specific listener before the
-    //     composite one, so we build a single veto wrapper on the specific
-    //     call and reuse it for the composite call. A `preventDefault()` in
-    //     either handler vetoes the close.
+    //     Outside channels are self-closing: `buildOutsideVetoOptions` builds
+    //     one veto per physical interaction and hands it to both the specific
+    //     (pointer-down-outside / focus-outside) and the composite
+    //     `interactOutside` emitter, so a `preventDefault()` in either handler
+    //     vetoes the close.
     const dismissCfg = config.dismiss;
     if (dismissCfg !== undefined) {
       dismissable.activate({

@@ -18,9 +18,14 @@
  *   point is recorded), `false` to ignore the press. All primitive-specific guards
  *   (disabled state, hit-testing the grabbed element, handle constraints, mouse button)
  *   live here.
- * - `onLift(event)` fires once, on the first move that crosses `armThreshold`. Return
- *   `false` to abort the session in flight (e.g. the grabbed element has since vanished):
- *   the document listeners are torn down and no further callback fires.
+ * - `onLift(event)` fires on the first move that crosses `armThreshold`, before the session
+ *   arms or captures the pointer. Return `false` to abort the session in flight (e.g. the
+ *   grabbed element has since vanished): the document listeners are torn down and no further
+ *   callback fires. Return `'skip'` to decline arming for now while keeping the press tracked
+ *   and unarmed — `onLift` is re-consulted on every subsequent move still past `armThreshold`,
+ *   with the delta and dominant axis recomputed from the fixed start point each time. Returning
+ *   `true` or `void` arms the session, captures the pointer when `capturePointer` is set, and
+ *   lets the move flow through to `onMove`.
  * - `onMove(event)` fires on every armed move after the lift.
  * - `onCommit(event)` fires on `pointerup` while armed.
  * - `onCancel(event?)` fires on `pointercancel`, on `Escape` when `cancelOnEscape` is set, and on an
@@ -42,10 +47,13 @@
  * also dismisses the surrounding dialog / popover / drawer. A non-armed press stays transparent:
  * the event is left untouched so a plain `Escape` still dismisses the overlay as usual.
  *
- * Click suppression: when a `pointerup` ends an armed drag, the next capture-phase `click`
- * on the document is swallowed (`stopPropagation` + `preventDefault`). The listener removes
- * itself after the first click, and a `suppressClickTimeoutMs` fallback removes it if no
- * click follows.
+ * Click suppression: when a `pointerup` ends an armed drag, the release point is recorded and a
+ * capture-phase `click` listener is installed. Only a click landing at the release coordinates
+ * (within a small tolerance) — the synthetic click the release itself generates — is swallowed
+ * (`stopPropagation` + `preventDefault`); a click elsewhere is left untouched, so an unrelated
+ * click that follows a release which produced no synthetic click still reaches its target. The
+ * listener removes itself after the first click either way, and a `suppressClickTimeoutMs`
+ * fallback removes it if no click follows.
  *
  * Nested-control opt-out: if the originating `pointerdown` was `defaultPrevented` by a
  * descendant that owns the same gesture (e.g. a nested resize handle), the session stands
@@ -93,11 +101,15 @@ export interface PointerDragSessionOptions {
    */
   readonly canStart: (event: PointerEvent) => boolean;
   /**
-   * Fires once, on the first move past `armThreshold`. Return `false` to abort the session
-   * in flight (the grabbed element vanished, etc.); the session tears its listeners down and
-   * fires no further callback. Returning `true` or `void` keeps the session armed.
+   * Fires on the first move past `armThreshold`, before the session arms or captures the
+   * pointer. Return `false` to abort the session in flight (the grabbed element vanished, etc.);
+   * the session tears its listeners down and fires no further callback. Return `'skip'` to
+   * decline arming for now while keeping the press tracked and unarmed: `onLift` is re-consulted
+   * on every subsequent move still past `armThreshold`, with the delta and dominant axis
+   * recomputed from the fixed start point each time. Returning `true` or `void` arms the session
+   * and lets the move flow through to `onMove`.
    */
-  readonly onLift: (event: PointerEvent) => boolean | void;
+  readonly onLift: (event: PointerEvent) => boolean | 'skip' | void;
   /** Fires on every armed move after the lift. */
   readonly onMove: (event: PointerEvent) => void;
   /** Fires on `pointerup` while armed. */
@@ -134,6 +146,7 @@ export interface PointerDragSessionOptions {
 }
 
 const DEFAULT_SUPPRESS_CLICK_TIMEOUT_MS = 500;
+const CLICK_SUPPRESS_TOLERANCE_PX = 2;
 
 /**
  * Attach a pointer-drag session to `opts.host`. Returns a {@link PointerDragSession} whose
@@ -218,6 +231,14 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
         resetTracking();
         return;
       }
+      const lift = opts.onLift(event);
+      if (lift === false) {
+        resetTracking();
+        return;
+      }
+      if (lift === 'skip') {
+        return;
+      }
       armed = true;
       if (opts.capturePointer && pointerId !== null) {
         try {
@@ -226,18 +247,19 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
           // Some environments (jsdom) reject capture on detached nodes.
         }
       }
-      if (opts.onLift(event) === false) {
-        resetTracking();
-        return;
-      }
     }
     opts.onMove(event);
   };
 
-  const installClickTrap = (): void => {
+  const installClickTrap = (release: { x: number; y: number }): void => {
     const trap = (event: MouseEvent): void => {
-      event.stopPropagation();
-      event.preventDefault();
+      if (
+        Math.abs(event.clientX - release.x) <= CLICK_SUPPRESS_TOLERANCE_PX &&
+        Math.abs(event.clientY - release.y) <= CLICK_SUPPRESS_TOLERANCE_PX
+      ) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
       removeClickTrap();
     };
     onDocumentClick = trap;
@@ -255,7 +277,7 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     }
     const wasArmed = armed;
     if (wasArmed) {
-      installClickTrap();
+      installClickTrap({ x: event.clientX, y: event.clientY });
     }
     resetTracking();
     if (wasArmed) {

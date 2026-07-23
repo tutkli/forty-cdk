@@ -133,9 +133,6 @@ export class FocusTrap {
   #returnTo: HTMLElement | null = null;
   #active = false;
   #containerHadTabindex = false;
-  #focusablesCache: HTMLElement[] | null = null;
-  #tabbablesCache: HTMLElement[] | null = null;
-  #observer: MutationObserver | null = null;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
 
@@ -167,29 +164,6 @@ export class FocusTrap {
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
     this.#stack.push(this);
 
-    const win = this.#container.ownerDocument.defaultView;
-    if (win && typeof win.MutationObserver === 'function') {
-      this.#observer = new win.MutationObserver(() => {
-        this.#focusablesCache = null;
-        this.#tabbablesCache = null;
-      });
-      this.#observer.observe(this.#container, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: [
-          'disabled',
-          'hidden',
-          'inert',
-          'tabindex',
-          'type',
-          'contenteditable',
-          'style',
-          'class',
-        ],
-      });
-    }
-
     if (options.preventInitialFocus) {
       // Tab cycling and return-focus are still set up; the imperative
       // focus move is the only thing skipped. Focus stays wherever the
@@ -214,8 +188,8 @@ export class FocusTrap {
 
   /**
    * Deactivates the trap: removes the keydown listener, unregisters from the
-   * stack, disconnects the observer, and (unless `returnFocus: false`)
-   * restores focus to the element captured on activation.
+   * stack, and (unless `returnFocus: false`) restores focus to the element
+   * captured on activation.
    *
    * Return focus is skipped when the captured target is no longer connected
    * to the document — e.g. the trigger was unmounted while the surface was
@@ -231,10 +205,6 @@ export class FocusTrap {
     this.#active = false;
     this.#document.removeEventListener('keydown', this.#onKeyDown, true);
     this.#stack.remove(this);
-    this.#observer?.disconnect();
-    this.#observer = null;
-    this.#focusablesCache = null;
-    this.#tabbablesCache = null;
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -295,21 +265,13 @@ export class FocusTrap {
   }
 
   #focusables(): HTMLElement[] {
-    if (this.#focusablesCache !== null) {
-      return this.#focusablesCache;
-    }
     const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-    this.#focusablesCache = all.filter((el) => isFocusableCandidate(el, this.#container));
-    return this.#focusablesCache;
+    return all.filter((el) => isFocusableCandidate(el, this.#container));
   }
 
   #tabbables(): HTMLElement[] {
-    if (this.#tabbablesCache !== null) {
-      return this.#tabbablesCache;
-    }
     const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
-    this.#tabbablesCache = all.filter((el) => isTabbableCandidate(el, this.#container));
-    return this.#tabbablesCache;
+    return all.filter((el) => isTabbableCandidate(el, this.#container));
   }
 }
 
@@ -326,9 +288,8 @@ export class FocusTrap {
  * answer; do the deactivate yourself.
  *
  * SSR-safe: the trap is constructed with the resolved platform, so
- * `activate()` is a no-op off-browser (no `document` keydown listener, no
- * `MutationObserver`) rather than relying on the caller to gate it behind
- * `afterNextRender`.
+ * `activate()` is a no-op off-browser (no `document` keydown listener)
+ * rather than relying on the caller to gate it behind `afterNextRender`.
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
