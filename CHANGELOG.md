@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-07-23
+
+The resolution wave for the July 18, 2026 deep audit — sweeps across the core state/navigation
+utilities, core overlay infrastructure, the dismissable-layer, the static primitives, and the table +
+virtualization primitives. Several breaking changes in `forty-cdk/core` and the
+table / tabs / stepper / breakpoints primitives.
+
+### Added
+
+- **Tabs** — `ForTabsList` gains the uniform `ariaLabel` input, bound to `role="tablist"`.
+- **Accordion & Pagination** — every disable-capable piece now reflects `data-disabled` (truthy-only)
+  when effectively disabled, alongside the native `disabled` / `aria-disabled`, matching the disclosure
+  precedent, so a disabled sibling can be styled off one attribute across primitives.
+- **Core (drag)** — `createPointerDragSession` accepts an opt-in `cancelOnDestroy` flag that cancels an
+  in-flight drag if the session is destroyed mid-gesture (default `false`, no change for existing callers).
+
+### Changed
+
+- **Core (roving tabindex)** — **BREAKING.** `reconcileRovingActive` and `ReconcileRovingActiveOptions`
+  are removed from `forty-cdk/core`. Reconciliation is folded into `RovingTabindex` as a `linkedSignal`
+  over a caller-supplied items signal, so a disabled / disconnected active handle now reconciles
+  synchronously without a per-container reconcile `effect()`.
+- **Core (a11y ids)** — **BREAKING.** `registerA11yName` / `registerA11yDescription` return a plain
+  `string` (the generated id) instead of a decorative `Signal<string>`; host-bind `'[id]': 'id'` directly.
+- **Core (collection / navigation)** — **BREAKING.** Removed the `readEntryGuarded` barrel alias (use
+  `tryReadHandle`) and the `registerCollectionHandle` convenience overload.
+- **Core (dismissable layer)** — **BREAKING.** A dismissable layer must now declare its channel ownership
+  explicitly via a required `channels: readonly DismissableLayerChannel[]` field — it is no longer inferred
+  from handler presence (the `handlesPointer` / `handlesFocus` getters are gone) — and the unused
+  `DismissableLayerActivateOptions.onDismiss` callback is removed. `DismissableLayerChannel` is now
+  exported from `forty-cdk/core`.
+- **Tabs & Stepper** — **BREAKING.** Disabled triggers / steps stay in the roving cycle: `Arrow` / `Home`
+  / `End` land on them (activation stays guarded) instead of skipping over them, so they are now
+  focusable-but-inert, matching the WAI-ARIA APG. Listbox, toolbar, menubar and radio-group keep their
+  disabled-skip navigation.
+- **Stepper** — **BREAKING.** `ForStepperTriggerHandle` gains a required `index: Signal<number>` member;
+  a consumer implementing a custom trigger handle must supply it.
+- **Breakpoints** — **BREAKING.** Renamed to the standard defaults-provider scheme: `FOR_BREAKPOINTS` →
+  `FOR_BREAKPOINTS_DEFAULTS`, `provideForBreakpoints` → `provideForBreakpointsDefaults`,
+  `breakpointsTailwind` → `forBreakpointsTailwind`.
+- **Table** — **BREAKING.** In `mode="grid"` / `treegrid`, `[forTableColumnResizer]` and
+  `[forTableSelectAll]` emit `tabindex="-1"` and are reached via `Enter` / `F2` cell-entry, so the grid
+  keeps a single tab stop instead of taking one `Tab` per resizable column.
+- **Table** — **BREAKING.** Rows in `mode="table"` no longer emit `aria-selected` at all (it is gated to
+  grid mode); style the falsy state on the attribute's absence, not `[aria-selected="false"]`.
+- **Table** — **BREAKING.** `(columnReorder)`'s `from` / `to` are now indices in the full displayed
+  column order (previously relative to reorderable cells only), so interleaved fixed columns no longer
+  corrupt a `moveItemInArray`.
+- **Table** — **BREAKING.** `[forTableRowSelector]` is now a focusable `role="checkbox"` — the incorrect
+  `aria-hidden="true"` was dropped and it has a table-mode keyboard selection path.
+
+### Fixed
+
+- **Core (overlay)** — a leave animation defined on an inner panel rather than the overlay host is no
+  longer cut short; the deferred-teardown path waits on `getAnimations({ subtree: true })`.
+- **Core (focus trap)** — `FocusTrap` recomputes focusable / tabbable candidates on every read instead of
+  caching them, so a container-external class / stylesheet / media-query change that hides a tabbable can
+  no longer leave `Tab` able to escape the trap.
+- **Core (drag)** — the post-drag click suppression only swallows a click within 2 px of the release
+  point, so a release that produced no synthetic click (pointer released over an iframe / off-viewport)
+  no longer eats the next genuine click.
+- **Core (swipe dismiss)** — an off-axis wobble no longer kills a swipe: `onLift` may return `'skip'` to
+  decline arming while keeping the press tracked, so an on-axis lift can still happen later in the same
+  press.
+- **Core (scroll dismiss)** — `ScrollDismissDispatcher` refcounts each registration independently, so
+  registering the same callback twice yields two independent, idempotent teardowns.
+- **Core (keyboard navigation)** — a backward looped move from the sentinel index clamps to the last
+  index instead of overshooting.
+- **Core (typeahead)** — keystrokes emitted during IME composition (`event.isComposing`) no longer
+  pollute the typeahead buffer or move the active descendant.
+- **Dismissable layer** — containment is stack-aware: an interactive Escape-only surface (a hover-card
+  over a popover / menu) no longer leaks an "outside" dismissal to the layer below when the user clicks or
+  tabs inside it. `Escape` also honors `event.defaultPrevented`, so an inner widget can cooperatively
+  claim the key and keep its overlay open.
+- **Tabs** — every trigger whose panel is registered emits `aria-controls` (previously only the selected
+  trigger), and it still never dangles under the `@if(selected())` unmount pattern.
+- **Stepper** — `navigate()` activates the correct step when a trigger is structurally hidden (`@if`),
+  resolving the target by item index rather than trigger-collection position; and the progress
+  `aria-valuenow` reaches 100 only at completion (divides by `total`, not `total - 1`).
+- **Pagination** — `effectivePage` is read-only, so the page window / `aria-current` can no longer move
+  without emitting `pageChange`; `count` / `siblingCount` / `boundaryCount` are coerced and clamped
+  (NaN / ±Infinity / fractional / negative).
+- **Avatar** — a late `load` / `error` from a replaced `src` can no longer settle the current request
+  (guarded on `HTMLImageElement.complete`), and a garbage `fallbackDelayMs` coerces to the scope default.
+- **Table (virtualization)** — a `measureRows` table no longer leaks detached rows: the measure seam
+  triggers the virtualizer's eviction sweep, and retained (focused / reordering) out-of-window rows are
+  positioned from their measured size instead of the raw estimate.
+- **Table (virtualization)** — cross-window keyboard navigation steps over disabled placeholder /
+  skeleton cells, and a pending cross-window target is cleared on the next grid key and clamped to the
+  loaded prefix, so a late page load never steals focus mid-typing.
+- **Table** — loading skeleton cells are stamped `disabled` with coherent row counts, and the
+  interactive-descendant guard (for row activation / selection / sort) now also recognizes `label`,
+  `contenteditable`, media controls, and interactive ARIA widget roles.
+- **Table** — `Space` / `Enter` on a column resize handle inside a sortable header no longer also
+  triggers the sort; `Ctrl+Home` resolves the same target in virtualized and non-virtualized modes; and
+  `[(columnWidths)]` gains a removal path (a `removeColumnWidth` context method clears the
+  `--for-table-col-*-width` var on reset / remove / unmount).
+- **Table** — column names are validated at the CSS-interpolation choke points, throwing a dev-mode
+  `[forty-cdk/table]` error on an unsafe name.
+
+### Performance
+
+- **Core (flat hierarchy)** — membership is computed in a single O(n) level-counter pass (was O(n²) on
+  the table hot path); behavior is unchanged.
+
 ## [0.11.1] - 2026-07-23
 
 ### Fixed
@@ -435,7 +540,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/tutkli/forty-cdk/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/tutkli/forty-cdk/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/tutkli/forty-cdk/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/tutkli/forty-cdk/compare/v0.9.0...v0.10.0
