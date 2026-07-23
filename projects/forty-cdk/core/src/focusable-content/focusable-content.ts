@@ -9,7 +9,10 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { FOCUSABLE_SELECTOR } from '../focus-trap/focus-trap';
+import {
+  FOCUSABLE_SELECTOR,
+  isFocusableCandidate,
+} from '../focusable-candidate/focusable-candidate';
 
 /**
  * Reports whether the host element currently has at least one focusable
@@ -20,12 +23,22 @@ import { FOCUSABLE_SELECTOR } from '../focus-trap/focus-trap';
  * focusable content of its own; a panel containing buttons / links / form
  * controls must not add a redundant tab stop.
  *
- * Detection mirrors the `FocusTrap` filter: it queries the shared
- * `FOCUSABLE_SELECTOR` and ignores `[hidden]` candidates and any candidate
- * nested under an `[inert]` ancestor below the host (those are not reachable
- * by Tab). A single `MutationObserver` scoped to the host's subtree watches
- * for childList / attribute changes so a panel that gains or loses focusable
- * content after first render flips the result.
+ * Detection runs the shared `isFocusableCandidate` filter over the elements
+ * matched by `FOCUSABLE_SELECTOR`, so it stays byte-for-byte aligned with
+ * `FocusTrap`: a candidate is ignored when it is `[hidden]`, carries or is
+ * nested under an `[inert]` ancestor below the host, or is hidden via CSS
+ * (`display: none` / `visibility: hidden`) — none of which can receive focus.
+ *
+ * A single `MutationObserver` scoped to the host's subtree watches for
+ * childList and attribute changes so a panel that gains or loses focusable
+ * content after first render flips the result. **Boundary:** the observer's
+ * `attributeFilter` does not include `class` or `style`, so a visibility flip
+ * applied purely through a CSS class or an external stylesheet (rather than
+ * through one of the watched attributes or a childList change) does not
+ * re-trigger evaluation. Extending invalidation to cover class- or
+ * stylesheet-driven flips is deliberately out of scope (#1382); the initial
+ * render is always measured correctly because the filter itself now excludes
+ * CSS-hidden candidates.
  *
  * SSR-safe: on the server no observer is created, the DOM is never touched,
  * and the signal stays `false` (the panel is treated as having no focusable
@@ -73,24 +86,9 @@ export function injectHasFocusableContent(): Signal<boolean> {
 function hasFocusableDescendant(host: HTMLElement): boolean {
   const candidates = host.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
   for (const el of candidates) {
-    if (el.hasAttribute('hidden')) {
-      continue;
-    }
-    if (hasInertAncestor(el, host)) {
-      continue;
-    }
-    return true;
-  }
-  return false;
-}
-
-function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
-  let cur: HTMLElement | null = el.parentElement;
-  while (cur && cur !== root) {
-    if (cur.hasAttribute('inert')) {
+    if (isFocusableCandidate(el, host)) {
       return true;
     }
-    cur = cur.parentElement;
   }
   return false;
 }

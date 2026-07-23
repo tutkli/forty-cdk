@@ -30,6 +30,15 @@ class Probe {
       @if (showInertButton()) {
         <div inert><button type="button">Inert</button></div>
       }
+      @if (showCssHiddenButton()) {
+        <button type="button" style="display: none">Display none</button>
+      }
+      @if (showVisibilityHiddenButton()) {
+        <button type="button" style="visibility: hidden">Visibility hidden</button>
+      }
+      @if (showCssHiddenAncestorButton()) {
+        <div style="display: none"><button type="button">Hidden ancestor</button></div>
+      }
     </div>
   `,
 })
@@ -37,6 +46,9 @@ class Host {
   readonly showButton = signal(false);
   readonly showHiddenButton = signal(false);
   readonly showInertButton = signal(false);
+  readonly showCssHiddenButton = signal(false);
+  readonly showVisibilityHiddenButton = signal(false);
+  readonly showCssHiddenAncestorButton = signal(false);
   readonly probe = viewChild.required(Probe);
 }
 
@@ -98,6 +110,27 @@ describe('injectHasFocusableContent', () => {
   it('ignores candidates under an [inert] ancestor', async () => {
     const { has, instance, flush } = setup();
     instance.showInertButton.set(true);
+    await flush();
+    expect(has()).toBe(false);
+  });
+
+  it('ignores a display:none candidate', async () => {
+    const { has, instance, flush } = setup();
+    instance.showCssHiddenButton.set(true);
+    await flush();
+    expect(has()).toBe(false);
+  });
+
+  it('ignores a visibility:hidden candidate', async () => {
+    const { has, instance, flush } = setup();
+    instance.showVisibilityHiddenButton.set(true);
+    await flush();
+    expect(has()).toBe(false);
+  });
+
+  it('ignores a candidate under a display:none ancestor', async () => {
+    const { has, instance, flush } = setup();
+    instance.showCssHiddenAncestorButton.set(true);
     await flush();
     expect(has()).toBe(false);
   });

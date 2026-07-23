@@ -259,6 +259,27 @@ describe('ForTabs', () => {
       await flush();
       expect(contentOf(el, 'a').getAttribute('tabindex')).toBe('0');
     });
+
+    it('a panel whose only focusable child is CSS-hidden is a tab stop (tabindex=0)', async () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs value="a">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+            </div>
+            <section forTabsContent value="a" data-test-content="a">
+              <button type="button" style="display: none">Hidden</button>
+            </section>
+          </div>
+        `,
+      })
+      class CssHiddenHost {}
+
+      const { el, flush } = renderHost(CssHiddenHost);
+      await flush();
+      expect(contentOf(el, 'a').getAttribute('tabindex')).toBe('0');
+    });
   });
 
   describe('value contract (string | null)', () => {
