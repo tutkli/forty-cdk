@@ -22,7 +22,8 @@ import { injectPortal } from '../portal/portal';
  * The positioner-specific work for a single open run, returned by
  * {@link PositioningConfig.computeAndApply}. The shared scaffold owns the
  * platform gate, portal, anti-flash baseline, `autoUpdate` loop, the
- * `!open()` bail, the `translate` write, the `clip-path` drop, and the
+ * `!open()` / cancelled-run bail, the `translate` write, the `clip-path` drop,
+ * the per-open {@link PositioningConfig.onFirstPosition} dispatch, and the
  * `.catch(() => {})`; a run supplies only the parts that genuinely differ
  * between positioners.
  */
@@ -90,6 +91,25 @@ export interface PositioningConfig {
   readonly clipUntilPositioned?: Signal<boolean>;
 
   /**
+   * Invoked once per **open cycle**, immediately after the first
+   * `computePosition` of that cycle resolves and its `run.apply` has run —
+   * i.e. after the portal move, after the `clip-path` anti-flash baseline is
+   * dropped, and after the positioner has written its `data-*` / CSS vars.
+   *
+   * The semantics are deliberately **per-open, not per-run**: a positioner
+   * config change while the surface stays open re-runs the effect (a new
+   * positioning run), but this hook does **not** fire again — it fires only on
+   * the run that first resolves after `open` transitions to `true`. A run that
+   * is superseded (config change while open) or torn down (close / destroy)
+   * before its `computePosition` resolves is cancelled: its resolution writes
+   * nothing and never fires this hook. This matters because consumers use it to
+   * seed one-shot state that a re-fire would corrupt — e.g. scrolling an active
+   * option into view inside a freshly portaled listbox, which a per-run re-fire
+   * would yank back mid-interaction on every side flip.
+   */
+  readonly onFirstPosition?: () => void;
+
+  /**
    * Builds the per-run controller. Called once per open run, synchronously
    * inside the positioning effect, so its reactive reads (side, align,
    * offsets, selected option, …) register as effect dependencies and a change
@@ -121,13 +141,17 @@ export interface PositioningConfig {
  *    while closed — so a closed overlay only tracks `open` / `reference` and
  *    never re-runs on an offset/side change — then delegates to
  *    {@link PositioningConfig.computeAndApply} and drives `autoUpdate`.
- * 5. Inside each `autoUpdate` frame: the `!open()` bail (the surface may have
- *    closed between schedule and resolution), the `translate` write, the
- *    `clip-path` drop, and the `.catch(() => {})` that swallows the rejection
- *    when the reference detaches mid-frame during virtualization / autoUpdate
- *    scrolls (`autoUpdate` reschedules with the next live frame).
- * 6. Symmetric cleanup: `onCleanup` tears down `autoUpdate` and invokes the
- *    run's `reset` so a re-open never inherits stale geometry.
+ * 5. Inside each `autoUpdate` frame: the `!open()` / cancelled-run bail (the
+ *    surface may have closed, or this run may have been superseded by a config
+ *    change, between schedule and resolution), the `translate` write, the
+ *    `clip-path` drop, the per-open `onFirstPosition` dispatch, and the
+ *    `.catch(() => {})` that swallows the rejection when the reference detaches
+ *    mid-frame during virtualization / autoUpdate scrolls (`autoUpdate`
+ *    reschedules with the next live frame).
+ * 6. Symmetric cleanup: `onCleanup` marks the run cancelled (so a
+ *    still-pending `computePosition` from it resolves to a no-op), tears down
+ *    `autoUpdate`, and invokes the run's `reset` so a re-open never inherits
+ *    stale geometry.
  *
  * Position is written to the `translate` property, NOT `transform`. CSS
  * composes the individual `translate` / `rotate` / `scale` properties before
@@ -165,12 +189,21 @@ export function runPositioning(config: PositioningConfig): void {
     }
   });
 
+  let openCycleActive = false;
+  let firstPositionFired = false;
+
   effect((onCleanup) => {
     const isOpen = config.open();
     const reference = config.reference();
 
     if (!isOpen || !reference) {
+      openCycleActive = false;
       return;
+    }
+
+    if (!openCycleActive) {
+      openCycleActive = true;
+      firstPositionFired = false;
     }
 
     if (shouldClip()) {
@@ -178,6 +211,7 @@ export function runPositioning(config: PositioningConfig): void {
     }
 
     const run = config.computeAndApply(el, reference);
+    let cancelled = false;
 
     const cleanup = autoUpdate(reference, el, () => {
       computePosition(reference, el, {
@@ -186,17 +220,22 @@ export function runPositioning(config: PositioningConfig): void {
         middleware: run.middleware,
       })
         .then((result) => {
-          if (!config.open()) {
+          if (cancelled || !config.open()) {
             return;
           }
           el.style.translate = `${Math.round(result.x)}px ${Math.round(result.y)}px`;
           el.style.clipPath = '';
           run.apply(result);
+          if (!firstPositionFired) {
+            firstPositionFired = true;
+            config.onFirstPosition?.();
+          }
         })
         .catch(() => {});
     });
 
     onCleanup(() => {
+      cancelled = true;
       cleanup();
       run.reset();
     });

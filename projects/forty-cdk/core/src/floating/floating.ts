@@ -173,18 +173,27 @@ export interface FloatingConfig {
   readonly clipUntilPositioned?: Signal<boolean>;
 
   /**
-   * Invoked on the first resolved position of each positioning run — i.e.
-   * after `@floating-ui/dom`'s async `computePosition` lands and the helper
-   * drops the `clip-path` anti-flash baseline. A positioning run is an open
-   * transition (or a positioner-config change while open); the callback fires
-   * once per run and never while the surface stays closed.
+   * Invoked once per **open cycle**, on the first resolved position after
+   * `open` transitions to `true` — after `@floating-ui/dom`'s async
+   * `computePosition` lands, the helper drops the `clip-path` anti-flash
+   * baseline, and the positioner has written its `data-*` / CSS vars.
    *
-   * Because it runs strictly after the optional portal's `appendChild` and
-   * after `computePosition` (so the `size` middleware's `max-height` is already
-   * applied), it is the only moment a consumer can touch the now-portaled,
-   * now-sized surface. Combobox uses it to scroll the active descendant into
-   * view inside a `max-height`-constrained listbox whose `scrollTop` the portal
-   * move reset to 0 — see `[forComboboxContent]`.
+   * The semantics are **per-open, not per-run**: a positioner-config change
+   * while the surface stays open re-runs the positioning effect, but this
+   * callback does **not** re-fire — it fires only on the run that first
+   * resolves after opening, and never while the surface stays closed. A run
+   * superseded by a config change (or torn down by a close / destroy) before
+   * its `computePosition` resolves is cancelled: its resolution writes nothing
+   * and never fires this hook.
+   *
+   * This per-open guarantee is load-bearing for the seed-once consumers.
+   * Because the hook runs strictly after the optional portal's `appendChild`
+   * and after `computePosition` (so the `size` middleware's `max-height` is
+   * already applied), it is the only moment a consumer can touch the
+   * now-portaled, now-sized surface. Combobox uses it to scroll the active
+   * descendant into view inside a `max-height`-constrained listbox whose
+   * `scrollTop` the portal move reset to 0 — see `[forComboboxContent]`; a
+   * per-run re-fire would yank that scroll back on every side flip.
    */
   readonly onFirstPosition?: () => void;
 
@@ -267,9 +276,11 @@ export function buildFlipOptions(options: {
  * `--for-available-width/-height`, and `--for-content-transform-origin` CSS
  * variables, and the optional arrow's position + `--for-arrow-offset`.
  *
- * On the first resolved position of each run it invokes `onFirstPosition`
- * once — after the portal move and after `size` applied its `max-height`, so
- * a consumer can touch the now-portaled, now-sized surface.
+ * Once per open cycle, on the first resolved position after opening, it invokes
+ * `onFirstPosition` — after the portal move and after `size` applied its
+ * `max-height`, so a consumer can touch the now-portaled, now-sized surface. A
+ * config change while open does not re-fire it; see
+ * {@link FloatingConfig.onFirstPosition}.
  *
  * Cleanup is asymmetric on purpose: {@link resetFloatingStyles} strips the
  * transient sizing vars and occlusion attributes but retains the resolved
@@ -289,10 +300,9 @@ export function injectFloating(config: FloatingConfig): void {
     open: config.open,
     portal: config.portal,
     clipUntilPositioned: config.clipUntilPositioned,
+    onFirstPosition: config.onFirstPosition,
     computeAndApply: (el, reference) => {
       const arrowEl = config.arrow?.() ?? null;
-
-      let firstPositionResolved = false;
 
       // Resolve placement from `side` + `align` with sensible defaults.
       const sideInput = config.side?.() ?? 'bottom';
@@ -375,11 +385,6 @@ export function injectFloating(config: FloatingConfig): void {
           el.dataset['placement'] = resolvedPlacement;
           el.dataset['side'] = resolvedSide;
           el.dataset['align'] = resolvedAlign;
-
-          if (!firstPositionResolved) {
-            firstPositionResolved = true;
-            config.onFirstPosition?.();
-          }
 
           // Anchor box → CSS vars so the consumer can size the floating
           // element relative to the anchor (`width: var(--for-anchor-width)`).

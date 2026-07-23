@@ -766,9 +766,10 @@ export class ForCombobox<T = string>
    * Re-applies the scroll unconditionally — the bridge already recorded this id
    * as positioned, but the portal move invalidated the real scroll position, so
    * the usual "already positioned" guard must not short-circuit here. Fires once
-   * per open (the positioner hook is one-shot per run), so a later hover never
-   * scrolls. No-op while virtualizing: the navigator owns the virtualized scroll
-   * and the indexed seed is intentionally passive.
+   * per open (the positioner hook is per-open, not per-run, so a side flip while
+   * open never re-fires it and yanks the user's scroll back), so a later hover
+   * never scrolls. No-op while virtualizing: the navigator owns the virtualized
+   * scroll and the indexed seed is intentionally passive.
    */
   scrollActiveOptionIntoView(): void {
     if (this.totalCount() !== undefined) {
