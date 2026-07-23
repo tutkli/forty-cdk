@@ -12,11 +12,11 @@ export type BreakpointMap = Record<string, number>;
 
 /**
  * The default breakpoint map, mirroring Tailwind CSS's `sm`–`2xl` scale. Used
- * as the library fallback when no `provideForBreakpoints` is in scope, and the
- * source of the typed breakpoint names when the consumer has not augmented
- * {@link BreakpointRegistry}.
+ * as the library fallback when no `provideForBreakpointsDefaults` is in scope,
+ * and the source of the typed breakpoint names when the consumer has not
+ * augmented {@link BreakpointRegistry}.
  */
-export const breakpointsTailwind = {
+export const forBreakpointsTailwind = {
   sm: 640,
   md: 768,
   lg: 1024,
@@ -25,29 +25,29 @@ export const breakpointsTailwind = {
 } as const satisfies BreakpointMap;
 
 /** The breakpoint names from the default Tailwind scale. */
-export type TailwindBreakpointName = keyof typeof breakpointsTailwind;
+export type TailwindBreakpointName = keyof typeof forBreakpointsTailwind;
 
-/** Resolved shape stored against {@link FOR_BREAKPOINTS}. */
+/** Resolved shape stored against {@link FOR_BREAKPOINTS_DEFAULTS}. */
 export interface ForBreakpointsDefaults {
   /** The active breakpoint map for the current injector scope. */
   breakpoints: BreakpointMap;
 }
 
 const FALLBACK: ForBreakpointsDefaults = {
-  breakpoints: breakpointsTailwind,
+  breakpoints: forBreakpointsTailwind,
 };
 
 const { token, provideDefaults } = createDefaults<ForBreakpointsDefaults>(
-  'FOR_BREAKPOINTS',
+  'FOR_BREAKPOINTS_DEFAULTS',
   FALLBACK,
 );
 
 /**
  * Token holding the resolved breakpoint map for the current injector scope.
  * The library always provides a fully-populated value (the Tailwind fallback
- * at the root, or the map from the nearest `provideForBreakpoints`).
+ * at the root, or the map from the nearest `provideForBreakpointsDefaults`).
  */
-export const FOR_BREAKPOINTS = token;
+export const FOR_BREAKPOINTS_DEFAULTS = token;
 
 /**
  * Configures the breakpoint map for this injector scope so `injectBreakpoints`
@@ -55,14 +55,14 @@ export const FOR_BREAKPOINTS = token;
  *
  * ```ts
  * providers: [
- *   provideForBreakpoints({ mobile: 0, tablet: 640, laptop: 1024, desktop: 1280 }),
+ *   provideForBreakpointsDefaults({ mobile: 0, tablet: 640, laptop: 1024, desktop: 1280 }),
  * ]
  * ```
  *
  * Providing it again on a component injector replaces the map for that subtree
  * only (the nearest scope wins; the map is replaced wholesale, never merged
- * key-by-key). Omit it entirely to use {@link breakpointsTailwind}.
+ * key-by-key). Omit it entirely to use {@link forBreakpointsTailwind}.
  */
-export function provideForBreakpoints(breakpoints: BreakpointMap): Provider[] {
+export function provideForBreakpointsDefaults(breakpoints: BreakpointMap): Provider[] {
   return provideDefaults({ breakpoints });
 }

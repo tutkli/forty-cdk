@@ -1,6 +1,6 @@
 # Breakpoints
 
-A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpoints — or use the Tailwind scale by default — then read up / down / between / only / active or any arbitrary media query, each as a live Signal&lt;boolean&gt;.
+A signal-first, zoneless, SSR-safe viewport breakpoint observer (injectBreakpoints). Configure the breakpoint map once via provideForBreakpointsDefaults — or use the Tailwind scale by default — then read up / down / between / only / active or any arbitrary media query, each as a live Signal&lt;boolean&gt;.
 
 It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no template. Configure the breakpoint map **once** via a provider; read it anywhere with `injectBreakpoints()` — no need to repeat the breakpoint set at every call site.
 
@@ -9,10 +9,12 @@ It is a headless reactive utility, not a UI primitive: no DOM, no ARIA, no templ
 Configuring is optional — without a provider the Tailwind scale (`sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536) is used. To define your own:
 
 ```ts
-import { provideForBreakpoints } from 'forty-cdk/breakpoints';
+import { provideForBreakpointsDefaults } from 'forty-cdk/breakpoints';
 
 export const appConfig: ApplicationConfig = {
-  providers: [provideForBreakpoints({ mobile: 0, tablet: 640, laptop: 1024, desktop: 1280 })],
+  providers: [
+    provideForBreakpointsDefaults({ mobile: 0, tablet: 640, laptop: 1024, desktop: 1280 }),
+  ],
 };
 ```
 

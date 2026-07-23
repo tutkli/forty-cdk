@@ -14,6 +14,7 @@ import { injectPaginationContext } from './pagination-context';
   host: {
     type: 'button',
     '[attr.aria-current]': 'isCurrent() ? "page" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'activate()',
   },
 })

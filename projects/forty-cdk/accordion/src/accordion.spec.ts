@@ -257,6 +257,53 @@ describe('ForAccordion', () => {
     });
   });
 
+  describe('data-disabled reflection (trigger + content)', () => {
+    it('reflects data-disabled on every trigger and content under root [disabled]', async () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      await flush();
+
+      for (const id of ['a', 'b', 'c']) {
+        expect(triggerOf(el, id).getAttribute('data-disabled')).toBe('');
+        expect(contentOf(el, id)!.getAttribute('data-disabled')).toBe('');
+      }
+    });
+
+    it('reflects data-disabled only on the per-item [disabled] trigger and content', async () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+      fixture.componentInstance.disabledItem.set('b');
+      await flush();
+
+      expect(triggerOf(el, 'b').getAttribute('data-disabled')).toBe('');
+      expect(contentOf(el, 'b')!.getAttribute('data-disabled')).toBe('');
+
+      expect(triggerOf(el, 'a').hasAttribute('data-disabled')).toBe(false);
+      expect(contentOf(el, 'a')!.hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('omits data-disabled entirely when nothing is disabled (truthy-only, never "false")', () => {
+      const { el } = renderHost(AccordionHost);
+
+      for (const id of ['a', 'b', 'c']) {
+        expect(triggerOf(el, id).hasAttribute('data-disabled')).toBe(false);
+        expect(contentOf(el, id)!.hasAttribute('data-disabled')).toBe(false);
+      }
+    });
+
+    it('reflects data-disabled after a runtime [disabled] flip without Zone.js', async () => {
+      const { el, fixture, flush } = renderHost(AccordionHost);
+
+      expect(triggerOf(el, 'a').hasAttribute('data-disabled')).toBe(false);
+      expect(contentOf(el, 'a')!.hasAttribute('data-disabled')).toBe(false);
+
+      fixture.componentInstance.disabledItem.set('a');
+      await flush();
+
+      expect(triggerOf(el, 'a').getAttribute('data-disabled')).toBe('');
+      expect(contentOf(el, 'a')!.getAttribute('data-disabled')).toBe('');
+    });
+  });
+
   describe('two-way binding [(value)]', () => {
     it('reflects external value writes into the DOM', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);

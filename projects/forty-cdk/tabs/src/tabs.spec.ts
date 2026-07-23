@@ -22,7 +22,7 @@ const TABS_IMPORTS = [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent] as c
       [disabled]="rootDisabled()"
       [loop]="loop()"
     >
-      <div forTabsList>
+      <div forTabsList [ariaLabel]="listLabel()">
         @for (t of tabs(); track t.value) {
           <button
             type="button"
@@ -45,6 +45,7 @@ const TABS_IMPORTS = [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent] as c
 })
 class TabsHost {
   readonly active = signal<string | null>(null);
+  readonly listLabel = signal<string | null>(null);
   readonly mode = signal<'automatic' | 'manual'>('automatic');
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
@@ -95,25 +96,60 @@ describe('ForTabs', () => {
       }
     });
 
-    it('gates aria-controls to the selected tab, mirroring the overlay triggers', () => {
+    it('emits aria-controls on every trigger whose panel is registered (keep-mounted)', () => {
       const { el, instance, fixture } = renderHost(TabsHost);
 
       for (const v of ['a', 'b', 'c']) {
-        expect(triggerOf(el, v).hasAttribute('aria-controls')).toBe(false);
+        expect(triggerOf(el, v).getAttribute('aria-controls')).toBe(contentOf(el, v).id);
       }
 
       instance.active.set('b');
       fixture.detectChanges();
 
+      for (const v of ['a', 'b', 'c']) {
+        expect(triggerOf(el, v).getAttribute('aria-controls')).toBe(contentOf(el, v).id);
+      }
+    });
+
+    it('omits aria-controls when the matching panel is unmounted (@if selected pattern)', async () => {
+      @Component({
+        imports: [...TABS_IMPORTS],
+        template: `
+          <div forTabs [(value)]="active">
+            <div forTabsList>
+              <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+              <button type="button" forTabsTrigger value="b" data-test-id="b">B</button>
+              <button type="button" forTabsTrigger value="c" data-test-id="c">C</button>
+            </div>
+            @if (active() === 'a') {
+              <section forTabsContent value="a" data-test-content="a">A</section>
+            }
+            @if (active() === 'b') {
+              <section forTabsContent value="b" data-test-content="b">B</section>
+            }
+            @if (active() === 'c') {
+              <section forTabsContent value="c" data-test-content="c">C</section>
+            }
+          </div>
+        `,
+      })
+      class IfHost {
+        readonly active = signal<string>('a');
+      }
+
+      const { el, fixture, flush } = renderHost(IfHost);
+      await flush();
+
+      expect(triggerOf(el, 'a').getAttribute('aria-controls')).toBe(contentOf(el, 'a').id);
+      expect(triggerOf(el, 'b').hasAttribute('aria-controls')).toBe(false);
+      expect(triggerOf(el, 'c').hasAttribute('aria-controls')).toBe(false);
+
+      fixture.componentInstance.active.set('b');
+      await flush();
+
       expect(triggerOf(el, 'a').hasAttribute('aria-controls')).toBe(false);
       expect(triggerOf(el, 'b').getAttribute('aria-controls')).toBe(contentOf(el, 'b').id);
       expect(triggerOf(el, 'c').hasAttribute('aria-controls')).toBe(false);
-
-      instance.active.set('c');
-      fixture.detectChanges();
-
-      expect(triggerOf(el, 'b').hasAttribute('aria-controls')).toBe(false);
-      expect(triggerOf(el, 'c').getAttribute('aria-controls')).toBe(contentOf(el, 'c').id);
     });
 
     // Issue #102 reproduction. Previously, `triggerIdFor` / `contentIdFor`
@@ -131,8 +167,8 @@ describe('ForTabs', () => {
     it('resolves trigger↔content pairing deterministically, including late inserts', () => {
       const { el, instance, fixture } = renderHost(TabsHost);
       // `aria-labelledby` is emitted unconditionally and proves the
-      // content→trigger lookup settled; selecting each value in turn exposes
-      // the gated `aria-controls` so the trigger→content lookup is also pinned.
+      // content→trigger lookup settled; `aria-controls` reflects the
+      // registration-gated trigger→content lookup on every trigger.
       for (const v of ['a', 'b', 'c']) {
         instance.active.set(v);
         fixture.detectChanges();
@@ -166,6 +202,27 @@ describe('ForTabs', () => {
         expect(contentOf(el, v).hasAttribute('inert')).toBe(true);
         expect(contentOf(el, v).getAttribute('data-state')).toBe('inactive');
       }
+    });
+  });
+
+  describe('accessible name (ariaLabel)', () => {
+    it('reflects ariaLabel on the tablist when set', () => {
+      const { el, instance, fixture } = renderHost(TabsHost);
+      instance.listLabel.set('Main sections');
+      fixture.detectChanges();
+      expect(tablistOf(el).getAttribute('aria-label')).toBe('Main sections');
+    });
+
+    it('emits no aria-label attribute when null (default)', () => {
+      const { el } = renderHost(TabsHost);
+      expect(tablistOf(el).hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('emits no aria-label attribute for the empty string (truthy-only guard)', () => {
+      const { el, instance, fixture } = renderHost(TabsHost);
+      instance.listLabel.set('');
+      fixture.detectChanges();
+      expect(tablistOf(el).hasAttribute('aria-label')).toBe(false);
     });
   });
 
@@ -354,16 +411,6 @@ describe('ForTabs', () => {
       ]);
       await r.flush();
       return { items: triggers(r.el), enabledIndices: [1, 2], flush: r.flush };
-    },
-    mountWithDisabledMiddle: async () => {
-      const r = renderHost(TabsHost);
-      r.fixture.componentInstance.tabs.set([
-        { value: 'a', label: 'A', disabled: false },
-        { value: 'b', label: 'B', disabled: true },
-        { value: 'c', label: 'C', disabled: false },
-      ]);
-      await r.flush();
-      return { items: triggers(r.el), enabledIndices: [0, 2], flush: r.flush };
     },
     mountRtl: async () => {
       const r = renderHost(TabsHost);
@@ -628,6 +675,65 @@ describe('ForTabs', () => {
       triggerOf(el, 'a').click();
       await flush();
       expect(fixture.componentInstance.active()).toBeNull();
+    });
+  });
+
+  describe('disabled triggers stay keyboard-reachable (APG)', () => {
+    const withDisabledB = async () => {
+      const r = renderHost(TabsHost);
+      r.fixture.componentInstance.tabs.set([
+        { value: 'a', label: 'A', disabled: false },
+        { value: 'b', label: 'B', disabled: true },
+        { value: 'c', label: 'C', disabled: false },
+      ]);
+      await r.flush();
+      return r;
+    };
+
+    it('a disabled middle trigger keeps tabindex="-1" and aria-disabled="true"', async () => {
+      const { el } = await withDisabledB();
+      expect(triggerOf(el, 'b').getAttribute('tabindex')).toBe('-1');
+      expect(triggerOf(el, 'b').getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('automatic mode: ArrowRight from a reaches disabled b without activating it', async () => {
+      const { el, fixture, flush } = await withDisabledB();
+      fixture.componentInstance.active.set('a');
+      await flush();
+
+      triggerOf(el, 'a').focus();
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
+      await flush();
+
+      expect(document.activeElement).toBe(triggerOf(el, 'b'));
+      expect(triggerOf(el, 'a').getAttribute('aria-selected')).toBe('true');
+      expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('automatic mode: ArrowRight dispatched on the disabled trigger b advances selection to c', async () => {
+      const { el, fixture, flush } = await withDisabledB();
+      fixture.componentInstance.active.set('a');
+      await flush();
+
+      triggerOf(el, 'b').focus();
+      pressKey(triggerOf(el, 'b'), 'ArrowRight');
+      await flush();
+
+      expect(document.activeElement).toBe(triggerOf(el, 'c'));
+      expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('zoneless: arrow-over-disabled reaches the disabled trigger without activating it', async () => {
+      const { el, fixture, flush } = await withDisabledB();
+      fixture.componentInstance.active.set('a');
+      await flush();
+
+      triggerOf(el, 'a').focus();
+      pressKey(triggerOf(el, 'a'), 'ArrowRight');
+      await flush();
+
+      expect(document.activeElement).toBe(triggerOf(el, 'b'));
+      expect(fixture.componentInstance.active()).toBe('a');
     });
   });
 

@@ -1,4 +1,4 @@
-import { Directive } from '@angular/core';
+import { Directive, input } from '@angular/core';
 
 import { injectTabsContext } from './tabs-context';
 
@@ -13,9 +13,13 @@ import { injectTabsContext } from './tabs-context';
   host: {
     role: 'tablist',
     '[attr.aria-orientation]': 'group.orientation()',
+    '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.data-orientation]': 'group.orientation()',
   },
 })
 export class ForTabsList {
   protected readonly group = injectTabsContext('ForTabsList');
+
+  /** Accessible name for the tab list. Defers to a consumer `aria-labelledby`. */
+  readonly ariaLabel = input<string | null>(null);
 }

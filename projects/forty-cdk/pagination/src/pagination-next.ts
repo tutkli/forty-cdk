@@ -14,6 +14,7 @@ import { injectPaginationContext } from './pagination-context';
   host: {
     type: 'button',
     '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'ctx.next()',
   },
 })

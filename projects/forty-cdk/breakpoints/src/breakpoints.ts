@@ -1,7 +1,7 @@
 import { Injector, computed, inject, runInInjectionContext, type Signal } from '@angular/core';
 
 import { injectMediaQuery } from 'forty-cdk/core';
-import { FOR_BREAKPOINTS, type TailwindBreakpointName } from './breakpoints-defaults';
+import { FOR_BREAKPOINTS_DEFAULTS, type TailwindBreakpointName } from './breakpoints-defaults';
 
 /**
  * Extension point for typing custom breakpoint names. Augment it via module
@@ -17,7 +17,7 @@ import { FOR_BREAKPOINTS, type TailwindBreakpointName } from './breakpoints-defa
  * ```
  *
  * When left empty (no augmentation), {@link BreakpointName} falls back to the
- * keys of {@link breakpointsTailwind}.
+ * keys of {@link forBreakpointsTailwind}.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface BreakpointRegistry {}
@@ -72,9 +72,9 @@ export interface ForBreakpoints<K extends string = BreakpointName> {
 
 /**
  * A signal-first, zoneless, SSR-safe viewport breakpoint observer. Reads the
- * breakpoint map from the ambient {@link FOR_BREAKPOINTS} token (configured
- * with `provideForBreakpoints`, or the Tailwind fallback), so call sites never
- * repeat the breakpoint set:
+ * breakpoint map from the ambient {@link FOR_BREAKPOINTS_DEFAULTS} token
+ * (configured with `provideForBreakpointsDefaults`, or the Tailwind fallback),
+ * so call sites never repeat the breakpoint set:
  *
  * ```ts
  * private bp = injectBreakpoints();
@@ -86,8 +86,10 @@ export interface ForBreakpoints<K extends string = BreakpointName> {
  * `MediaQueryList`. The returned handle captures the calling injection
  * context, so its methods can be invoked lazily from `computed()` or a
  * template — not only during construction. Listeners are torn down with the
- * injector. On the server (or where `matchMedia` is unavailable) every signal
- * reads `false` and `active` reads `null`.
+ * injector. `active`'s per-breakpoint queries are materialized eagerly at call
+ * time, so reading `active` never attaches a listener from inside a reactive
+ * computation or after teardown. On the server (or where `matchMedia` is
+ * unavailable) every signal reads `false` and `active` reads `null`.
  *
  * Must be called from an injection context.
  *
@@ -95,7 +97,7 @@ export interface ForBreakpoints<K extends string = BreakpointName> {
  */
 export function injectBreakpoints(): ForBreakpoints {
   const injector = inject(Injector);
-  const map = inject(FOR_BREAKPOINTS).breakpoints;
+  const map = inject(FOR_BREAKPOINTS_DEFAULTS).breakpoints;
   const names = Object.keys(map).sort((a, b) => map[a]! - map[b]!);
   const cache = new Map<string, Signal<boolean>>();
 
@@ -137,11 +139,16 @@ export function injectBreakpoints(): ForBreakpoints {
       : observe(`(min-width: ${lower}px) and (max-width: ${next - 0.02}px)`);
   };
 
+  const activeCandidates = names.map((name) => ({
+    name,
+    matches: observe(`(min-width: ${map[name]}px)`),
+  }));
+
   const active = computed<BreakpointName | null>(() => {
     let current: string | null = null;
-    for (const name of names) {
-      if (observe(`(min-width: ${map[name]}px)`)()) {
-        current = name;
+    for (const candidate of activeCandidates) {
+      if (candidate.matches()) {
+        current = candidate.name;
       }
     }
     return current as BreakpointName | null;

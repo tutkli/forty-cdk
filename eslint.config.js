@@ -965,10 +965,9 @@ const fortyCdkPlugin = {
     // The token identifier is read from the defaults file's own exports (the
     // `export const FOR_<X> = token;` shape from `createDefaults`, or a bare
     // `= new InjectionToken(...)`) rather than derived from the primitive name,
-    // so it stays correct for entries whose token drops the `_DEFAULTS` suffix
-    // (`breakpoints` exports `FOR_BREAKPOINTS`) and for secondary defaults files
-    // that don't match the entry name (`date-picker/src/date-range-picker-defaults.ts`
-    // exports `FOR_DATE_RANGE_PICKER_DEFAULTS`). Recognises both library layouts:
+    // so it stays correct for secondary defaults files that don't match the
+    // entry name (`date-picker/src/date-range-picker-defaults.ts` exports
+    // `FOR_DATE_RANGE_PICKER_DEFAULTS`). Recognises both library layouts:
     //   - per-entry-point:  projects/forty-cdk/<entry>/src/<name>-defaults.ts
     //   - legacy folder:    projects/forty-cdk/src/lib/<name>/<name>-defaults.ts
     // The `core` entry holds the cross-cutting utilities and is exempt, as are

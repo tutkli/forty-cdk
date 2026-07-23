@@ -26,6 +26,7 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
     '[attr.aria-hidden]': 'item.expanded() ? null : "true"',
     '[attr.inert]': 'item.expanded() ? null : ""',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
+    '[attr.data-disabled]': 'item.disabled() ? "" : null',
     '[attr.data-orientation]': 'parent.orientation()',
   },
 })

@@ -35,6 +35,10 @@ export class ForStepperProgress {
    * Basis for the reported percent. `'index'` (default) derives progress from
    * the current step index; `'completed'`
    * derives it from the count of steps whose resolved state is `completed`.
+   * In both cases the percent is `value / count`, so `aria-valuenow` reaches
+   * `100` only in the terminal completed state (`selectedIndex === count`) or,
+   * on the `'completed'` basis, when every step is completed; standing on the
+   * last step before completion reports less than `100`.
    */
   readonly valueBy = input<'index' | 'completed'>('index');
 
@@ -63,14 +67,17 @@ export class ForStepperProgress {
   /**
    * Progress as a whole-number percent in `[0, 100]`, reflected to
    * `aria-valuenow` and (divided by 100) to the `--for-stepper-progress`
-   * custom property.
+   * custom property. Computed as `value / count`, so it reaches `100` only in
+   * the terminal completed state (`selectedIndex === count`) or, on the
+   * `'completed'` basis, when every step is completed; the last non-terminal
+   * step reports less than `100`.
    */
   readonly percent = computed<number>(() => {
     const total = this.ctx.count();
-    if (total <= 1) {
-      return total === 1 && this.#value() >= 1 ? 100 : 0;
+    if (total === 0) {
+      return 0;
     }
-    const raw = Math.round((this.#value() / (total - 1)) * 100);
+    const raw = Math.round((this.#value() / total) * 100);
     return Math.min(100, Math.max(0, raw));
   });
 

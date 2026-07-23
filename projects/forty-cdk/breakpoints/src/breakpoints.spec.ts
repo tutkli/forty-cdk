@@ -7,7 +7,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { type ForBreakpoints, injectBreakpoints } from './breakpoints';
-import { provideForBreakpoints } from './breakpoints-defaults';
+import { provideForBreakpointsDefaults } from './breakpoints-defaults';
 
 interface FakeMql {
   matches: boolean;
@@ -214,8 +214,8 @@ describe('injectBreakpoints', () => {
     );
   });
 
-  it('reads the breakpoint map from provideForBreakpoints', () => {
-    const bp = create([provideForBreakpoints({ sm: 800, md: 900 })]).componentInstance.bp;
+  it('reads the breakpoint map from provideForBreakpointsDefaults', () => {
+    const bp = create([provideForBreakpointsDefaults({ sm: 800, md: 900 })]).componentInstance.bp;
     const sm = bp.up('sm');
     env.setWidth(850);
     expect(sm()).toBe(true);
@@ -250,6 +250,32 @@ describe('injectBreakpoints', () => {
     bp.up('md');
     bp.active();
     expect(env.listenerCount()).toBeGreaterThan(0);
+    fixture.destroy();
+    expect(env.listenerCount()).toBe(0);
+  });
+
+  it('materializes active breakpoint listeners eagerly at injection time', () => {
+    create();
+    expect(env.listenerCount()).toBe(5);
+    expect(env.calls.filter((q) => /min-width/.test(q))).toHaveLength(5);
+  });
+
+  it('reading active after the injector is destroyed neither throws nor attaches a listener', () => {
+    const fixture = create();
+    const bp = fixture.componentInstance.bp;
+    fixture.destroy();
+    expect(env.listenerCount()).toBe(0);
+    expect(() => bp.active()).not.toThrow();
+    expect(env.listenerCount()).toBe(0);
+    expect(bp.active()).toBeNull();
+  });
+
+  it('reading active for the first time during injector destruction leaks no listener', () => {
+    const fixture = create();
+    const bp = fixture.componentInstance.bp;
+    fixture.componentRef.onDestroy(() => {
+      bp.active();
+    });
     fixture.destroy();
     expect(env.listenerCount()).toBe(0);
   });

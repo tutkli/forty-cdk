@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import { registerHandle, hostId, resolveListNavigation, rovingTabStop } from 'forty-cdk/core';
 import { injectStepperContext, injectStepperItemContext } from './stepper-context';
 
 /**
@@ -13,10 +13,11 @@ import { injectStepperContext, injectStepperItemContext } from './stepper-contex
  * activation is native. A static element (`<span>`) is acceptable for progress
  * mode.
  *
- * Disabled triggers in interactive mode reflect `aria-disabled` (never the
- * native `disabled` attribute) and drop out of the Tab sequence (`tabindex`
- * `-1`) and arrow navigation, but stay in the accessibility tree so assistive
- * tech can still announce them.
+ * Disabled triggers in interactive mode reflect `aria-disabled` + `data-disabled`
+ * (never the native `disabled` attribute) and drop out of the Tab sequence
+ * (`tabindex` `-1`), but REMAIN reachable by arrow navigation: focus lands on
+ * them and activation is a no-op, so assistive tech announces them in both
+ * browse and focus / interaction modes.
  */
 @Directive({
   selector: '[forStepperTrigger]',
@@ -63,24 +64,20 @@ export class ForStepperTrigger {
     if (this.ctx.mode() !== 'interactive') {
       return null;
     }
-    if (!this.item.selectable()) {
-      return -1;
-    }
-    if (this.ctx.roving.hasActive()) {
-      return this.ctx.roving.tabindexFor(this.#host);
-    }
-    if (this.item.current()) {
-      return 0;
-    }
-    if (this.ctx.hasCurrentTrigger()) {
-      return -1;
-    }
-    return this.ctx.isFirstSelectableTrigger(this.#host) ? 0 : -1;
+    return rovingTabStop({
+      disabled: !this.item.selectable(),
+      selected: this.item.current(),
+      hasSelected: this.ctx.hasCurrentTrigger(),
+      isFirstEnabled: this.ctx.isFirstSelectableTrigger(this.#host),
+      roving: this.ctx.roving,
+      host: this.#host,
+    });
   });
 
   constructor() {
     const handle = {
       host: this.#host,
+      index: this.item.index,
       id: this.id,
       selectable: this.item.selectable,
       disabled: computed(() => !this.item.selectable()),
@@ -107,7 +104,7 @@ export class ForStepperTrigger {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.ctx.mode() !== 'interactive' || !this.item.selectable()) {
+    if (this.ctx.mode() !== 'interactive') {
       return;
     }
     const action = resolveListNavigation(event, {

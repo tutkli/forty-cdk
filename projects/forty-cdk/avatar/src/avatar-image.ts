@@ -90,18 +90,23 @@ export class ForAvatarImage {
     // Ignore a `load` that fires for a request the host has already moved past
     // (the native event can arrive after `src` was reassigned).
     if (!this.#isCurrentRequest()) return;
+    if (!this.#host.complete) return;
     this.#emit('loaded');
   }
 
   protected onError(): void {
     if (!this.#isCurrentRequest()) return;
+    if (!this.#host.complete) return;
     this.#emit('error');
   }
 
   /**
-   * True when the `src` the host currently carries is the one the latest
-   * `#syncFromAttr` observed, so a native load/error event belongs to the
-   * in-flight request rather than a superseded one.
+   * Cheap string-identity fast-path: true when the `src` the host currently
+   * carries is the one the latest `#syncFromAttr` observed, so a native
+   * load/error event has not drifted away from the in-flight request. This
+   * proves src-attribute stability only; request *completeness* (a late event
+   * from a superseded resource that happens to share the current src) is
+   * verified separately in onLoad/onError via `this.#host.complete`.
    */
   #isCurrentRequest(): boolean {
     return this.#host.getAttribute('src') === this.#requestSrc;

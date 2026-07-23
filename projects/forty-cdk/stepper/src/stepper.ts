@@ -13,7 +13,7 @@ import {
   Collection,
   firstEnabledHost,
   type ListNavigationAction,
-  moveIndex,
+  rovingListTarget,
   type WritingDirection,
   reconcileRovingActive,
   RovingTabindex,
@@ -236,24 +236,13 @@ export class ForStepper implements ForStepperContext {
       return;
     }
     const triggers = this.#triggers.items();
-    if (triggers.length === 0) {
-      return;
-    }
-    const currentIndex = triggers.findIndex((t) => t.host === currentTrigger);
-    const next = moveIndex(currentIndex < 0 ? 0 : currentIndex, triggers.length, action, {
-      loop: this.loop(),
-      isDisabled: (i) => !triggers[i]!.selectable(),
-    });
-    if (next === null) {
-      return;
-    }
-    const target = triggers[next];
+    const target = rovingListTarget(triggers, currentTrigger, action, { loop: this.loop() });
     if (!target) {
       return;
     }
     target.host.focus();
-    if (this.activationMode() === 'automatic') {
-      this.selectedIndex.set(next);
+    if (this.activationMode() === 'automatic' && target.selectable()) {
+      this.selectedIndex.set(target.index());
     }
   }
 

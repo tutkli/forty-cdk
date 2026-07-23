@@ -26,6 +26,7 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
     '[attr.aria-controls]': 'item.expanded() ? item.contentId() : null',
     '[attr.aria-disabled]': 'ariaDisabled() ? "true" : null',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
+    '[attr.data-disabled]': 'item.disabled() ? "" : null',
     '[attr.data-orientation]': 'parent.orientation()',
     '(click)': 'item.toggle()',
     '(keydown)': 'onKeyDown($event)',

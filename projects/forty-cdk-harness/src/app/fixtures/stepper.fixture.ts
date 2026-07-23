@@ -31,6 +31,8 @@ import {
  *  - `?orientation=vertical` — switches to vertical layout.
  *  - `?activation=automatic` — switches to automatic activation (default `manual`).
  *  - `?dir=rtl` — flips ArrowLeft / ArrowRight horizontally.
+ *  - `?disabled=N` — disables the step at index `N` (default none) so
+ *    disabled-reachable arrow navigation can be exercised on a middle step.
  */
 @Component({
   selector: 'app-stepper-fixture',
@@ -62,7 +64,11 @@ import {
     >
       <ol forStepperList ariaLabel="Checkout steps">
         @for (step of steps; track step.index) {
-          <li forStepperItem [completed]="completed()[step.index]">
+          <li
+            forStepperItem
+            [completed]="completed()[step.index]"
+            [disabled]="step.index === disabledIndex"
+          >
             <button forStepperTrigger [attr.data-testid]="'trigger-' + step.index">
               <span forStepperIndicator></span>
               {{ step.label }}
@@ -118,6 +124,11 @@ export class StepperFixture {
 
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+
+  protected readonly disabledIndex: number = Number.parseInt(
+    this.#route.snapshot.queryParamMap.get('disabled') ?? '',
+    10,
+  );
 
   protected readonly selectedIndex = signal(0);
 

@@ -358,6 +358,12 @@ export {
   reconcileRovingActive,
   type ReconcileRovingActiveOptions,
 } from './roving-tabindex/reconcile-roving-active';
+export {
+  rovingListTarget,
+  rovingTabStop,
+  type RovingListTargetOptions,
+  type RovingTabStopOptions,
+} from './roving-tabindex/roving-list-navigation';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { isScrollableAtEdge } from './scroll-boundary/scroll-boundary';
 export {
