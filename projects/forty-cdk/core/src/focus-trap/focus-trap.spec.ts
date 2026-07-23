@@ -537,6 +537,58 @@ describe('FocusTrap', () => {
       document.dispatchEvent(tab());
       expect(document.activeElement?.id).toBe('b2');
     });
+
+    it('does not escape when the last tabbable is CSS-hidden by a container-external class flip', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const b1 = container.querySelector<HTMLElement>('#b1')!;
+      b1.focus();
+      document.dispatchEvent(tab(true));
+      expect(document.activeElement?.id).toBe('b3');
+
+      const sheet = document.createElement('style');
+      sheet.textContent = '.for-compact #trap #b3{display:none}';
+      document.head.appendChild(sheet);
+      document.body.classList.add('for-compact');
+      try {
+        const b2 = container.querySelector<HTMLElement>('#b2')!;
+        b2.focus();
+        const event = tab();
+        document.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe('b1');
+      } finally {
+        document.body.classList.remove('for-compact');
+        sheet.remove();
+      }
+    });
+
+    it('does not escape when the first tabbable is CSS-hidden by a container-external class flip', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      const b3 = container.querySelector<HTMLElement>('#b3')!;
+      b3.focus();
+      document.dispatchEvent(tab());
+      expect(document.activeElement?.id).toBe('b1');
+
+      const sheet = document.createElement('style');
+      sheet.textContent = '.for-compact #trap #b1{display:none}';
+      document.head.appendChild(sheet);
+      document.body.classList.add('for-compact');
+      try {
+        const b2 = container.querySelector<HTMLElement>('#b2')!;
+        b2.focus();
+        const event = tab(true);
+        document.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(document.activeElement?.id).toBe('b3');
+      } finally {
+        document.body.classList.remove('for-compact');
+        sheet.remove();
+      }
+    });
   });
 
   describe('tabbable endpoints exclude tabindex="-1" candidates', () => {

@@ -226,7 +226,9 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
       return;
     }
     requestAnimationFrame(() => {
-      const finite = targets.flatMap((el) => el.getAnimations()).filter(isFiniteAnimation);
+      const finite = targets
+        .flatMap((el) => el.getAnimations({ subtree: true }))
+        .filter(isFiniteAnimation);
       if (finite.length === 0) {
         remove();
         return;

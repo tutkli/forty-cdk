@@ -76,7 +76,7 @@ export function injectPortal(config: PortalConfig = {}): void {
       return;
     }
     requestAnimationFrame(() => {
-      const finite = el.getAnimations().filter(isFiniteAnimation);
+      const finite = el.getAnimations({ subtree: true }).filter(isFiniteAnimation);
       if (finite.length === 0) {
         el.remove();
         return;

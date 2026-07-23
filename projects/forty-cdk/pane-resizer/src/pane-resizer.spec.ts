@@ -430,7 +430,12 @@ describe('ForPaneResizer', () => {
       document.dispatchEvent(pointerEvent('pointerup', { clientX: 120 }));
       await flush();
 
-      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 0,
+      });
       document.dispatchEvent(click);
       expect(click.defaultPrevented).toBe(true);
     });

@@ -3,6 +3,10 @@ import { isPlatformBrowser } from '@angular/common';
 
 import { attachScrollDismiss, type ScrollDismiss } from './scroll-dismiss';
 
+interface ScrollDismissRegistration {
+  readonly dismiss: () => void;
+}
+
 /**
  * Application-scoped owner of the single document `scroll` listener shared by
  * every hover-driven anchored overlay (Tooltip, HoverCard).
@@ -26,14 +30,14 @@ export class ScrollDismissDispatcher {
   readonly #doc = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly #subscribers = new Set<() => void>();
+  readonly #registrations = new Set<ScrollDismissRegistration>();
   #scrollDismiss: ScrollDismiss | null = null;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.#scrollDismiss?.destroy();
       this.#scrollDismiss = null;
-      this.#subscribers.clear();
+      this.#registrations.clear();
     });
   }
 
@@ -48,10 +52,14 @@ export class ScrollDismissDispatcher {
   }
 
   /**
-   * Registers `dismiss` to run on every ancestor scroll. Installs the shared
-   * listener on the first registration and returns a teardown that removes the
-   * callback, tearing the listener down with the last registration. A no-op
-   * returning an empty teardown on the server.
+   * Registers `dismiss` to run on every ancestor scroll. Each call is an
+   * independent registration tracked by its own token, so registering the same
+   * callback twice yields two independent teardowns that fire it twice and must
+   * both run to remove it. Installs the shared listener on the first
+   * registration and returns a teardown that removes exactly this registration,
+   * tearing the listener down with the last one. The teardown is idempotent —
+   * calling it more than once has no effect on any sibling registration. A
+   * no-op returning an empty teardown on the server.
    *
    * @param dismiss Called on every ancestor scroll; implement it as a no-op
    *   when the overlay is neither open nor armed.
@@ -61,19 +69,22 @@ export class ScrollDismissDispatcher {
     if (!this.#isBrowser) {
       return () => {};
     }
-    this.#subscribers.add(dismiss);
+    const registration: ScrollDismissRegistration = { dismiss };
+    this.#registrations.add(registration);
     if (!this.#scrollDismiss) {
       this.#scrollDismiss = attachScrollDismiss(this.#doc, {
         dismiss: () => {
-          for (const fn of [...this.#subscribers]) {
-            fn();
+          for (const reg of [...this.#registrations]) {
+            reg.dismiss();
           }
         },
       });
     }
     return () => {
-      this.#subscribers.delete(dismiss);
-      if (this.#subscribers.size === 0) {
+      if (!this.#registrations.delete(registration)) {
+        return;
+      }
+      if (this.#registrations.size === 0) {
         this.#scrollDismiss?.destroy();
         this.#scrollDismiss = null;
       }

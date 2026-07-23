@@ -3177,7 +3177,12 @@ describe('ForTable', () => {
       document.dispatchEvent(pointerEvent('pointerup', { clientX: 250 }));
       await flush();
 
-      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      const click = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 250,
+        clientY: 0,
+      });
       document.dispatchEvent(click);
       expect(click.defaultPrevented).toBe(true);
     });

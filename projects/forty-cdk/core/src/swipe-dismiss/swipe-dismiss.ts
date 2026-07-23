@@ -22,9 +22,11 @@
  *   yet, so a plain tap fires nothing. A press with no allowed direction, and a
  *   non-primary mouse button, are rejected before tracking begins.
  * - Once the drag travels past an internal arm distance the dominant axis picks
- *   the candidate direction; if it is not in the allowed set the gesture is
- *   dropped silently. A mouse move seen with no button held is a press released
- *   off-element (no `pointerup` reached it) and does not arm a phantom swipe.
+ *   the candidate direction; if it is not in the allowed set the press keeps
+ *   watching — it stays tracked and unarmed, re-checking the dominant axis on
+ *   every further move — instead of arming. A mouse move seen with no button held
+ *   is a press released off-element (no `pointerup` reached it) and does not arm a
+ *   phantom swipe.
  * - On arming, `onSwipeStart` fires (with the constrained delta) and
  *   `onSwipeMove` fires for every move including the arming one. `getDirections()`
  *   is re-read on every armed move: if the active direction is toggled out of the
@@ -164,7 +166,7 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
         opts.getDirections(),
       );
       if (!dir) {
-        return false;
+        return 'skip';
       }
       direction = dir;
       opts.onSwipeStart?.(detailFor(event, dir));

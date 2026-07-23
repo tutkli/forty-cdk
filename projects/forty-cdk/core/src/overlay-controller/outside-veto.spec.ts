@@ -12,7 +12,7 @@ function focusEvent(): FocusEvent {
 }
 
 describe('buildOutsideVetoOptions', () => {
-  it('shares one veto object across pointerDownOutside and the composite interactOutside', () => {
+  it('shares one veto object across the specific pointerDownOutside and composite interactOutside emitters', () => {
     const pointerVetoes: Array<VetoableNativeEvent<PointerEvent>> = [];
     const interactVetoes: Array<VetoableNativeEvent<PointerEvent | FocusEvent>> = [];
     const reasons: string[] = [];
@@ -24,19 +24,15 @@ describe('buildOutsideVetoOptions', () => {
       emitInteractOutside: (veto) => interactVetoes.push(veto),
     });
 
-    const event = pointerEvent();
-    options.onPointerDownOutside!(event);
-    options.onInteractOutside!(event);
+    options.onPointerDownOutside!(pointerEvent());
 
     expect(pointerVetoes).toHaveLength(1);
     expect(interactVetoes).toHaveLength(1);
-    // The SAME object instance in both channels is what makes the triple-veto
-    // work: a preventDefault() on the specific call is visible to the composite.
     expect(pointerVetoes[0]).toBe(interactVetoes[0]);
     expect(reasons).toEqual(['pointerDownOutside']);
   });
 
-  it('vetoing the shared wrapper on the specific channel blocks the composite-driven close', () => {
+  it('does not close when the specific pointer emitter vetoes', () => {
     const reasons: string[] = [];
 
     const options = buildOutsideVetoOptions({
@@ -46,14 +42,27 @@ describe('buildOutsideVetoOptions', () => {
       emitInteractOutside: () => {},
     });
 
-    const event = pointerEvent();
-    options.onPointerDownOutside!(event);
-    options.onInteractOutside!(event);
+    options.onPointerDownOutside!(pointerEvent());
 
     expect(reasons).toEqual([]);
   });
 
-  it('shares one veto across focusOutside and interactOutside with the focusOutside reason', () => {
+  it('does not close when the composite emitter vetoes while the specific channel is wired', () => {
+    const reasons: string[] = [];
+
+    const options = buildOutsideVetoOptions({
+      dismissible: signal(true),
+      requestClose: (reason) => reasons.push(reason),
+      emitPointerDownOutside: () => {},
+      emitInteractOutside: (veto) => veto.preventDefault(),
+    });
+
+    options.onPointerDownOutside!(pointerEvent());
+
+    expect(reasons).toEqual([]);
+  });
+
+  it('shares one veto across the focusOutside and interactOutside emitters with the focusOutside reason', () => {
     const focusVetoes: Array<VetoableNativeEvent<FocusEvent>> = [];
     const interactVetoes: Array<VetoableNativeEvent<PointerEvent | FocusEvent>> = [];
     const reasons: string[] = [];
@@ -65,15 +74,13 @@ describe('buildOutsideVetoOptions', () => {
       emitInteractOutside: (veto) => interactVetoes.push(veto),
     });
 
-    const event = focusEvent();
-    options.onFocusOutside!(event);
-    options.onInteractOutside!(event);
+    options.onFocusOutside!(focusEvent());
 
     expect(focusVetoes[0]).toBe(interactVetoes[0]);
     expect(reasons).toEqual(['focusOutside']);
   });
 
-  it('falls back to a fresh veto when interactOutside fires without a prior specific channel', () => {
+  it('closes on both pointer and focus for an interact-only wiring', () => {
     const interactVetoes: Array<VetoableNativeEvent<PointerEvent | FocusEvent>> = [];
     const reasons: string[] = [];
 
@@ -83,10 +90,39 @@ describe('buildOutsideVetoOptions', () => {
       emitInteractOutside: (veto) => interactVetoes.push(veto),
     });
 
-    options.onInteractOutside!(pointerEvent());
+    options.onPointerDownOutside!(pointerEvent());
+    options.onFocusOutside!(focusEvent());
 
-    expect(interactVetoes).toHaveLength(1);
+    expect(interactVetoes).toHaveLength(2);
+    expect(reasons).toEqual(['pointerDownOutside', 'focusOutside']);
+  });
+
+  it('closes a pointer channel wired without the composite interactOutside emitter', () => {
+    const reasons: string[] = [];
+
+    const options = buildOutsideVetoOptions({
+      dismissible: signal(true),
+      requestClose: (reason) => reasons.push(reason),
+      emitPointerDownOutside: () => {},
+    });
+
+    options.onPointerDownOutside!(pointerEvent());
+
     expect(reasons).toEqual(['pointerDownOutside']);
+  });
+
+  it('closes a focus channel wired without the composite interactOutside emitter', () => {
+    const reasons: string[] = [];
+
+    const options = buildOutsideVetoOptions({
+      dismissible: signal(true),
+      requestClose: (reason) => reasons.push(reason),
+      emitFocusOutside: () => {},
+    });
+
+    options.onFocusOutside!(focusEvent());
+
+    expect(reasons).toEqual(['focusOutside']);
   });
 
   it('does not requestClose when dismissible() is false', () => {
@@ -98,21 +134,29 @@ describe('buildOutsideVetoOptions', () => {
       emitInteractOutside: () => {},
     });
 
-    options.onInteractOutside!(pointerEvent());
+    options.onPointerDownOutside!(pointerEvent());
 
     expect(reasons).toEqual([]);
   });
 
-  it('registers a channel only when its emitter is provided', () => {
+  it('registers both outside handlers for an interact-only wiring', () => {
     const options = buildOutsideVetoOptions({
       dismissible: signal(true),
       requestClose: () => {},
       emitInteractOutside: () => {},
     });
 
-    expect(options.onPointerDownOutside).toBeUndefined();
+    expect(typeof options.onPointerDownOutside).toBe('function');
+    expect(typeof options.onFocusOutside).toBe('function');
+  });
+
+  it('registers only the pointer handler when the specific pointer channel alone is wired', () => {
+    const options = buildOutsideVetoOptions({
+      emitPointerDownOutside: () => {},
+    });
+
+    expect(typeof options.onPointerDownOutside).toBe('function');
     expect(options.onFocusOutside).toBeUndefined();
-    expect(typeof options.onInteractOutside).toBe('function');
   });
 
   it('does not close when requestClose is omitted even if dismissible() is true', () => {
@@ -123,7 +167,7 @@ describe('buildOutsideVetoOptions', () => {
       emitInteractOutside: (veto) => interactVetoes.push(veto),
     });
 
-    expect(() => options.onInteractOutside!(pointerEvent())).not.toThrow();
+    expect(() => options.onPointerDownOutside!(pointerEvent())).not.toThrow();
     expect(interactVetoes).toHaveLength(1);
   });
 });

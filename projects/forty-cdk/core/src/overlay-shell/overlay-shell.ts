@@ -1,4 +1,4 @@
-import { DestroyRef, ElementRef, inject, isDevMode, type Signal } from '@angular/core';
+import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
 
 import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import {
@@ -25,33 +25,30 @@ export type OverlayShellPositionerConfig =
   | ({ readonly kind: 'item-aligned' } & ItemAlignedConfig);
 
 /**
- * Dismissable-layer wiring. The shell owns the pointer/focus/interact veto
- * reuse that every trigger-anchored overlay (Popover, Menu / MenuSub /
+ * Dismissable-layer wiring. The shell owns the pointer/focus outside-interaction
+ * wiring that every trigger-anchored overlay (Popover, Menu / MenuSub /
  * ContextMenu / DropdownMenu, Combobox, Select, date-picker) used to
- * duplicate verbatim as a per-primitive `#pendingOutsideVeto` field:
+ * duplicate verbatim:
  *
- * - The specific outside channels (pointer-down-outside / focus-outside) fire
- *   on the same physical interaction as the composite `interactOutside`, and
- *   the dismissable layer always invokes the specific listener first. The
- *   shell builds a single `VetoableNativeEvent` on the specific call, hands it
- *   to the consumer's emitter, and reuses it for the immediately-following
- *   composite call so a `preventDefault()` from either handler vetoes the
- *   close.
- * - When the consumer doesn't veto AND `dismissible()` is `true`, the shell
+ * - Each wired outside channel (pointer-down-outside / focus-outside) builds a
+ *   single `VetoableNativeEvent` for its physical interaction, hands it to the
+ *   consumer's specific emitter (if wired) and to the composite `interactOutside`
+ *   emitter (if wired), so a `preventDefault()` from either subscriber vetoes
+ *   the close.
+ * - When neither subscriber vetoes AND `dismissible()` is `true`, the shell
  *   calls `requestClose(reason)` with the channel's reason
- *   (`'pointerDownOutside' | 'focusOutside'`) from the composite handler.
- *   `dismissible` / `requestClose` are required whenever any outside channel
- *   is wired and unused otherwise.
+ *   (`'pointerDownOutside' | 'focusOutside'`) — each wired outside channel fires
+ *   its own close. `dismissible` / `requestClose` are required whenever any
+ *   outside channel is wired and unused otherwise.
  * - `exemptElements` is recomputed on every event so DOM mutations (newly
  *   portaled siblings, swapped triggers) are picked up live.
  *
  * Escape stays a one-shot, consumer-owned channel (`emitEscapeKeyDown`
  * receives the raw `KeyboardEvent` and forwards verbatim to the layer): it
- * never participates in the shared `#pendingOutsideVeto` reuse, and its close
- * behaviour differs per primitive (hover-card schedules a close, the input-
- * focused combobox owns Escape on its input directive and omits it here). The
- * shell therefore leaves Escape's emit + close decision entirely to the
- * consumer.
+ * never participates in the outside-close, and its close behaviour differs per
+ * primitive (hover-card schedules a close, the input-focused combobox owns
+ * Escape on its input directive and omits it here). The shell therefore leaves
+ * Escape's emit + close decision entirely to the consumer.
  *
  * Each callback is individually optional so a primitive can opt out of a
  * single channel; the shell registers a layer listener only for the channels
@@ -69,10 +66,9 @@ export interface OverlayShellDismissConfig {
    * Called with the matching reason when the consumer doesn't veto an outside
    * interaction. The consumer owns the close (and any bookkeeping such as
    * marking the control touched); the shell never touches the directive's
-   * close output directly. Required alongside `dismissible`. The implicit close
-   * fires from the composite `emitInteractOutside` channel only, so a wiring
-   * that provides `requestClose` MUST also wire `emitInteractOutside` — the
-   * shell throws a dev-mode error otherwise.
+   * close output directly. Required alongside `dismissible`. Each wired outside
+   * channel fires its own close, so a specific channel (`emitPointerDownOutside`
+   * / `emitFocusOutside`) closes even without `emitInteractOutside` wired.
    */
   readonly requestClose?: (reason: 'pointerDownOutside' | 'focusOutside') => void;
   /** Forwards the raw Escape `KeyboardEvent` to the consumer; close is consumer-owned. */
@@ -171,14 +167,14 @@ export interface OverlayShellConfig {
  *    `injectPortal` itself — the consumer must NOT either, on pain of
  *    double-portaling (see #106).
  * 2. Dismissable layer. When `dismiss` is configured, creates a layer for
- *    the host element and activates it inside `afterNextRender`. The shell
- *    owns the triple-veto + composite `interactOutside` bookkeeping: it
- *    builds one `VetoableNativeEvent` per physical interaction and reuses it
- *    across the specific (`pointerDownOutside` / `focusOutside`) and composite
- *    (`interactOutside`) channels, so a `preventDefault()` from either
- *    suppresses the implicit close. When the consumer doesn't veto and
- *    `dismissible()` is `true`, the shell calls `requestClose(reason)`.
- *    Deactivation runs from the shell's `DestroyRef.onDestroy` hook.
+ *    the host element and activates it inside `afterNextRender`. Each wired
+ *    outside channel is self-closing: it builds one `VetoableNativeEvent` per
+ *    physical interaction, hands it to the specific (`pointerDownOutside` /
+ *    `focusOutside`) and composite (`interactOutside`) emitters, so a
+ *    `preventDefault()` from either suppresses the implicit close. When neither
+ *    subscriber vetoes and `dismissible()` is `true`, the shell calls
+ *    `requestClose(reason)`. Deactivation runs from the shell's
+ *    `DestroyRef.onDestroy` hook.
  * 3. Initial focus. When `initialFocus` is configured, runs `veto()` first;
  *    if it returns truthy the imperative focus move is skipped (this is the
  *    `(autoFocusOnOpen)` veto). Otherwise the shell either calls the
@@ -292,17 +288,6 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
         channels: outsideVetoChannels(dismissCfg),
         ...buildOutsideVetoOptions(dismissCfg),
       };
-
-      // The implicit outside-close fires from the composite `onInteractOutside`
-      // handler only (the specific pointer/focus handlers just emit). A wiring
-      // that provides `requestClose` but omits `emitInteractOutside` would emit
-      // its outside outputs yet never close — fail loudly in dev rather than
-      // ship that silent gap.
-      if (isDevMode() && dismissCfg.requestClose && !dismissCfg.emitInteractOutside) {
-        throw new Error(
-          '[forty-cdk/overlay-shell] dismiss.requestClose requires dismiss.emitInteractOutside to be wired; the implicit outside-close fires from the composite interactOutside channel.',
-        );
-      }
 
       if (dismissCfg.exemptElements) {
         options.exemptElements = dismissCfg.exemptElements;
