@@ -330,6 +330,38 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(1234567);
     });
 
+    it('commits a numpad-dot decimal typed in de-DE without stripping it (#1383)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('de-DE');
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '1.5');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1.5);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1.5);
+    });
+
+    it('commits a numpad-dot decimal typed in fr-FR without stripping it (#1383)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.locale.set('fr-FR');
+      await flush();
+      const input = inputOf(el);
+      input.focus();
+
+      typeInto(input, '1.5');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1.5);
+
+      input.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1.5);
+    });
+
     it('does not clamp while typing (clamps on commit)', async () => {
       const { el, fixture, flush } = renderHost(NumberHost);
       fixture.componentInstance.min.set(10);

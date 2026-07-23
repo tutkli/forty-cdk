@@ -43,6 +43,36 @@ function isSpaceSeparator(separator: string): boolean {
 }
 
 /**
+ * In the lenient (live-typing) path, promote a lone digit-flanked `'.'` to the
+ * locale's decimal separator in a non-dot-decimal locale. The numpad decimal
+ * key emits `'.'` regardless of keyboard layout or locale, so a user typing
+ * `1.5` on the numpad in `de-DE` / `fr-FR` means a decimal, not a group
+ * separator or noise; without this the `'.'` is stripped and `1.5` commits as
+ * `15`. The one interpretation preserved is a genuine group separator in a
+ * locale that groups with `'.'` (`de-DE`): a trailing run of exactly the
+ * primary group size keeps its group meaning (`1.234` → `1234`), while any
+ * other run length (`1.5`, `12.34`) is treated as the user's decimal. Runs only
+ * for a single `'.'`; multiple dots are left to grouping / the strict gate.
+ */
+function promoteLenientDecimalDot(input: string, separators: LocaleSeparators): string {
+  const { group, decimal, groupSizes } = separators;
+  if (decimal === '.') {
+    return input;
+  }
+  const dots = input.match(/\./g);
+  if ((dots?.length ?? 0) !== 1 || !/(?<=\d)\.(?=\d)/.test(input)) {
+    return input;
+  }
+  if (group === '.') {
+    const trailing = input.slice(input.indexOf('.') + 1).match(/^\d+/)?.[0] ?? '';
+    if (trailing.length === (groupSizes[0] ?? 3)) {
+      return input;
+    }
+  }
+  return input.replace('.', decimal);
+}
+
+/**
  * Minus-sign variants a locale may emit for a negative, or that a user may type
  * in their place, normalized to ASCII `-` before the numeric gates: U+2212 MINUS
  * SIGN (`Intl` formats negatives with it in sv / fi / nb / lt and others) and
@@ -105,7 +135,13 @@ function deriveGroupSizes(integerLengths: readonly number[]): readonly number[] 
  * This is the mid-edit mode: while the user types inside a formatted value the
  * intermediate grouping is almost never well-formed (`"1,234"` → `"1,2345"`),
  * and the display is reformatted from the committed value on blur anyway, so
- * enforcing grouping during typing would silently discard valid edits.
+ * enforcing grouping during typing would silently discard valid edits. In this
+ * mode a lone digit-flanked `'.'` in a non-dot-decimal locale (`de-DE`,
+ * `fr-FR`, …) is also promoted to the locale decimal separator — the numpad
+ * decimal key emits `'.'` regardless of layout, so `"1.5"` parses as `1.5`
+ * instead of the `15` it would collapse to once the `'.'` is stripped. A `'.'`
+ * whose trailing digit run is exactly the locale's primary group size keeps its
+ * group meaning (`"1.234"` → `1234` in `de-DE`); the strict path is untouched.
  *
  * For locales that group with a space (the NBSP / NNBSP fr-style locales), a
  * whitespace-space variant — including the plain ASCII space a user is most
@@ -132,7 +168,10 @@ export function parseLocaleNumber(
   // of which variant was typed while a space before a trailing literal is left
   // for the noise strip instead of being promoted to a group separator.
   const spaceNormalized = isSpaceSeparator(group) ? text.replace(DIGIT_GROUPED_SPACE, group) : text;
-  const input = spaceNormalized.replace(MINUS_VARIANTS, '-');
+  const minusNormalized = spaceNormalized.replace(MINUS_VARIANTS, '-');
+  const input = options?.lenientGrouping
+    ? promoteLenientDecimalDot(minusNormalized, separators)
+    : minusNormalized;
   // Strip currency symbols, percent signs, and any other non-numeric noise
   // the locale may include, leaving digits, sign, the locale group/decimal
   // separators, and the exponent letters — the strict gates below reject
