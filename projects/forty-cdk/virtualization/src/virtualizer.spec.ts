@@ -472,6 +472,90 @@ describe('injectVirtualizer', () => {
     });
   });
 
+  describe('measureElement(null) sweep (#1387)', () => {
+    class RecordingResizeObserver {
+      static observed: Element[] = [];
+      static unobserved: Element[] = [];
+      observe(el: Element): void {
+        RecordingResizeObserver.observed.push(el);
+      }
+      unobserve(el: Element): void {
+        RecordingResizeObserver.unobserved.push(el);
+      }
+      disconnect(): void {}
+    }
+
+    let priorResizeObserver: unknown;
+    const appended: HTMLElement[] = [];
+
+    beforeEach(() => {
+      RecordingResizeObserver.observed = [];
+      RecordingResizeObserver.unobserved = [];
+      priorResizeObserver = (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver;
+      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver =
+        RecordingResizeObserver;
+    });
+
+    afterEach(() => {
+      (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = priorResizeObserver;
+      for (const el of appended.splice(0)) {
+        el.remove();
+      }
+    });
+
+    async function mount(): Promise<ReturnType<typeof TestBed.createComponent<Host>>> {
+      const fixture = TestBed.createComponent(Host);
+      const el = fixture.nativeElement.querySelector('div') as HTMLElement;
+      fakeLayoutProps(el, 200);
+      fixture.detectChanges();
+      await flush(fixture);
+      return fixture;
+    }
+
+    function appendRow(index: number, height = 40): HTMLElement {
+      const row = document.createElement('div');
+      row.setAttribute('data-index', String(index));
+      Object.defineProperty(row, 'offsetHeight', { configurable: true, value: height });
+      Object.defineProperty(row, 'offsetWidth', { configurable: true, value: height });
+      document.body.appendChild(row);
+      appended.push(row);
+      return row;
+    }
+
+    it('unobserves and evicts a detached measured element', async () => {
+      const fixture = await mount();
+      const { v } = fixture.componentInstance;
+
+      const row = appendRow(0);
+      expect(row.isConnected).toBe(true);
+      v.measureElement(row);
+      expect(RecordingResizeObserver.observed).toContain(row);
+
+      document.body.removeChild(row);
+      expect(row.isConnected).toBe(false);
+      v.measureElement(null);
+      expect(RecordingResizeObserver.unobserved).toContain(row);
+    });
+
+    it('keeps observing a still-connected measured element after a sweep', async () => {
+      const fixture = await mount();
+      const { v } = fixture.componentInstance;
+
+      const row = appendRow(1);
+      v.measureElement(row);
+      expect(RecordingResizeObserver.observed).toContain(row);
+
+      v.measureElement(null);
+      expect(RecordingResizeObserver.unobserved).not.toContain(row);
+    });
+
+    it('does not throw when called with null before any measurement', async () => {
+      const fixture = await mount();
+      const { v } = fixture.componentInstance;
+      expect(() => v.measureElement(null)).not.toThrow();
+    });
+  });
+
   describe('SSR empty window', () => {
     beforeEach(() => {
       TestBed.configureTestingModule({
@@ -515,6 +599,7 @@ describe('injectVirtualizer', () => {
       expect(() => v.scrollToOffset(50)).not.toThrow();
       expect(() => v.scrollToIndex(5)).not.toThrow();
       expect(() => v.measureElement(fakeEl)).not.toThrow();
+      expect(() => v.measureElement(null)).not.toThrow();
       expect(v.measurementFor(0)).toBeNull();
       expect(spyScrollTo).not.toHaveBeenCalled();
     });

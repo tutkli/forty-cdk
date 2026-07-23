@@ -75,6 +75,7 @@ export class ForTableVirtualized {
     scrollToRow: (index) => this.scrollToRow(index),
     scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
     rowCount: () => this.#ctx.rowCount() ?? 0,
+    loadedRowCount: () => this.#ctx.loadedRowCount(),
   });
 
   constructor() {
@@ -119,12 +120,10 @@ export class ForTableVirtualized {
       return items;
     }
     const size = this.estimateRowSize();
-    const retained: VirtualItem[] = [...retain].map((index) => ({
-      index,
-      key: index,
-      start: index * size,
-      size,
-    }));
+    const retained: VirtualItem[] = [...retain].map(
+      (index) =>
+        this.#virtualizer.measurementFor(index) ?? { index, key: index, start: index * size, size },
+    );
     return [...items, ...retained].sort((a, b) => a.index - b.index);
   });
 
@@ -148,8 +147,11 @@ export class ForTableVirtualized {
     this.#virtualizer.scrollToIndex(index, options);
   }
 
-  /** Record the measured size of a rendered row element (dynamic / measured row heights). */
-  measureRow(element: HTMLElement): void {
+  /**
+   * Record the measured size of a rendered row element (dynamic / measured row heights).
+   * Passing `null` sweeps evicted rows recycled out of the window from the measurement cache.
+   */
+  measureRow(element: HTMLElement | null): void {
     this.#virtualizer.measureElement(element);
   }
 }

@@ -93,7 +93,11 @@ export class ForTableRow implements ForTableRowContext {
   });
 
   protected readonly ariaSelected = computed<'true' | 'false' | null>(() => {
-    if (this.ctx.selectionMode() === 'none' || this.value() === undefined) {
+    if (
+      this.ctx.mode() === 'table' ||
+      this.ctx.selectionMode() === 'none' ||
+      this.value() === undefined
+    ) {
       return null;
     }
     return this.selected() ? 'true' : 'false';

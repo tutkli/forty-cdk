@@ -11,15 +11,28 @@ import {
   type ForDropListRovingDelegate,
   moveItemInArray,
 } from 'forty-cdk/drag-drop';
+import { translateWindowReorder } from 'forty-cdk/core';
 import { hostHasSortActivation, injectTableContext } from './table-context';
 
 /** Payload of `columnReorder`: the move's indices and the resulting column-name order. */
 export interface TableColumnReorderDescriptor {
-  /** Previous column index (0-based, in rendered order). */
+  /**
+   * Previous 0-based index into the **full displayed column order**, counting
+   * non-reorderable columns; feed it (with `to`) to `moveItemInArray` over the
+   * full displayed-columns array.
+   */
   from: number;
-  /** New column index (0-based, in rendered order). */
+  /**
+   * New 0-based index into the **full displayed column order**, counting
+   * non-reorderable columns; feed it (with `from`) to `moveItemInArray` over the
+   * full displayed-columns array.
+   */
   to: number;
-  /** Full column-name order after the move, read from each draggable header cell's `dragData`. */
+  /**
+   * The reorderable columns in their new order, read from each draggable header
+   * cell's `dragData`. Equal to the full displayed order only when every displayed
+   * column is reorderable; otherwise it omits the non-reorderable columns.
+   */
   columns: readonly string[];
 }
 
@@ -30,9 +43,9 @@ export interface TableColumnReorderDescriptor {
  * `hostDirectives`) so the header cells become a reorderable list, then translates
  * drag-drop's generic drop into the table-friendly `columnReorder` output. Mark each
  * `[forTableHeaderCell]` as `[forDraggable]` with `[dragData]` set to the column name.
- * On a committed drop (pointer or keyboard) it emits the previous / new index and the
- * new column-name order; the consumer applies it to their own column array. **It never
- * reorders columns itself** (BYO-data).
+ * On a committed drop (pointer or keyboard) it emits the previous / new index (into the
+ * full displayed column order) and the reorderable columns' new order; the consumer
+ * applies it to their own column array. **It never reorders columns itself** (BYO-data).
  *
  * The wrapped list defaults to `orientation="horizontal"` (a column reorder is always along
  * the row axis), so no `orientation` binding is needed. Bind `orientation="vertical"` to
@@ -109,7 +122,8 @@ export class ForTableColumnReorder {
 
   /**
    * Fires once per committed reorder gesture (pointer drop or keyboard drop) with the
-   * previous / new column index and the full column-name order after the move.
+   * previous / new column index (into the full displayed column order, counting
+   * non-reorderable columns) and the reorderable columns' new order after the move.
    */
   readonly columnReorder = output<TableColumnReorderDescriptor>();
 
@@ -156,8 +170,13 @@ export class ForTableColumnReorder {
   }
 
   #emit(event: ForDragDropEvent): void {
-    const names = this.#list.items().map((handle) => String(handle.data()));
+    const items = this.#list.items();
+    const names = items.map((handle) => String(handle.data()));
     const columns = moveItemInArray(names, event.previousIndex, event.currentIndex);
-    this.columnReorder.emit({ from: event.previousIndex, to: event.currentIndex, columns });
+    const displayedIndices = items.map((handle) => this.ctx.headerCellIndexOf(handle.host));
+    const { from, to } = displayedIndices.some((index) => index < 0)
+      ? { from: event.previousIndex, to: event.currentIndex }
+      : translateWindowReorder(displayedIndices, event.previousIndex, event.currentIndex);
+    this.columnReorder.emit({ from, to, columns });
   }
 }

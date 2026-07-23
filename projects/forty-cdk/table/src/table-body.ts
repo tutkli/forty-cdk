@@ -283,6 +283,7 @@ interface RenderRow<T> {
               <div
                 #cell="forTableCell"
                 forTableCell
+                disabled
                 [name]="col.name()"
                 [sticky]="col.sticky()"
                 [class]="col.cellClass()"
@@ -384,7 +385,9 @@ export class ForTableBody<T = unknown> {
   readonly #measuredAt = new WeakMap<HTMLElement, string>();
 
   constructor() {
-    const bodyRowCount = computed(() => this.rows().length);
+    const bodyRowCount = computed(() =>
+      this.loading() ? Math.max(0, this.placeholderRows()) : this.rows().length,
+    );
     this.#ctx.registerBodyRowCount(bodyRowCount);
     inject(DestroyRef).onDestroy(() => this.#ctx.registerBodyRowCount(null));
 
@@ -402,6 +405,7 @@ export class ForTableBody<T = unknown> {
         this.#measuredAt.set(el, index);
         window.measureRow(el);
       }
+      window.measureRow(null);
     });
   }
 
@@ -443,6 +447,14 @@ export class ForTableBody<T = unknown> {
    * Off by default: a uniform-height table keeps the pure `estimateRowSize` fast
    * path with no per-row measurement work. Has no effect without
    * `[forTableVirtualized]` (there is no window to measure against).
+   *
+   * Measurement is not one-shot. The body's per-render measure is throttled per
+   * `data-index`, so it covers only a row's initial post-render measurement and any
+   * row recycled to a new index. Subsequent size changes of the **same mounted row**
+   * (async content, image load, cell reflow) are re-measured automatically by the
+   * virtualizer's own `ResizeObserver` — which re-aligns the offsets of the rows below
+   * without any consumer action — so a row whose content loads asynchronously needs no
+   * manual re-measure trigger.
    */
   readonly measureRows = input(false, { transform: booleanAttribute });
 
@@ -454,11 +466,14 @@ export class ForTableBody<T = unknown> {
 
   /**
    * Fires once per committed column reorder gesture (pointer drop or keyboard drop),
-   * forwarded unchanged from the internal `[forTableColumnReorder]`. Its `columns`
-   * lists the reorderable columns in their new order (equal to the full displayed
-   * order when every displayed column is `reorderable`); apply it to your own column
-   * order and feed it back through `displayedColumns` (BYO-data). Only present when at
-   * least one `[forColumnDef]` is `reorderable`.
+   * forwarded unchanged from the internal `[forTableColumnReorder]`. Its `from` / `to`
+   * are indices into the **full displayed column order** (counting non-reorderable
+   * columns), so a table with fixed columns applies `moveItemInArray(displayedColumns,
+   * from, to)` over the whole `displayedColumns` array. Its `columns` lists the
+   * reorderable columns in their new order (equal to the full displayed order only when
+   * every displayed column is `reorderable`) — setting `displayedColumns` directly to
+   * `columns` is valid only in that all-reorderable case, otherwise the fixed columns
+   * are dropped. Only present when at least one `[forColumnDef]` is `reorderable`.
    */
   readonly columnReorder = output<TableColumnReorderDescriptor>();
 
@@ -489,10 +504,11 @@ export class ForTableBody<T = unknown> {
    *
    * Interactive content inside a data cell owns its own events: a click or
    * `Enter` originating from a `button`, `a[href]`, `input`, `select`,
-   * `textarea`, `summary`, or `contenteditable` descendant does **not** emit
-   * `rowActivate`, and its native default action is left intact — a trailing
-   * per-row action button keeps working, and `Enter` on it is not
-   * `preventDefault`ed. The row still activates from anywhere else: cell text,
+   * `textarea`, `summary`, `label`, `audio`/`video[controls]`, an editable
+   * `contenteditable` region, or an element carrying an interactive ARIA `role`
+   * descendant does **not** emit `rowActivate`, and its native default action is
+   * left intact — a trailing per-row action button keeps working, and `Enter` on
+   * it is not `preventDefault`ed. The row still activates from anywhere else: cell text,
    * the gaps between cells, or the focused row host itself. `rowContextMenu` is
    * deliberately unguarded — a right-click anywhere on the row, including over an
    * inner control, still offers the row's context menu, matching native lists.

@@ -63,7 +63,11 @@
 
 /** A live pointer-drag session. Call `destroy()` to remove every listener. */
 export interface PointerDragSession {
-  /** Remove the host listener, any active document listeners, and any pending click trap. */
+  /**
+   * Remove the host listener, any active document listeners, and any pending click trap.
+   * With `cancelOnDestroy` set, an in-flight (tracked) drag is first aborted through the
+   * cancel path (`onCancel` fires) before teardown; otherwise `destroy()` fires no callback.
+   */
   destroy(): void;
   /**
    * Abort an in-flight drag imperatively, as if a `pointercancel` had arrived: release capture,
@@ -110,6 +114,14 @@ export interface PointerDragSessionOptions {
    * `onCancel`). Defaults to `false` so callers owning their own `Escape` handling are unaffected.
    */
   readonly cancelOnEscape?: boolean;
+  /**
+   * When `true`, `destroy()` aborts an in-flight (tracked) drag through the same path as
+   * `cancel()` / `pointercancel` — `resetTracking()` then `onCancel(undefined)` — before removing
+   * listeners. Defaults to `false`, so `destroy()` is a pure teardown that fires no callback. Opt in
+   * when the owning directive must revert transient drag state on unmount (e.g. a column resizer
+   * restoring its pre-drag width).
+   */
+  readonly cancelOnDestroy?: boolean;
   /**
    * When `true`, the host captures the pointer once the drag arms and releases it on
    * commit / cancel / teardown. Capture also suppresses the browser's native drag behaviours
@@ -301,6 +313,9 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
 
   return {
     destroy(): void {
+      if (opts.cancelOnDestroy && start !== null) {
+        abort();
+      }
       host.removeEventListener('pointerdown', down, { capture: true });
       releaseCapture();
       removeDocumentListeners();

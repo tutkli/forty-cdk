@@ -134,7 +134,13 @@ const PEOPLE: readonly Person[] = [
       >
         <ng-container forColumnDef="sel" sticky width="48px">
           <ng-template forHeaderCell>
-            <span forTableSelectAll ariaLabel="Select all rows" data-testid="select-all"></span>
+            <button
+              type="button"
+              forTableSelectAll
+              ariaLabel="Select all rows"
+              aria-label="Select all rows"
+              data-testid="select-all"
+            ></button>
           </ng-template>
           <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>
             <span forTableRowSelector></span>

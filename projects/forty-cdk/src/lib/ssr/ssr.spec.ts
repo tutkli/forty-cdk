@@ -2485,7 +2485,7 @@ describe('SSR smoke tests', () => {
     ) as HTMLElement;
     expect(resizer.getAttribute('role')).toBe('separator');
     expect(resizer.getAttribute('aria-orientation')).toBe('vertical');
-    expect(resizer.getAttribute('tabindex')).toBe('0');
+    expect(resizer.getAttribute('tabindex')).toBe('-1');
     expect(resizer.getAttribute('aria-valuenow')).toBe('120');
     const unseededResizer = f.nativeElement.querySelector(
       '[forTableColumnResizer][column="name"]',

@@ -10,6 +10,7 @@ import {
   output,
 } from '@angular/core';
 
+import { eventFromInteractiveDescendant } from './interactive-descendant';
 import { hostHasDraggable, injectTableContext } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
@@ -55,6 +56,15 @@ export interface TableSortDescriptor {
  * column starts descending: `none → descending → ascending → none` (and with
  * `disableClear`: `none → descending → ascending → descending`) — the descending-first
  * behavior used by single-always-active sort descriptors.
+ *
+ * A `click`, `Space`, or `Enter` originating from an interactive descendant of the
+ * header cell — a stamped `[forTableColumnResizer]` handle, or a consumer-placed
+ * `button` / `a[href]` / `input` / `select` / `textarea` / `summary` / editable
+ * `contenteditable` / role-based control — does not toggle the sort and leaves the
+ * descendant's own activation intact. (A non-native custom handle carrying only
+ * `role="separator"` / `tabindex` is not matched by the shared interactive-descendant
+ * selector, so it would still bubble to sort; the stamped resize handle and the
+ * documented example are native `<button>`s, so this is not a real path today.)
  */
 @Directive({
   selector: '[forTableSortHeader]',
@@ -63,7 +73,7 @@ export interface TableSortDescriptor {
     '[attr.aria-sort]': 'activeDirection()',
     '[attr.data-sorted]': 'activeDirection()',
     '[attr.data-sortable]': "sortable() ? '' : null",
-    '(click)': 'activate()',
+    '(click)': 'onClick($event)',
     '(keydown)': 'onKeyDown($event)',
   },
 })
@@ -135,6 +145,18 @@ export class ForTableSortHeader {
     );
   }
 
+  /**
+   * Handles pointer activation, forwarding to `activate()` unless the click
+   * originated from an interactive descendant of the header cell (which owns its
+   * own activation).
+   */
+  protected onClick(event: MouseEvent): void {
+    if (eventFromInteractiveDescendant(event)) {
+      return;
+    }
+    this.activate();
+  }
+
   /** Activates the sort: computes the next direction, updates the model, and emits `sortChange`. */
   protected activate(): void {
     if (!this.sortable()) return;
@@ -155,6 +177,9 @@ export class ForTableSortHeader {
     const isEnter = event.key === 'Enter';
     const isSpace = event.key === ' ';
     if (!isEnter && !isSpace) {
+      return;
+    }
+    if (eventFromInteractiveDescendant(event)) {
       return;
     }
     if (this.#hasDraggable && (isSpace || this.#host.hasAttribute('data-dragging'))) {
