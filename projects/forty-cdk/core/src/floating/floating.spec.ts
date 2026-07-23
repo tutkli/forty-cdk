@@ -7,9 +7,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import type { ComputePositionReturn, Placement } from '@floating-ui/dom';
 
 import { flushPositioning, installObserverPolyfills } from '../../../src/test-utils';
 import { buildFlipOptions, injectFloating } from './floating';
+import { runPositioning } from './run-positioning';
 
 @Component({
   template: `
@@ -278,6 +280,58 @@ class FirstPositionBubble {
 class FirstPositionBubbleHost {
   readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
   readonly bubble = viewChild.required<FirstPositionBubble>('bubble');
+}
+
+@Component({
+  selector: 'recorder-bubble',
+  template: '<ng-content />',
+})
+class RecorderBubble {
+  readonly reference = signal<HTMLElement | null>(null);
+  readonly open = signal(false);
+  readonly requestedPlacement = signal<Placement>('top');
+
+  readonly appliedPlacements: Placement[] = [];
+  firstPositionCount = 0;
+  firstPositionSawPlacement: Placement | null = null;
+
+  constructor() {
+    runPositioning({
+      reference: this.reference,
+      open: this.open,
+      portal: false,
+      onFirstPosition: () => {
+        this.firstPositionCount++;
+        this.firstPositionSawPlacement =
+          this.appliedPlacements[this.appliedPlacements.length - 1] ?? null;
+      },
+      computeAndApply: () => {
+        const placement = this.requestedPlacement();
+        return {
+          placement,
+          middleware: [],
+          apply: (result: ComputePositionReturn) => {
+            this.appliedPlacements.push(result.placement);
+          },
+          reset: () => {},
+        };
+      },
+    });
+  }
+}
+
+@Component({
+  imports: [RecorderBubble],
+  template: `
+    <div id="container">
+      <button #anchor type="button">Anchor</button>
+      <recorder-bubble #bubble>Content</recorder-bubble>
+    </div>
+  `,
+})
+class RecorderBubbleHost {
+  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
+  readonly bubble = viewChild.required<RecorderBubble>('bubble');
 }
 
 describe('injectFloating', () => {
@@ -776,7 +830,7 @@ describe('injectFloating', () => {
       expect(bubble.firstPositionCount).toBe(1);
     });
 
-    it('re-arms on a positioner-config change while open', async () => {
+    it('does not re-fire on a positioner-config change while open (per-open, not per-run)', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(FirstPositionBubbleHost);
       await flushPositioning(fixture);
@@ -789,7 +843,67 @@ describe('injectFloating', () => {
 
       bubble.side.set('bottom');
       await flushPositioning(fixture);
+      expect(bubble.firstPositionCount).toBe(1);
+    });
+
+    it('fires again on a fresh open cycle after close and re-open', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(FirstPositionBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      await flushPositioning(fixture);
+      expect(bubble.firstPositionCount).toBe(1);
+
+      bubble.open.set(false);
+      await flushPositioning(fixture);
+
+      bubble.open.set(true);
+      await flushPositioning(fixture);
       expect(bubble.firstPositionCount).toBe(2);
+    });
+  });
+
+  describe('superseded (cancelled) run', () => {
+    it('a run superseded by a config change while its position is still pending writes nothing and never fires onFirstPosition', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(RecorderBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      fixture.detectChanges();
+
+      bubble.requestedPlacement.set('bottom');
+      fixture.detectChanges();
+
+      await flushPositioning(fixture);
+
+      expect(bubble.appliedPlacements).toEqual(['bottom']);
+      expect(bubble.firstPositionCount).toBe(1);
+      expect(bubble.firstPositionSawPlacement).toBe('bottom');
+    });
+
+    it('a run torn down by a close while its position is still pending writes nothing', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(RecorderBubbleHost);
+      await flushPositioning(fixture);
+      const bubble = fixture.componentInstance.bubble();
+
+      bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      bubble.open.set(true);
+      fixture.detectChanges();
+
+      bubble.open.set(false);
+      fixture.detectChanges();
+
+      await flushPositioning(fixture);
+
+      expect(bubble.appliedPlacements).toEqual([]);
+      expect(bubble.firstPositionCount).toBe(0);
     });
   });
 
