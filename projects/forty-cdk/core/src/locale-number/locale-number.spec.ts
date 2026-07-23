@@ -167,4 +167,41 @@ describe('parseLocaleNumber', () => {
       expect(parseLocaleNumber('1.2.3', EN, { lenientGrouping: true })).toBeNull();
     });
   });
+
+  describe('lenient numpad-dot promotion in non-dot-decimal locales (#1383)', () => {
+    const FR = localeSeparators('fr-FR');
+
+    it('leaves a numpad dot as the decimal in a dot-decimal locale (en-US)', () => {
+      expect(parseLocaleNumber('1.5', EN, { lenientGrouping: true })).toBe(1.5);
+    });
+
+    it('promotes a lone numpad dot to the decimal separator in de-DE', () => {
+      expect(parseLocaleNumber('1.5', DE, { lenientGrouping: true })).toBe(1.5);
+    });
+
+    it('promotes a lone numpad dot to the decimal separator in fr-FR', () => {
+      expect(parseLocaleNumber('1.5', FR, { lenientGrouping: true })).toBe(1.5);
+    });
+
+    it('keeps a dot as a group separator when its trailing run is a legal group size (de-DE)', () => {
+      expect(parseLocaleNumber('1.234', DE, { lenientGrouping: true })).toBe(1234);
+    });
+
+    it('treats a dot as decimal when its trailing run is not a legal group size (de-DE)', () => {
+      expect(parseLocaleNumber('12.34', DE, { lenientGrouping: true })).toBe(12.34);
+    });
+
+    it('keeps grouping and a numpad decimal coexisting in de-DE', () => {
+      expect(parseLocaleNumber('1.234,5', DE, { lenientGrouping: true })).toBe(1234.5);
+    });
+
+    it('promotes a numpad dot alongside space grouping in fr-FR', () => {
+      expect(parseLocaleNumber('1 234.5', FR, { lenientGrouping: true })).toBe(1234.5);
+    });
+
+    it('does not touch the strict path — a de-DE dot stays a group separator', () => {
+      expect(parseLocaleNumber('1.5', DE)).toBeNull();
+      expect(parseLocaleNumber('1.234', DE)).toBe(1234);
+    });
+  });
 });
