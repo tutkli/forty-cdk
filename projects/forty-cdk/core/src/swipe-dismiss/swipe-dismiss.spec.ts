@@ -1,6 +1,7 @@
 import {
   attachSwipeDismiss,
   FLICK_STALE_VELOCITY_MS,
+  FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
   type SwipeDirection,
   type SwipeEventDetail,
@@ -495,5 +496,9 @@ describe('flickVelocity', () => {
 
   it('exposes a 100 ms staleness cutoff', () => {
     expect(FLICK_STALE_VELOCITY_MS).toBe(100);
+  });
+
+  it('exposes a 0.4 px/ms intentional-flick threshold', () => {
+    expect(FLICK_VELOCITY_PX_PER_MS).toBe(0.4);
   });
 });

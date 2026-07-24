@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flickVelocity } from 'forty-cdk/core';
+import { flickVelocity, FLICK_VELOCITY_PX_PER_MS } from 'forty-cdk/core';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForCarousel } from './carousel';
@@ -76,21 +76,19 @@ describe('ForCarouselDrag', () => {
   });
 
   describe('flick velocity staleness (D: no flick after a long pause)', () => {
-    const FLICK = 0.4;
-
     it('a fast flick toward the next slide biases the snap forward', () => {
-      const v = flickVelocity(FLICK, false);
+      const v = flickVelocity(FLICK_VELOCITY_PX_PER_MS, false);
       expect(resolveDragIndex(0, 0.1, v)).toBe(1);
     });
 
     it('a stale release zeroes the velocity so the snap goes to nearest', () => {
-      const v = flickVelocity(FLICK, true);
+      const v = flickVelocity(FLICK_VELOCITY_PX_PER_MS, true);
       expect(v).toBe(0);
       expect(resolveDragIndex(0, 0.1, v)).toBe(0);
     });
 
     it('a stale release does not bias a small backward drag either', () => {
-      const v = flickVelocity(-FLICK, true);
+      const v = flickVelocity(-FLICK_VELOCITY_PX_PER_MS, true);
       expect(v).toBe(0);
       expect(resolveDragIndex(2, -0.2, v)).toBe(2);
     });

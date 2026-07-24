@@ -655,8 +655,9 @@ test.describe('Drawer', () => {
       // travel → position = 200 − 60 = 140. Closest snap by position is
       // 148 (8 px away) vs 200 (60 px) vs 400 (260 px) → settles on
       // '148px'. With 100 ms gaps the per-event velocity is 10/100 =
-      // 0.1 px/ms, well below the 0.4 flick threshold, so no velocity
-      // bias kicks in and the position-only check decides the target.
+      // 0.1 px/ms, well below the 0.4 px/ms `FLICK_VELOCITY_PX_PER_MS`
+      // flick threshold, so no velocity bias kicks in and the position-only
+      // check decides the target.
       // Without the cumulative fix the offset would be stuck at 10, the
       // end position would be 190, the closest snap would still be 200,
       // and the test would observe a snap-back to '0.5' rather than the
@@ -777,7 +778,7 @@ test.describe('Drawer', () => {
       // `moveTowardEdge / dt` where `dt = now - lastEventTime`. The
       // release reads `#pointerVelocity` set by the LAST move, so the
       // flick is registered iff the final move's velocity clears the
-      // 0.4 px/ms `VELOCITY_THRESHOLD_PX_PER_MS` gate.
+      // 0.4 px/ms `FLICK_VELOCITY_PX_PER_MS` gate.
       //
       // Robustness: the previous shape relied on the final move's
       // `dt` being sub-millisecond ("CDP transport overhead") while keeping

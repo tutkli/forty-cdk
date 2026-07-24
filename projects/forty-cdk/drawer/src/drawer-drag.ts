@@ -19,6 +19,7 @@ import {
   resolveSnapTarget,
   flickVelocity,
   FLICK_STALE_VELOCITY_MS,
+  FLICK_VELOCITY_PX_PER_MS,
 } from 'forty-cdk/core';
 import {
   type ForDrawerDragEvent,
@@ -432,7 +433,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     } else {
       // No snap points: dismiss when dragged past closeThreshold OR fast
       // flick toward edge.
-      willClose = offset >= dim * threshold || effectiveVelocity >= 0.4;
+      willClose = offset >= dim * threshold || effectiveVelocity >= FLICK_VELOCITY_PX_PER_MS;
     }
 
     config.emitRelease({ willClose, nextSnapPoint: nextSnap, originalEvent: event });

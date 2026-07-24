@@ -140,6 +140,18 @@ function constrainedDelta(dx: number, dy: number, dir: SwipeDirection): { x: num
 export const FLICK_STALE_VELOCITY_MS = 100;
 
 /**
+ * Release speed (CSS px/ms) past which a gesture counts as a deliberate flick
+ * rather than a slow position drag. A release at or above it biases the
+ * resolution one step in the flick direction instead of snapping to nearest.
+ *
+ * Shared by every swipe-driven resolution in the library — `ForCarousel`'s
+ * drag directive (`resolveDragIndex`), `ForDrawer`'s no-snap-points dismiss
+ * check, and `resolveSnapTarget`'s velocity bias — so the "intentional flick"
+ * semantics stay identical across the library.
+ */
+export const FLICK_VELOCITY_PX_PER_MS = 0.4;
+
+/**
  * Zeroes the flick velocity when the release is stale — its last `pointermove`
  * sample is older than {@link FLICK_STALE_VELOCITY_MS} — so a fast final move
  * followed by a hold-still before lifting can't carry the stale sample into the
