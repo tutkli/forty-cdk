@@ -19,7 +19,9 @@ import { injectComboboxContext } from './combobox-context';
  *   or the next chip when there is no previous one (so removing the first
  *   chip lands on the new first chip), falling back to the input only when
  *   the removed chip was the last one standing.
- * - **Escape** — return focus to the input.
+ * - **Escape** — dismiss the open popup via the consumer's `(escapeKeyDown)`
+ *   (a veto keeps it open), then return focus to the input; with the popup
+ *   already closed it simply returns focus to the input.
  *
  * Click on the chip body (excluding the remove button) just focuses the
  * chip — useful as an alternative to the Backspace path.
@@ -142,7 +144,13 @@ export class ForComboboxChip<T = string> {
       }
       case 'Escape': {
         event.preventDefault();
-        this.ctx.input()?.focus();
+        if (this.ctx.open()) {
+          event.stopPropagation();
+          this.ctx.emitEscapeKeyDown(event);
+        }
+        if (!this.ctx.open() && this.ctx.trigger() === null) {
+          this.ctx.input()?.focus();
+        }
         break;
       }
     }

@@ -102,7 +102,12 @@ import { queryFlag } from './_query-flag';
         </div>
       }
     </div>
-    <input id="after" data-testid="after" placeholder="after-trigger" />
+    <input
+      id="after"
+      data-testid="after"
+      placeholder="after-trigger"
+      style="position: fixed; right: 8px; bottom: 8px;"
+    />
   `,
 })
 export class SelectFixture {

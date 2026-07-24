@@ -205,11 +205,13 @@ export class ForComboboxInput {
           return option.label();
         }
       }
-      return null;
+      if (this.ctx.totalCount() === undefined) {
+        return null;
+      }
     }
     const match = this.ctx
       .inlineCompletionOptions()
-      .find((o) => foldTypeaheadText(o.label).startsWith(folded));
+      .find((o) => !o.disabled && foldTypeaheadText(o.label).startsWith(folded));
     return match ? match.label : null;
   }
 

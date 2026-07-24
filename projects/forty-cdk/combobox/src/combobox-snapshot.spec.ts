@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { afterEachOverlayCleanup } from '../../src/test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
 import { OptionLabelCache, type SnapshotEntry } from './combobox-label-cache';
-import { type IndexedSnapshotEntry, VirtualizedNavigator } from './combobox-virtualized-navigator';
+import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 interface FakeOption {
   readonly handle: ForComboboxOptionHandle<string>;
@@ -50,7 +50,7 @@ function makeHandle(opts: {
  */
 function mergedCachedOptions(
   live: readonly SnapshotEntry<string>[],
-  indexed: ReadonlyMap<number, IndexedSnapshotEntry<string>>,
+  indexed: ReadonlyMap<number, SnapshotEntry<string>>,
 ): readonly SnapshotEntry<string>[] {
   if (indexed.size === 0) {
     return live;
@@ -60,7 +60,7 @@ function mergedCachedOptions(
   for (const pos of [...indexed.keys()].sort((a, b) => a - b)) {
     const entry = indexed.get(pos)!;
     if (seen.has(entry.id)) continue;
-    merged.push({ id: entry.id, value: entry.value, label: entry.label });
+    merged.push({ id: entry.id, value: entry.value, label: entry.label, disabled: entry.disabled });
   }
   return merged;
 }
@@ -75,7 +75,11 @@ interface LabelCacheHarness {
 function createLabelCache(initialTotal?: number): LabelCacheHarness {
   const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
   const total = signal<number | undefined>(initialTotal);
-  const cache = new OptionLabelCache<string>({ items, totalCount: total });
+  const cache = new OptionLabelCache<string>({
+    items,
+    totalCount: total,
+    itemToFormValue: signal((value: string) => value),
+  });
   return {
     cache,
     setItems: (next) => items.set(next),
@@ -164,6 +168,46 @@ describe('OptionLabelCache', () => {
     // Listbox closes → consumer's @if unmounts the @for; items() goes to [].
     h.setItems([]);
     expect(h.entries().map((e) => e.id)).toEqual(['a', 'b']);
+  });
+
+  it('heals a relabeled option on reopen with a fresh id but same value (#1389)', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    h.setItems([a.handle]);
+    h.cache.prime();
+    h.setItems([]);
+    const relabeled = makeHandle({ id: 'a2', value: 'apple', label: 'Green Apple' });
+    h.setItems([relabeled.handle]);
+    h.cache.prime();
+
+    const entries = h.entries();
+    expect(entries.map((e) => e.value)).toEqual(['apple']);
+    expect(entries.map((e) => e.label)).toEqual(['Green Apple']);
+  });
+
+  it('dedups mergedEntries by value across an off-window id churn (#1389)', () => {
+    const h = createLabelCache(100);
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    h.setItems([a.handle]);
+    h.cache.prime();
+    const offWindow = new Map<number, SnapshotEntry<string>>([
+      [50, { id: 'a-remount', value: 'apple', label: 'Apple', disabled: false }],
+    ]);
+    expect(h.cache.mergedEntries(offWindow).map((e) => e.value)).toEqual(['apple']);
+  });
+
+  it('carries the disabled flag through the fold and mergedEntries (#1389)', () => {
+    const h = createLabelCache(100);
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple', disabled: true });
+    h.setItems([a.handle]);
+    h.cache.prime();
+    expect(h.entries().find((e) => e.value === 'apple')?.disabled).toBe(true);
+
+    const offWindow = new Map<number, SnapshotEntry<string>>([
+      [50, { id: 'b', value: 'banana', label: 'Banana', disabled: true }],
+    ]);
+    const merged = h.cache.mergedEntries(offWindow);
+    expect(merged.find((e) => e.value === 'banana')?.disabled).toBe(true);
   });
 
   it('purges a live-window removal from liveEntries but keeps it in entries (#1196)', () => {
@@ -441,7 +485,11 @@ describe('combobox-snapshot zoneless reactivity', () => {
 
     const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
     const total = signal<number | undefined>(undefined);
-    const cache = new OptionLabelCache<string>({ items, totalCount: total });
+    const cache = new OptionLabelCache<string>({
+      items,
+      totalCount: total,
+      itemToFormValue: signal((value: string) => value),
+    });
 
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     items.set([a.handle]);

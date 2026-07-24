@@ -62,7 +62,44 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
   ],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
-    @if (multi) {
+    @if (actionMounted) {
+      <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" ariaLabel="Fruit search">
+        <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+        <div forComboboxContent data-testid="content">
+          <button data-testid="action" forComboboxAction (action)="onAction()">
+            Create "{{ query() }}"
+          </button>
+          <div data-testid="list" forComboboxList>
+            @for (opt of filtered(); track opt) {
+              <div forComboboxOption [attr.data-testid]="'opt-' + opt" [value]="opt">
+                {{ opt }}
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    } @else if (noInput) {
+      <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" ariaLabel="Fruit search">
+        <button data-testid="trigger" forComboboxTrigger>
+          {{ value().at(0) ?? 'Pick a fruit' }}
+        </button>
+        @if (open()) {
+          <div forComboboxContent data-testid="content">
+            <div data-testid="list" forComboboxList>
+              @for (opt of filtered(); track opt) {
+                <div forComboboxOption [attr.data-testid]="'opt-' + opt" [value]="opt">
+                  {{ opt }}
+                </div>
+              }
+            </div>
+            <button data-testid="action" forComboboxAction (action)="onAction()">Create</button>
+            <button data-testid="action2" forComboboxAction (action)="onAction()">
+              More options
+            </button>
+          </div>
+        }
+      </div>
+    } @else if (multi) {
       <div
         forCombobox
         multiple
@@ -125,8 +162,20 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
                 Create "{{ query() }}"
               </button>
             }
+            @if (showAction2) {
+              <button
+                data-testid="action2"
+                forComboboxAction
+                [disabled]="action2Disabled()"
+                (action)="onAction()"
+              >
+                More options
+              </button>
+            }
             @if (picker) {
               <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+            }
+            @if (picker || showAction || showAction2) {
               <div data-testid="list" forComboboxList>
                 @for (opt of filtered(); track opt) {
                   <div
@@ -155,7 +204,11 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
         }
       </div>
     }
-    <input data-testid="after" placeholder="after-trigger" />
+    <input
+      data-testid="after"
+      placeholder="after-trigger"
+      style="position: fixed; right: 8px; bottom: 8px;"
+    />
     <div data-testid="action-count">{{ actionCount() }}</div>
     <div data-testid="value">{{ value().join(',') }}</div>
   `,
@@ -189,6 +242,19 @@ export class ComboboxFixture {
   // `?action=1` pins a `[forComboboxAction]` ("Create …") at the top of the
   // popup so the action-item focus / activation specs (#1325) can drive it.
   protected readonly showAction = queryFlag('action');
+  // `?action2=1` pins a SECOND `[forComboboxAction]` so the ring resolution and
+  // disabled-while-focused specs (#1389 item 9) can step between two actions.
+  protected readonly showAction2 = queryFlag('action2');
+  // `?action2disabled=1` starts the second action disabled so a spec can prove
+  // the ring steps to the nearest enabled neighbor from a disabled origin.
+  protected readonly action2Disabled = signal(queryFlag('action2disabled'));
+  // `?actionMounted=1` renders the content (and its action) OUTSIDE `@if (open())`
+  // so the action stays in the DOM while the popup is closed — the mounted-but-
+  // closed anatomy where Tab must let focus leave (#1389 item 9, CLAIM 1).
+  protected readonly actionMounted = queryFlag('actionMounted');
+  // `?noinput=1` renders a picker with actions but NO in-panel `[forComboboxInput]`,
+  // so the ring cycles among the actions with no input slot (#1389 item 9, CLAIM 3).
+  protected readonly noInput = queryFlag('noinput');
   protected readonly multi = queryFlag('multi');
   // `?long=1` renders a 60-item list that scrolls past the viewport, so the
   // action's keyboard reachability can be asserted from a deep scroll position.

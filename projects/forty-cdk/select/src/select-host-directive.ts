@@ -56,6 +56,7 @@ export const FOR_SELECT_HOST_DIRECTIVE_INPUTS = [
   'readonly',
   'required',
   'returnFocus',
+  'selectedIndex',
   'selectionFollowsFocus',
   'side',
   'sideOffset',

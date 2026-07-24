@@ -644,6 +644,35 @@ describe('ForListbox', () => {
       expect(document.activeElement).toBe(optOf(el, 'avocado'));
     });
 
+    it('excludes an aria-hidden indicator glyph from the matched text', async () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS, ForListboxOptionIndicator],
+        template: `
+          <ul forListbox [(value)]="picked">
+            <li>
+              <button type="button" forListboxOption value="apple" data-test-id="apple">
+                <span forListboxOptionIndicator>✓</span>Apple
+              </button>
+            </li>
+            <li>
+              <button type="button" forListboxOption value="banana" data-test-id="banana">
+                <span forListboxOptionIndicator>✓</span>Banana
+              </button>
+            </li>
+          </ul>
+        `,
+      })
+      class IndicatorTypeaheadHost {
+        readonly picked = signal<readonly string[]>([]);
+      }
+
+      const { el, flush } = renderHost(IndicatorTypeaheadHost);
+      optOf(el, 'apple').focus();
+      pressKey(optOf(el, 'apple'), 'a');
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+    });
+
     it('ignores Space (reserved for activation)', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       optOf(el, 'apple').focus();
@@ -1346,6 +1375,36 @@ describe('ForListbox', () => {
 
       expect(fixture.componentInstance.emitted).toEqual([]);
     });
+
+    it('does not re-emit valueChange when the already-selected single option is clicked again', async () => {
+      @Component({
+        imports: [...LISTBOX_IMPORTS],
+        template: `
+          <ul forListbox [(value)]="picked" (valueChange)="emitted.push($event)">
+            <li><button type="button" forListboxOption value="a" data-test-id="a">A</button></li>
+            <li><button type="button" forListboxOption value="b" data-test-id="b">B</button></li>
+          </ul>
+        `,
+      })
+      class Host {
+        readonly picked = signal<readonly string[]>([]);
+        readonly emitted: (readonly string[])[] = [];
+      }
+
+      const { fixture, el, flush } = renderHost(Host);
+      optOf(el, 'a').click();
+      await flush();
+      expect(fixture.componentInstance.emitted).toEqual([['a']]);
+
+      optOf(el, 'a').click();
+      await flush();
+      expect(fixture.componentInstance.emitted).toEqual([['a']]);
+      expect(fixture.componentInstance.picked()).toEqual(['a']);
+
+      optOf(el, 'b').click();
+      await flush();
+      expect(fixture.componentInstance.emitted).toEqual([['a'], ['b']]);
+    });
   });
 
   describe('groups (ForListboxGroup + ForListboxGroupLabel)', () => {
@@ -1445,6 +1504,12 @@ describe('ForListbox', () => {
       const { el } = renderHost(IndicatorHost);
       const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
       expect(Array.from(inds).every((n) => n.hasAttribute('hidden'))).toBe(true);
+    });
+
+    it('marks the indicator aria-hidden so screen readers ignore the decoration', () => {
+      const { el } = renderHost(IndicatorHost);
+      const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
+      expect(Array.from(inds).every((n) => n.getAttribute('aria-hidden') === 'true')).toBe(true);
     });
 
     it('reflects per-option selection (independent of siblings) in multi mode', async () => {

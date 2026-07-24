@@ -19,6 +19,7 @@
  * barrel is intentionally empty — see the package README).
  */
 
+export { accessibleTextContent } from './accessible-text/accessible-text';
 export { afterNextRenderCancellable } from './after-next-render-cancellable/after-next-render-cancellable';
 export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';
 export { resolveConfigClass } from './class-list/resolve-config-class';

@@ -829,6 +829,24 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
       expect(r.instance.value()).toEqual(['banana']);
     });
+
+    it('re-seeds the activedescendant when the active option is filtered out of the registry', async () => {
+      const r = renderHost(ComboboxHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getInput();
+      pressKey(input, 'ArrowDown');
+      pressKey(input, 'ArrowDown');
+      await flush(r.fixture);
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('banana').id);
+
+      typeInto(input, 'ap');
+      await flush(r.fixture);
+
+      expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
+      expect(input.getAttribute('aria-activedescendant')).toBe(getOption('apple').id);
+    });
   });
 
   describe('inline autocomplete', () => {
@@ -1524,6 +1542,60 @@ describe('ForCombobox', () => {
       expect(queryEmits).toBe(1);
       expect(valueEmits).toBe(1);
     });
+
+    it('does not re-emit valueChange when the already-selected single option is re-activated', async () => {
+      let valueEmits = 0;
+
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div
+            forCombobox
+            [(query)]="query"
+            [(value)]="value"
+            [(open)]="open"
+            (valueChange)="onValue()"
+          >
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent>
+                <div data-test-id="apple" forComboboxOption value="apple" label="Apple">Apple</div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly query = signal('');
+        readonly value = signal<readonly string[]>([]);
+        readonly open = signal(false);
+        onValue(): void {
+          valueEmits++;
+        }
+      }
+
+      const r = renderHost(Host);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').click();
+      await flush(r.fixture);
+
+      expect(valueEmits).toBe(1);
+      expect(r.instance.value()).toEqual(['apple']);
+      expect(r.instance.query()).toBe('Apple');
+      expect(r.instance.open()).toBe(false);
+
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').click();
+      await flush(r.fixture);
+
+      expect(valueEmits).toBe(1);
+      expect(r.instance.value()).toEqual(['apple']);
+      expect(r.instance.query()).toBe('Apple');
+      expect(r.instance.open()).toBe(false);
+    });
   });
 
   describe('multi mode', () => {
@@ -1889,7 +1961,7 @@ describe('ForCombobox', () => {
         expect(document.activeElement).toBe(getInput());
       });
 
-      it('Escape on chip returns focus to the input', async () => {
+      it('Escape on chip returns focus to the input when the popup is closed', async () => {
         const r = renderHost(MultiHost);
         r.instance.value.set(['apple']);
         await flush(r.fixture);
@@ -1902,6 +1974,71 @@ describe('ForCombobox', () => {
         await flush(r.fixture);
 
         expect(document.activeElement).toBe(getInput());
+      });
+
+      it('Escape on chip closes an open popup and returns focus to the input', async () => {
+        const r = renderHost(MultiHost);
+        r.instance.value.set(['apple']);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const apple = getChip('apple');
+        apple.focus();
+        apple.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(document.activeElement).toBe(getInput());
+      });
+
+      it('Escape on chip keeps the popup open and leaves focus on the chip when vetoed', async () => {
+        @Component({
+          imports: [
+            ForCombobox,
+            ForComboboxChips,
+            ForComboboxChip,
+            ForComboboxInput,
+            ForComboboxContent,
+          ],
+          template: `
+            <div
+              forCombobox
+              multiple
+              [(value)]="value"
+              [(open)]="open"
+              (escapeKeyDown)="$event.preventDefault()"
+            >
+              <div forComboboxChips>
+                @for (v of value(); track v) {
+                  <span forComboboxChip [value]="v" [attr.data-test-chip]="v">{{ v }}</span>
+                }
+                <input forComboboxInput />
+              </div>
+              @if (open()) {
+                <div forComboboxContent></div>
+              }
+            </div>
+          `,
+        })
+        class VetoHost {
+          readonly value = signal<readonly string[]>(['apple']);
+          readonly open = signal(true);
+        }
+
+        const r = renderHost(VetoHost);
+        await flush(r.fixture);
+
+        const apple = document.querySelector<HTMLElement>('[data-test-chip="apple"]')!;
+        apple.focus();
+        apple.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+        );
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(true);
+        expect(document.activeElement).toBe(apple);
       });
 
       it('Delete on chip removes it', async () => {
@@ -2579,6 +2716,60 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       await flush(r.fixture);
 
       expect(r.instance.autoFocusOnCloseCount).toBe(0);
+    });
+  });
+
+  describe('return-focus skip on outside-interaction close (#1389 item 4)', () => {
+    it('does NOT return focus to the trigger on an outside pointer-down close', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getPickerInput().focus();
+      const focusSpy = vi.spyOn(getTrigger(), 'focus');
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).not.toHaveBeenCalled();
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
+      outside.remove();
+    });
+
+    it('returns focus to the trigger on an Escape close (unchanged)', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const input = getPickerInput();
+      input.focus();
+      const focusSpy = vi.spyOn(getTrigger(), 'focus');
+
+      pressKey(input, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalled();
+    });
+
+    it('returns focus to the trigger on an option-select close (unchanged)', async () => {
+      const r = renderHost(PickerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const focusSpy = vi.spyOn(getTrigger(), 'focus');
+
+      getOption('banana').click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalled();
     });
   });
 
@@ -3903,6 +4094,99 @@ describe('ForCombobox virtualization', () => {
   // the headless contract is the DOM (`aria-activedescendant`, inline
   // autocomplete completion, etc.), not the snapshot cache shape.
 
+  describe('inline autocomplete against off-window options (#1389 item 3)', () => {
+    interface WItem {
+      readonly id: string;
+      readonly label: string;
+      readonly disabled?: boolean;
+    }
+    const WORDS: readonly WItem[] = [
+      { id: 'apple', label: 'Apple' },
+      { id: 'banana', label: 'Banana' },
+      { id: 'cherry', label: 'Cherry', disabled: true },
+      { id: 'date', label: 'Date' },
+      { id: 'elderberry', label: 'Elderberry' },
+    ];
+
+    @Component({
+      imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+      template: `
+        <div
+          forCombobox
+          [(query)]="query"
+          [(value)]="value"
+          [(open)]="open"
+          [autocompleteMode]="'both'"
+          [totalCount]="WORDS.length"
+          [visibleRange]="range()"
+        >
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              @for (it of windowed(); track it.id) {
+                <div
+                  [attr.data-test-id]="it.id"
+                  forComboboxOption
+                  [value]="it.id"
+                  [label]="it.label"
+                  [posInSet]="it.posInSet"
+                  [disabled]="!!it.disabled"
+                >
+                  {{ it.label }}
+                </div>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class VirtInlineHost {
+      readonly query = signal('');
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(false);
+      readonly WORDS = WORDS;
+      readonly range = signal<readonly [number, number]>([0, 3]);
+      readonly windowed = computed<readonly (WItem & { posInSet: number })[]>(() => {
+        const [start, end] = this.range();
+        return WORDS.slice(start, end).map((it, i) => ({ ...it, posInSet: start + i }));
+      });
+    }
+
+    it('completes against an enabled option scrolled out of the live window', async () => {
+      const r = renderHost(VirtInlineHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.range.set([3, 5]);
+      await flush(r.fixture);
+      expect(document.querySelector('[data-test-id="apple"]')).toBeNull();
+
+      const input = getInput();
+      input.focus();
+      typeInto(input, 'app');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('Apple');
+      expect(input.selectionStart).toBe(3);
+      expect(input.selectionEnd).toBe(5);
+    });
+
+    it('skips a disabled off-window option instead of completing to it', async () => {
+      const r = renderHost(VirtInlineHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.range.set([3, 5]);
+      await flush(r.fixture);
+      expect(document.querySelector('[data-test-id="cherry"]')).toBeNull();
+
+      const input = getInput();
+      input.focus();
+      typeInto(input, 'che');
+      await flush(r.fixture);
+
+      expect(input.value).toBe('che');
+    });
+  });
+
   it('zoneless: virtualized navigation works without Zone.js', async () => {
     const r = renderHost(VirtHost);
     r.instance.open.set(true);
@@ -4001,5 +4285,125 @@ describe('ForCombobox virtualization', () => {
       expect(i.getAttribute('aria-errormessage')).toBe(error.id);
       expect(i.getAttribute('aria-describedby')).toContain(error.id);
     });
+  });
+});
+
+describe('late [forComboboxTrigger] dev-mode warning (#1389 item 10)', () => {
+  @Component({
+    imports: [
+      ForCombobox,
+      ForComboboxInput,
+      ForComboboxContent,
+      ForComboboxList,
+      ForComboboxTrigger,
+    ],
+    template: `
+      <div forCombobox [(open)]="open">
+        @if (open()) {
+          <div forComboboxContent>
+            <input forComboboxInput />
+            <div forComboboxList></div>
+          </div>
+        }
+        @if (showTrigger()) {
+          <button forComboboxTrigger></button>
+        }
+      </div>
+    `,
+  })
+  class LateTriggerHost {
+    readonly open = signal(true);
+    readonly showTrigger = signal(false);
+  }
+
+  @Component({
+    imports: [
+      ForCombobox,
+      ForComboboxInput,
+      ForComboboxContent,
+      ForComboboxList,
+      ForComboboxTrigger,
+    ],
+    template: `
+      <div forCombobox [(open)]="open">
+        <button forComboboxTrigger></button>
+        @if (open()) {
+          <div forComboboxContent>
+            <input forComboboxInput />
+            <div forComboboxList></div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class EarlyTriggerHost {
+    readonly open = signal(false);
+  }
+
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div forCombobox [(open)]="open">
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div forComboboxOption value="apple" label="Apple">Apple</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class EditableHost {
+    readonly open = signal(true);
+  }
+
+  afterEachOverlayCleanup();
+
+  it('warns when a trigger registers after the content mounted', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(LateTriggerHost);
+    await flush(r.fixture);
+    expect(warn).not.toHaveBeenCalled();
+
+    r.instance.showTrigger.set(true);
+    await flush(r.fixture);
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]?.[0]).toContain('[forty-cdk/combobox]');
+  });
+
+  it('does not warn when the trigger is present before the content mounts', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(EarlyTriggerHost);
+    await flush(r.fixture);
+
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    expect(warn).not.toHaveBeenCalled();
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('does not warn in the editable anatomy', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(EditableHost);
+    await flush(r.fixture);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('zoneless: warns on a late trigger without zone.js', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(LateTriggerHost);
+    await flush(r.fixture);
+    expect(warn).not.toHaveBeenCalled();
+
+    r.instance.showTrigger.set(true);
+    await flush(r.fixture);
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

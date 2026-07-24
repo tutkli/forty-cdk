@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   Directive,
   ElementRef,
@@ -40,14 +41,22 @@ import { injectComboboxContext } from './combobox-context';
  * naturally "inside" the outside-pointer / outside-focus dismissal checks, just
  * like the input.
  *
+ * The action must be a sibling of the listbox, never a child of it: in the
+ * editable anatomy `[forComboboxContent]` carries `role="listbox"`, which may
+ * only own `option` / `group` children, so the options are wrapped in a
+ * `[forComboboxList]` and the action sits beside it under the (now role-less)
+ * content.
+ *
  * ```html
  * <div forComboboxContent>
  *   <button forComboboxAction (action)="createNew(query())">
  *     Create "{{ query() }}"
  *   </button>
- *   @for (item of filtered(); track item.id) {
- *     <div forComboboxOption [value]="item">{{ item.name }}</div>
- *   }
+ *   <div forComboboxList>
+ *     @for (item of filtered(); track item.id) {
+ *       <div forComboboxOption [value]="item">{{ item.name }}</div>
+ *     }
+ *   </div>
  * </div>
  * ```
  */
@@ -105,6 +114,14 @@ export class ForComboboxAction {
       (h) => this.#ctx.registerAction(h),
       (h) => this.#ctx.unregisterAction(h),
     );
+
+    afterNextRender(() => {
+      if (!this.#ctx.hasList()) {
+        throw new Error(
+          '[forty-cdk/combobox] [forComboboxAction] must be nested inside a [forComboboxContent] that also contains a [forComboboxList]. In the editable anatomy [forComboboxContent] carries role="listbox", so a role="button" action placed directly inside it is an invalid listbox child (aria-required-owned). Wrap the options in a <div forComboboxList> so the action becomes a sibling of the listbox.',
+        );
+      }
+    });
   }
 
   protected onClick(): void {
@@ -115,12 +132,12 @@ export class ForComboboxAction {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled()) {
-      return;
-    }
     switch (event.key) {
       case 'Enter':
       case ' ':
+        if (this.disabled()) {
+          return;
+        }
         event.preventDefault();
         if (!this.#isInert()) {
           this.action.emit();
@@ -128,11 +145,17 @@ export class ForComboboxAction {
         break;
 
       case 'Tab':
+        if (!this.#ctx.open()) {
+          return;
+        }
         event.preventDefault();
         this.#ctx.moveActionFocus(this.id(), event.shiftKey ? 'prev' : 'next');
         break;
 
       case 'Escape':
+        if (this.disabled()) {
+          return;
+        }
         event.preventDefault();
         event.stopPropagation();
         this.#ctx.emitEscapeKeyDown(event);

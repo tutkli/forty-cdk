@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 
 import {
+  accessibleTextContent,
   resolveDropTarget,
   isDragLiftKey,
   resolveLiftedDragControl,
@@ -322,7 +323,7 @@ export class ForListboxReorder {
     this.#liftedHost = host;
     this.#fromIndex = index;
     this.#targetIndex = index;
-    this.#label = (host.textContent ?? '').trim();
+    this.#label = accessibleTextContent(host).trim();
     host.setAttribute('data-dragging', '');
     this._dragging.set(true);
 

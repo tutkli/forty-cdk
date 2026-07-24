@@ -62,6 +62,16 @@ test.describe('Select', () => {
     await expect(el(page, 'content')).toHaveCount(0);
   });
 
+  test('clicking an outside input does not steal focus back to the trigger', async ({ page }) => {
+    await gotoFixture(page, 'select');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    await el(page, 'after').click();
+    await expect(el(page, 'content')).toHaveCount(0);
+    await expectFocused(el(page, 'after'));
+  });
+
   test('(autoFocusOnOpen) preventDefault skips the imperative focus move', async ({ page }) => {
     await gotoFixture(page, 'select', { vetoOpen: '1' });
     await el(page, 'trigger').click();
