@@ -2,7 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
-import { CalendarDateTime } from '@internationalized/date';
+import { CalendarDate, CalendarDateTime } from '@internationalized/date';
 
 import { flush, pressKey, renderHost, type RenderResult } from '../../src/test-utils';
 import {
@@ -10,6 +10,7 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import {
+  InternationalizedDateAdapter,
   InternationalizedDateTimeAdapter,
   provideInternationalizedDateAdapter,
   provideInternationalizedDateTimeAdapter,
@@ -250,11 +251,22 @@ describe('ForDateField', () => {
       await type(r, 'month', '12');
       await type(r, 'day', '05');
       expect(r.instance.value()).toBeNull();
-      expect(root(r).getAttribute('data-empty')).toBe('');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
 
       await type(r, 'year', '2026');
       expect(r.instance.value()?.getTime()).toBe(new Date(2026, 11, 5).getTime());
       expect(root(r).getAttribute('data-empty')).toBeNull();
+    });
+
+    it('marks data-empty only while every segment is empty', async () => {
+      const r = renderHost(Host);
+      expect(root(r).getAttribute('data-empty')).toBe('');
+
+      await type(r, 'month', '12');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
+
+      await key(r, 'month', 'Delete');
+      expect(root(r).getAttribute('data-empty')).toBe('');
     });
 
     it('reflects aria-valuenow / valuetext as segments are filled', async () => {
@@ -264,6 +276,19 @@ describe('ForDateField', () => {
       await type(r, 'month', '03');
       expect(seg(r, 'month').getAttribute('aria-valuenow')).toBe('3');
       expect(seg(r, 'month').getAttribute('aria-valuetext')).toBe(marchLongName);
+    });
+
+    describe('non-ASCII digit entry (#1388)', () => {
+      it('commits Arabic-Indic digits typed into a segment', async () => {
+        const r = renderHost(Host);
+        expect(seg(r, 'day').getAttribute('aria-valuenow')).toBeNull();
+
+        pressKey(seg(r, 'day'), '٠');
+        pressKey(seg(r, 'day'), '٥');
+        await flush(r.fixture);
+
+        expect(seg(r, 'day').getAttribute('aria-valuenow')).toBe('5');
+      });
     });
 
     it('formats the month aria-valuetext through the configured [locale] (#1150)', async () => {
@@ -302,13 +327,25 @@ describe('ForDateField', () => {
       expect(seg(r, 'year').textContent?.trim()).toBe('2026');
     });
 
-    it('clears the value to null when a filled segment is cleared', async () => {
+    it('clears the value to null when Delete clears a filled segment', async () => {
       const r = renderHost(Host);
       r.instance.value.set(new Date(2026, 11, 5));
       await flush(r.fixture);
-      await key(r, 'day', 'Backspace');
+      await key(r, 'day', 'Delete');
       expect(r.instance.value()).toBeNull();
       expect(seg(r, 'day').textContent?.trim()).toBe('dd');
+    });
+
+    it('pops the last entered digit of a filled segment on Backspace', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 11, 15));
+      await flush(r.fixture);
+      await key(r, 'year', 'Backspace');
+      expect(seg(r, 'year').textContent?.trim()).toBe('202');
+
+      seg(r, 'year').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(r.instance.value()?.getFullYear()).toBe(202);
     });
 
     it('clamps the day to the month length', async () => {
@@ -450,6 +487,69 @@ describe('ForDateField', () => {
       await type(r, 'day', '05');
       await type(r, 'year', '2026');
       expect(r.instance.value()?.getTime()).toBe(new Date(2026, 11, 10).getTime());
+    });
+  });
+
+  describe('commit-on-settle (#16)', () => {
+    it('emits no intermediate value while re-typing a segment of a complete value', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 2, 15));
+      await flush(r.fixture);
+      const before = r.instance.value();
+
+      pressKey(seg(r, 'year'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'year'), '0');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'year'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'year'), '6');
+      await flush(r.fixture);
+      expect(r.instance.value()).not.toBe(before);
+      expect(adapter.getYear(r.instance.value()!)).toBe(2026);
+    });
+
+    it('settles a partial segment on blur, clamping to minDate (item 1)', async () => {
+      const r = renderHost(Host);
+      r.instance.minDate.set(new Date(1900, 0, 1));
+      await flush(r.fixture);
+      await type(r, 'month', '06');
+      await type(r, 'day', '15');
+
+      pressKey(seg(r, 'year'), '1');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBeNull();
+
+      seg(r, 'year').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+
+      const value = r.instance.value()!;
+      expect(value).not.toBeNull();
+      expect(adapter.getYear(value)).toBe(1900);
+      expect(adapter.getMonth(value)).toBe(1);
+      expect(adapter.getDate(value)).toBe(1);
+    });
+
+    it('emits no intermediate value under zoneless change detection', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Host);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+
+      fixture.componentInstance.value.set(new Date(2026, 2, 15));
+      await flush(fixture);
+      const before = fixture.componentInstance.value();
+
+      const yearSeg = host.querySelector('[data-testid="year"]')! as HTMLElement;
+      pressKey(yearSeg, '2');
+      await flush(fixture);
+      expect(fixture.componentInstance.value()).toBe(before);
     });
   });
 
@@ -685,6 +785,26 @@ describe('ForDateField', () => {
       expect(adapter.getHours(r.instance.value()!)).toBe(21);
     });
 
+    it('stores the AM/PM period chosen while the hour is empty and composes against it', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      expect(order(r)).toEqual(['month', 'day', 'year', 'hour', 'minute', 'dayPeriod']);
+
+      pressKey(dseg(r, 'dayPeriod'), 'p');
+      await flush(r.fixture);
+      expect(dseg(r, 'dayPeriod').textContent?.trim()).toBe('PM');
+      expect(dseg(r, 'hour').textContent?.trim()).toBe('hh');
+      expect(r.instance.value()).toBeNull();
+
+      await typeInto(r, 'month', '06');
+      await typeInto(r, 'day', '15');
+      await typeInto(r, 'year', '2026');
+      await typeInto(r, 'hour', '8');
+      await typeInto(r, 'minute', '30');
+      expect(adapter.getHours(r.instance.value()!)).toBe(20);
+    });
+
     it('surfaces the time-capable-adapter requirement (not swallowed) under a day-only adapter (#590 F2)', () => {
       @Component({
         imports: [ForDateField, ForDateFieldSegment],
@@ -706,6 +826,76 @@ describe('ForDateField', () => {
       expect(() => renderHost(DayOnlyHost)).toThrow(
         /\[forty-cdk\/date-adapter\] ForDateField requires a time-capable DateAdapter/,
       );
+    });
+  });
+
+  describe('time preservation at granularity="day"', () => {
+    it('keeps the bound value time-of-day when stepping the day', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30, 45));
+      await flush(r.fixture);
+      await key(r, 'day', 'ArrowUp');
+      const value = r.instance.value()!;
+      expect(adapter.getDate(value)).toBe(16);
+      expect(value.getHours()).toBe(14);
+      expect(value.getMinutes()).toBe(30);
+      expect(value.getSeconds()).toBe(45);
+    });
+
+    it('keeps the bound value time-of-day when stepping the month', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 14, 30, 45));
+      await flush(r.fixture);
+      await key(r, 'month', 'ArrowUp');
+      const value = r.instance.value()!;
+      expect(adapter.getMonth(value)).toBe(7);
+      expect(value.getHours()).toBe(14);
+      expect(value.getMinutes()).toBe(30);
+      expect(value.getSeconds()).toBe(45);
+    });
+
+    it('composes midnight when typing a full date from an empty value', async () => {
+      const r = renderHost(Host);
+      await type(r, 'month', '06');
+      await type(r, 'day', '15');
+      await type(r, 'year', '2026');
+      const value = r.instance.value()!;
+      expect(adapter.getDate(value)).toBe(15);
+      expect(value.getHours()).toBe(0);
+      expect(value.getMinutes()).toBe(0);
+      expect(value.getSeconds()).toBe(0);
+    });
+
+    it('composes a valid value under a day-only adapter without throwing', async () => {
+      @Component({
+        imports: [ForDateField, ForDateFieldSegment, ForDateFieldLiteral],
+        providers: [...provideInternationalizedDateAdapter()],
+        template: `
+          <div forDateField [(value)]="value" [locale]="'en-US'" #field="forDateField">
+            @for (seg of field.segments(); track seg.id) {
+              @if (seg.isLiteral) {
+                <span forDateFieldLiteral>{{ seg.text }}</span>
+              } @else {
+                <span forDateFieldSegment [segment]="seg.type!" [attr.data-testid]="seg.type">{{
+                  seg.text
+                }}</span>
+              }
+            }
+          </div>
+        `,
+      })
+      class DayOnlyHost {
+        readonly value = signal<CalendarDate | null>(new CalendarDate(2026, 6, 15));
+      }
+
+      const intl = new InternationalizedDateAdapter();
+      const r = renderHost(DayOnlyHost);
+      await flush(r.fixture);
+      pressKey(r.query('[data-testid="day"]')!, 'ArrowUp');
+      await flush(r.fixture);
+      const value = r.instance.value()!;
+      expect(value).toBeInstanceOf(CalendarDate);
+      expect(intl.getDate(value)).toBe(16);
     });
   });
 

@@ -2,11 +2,10 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { NativeDateAdapter } from 'forty-cdk/calendar';
-import { buildTimeSlots, type BuildTimeSlotsConfig } from './build-time-slots';
+import { buildTimeSlots, timeOfDaySeconds, type BuildTimeSlotsConfig } from './build-time-slots';
 
 describe('buildTimeSlots', () => {
   let adapter: NativeDateAdapter;
-  const anchor = new Date(2026, 5, 15);
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -16,7 +15,6 @@ describe('buildTimeSlots', () => {
   function cfg(overrides: Partial<BuildTimeSlotsConfig<Date>> = {}): BuildTimeSlotsConfig<Date> {
     return {
       adapter,
-      anchor,
       selected: null,
       minTime: null,
       maxTime: null,
@@ -42,24 +40,41 @@ describe('buildTimeSlots', () => {
     expect(slots.length).toBe(96);
   });
 
-  it('first slot is 00:00 on the anchor date', () => {
+  it('first slot is 00:00 on the DST-stable sentinel date', () => {
     const slots = buildTimeSlots(cfg());
     const first = slots[0]!;
     expect(adapter.getHours(first.value)).toBe(0);
     expect(adapter.getMinutes(first.value)).toBe(0);
     expect(adapter.getSeconds(first.value)).toBe(0);
-    expect(adapter.getYear(first.value)).toBe(2026);
-    expect(adapter.getMonth(first.value)).toBe(6);
-    expect(adapter.getDate(first.value)).toBe(15);
+    expect(adapter.getYear(first.value)).toBe(2000);
+    expect(adapter.getMonth(first.value)).toBe(1);
+    expect(adapter.getDate(first.value)).toBe(1);
   });
 
-  it('slot value preserves the anchor date', () => {
+  it('every slot value stays on the DST-stable sentinel date', () => {
     const slots = buildTimeSlots(cfg({ step: 60 }));
     for (const slot of slots) {
-      expect(adapter.getYear(slot.value)).toBe(2026);
-      expect(adapter.getMonth(slot.value)).toBe(6);
-      expect(adapter.getDate(slot.value)).toBe(15);
+      expect(adapter.getYear(slot.value)).toBe(2000);
+      expect(adapter.getMonth(slot.value)).toBe(1);
+      expect(adapter.getDate(slot.value)).toBe(1);
     }
+  });
+
+  it('all 48 slot labels are distinct at step=30', () => {
+    const slots = buildTimeSlots(cfg({ step: 30 }));
+    const labels = new Set(slots.map((s) => s.label));
+    expect(slots.length).toBe(48);
+    expect(labels.size).toBe(48);
+  });
+
+  it('slot values ignore the selected date and stay on the DST-stable sentinel', () => {
+    const selected = new Date(2026, 2, 8, 3, 30);
+    const slots = buildTimeSlots(cfg({ selected, step: 30 }));
+    for (const slot of slots) {
+      expect(adapter.getYear(slot.value)).toBe(2000);
+    }
+    const labels = new Set(slots.map((s) => s.label));
+    expect(labels.size).toBe(slots.length);
   });
 
   it('slot ids are stable strings based on total seconds', () => {
@@ -122,5 +137,27 @@ describe('buildTimeSlots', () => {
     const slots = buildTimeSlots(cfg({ selected, granularity: 'hour', step: 60 }));
     const nineAm = slots.find((s) => adapter.getHours(s.value) === 9);
     expect(nineAm?.selected).toBe(true);
+  });
+});
+
+describe('timeOfDaySeconds', () => {
+  let adapter: NativeDateAdapter;
+  const instant = new Date(2026, 5, 15, 9, 30, 45);
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    adapter = new NativeDateAdapter();
+  });
+
+  it('hour granularity drops minutes and seconds', () => {
+    expect(timeOfDaySeconds(adapter, instant, 'hour')).toBe(9 * 3600);
+  });
+
+  it('minute granularity drops seconds', () => {
+    expect(timeOfDaySeconds(adapter, instant, 'minute')).toBe(9 * 3600 + 30 * 60);
+  });
+
+  it('second granularity keeps the full time-of-day', () => {
+    expect(timeOfDaySeconds(adapter, instant, 'second')).toBe(9 * 3600 + 30 * 60 + 45);
   });
 });

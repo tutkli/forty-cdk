@@ -201,13 +201,38 @@ describe('ForTimeRangeField', () => {
   );
 
   describe('focus (focus-on-error)', () => {
-    it('moves focus to the first segment of the start endpoint, not the group host', async () => {
+    const fieldOf = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForTimeRangeField)).injector.get(ForTimeRangeField);
+
+    it('moves focus to the first segment of the start endpoint when both endpoints are empty', async () => {
       const r = renderHost(Host);
       await r.flush();
-      const field = r.fixture.debugElement
-        .query(By.directive(ForTimeRangeField))
-        .injector.get(ForTimeRangeField);
-      field.focus();
+      fieldOf(r).focus();
+      expect(document.activeElement).toBe(seg(r, 'start', 'hour'));
+    });
+
+    it('moves focus to the first segment of the end endpoint when the start is complete but the end is empty', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      await fill(r, 'start', '09', '30');
+      fieldOf(r).focus();
+      expect(document.activeElement).toBe(seg(r, 'end', 'hour'));
+    });
+
+    it('keeps focus on the start endpoint when the start is incomplete even if the end is filled', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      await fill(r, 'end', '09', '30');
+      fieldOf(r).focus();
+      expect(document.activeElement).toBe(seg(r, 'start', 'hour'));
+    });
+
+    it('falls back to the start endpoint when both endpoints are complete', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      await fill(r, 'start', '09', '30');
+      await fill(r, 'end', '17', '30');
+      fieldOf(r).focus();
       expect(document.activeElement).toBe(seg(r, 'start', 'hour'));
     });
   });
@@ -250,7 +275,7 @@ describe('ForTimeRangeField', () => {
       const r = renderHost(Host);
       await fill(r, 'start', '09', '00');
       expect(r.instance.value()).toBeNull();
-      expect(root(r).getAttribute('data-empty')).toBe('');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
 
       await fill(r, 'end', '17', '30');
       const range = r.instance.value()!;
@@ -284,7 +309,7 @@ describe('ForTimeRangeField', () => {
       expect(seg(r, 'end', 'minute').textContent?.trim()).toBe('30');
     });
 
-    it('clears the range to null when one endpoint segment is cleared, keeping the other endpoint', async () => {
+    it('clears the range to null when Delete clears one endpoint segment, keeping the other endpoint', async () => {
       const r = renderHost(Host);
       r.instance.value.set({
         start: new Date(2026, 5, 10, 9, 5),
@@ -292,11 +317,24 @@ describe('ForTimeRangeField', () => {
       });
       await flush(r.fixture);
 
-      await key(r, 'start', 'minute', 'Backspace');
+      await key(r, 'start', 'minute', 'Delete');
       expect(r.instance.value()).toBeNull();
       expect(seg(r, 'start', 'minute').textContent?.trim()).toBe('mm');
       expect(seg(r, 'end', 'hour').textContent?.trim()).toBe('17');
       expect(seg(r, 'end', 'minute').textContent?.trim()).toBe('30');
+    });
+
+    it('pops the last entered digit of an endpoint segment on Backspace', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({
+        start: new Date(2026, 5, 10, 9, 30),
+        end: new Date(2026, 5, 10, 17, 45),
+      });
+      await flush(r.fixture);
+
+      await key(r, 'start', 'minute', 'Backspace');
+      expect(seg(r, 'start', 'minute').textContent?.trim()).toBe('3');
+      expect(seg(r, 'end', 'minute').textContent?.trim()).toBe('45');
     });
 
     it('clears both endpoints when a typed range is reset to null externally', async () => {
@@ -344,6 +382,67 @@ describe('ForTimeRangeField', () => {
     });
   });
 
+  describe('commit-on-settle (#16)', () => {
+    it('does not rewrite the range value while re-typing one endpoint (transient)', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({
+        start: new Date(2026, 5, 10, 9, 0),
+        end: new Date(2026, 5, 10, 17, 0),
+      });
+      await flush(r.fixture);
+      const before = r.instance.value();
+
+      pressKey(seg(r, 'start', 'hour'), '1');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'start', 'hour'), '0');
+      await flush(r.fixture);
+      expect(r.instance.value()).not.toBe(before);
+      expect(adapter.getHours(r.instance.value()!.start)).toBe(10);
+    });
+
+    it('does not reclassify an overnight range on a transient keystroke', async () => {
+      const r = renderHost(Host);
+      r.instance.allowOvernight.set(true);
+      await flush(r.fixture);
+      await fill(r, 'start', '22', '00');
+      await fill(r, 'end', '06', '00');
+      const before = r.instance.value()!;
+      expect(before.end.getTime() - before.start.getTime()).toBe(8 * 60 * 60 * 1000);
+
+      pressKey(seg(r, 'end', 'hour'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'end', 'hour'), '3');
+      await flush(r.fixture);
+      const range = r.instance.value()!;
+      expect(range).not.toBe(before);
+      expect(adapter.getHours(range.end)).toBe(23);
+      expect(range.end.getTime() - range.start.getTime()).toBe(60 * 60 * 1000);
+    });
+
+    it('does not rewrite the range value on a transient keystroke under zoneless CD', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Host);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+
+      fixture.componentInstance.value.set({
+        start: new Date(2026, 5, 10, 9, 0),
+        end: new Date(2026, 5, 10, 17, 0),
+      });
+      await flush(fixture);
+      const before = fixture.componentInstance.value();
+
+      const startHour = host.querySelector('[data-testid="start-hour"]')! as HTMLElement;
+      pressKey(startHour, '1');
+      await flush(fixture);
+      expect(fixture.componentInstance.value()).toBe(before);
+    });
+  });
+
   describe('ordering', () => {
     it('keeps value null and flags the disorder when start falls after end', async () => {
       const r = renderHost(Host);
@@ -353,6 +452,7 @@ describe('ForTimeRangeField', () => {
       expect(r.instance.value()).toBeNull();
       expect(root(r).getAttribute('aria-invalid')).toBe('true');
       expect(root(r).getAttribute('data-range-error')).toBe('');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
       expect(root(r).getAttribute('data-invalid')).toBe('');
       expect(seg(r, 'start', 'hour').textContent?.trim()).toBe('17');
       expect(seg(r, 'end', 'hour').textContent?.trim()).toBe('09');

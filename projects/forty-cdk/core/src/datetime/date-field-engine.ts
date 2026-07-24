@@ -1,21 +1,14 @@
-import { computed, linkedSignal, signal, type Signal } from '@angular/core';
+import { computed, linkedSignal, type Signal } from '@angular/core';
 
 import {
   assertTimeCapable,
   type DateAdapter,
   type TimeCapableDateAdapter,
 } from '../date-adapter/date-adapter';
-import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
+import { type BaseFieldEngineConfig, DateTimeFieldEngineBase } from './field-engine-base';
 import { buildDateTimeSegments, type FieldGranularity } from './date-segments';
-import { dayPeriodNames, resolveHourCycle } from './hour-cycle';
-import {
-  type FieldSegment,
-  type FieldSpec,
-  SegmentEditor,
-  type SegmentHandle,
-  type SegmentType,
-} from './segment-editor';
-import { clampToBounds } from './serialize';
+import { type FieldSpec, type SegmentType } from './segment-editor';
+import { clampToBounds, composeWithTime } from './serialize';
 
 /** Internal per-part state: the entered value for each editable segment, hour as 0-23. */
 export interface DateTimeParts {
@@ -25,6 +18,7 @@ export interface DateTimeParts {
   hour: number | null;
   minute: number | null;
   second: number | null;
+  dayPeriod: number | null;
 }
 
 /**
@@ -37,33 +31,17 @@ export interface DateTimeParts {
  *
  * @typeParam D The adapter's immutable date (or date-time) type.
  */
-export interface DateFieldEngineConfig<D> {
+export interface DateFieldEngineConfig<D> extends BaseFieldEngineConfig<D> {
   /** The active date adapter (shared with `ForCalendar`). */
   readonly adapter: DateAdapter<D>;
-  /** Whether editing is disabled (the field's effective disabled). */
-  readonly disabled: Signal<boolean>;
-  /** Whether editing is read-only. */
-  readonly readonly: Signal<boolean>;
-  /** Shared roving-tabindex tracker for this field's segments. */
-  readonly roving: RovingTabindex;
   /** Date-time precision; `'day'` keeps the field date-only. */
   readonly granularity: Signal<FieldGranularity>;
-  /** 12- / 24-hour override, or `null` to derive from the locale. */
-  readonly hourCycle: Signal<12 | 24 | null>;
-  /** BCP 47 locale driving segment order, separators, and AM/PM names. */
-  readonly locale: Signal<string | null>;
   /** Per-segment placeholder overrides shown while empty. */
   readonly placeholder: Signal<Partial<Record<SegmentType, string>>>;
-  /** Accessible `aria-valuetext` announced for an empty editable segment. */
-  readonly emptySegmentText: Signal<string>;
   /** Minimum selectable date (inclusive), or `null` for unbounded. */
   readonly minDate: Signal<D | null>;
   /** Maximum selectable date (inclusive), or `null` for unbounded. */
   readonly maxDate: Signal<D | null>;
-  /** Authoritative current value the entered parts rehydrate from. */
-  readonly source: Signal<D | null>;
-  /** Sink called with the composed value (or `null` while incomplete) on every edit. */
-  readonly onCommit: (value: D | null) => void;
   /** Name of the owning directive, used in the time-capability error message. */
   readonly piece: string;
 }
@@ -94,28 +72,16 @@ const RESOLVER_YEAR = 2000;
  *
  * @typeParam D The adapter's immutable date (or date-time) type.
  */
-export class DateFieldEngine<D> {
+export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts> {
   readonly #config: DateFieldEngineConfig<D>;
 
-  readonly #cycle = computed(() =>
-    resolveHourCycle(this.#config.locale() ?? undefined, this.#config.hourCycle()),
-  );
-
-  readonly #specs = computed<readonly FieldSpec[]>(() =>
+  protected readonly specs = computed<readonly FieldSpec[]>(() =>
     buildDateTimeSegments(
       this.#config.locale() ?? undefined,
       this.#config.granularity(),
-      this.#cycle(),
+      this.cycle(),
     ),
   );
-
-  readonly #editableOrder = computed<readonly SegmentType[]>(() =>
-    this.#specs()
-      .filter((spec): spec is Extract<FieldSpec, { kind: 'editable' }> => spec.kind === 'editable')
-      .map((spec) => spec.type),
-  );
-
-  readonly #periodNames = computed(() => dayPeriodNames(this.#config.locale() ?? undefined));
 
   /**
    * The entered parts. A `linkedSignal` keyed on `source`: a non-null write
@@ -126,13 +92,10 @@ export class DateFieldEngine<D> {
    * never wipes the month / year); an *external* reset of a complete value
    * leaves `previous` fully filled, so the field clears.
    */
-  readonly #parts = linkedSignal<D | null, DateTimeParts>({
+  protected readonly parts = linkedSignal<D | null, DateTimeParts>({
     source: () => this.#config.source(),
     computation: (current, previous) => {
       if (current !== null) {
-        if (current === this.#transientEmission && previous) {
-          return previous.value;
-        }
         const adapter = this.#config.adapter;
         const parts: DateTimeParts = {
           day: adapter.getDate(current),
@@ -141,12 +104,14 @@ export class DateFieldEngine<D> {
           hour: null,
           minute: null,
           second: null,
+          dayPeriod: null,
         };
         if (this.#config.granularity() !== 'day') {
           const time = this.#time();
           parts.hour = time.getHours(current);
           parts.minute = time.getMinutes(current);
           parts.second = time.getSeconds(current);
+          parts.dayPeriod = time.getHours(current) >= 12 ? 1 : 0;
         }
         return parts;
       }
@@ -154,63 +119,27 @@ export class DateFieldEngine<D> {
       if (prior && this.#someEditableEmpty(prior)) {
         return prior;
       }
-      return { day: null, month: null, year: null, hour: null, minute: null, second: null };
+      return {
+        day: null,
+        month: null,
+        year: null,
+        hour: null,
+        minute: null,
+        second: null,
+        dayPeriod: null,
+      };
     },
   });
 
-  readonly #editor: SegmentEditor<DateTimeParts>;
-
-  /**
-   * Whether {@link composed} clamps to the bounds. `false` only during a
-   * mid-typing (transient) keystroke, so an intermediate out-of-range
-   * composition round-trips through `source` without snapping the value and
-   * rehydrating — and corrupting — the other typed segments. Settled edits
-   * restore it to `true`.
-   */
-  readonly #clampComposed = signal(true);
-
-  #transientEmission: D | null = null;
-
-  /**
-   * The ordered, locale-derived segments (editable + literals) to render. Each
-   * entry carries the text to display: the formatted value when filled, the
-   * placeholder while empty, or the literal separator.
-   */
-  readonly segments: Signal<readonly FieldSegment[]>;
-
-  /** The composed value of the entered parts, or `null` while any segment is empty. */
-  readonly composed = computed<D | null>(() =>
-    this.#composeFrom(this.#parts(), this.#clampComposed()),
-  );
-
   constructor(config: DateFieldEngineConfig<D>) {
+    super(config);
     this.#config = config;
-    this.#editor = new SegmentEditor<DateTimeParts>({
-      disabled: config.disabled,
-      readonly: config.readonly,
-      roving: config.roving,
-      cycle: this.#cycle,
-      specs: this.#specs,
-      editableOrder: this.#editableOrder,
-      periodNames: this.#periodNames,
-      parts: () => this.#parts(),
-      segmentMin: (type) => this.segmentMin(type),
-      segmentMax: (type) => this.segmentMax(type),
-      seed: (type) => this.#seed(type),
-      placeholderFor: (type) => this.#placeholderFor(type),
-      valueText: (type) => this.#valueText(type),
-      commit: (next, transient) => this.#commitParts(next, transient),
-    });
-    this.segments = this.#editor.segments;
-  }
-
-  segmentValue(type: SegmentType): number | null {
-    return this.#editor.segmentValue(type);
+    this.initEditor();
   }
 
   segmentMin(type: SegmentType): number {
     if (type === 'hour') {
-      return this.#cycle() === 12 ? 1 : 0;
+      return this.cycle() === 12 ? 1 : 0;
     }
     if (type === 'minute' || type === 'second' || type === 'dayPeriod') {
       return 0;
@@ -225,14 +154,14 @@ export class DateFieldEngine<D> {
       case 'year':
         return 9999;
       case 'hour':
-        return this.#cycle() === 12 ? 12 : 23;
+        return this.cycle() === 12 ? 12 : 23;
       case 'minute':
       case 'second':
         return 59;
       case 'dayPeriod':
         return 1;
       default: {
-        const parts = this.#parts();
+        const parts = this.parts();
         const probe = this.#config.adapter.createDate(
           parts.year ?? RESOLVER_YEAR,
           parts.month ?? 1,
@@ -243,81 +172,32 @@ export class DateFieldEngine<D> {
     }
   }
 
-  segmentValueText(type: SegmentType): string | null {
-    return this.#editor.segmentValueText(type);
-  }
-
-  segmentDisplayText(type: SegmentType): string {
-    return this.#editor.segmentDisplayText(type);
-  }
-
-  isSegmentEmpty(type: SegmentType): boolean {
-    return this.#editor.isSegmentEmpty(type);
-  }
-
-  isFirstSegmentType(type: SegmentType): boolean {
-    return this.#editor.isFirstSegmentType(type);
-  }
-
-  registerSegment(handle: SegmentHandle): void {
-    this.#editor.registerSegment(handle);
-  }
-
-  unregisterSegment(handle: SegmentHandle): void {
-    this.#editor.unregisterSegment(handle);
-  }
-
-  focusSegment(type: SegmentType): void {
-    this.#editor.focusSegment(type);
-  }
-
-  /** Move focus to the first editable segment — the field's focus-on-error target. */
-  focusFirstSegment(options?: FocusOptions): void {
-    this.#editor.focusFirstSegment(options);
-  }
-
-  typeDigit(type: SegmentType, digit: number): void {
-    this.#editor.typeDigit(type, digit);
-  }
-
-  step(type: SegmentType, delta: number): void {
-    this.#editor.step(type, delta);
-  }
-
-  goToBound(type: SegmentType, bound: 'min' | 'max'): void {
-    this.#editor.goToBound(type, bound);
-  }
-
-  setDayPeriod(period: 'am' | 'pm'): void {
-    this.#editor.setDayPeriod(period);
-  }
-
-  clear(type: SegmentType): void {
-    this.#editor.clear(type);
-  }
-
-  focusSibling(type: SegmentType, step: -1 | 1): void {
-    this.#editor.focusSibling(type, step);
-  }
-
-  endTyping(): void {
-    this.#editor.endTyping();
-  }
-
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time(): TimeCapableDateAdapter<D> {
     return assertTimeCapable(this.#config.adapter, this.#config.piece);
   }
 
+  #preserveSourceTime(day: D): D {
+    const source = this.#config.source();
+    if (source === null || this.#config.adapter.supportsTime?.() !== true) {
+      return day;
+    }
+    return composeWithTime(
+      assertTimeCapable(this.#config.adapter, this.#config.piece),
+      day,
+      source,
+    );
+  }
+
   /** Field-specific `aria-valuetext`: the empty marker or the localized month name. */
-  #valueText(type: SegmentType): string | null {
+  protected valueText(type: SegmentType): string | null {
     if (this.isSegmentEmpty(type)) {
       return this.#config.emptySegmentText();
     }
     if (type !== 'month') {
       return null;
     }
-    const month = this.#parts().month;
+    const month = this.parts().month;
     if (month === null) {
       return null;
     }
@@ -333,7 +213,7 @@ export class DateFieldEngine<D> {
   }
 
   /** Base value for stepping an empty segment: date parts from today, time parts from their minimum. */
-  #seed(type: SegmentType): number {
+  protected seed(type: SegmentType): number {
     if (type === 'hour') {
       return this.#toInternalHour(this.segmentMin('hour'));
     }
@@ -353,16 +233,17 @@ export class DateFieldEngine<D> {
 
   /** Converts a 12-hour display hour to a 0-23 hour, preserving the entered AM/PM. */
   #toInternalHour(display: number): number {
-    if (this.#cycle() === 24) {
+    if (this.cycle() === 24) {
       return display;
     }
-    const hour = this.#parts().hour;
-    const pm = hour !== null && hour >= 12;
+    const parts = this.parts();
+    const pm =
+      parts.dayPeriod !== null ? parts.dayPeriod === 1 : parts.hour !== null && parts.hour >= 12;
     const base = display % 12;
     return pm ? base + 12 : base;
   }
 
-  #placeholderFor(type: SegmentType): string {
+  protected placeholderFor(type: SegmentType): string {
     const override = this.#config.placeholder()[type];
     if (override) {
       return override;
@@ -386,12 +267,7 @@ export class DateFieldEngine<D> {
   }
 
   #someEditableEmpty(parts: DateTimeParts): boolean {
-    return this.#editableOrder().some((type) => {
-      if (type === 'dayPeriod') {
-        return parts.hour === null;
-      }
-      return parts[type] === null;
-    });
+    return this.editableOrder().some((type) => parts[type] === null);
   }
 
   /**
@@ -413,13 +289,8 @@ export class DateFieldEngine<D> {
     return { ...parts, day: maxDay };
   }
 
-  /**
-   * Composes a parts record into the value, or `null` while incomplete. Clamps
-   * to the bounds only when `clamp` is `true` — a transient (mid-typing)
-   * composition stays unclamped so it round-trips through `source` losslessly
-   * and never rehydrates the other typed segments.
-   */
-  #composeFrom(parts: DateTimeParts, clamp: boolean): D | null {
+  /** Composes a parts record into the value, clamped to the bounds, or `null` while incomplete. */
+  protected composeFrom(parts: DateTimeParts): D | null {
     const granularity = this.#config.granularity();
     const needHour = granularity !== 'day';
     const needMinute = granularity === 'minute' || granularity === 'second';
@@ -442,9 +313,8 @@ export class DateFieldEngine<D> {
         needMinute ? parts.minute! : 0,
         needSecond ? parts.second! : 0,
       );
-    }
-    if (!clamp) {
-      return created;
+    } else {
+      created = this.#preserveSourceTime(created);
     }
     return clampToBounds(
       this.#config.adapter,
@@ -454,12 +324,7 @@ export class DateFieldEngine<D> {
     );
   }
 
-  #commitParts(rawNext: DateTimeParts, transient: boolean): void {
-    const next = transient ? rawNext : this.#clampDay(rawNext);
-    this.#clampComposed.set(!transient);
-    this.#parts.set(next);
-    const composed = this.#composeFrom(next, !transient);
-    this.#transientEmission = transient ? composed : null;
-    this.#config.onCommit(composed);
+  protected override finalizeCommitParts(next: DateTimeParts, transient: boolean): DateTimeParts {
+    return transient ? next : this.#clampDay(next);
   }
 }

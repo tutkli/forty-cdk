@@ -16,7 +16,8 @@ import {
  * reflection, the roving tabindex (scoped to the surrounding endpoint group),
  * and the full keyboard map (digits, a/p for AM·PM, ArrowUp/Down to step,
  * ArrowLeft/Right to move between segments — mirrored under RTL, Home/End for the
- * bounds, Backspace/Delete to clear).
+ * bounds, Backspace to delete the last entered digit, Delete to clear the whole
+ * segment).
  *
  * All state lives on the root `ForTimeRangeField`; the segment only reads its
  * endpoint's coordination surface and forwards intents. The rendered text comes

@@ -17,7 +17,8 @@ import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './ti
  * - **ArrowUp / ArrowDown** step the value (hour / minute / second wrap; dayPeriod toggles);
  * - **ArrowLeft / ArrowRight** move between segments (mirrored under RTL, no wrap);
  * - **Home / End** jump to the segment minimum / maximum (dayPeriod → AM / PM);
- * - **Backspace / Delete** clear a numeric segment.
+ * - **Backspace** deletes the last entered digit of a numeric segment (clearing
+ *   it once the last digit is removed); **Delete** clears the whole segment.
  *
  * All state lives on the root `ForTimeField`; the segment only reads it and
  * forwards intents. The rendered text comes from the root's `segments()` list

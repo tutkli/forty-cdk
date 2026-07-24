@@ -24,6 +24,7 @@ export type {
   DateRange,
   FieldSegment,
   SegmentEditorContext,
+  SegmentEditorDelegate,
   TimeCapableDateAdapter,
   WritingDirection,
 } from 'forty-cdk/core';

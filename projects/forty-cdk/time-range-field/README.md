@@ -198,15 +198,15 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 | `[forTimeRangeFieldSegment]` | `data-disabled`    | present \| absent |
 | `[forTimeRangeFieldSegment]` | `data-readonly`    | present \| absent |
 
-`data-empty` marks the whole field while the range is `null` (either endpoint unfilled, or the two out of order); `data-range-error` marks the specific case of two complete but out-of-order endpoints; `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment — the only focus hook the consumer gets, shared with the other roving primitives.
+`data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty (`data-range-error` covers the disorder). `data-range-error` marks the specific case of two complete but out-of-order endpoints; `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment — the only focus hook the consumer gets, shared with the other roving primitives.
 
 ## Ordering
 
-The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
+The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range. Two complete endpoints with an **equal** time compose a valid zero-length range (`start === end`), not `null`.
 
 ### Overnight ranges
 
-Set `allowOvernight` to read a `start > end` entry as a range that **crosses midnight** (a night shift, `22:00`–`06:00`) rather than a disorder. The field then commits `{ start, end }` with the end advanced to the next day, so the `end >= start` invariant still holds and the emitted range spans the correct duration; `aria-invalid` / `data-range-error` are no longer set. In this mode both endpoints operate purely on their time-of-day — the calendar day of a bound `value` is re-anchored on the DST-stable sentinel rather than preserved, so every edit re-derives the crossing afresh (an end nudged back to a same-day time drops the extra day). Only the time-of-day of each endpoint is meaningful, so this trade-off is immaterial to a time-of-day range.
+Set `allowOvernight` to read a `start > end` entry as a range that **crosses midnight** (a night shift, `22:00`–`06:00`) rather than a disorder. The field then commits `{ start, end }` with the end advanced to the next day, so the `end >= start` invariant still holds and the emitted range spans the correct duration; `aria-invalid` / `data-range-error` are no longer set. In this mode both endpoints operate purely on their time-of-day — the calendar day of a bound `value` is re-anchored on the DST-stable sentinel rather than preserved, so every edit re-derives the crossing afresh (an end nudged back to a same-day time drops the extra day). Only the time-of-day of each endpoint is meaningful, so this trade-off is immaterial to a time-of-day range. The +1-day advance is carried by the in-memory `value` only — the native hidden inputs serialize each endpoint's time-of-day (`HH:mm`), so an overnight range submits as `<name>-start` / `<name>-end` with the crossing erased, and a server must re-apply the overnight rule to reconstruct it.
 
 ## Scope defaults
 
@@ -231,14 +231,15 @@ providers: [
 
 Key behavior applies per segment. Each endpoint is its own tab stop, so `Tab` moves from the start group to the end group to the next control; arrows move between segments **within** an endpoint. Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                                           |
-| -------------------------- | -------------------------------------------------------------------------------------------------- |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.                                       |
-| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                          |
-| **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. Empty seeds from midnight. |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment in the same endpoint (no wrap).                                |
-| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                               |
-| **Backspace / Delete**     | Clear a numeric segment (the range becomes `null` until refilled).                                 |
+| Key                        | Behavior                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.                                                 |
+| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                                    |
+| **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. Empty seeds from midnight.           |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment in the same endpoint (no wrap).                                          |
+| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                                         |
+| **Backspace**              | Delete the last entered digit of a numeric segment; the range becomes `null` when the last digit is removed. |
+| **Delete**                 | Clear the whole numeric segment (the range becomes `null` until refilled).                                   |
 
 Each composed endpoint is clamped into `[minTime, maxTime]` by time-of-day. The AM/PM period is derived from the entered hour; clearing it is a no-op (clear or step the hour instead).
 

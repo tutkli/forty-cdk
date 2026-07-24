@@ -17,6 +17,7 @@ interface Parts extends SegmentParts {
   hour?: number | null;
   minute?: number | null;
   second?: number | null;
+  dayPeriod?: number | null;
 }
 
 const DATE_TIME_SPECS: readonly FieldSpec[] = [
@@ -272,8 +273,10 @@ describe('SegmentEditor.step', () => {
     host.setParts({ hour: 9 });
     editor.step('dayPeriod', 1);
     expect(host.parts().hour).toBe(21);
+    expect(host.parts().dayPeriod).toBe(1);
     editor.step('dayPeriod', -1);
     expect(host.parts().hour).toBe(9);
+    expect(host.parts().dayPeriod).toBe(0);
   });
 
   it('does nothing while disabled', () => {
@@ -309,8 +312,10 @@ describe('SegmentEditor.goToBound', () => {
     host.setParts({ hour: 9 });
     editor.goToBound('dayPeriod', 'max');
     expect(host.parts().hour).toBe(21);
+    expect(host.parts().dayPeriod).toBe(1);
     editor.goToBound('dayPeriod', 'min');
     expect(host.parts().hour).toBe(9);
+    expect(host.parts().dayPeriod).toBe(0);
   });
 
   it('does nothing while readonly', () => {
@@ -322,14 +327,16 @@ describe('SegmentEditor.goToBound', () => {
 });
 
 describe('SegmentEditor.setDayPeriod', () => {
-  it('defaults an empty hour to noon for PM and midnight for AM', () => {
+  it('stores the day period without inventing an hour on an empty field', () => {
     const { host, editor } = setup();
     editor.setDayPeriod('pm');
-    expect(host.parts().hour).toBe(12);
+    expect(host.parts().hour).toBeNull();
+    expect(host.parts().dayPeriod).toBe(1);
 
     host.setParts({});
     editor.setDayPeriod('am');
-    expect(host.parts().hour).toBe(0);
+    expect(host.parts().hour).toBeNull();
+    expect(host.parts().dayPeriod).toBe(0);
   });
 
   it('shifts a morning hour into the afternoon and back', () => {
@@ -337,8 +344,10 @@ describe('SegmentEditor.setDayPeriod', () => {
     host.setParts({ hour: 9 });
     editor.setDayPeriod('pm');
     expect(host.parts().hour).toBe(21);
+    expect(host.parts().dayPeriod).toBe(1);
     editor.setDayPeriod('am');
     expect(host.parts().hour).toBe(9);
+    expect(host.parts().dayPeriod).toBe(0);
   });
 
   it('is idempotent when already in the requested period', () => {
@@ -346,6 +355,68 @@ describe('SegmentEditor.setDayPeriod', () => {
     host.setParts({ hour: 21 });
     editor.setDayPeriod('pm');
     expect(host.parts().hour).toBe(21);
+    expect(host.parts().dayPeriod).toBe(1);
+  });
+
+  it('resolves a subsequently typed hour against a period chosen while empty', () => {
+    const { host, editor } = setup();
+    editor.setDayPeriod('pm');
+    expect(host.parts().hour).toBeNull();
+    expect(host.parts().dayPeriod).toBe(1);
+
+    editor.typeDigit('hour', 8);
+    expect(host.parts().hour).toBe(20);
+    expect(host.parts().dayPeriod).toBe(1);
+  });
+});
+
+describe('SegmentEditor.setDayPeriodFromKey', () => {
+  it('sets the period from Latin a / p against the default English names', () => {
+    const { host, editor } = setup();
+    host.setParts({ hour: 9 });
+    expect(editor.setDayPeriodFromKey('p')).toBe(true);
+    expect(host.parts().hour).toBe(21);
+    expect(editor.setDayPeriodFromKey('a')).toBe(true);
+    expect(host.parts().hour).toBe(9);
+  });
+
+  it('sets the period from a localized character for a non-Latin locale', () => {
+    const { host, editor } = setup();
+    host.periodNames.set({ am: '午前', pm: '午後' });
+    host.setParts({ hour: 9 });
+    expect(editor.setDayPeriodFromKey('後')).toBe(true);
+    expect(host.parts().hour).toBe(21);
+    expect(host.parts().dayPeriod).toBe(1);
+    expect(editor.setDayPeriodFromKey('前')).toBe(true);
+    expect(host.parts().hour).toBe(9);
+    expect(host.parts().dayPeriod).toBe(0);
+  });
+
+  it('keeps the Latin a / p fallback for a non-Latin locale', () => {
+    const { host, editor } = setup();
+    host.periodNames.set({ am: '午前', pm: '午後' });
+    host.setParts({ hour: 9 });
+    expect(editor.setDayPeriodFromKey('p')).toBe(true);
+    expect(host.parts().hour).toBe(21);
+    expect(editor.setDayPeriodFromKey('a')).toBe(true);
+    expect(host.parts().hour).toBe(9);
+  });
+
+  it('returns false and commits nothing for an unrecognized key', () => {
+    const { host, editor } = setup();
+    host.setParts({ hour: 9 });
+    host.committed.length = 0;
+    expect(editor.setDayPeriodFromKey('x')).toBe(false);
+    expect(host.committed).toEqual([]);
+  });
+
+  it('returns true for a recognized key but commits nothing while read-only', () => {
+    const { host, editor } = setup();
+    host.setParts({ hour: 9 });
+    host.committed.length = 0;
+    host.readonly.set(true);
+    expect(editor.setDayPeriodFromKey('p')).toBe(true);
+    expect(host.committed).toEqual([]);
   });
 });
 
@@ -361,6 +432,75 @@ describe('SegmentEditor.clear', () => {
     const { host, editor } = setup();
     host.setParts({ hour: 9 });
     editor.clear('dayPeriod');
+    expect(host.committed).toEqual([]);
+  });
+});
+
+describe('SegmentEditor.backspace', () => {
+  it('pops the last digit of a committed multi-digit value as a transient', () => {
+    const { host, editor } = setup();
+    host.setParts({ day: 15 });
+    editor.backspace('day');
+    expect(host.parts().day).toBe(1);
+    expect(host.transientFlags.at(-1)).toBe(true);
+  });
+
+  it('clears to null as a settled commit when the last digit is removed', () => {
+    const { host, editor } = setup();
+    host.setParts({ day: 5 });
+    editor.backspace('day');
+    expect(host.parts().day).toBeNull();
+    expect(host.transientFlags.at(-1)).toBe(false);
+  });
+
+  it('pops the last digit of an active typing buffer', () => {
+    const { host, editor } = setup();
+    editor.typeDigit('year', 2);
+    editor.typeDigit('year', 0);
+    expect(host.parts().year).toBe(20);
+    editor.backspace('year');
+    expect(editor.segmentDisplayText('year')).toBe('2');
+    expect(host.parts().year).toBe(2);
+    expect(host.transientFlags.at(-1)).toBe(true);
+  });
+
+  it('keeps the AM/PM period when popping a 12-hour hour digit', () => {
+    const { host, editor } = setup();
+    host.setParts({ hour: 23 });
+    editor.backspace('hour');
+    expect(host.parts().hour).toBe(13);
+  });
+
+  it('clears a min-1 segment to null when its single digit is removed', () => {
+    const { host, editor } = setup();
+    host.setParts({ month: 5 });
+    editor.backspace('month');
+    expect(host.parts().month).toBeNull();
+  });
+
+  it('does nothing on the dayPeriod segment', () => {
+    const { host, editor } = setup();
+    host.setParts({ hour: 9, dayPeriod: 0 });
+    host.committed.length = 0;
+    editor.backspace('dayPeriod');
+    expect(host.committed).toEqual([]);
+  });
+
+  it('does nothing while disabled', () => {
+    const { host, editor } = setup();
+    host.setParts({ day: 15 });
+    host.disabled.set(true);
+    host.committed.length = 0;
+    editor.backspace('day');
+    expect(host.committed).toEqual([]);
+  });
+
+  it('does nothing while readonly', () => {
+    const { host, editor } = setup();
+    host.setParts({ day: 15 });
+    host.readonly.set(true);
+    host.committed.length = 0;
+    editor.backspace('day');
     expect(host.committed).toEqual([]);
   });
 });
@@ -382,6 +522,44 @@ describe('SegmentEditor.endTyping', () => {
 
     editor.endTyping();
     expect(editor.segmentDisplayText('day')).toBe('day');
+  });
+
+  it('flushes a pending transient as one settled commit of the current parts', () => {
+    const { host, editor } = setup();
+    editor.typeDigit('day', 1);
+    expect(host.transientFlags).toEqual([true]);
+
+    editor.endTyping();
+    expect(host.transientFlags).toEqual([true, false]);
+    expect(host.committed.at(-1)).toEqual({ day: 1 });
+  });
+
+  it('records no extra commit when the last commit already settled (auto-advance)', () => {
+    const { host, editor } = setup();
+    editor.typeDigit('month', 5);
+    expect(host.transientFlags).toEqual([false]);
+
+    editor.endTyping();
+    expect(host.transientFlags).toEqual([false]);
+  });
+
+  it('records no extra commit when the last commit already settled (step)', () => {
+    const { host, editor } = setup();
+    editor.step('minute', 1);
+    expect(host.transientFlags).toEqual([false]);
+
+    editor.endTyping();
+    expect(host.transientFlags).toEqual([false]);
+  });
+
+  it('records no extra commit when the last commit already settled (clear)', () => {
+    const { host, editor } = setup();
+    host.setParts({ day: 15 });
+    editor.clear('day');
+    expect(host.transientFlags).toEqual([false]);
+
+    editor.endTyping();
+    expect(host.transientFlags).toEqual([false]);
   });
 });
 
@@ -425,6 +603,15 @@ describe('SegmentEditor reactive accessors', () => {
     expect(editor.isFirstSegmentType('day')).toBe(false);
   });
 
+  it('reports empty only while every editable segment is empty', () => {
+    const { host, editor } = setup();
+    expect(editor.empty()).toBe(true);
+    host.setParts({ day: 5 });
+    expect(editor.empty()).toBe(false);
+    host.setParts({});
+    expect(editor.empty()).toBe(true);
+  });
+
   it('converts the stored 24h hour to its 12-hour display value', () => {
     const { host, editor } = setup();
     host.setParts({ hour: 13 });
@@ -433,12 +620,16 @@ describe('SegmentEditor reactive accessors', () => {
     expect(editor.segmentValue('hour')).toBe(13);
   });
 
-  it('reports dayPeriod value as 1 for PM and 0 for AM', () => {
+  it('reports the stored dayPeriod value independently of the hour', () => {
     const { host, editor } = setup();
-    host.setParts({ hour: 13 });
+    host.setParts({ dayPeriod: 1 });
     expect(editor.segmentValue('dayPeriod')).toBe(1);
-    host.setParts({ hour: 9 });
+    expect(editor.isSegmentEmpty('dayPeriod')).toBe(false);
+    host.setParts({ dayPeriod: 0 });
     expect(editor.segmentValue('dayPeriod')).toBe(0);
+    host.setParts({ hour: 13 });
+    expect(editor.segmentValue('dayPeriod')).toBeNull();
+    expect(editor.isSegmentEmpty('dayPeriod')).toBe(true);
   });
 
   it('builds the rendered segment list with literals and pads filled values', () => {

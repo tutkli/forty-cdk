@@ -1,7 +1,7 @@
 import { computed, signal, type Signal } from '@angular/core';
 
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
-import { from12, to12 } from './hour-cycle';
+import { from12, matchDayPeriod, to12 } from './hour-cycle';
 import type { TimeSegmentType } from './segment-types';
 
 /** Which calendar part an editable date segment edits. */
@@ -66,6 +66,58 @@ export interface SegmentHandle<T extends SegmentType = SegmentType> {
 }
 
 /**
+ * The per-segment accessor and behavior surface a date / time field engine
+ * exposes to its segment children. It is the non-signal half of a
+ * {@link import('./segment-directive').SegmentEditorContext}: segments read the
+ * reactive accessors for their ARIA / display bindings and call the behavior
+ * methods to type, step, clear, and move focus. `DateFieldEngine` and
+ * `TimeFieldEngine` both satisfy it, so one segment directive drives either
+ * flavour of field and one composer coordinates either flavour of endpoint.
+ */
+export interface SegmentEditorDelegate {
+  /** Current display value of `type`, or `null` while empty. */
+  segmentValue(type: SegmentType): number | null;
+  /** Lowest accepted display value for `type`. */
+  segmentMin(type: SegmentType): number;
+  /** Highest accepted display value for `type`. */
+  segmentMax(type: SegmentType): number;
+  /** Field-specific `aria-valuetext` for `type`, or `null` for the numeric reading. */
+  segmentValueText(type: SegmentType): string | null;
+  /** Text to render for `type`: the formatted value, the placeholder, or the typing buffer. */
+  segmentDisplayText(type: SegmentType): string;
+  /** Whether `type` currently holds no entered value. */
+  isSegmentEmpty(type: SegmentType): boolean;
+  /** Whether `type` is the first editable segment in locale order. */
+  isFirstSegmentType(type: SegmentType): boolean;
+
+  /** Registers a segment handle for focus moves. */
+  registerSegment(handle: SegmentHandle): void;
+  /** Removes a previously registered segment handle. */
+  unregisterSegment(handle: SegmentHandle): void;
+
+  /** Moves the roving tab stop to `type` and clears the typing buffer. */
+  focusSegment(type: SegmentType): void;
+  /** Types a digit into `type` (fill + auto-advance). */
+  typeDigit(type: SegmentType, digit: number): void;
+  /** Steps `type` by `delta` (arrow keys), wrapping / clamping per part. */
+  step(type: SegmentType, delta: number): void;
+  /** Jumps `type` to its minimum or maximum (Home / End). */
+  goToBound(type: SegmentType, bound: 'min' | 'max'): void;
+  /** Sets the AM / PM period. */
+  setDayPeriod(period: 'am' | 'pm'): void;
+  /** Sets AM/PM from a typed character; returns whether the key was recognized. */
+  setDayPeriodFromKey(key: string): boolean;
+  /** Clears `type` back to empty (Delete). */
+  clear(type: SegmentType): void;
+  /** Removes the last entered digit of `type` (whole clear when the last digit goes). */
+  backspace(type: SegmentType): void;
+  /** Moves focus to the sibling segment in the given direction. */
+  focusSibling(type: SegmentType, step: -1 | 1): void;
+  /** Flushes any mid-typing transient and clears the typing buffer (blur). */
+  endTyping(): void;
+}
+
+/**
  * The field-specific surface a date / time root supplies to its
  * {@link SegmentEditor}. The editor owns the spin-button state machine (typing
  * buffer, step / clear / Home-End, digit auto-advance, RTL focus moves, the
@@ -108,15 +160,15 @@ export interface SegmentEditorHost<P extends SegmentParts> {
    */
   valueText(type: SegmentType): string | null;
   /**
-   * Composes the next parts into the field value and writes it.
+   * Records the next parts for the field.
    *
    * `transient` is `true` for a mid-typing digit whose segment buffer has not
-   * yet settled (a non-final keystroke). A transient commit must compose the
-   * value **without** clamping it to the field bounds, so an intermediate
-   * out-of-range composition (e.g. a partially typed year) never snaps the
-   * value and rehydrates — and corrupts — the other already-typed segments. A
+   * yet settled (a non-final keystroke): the host updates its live segment
+   * display only and does **not** emit the composed value, so an intermediate
+   * keystroke composition is never observable through the field value. A
    * settled commit (`false`: a completed digit / auto-advance, a step, a
-   * Home/End jump, a day-period toggle, or a clear) clamps to the bounds.
+   * Home/End jump, a day-period toggle, a clear, or a blur flush) clamps to the
+   * bounds and emits the composed value.
    */
   commit(next: P, transient: boolean): void;
 }
@@ -146,12 +198,17 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
   /** Ephemeral type-to-fill buffer for the segment currently being typed into. */
   readonly #typing = signal<{ type: SegmentType; buffer: string } | null>(null);
 
+  #pendingSettle = false;
+
   /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
    * entry carries the text to display: the formatted value when filled, the
    * placeholder while empty, or the literal separator.
    */
   readonly segments: Signal<readonly FieldSegment<T>[]>;
+
+  /** `true` while every editable segment is empty — the field shows no entered digits. */
+  readonly empty: Signal<boolean>;
 
   constructor(host: SegmentEditorHost<P>) {
     this.#host = host;
@@ -174,13 +231,15 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
         };
       });
     });
+    this.empty = computed(() =>
+      this.#host.editableOrder().every((type) => this.isSegmentEmpty(type)),
+    );
   }
 
   segmentValue(type: SegmentType): number | null {
     const parts = this.#host.parts();
     if (type === 'dayPeriod') {
-      const hour = parts.hour;
-      return hour == null ? null : hour >= 12 ? 1 : 0;
+      return parts.dayPeriod ?? null;
     }
     if (type === 'hour') {
       const hour = parts.hour;
@@ -194,12 +253,12 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
 
   segmentValueText(type: SegmentType): string | null {
     if (type === 'dayPeriod') {
-      const hour = this.#host.parts().hour;
-      if (hour == null) {
+      const dayPeriod = this.#host.parts().dayPeriod;
+      if (dayPeriod == null) {
         return null;
       }
       const names = this.#host.periodNames();
-      return hour >= 12 ? names.pm : names.am;
+      return dayPeriod === 1 ? names.pm : names.am;
     }
     return this.#host.valueText(type);
   }
@@ -210,12 +269,12 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       return typing.buffer;
     }
     if (type === 'dayPeriod') {
-      const hour = this.#host.parts().hour;
-      if (hour == null) {
+      const dayPeriod = this.#host.parts().dayPeriod;
+      if (dayPeriod == null) {
         return this.#host.placeholderFor(type);
       }
       const names = this.#host.periodNames();
-      return hour >= 12 ? names.pm : names.am;
+      return dayPeriod === 1 ? names.pm : names.am;
     }
     const value = this.segmentValue(type);
     if (value === null) {
@@ -225,9 +284,6 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
   }
 
   isSegmentEmpty(type: SegmentType): boolean {
-    if (type === 'dayPeriod') {
-      return this.#host.parts().hour == null;
-    }
     return this.#host.parts()[type] == null;
   }
 
@@ -257,9 +313,21 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
    * Clears the ephemeral type-to-fill buffer so a partially typed, uncommitted
    * digit is not left painted once the segment loses focus. The segment repaints
    * from its committed value (zero-padded, or the placeholder when empty).
+   *
+   * A blur is a settle event: when a mid-typing transient is still pending, it
+   * is flushed as a settled commit of the current parts before the buffer is
+   * cleared, so leaving a partially typed segment settles (and clamps) its value.
    */
   endTyping(): void {
+    if (this.#pendingSettle) {
+      this.#commit(this.#host.parts(), false);
+    }
     this.#typing.set(null);
+  }
+
+  #commit(next: P, transient: boolean): void {
+    this.#pendingSettle = transient;
+    this.#host.commit(next, transient);
   }
 
   typeDigit(type: SegmentType, digit: number): void {
@@ -278,7 +346,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     const valid = num >= min && num <= max;
     const full = valid && (buffer.length >= spec.digits || num * 10 > max);
     this.#typing.set({ type, buffer });
-    this.#host.commit(this.#withPart(type, valid ? this.#toInternal(type, num) : null), !full);
+    this.#commit(this.#withPart(type, valid ? this.#toInternal(type, num) : null), !full);
     if (full) {
       this.#typing.set(null);
       this.focusSibling(type, 1);
@@ -297,7 +365,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     const parts = this.#host.parts();
     const current = parts[type];
     if (current == null) {
-      this.#host.commit(this.#withPart(type, this.#host.seed(type)), false);
+      this.#commit(this.#withPart(type, this.#host.seed(type)), false);
       return;
     }
     let next: number;
@@ -315,7 +383,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       const range = this.#host.segmentMax(type) - min + 1;
       next = min + ((((current - min + delta) % range) + range) % range);
     }
-    this.#host.commit(this.#withPart(type, next), false);
+    this.#commit(this.#withPart(type, next), false);
   }
 
   goToBound(type: SegmentType, bound: 'min' | 'max'): void {
@@ -328,7 +396,7 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       return;
     }
     const display = bound === 'min' ? this.#host.segmentMin(type) : this.#host.segmentMax(type);
-    this.#host.commit(this.#withPart(type, this.#toInternal(type, display)), false);
+    this.#commit(this.#withPart(type, this.#toInternal(type, display)), false);
   }
 
   setDayPeriod(period: 'am' | 'pm'): void {
@@ -336,10 +404,28 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       return;
     }
     this.#typing.set(null);
-    const hour = this.#host.parts().hour ?? null;
+    const parts = this.#host.parts();
     const pm = period === 'pm';
-    const next = hour === null ? (pm ? 12 : 0) : pm ? (hour % 12) + 12 : hour % 12;
-    this.#host.commit(this.#withPart('hour', next), false);
+    const hour = parts.hour ?? null;
+    const nextHour = hour === null ? null : from12(to12(hour).h12, pm);
+    this.#commit({ ...parts, dayPeriod: pm ? 1 : 0, hour: nextHour } as P, false);
+  }
+
+  /**
+   * Sets the AM / PM period from a single typed character on the `dayPeriod`
+   * segment, matched against the localized day-period names (with a Latin
+   * `a` / `p` fallback) via {@link matchDayPeriod}. Returns `true` when `key`
+   * is a recognized period character — regardless of disabled / read-only, so
+   * the caller can `preventDefault` on a known key even when no commit
+   * occurs — and `false` when it is not.
+   */
+  setDayPeriodFromKey(key: string): boolean {
+    const period = matchDayPeriod(key, this.#host.periodNames());
+    if (period === null) {
+      return false;
+    }
+    this.setDayPeriod(period);
+    return true;
   }
 
   clear(type: SegmentType): void {
@@ -347,7 +433,35 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
       return;
     }
     this.#typing.set(null);
-    this.#host.commit(this.#withPart(type, null), false);
+    this.#commit(this.#withPart(type, null), false);
+  }
+
+  /**
+   * Removes the last entered digit of a numeric segment (the mirror of
+   * {@link typeDigit}). It pops one display digit off the active typing buffer,
+   * or off the committed display value when nothing is being typed, then
+   * re-commits the shortened buffer as a mid-typing transient — so a partial
+   * value is not clamped or rehydrated. When the last digit is removed the
+   * segment settles to empty (a settled `null` commit, identical to
+   * {@link clear}). No-op on the `dayPeriod` toggle and while disabled /
+   * read-only.
+   */
+  backspace(type: SegmentType): void {
+    if (this.#host.disabled() || this.#host.readonly() || type === 'dayPeriod') {
+      return;
+    }
+    const previous = this.#typing();
+    const source = previous?.type === type ? previous.buffer : this.#currentDigits(type);
+    const buffer = source.slice(0, -1);
+    if (buffer === '') {
+      this.#typing.set(null);
+      this.#commit(this.#withPart(type, null), false);
+      return;
+    }
+    const num = Number(buffer);
+    const valid = num >= this.#host.segmentMin(type) && num <= this.#host.segmentMax(type);
+    this.#typing.set({ type, buffer });
+    this.#commit(this.#withPart(type, valid ? this.#toInternal(type, num) : null), true);
   }
 
   focusSibling(type: SegmentType, step: -1 | 1): void {
@@ -383,13 +497,19 @@ export class SegmentEditor<P extends SegmentParts, T extends SegmentType = Segme
     handle.host.focus(options);
   }
 
+  #currentDigits(type: SegmentType): string {
+    const value = this.segmentValue(type);
+    return value === null ? '' : String(value);
+  }
+
   /** Converts a displayed segment value to its internal representation (hour: 12h→24h). */
   #toInternal(type: SegmentType, display: number): number {
     if (type !== 'hour' || this.#host.cycle() === 24) {
       return display;
     }
-    const hour = this.#host.parts().hour ?? null;
-    const pm = hour !== null && hour >= 12;
+    const parts = this.#host.parts();
+    const pm =
+      parts.dayPeriod != null ? parts.dayPeriod === 1 : parts.hour != null && parts.hour >= 12;
     return from12(display, pm);
   }
 

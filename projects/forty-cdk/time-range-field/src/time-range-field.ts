@@ -41,9 +41,8 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
  * segments, the per-endpoint coordination surfaces, and the shared configuration
  * to its `[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]` children through
  * {@link FOR_TIME_RANGE_FIELD_CONTEXT}. The spin-button engine lives in the
- * shared `_internal/datetime` `TimeFieldEngine`; all time math goes through the
- * pluggable {@link import('../_internal/date-adapter/date-adapter').DateAdapter}
- * shared with `ForCalendar`, which **must be time-capable**
+ * shared `core/datetime` `TimeFieldEngine`; all time math goes through the
+ * pluggable `DateAdapter` shared with `ForCalendar`, which **must be time-capable**
  * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`;
  * the day-only `provideInternationalizedDateAdapter()` throws).
  *
@@ -112,7 +111,7 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
     '[attr.aria-invalid]': 'ariaInvalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.data-empty]': 'value() === null ? "" : null',
+    '[attr.data-empty]': 'empty() ? "" : null',
     '[attr.data-range-error]': 'disordered() ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -139,9 +138,14 @@ export class ForTimeRangeField<D>
    * incomplete or the two are out of order (unless {@link allowOvernight} reads a
    * `start > end` entry as a midnight-crossing range). Required by
    * `FormValueControl<DateRange<D> | null>` — this **is** the form
-   * value, so it auto-wires with `[formField]`. The `model()` change emitter
-   * (`(valueChange)`) fires only when the field itself composes or clears a
-   * range, never on consumer writes via `[(value)]`.
+   * value, so it auto-wires with `[formField]`. Emitted only on a settled commit
+   * (segment completion / blur) of an endpoint — a mid-typing keystroke is never
+   * observable through the value. The `model()` change emitter (`(valueChange)`)
+   * fires only when the field itself composes or clears a range, never on
+   * consumer writes via `[(value)]`.
+   *
+   * Two complete endpoints with an **equal** time-of-day compose a valid
+   * zero-length range (`start === end`), not `null`.
    */
   readonly value = model<DateRange<D> | null>(null);
 
@@ -174,6 +178,15 @@ export class ForTimeRangeField<D>
    * re-anchored on the DST-stable sentinel), the reverse of the default mode. Only
    * the time-of-day of each endpoint is meaningful, so this trade-off is
    * immaterial to a time-of-day range.
+   *
+   * Overnight reinterpretation applies only to a **strict** `start > end`: two
+   * complete endpoints with an equal time compose a valid zero-length range in
+   * either mode, never a 24-hour span. The midnight crossing lives **only** in the
+   * in-memory `DateRange` delivered via `[(value)]` / `[formField]` — the native
+   * hidden inputs serialize each endpoint's time-of-day only (`HH` / `HH:mm` /
+   * `HH:mm:ss`), so an overnight range posts as `<name>-start` / `<name>-end` with
+   * the +1-day advance erased; a server reading the raw fields sees `start > end`
+   * again and must re-apply the overnight rule to reconstruct the crossing.
    */
   readonly allowOvernight = input<boolean>(false);
 
@@ -228,6 +241,9 @@ export class ForTimeRangeField<D>
    * entry is a valid midnight-crossing range instead of an error.
    */
   protected readonly disordered = computed(() => this.#composer.disordered());
+
+  /** `true` only while both endpoints are entirely empty — neither shows entered digits. */
+  protected readonly empty = computed(() => this.#startEngine.empty() && this.#endEngine.empty());
 
   /**
    * Folds a self-detected out-of-order range into the base invalidity so
@@ -320,16 +336,25 @@ export class ForTimeRangeField<D>
   }
 
   /**
-   * Move focus to the first editable segment of the start endpoint, implementing
-   * `FormValueControl.focus` from `@angular/forms/signals`. Without this override
-   * Signal Forms would focus the host `role="group"` wrapper — which is not
-   * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
+   * Move focus to the first editable segment of the first incomplete endpoint,
+   * implementing `FormValueControl.focus` from `@angular/forms/signals`: the start
+   * endpoint unless it is complete and the end is not, in which case focus lands
+   * on the end; when both endpoints are complete it falls back to the start.
+   * Without this override Signal Forms would focus the host `role="group"`
+   * wrapper — which is not focusable — so focus-on-error would silently go
+   * nowhere. No-op when disabled.
    */
   focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#startEngine.focusFirstSegment(options);
+    const engine =
+      this.#startEngine.composed() === null
+        ? this.#startEngine
+        : this.#endEngine.composed() === null
+          ? this.#endEngine
+          : this.#startEngine;
+    engine.focusFirstSegment(options);
   }
 
   endpointSegments(

@@ -3,22 +3,20 @@ import { computed, linkedSignal, type Signal, signal, type WritableSignal } from
 import { type DateRange } from '../date-range/date-range';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../roving-tabindex/roving-tabindex';
+import { type SegmentEditorDelegate } from './segment-editor';
 import { type SegmentEditorContext } from './segment-directive';
 
 /** Which endpoint of a range field — the composer keys its two sources on this. */
 export type RangeFieldEndpoint = 'start' | 'end';
 
 /**
- * The subset of a date / time field engine's surface the composer forwards into
- * a {@link SegmentEditorContext}: every non-signal member of the context (the
- * per-segment accessors and behavior methods). Both `DateFieldEngine` and
- * `TimeFieldEngine` satisfy it structurally, so one composer coordinates either
- * flavour of endpoint.
+ * The date / time field engine surface the composer provides as an endpoint's
+ * {@link SegmentEditorContext} delegate: the per-segment accessors and behavior
+ * methods. Both `DateFieldEngine` and `TimeFieldEngine` satisfy it structurally,
+ * so one composer coordinates either flavour of endpoint. Alias of
+ * {@link SegmentEditorDelegate}.
  */
-export type RangeFieldEndpointEngine = Omit<
-  SegmentEditorContext,
-  'effectiveDisabled' | 'readonly' | 'dir' | 'roving'
->;
+export type RangeFieldEndpointEngine = SegmentEditorDelegate;
 
 /** The committed range paired with the generation of its last internal write. */
 interface CommittedRange<D> {
@@ -177,8 +175,8 @@ export class RangeFieldComposer<D> {
   /**
    * Builds the {@link SegmentEditorContext} an endpoint group provides to its
    * segment / literal children: the field-level `effectiveDisabled` / `readonly`
-   * / `dir` plus that endpoint's roving tracker, with every per-segment accessor
-   * and behavior method forwarded to `engine`.
+   * / `dir` plus that endpoint's roving tracker, with `engine` as the
+   * per-segment accessor / behavior delegate.
    *
    * @param engine The endpoint's date / time field engine.
    * @param which Which endpoint, selecting its roving tracker.
@@ -192,23 +190,7 @@ export class RangeFieldComposer<D> {
       readonly: this.#config.readonly,
       dir: this.#config.dir,
       roving: which === 'start' ? this.startRoving : this.endRoving,
-      segmentValue: (type) => engine.segmentValue(type),
-      segmentMin: (type) => engine.segmentMin(type),
-      segmentMax: (type) => engine.segmentMax(type),
-      segmentValueText: (type) => engine.segmentValueText(type),
-      segmentDisplayText: (type) => engine.segmentDisplayText(type),
-      isSegmentEmpty: (type) => engine.isSegmentEmpty(type),
-      isFirstSegmentType: (type) => engine.isFirstSegmentType(type),
-      registerSegment: (handle) => engine.registerSegment(handle),
-      unregisterSegment: (handle) => engine.unregisterSegment(handle),
-      focusSegment: (type) => engine.focusSegment(type),
-      typeDigit: (type, digit) => engine.typeDigit(type, digit),
-      step: (type, delta) => engine.step(type, delta),
-      goToBound: (type, bound) => engine.goToBound(type, bound),
-      setDayPeriod: (period) => engine.setDayPeriod(period),
-      clear: (type) => engine.clear(type),
-      focusSibling: (type, step) => engine.focusSibling(type, step),
-      endTyping: () => engine.endTyping(),
+      delegate: engine,
     };
   }
 

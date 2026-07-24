@@ -230,7 +230,7 @@ describe('ForTimeField', () => {
       const r = renderHost(Host);
       await type(r, 'hour', '13');
       expect(r.instance.value()).toBeNull();
-      expect(root(r).getAttribute('data-empty')).toBe('');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
 
       await type(r, 'minute', '45');
       const value = r.instance.value()!;
@@ -238,6 +238,17 @@ describe('ForTimeField', () => {
       expect(adapter.getMinutes(value)).toBe(45);
       expect(adapter.getSeconds(value)).toBe(0);
       expect(root(r).getAttribute('data-empty')).toBeNull();
+    });
+
+    it('marks data-empty only while every segment is empty', async () => {
+      const r = renderHost(Host);
+      expect(root(r).getAttribute('data-empty')).toBe('');
+
+      await type(r, 'hour', '13');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
+
+      await key(r, 'hour', 'Delete');
+      expect(root(r).getAttribute('data-empty')).toBe('');
     });
 
     it('anchors a value composed with no bound date on the DST-stable sentinel', async () => {
@@ -263,6 +274,17 @@ describe('ForTimeField', () => {
       expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('9');
     });
 
+    it('commits Devanagari digits typed into a segment (#1388)', async () => {
+      const r = renderHost(Host);
+      expect(seg(r, 'minute').getAttribute('aria-valuenow')).toBeNull();
+
+      pressKey(seg(r, 'minute'), '०');
+      pressKey(seg(r, 'minute'), '९');
+      await flush(r.fixture);
+
+      expect(seg(r, 'minute').getAttribute('aria-valuenow')).toBe('9');
+    });
+
     it('announces an empty state on every empty segment', async () => {
       const r = renderHost(Host);
       expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBeNull();
@@ -283,13 +305,25 @@ describe('ForTimeField', () => {
       expect(seg(r, 'minute').textContent?.trim()).toBe('30');
     });
 
-    it('clears the value to null when a filled segment is cleared', async () => {
+    it('clears the value to null when Delete clears a filled segment', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30));
+      await flush(r.fixture);
+      await key(r, 'minute', 'Delete');
+      expect(r.instance.value()).toBeNull();
+      expect(seg(r, 'minute').textContent?.trim()).toBe('mm');
+    });
+
+    it('pops the last entered digit of a filled segment on Backspace', async () => {
       const r = renderHost(Host);
       r.instance.value.set(new Date(2026, 5, 15, 9, 30));
       await flush(r.fixture);
       await key(r, 'minute', 'Backspace');
-      expect(r.instance.value()).toBeNull();
-      expect(seg(r, 'minute').textContent?.trim()).toBe('mm');
+      expect(seg(r, 'minute').textContent?.trim()).toBe('3');
+
+      seg(r, 'minute').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+      expect(r.instance.value()?.getMinutes()).toBe(3);
     });
 
     it('clamps a composed value up to minTime (time-of-day only)', async () => {
@@ -326,6 +360,59 @@ describe('ForTimeField', () => {
     });
   });
 
+  describe('commit-on-settle (#16)', () => {
+    it('emits no intermediate value while re-typing the hour of a complete time', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set(new Date(2026, 5, 15, 10, 30));
+      await flush(r.fixture);
+      const before = r.instance.value();
+
+      pressKey(seg(r, 'hour'), '1');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'hour'), '4');
+      await flush(r.fixture);
+      expect(r.instance.value()).not.toBe(before);
+      expect(adapter.getHours(r.instance.value()!)).toBe(14);
+    });
+
+    it('settles a partial hour on blur, clamping to minTime (item 1)', async () => {
+      const r = renderHost(Host);
+      r.instance.minTime.set(new Date(2000, 0, 1, 8, 0));
+      await flush(r.fixture);
+      await type(r, 'minute', '30');
+
+      pressKey(seg(r, 'hour'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBeNull();
+
+      seg(r, 'hour').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+
+      const value = r.instance.value()!;
+      expect(value).not.toBeNull();
+      expect(adapter.getHours(value)).toBe(8);
+      expect(adapter.getMinutes(value)).toBe(0);
+    });
+
+    it('emits no intermediate value under zoneless change detection', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Host);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+
+      fixture.componentInstance.value.set(new Date(2026, 5, 15, 10, 30));
+      await flush(fixture);
+      const before = fixture.componentInstance.value();
+
+      const hourSeg = host.querySelector('[data-testid="hour"]')! as HTMLElement;
+      pressKey(hourSeg, '1');
+      await flush(fixture);
+      expect(fixture.componentInstance.value()).toBe(before);
+    });
+  });
+
   describe('keyboard editing', () => {
     it('steps the segment with ArrowUp / ArrowDown', async () => {
       const r = renderHost(Host);
@@ -354,7 +441,7 @@ describe('ForTimeField', () => {
       expect(adapter.getMinutes(r.instance.value()!)).toBe(0);
     });
 
-    it('seeds an empty segment from midnight on first step', async () => {
+    it('seeds an empty hour to midnight on first step in 24-hour mode', async () => {
       const r = renderHost(Host);
       await key(r, 'hour', 'ArrowUp');
       expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('0');
@@ -389,6 +476,15 @@ describe('ForTimeField', () => {
       r.instance.hourCycle.set(24);
       await flush(r.fixture);
       expect(segmentsInOrder(r)).toEqual(['hour', 'minute']);
+    });
+
+    it('seeds an empty hour to 1 AM on first step in 12-hour mode', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await key(r, 'hour', 'ArrowUp');
+      expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBe('1');
+      expect(seg(r, 'hour').textContent?.trim()).toBe('01');
     });
 
     it('shows the 12-hour clock and the localized AM/PM for an afternoon time', async () => {
@@ -431,6 +527,26 @@ describe('ForTimeField', () => {
       const value = r.instance.value()!;
       expect(adapter.getHours(value)).toBe(8);
       expect(adapter.getMinutes(value)).toBe(15);
+    });
+
+    it('stores the AM/PM period on an empty field without inventing an hour', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await key(r, 'dayPeriod', 'p');
+      expect(r.instance.value()).toBeNull();
+      expect(seg(r, 'hour').textContent?.trim()).toBe('hh');
+      expect(seg(r, 'dayPeriod').textContent?.trim()).toBe('PM');
+    });
+
+    it('composes a later typed hour against a period chosen while empty', async () => {
+      const r = renderHost(Host);
+      r.instance.hourCycle.set(12);
+      await flush(r.fixture);
+      await key(r, 'dayPeriod', 'p');
+      await type(r, 'hour', '8');
+      await type(r, 'minute', '30');
+      expect(adapter.getHours(r.instance.value()!)).toBe(20);
     });
   });
 

@@ -189,7 +189,7 @@ Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled
 | `[forDateRangeFieldSegment]` | `data-disabled`    | present \| absent |
 | `[forDateRangeFieldSegment]` | `data-readonly`    | present \| absent |
 
-`data-empty` marks the whole field while the range is `null` (either endpoint unfilled, or the two out of order); `data-range-error` marks the specific case of two complete but out-of-order endpoints; `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment — the only focus hook the consumer gets, shared with the other roving primitives.
+`data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty (`data-range-error` covers the disorder). `data-range-error` marks the specific case of two complete but out-of-order endpoints; `data-placeholder` marks each individual segment that is still empty. `data-highlighted` is the current roving-tabindex segment — the only focus hook the consumer gets, shared with the other roving primitives.
 
 ## Ordering
 
@@ -222,13 +222,14 @@ providers: [
 
 Key behavior applies per segment. Each endpoint is its own tab stop, so `Tab` moves from the start group to the end group to the next control; arrows move between segments **within** an endpoint. Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                 |
-| -------------------------- | ------------------------------------------------------------------------ |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.             |
-| **ArrowUp / ArrowDown**    | Step the value. Day and month wrap; year clamps. Empty seeds from today. |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment in the same endpoint (no wrap).      |
-| **Home / End**             | Jump to the segment minimum / maximum.                                   |
-| **Backspace / Delete**     | Clear the segment (the range becomes `null` until refilled).             |
+| Key                        | Behavior                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.                            |
+| **ArrowUp / ArrowDown**    | Step the value. Day and month wrap; year clamps. Empty seeds from today.                |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment in the same endpoint (no wrap).                     |
+| **Home / End**             | Jump to the segment minimum / maximum.                                                  |
+| **Backspace**              | Delete the last entered digit; the range becomes `null` when the last digit is removed. |
+| **Delete**                 | Clear the whole segment (the range becomes `null` until refilled).                      |
 
 The day clamps to the current month's length (e.g. 31 → 28 in February), and each composed endpoint is clamped into `[minDate, maxDate]`.
 

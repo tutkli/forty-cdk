@@ -16,8 +16,7 @@ import {
   injectDateAdapter,
   DateFieldEngine,
   type FieldSegment,
-  type SegmentHandle,
-  type SegmentType,
+  type SegmentEditorDelegate,
   serializeISODate,
   FormUiControlBase,
   injectHiddenInput,
@@ -44,7 +43,7 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
  * everything to the segment / literal children through
  * {@link FOR_DATE_FIELD_CONTEXT}. The spin-button engine (digit typing, stepping,
  * Home/End, RTL focus moves, the segment registry) lives in the shared
- * `_internal/datetime` {@link DateFieldEngine} (itself built on `SegmentEditor`);
+ * `core/datetime` {@link DateFieldEngine} (itself built on `SegmentEditor`);
  * the root supplies only the reactive inputs and writes the composed value.
  * All date math goes through the pluggable {@link DateAdapter} shared with
  * `ForCalendar` (`provideInternationalizedDateAdapter()` /
@@ -97,7 +96,7 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.data-empty]': 'value() === null ? "" : null',
+    '[attr.data-empty]': 'empty() ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
   providers: [{ provide: FOR_DATE_FIELD_CONTEXT, useExisting: ForDateField }],
@@ -114,9 +113,11 @@ export class ForDateField<D>
 
   /**
    * Two-way bindable entered date, or `null` while any segment is empty.
-   * Required by `FormValueControl<D | null>`. The `model()` change emitter
-   * (`(valueChange)`) fires only when the field itself composes a new value,
-   * never on consumer writes via `[(value)]`.
+   * Required by `FormValueControl<D | null>`. Emitted only on a settled commit
+   * (segment completion / blur) — a mid-typing keystroke is never observable
+   * through the value. The `model()` change emitter (`(valueChange)`) fires only
+   * when the field itself composes a new value, never on consumer writes via
+   * `[(value)]`.
    */
   readonly value = model<D | null>(null);
 
@@ -181,11 +182,19 @@ export class ForDateField<D>
   readonly #engine: DateFieldEngine<D>;
 
   /**
+   * The field engine backing the per-segment accessors and behavior methods the
+   * segment / literal children read through {@link FOR_DATE_FIELD_CONTEXT}.
+   */
+  readonly delegate: SegmentEditorDelegate;
+
+  /**
    * The ordered, locale-derived segments (editable + literals) to render. Each
    * entry carries the text to display: the formatted value when filled, the
    * placeholder while empty, or the literal separator.
    */
   readonly segments: Signal<readonly FieldSegment[]>;
+
+  protected readonly empty: Signal<boolean>;
 
   constructor() {
     super();
@@ -205,7 +214,9 @@ export class ForDateField<D>
       onCommit: (next) => this.value.set(next),
       piece: 'ForDateField',
     });
+    this.delegate = this.#engine;
     this.segments = this.#engine.segments;
+    this.empty = this.#engine.empty;
 
     injectHiddenInput({
       name: this.name,
@@ -242,74 +253,6 @@ export class ForDateField<D>
       return;
     }
     this.#engine.focusFirstSegment(options);
-  }
-
-  segmentValue(type: SegmentType): number | null {
-    return this.#engine.segmentValue(type);
-  }
-
-  segmentMin(type: SegmentType): number {
-    return this.#engine.segmentMin(type);
-  }
-
-  segmentMax(type: SegmentType): number {
-    return this.#engine.segmentMax(type);
-  }
-
-  segmentValueText(type: SegmentType): string | null {
-    return this.#engine.segmentValueText(type);
-  }
-
-  segmentDisplayText(type: SegmentType): string {
-    return this.#engine.segmentDisplayText(type);
-  }
-
-  isSegmentEmpty(type: SegmentType): boolean {
-    return this.#engine.isSegmentEmpty(type);
-  }
-
-  isFirstSegmentType(type: SegmentType): boolean {
-    return this.#engine.isFirstSegmentType(type);
-  }
-
-  registerSegment(handle: SegmentHandle): void {
-    this.#engine.registerSegment(handle);
-  }
-
-  unregisterSegment(handle: SegmentHandle): void {
-    this.#engine.unregisterSegment(handle);
-  }
-
-  focusSegment(type: SegmentType): void {
-    this.#engine.focusSegment(type);
-  }
-
-  typeDigit(type: SegmentType, digit: number): void {
-    this.#engine.typeDigit(type, digit);
-  }
-
-  step(type: SegmentType, delta: number): void {
-    this.#engine.step(type, delta);
-  }
-
-  goToBound(type: SegmentType, bound: 'min' | 'max'): void {
-    this.#engine.goToBound(type, bound);
-  }
-
-  setDayPeriod(period: 'am' | 'pm'): void {
-    this.#engine.setDayPeriod(period);
-  }
-
-  clear(type: SegmentType): void {
-    this.#engine.clear(type);
-  }
-
-  focusSibling(type: SegmentType, step: -1 | 1): void {
-    this.#engine.focusSibling(type, step);
-  }
-
-  endTyping(): void {
-    this.#engine.endTyping();
   }
 
   protected onFocusOut(event: FocusEvent): void {

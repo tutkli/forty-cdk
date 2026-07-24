@@ -27,8 +27,14 @@ import {
   FOR_TIME_VALUE_SOURCE,
   serializeISOTime,
   timeSentinel,
+  composeWithTime,
 } from 'forty-cdk/core';
-import { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './build-time-slots';
+import {
+  buildTimeSlots,
+  timeOfDaySeconds,
+  type ForTimeSlot,
+  type TimePickerGranularity,
+} from './build-time-slots';
 import {
   FOR_TIME_PICKER_CONTEXT,
   type ForTimePickerCloseReason,
@@ -320,16 +326,15 @@ export class ForTimePicker<D>
 
   /**
    * The generated list of time slots for the full day. Each slot's `value` is
-   * anchored to the current `value()` date (or a sentinel), so selecting a
-   * slot preserves the calendar date when used inside a date-time picker.
+   * anchored to a fixed DST-stable sentinel date; `activate` grafts the picked
+   * wall-clock onto the current `value()` date, so selecting a slot preserves
+   * the calendar date when used inside a date-time picker.
    *
    * Pure derivation — never written from inside an `effect()`.
    */
   readonly slots = computed<readonly ForTimeSlot<D>[]>(() => {
-    const anchor = this.value() ?? this.#sentinel();
     return buildTimeSlots({
       adapter: this.adapter,
-      anchor,
       selected: this.value(),
       minTime: this.minTime(),
       maxTime: this.maxTime(),
@@ -373,15 +378,7 @@ export class ForTimePicker<D>
 
   #sameTimeOfDay(a: D, b: D): boolean {
     const g = this.granularity();
-    const secA =
-      this.adapter.getHours(a) * 3600 +
-      (g !== 'hour' ? this.adapter.getMinutes(a) * 60 : 0) +
-      (g === 'second' ? this.adapter.getSeconds(a) : 0);
-    const secB =
-      this.adapter.getHours(b) * 3600 +
-      (g !== 'hour' ? this.adapter.getMinutes(b) * 60 : 0) +
-      (g === 'second' ? this.adapter.getSeconds(b) : 0);
-    return secA === secB;
+    return timeOfDaySeconds(this.adapter, a, g) === timeOfDaySeconds(this.adapter, b, g);
   }
 
   isSelected(v: D): boolean {
@@ -396,7 +393,7 @@ export class ForTimePicker<D>
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
-    this.value.set(v);
+    this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), v));
     if (this.closeOnSelect()) {
       this.#controller.closeMenu('select');
     }
@@ -427,7 +424,7 @@ export class ForTimePicker<D>
       return;
     }
     if (!this.readonly()) {
-      this.value.set(value);
+      this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), value));
     }
     this.#controller.focusTrigger();
     this.#controller.closeMenu('tab');

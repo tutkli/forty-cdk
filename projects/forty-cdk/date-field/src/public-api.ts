@@ -28,6 +28,7 @@ export type {
   FieldSegment,
   RovingTabindex,
   SegmentEditorContext,
+  SegmentEditorDelegate,
   SegmentHandle,
   WritingDirection,
 } from 'forty-cdk/core';

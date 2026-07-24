@@ -41,3 +41,54 @@ export function dayPeriodNames(locale: string | undefined): { am: string; pm: st
     fmt.formatToParts(date).find((part) => part.type === 'dayPeriod')?.value ?? '';
   return { am: read(AM_TIME) || 'AM', pm: read(PM_TIME) || 'PM' };
 }
+
+function firstDifferingIndex(a: string, b: string): number {
+  const length = Math.min(a.length, b.length);
+  for (let i = 0; i < length; i++) {
+    if (a[i] !== b[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Resolves a single typed character to an AM / PM period for the `dayPeriod`
+ * segment, so localized fields accept the locale's own day-period key (e.g.
+ * `前` / `後` for `午前` / `午後`, `ص` / `م`) rather than only Latin `a` / `p`.
+ *
+ * The key is matched against the first character at which the two localized
+ * names (`names.am` / `names.pm`) differ — this disambiguates locales whose
+ * names share a leading character (`午前` / `午後`, `오전` / `오후`) while
+ * coinciding with the first character for English. A Latin `a` / `p` fallback
+ * always applies, since AM/PM is universal and many users lack an IME for the
+ * native character. Returns `null` for a multi-character key or an unrecognized
+ * character. Pure.
+ *
+ * @param key The typed character (`event.key`).
+ * @param names The localized AM / PM strings, as read by {@link dayPeriodNames}.
+ */
+export function matchDayPeriod(key: string, names: { am: string; pm: string }): 'am' | 'pm' | null {
+  if (key.length !== 1) {
+    return null;
+  }
+  const lowerKey = key.toLowerCase();
+  const am = names.am.toLowerCase();
+  const pm = names.pm.toLowerCase();
+  const index = firstDifferingIndex(am, pm);
+  if (index !== -1) {
+    if (lowerKey === am[index]) {
+      return 'am';
+    }
+    if (lowerKey === pm[index]) {
+      return 'pm';
+    }
+  }
+  if (lowerKey === 'a') {
+    return 'am';
+  }
+  if (lowerKey === 'p') {
+    return 'pm';
+  }
+  return null;
+}

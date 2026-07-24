@@ -23,6 +23,7 @@ export type {
   FieldSegment,
   RovingTabindex,
   SegmentEditorContext,
+  SegmentEditorDelegate,
   SegmentHandle,
   SegmentType,
   TimeCapableDateAdapter,

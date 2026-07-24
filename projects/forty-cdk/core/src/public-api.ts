@@ -46,6 +46,7 @@ export {
   injectDateAdapter,
   type TimeCapableDateAdapter,
 } from './date-adapter/date-adapter';
+export { createFormatterCache } from './date-adapter/formatter-cache';
 export { type DateRange } from './date-range/date-range';
 export {
   DateFieldEngine,
@@ -57,7 +58,13 @@ export {
   buildSegments,
   type FieldGranularity,
 } from './datetime/date-segments';
-export { dayPeriodNames, from12, resolveHourCycle, to12 } from './datetime/hour-cycle';
+export {
+  dayPeriodNames,
+  from12,
+  matchDayPeriod,
+  resolveHourCycle,
+  to12,
+} from './datetime/hour-cycle';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
 export {
   RangeFieldComposer,
@@ -73,6 +80,7 @@ export {
   type FieldSpec,
   type LiteralSpec,
   SegmentEditor,
+  type SegmentEditorDelegate,
   type SegmentEditorHost,
   type SegmentHandle,
   type SegmentParts,
