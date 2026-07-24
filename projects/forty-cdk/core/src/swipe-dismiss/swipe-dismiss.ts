@@ -132,6 +132,29 @@ function constrainedDelta(dx: number, dy: number, dir: SwipeDirection): { x: num
 }
 
 /**
+ * Cutoff (ms) past which a flick's last velocity sample is considered stale.
+ * A release whose last `pointermove` sample is older than this — a fast final
+ * move followed by a hold-still before lifting — must not carry the stale
+ * sample into the release decision. Consumed by {@link flickVelocity}.
+ */
+export const FLICK_STALE_VELOCITY_MS = 100;
+
+/**
+ * Zeroes the flick velocity when the release is stale — its last `pointermove`
+ * sample is older than {@link FLICK_STALE_VELOCITY_MS} — so a fast final move
+ * followed by a hold-still before lifting can't carry the stale sample into the
+ * release decision. Returns the effective velocity the caller feeds into its
+ * snap / dismiss resolution.
+ *
+ * Shared by the swipe-driven primitives (`ForDrawer`'s drag engine and
+ * `ForCarousel`'s drag directive) so the staleness rule stays identical across
+ * the library.
+ */
+export function flickVelocity(rawVelocity: number, stale: boolean): number {
+  return stale ? 0 : rawVelocity;
+}
+
+/**
  * Attach swipe-dismiss listeners to `opts.element`. Returns a cleanup
  * function that tears down the underlying pointer-drag session (every
  * listener and any pending click trap).

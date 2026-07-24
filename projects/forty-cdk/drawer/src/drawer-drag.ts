@@ -17,6 +17,8 @@ import {
   type SwipeEventDetail,
   isScrollableAtEdge,
   resolveSnapTarget,
+  flickVelocity,
+  FLICK_STALE_VELOCITY_MS,
 } from 'forty-cdk/core';
 import {
   type ForDrawerDragEvent,
@@ -29,8 +31,6 @@ import {
   validateSnapPointsShape,
   validateSnapPositions,
 } from './snap-points';
-
-const FLICK_STALE_VELOCITY_MS = 100;
 
 function sideToDirections(side: ForDrawerSide): readonly SwipeDirection[] {
   switch (side) {
@@ -593,14 +593,4 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     validateOnMount,
     arm: () => swipeReady.set(true),
   };
-}
-
-/**
- * Zeroes the flick velocity when the release is stale — its last `pointermove`
- * sample is older than `FLICK_STALE_VELOCITY_MS` — so a fast final move
- * followed by a hold-still before lifting can't carry a stale sample into the
- * release decision. Returns the effective velocity consumed by `onSwipeRelease`.
- */
-export function flickVelocity(rawVelocity: number, stale: boolean): number {
-  return stale ? 0 : rawVelocity;
 }

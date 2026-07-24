@@ -399,6 +399,8 @@ export {
 } from './snap-points/snap-points';
 export {
   attachSwipeDismiss,
+  FLICK_STALE_VELOCITY_MS,
+  flickVelocity,
   type SwipeDirection,
   type SwipeDismissOptions,
   type SwipeEventDetail,

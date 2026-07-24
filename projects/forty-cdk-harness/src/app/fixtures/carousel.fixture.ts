@@ -71,6 +71,16 @@ import {
         justify-content: center;
         font-size: 2rem;
       }
+      [data-testid='scroll-content'] {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      [data-testid='scroll-content'] .wide {
+        display: inline-block;
+        width: 1200px;
+        height: 1px;
+      }
     `,
   ],
   template: `
@@ -91,10 +101,26 @@ import {
       <button forCarouselRotationControl data-testid="rotation">&#x25B6;</button>
       <button forCarouselPrevious aria-label="Previous slide" data-testid="prev"></button>
 
-      <div forCarouselViewport forCarouselDrag data-testid="viewport">
+      <div
+        forCarouselViewport
+        forCarouselDrag
+        data-testid="viewport"
+        (gotpointercapture)="onPointerCapture()"
+      >
         <div forCarouselTrack data-testid="track">
           @for (slide of slides(); track slide) {
-            <div forCarouselSlide [attr.data-testid]="'slide-' + slide">Slide {{ slide }}</div>
+            <div forCarouselSlide [attr.data-testid]="'slide-' + slide">
+              @if (scrollable && slide === 0) {
+                <div data-testid="scroll-content">
+                  <button data-testid="scroll-click" type="button" (click)="onScrollClick()">
+                    Scroll click
+                  </button>
+                  <span class="wide"></span>
+                </div>
+              } @else {
+                Slide {{ slide }}
+              }
+            </div>
           }
         </div>
       </div>
@@ -112,6 +138,8 @@ import {
       </div>
     </div>
     <input data-testid="after" placeholder="after-carousel" />
+    <output data-testid="scroll-click-count">{{ clickCount() }}</output>
+    <output data-testid="capture-count">{{ captureCount() }}</output>
   `,
 })
 export class CarouselFixture {
@@ -141,7 +169,22 @@ export class CarouselFixture {
     this.#route.snapshot.queryParamMap.get('autoplayInterval') ?? '400',
   );
 
+  protected readonly scrollable: boolean =
+    this.#route.snapshot.queryParamMap.get('scrollable') === '1';
+
   protected readonly active = signal(0);
 
   protected readonly slides = signal([0, 1, 2, 3]);
+
+  protected readonly clickCount = signal(0);
+
+  protected readonly captureCount = signal(0);
+
+  protected onScrollClick(): void {
+    this.clickCount.update((n) => n + 1);
+  }
+
+  protected onPointerCapture(): void {
+    this.captureCount.update((n) => n + 1);
+  }
 }
