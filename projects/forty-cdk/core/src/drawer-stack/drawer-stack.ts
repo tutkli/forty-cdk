@@ -5,9 +5,9 @@ import { type ForDrawerSide } from './drawer-side';
 /**
  * Snapshot of a single drawer registered with {@link ForDrawerStack}. The
  * stack is LIFO ordered (root → topmost) and exposes only what other
- * coordinators need — `host` for ancestry checks, `side` for layout
- * heuristics, `scaleBackground` for visual composition, `parent` for
- * topology, `dragging` so visual coordinators (e.g.
+ * coordinators need — `host` for ancestry checks, `side` (a `Signal`, so a
+ * runtime side flip recomputes dependent transforms) for layout heuristics,
+ * `parent` for topology, `dragging` so visual coordinators (e.g.
  * `ForDrawerScaleCoordinator`'s nested-transform pass) can yield the
  * surface to imperative drag handlers, and the resolved nested-transform
  * tunables so the coordinator never needs to re-read scope-dependent
@@ -15,8 +15,13 @@ import { type ForDrawerSide } from './drawer-side';
  */
 export interface DrawerStackNode {
   readonly host: HTMLElement;
-  readonly side: ForDrawerSide;
-  readonly scaleBackground: boolean;
+  /**
+   * Reactive edge the drawer is anchored to. Read inside the coordinator's
+   * nested-transform effect so a runtime `[side]` rebind recomputes the
+   * parent surface's transform axis, mirroring the reactive `dragging`
+   * channel.
+   */
+  readonly side: Signal<ForDrawerSide>;
   readonly parent: HTMLElement | null;
   /**
    * Reactive flag that flips to `true` while a swipe gesture is in flight

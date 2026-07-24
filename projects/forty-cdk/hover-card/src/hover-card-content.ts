@@ -29,6 +29,7 @@ import { injectHoverCardContext } from './hover-card-context';
   exportAs: 'forHoverCardContent',
   host: {
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     '(pointerenter)': 'onPointerEnter()',
     '(pointerleave)': 'onPointerLeave()',
   },
@@ -50,12 +51,10 @@ export class ForHoverCardContent {
   }
 
   protected onPointerEnter(): void {
-    // Moving the cursor onto the card cancels any pending close so the
-    // user can interact with content inside.
-    this.ctx.cancelPending();
+    this.ctx.pointerEnterContent();
   }
 
   protected onPointerLeave(): void {
-    this.ctx.scheduleClose('hover-content');
+    this.ctx.pointerLeaveContent();
   }
 }

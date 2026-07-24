@@ -111,6 +111,7 @@ import { ForToastTitle } from './toast-title';
         [animate.leave]="toastAnimateLeave(toast)"
         [variant]="toast.config.variant ?? 'info'"
         [duration]="toast.config.duration ?? defaultDuration()"
+        [restartToken]="toast.generation"
         [closable]="toast.config.closable !== false"
         [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
         [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"

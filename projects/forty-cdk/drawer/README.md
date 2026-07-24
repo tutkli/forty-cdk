@@ -205,6 +205,20 @@ this.#drawers.open(ConfirmDrawer, {
 
 `activeSnapPointChange` fires with the landed snap on the mount-time default and every drag release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All three subscriptions are released automatically when the drawer closes.
 
+**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open — the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions — the mount-time default and every drag release):
+
+```ts
+const ref = this.#drawers.open(ConfirmDrawer, {
+  data,
+  snapPoints: ['148px', '50%', 1],
+  defaultSnapPoint: '148px',
+});
+ref.setActiveSnapPoint('50%'); // slide to the mid snap
+ref.activeSnapPoint(); // => '50%'
+```
+
+Like the declarative model it does not validate the argument against `snapPoints` (the drag engine tolerates a non-member), it is a no-op once the drawer has closed, and it is meaningful only when `snapPoints` are configured. The surface movement is the consumer's CSS keyed off the reflected `data-active-snap-point` attribute (see [Positioning the snaps](#positioning-the-snaps-css-contract)); `setActiveSnapPoint` only sets the state. As with `[(activeSnapPoint)]`, driving the snap this way does **not** re-fire the `activeSnapPointChange` callback (that fires only on the drawer's own internal transitions).
+
 ### Per-channel dismissal (Escape-only drawers)
 
 `dismissible` is **not** all-or-nothing. The four dismiss channels — Escape, pointer-down-outside, focus-outside, and the composite outside-interaction — are independently vetoable on both APIs, so you can keep some live and suppress others (e.g. a non-modal floater that closes on Escape but stays put on an outside click). Programmatically the channels are callbacks on the open config, mirroring the `autoFocusOn*` shape:

@@ -7,7 +7,14 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
   template: `
     <input data-testid="before" placeholder="before-trigger" />
-    <span forTooltip #main="forTooltip" [(open)]="open" [openDelay]="0" [closeDelay]="0">
+    <span
+      forTooltip
+      #main="forTooltip"
+      [(open)]="open"
+      [openDelay]="0"
+      [closeDelay]="0"
+      [hoverableContent]="false"
+    >
       <button data-testid="trigger" forTooltipTrigger>Save</button>
       @if (open()) {
         <div forTooltipContent data-testid="tooltip">Save changes</div>
@@ -79,7 +86,14 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
       style="height:96px;width:220px;overflow-y:auto;border:1px solid #ccc;"
     >
       @for (row of rows; track row) {
-        <div forTooltip #tip="forTooltip" [openDelay]="0" [closeDelay]="0" style="padding:8px;">
+        <div
+          forTooltip
+          #tip="forTooltip"
+          [openDelay]="0"
+          [closeDelay]="0"
+          [hoverableContent]="false"
+          style="padding:8px;"
+        >
           <button [attr.data-testid]="'row-trigger-' + row" forTooltipTrigger>Row {{ row }}</button>
           @if (tip.open()) {
             <div forTooltipContent [attr.data-testid]="'row-tooltip-' + row">Tooltip {{ row }}</div>

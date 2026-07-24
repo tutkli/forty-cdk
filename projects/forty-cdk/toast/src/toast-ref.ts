@@ -14,6 +14,7 @@ export class ForToastRef<R = unknown, D = unknown> {
   readonly #closed = signal(false);
   readonly #result = signal<R | undefined>(undefined);
   readonly #config = signal<ForToastConfig<D>>({});
+  readonly #generation = signal(0);
 
   /** Reactive: `true` once `dismiss()` has been called. */
   readonly isClosed = this.#closed.asReadonly();
@@ -21,6 +22,11 @@ export class ForToastRef<R = unknown, D = unknown> {
   readonly result = this.#result.asReadonly();
   /** Reactive: the toast's current config (mutable via `update()`). */
   readonly config = this.#config.asReadonly();
+  /**
+   * @internal Reactive dedupe generation. The viewport binds it to the toast's
+   * `[restartToken]`; each increment restarts the auto-dismiss countdown.
+   */
+  readonly generation = this.#generation.asReadonly();
 
   /** Awaitable: resolves with `{ reason, result }` the first time `dismiss()` runs. */
   readonly closed: Promise<{ reason: ForToastCloseReason; result: R | undefined }>;
@@ -70,5 +76,18 @@ export class ForToastRef<R = unknown, D = unknown> {
       const { id: _id, region: _region, ...mutable } = patch;
       return { ...current, ...mutable };
     });
+  }
+
+  /**
+   * Restart the auto-dismiss countdown from the full `duration`. No-op once
+   * dismissed. Called automatically when a live toast is re-shown via
+   * `ForToastManager.show({ id })` (dedupe); also callable directly to extend a
+   * toast's life on demand.
+   */
+  resetTimer(): void {
+    if (this.#closed()) {
+      return;
+    }
+    this.#generation.update((n) => n + 1);
   }
 }

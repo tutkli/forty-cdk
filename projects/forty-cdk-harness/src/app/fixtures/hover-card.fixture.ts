@@ -7,15 +7,18 @@ import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cd
   imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
   template: `
     <input id="before" placeholder="before-trigger" />
-    <span forHoverCard [(open)]="open" [openDelay]="0" [closeDelay]="0">
+    <span forHoverCard #card="forHoverCard" [(open)]="open" [openDelay]="0" [closeDelay]="0">
       <a data-testid="trigger" forHoverCardTrigger href="#user">Profile</a>
       @if (open()) {
-        <div forHoverCardContent data-testid="card">
+        <div forHoverCardContent data-testid="card" style="padding:24px;">
           <button data-testid="card-button">Add friend</button>
         </div>
       }
     </span>
     <input id="after" placeholder="after-trigger" />
+
+    <button data-testid="imp-show" type="button" (click)="card.show()">show</button>
+    <button data-testid="imp-hide" type="button" (click)="card.hide()">hide</button>
 
     <div
       data-testid="scroll-list"

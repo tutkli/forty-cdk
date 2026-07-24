@@ -2,20 +2,26 @@ import { Component, inject, provideZonelessChangeDetection, signal } from '@angu
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush } from '../../../src/test-utils';
+import { type ForDrawerSide } from './drawer-side';
 import { type DrawerStackNode, ForDrawerStack } from './drawer-stack';
 
 const STILL = signal(false).asReadonly();
 
 function nodeOf(
-  partial: Pick<DrawerStackNode, 'host' | 'parent'> & Partial<DrawerStackNode>,
+  partial: Pick<DrawerStackNode, 'host' | 'parent'> & {
+    side?: ForDrawerSide;
+    dragging?: DrawerStackNode['dragging'];
+    nestedScaleAmount?: number;
+    nestedTranslateYpx?: number;
+  },
 ): DrawerStackNode {
+  const { side, ...rest } = partial;
   return {
-    side: 'bottom',
-    scaleBackground: false,
     dragging: STILL,
     nestedScaleAmount: 0.93,
     nestedTranslateYpx: 8,
-    ...partial,
+    ...rest,
+    side: signal<ForDrawerSide>(side ?? 'bottom').asReadonly(),
   };
 }
 
@@ -136,20 +142,18 @@ describe('ForDrawerStack', () => {
     expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
   });
 
-  it('preserves node metadata (side, scaleBackground, parent)', async () => {
+  it('preserves node metadata (side, parent)', async () => {
     const { stack } = await createHost();
     const root = track(makeHost('root'));
     const child = track(makeHost('child'));
 
-    stack.push(nodeOf({ host: root, side: 'right', scaleBackground: true, parent: null }));
-    stack.push(nodeOf({ host: child, side: 'top', scaleBackground: false, parent: root }));
+    stack.push(nodeOf({ host: root, side: 'right', parent: null }));
+    stack.push(nodeOf({ host: child, side: 'top', parent: root }));
 
     const [rootNode, childNode] = stack.stack();
-    expect(rootNode?.side).toBe('right');
-    expect(rootNode?.scaleBackground).toBe(true);
+    expect(rootNode?.side()).toBe('right');
     expect(rootNode?.parent).toBeNull();
-    expect(childNode?.side).toBe('top');
-    expect(childNode?.scaleBackground).toBe(false);
+    expect(childNode?.side()).toBe('top');
     expect(childNode?.parent).toBe(root);
   });
 });

@@ -29,6 +29,7 @@ import { ForTooltipTrigger } from './tooltip-trigger';
       [disabled]="isDisabled()"
       [openDelay]="openDelay()"
       [closeDelay]="closeDelay()"
+      [hoverableContent]="false"
     >
       <button type="button" forTooltipTrigger>Hover me</button>
       <div forTooltipContent>Helpful hint</div>
@@ -1037,6 +1038,7 @@ describe('ForTooltip', () => {
             [(open)]="isOpen"
             [openDelay]="0"
             [closeDelay]="0"
+            [hoverableContent]="false"
             (openChange)="emitted.push($event)"
           >
             <button type="button" forTooltipTrigger>T</button>
@@ -1064,7 +1066,13 @@ describe('ForTooltip', () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         template: `
-          <div forTooltip [openDelay]="0" [closeDelay]="0" (openChange)="emitted.push($event)">
+          <div
+            forTooltip
+            [openDelay]="0"
+            [closeDelay]="0"
+            [hoverableContent]="false"
+            (openChange)="emitted.push($event)"
+          >
             <button type="button" forTooltipTrigger>T</button>
             <div forTooltipContent>C</div>
           </div>
@@ -1121,11 +1129,23 @@ describe('ForTooltip', () => {
       imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
       providers: [provideForTooltipDefaults({ skipDelayDuration: 1000 })],
       template: `
-        <div forTooltip [(open)]="aOpen" [openDelay]="500" [closeDelay]="0">
+        <div
+          forTooltip
+          [(open)]="aOpen"
+          [openDelay]="500"
+          [closeDelay]="0"
+          [hoverableContent]="false"
+        >
           <button type="button" forTooltipTrigger>A</button>
           <div forTooltipContent>A</div>
         </div>
-        <div forTooltip [(open)]="bOpen" [openDelay]="500" [closeDelay]="0">
+        <div
+          forTooltip
+          [(open)]="bOpen"
+          [openDelay]="500"
+          [closeDelay]="0"
+          [hoverableContent]="false"
+        >
           <button type="button" forTooltipTrigger>B</button>
           <div forTooltipContent>B</div>
         </div>
@@ -1204,7 +1224,7 @@ describe('ForTooltip', () => {
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         providers: [provideForTooltipDefaults({ closeDelay: 0 })],
         template: `
-          <div forTooltip [(open)]="open">
+          <div forTooltip [(open)]="open" [hoverableContent]="false">
             <button type="button" forTooltipTrigger>T</button>
             <div forTooltipContent>C</div>
           </div>
@@ -1478,15 +1498,50 @@ describe('ForTooltip', () => {
       expect(tooltip.hoverableContent()).toBe(false);
     });
 
-    it('keeps the library fallbacks (false / false) when nothing is configured', async () => {
-      const r = renderHost(TooltipHost);
+    it('keeps the library fallbacks (showOnOverflow false / hoverableContent true) when nothing is configured', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(Host);
       await flush(r.fixture);
 
       const tooltip = r.fixture.debugElement
         .query(By.directive(ForTooltip))
         .injector.get(ForTooltip);
       expect(tooltip.showOnOverflow()).toBe(false);
-      expect(tooltip.hoverableContent()).toBe(false);
+      expect(tooltip.hoverableContent()).toBe(true);
+    });
+
+    it('leaves the content without pointer-events: none by default (WCAG 1.4.13 Hoverable)', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+        template: `
+          <div forTooltip [(open)]="open">
+            <button type="button" forTooltipTrigger>T</button>
+            <div forTooltipContent>C</div>
+          </div>
+        `,
+      })
+      class DefaultPostureHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(DefaultPostureHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.style.pointerEvents).toBe('');
     });
   });
 
@@ -1625,6 +1680,34 @@ describe('ForTooltip', () => {
       vi.useFakeTimers();
       document.dispatchEvent(new Event('scroll'));
       tooltip.show();
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('scheduleOpen("focus") opens while an ancestor is scrolling', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const tooltip = getTooltip(r);
+
+      vi.useFakeTimers();
+      document.dispatchEvent(new Event('scroll'));
+      tooltip.scheduleOpen('focus');
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
+    it('scheduleOpen("hover") is a no-op while an ancestor is scrolling', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const tooltip = getTooltip(r);
+
+      vi.useFakeTimers();
+      document.dispatchEvent(new Event('scroll'));
+      tooltip.scheduleOpen('hover');
       r.fixture.detectChanges();
       expect(r.instance.isOpen()).toBe(false);
     });

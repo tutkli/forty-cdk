@@ -30,6 +30,8 @@ import {
   validateSnapPositions,
 } from './snap-points';
 
+const FLICK_STALE_VELOCITY_MS = 100;
+
 function sideToDirections(side: ForDrawerSide): readonly SwipeDirection[] {
   switch (side) {
     case 'bottom':
@@ -288,22 +290,19 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     return idx >= 0 ? snapPositions[idx]! : snapPositions[0]!;
   }
 
-  function onSwipeStart(detail: SwipeEventDetail): void {
-    // Bail out conditions that the swipe-dismiss helper can't know about:
-    // (a) `handleOnly` and the gesture didn't start on the registered handle,
-    // (b) the gesture started inside a scrollable element that hasn't reached
-    //     its edge along the dismissal direction (don't steal scroll).
+  function canBeginSwipe(detail: SwipeEventDetail): boolean {
     const target = detail.originalEvent.target as Element | null;
     const handle = config.handleEl();
     if (config.handleOnly() && (!handle || !target || !handle.contains(target))) {
-      dragging.set(false);
-      return;
+      return false;
     }
     if (target && isScrollableAtEdge(target, detail.direction, host.nativeElement)) {
-      dragging.set(false);
-      return;
+      return false;
     }
+    return true;
+  }
 
+  function onSwipeStart(detail: SwipeEventDetail): void {
     dragging.set(true);
     dragProgress.set(0);
     pointerStartTime = detail.originalEvent.timeStamp || performance.now();
@@ -323,7 +322,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       refreshSnapPositions(points);
       const cached = snapPositionsCache;
       const positions =
-        cached && cached.snapPoints === points
+        cached && cached.dimension === dimensionAtStart && cached.snapPoints === points
           ? cached.positions
           : computeSnapPositions(points, dimensionAtStart);
       const activePos = activeSnapPositionPx(points, positions);
@@ -381,11 +380,20 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     config.emitDrag({ percentageDragged, originalEvent: event });
   }
 
+  function resetDragState(): void {
+    dragOffset.set(0);
+    dragProgress.set(0);
+    dragging.set(false);
+  }
+
   function onSwipeRelease(detail: SwipeEventDetail): void {
     if (!dragging()) {
       return;
     }
     const event = detail.originalEvent;
+    const releaseTime = event.timeStamp || pointerLastTime;
+    const staleVelocity = releaseTime - pointerLastTime > FLICK_STALE_VELOCITY_MS;
+    const effectiveVelocity = flickVelocity(pointerVelocity, staleVelocity);
     const offset = dragOffset();
     const dim = dimensionAtStart || 1;
     const threshold = closeThreshold();
@@ -416,7 +424,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
         snapPositions,
         activeSnapPoint: activeSnapPoint(),
         position,
-        velocity: -pointerVelocity, // helper sema: positive = away from edge
+        velocity: -effectiveVelocity, // helper sema: positive = away from edge
         closeThreshold: threshold,
       });
       willClose = resolved.willClose;
@@ -424,7 +432,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     } else {
       // No snap points: dismiss when dragged past closeThreshold OR fast
       // flick toward edge.
-      willClose = offset >= dim * threshold || pointerVelocity >= 0.4;
+      willClose = offset >= dim * threshold || effectiveVelocity >= 0.4;
     }
 
     config.emitRelease({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
@@ -436,9 +444,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     // style recalc — the consumer's `transition: translate` then animates the
     // drag delta away in lockstep with the snap-position transition, with no
     // intermediate jump to the previous rest position.
-    dragOffset.set(0);
-    dragProgress.set(0);
-    dragging.set(false);
+    resetDragState();
 
     if (willClose) {
       config.requestClose('swipe');
@@ -450,6 +456,18 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     }
   }
 
+  function onSwipeCancel(detail: SwipeEventDetail): void {
+    if (!dragging()) {
+      return;
+    }
+    config.emitRelease({
+      willClose: false,
+      nextSnapPoint: activeSnapPoint(),
+      originalEvent: detail.originalEvent,
+    });
+    resetDragState();
+  }
+
   function attachSwipe(): () => void {
     const el = host.nativeElement;
     return attachSwipeDismiss({
@@ -458,10 +476,11 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       // Always arm on a tiny gesture and let the move handler decide; we
       // resolve the actual close threshold on release via resolveSnapTarget.
       getThreshold: () => 1,
+      canBegin: (detail) => canBeginSwipe(detail),
       onSwipeStart: (detail) => onSwipeStart(detail),
       onSwipeMove: (detail) => onSwipeMove(detail),
       onSwipeEnd: (detail) => onSwipeRelease(detail),
-      onSwipeCancel: (detail) => onSwipeRelease(detail),
+      onSwipeCancel: (detail) => onSwipeCancel(detail),
     });
   }
 
@@ -574,4 +593,14 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     validateOnMount,
     arm: () => swipeReady.set(true),
   };
+}
+
+/**
+ * Zeroes the flick velocity when the release is stale — its last `pointermove`
+ * sample is older than `FLICK_STALE_VELOCITY_MS` — so a fast final move
+ * followed by a hold-still before lifting can't carry a stale sample into the
+ * release decision. Returns the effective velocity consumed by `onSwipeRelease`.
+ */
+export function flickVelocity(rawVelocity: number, stale: boolean): number {
+  return stale ? 0 : rawVelocity;
 }

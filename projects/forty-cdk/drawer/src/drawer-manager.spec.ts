@@ -628,6 +628,64 @@ describe('ForDrawerManager (programmatic)', () => {
       await ref.closed;
       expect(landed).toEqual(['148px']);
     });
+
+    it('setActiveSnapPoint drives the reflected data-active-snap-point', () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        defaultSnapPoint: '148px',
+      });
+      const host = document.querySelector<HTMLElement>('[role="dialog"]')!;
+      expect(host.getAttribute('data-active-snap-point')).toBe('148px');
+
+      ref.setActiveSnapPoint('50%');
+      TestBed.tick();
+      expect(host.getAttribute('data-active-snap-point')).toBe('50%');
+    });
+
+    it('setActiveSnapPoint does not re-fire the activeSnapPointChange callback (consumer write, mirrors the model contract)', () => {
+      const { drawers } = setup();
+      const landed: (string | number | null)[] = [];
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        defaultSnapPoint: '148px',
+        activeSnapPointChange: (snap) => landed.push(snap),
+      });
+      expect(landed).toEqual([]);
+
+      ref.setActiveSnapPoint('50%');
+      TestBed.tick();
+      expect(landed).toEqual([]);
+      expect(
+        document
+          .querySelector<HTMLElement>('[role="dialog"]')!
+          .getAttribute('data-active-snap-point'),
+      ).toBe('50%');
+    });
+
+    it('setActiveSnapPoint is a no-op after close', async () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+        defaultSnapPoint: '148px',
+      });
+      ref.close();
+      await ref.closed;
+      expect(() => ref.setActiveSnapPoint('50%')).not.toThrow();
+    });
+
+    it('ref.activeSnapPoint() reflects the mount-seeded default (write-back from an internal transition)', () => {
+      const { drawers } = setup();
+      const ref = drawers.open(SheetDrawer, {
+        data: { message: 'x' },
+        snapPoints: ['148px', '50%', 1],
+      });
+      TestBed.tick();
+      expect(ref.activeSnapPoint()).toBe('148px');
+    });
   });
 
   describe('child pieces work inside the opened component', () => {

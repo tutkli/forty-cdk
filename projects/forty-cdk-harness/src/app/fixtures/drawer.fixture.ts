@@ -115,10 +115,11 @@ import { queryFlag } from './_query-flag';
         <div data-testid="handle" forDrawerHandle></div>
         @if (scrollable) {
           <div data-testid="scroll-content">
+            <button data-testid="scroll-click" (click)="onSurfaceClick()">Scroll click</button>
             <div class="tall">Scrollable content</div>
           </div>
         }
-        <button data-testid="first">First</button>
+        <button data-testid="first" (click)="onSurfaceClick()">First</button>
         <button data-testid="second">Second</button>
         <input data-testid="text-input" />
         <button data-testid="close-btn" forDrawerClose>Close</button>
@@ -153,6 +154,7 @@ import { queryFlag } from './_query-flag';
     <output data-testid="release-count">{{ releaseCount() }}</output>
     <output data-testid="last-release-will-close">{{ lastReleaseWillClose() }}</output>
     <output data-testid="last-release-next-snap">{{ lastReleaseNextSnap() }}</output>
+    <output data-testid="surface-click-count">{{ clickCount() }}</output>
   `,
 })
 export class DrawerFixture {
@@ -170,6 +172,8 @@ export class DrawerFixture {
   protected readonly releaseCount = signal(0);
   protected readonly lastReleaseWillClose = signal('none');
   protected readonly lastReleaseNextSnap = signal('none');
+
+  protected readonly clickCount = signal(0);
 
   readonly #route = inject(ActivatedRoute);
 
@@ -233,6 +237,10 @@ export class DrawerFixture {
   protected onChildClose(reason: ForDrawerCloseReason): void {
     this.lastChildCloseReason.set(reason);
     this.childOpen.set(false);
+  }
+
+  protected onSurfaceClick(): void {
+    this.clickCount.update((n) => n + 1);
   }
 
   protected onDrag(event: ForDrawerDragEvent): void {

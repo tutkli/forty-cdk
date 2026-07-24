@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type AnchoredPositioningContext } from 'forty-cdk/core';
+import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';
@@ -8,6 +8,8 @@ export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus
 export interface ForHoverCardContext extends AnchoredPositioningContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;
+  /** Whether `prefers-reduced-motion: reduce` is active — reflected as `data-reduced-motion`. */
+  readonly reducedMotion: Signal<boolean>;
   readonly trigger: Signal<HTMLElement | null>;
   readonly content: Signal<HTMLElement | null>;
 
@@ -17,6 +19,19 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
   unregisterArrow(el: HTMLElement): void;
   registerContent(el: HTMLElement): void;
   unregisterContent(el: HTMLElement): void;
+
+  /** The pointer entered the trigger; opens after the resolved open delay. */
+  pointerEnterTrigger(): void;
+  /** The pointer left the trigger; closes, or arms the pointer-grace bridge from `cursor`. */
+  pointerLeaveTrigger(cursor: Point): void;
+  /** The trigger received keyboard focus; opens after the resolved open delay. */
+  focusTrigger(): void;
+  /** The trigger lost focus; closes when nothing else keeps the card alive. */
+  blurTrigger(): void;
+  /** The pointer entered the content; holds the card open. */
+  pointerEnterContent(): void;
+  /** The pointer left the content; closes when nothing else keeps it alive. */
+  pointerLeaveContent(): void;
 
   /**
    * Schedule the card to open after `openDelay` ms (instant when delay is 0).

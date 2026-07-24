@@ -99,6 +99,13 @@ export class ForToast implements ForToastContext {
   readonly duration = input(5000, { transform: numberAttribute });
 
   /**
+   * @internal Restart nonce bound by `ForToastViewport` from the instance's
+   * dedupe generation. Each increment re-runs the timer effect and restarts the
+   * auto-dismiss countdown from the full `duration`.
+   */
+  readonly restartToken = input(0);
+
+  /**
    * Whether the user can dismiss the toast through an ambient gesture —
    * Escape, the close button, the auto-dismiss timer, and swipe. Defaults to
    * `true`.
@@ -233,11 +240,6 @@ export class ForToast implements ForToastContext {
   #timerHandle: ReturnType<typeof setTimeout> | null = null;
   #timerEndsAt = 0;
   #remainingMs = 0;
-  // True once the auto-dismiss countdown has begun, so `#remainingMs` holds a
-  // meaningful value. While paused this guards the duration effect from
-  // clobbering a captured remaining time on an unrelated re-run (e.g. an
-  // `update()` that re-renders the toast); see `#onPausedChange`.
-  #timerStarted = false;
 
   constructor() {
     // Multi-reason pause: pointer hover, focus, and page visibility each
@@ -252,24 +254,19 @@ export class ForToast implements ForToastContext {
     this.paused = this.#pause.paused;
 
     // Start (or reset) the auto-dismiss timer whenever `duration` /
-    // `closable` changes. Pause / resume are handled imperatively in
-    // `#onPausedChange`, so we read `paused()` via `untracked()` here —
-    // otherwise the effect would re-run on hover and clobber the in-flight
-    // remaining-ms capture. While paused with a countdown already in flight we
-    // bail out entirely so the captured remaining time survives a re-render;
-    // resume reschedules with that captured value rather than the full
-    // duration.
+    // `closable` / `restartToken` changes. Pause / resume are handled
+    // imperatively in `#onPausedChange`, so we read `paused()` via
+    // `untracked()` here — otherwise the effect would re-run on hover and
+    // clobber the in-flight remaining-ms capture.
     effect(() => {
       const ms = this.duration();
       const closable = this.closable();
+      this.restartToken();
       const paused = untracked(this.paused);
-      if (paused && this.#timerStarted) {
-        return;
-      }
       this.#cancelTimer();
       this.#remainingMs = ms;
-      this.#timerStarted = ms > 0 && closable;
-      if (this.#timerStarted && !paused) {
+      const started = ms > 0 && closable;
+      if (started && !paused) {
         this.#scheduleTimer();
       }
     });
@@ -418,7 +415,7 @@ export class ForToast implements ForToastContext {
     if (paused) {
       // Pause: capture remaining time and cancel the running timer.
       if (this.#timerHandle !== null) {
-        this.#remainingMs = Math.max(0, this.#timerEndsAt - Date.now());
+        this.#remainingMs = Math.max(1, this.#timerEndsAt - Date.now());
         this.#cancelTimer();
       }
     } else if (this.duration() > 0 && this.closable() && this.#remainingMs > 0) {

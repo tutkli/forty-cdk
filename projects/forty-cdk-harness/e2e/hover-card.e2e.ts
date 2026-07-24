@@ -45,6 +45,32 @@ test.describe('HoverCard', () => {
     await expect(el(page, 'card')).toHaveCount(0);
   });
 
+  test('moves from the trigger across the gap into the card and stays open with closeDelay:0', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'hover-card');
+
+    await el(page, 'trigger').hover();
+    await expect(el(page, 'card')).toBeVisible();
+
+    await el(page, 'card').hover();
+    await page.waitForTimeout(200);
+    await expect(el(page, 'card')).toBeVisible();
+
+    await page.mouse.move(2, 2);
+    await expect(el(page, 'card')).toHaveCount(0);
+  });
+
+  test('show() / hide() imperatively open and close the card', async ({ page }) => {
+    await gotoFixture(page, 'hover-card');
+
+    await el(page, 'imp-show').click();
+    await expect(el(page, 'card')).toBeVisible();
+
+    await el(page, 'imp-hide').click();
+    await expect(el(page, 'card')).toHaveCount(0);
+  });
+
   test('scrolling an ancestor closes the open card and does not flicker new ones', async ({
     page,
   }) => {

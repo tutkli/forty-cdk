@@ -1,7 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, ViewEncapsulation } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  ViewEncapsulation,
+} from '@angular/core';
 import {
   ForDrawerClose,
+  ForDrawerHandle,
   ForDrawerManager,
+  type ForDrawerRef,
+  type ForDrawerSnapPoint,
   ForDrawerTitle,
   injectDrawerData,
 } from 'forty-cdk/drawer';
@@ -56,21 +66,90 @@ class ProgrammaticDrawerContent {
   protected readonly data = injectDrawerData<ProgrammaticDrawerData>();
 }
 
+interface ProgrammaticSnapDrawerData {
+  drive: (snap: ForDrawerSnapPoint) => void;
+}
+
+@Component({
+  imports: [ForDrawerHandle, ForDrawerTitle, ForDrawerClose],
+  template: `
+    <div data-testid="prog-snap-handle" forDrawerHandle></div>
+    <h2 data-testid="prog-snap-title" forDrawerTitle>Snap Drawer</h2>
+    <button data-testid="prog-snap-148" (click)="data?.drive('148px')">Snap to 148px</button>
+    <button data-testid="prog-snap-50" (click)="data?.drive('50%')">Snap to 50%</button>
+    <button data-testid="prog-snap-close" forDrawerClose>Close</button>
+  `,
+})
+class ProgrammaticSnapDrawerContent {
+  protected readonly data = injectDrawerData<ProgrammaticSnapDrawerData>();
+}
+
 @Component({
   selector: 'app-drawer-programmatic-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None,
+  styles: [
+    `
+      .prog-snap-drawer-host {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 400px;
+        box-sizing: border-box;
+        padding: 16px;
+        background: white;
+        z-index: 1;
+        translate: var(--for-drawer-translate, 0px 0px);
+      }
+      .prog-snap-drawer-host[data-active-snap-point] {
+        transition:
+          bottom 0.2s ease,
+          translate 0.2s ease;
+      }
+      .prog-snap-drawer-host[data-active-snap-point][data-dragging] {
+        transition: none;
+      }
+      .prog-snap-drawer-host[data-active-snap-point='148px'] {
+        bottom: calc(148px - 400px);
+      }
+      .prog-snap-drawer-host[data-active-snap-point='50%'] {
+        bottom: -200px;
+      }
+      .prog-snap-drawer-host[data-active-snap-point='1'] {
+        bottom: 0;
+      }
+      .prog-snap-drawer-host [data-testid='prog-snap-handle'] {
+        height: 16px;
+        margin-bottom: 8px;
+        background: #ddd;
+        border-radius: 4px;
+      }
+    `,
+  ],
   template: `
     <button data-testid="open-prog-drawer" (click)="openDrawer($event)">
       Open programmatic drawer
     </button>
+
+    <button data-testid="open-prog-snap-drawer" (click)="openSnapDrawer($event)">
+      Open programmatic snap drawer
+    </button>
+    <output data-testid="prog-active-snap">{{ progActiveSnap() }}</output>
   `,
 })
 export class DrawerProgrammaticFixture {
   readonly #manager = inject(ForDrawerManager);
   readonly #slowEnter = queryFlag('slowEnter');
 
+  protected readonly snapRef = signal<ForDrawerRef | null>(null);
+  protected readonly progActiveSnap = computed(() => {
+    const snap = this.snapRef()?.activeSnapPoint() ?? null;
+    return snap == null ? 'none' : String(snap);
+  });
+
   openDrawer(event: Event): void {
-    // Re-focus the opener before opening, mirroring `ForDialogTrigger.onClick`:
+    // Re-focus the opener before opening, mirroring `ForDrawerTrigger.onClick`:
     // WebKit/Safari does not focus a `<button>` on `mousedown` and blurs an
     // already-focused one, so by the time this click handler runs the active
     // element is `<body>`. The manager's return-focus contract restores
@@ -84,5 +163,18 @@ export class DrawerProgrammaticFixture {
       animateEnter: this.#slowEnter ? 'prog-entering-slow' : 'prog-entering',
       animateLeave: 'prog-leaving',
     });
+  }
+
+  openSnapDrawer(event: Event): void {
+    (event.currentTarget as HTMLElement).focus();
+    let ref: ForDrawerRef | null = null;
+    const drive = (snap: ForDrawerSnapPoint): void => ref?.setActiveSnapPoint(snap);
+    ref = this.#manager.open(ProgrammaticSnapDrawerContent, {
+      class: 'prog-snap-drawer-host',
+      data: { drive },
+      snapPoints: ['148px', '50%', 1],
+      defaultSnapPoint: '148px',
+    });
+    this.snapRef.set(ref);
   }
 }

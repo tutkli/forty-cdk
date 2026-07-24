@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { type ForDrawerSide } from '../drawer-stack/drawer-side';
 import { type DrawerStackNode, ForDrawerStack } from '../drawer-stack/drawer-stack';
 import { flush, withReducedMotion } from '../../../src/test-utils';
 import { ForDrawerScaleCoordinator, type ForDrawerScaleConfig } from './drawer-scale-coordinator';
@@ -42,26 +43,33 @@ function makeDrawerHost(id: string): HTMLElement {
 interface PushedNode {
   readonly node: DrawerStackNode;
   readonly dragging: WritableSignal<boolean>;
+  readonly side: WritableSignal<ForDrawerSide>;
   cleanup(): void;
 }
 
 function pushNode(
   drawerStack: ForDrawerStack,
-  partial: Pick<DrawerStackNode, 'host' | 'parent'> & Partial<DrawerStackNode>,
+  partial: Pick<DrawerStackNode, 'host' | 'parent'> & {
+    side?: ForDrawerSide;
+    nestedScaleAmount?: number;
+    nestedTranslateYpx?: number;
+  },
 ): PushedNode {
   const draggingSig = signal(false);
+  const sideSig = signal<ForDrawerSide>(partial.side ?? 'bottom');
   const node: DrawerStackNode = {
-    side: 'bottom',
-    scaleBackground: false,
-    nestedScaleAmount: 0.93,
-    nestedTranslateYpx: 8,
+    host: partial.host,
+    parent: partial.parent,
+    nestedScaleAmount: partial.nestedScaleAmount ?? 0.93,
+    nestedTranslateYpx: partial.nestedTranslateYpx ?? 8,
     dragging: draggingSig.asReadonly(),
-    ...partial,
+    side: sideSig.asReadonly(),
   };
   const handle = drawerStack.push(node);
   return {
     node,
     dragging: draggingSig,
+    side: sideSig,
     cleanup: handle.cleanup,
   };
 }
@@ -336,6 +344,23 @@ describe('ForDrawerScaleCoordinator nested-state transform', () => {
 
     pushNode(drawerStack, { host: parentEl, parent: null, side: 'right' });
     pushNode(drawerStack, { host: childEl, parent: parentEl, side: 'right' });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toContain('translate3d(8px, 0px, 0)');
+  });
+
+  it('recomputes the parent nested transform when the parent side flips at runtime', async () => {
+    const { drawerStack, fixture } = await createHost();
+    const parentEl = track(makeDrawerHost('parent'));
+    const childEl = track(makeDrawerHost('child'));
+
+    const parent = pushNode(drawerStack, { host: parentEl, parent: null });
+    pushNode(drawerStack, { host: childEl, parent: parentEl });
+    await flush(fixture);
+
+    expect(parentEl.style.transform).toContain('translate3d(0px, -8px, 0)');
+
+    parent.side.set('right');
     await flush(fixture);
 
     expect(parentEl.style.transform).toContain('translate3d(8px, 0px, 0)');

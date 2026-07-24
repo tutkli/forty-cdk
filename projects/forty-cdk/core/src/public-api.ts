@@ -202,6 +202,10 @@ export {
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset/fieldset-context';
 export { computeFlatHierarchy } from './flat-hierarchy/flat-hierarchy';
 export {
+  AnchoredOverlayPositioningBase,
+  type AnchoredPositioningSeedDefaults,
+} from './floating/anchored-overlay-positioning-base';
+export {
   ANCHORED_POSITIONING_DEFAULTS,
   type AnchoredPositioningContext,
   toFloatingPositioner,
@@ -314,6 +318,7 @@ export {
   type ModalShellInitialFocusConfig,
   resolveModalExemptOverlays,
 } from './modal-shell/modal-shell';
+export { ModalSurfaceBase } from './modal-surface-base/modal-surface-base';
 export {
   clamp,
   decimalPlaces,

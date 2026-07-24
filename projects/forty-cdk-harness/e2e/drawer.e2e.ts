@@ -454,7 +454,7 @@ test.describe('Drawer', () => {
       ).toBe('0');
     });
 
-    test('handleOnly: drag starting outside the handle does not arm; on the handle it does', async ({
+    test('handleOnly: off-handle drag does not arm and leaves the surface clickable; on the handle it dismisses', async ({
       page,
     }) => {
       // Two-phase: start a drag on the `first` button (on the drawer surface
@@ -464,11 +464,15 @@ test.describe('Drawer', () => {
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'surface-click-count')).toHaveText('0');
 
       await dragFrom(page, el(page, 'first'), { dx: 0, dy: 80 });
       await expect(el(page, 'drag-count')).toHaveText('0');
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-close-reason')).toHaveText('none');
+
+      await el(page, 'first').click();
+      await expect(el(page, 'surface-click-count')).toHaveText('1');
 
       // Now arm the gesture on the handle and dismiss past threshold.
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
@@ -815,6 +819,37 @@ test.describe('Drawer', () => {
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
     });
 
+    test('@mobile a fast flick followed by a hold-still does NOT dismiss (staleness cutoff)', async ({
+      page,
+    }) => {
+      // Staleness cutoff (item 3): the release zeroes `#pointerVelocity` when
+      // the last `pointermove` sample is older than FLICK_STALE_VELOCITY_MS
+      // (100 ms). Same setup as the fresh-flick control above — 200 px drawer
+      // with closeThreshold 0.5 lifts the position threshold to 100 px, and a
+      // 90 px total drag (cumulative offset 85 px) stays below it, so the ONLY
+      // dismiss path is the velocity branch. A fast final move (+90 in one
+      // step) drives velocity well above 0.4, but a 200 ms pause before
+      // lifting makes the sample stale: `effectiveVelocity` collapses to 0, no
+      // velocity dismiss fires, and the sub-threshold offset springs back.
+      // Without the fix the stale flick dismisses.
+      await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '0.5' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+
+      const handleBox = (await el(page, 'handle').boundingBox())!;
+      const sx = handleBox.x + handleBox.width / 2;
+      const sy = handleBox.y + handleBox.height / 2;
+      await page.mouse.move(sx, sy);
+      await page.mouse.down();
+      await page.mouse.move(sx, sy + 5); // arm
+      await page.mouse.move(sx, sy + 90); // fast final move: dt tiny ⇒ velocity ≫ 0.4
+      await page.waitForTimeout(200); // hold still, well past the 100 ms cutoff
+      await page.mouse.up();
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+    });
+
     test('@mobile scroll-inside-drawer does NOT dismiss while the inner scroller can still scroll', async ({
       page,
     }) => {
@@ -845,5 +880,78 @@ test.describe('Drawer', () => {
       await expect(el(page, 'drag-count')).toHaveText('0');
       await expect(el(page, 'last-close-reason')).toHaveText('none');
     });
+
+    test('@mobile scroll-inside-drawer leaves the scroller clickable after the bailed gesture', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'drawer', { drawerHeight: '300', scrollable: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'surface-click-count')).toHaveText('0');
+
+      await el(page, 'scroll-content').evaluate((node) => {
+        (node as HTMLElement).scrollTop = 100;
+      });
+
+      await dragFrom(page, el(page, 'scroll-content'), { dx: 0, dy: 120 });
+
+      await expect(el(page, 'drawer')).toBeVisible();
+      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'last-close-reason')).toHaveText('none');
+
+      await el(page, 'scroll-click').click();
+      await expect(el(page, 'surface-click-count')).toHaveText('1');
+    });
+  });
+});
+
+test.describe('Drawer (programmatic snap drive — #1391)', () => {
+  test('setActiveSnapPoint drives data-active-snap-point and moves the surface', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drawer-programmatic');
+    await el(page, 'open-prog-snap-drawer').click();
+
+    const drawer = page.locator('[role="dialog"]');
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toHaveAttribute('data-active-snap-point', '148px');
+    await expect(el(page, 'prog-active-snap')).toHaveText('148px');
+
+    const peekTop = await drawer.evaluate((n) => (n as HTMLElement).getBoundingClientRect().top);
+
+    await el(page, 'prog-snap-50').click();
+    await expect(drawer).toHaveAttribute('data-active-snap-point', '50%');
+    await expect(el(page, 'prog-active-snap')).toHaveText('50%');
+    await expect
+      .poll(() => drawer.evaluate((n) => (n as HTMLElement).getBoundingClientRect().top))
+      .toBeLessThan(peekTop);
+  });
+
+  test('setActiveSnapPoint drives back to the original snap after a real drag release (write-back)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drawer-programmatic');
+    await el(page, 'open-prog-snap-drawer').click();
+
+    const drawer = page.locator('[role="dialog"]');
+    await expect(drawer).toBeVisible();
+    await expect(drawer).toHaveAttribute('data-active-snap-point', '148px');
+
+    const peekTop = await drawer.evaluate((n) => (n as HTMLElement).getBoundingClientRect().top);
+
+    await dragFromSteps(page, el(page, 'prog-snap-handle'), { dx: 0, dy: -20 }, 6);
+
+    await expect(drawer).toBeVisible();
+    await expect(drawer).not.toHaveAttribute('data-active-snap-point', '148px');
+    const grownTop = await drawer.evaluate((n) => (n as HTMLElement).getBoundingClientRect().top);
+    expect(grownTop).toBeLessThan(peekTop);
+
+    await el(page, 'prog-snap-148').click();
+    await expect(drawer).toHaveAttribute('data-active-snap-point', '148px');
+    await expect(el(page, 'prog-active-snap')).toHaveText('148px');
+    await expect
+      .poll(() => drawer.evaluate((n) => (n as HTMLElement).getBoundingClientRect().top))
+      .toBeGreaterThan(grownTop);
   });
 });
