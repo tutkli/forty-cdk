@@ -94,6 +94,26 @@ See [Styling forty-cdk](../../../../../docs/styling.md) for theming guidance.
 
 When `Next` is pressed on the last step, `selectedIndex` advances to `count` (one past the last step) and `(complete)` fires once. `[forStepperPrevious]` returns to the last step. While completed, every `[forStepperContent]` panel is inactive and only `[forStepperCompletedContent]` carries `data-state="active"` (the others reflect `inert` + `aria-hidden`).
 
+### Conditionally rendered or reordered panels (`[step]`)
+
+A `[forStepperContent]` panel pairs with a step by DOM-order position: the Nth panel is the
+Nth step. When panels are conditionally rendered — or declared in an order that doesn't match
+the steps — that position no longer identifies the step, so bind `[step]` to make the pairing
+explicit. It keeps `data-state` / `inert` / `aria-labelledby` on the panel and `aria-controls`
+on the trigger correct no matter which panels are mounted.
+
+```html
+<div forStepper [(selectedIndex)]="step">
+  <!-- … list … -->
+  @for (s of steps; track $index) { @if (step() === $index) {
+  <section forStepperContent [step]="$index">{{ s.body }}</section>
+  } }
+</div>
+```
+
+A structurally hidden `[forStepperTrigger]` needs no equivalent opt-in: a trigger always
+resolves its step from its enclosing `[forStepperItem]`.
+
 ### Signal Forms field-driven completion
 
 Bind a step to a [Signal Forms](https://angular.dev/) field and its completion and
@@ -264,6 +284,12 @@ Or purely via CSS:
 | `field`     | `input<FieldTree<unknown>\|null>` | Optional Signal Forms field; drives `completed`/`hasError` from validity.<br>**Default:** `null`     |
 | `state`     | `input<string\|null>`             | Custom state override — wins over derived state.<br>**Default:** `null`                              |
 
+### `ForStepperContent`
+
+| Property | Type                    | Description                                                                                        |
+| -------- | ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `step`   | `input<number \| null>` | Index of the step this panel belongs to. Unset pairs by DOM-order position.<br>**Default:** `null` |
+
 ### Data attributes
 
 #### `data-state` vocabulary
@@ -306,7 +332,7 @@ In `orientation="vertical"` ArrowUp/Down navigate; ArrowLeft/Right are ignored. 
 
 Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/).
 
-- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly — an interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`).
+- **Interactive mode** implements the WAI-ARIA Tabs pattern. Each trigger carries `role="tab"`, the list carries `role="tablist"`, and content panels carry `role="tabpanel"`. Each `<li forStepperItem>` carries `role="presentation"` so the `tablist` owns the `tab` triggers directly — an interposed implicit `listitem` would violate the tablist's required-owned-elements contract. `aria-selected` is always emitted; `aria-controls` is gated to the current step (prevents dangling references when panels are unmounted with `@if`). The trigger ↔ panel pairing resolves each side by its step index — a trigger through its `[forStepperItem]`, a panel through `[step]` (or its position when unbound) — so hiding one trigger or panel with `@if` never shifts the pairing of the others.
 - **Progress mode** uses a standard `<ol role="list">` with `aria-current="step"` on the active trigger; each `<li forStepperItem>` keeps its implicit `listitem` role. No tab-stop manipulation is performed; triggers carry no `role`.
 - **Disabled triggers** in interactive mode retain their tab stop using `aria-disabled="true"` rather than the native `disabled` attribute, so assistive technology can announce them.
 - **Linear mode** reflects unreachable ahead-steps as `aria-disabled="true"` + `data-disabled=""` on the trigger. Keyboard navigation skips them automatically.

@@ -59,12 +59,18 @@ export interface ForStepperTriggerHandle {
 }
 
 /**
- * Registry entry for one content panel (id source; positional). The content's
- * position in this collection determines its associated step index.
+ * Registry entry for one content panel (id source). The panel's step index is
+ * carried on the handle, so a lookup never conflates it with the panel's
+ * position in the content collection.
  */
 export interface ForStepperContentHandle {
   /** Host element, used for DOM-order sorting and index derivation. */
   readonly host: HTMLElement;
+  /**
+   * Index of the step this panel is paired with — the explicit `[step]` when
+   * bound, else the panel's DOM-order position among the registered panels.
+   */
+  readonly index: Signal<number>;
   /** The panel's own host id, for `aria-controls` on triggers. */
   readonly id: Signal<string>;
 }
@@ -164,19 +170,22 @@ export interface ForStepperContext {
   unregisterContent(h: ForStepperContentHandle): void;
 
   /**
-   * Returns the id of the trigger at `index`, or `null` if there is no
-   * registered trigger at that position.
+   * Returns the id of the trigger belonging to step `index`, or `null` when no
+   * registered trigger claims that step. Resolved through the trigger handle's
+   * item index, so a structurally hidden trigger never shifts the pairing.
    */
   triggerIdFor(index: number): string | null;
   /**
-   * Returns the id of the content panel at `index`, or `null` if there is no
-   * registered panel at that position.
+   * Returns the id of the content panel paired with step `index`, or `null`
+   * when no registered panel claims that step. Resolved through the content
+   * handle's step index, so a structurally absent panel never shifts the
+   * pairing.
    */
   contentIdFor(index: number): string | null;
   /**
    * Returns the DOM-order index of the content panel whose host is `host`, or
-   * -1 if not registered. Used by `ForStepperContent` to derive its step index
-   * reactively.
+   * -1 if not registered. Used by `ForStepperContent` as the positional
+   * fallback when the panel declares no explicit `[step]`.
    */
   indexOfContent(host: HTMLElement): number;
   /**
@@ -188,7 +197,8 @@ export interface ForStepperContext {
    * True when some registered trigger corresponds to the currently selected
    * step. Distinguishes "the current step owns the tab stop" from "the selected
    * index points at a missing or unreachable trigger" so the per-trigger
-   * tabindex fallback can re-engage the first-selectable entry point.
+   * tabindex fallback can re-engage the first-selectable entry point. Matched on
+   * the trigger handle's item index, never on its collection position.
    */
   hasCurrentTrigger(): boolean;
 }

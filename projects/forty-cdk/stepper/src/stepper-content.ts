@@ -1,12 +1,14 @@
-import { computed, Directive, ElementRef, inject } from '@angular/core';
+import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle, injectHasFocusableContent, hostId } from 'forty-cdk/core';
 import { injectStepperContext } from './stepper-context';
 
 /**
- * Panel for one step. Correlates to a step by **position** — the Nth
- * `[forStepperContent]` panel in registration (DOM document) order corresponds
- * to the Nth step.
+ * Panel for one step. Pairs with a step through the explicit `[step]` index
+ * when bound; otherwise by **position** — the Nth `[forStepperContent]` panel in
+ * registration (DOM document) order corresponds to the Nth step. Bind `[step]`
+ * whenever panels are conditionally rendered or ordered independently of the
+ * steps, since the positional fallback renumbers the remaining panels.
  *
  * In `mode="interactive"` the panel carries `role="tabpanel"` and is a tab
  * stop (`tabindex="0"`) only when it has no focusable content of its own
@@ -37,18 +39,27 @@ export class ForStepperContent {
   protected readonly ctx = injectStepperContext('ForStepperContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
+  /**
+   * Index of the step this panel belongs to. Leave unset (default `null`) to
+   * pair by DOM-order position among the registered panels; bind it when panels
+   * are conditionally rendered or ordered independently of the steps, so the
+   * pairing survives a structurally absent panel.
+   */
+  readonly step = input<number | null>(null);
+
   /** Generated (or consumer-set static) id for this panel. Used by triggers for `aria-controls`. */
   readonly id = hostId('for-stepper-content');
 
   readonly #hasFocusableContent = injectHasFocusableContent();
 
-  readonly #index = computed(() => this.ctx.indexOfContent(this.#host));
+  /** Resolved step index — the explicit `step()` when bound, else the positional fallback. */
+  readonly index = computed(() => this.step() ?? this.ctx.indexOfContent(this.#host));
 
   /** True when this panel corresponds to the currently selected step. */
-  readonly current = computed(() => this.ctx.isCurrent(this.#index()));
+  readonly current = computed(() => this.ctx.isCurrent(this.index()));
 
   /** Id of the trigger that labels this panel (`aria-labelledby`). */
-  protected readonly labelledBy = computed(() => this.ctx.triggerIdFor(this.#index()));
+  protected readonly labelledBy = computed(() => this.ctx.triggerIdFor(this.index()));
 
   /**
    * APG tabindex: `'0'` only when in interactive mode and the panel has no
@@ -64,7 +75,7 @@ export class ForStepperContent {
   });
 
   constructor() {
-    const handle = { host: this.#host, id: this.id };
+    const handle = { host: this.#host, index: this.index, id: this.id };
     registerHandle(
       handle,
       (h) => this.ctx.registerContent(h),

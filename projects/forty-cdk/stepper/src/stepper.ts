@@ -269,11 +269,11 @@ export class ForStepper implements ForStepperContext {
   }
 
   triggerIdFor(index: number): string | null {
-    return this.#triggers.items()[index]?.id() ?? null;
+    return this.#triggerForStep(index)?.id() ?? null;
   }
 
   contentIdFor(index: number): string | null {
-    return this.#contents.items()[index]?.id() ?? null;
+    return this.#contentForStep(index)?.id() ?? null;
   }
 
   indexOfContent(host: HTMLElement): number {
@@ -285,12 +285,14 @@ export class ForStepper implements ForStepperContext {
   }
 
   hasCurrentTrigger(): boolean {
-    const idx = this.selectedIndex();
-    const triggers = this.#triggers.items();
-    if (idx < 0 || idx >= triggers.length) {
-      return false;
-    }
-    const trigger = triggers[idx];
-    return trigger !== undefined && trigger.selectable();
+    return this.#triggerForStep(this.selectedIndex())?.selectable() ?? false;
+  }
+
+  #triggerForStep(index: number): ForStepperTriggerHandle | undefined {
+    return this.#triggers.items().find((t) => t.index() === index);
+  }
+
+  #contentForStep(index: number): ForStepperContentHandle | undefined {
+    return this.#contents.items().find((c) => c.index() === index);
   }
 }
