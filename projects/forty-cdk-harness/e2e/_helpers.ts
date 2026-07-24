@@ -68,7 +68,7 @@ export function isMobileProject(testInfo: TestInfo): boolean {
  * cumulative integrator (many small moves) use {@link dragFromSteps}.
  *
  * `stepDelayMs` controls the gap between the arm step and the big move so
- * the computed velocity stays below `VELOCITY_THRESHOLD_PX_PER_MS = 0.4`
+ * the computed velocity stays below `FLICK_VELOCITY_PX_PER_MS` (0.4 px/ms)
  * unless a test explicitly wants the fast-flick path. With the default
  * 250 ms gap, a 100-pixel total move resolves at ≈ 0.38 px/ms; tests that
  * need a non-flick result keep `dy <= 100`, and tests that want a flick
@@ -147,9 +147,9 @@ export async function dragFrom(
  *
  * Velocity at release is the last move's `|step|` divided by
  * `stepDelayMs` (the default 50 ms with a 30-px step gives 0.6 px/ms —
- * past the 0.4-px/ms flick threshold). Tests that need the no-flick
- * branch pass a larger `stepDelayMs` so per-event velocity stays below
- * the threshold.
+ * past the 0.4-px/ms `FLICK_VELOCITY_PX_PER_MS` threshold). Tests that
+ * need the no-flick branch pass a larger `stepDelayMs` so per-event
+ * velocity stays below the threshold.
  *
  * `opts.flickRelease` makes the flick deterministic: the FINAL step is
  * dispatched back-to-back with the previous move (its preceding

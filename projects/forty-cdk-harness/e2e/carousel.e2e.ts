@@ -346,9 +346,10 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
   // the mobile projects (hasTouch) Playwright translates to pointerType:'touch'
   // events while preserving pointer-capture forwarding — the same path the
   // drawer flick-velocity block uses. Gestures stay short so the endpoint lands
-  // inside the narrow mobile viewport; a fast flick (>= 0.4 px/ms) advances even
-  // on a sub-half-slide drag. The slow position-snap case is desktop-only because
-  // a > half-slide drag (260px) does not fit the mobile viewport width.
+  // inside the narrow mobile viewport; a fast flick (>= 0.4 px/ms, the shared
+  // `FLICK_VELOCITY_PX_PER_MS`) advances even on a sub-half-slide drag. The slow
+  // position-snap case is desktop-only because a > half-slide drag (260px) does
+  // not fit the mobile viewport width.
 
   test('horizontal LTR — flick left advances to slide-1', async ({ page }) => {
     await gotoFixture(page, 'carousel');
