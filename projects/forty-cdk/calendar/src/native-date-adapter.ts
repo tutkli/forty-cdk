@@ -1,6 +1,6 @@
 import { Injectable, type Provider } from '@angular/core';
 
-import { type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
+import { createFormatterCache, type DateAdapter, FOR_DATE_ADAPTER } from 'forty-cdk/core';
 
 function isLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
@@ -66,17 +66,7 @@ function clampDay(
  */
 @Injectable()
 export class NativeDateAdapter implements DateAdapter<Date> {
-  readonly #formatters = new Map<string, Intl.DateTimeFormat>();
-
-  #formatter(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-    const key = `${locale ?? ''}${JSON.stringify(options)}`;
-    let formatter = this.#formatters.get(key);
-    if (formatter === undefined) {
-      formatter = new Intl.DateTimeFormat(locale, options);
-      this.#formatters.set(key, formatter);
-    }
-    return formatter;
-  }
+  readonly #formatter = createFormatterCache();
 
   /**
    * Today at local midnight in the runtime time zone. Subject to the

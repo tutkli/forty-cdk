@@ -67,7 +67,9 @@ function stubEngine(): RangeFieldEndpointEngine & { calls: Array<[string, unknow
     step: record('step', undefined),
     goToBound: record('goToBound', undefined),
     setDayPeriod: record('setDayPeriod', undefined),
+    setDayPeriodFromKey: record('setDayPeriodFromKey', false),
     clear: record('clear', undefined),
+    backspace: record('backspace', undefined),
     focusSibling: record('focusSibling', undefined),
     endTyping: record('endTyping', undefined),
   };
@@ -178,60 +180,41 @@ describe('RangeFieldComposer.makeEndpointContext', () => {
     expect(endCtx.roving).toBe(composer.endRoving);
   });
 
-  it('forwards every segment accessor and behavior method to the given engine', () => {
+  it('exposes the given engine as the endpoint segment delegate', () => {
     const { composer } = setup();
     const engine = stubEngine();
     const ctx = composer.makeEndpointContext(engine, 'start');
     const handle = { host: document.createElement('div'), type: signal<SegmentType>('day') };
 
-    expect(ctx.segmentValue('day')).toBe(7);
-    expect(ctx.segmentMin('day')).toBe(1);
-    expect(ctx.segmentMax('day')).toBe(12);
-    expect(ctx.segmentValueText('day')).toBe('text');
-    expect(ctx.segmentDisplayText('day')).toBe('display');
-    expect(ctx.isSegmentEmpty('day')).toBe(false);
-    expect(ctx.isFirstSegmentType('day')).toBe(true);
-    ctx.registerSegment(handle);
-    ctx.unregisterSegment(handle);
-    ctx.focusSegment('day');
-    ctx.typeDigit('day', 5);
-    ctx.step('day', -1);
-    ctx.goToBound('day', 'max');
-    ctx.setDayPeriod('pm');
-    ctx.clear('day');
-    ctx.focusSibling('day', 1);
-    ctx.endTyping();
+    expect(ctx.delegate).toBe(engine);
+
+    expect(ctx.delegate.segmentValue('day')).toBe(7);
+    expect(ctx.delegate.segmentMax('day')).toBe(12);
+    ctx.delegate.registerSegment(handle);
+    ctx.delegate.typeDigit('day', 5);
+    ctx.delegate.endTyping();
 
     expect(engine.calls).toEqual([
       ['segmentValue', ['day']],
-      ['segmentMin', ['day']],
       ['segmentMax', ['day']],
-      ['segmentValueText', ['day']],
-      ['segmentDisplayText', ['day']],
-      ['isSegmentEmpty', ['day']],
-      ['isFirstSegmentType', ['day']],
       ['registerSegment', [handle]],
-      ['unregisterSegment', [handle]],
-      ['focusSegment', ['day']],
       ['typeDigit', ['day', 5]],
-      ['step', ['day', -1]],
-      ['goToBound', ['day', 'max']],
-      ['setDayPeriod', ['pm']],
-      ['clear', ['day']],
-      ['focusSibling', ['day', 1]],
       ['endTyping', []],
     ]);
   });
 
-  it('routes each endpoint context to its own roving tracker and engine', () => {
+  it('routes each endpoint context to its own roving tracker and engine delegate', () => {
     const { composer } = setup();
     const startEngine = stubEngine();
     const endEngine = stubEngine();
     const startCtx = composer.makeEndpointContext(startEngine, 'start');
     const endCtx = composer.makeEndpointContext(endEngine, 'end');
 
-    startCtx.typeDigit('day', 1);
-    endCtx.typeDigit('day', 2);
+    expect(startCtx.delegate).toBe(startEngine);
+    expect(endCtx.delegate).toBe(endEngine);
+
+    startCtx.delegate.typeDigit('day', 1);
+    endCtx.delegate.typeDigit('day', 2);
 
     expect(startEngine.calls).toEqual([['typeDigit', ['day', 1]]]);
     expect(endEngine.calls).toEqual([['typeDigit', ['day', 2]]]);

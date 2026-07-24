@@ -361,6 +361,85 @@ describe('ForTimePicker', () => {
 
       expect(r.instance.value()).toBeNull();
     });
+
+    it('minute granularity drops seconds when reflecting aria-selected', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.granularity.set('minute');
+      r.instance.value.set(new Date(2026, 5, 15, 9, 0, 30));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(getSlot('slot-32400')!.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('second granularity keeps seconds when reflecting aria-selected', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.granularity.set('second');
+      r.instance.value.set(new Date(2026, 5, 15, 9, 0, 30));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(getSlot('slot-32400')!.getAttribute('aria-selected')).toBe('false');
+    });
+
+    it('hour granularity compares only the hour when reflecting aria-selected', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.granularity.set('hour');
+      r.instance.value.set(new Date(2026, 5, 15, 9, 30, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      expect(getSlot('slot-32400')!.getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
+  describe('DST-stable slots / date preservation', () => {
+    it('produces no duplicate slot labels and exactly one selected slot on a DST day', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(30);
+      r.instance.value.set(new Date(2026, 2, 8, 3, 30));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const labels = Array.from(getSlots()).map((s) => s.textContent!.trim());
+      expect(new Set(labels).size).toBe(labels.length);
+      expect(document.querySelectorAll('[aria-selected="true"]').length).toBe(1);
+    });
+
+    it('activating a slot grafts the picked time onto the real value date', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.value.set(new Date(2026, 2, 8, 10, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getSlot('slot-50400')!.click();
+      await flush(r.fixture);
+
+      const v = r.instance.value()!;
+      expect(v.getFullYear()).toBe(2026);
+      expect(v.getMonth()).toBe(2);
+      expect(v.getDate()).toBe(8);
+      expect(v.getHours()).toBe(14);
+    });
+
+    it('activating a slot with no committed date lands on the DST-stable sentinel', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.value.set(null);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getSlot('slot-32400')!.click();
+      await flush(r.fixture);
+
+      const v = r.instance.value()!;
+      expect(v.getFullYear()).toBe(2000);
+      expect(v.getHours()).toBe(9);
+    });
   });
 
   describe('minTime / maxTime disabling', () => {

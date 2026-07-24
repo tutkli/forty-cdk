@@ -95,14 +95,23 @@ test.describe('TimeRangeField', () => {
     await expect(el(page, 'value')).toHaveText('09:59 / 17:30');
   });
 
-  test('Backspace clears the focused segment and the composed range', async ({ page }) => {
+  test('Delete clears the focused segment and the composed range', async ({ page }) => {
+    await gotoFixture(page, 'time-range-field', { preset: '1' });
+    await expect(el(page, 'value')).toHaveText('09:15 / 17:30');
+
+    await el(page, 'start-minute').focus();
+    await page.keyboard.press('Delete');
+    await expect(el(page, 'value')).toHaveText('empty');
+    await expect(el(page, 'start-minute')).toHaveText('mm');
+  });
+
+  test('Backspace pops the last entered digit of the focused segment', async ({ page }) => {
     await gotoFixture(page, 'time-range-field', { preset: '1' });
     await expect(el(page, 'value')).toHaveText('09:15 / 17:30');
 
     await el(page, 'start-minute').focus();
     await page.keyboard.press('Backspace');
-    await expect(el(page, 'value')).toHaveText('empty');
-    await expect(el(page, 'start-minute')).toHaveText('mm');
+    await expect(el(page, 'start-minute')).toHaveText('1');
   });
 
   test('blurring the field out marks it touched', async ({ page }) => {

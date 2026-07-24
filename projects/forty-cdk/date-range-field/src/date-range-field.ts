@@ -48,7 +48,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
  * the per-endpoint coordination surfaces, and the shared configuration to its
  * `[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]` children through
  * {@link FOR_DATE_RANGE_FIELD_CONTEXT}. The spin-button engine lives in the
- * shared `_internal/datetime` `DateFieldEngine`; all date math goes through the
+ * shared `core/datetime` `DateFieldEngine`; all date math goes through the
  * pluggable {@link DateAdapter} shared with `ForCalendar`, so the field
  * hard-depends on no date library.
  *
@@ -114,7 +114,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
     '[attr.aria-invalid]': 'ariaInvalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
-    '[attr.data-empty]': 'value() === null ? "" : null',
+    '[attr.data-empty]': 'empty() ? "" : null',
     '[attr.data-range-error]': 'disordered() ? "" : null',
     '(focusout)': 'onFocusOut($event)',
   },
@@ -134,9 +134,11 @@ export class ForDateRangeField<D>
    * Two-way bindable committed date range, or `null` while either endpoint is
    * incomplete or the two are out of order. Required by
    * `FormValueControl<DateRange<D> | null>` — this **is** the form
-   * value, so it auto-wires with `[formField]`. The `model()` change emitter
-   * (`(valueChange)`) fires only when the field itself composes or clears a
-   * range, never on consumer writes via `[(value)]`.
+   * value, so it auto-wires with `[formField]`. Emitted only on a settled commit
+   * (segment completion / blur) of an endpoint — a mid-typing keystroke is never
+   * observable through the value. The `model()` change emitter (`(valueChange)`)
+   * fires only when the field itself composes or clears a range, never on
+   * consumer writes via `[(value)]`.
    */
   readonly value = model<DateRange<D> | null>(null);
 
@@ -207,6 +209,9 @@ export class ForDateRangeField<D>
 
   /** Both endpoints complete but the start falls after the end — an unorderable range. */
   protected readonly disordered = computed(() => this.#composer.disordered());
+
+  /** `true` only while both endpoints are entirely empty — neither shows entered digits. */
+  protected readonly empty = computed(() => this.#startEngine.empty() && this.#endEngine.empty());
 
   /**
    * Folds a self-detected out-of-order range into the base invalidity so
@@ -297,16 +302,25 @@ export class ForDateRangeField<D>
   }
 
   /**
-   * Move focus to the first editable segment of the start endpoint, implementing
-   * `FormValueControl.focus` from `@angular/forms/signals`. Without this override
-   * Signal Forms would focus the host `role="group"` wrapper — which is not
-   * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
+   * Move focus to the first editable segment of the first incomplete endpoint,
+   * implementing `FormValueControl.focus` from `@angular/forms/signals`: the start
+   * endpoint unless it is complete and the end is not, in which case focus lands
+   * on the end; when both endpoints are complete it falls back to the start.
+   * Without this override Signal Forms would focus the host `role="group"`
+   * wrapper — which is not focusable — so focus-on-error would silently go
+   * nowhere. No-op when disabled.
    */
   focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }
-    this.#startEngine.focusFirstSegment(options);
+    const engine =
+      this.#startEngine.composed() === null
+        ? this.#startEngine
+        : this.#endEngine.composed() === null
+          ? this.#endEngine
+          : this.#startEngine;
+    engine.focusFirstSegment(options);
   }
 
   endpointSegments(which: DateRangeFieldEndpoint): Signal<readonly FieldSegment[]> {

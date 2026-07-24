@@ -100,14 +100,23 @@ test.describe('DateRangeField', () => {
     await expect(el(page, 'start-day')).toHaveText('30');
   });
 
-  test('Backspace clears the focused segment and the composed range', async ({ page }) => {
+  test('Delete clears the focused segment and the composed range', async ({ page }) => {
+    await gotoFixture(page, 'date-range-field', { preset: '1' });
+    await expect(el(page, 'value')).toHaveText('2026-06-10 / 2026-06-20');
+
+    await el(page, 'start-day').focus();
+    await page.keyboard.press('Delete');
+    await expect(el(page, 'value')).toHaveText('empty');
+    await expect(el(page, 'start-day')).toHaveText('dd');
+  });
+
+  test('Backspace pops the last entered digit of the focused segment', async ({ page }) => {
     await gotoFixture(page, 'date-range-field', { preset: '1' });
     await expect(el(page, 'value')).toHaveText('2026-06-10 / 2026-06-20');
 
     await el(page, 'start-day').focus();
     await page.keyboard.press('Backspace');
-    await expect(el(page, 'value')).toHaveText('empty');
-    await expect(el(page, 'start-day')).toHaveText('dd');
+    await expect(el(page, 'start-day')).toHaveText('1');
   });
 
   test('blurring the field out marks it touched', async ({ page }) => {

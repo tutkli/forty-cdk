@@ -95,7 +95,7 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
 
   /**
    * When `true`, the surface is a trapped / inert / scroll-locked modal dialog
-   * (routed through `_internal/modal-shell`) instead of the default non-modal
+   * (routed through `core/modal-shell`) instead of the default non-modal
    * anchored popover. Read once when the content mounts.
    */
   readonly modal = input(false, { transform: booleanAttribute });

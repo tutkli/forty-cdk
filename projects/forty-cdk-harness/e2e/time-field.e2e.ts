@@ -60,13 +60,22 @@ test.describe('TimeField', () => {
     await expectFocused(el(page, 'hour'));
   });
 
-  test('Backspace clears the focused segment and the value', async ({ page }) => {
+  test('Delete clears the focused segment and the value', async ({ page }) => {
+    await gotoFixture(page, 'time-field', { preset: '1' });
+    await expect(el(page, 'value')).toHaveText('13:45');
+
+    await el(page, 'minute').focus();
+    await page.keyboard.press('Delete');
+    await expect(el(page, 'value')).toHaveText('empty');
+  });
+
+  test('Backspace pops the last entered digit of the focused segment', async ({ page }) => {
     await gotoFixture(page, 'time-field', { preset: '1' });
     await expect(el(page, 'value')).toHaveText('13:45');
 
     await el(page, 'minute').focus();
     await page.keyboard.press('Backspace');
-    await expect(el(page, 'value')).toHaveText('empty');
+    await expect(el(page, 'minute')).toHaveText('4');
   });
 
   test('Home / End jump the focused segment to its min / max bound', async ({ page }) => {

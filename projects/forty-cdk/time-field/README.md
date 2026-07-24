@@ -169,14 +169,15 @@ providers: [
 
 Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
 
-| Key                        | Behavior                                                                                           |
-| -------------------------- | -------------------------------------------------------------------------------------------------- |
-| **0–9**                    | Type the value; auto-advances to the next segment when full.                                       |
-| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                          |
-| **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. Empty seeds from midnight. |
-| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                                     |
-| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                               |
-| **Backspace / Delete**     | Clear a numeric segment (the value becomes `null` until refilled).                                 |
+| Key                        | Behavior                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **0–9**                    | Type the value; auto-advances to the next segment when full.                                                 |
+| **a / p**                  | On the AM/PM segment, set the period of the entered hour.                                                    |
+| **ArrowUp / ArrowDown**    | Step the value. Hour / minute / second wrap; the AM/PM segment toggles. Empty seeds from midnight.           |
+| **ArrowLeft / ArrowRight** | Move to the previous / next segment (no wrap).                                                               |
+| **Home / End**             | Jump to the segment minimum / maximum (the AM/PM segment → AM / PM).                                         |
+| **Backspace**              | Delete the last entered digit of a numeric segment; the value becomes `null` when the last digit is removed. |
+| **Delete**                 | Clear the whole numeric segment (the value becomes `null` until refilled).                                   |
 
 The hour, minute, and second clamp to their valid ranges (hour to the cycle, minute / second to 0–59), and a composed value is clamped into `[minTime, maxTime]` by time-of-day. The AM/PM period is derived from the entered hour; clearing it is a no-op (clear or step the hour instead).
 

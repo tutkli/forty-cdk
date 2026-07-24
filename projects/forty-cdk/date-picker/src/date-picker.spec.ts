@@ -974,7 +974,7 @@ describe('ForDatePicker', () => {
       r.instance.value.set(new Date(2026, 5, 15, 14, 30));
       await open(r);
 
-      pressKey(timeSeg('minute'), 'Backspace');
+      pressKey(timeSeg('minute'), 'Delete');
       await flush(r.fixture);
 
       const afterClear = r.instance.value();
@@ -1008,6 +1008,24 @@ describe('ForDatePicker', () => {
       expect(adapter.getDate(value!)).toBe(15);
       expect(adapter.getHours(value!)).toBe(14);
       expect(adapter.getMinutes(value!)).toBe(30);
+    });
+
+    it('does not rewrite the picker value while typing a multi-digit hour (item 2, #16)', async () => {
+      const r = renderHost(DateTimeHost);
+      r.instance.maxDate.set(new Date(2026, 5, 15, 23, 59));
+      r.instance.value.set(new Date(2026, 5, 15, 10, 30));
+      await open(r);
+      const before = r.instance.value();
+
+      pressKey(timeSeg('hour'), '1');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(timeSeg('hour'), '4');
+      await flush(r.fixture);
+      expect(r.instance.value()).not.toBe(before);
+      expect(adapter.getHours(r.instance.value()!)).toBe(14);
+      expect(adapter.getDate(r.instance.value()!)).toBe(15);
     });
 
     it('renders the value with its time component', async () => {

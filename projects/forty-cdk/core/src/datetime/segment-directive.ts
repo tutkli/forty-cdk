@@ -3,14 +3,16 @@ import { computed, Directive, ElementRef, inject, type Signal } from '@angular/c
 import { registerHandle } from '../collection/register-handle';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import type { RovingTabindex } from '../roving-tabindex/roving-tabindex';
-import type { SegmentHandle, SegmentType } from './segment-editor';
+import type { SegmentEditorDelegate, SegmentType } from './segment-editor';
+import { unicodeDigitValue } from './unicode-digit';
 
 /**
  * The coordination surface a date / time root exposes to its segment children,
- * as consumed by the shared {@link ForDateTimeSegmentBase}. The reactive per-part
- * accessors and the behavior methods are forwarded straight to the root's
- * {@link import('./segment-editor').SegmentEditor}; `disabled` / `readonly` /
- * `dir` / `roving` come off the root directly.
+ * as consumed by the shared {@link ForDateTimeSegmentBase}. The field-level
+ * `effectiveDisabled` / `readonly` / `dir` / `roving` signals come off the root
+ * directly; every per-part accessor and behavior method lives on the
+ * {@link SegmentEditorDelegate} (the field engine itself), reached through
+ * `delegate`.
  */
 export interface SegmentEditorContext {
   /**
@@ -25,33 +27,16 @@ export interface SegmentEditorContext {
   readonly dir: Signal<WritingDirection>;
   /** Shared roving-tabindex tracker: one segment owns `tabindex=0` at a time. */
   readonly roving: RovingTabindex;
-
-  segmentValue(type: SegmentType): number | null;
-  segmentMin(type: SegmentType): number;
-  segmentMax(type: SegmentType): number;
-  segmentValueText(type: SegmentType): string | null;
-  segmentDisplayText(type: SegmentType): string;
-  isSegmentEmpty(type: SegmentType): boolean;
-  isFirstSegmentType(type: SegmentType): boolean;
-
-  registerSegment(handle: SegmentHandle): void;
-  unregisterSegment(handle: SegmentHandle): void;
-
-  focusSegment(type: SegmentType): void;
-  typeDigit(type: SegmentType, digit: number): void;
-  step(type: SegmentType, delta: number): void;
-  goToBound(type: SegmentType, bound: 'min' | 'max'): void;
-  setDayPeriod(period: 'am' | 'pm'): void;
-  clear(type: SegmentType): void;
-  focusSibling(type: SegmentType, step: -1 | 1): void;
-  endTyping(): void;
+  /** The field engine backing the per-segment accessors and behavior methods. */
+  readonly delegate: SegmentEditorDelegate;
 }
 
 /**
  * The shared spinbutton segment directive backing `[forDateFieldSegment]` and
  * `[forTimeFieldSegment]`. It owns `role="spinbutton"`, the `aria-value*`
  * reflection, the roving tabindex, the digit / arrow / Home-End / Backspace
- * keyboard map (RTL-mirrored ArrowLeft / ArrowRight), and the segment
+ * (pop last digit) / Delete (clear whole segment) keyboard map (RTL-mirrored
+ * ArrowLeft / ArrowRight), and the segment
  * registration. All state lives on the root via {@link SegmentEditorContext};
  * the segment only reads it and forwards intents.
  *
@@ -67,15 +52,15 @@ export interface SegmentEditorContext {
     '[attr.inputmode]': 'inputmode()',
     '[attr.autocorrect]': '"off"',
     '[attr.spellcheck]': '"false"',
-    '[attr.aria-valuemin]': 'ctx.segmentMin(segment())',
-    '[attr.aria-valuemax]': 'ctx.segmentMax(segment())',
+    '[attr.aria-valuemin]': 'ctx.delegate.segmentMin(segment())',
+    '[attr.aria-valuemax]': 'ctx.delegate.segmentMax(segment())',
     '[attr.aria-valuenow]': 'valueNow()',
-    '[attr.aria-valuetext]': 'ctx.segmentValueText(segment())',
+    '[attr.aria-valuetext]': 'ctx.delegate.segmentValueText(segment())',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-highlighted]': 'highlighted() ? "" : null',
-    '[attr.data-placeholder]': 'ctx.isSegmentEmpty(segment()) ? "" : null',
+    '[attr.data-placeholder]': 'ctx.delegate.isSegmentEmpty(segment()) ? "" : null',
     '[attr.data-disabled]': 'ctx.effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'ctx.readonly() ? "" : null',
     '(keydown)': 'onKeyDown($event)',
@@ -104,7 +89,7 @@ export abstract class ForDateTimeSegmentBase {
     () => this.ariaLabel() ?? this.segment(),
   );
 
-  protected readonly valueNow = computed(() => this.ctx.segmentValue(this.segment()));
+  protected readonly valueNow = computed(() => this.ctx.delegate.segmentValue(this.segment()));
 
   protected readonly inputmode = computed<'numeric' | null>(() =>
     this.segment() === 'dayPeriod' ? null : 'numeric',
@@ -126,25 +111,25 @@ export abstract class ForDateTimeSegmentBase {
     if (this.ctx.roving.hasActive()) {
       return this.ctx.roving.tabindexFor(this.host.nativeElement);
     }
-    return this.ctx.isFirstSegmentType(this.segment()) ? 0 : -1;
+    return this.ctx.delegate.isFirstSegmentType(this.segment()) ? 0 : -1;
   });
 
   protected registerSegment(): void {
     const handle = { host: this.host.nativeElement, type: this.segment };
     registerHandle(
       handle,
-      (h) => this.ctx.registerSegment(h),
-      (h) => this.ctx.unregisterSegment(h),
+      (h) => this.ctx.delegate.registerSegment(h),
+      (h) => this.ctx.delegate.unregisterSegment(h),
       'afterNextRender',
     );
   }
 
   protected onFocus(): void {
-    this.ctx.focusSegment(this.segment());
+    this.ctx.delegate.focusSegment(this.segment());
   }
 
   protected onBlur(): void {
-    this.ctx.endTyping();
+    this.ctx.delegate.endTyping();
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -153,46 +138,49 @@ export abstract class ForDateTimeSegmentBase {
     }
     const type = this.segment();
     const key = event.key;
-    if (key.length === 1 && key >= '0' && key <= '9') {
+    const digit = unicodeDigitValue(key);
+    if (digit !== null) {
       event.preventDefault();
-      this.ctx.typeDigit(type, Number(key));
+      this.ctx.delegate.typeDigit(type, digit);
       return;
     }
-    if (type === 'dayPeriod' && (key === 'a' || key === 'A' || key === 'p' || key === 'P')) {
+    if (type === 'dayPeriod' && this.ctx.delegate.setDayPeriodFromKey(key)) {
       event.preventDefault();
-      this.ctx.setDayPeriod(key === 'a' || key === 'A' ? 'am' : 'pm');
       return;
     }
     const rtl = this.ctx.dir() === 'rtl';
     switch (key) {
       case 'ArrowUp':
         event.preventDefault();
-        this.ctx.step(type, 1);
+        this.ctx.delegate.step(type, 1);
         return;
       case 'ArrowDown':
         event.preventDefault();
-        this.ctx.step(type, -1);
+        this.ctx.delegate.step(type, -1);
         return;
       case 'ArrowRight':
         event.preventDefault();
-        this.ctx.focusSibling(type, rtl ? -1 : 1);
+        this.ctx.delegate.focusSibling(type, rtl ? -1 : 1);
         return;
       case 'ArrowLeft':
         event.preventDefault();
-        this.ctx.focusSibling(type, rtl ? 1 : -1);
+        this.ctx.delegate.focusSibling(type, rtl ? 1 : -1);
         return;
       case 'Home':
         event.preventDefault();
-        this.ctx.goToBound(type, 'min');
+        this.ctx.delegate.goToBound(type, 'min');
         return;
       case 'End':
         event.preventDefault();
-        this.ctx.goToBound(type, 'max');
+        this.ctx.delegate.goToBound(type, 'max');
         return;
       case 'Backspace':
+        event.preventDefault();
+        this.ctx.delegate.backspace(type);
+        return;
       case 'Delete':
         event.preventDefault();
-        this.ctx.clear(type);
+        this.ctx.delegate.clear(type);
         return;
       default:
         return;

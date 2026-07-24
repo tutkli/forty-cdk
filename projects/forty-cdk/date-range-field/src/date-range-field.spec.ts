@@ -203,13 +203,38 @@ describe('ForDateRangeField', () => {
   );
 
   describe('focus (focus-on-error)', () => {
-    it('moves focus to the first segment of the start endpoint, not the group host', async () => {
+    const fieldOf = (r: R) =>
+      r.fixture.debugElement.query(By.directive(ForDateRangeField)).injector.get(ForDateRangeField);
+
+    it('moves focus to the first segment of the start endpoint when both endpoints are empty', async () => {
       const r = renderHost(Host);
       await r.flush();
-      const field = r.fixture.debugElement
-        .query(By.directive(ForDateRangeField))
-        .injector.get(ForDateRangeField);
-      field.focus();
+      fieldOf(r).focus();
+      expect(document.activeElement).toBe(seg(r, 'start', 'month'));
+    });
+
+    it('moves focus to the first segment of the end endpoint when the start is complete but the end is empty', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      await fill(r, 'start', '06', '15', '2026');
+      fieldOf(r).focus();
+      expect(document.activeElement).toBe(seg(r, 'end', 'month'));
+    });
+
+    it('keeps focus on the start endpoint when the start is incomplete even if the end is filled', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      await fill(r, 'end', '06', '15', '2026');
+      fieldOf(r).focus();
+      expect(document.activeElement).toBe(seg(r, 'start', 'month'));
+    });
+
+    it('falls back to the start endpoint when both endpoints are complete', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      await fill(r, 'start', '06', '15', '2026');
+      await fill(r, 'end', '06', '20', '2026');
+      fieldOf(r).focus();
       expect(document.activeElement).toBe(seg(r, 'start', 'month'));
     });
   });
@@ -253,13 +278,31 @@ describe('ForDateRangeField', () => {
       const r = renderHost(Host);
       await fill(r, 'start', '06', '10', '2026');
       expect(r.instance.value()).toBeNull();
-      expect(root(r).getAttribute('data-empty')).toBe('');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
 
       await fill(r, 'end', '06', '20', '2026');
       const range = r.instance.value()!;
       expect(range.start.getTime()).toBe(new Date(2026, 5, 10).getTime());
       expect(range.end.getTime()).toBe(new Date(2026, 5, 20).getTime());
       expect(root(r).getAttribute('data-empty')).toBeNull();
+    });
+
+    it('keeps each endpoint time-of-day when stepping its day at granularity="day"', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({
+        start: new Date(2026, 5, 10, 9, 15, 30),
+        end: new Date(2026, 5, 20, 18, 45, 0),
+      });
+      await flush(r.fixture);
+
+      await key(r, 'start', 'day', 'ArrowUp');
+      const range = r.instance.value()!;
+      expect(adapter.getDate(range.start)).toBe(11);
+      expect(range.start.getHours()).toBe(9);
+      expect(range.start.getMinutes()).toBe(15);
+      expect(range.start.getSeconds()).toBe(30);
+      expect(range.end.getHours()).toBe(18);
+      expect(range.end.getMinutes()).toBe(45);
     });
 
     it('accepts an equal start and end (single-day range)', async () => {
@@ -282,16 +325,26 @@ describe('ForDateRangeField', () => {
       expect(seg(r, 'end', 'year').textContent?.trim()).toBe('2026');
     });
 
-    it('clears the range to null when one endpoint segment is cleared, keeping the other endpoint', async () => {
+    it('clears the range to null when Delete clears one endpoint segment, keeping the other endpoint', async () => {
       const r = renderHost(Host);
       r.instance.value.set({ start: new Date(2026, 0, 5), end: new Date(2026, 2, 9) });
       await flush(r.fixture);
 
-      await key(r, 'start', 'day', 'Backspace');
+      await key(r, 'start', 'day', 'Delete');
       expect(r.instance.value()).toBeNull();
       expect(seg(r, 'start', 'day').textContent?.trim()).toBe('dd');
       // The untouched end endpoint keeps its entered segments.
       expect(seg(r, 'end', 'month').textContent?.trim()).toBe('03');
+      expect(seg(r, 'end', 'year').textContent?.trim()).toBe('2026');
+    });
+
+    it('pops the last entered digit of an endpoint segment on Backspace', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 0, 5), end: new Date(2026, 2, 9) });
+      await flush(r.fixture);
+
+      await key(r, 'start', 'year', 'Backspace');
+      expect(seg(r, 'start', 'year').textContent?.trim()).toBe('202');
       expect(seg(r, 'end', 'year').textContent?.trim()).toBe('2026');
     });
 
@@ -352,6 +405,70 @@ describe('ForDateRangeField', () => {
     });
   });
 
+  describe('commit-on-settle (#16)', () => {
+    it('does not rewrite the range value while re-typing one endpoint (transient)', async () => {
+      const r = renderHost(Host);
+      r.instance.value.set({ start: new Date(2026, 0, 5), end: new Date(2026, 2, 9) });
+      await flush(r.fixture);
+      const before = r.instance.value();
+
+      pressKey(seg(r, 'start', 'year'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'start', 'year'), '0');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'start', 'year'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBe(before);
+
+      pressKey(seg(r, 'start', 'year'), '5');
+      await flush(r.fixture);
+      expect(r.instance.value()).not.toBe(before);
+      expect(r.instance.value()!.start.getTime()).toBe(new Date(2025, 0, 5).getTime());
+    });
+
+    it('settles a partial endpoint segment on blur (item 1)', async () => {
+      const r = renderHost(Host);
+      await fill(r, 'start', '06', '01', '2026');
+      await type(r, 'end', 'month', '06');
+      await type(r, 'end', 'year', '2026');
+
+      pressKey(seg(r, 'end', 'day'), '2');
+      await flush(r.fixture);
+      expect(r.instance.value()).toBeNull();
+
+      seg(r, 'end', 'day').dispatchEvent(new FocusEvent('blur'));
+      await flush(r.fixture);
+
+      const range = r.instance.value()!;
+      expect(range).not.toBeNull();
+      expect(range.start.getTime()).toBe(new Date(2026, 5, 1).getTime());
+      expect(range.end.getTime()).toBe(new Date(2026, 5, 2).getTime());
+    });
+
+    it('does not rewrite the range value on a transient keystroke under zoneless CD', async () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(Host);
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+
+      fixture.componentInstance.value.set({
+        start: new Date(2026, 0, 5),
+        end: new Date(2026, 2, 9),
+      });
+      await flush(fixture);
+      const before = fixture.componentInstance.value();
+
+      const startYear = host.querySelector('[data-testid="start-year"]')! as HTMLElement;
+      pressKey(startYear, '2');
+      await flush(fixture);
+      expect(fixture.componentInstance.value()).toBe(before);
+    });
+  });
+
   describe('ordering', () => {
     it('keeps value null and flags the disorder when start falls after end', async () => {
       const r = renderHost(Host);
@@ -361,6 +478,7 @@ describe('ForDateRangeField', () => {
       expect(r.instance.value()).toBeNull();
       expect(root(r).getAttribute('aria-invalid')).toBe('true');
       expect(root(r).getAttribute('data-range-error')).toBe('');
+      expect(root(r).getAttribute('data-empty')).toBeNull();
       // data-invalid must not diverge from aria-invalid on a disordered range.
       expect(root(r).getAttribute('data-invalid')).toBe('');
       // The typed segments are preserved, not silently rewritten.

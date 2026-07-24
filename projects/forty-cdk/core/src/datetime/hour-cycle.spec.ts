@@ -1,4 +1,4 @@
-import { dayPeriodNames, from12, resolveHourCycle, to12 } from './hour-cycle';
+import { dayPeriodNames, from12, matchDayPeriod, resolveHourCycle, to12 } from './hour-cycle';
 
 describe('to12', () => {
   it.each([
@@ -67,5 +67,51 @@ describe('dayPeriodNames', () => {
     expect(names.am).toBeTruthy();
     expect(names.pm).toBeTruthy();
     expect(names.am).not.toBe(names.pm);
+  });
+});
+
+describe('matchDayPeriod', () => {
+  const EN = { am: 'AM', pm: 'PM' };
+  const JA = { am: '午前', pm: '午後' };
+  const AR = { am: 'ص', pm: 'م' };
+  const KO = { am: '오전', pm: '오후' };
+
+  it('maps Latin a / p (either case) against English names', () => {
+    expect(matchDayPeriod('a', EN)).toBe('am');
+    expect(matchDayPeriod('p', EN)).toBe('pm');
+    expect(matchDayPeriod('A', EN)).toBe('am');
+    expect(matchDayPeriod('P', EN)).toBe('pm');
+  });
+
+  it('matches the first differing character for Japanese names', () => {
+    expect(matchDayPeriod('前', JA)).toBe('am');
+    expect(matchDayPeriod('後', JA)).toBe('pm');
+  });
+
+  it('keeps the Latin a / p fallback for Japanese names', () => {
+    expect(matchDayPeriod('a', JA)).toBe('am');
+    expect(matchDayPeriod('p', JA)).toBe('pm');
+  });
+
+  it('returns null for the shared leading character of Japanese names', () => {
+    expect(matchDayPeriod('午', JA)).toBeNull();
+  });
+
+  it('matches single-character Arabic names', () => {
+    expect(matchDayPeriod('ص', AR)).toBe('am');
+    expect(matchDayPeriod('م', AR)).toBe('pm');
+    expect(matchDayPeriod('a', AR)).toBe('am');
+    expect(matchDayPeriod('p', AR)).toBe('pm');
+  });
+
+  it('disambiguates Korean names at the first differing character', () => {
+    expect(matchDayPeriod('전', KO)).toBe('am');
+    expect(matchDayPeriod('후', KO)).toBe('pm');
+  });
+
+  it('returns null for an unrecognized or multi-character key', () => {
+    expect(matchDayPeriod('x', EN)).toBeNull();
+    expect(matchDayPeriod('ArrowUp', EN)).toBeNull();
+    expect(matchDayPeriod('', EN)).toBeNull();
   });
 });

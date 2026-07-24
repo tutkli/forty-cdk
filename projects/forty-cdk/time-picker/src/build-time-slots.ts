@@ -1,4 +1,4 @@
-import { type TimeCapableDateAdapter, secondsOfDay } from 'forty-cdk/core';
+import { type TimeCapableDateAdapter, secondsOfDay, timeSentinel } from 'forty-cdk/core';
 
 /** The time granularity at which the picker operates. */
 export type TimePickerGranularity = 'hour' | 'minute' | 'second';
@@ -11,7 +11,11 @@ export type TimePickerGranularity = 'hour' | 'minute' | 'second';
 export interface ForTimeSlot<D> {
   /** Stable identifier for use as the `track` expression in `@for`. Value is `'slot-' + totalSeconds`. */
   readonly id: string;
-  /** The date-time value this slot represents, anchored to the consumer's selected date (or a sentinel). */
+  /**
+   * The date-time value this slot represents, anchored to a fixed DST-stable
+   * sentinel date. The consumer grafts this wall-clock time onto the real
+   * selected date at commit time.
+   */
   readonly value: D;
   /** Display label formatted via the active adapter and the resolved format options. */
   readonly label: string;
@@ -28,8 +32,6 @@ export interface ForTimeSlot<D> {
  */
 export interface BuildTimeSlotsConfig<D> {
   readonly adapter: TimeCapableDateAdapter<D>;
-  /** The date-time used as the date anchor for every slot value. Typically `value ?? sentinel`. */
-  readonly anchor: D;
   /** The currently committed value, or `null` when nothing is selected. */
   readonly selected: D | null;
   /** Lower bound (inclusive). Only the time-of-day component is considered. `null` = start-of-day. */
@@ -45,7 +47,7 @@ export interface BuildTimeSlotsConfig<D> {
   readonly locale?: string;
 }
 
-function timeOfDaySeconds<D>(
+export function timeOfDaySeconds<D>(
   adapter: TimeCapableDateAdapter<D>,
   d: D,
   granularity: TimePickerGranularity,
@@ -68,11 +70,15 @@ function timeOfDaySeconds<D>(
  * — slots are never omitted, following the WAI-ARIA option convention for disabled
  * items.
  *
+ * Every slot value is anchored to a fixed DST-stable sentinel date so wall-clock
+ * times never collide on a spring-forward day; the consumer grafts the picked
+ * time onto the real selected date at commit.
+ *
  * Pure function: no signals, no DOM, no side effects.
  */
 export function buildTimeSlots<D>(config: BuildTimeSlotsConfig<D>): readonly ForTimeSlot<D>[] {
-  const { adapter, anchor, selected, minTime, maxTime, step, granularity, formatOptions, locale } =
-    config;
+  const { adapter, selected, minTime, maxTime, step, granularity, formatOptions, locale } = config;
+  const anchor = timeSentinel(adapter);
   const stepSeconds = Math.max(1, Math.round(step)) * 60;
   const minSec = minTime !== null ? timeOfDaySeconds(adapter, minTime, 'second') : null;
   const maxSec = maxTime !== null ? timeOfDaySeconds(adapter, maxTime, 'second') : null;
