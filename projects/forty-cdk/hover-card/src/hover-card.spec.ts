@@ -67,6 +67,17 @@ function pointerEvent(
   return new PointerEvent(type, { bubbles: true, relatedTarget });
 }
 
+function pointerMoveAway(): void {
+  document.dispatchEvent(
+    new PointerEvent('pointermove', {
+      bubbles: true,
+      clientX: 9999,
+      clientY: 9999,
+      pointerType: 'mouse',
+    }),
+  );
+}
+
 describe('ForHoverCard', () => {
   afterEachOverlayCleanup();
 
@@ -78,7 +89,7 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('opens after the open delay on pointerenter and closes after the close delay on pointerleave', async () => {
+    it('opens after the open delay on pointerenter and closes after the close delay once the pointer moves away', async () => {
       vi.useFakeTimers();
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.openDelay.set(700);
@@ -98,6 +109,8 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
+      pointerMoveAway();
       await flush();
       vi.advanceTimersByTime(299);
       await flush();
@@ -201,7 +214,7 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('still closes with closeDelay:0 when the pointer leaves the trigger to an unrelated element', async () => {
+    it('arms the grace bridge instead of closing when the pointer leaves the trigger into a gap at closeDelay:0', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
@@ -210,7 +223,51 @@ describe('ForHoverCard', () => {
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
-      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', { bubbles: true, clientX: 40, clientY: 40 }),
+      );
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('content pointerenter disarms the grace and holds the card open', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', { bubbles: true, clientX: 40, clientY: 40 }),
+      );
+      await flush();
+
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      vi.advanceTimersByTime(500);
+      await flush();
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
+    it('closes once the pointer finally leaves the content', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+
+      trigger.dispatchEvent(
+        new PointerEvent('pointerleave', { bubbles: true, clientX: 40, clientY: 40 }),
+      );
+      await flush();
+
+      const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      content.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+      content.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
@@ -225,6 +282,8 @@ describe('ForHoverCard', () => {
       await flush();
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
       content.dispatchEvent(pointerEvent('pointerenter'));
       await flush();
       content.dispatchEvent(pointerEvent('pointerleave'));
@@ -321,6 +380,8 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
+      pointerMoveAway();
       await flush();
       vi.advanceTimersByTime(0);
       await flush();
@@ -572,6 +633,8 @@ describe('ForHoverCard', () => {
       await flush();
       trigger.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
+      pointerMoveAway();
+      await flush();
       vi.advanceTimersByTime(0);
       await flush();
 
@@ -665,6 +728,8 @@ describe('ForHoverCard', () => {
       await flush();
       // Close A (closeDelay default 300)
       links[0]!.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
+      pointerMoveAway();
       await flush();
       vi.advanceTimersByTime(300);
       await flush();
@@ -766,6 +831,8 @@ describe('ForHoverCard', () => {
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
+      pointerMoveAway();
+      await flush();
       vi.advanceTimersByTime(0);
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
@@ -838,12 +905,38 @@ describe('ForHoverCard', () => {
 
       trigger.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
+      pointerMoveAway();
+      await flush();
       vi.advanceTimersByTime(299);
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(true);
       vi.advanceTimersByTime(1);
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
+    });
+
+    it('reflects data-reduced-motion on the root and content', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+
+      const root = query<HTMLElement>('[forHoverCard]')!;
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(root.getAttribute('data-reduced-motion')).toBe('');
+      expect(content.getAttribute('data-reduced-motion')).toBe('');
+    });
+  });
+
+  describe('reduced-motion styling hook (default)', () => {
+    it('omits data-reduced-motion when reduced motion is not requested', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      fixture.componentInstance.isOpen.set(true);
+      await flush();
+
+      const root = query<HTMLElement>('[forHoverCard]')!;
+      const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
+      expect(root.hasAttribute('data-reduced-motion')).toBe(false);
+      expect(content.hasAttribute('data-reduced-motion')).toBe(false);
     });
   });
 
@@ -1024,6 +1117,104 @@ describe('ForHoverCard', () => {
 
       const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
       expect(content.dataset['side']).toBe('top');
+    });
+  });
+
+  describe('show() / hide() imperative API', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('show() opens the card after openDelay', async () => {
+      const r = renderHost(HoverCardHost);
+      r.instance.openDelay.set(700);
+      await r.flush();
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+      const trigger = r.query<HTMLAnchorElement>('a')!;
+
+      vi.useFakeTimers();
+      card.show();
+
+      vi.advanceTimersByTime(699);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      vi.advanceTimersByTime(1);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+      expect(trigger.getAttribute('data-state')).toBe('open');
+    });
+
+    it('hide() closes the card after closeDelay, not before', async () => {
+      const r = renderHost(HoverCardHost);
+      r.instance.closeDelay.set(300);
+      r.instance.isOpen.set(true);
+      await r.flush();
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+
+      vi.useFakeTimers();
+      card.hide();
+
+      vi.advanceTimersByTime(299);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(true);
+
+      vi.advanceTimersByTime(1);
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('show() is a no-op while disabled', async () => {
+      const r = renderHost(HoverCardHost);
+      r.instance.isDisabled.set(true);
+      await r.flush();
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+
+      vi.useFakeTimers();
+      card.show();
+      vi.advanceTimersByTime(2000);
+      r.fixture.detectChanges();
+
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('show() is a no-op while an ancestor is scrolling', async () => {
+      const r = renderHost(HoverCardHost);
+      await r.flush();
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+
+      vi.useFakeTimers();
+      document.dispatchEvent(new Event('scroll'));
+      card.show();
+      r.fixture.detectChanges();
+      expect(r.instance.isOpen()).toBe(false);
+    });
+
+    it('reflects show() / hide() through data-state without Zone.js', async () => {
+      const r = renderHost(HoverCardHost);
+      await r.flush();
+      const card = r.fixture.debugElement
+        .query(By.directive(ForHoverCard))
+        .injector.get(ForHoverCard);
+      const trigger = r.query<HTMLAnchorElement>('a')!;
+      expect(trigger.getAttribute('data-state')).toBe('closed');
+
+      card.show();
+      await r.flush();
+      expect(trigger.getAttribute('data-state')).toBe('open');
+
+      card.hide();
+      await r.flush();
+      expect(trigger.getAttribute('data-state')).toBe('closed');
     });
   });
 

@@ -5,6 +5,7 @@ import {
   InjectionToken,
   type Injector,
   type Provider,
+  signal,
   type Type,
 } from '@angular/core';
 
@@ -337,9 +338,12 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
     const animateLeave = config.animateLeave ?? defaults.animateLeave;
     const backdropAnimateLeave = config.backdropAnimateLeave ?? defaults.backdropAnimateLeave;
 
+    const activeSnapPoint = signal<ForDrawerSnapPoint | null>(config.defaultSnapPoint ?? null);
+
     const ref = new ForDrawerRef<R>(
       () => this.beginLeave(id, animateLeave, backdropAnimateLeave, remove),
       'programmatic',
+      activeSnapPoint,
     );
 
     const hostClass = resolveConfigClass(config) ?? '';
@@ -349,26 +353,26 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       id,
       component: component as Type<unknown>,
       hostClass,
-      side: config.side ?? defaults.side,
-      dismissible: config.dismissible ?? defaults.dismissible,
-      modal: config.modal ?? defaults.modal,
+      side: config.side ?? defaults.side ?? 'bottom',
+      dismissible: config.dismissible ?? defaults.dismissible ?? true,
+      modal: config.modal ?? defaults.modal ?? true,
       alert: config.alert,
-      returnFocus: config.returnFocus ?? defaults.returnFocus,
+      returnFocus: config.returnFocus ?? defaults.returnFocus ?? true,
       returnFocusTarget,
-      initialFocus: config.initialFocus ?? defaults.initialFocus,
+      initialFocus: config.initialFocus ?? defaults.initialFocus ?? 'first',
       ariaLabel: config.ariaLabel,
       container: config.container,
       animateEnter,
       autoFocusOnOpen: config.autoFocusOnOpen,
       autoFocusOnClose: config.autoFocusOnClose,
-      swipeToDismiss: config.swipeToDismiss ?? defaults.swipeToDismiss,
-      closeThreshold: config.closeThreshold ?? defaults.closeThreshold,
-      handleOnly: config.handleOnly ?? defaults.handleOnly,
-      scaleBackground: config.scaleBackground ?? defaults.scaleBackground,
+      swipeToDismiss: config.swipeToDismiss ?? defaults.swipeToDismiss ?? true,
+      closeThreshold: config.closeThreshold ?? defaults.closeThreshold ?? 0.25,
+      handleOnly: config.handleOnly ?? defaults.handleOnly ?? false,
+      scaleBackground: config.scaleBackground ?? defaults.scaleBackground ?? false,
       setBackgroundColorOnScale:
-        config.setBackgroundColorOnScale ?? defaults.setBackgroundColorOnScale,
+        config.setBackgroundColorOnScale ?? defaults.setBackgroundColorOnScale ?? true,
       snapPoints: config.snapPoints,
-      activeSnapPoint: config.defaultSnapPoint,
+      activeSnapPoint,
       fadeFromIndex: config.fadeFromIndex,
       escapeKeyDown: config.escapeKeyDown,
       pointerDownOutside: config.pointerDownOutside,
@@ -376,10 +380,13 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       interactOutside: config.interactOutside,
       dragMove: config.dragMove,
       release: config.release,
-      activeSnapPointChange: config.activeSnapPointChange,
       ref: ref as ForDrawerRef<unknown>,
       handleClose(reason: ForDrawerCloseReason, value: unknown): void {
         ref.close(value as R, reason);
+      },
+      onActiveSnapPointChange(snap: ForDrawerSnapPoint | null): void {
+        activeSnapPoint.set(snap);
+        config.activeSnapPointChange?.(snap);
       },
       injectorFor: this.createInjectorFactory(
         [

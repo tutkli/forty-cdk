@@ -368,11 +368,7 @@ describe('ForToast (declarative)', () => {
       expect(t.getAttribute('data-paused')).toBe('');
     });
 
-    it('a re-render while paused does not reset the captured remaining time', async () => {
-      // F3: the duration effect must not clobber #remainingMs while paused.
-      // Pause at 2_000ms in (3_000ms remaining), then trigger an unrelated
-      // effect re-run by changing `duration` while still paused; on resume the
-      // toast must continue from the captured 3_000ms, not restart at full.
+    it('a non-duration re-render while paused preserves the captured remaining time', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
@@ -383,9 +379,7 @@ describe('ForToast (declarative)', () => {
       await r.flush();
       expect(t.getAttribute('data-paused')).toBe('');
 
-      // Re-render the toast (change an input that re-runs the duration effect)
-      // while paused. The captured 3_000ms must survive.
-      r.instance.duration.set(10_000);
+      r.instance.variant.set('warning');
       await r.flush();
       expect(r.instance.closes).toEqual([]);
 
@@ -394,6 +388,46 @@ describe('ForToast (declarative)', () => {
       vi.advanceTimersByTime(2_999);
       await r.flush();
       expect(r.instance.closes).toEqual([]);
+      vi.advanceTimersByTime(1);
+      await r.flush();
+      expect(r.instance.closes).toEqual(['auto']);
+    });
+
+    it('a duration update while paused restarts the countdown at the full new duration on resume', async () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+
+      vi.advanceTimersByTime(2_000);
+      await r.flush();
+      t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await r.flush();
+      expect(t.getAttribute('data-paused')).toBe('');
+
+      r.instance.duration.set(10_000);
+      await r.flush();
+      expect(r.instance.closes).toEqual([]);
+
+      t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      await r.flush();
+      vi.advanceTimersByTime(9_999);
+      await r.flush();
+      expect(r.instance.closes).toEqual([]);
+      vi.advanceTimersByTime(1);
+      await r.flush();
+      expect(r.instance.closes).toEqual(['auto']);
+    });
+
+    it('pausing exactly at the expiry instant still dismisses on resume (never goes sticky)', async () => {
+      vi.useFakeTimers();
+      const r = renderHost(DeclarativeHost);
+      const t = $(r.el, 'declarative')!;
+      vi.setSystemTime(Date.now() + 5000);
+      t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await r.flush();
+      expect(r.instance.closes).toEqual([]);
+      t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+      await r.flush();
       vi.advanceTimersByTime(1);
       await r.flush();
       expect(r.instance.closes).toEqual(['auto']);
@@ -1025,6 +1059,119 @@ describe('ForToastManager (programmatic)', () => {
     expect(a).toBe(b);
     expect(r.instance.toasts.count()).toBe(1);
     expect(r.el.querySelector('[forToastTitle]')?.textContent).toContain('Saved');
+  });
+
+  it('re-show with same id restarts the auto-dismiss countdown', async () => {
+    vi.useFakeTimers();
+    const r = renderHost(ProgrammaticHost);
+    r.instance.toasts.show({ id: 'ping', duration: 5000 });
+    await r.flush();
+    vi.advanceTimersByTime(3000);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(1);
+    r.instance.toasts.show({ id: 'ping', duration: 5000 });
+    await r.flush();
+    vi.advanceTimersByTime(3000);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(1);
+    vi.advanceTimersByTime(2000);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('ref.resetTimer() restarts the countdown from full duration', async () => {
+    vi.useFakeTimers();
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'A', duration: 5000 });
+    await r.flush();
+    vi.advanceTimersByTime(4000);
+    await r.flush();
+    ref.resetTimer();
+    await r.flush();
+    vi.advanceTimersByTime(4999);
+    await r.flush();
+    expect(ref.isClosed()).toBe(false);
+    vi.advanceTimersByTime(1);
+    await r.flush();
+    expect(ref.isClosed()).toBe(true);
+  });
+
+  it('ref.resetTimer() is a no-op after dismiss', async () => {
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'A' });
+    await r.flush();
+    ref.dismiss();
+    await r.flush();
+    expect(() => ref.resetTimer()).not.toThrow();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('zoneless: dedupe re-show restarts the auto-dismiss timer', () => {
+    vi.useFakeTimers();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const toasts = fixture.componentInstance.toasts;
+    toasts.show({ id: 'z', duration: 100 });
+    fixture.detectChanges();
+    vi.advanceTimersByTime(60);
+    toasts.show({ id: 'z', duration: 100 });
+    fixture.detectChanges();
+    vi.advanceTimersByTime(60);
+    fixture.detectChanges();
+    expect(toasts.count()).toBe(1);
+    vi.advanceTimersByTime(40);
+    fixture.detectChanges();
+    expect(toasts.count()).toBe(0);
+  });
+
+  it('ref.update({ duration }) while paused applies on resume', async () => {
+    vi.useFakeTimers();
+    const r = renderHost(ProgrammaticHost);
+    const ref = r.instance.toasts.show({ title: 'Saving…', duration: 5000 });
+    await r.flush();
+    vi.advanceTimersByTime(2000);
+    await r.flush();
+    const t = r.el.querySelector<HTMLElement>('[forToast]')!;
+    t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+    await r.flush();
+    ref.update({ duration: 10_000 });
+    await r.flush();
+    t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+    await r.flush();
+    vi.advanceTimersByTime(9999);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(1);
+    vi.advanceTimersByTime(1);
+    await r.flush();
+    expect(r.instance.toasts.count()).toBe(0);
+  });
+
+  it('zoneless: a duration update while paused dismisses on the new duration after resume', () => {
+    vi.useFakeTimers();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const toasts = fixture.componentInstance.toasts;
+    const ref = toasts.show({ title: 'Saving…', duration: 5000 });
+    fixture.detectChanges();
+    vi.advanceTimersByTime(2000);
+    const el = fixture.nativeElement as HTMLElement;
+    const t = el.querySelector<HTMLElement>('[forToast]')!;
+    t.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+    fixture.detectChanges();
+    ref.update({ duration: 10_000 });
+    fixture.detectChanges();
+    t.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+    fixture.detectChanges();
+    vi.advanceTimersByTime(9999);
+    fixture.detectChanges();
+    expect(toasts.count()).toBe(1);
+    vi.advanceTimersByTime(1);
+    fixture.detectChanges();
+    expect(toasts.count()).toBe(0);
   });
 
   it('two synchronous show({id}) calls before any flush yield exactly one entry and one ref', async () => {

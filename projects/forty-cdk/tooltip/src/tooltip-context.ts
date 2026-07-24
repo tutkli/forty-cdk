@@ -52,7 +52,12 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
   /** The pointer left the content (`hoverableContent`); closes when nothing else keeps it alive. */
   pointerLeaveContent(): void;
 
-  /** Schedule the tooltip to open after `openDelay` ms (instant when delay is 0). */
+  /**
+   * Schedule the tooltip to open after `openDelay` ms (instant when delay is 0).
+   * Hover-driven opens are suppressed while an ancestor scroll container is
+   * moving content under a stationary cursor, so a row sliding past the pointer
+   * can't flicker a tooltip open; the `'focus'` path is never suppressed.
+   */
   scheduleOpen(reason: TooltipScheduleReason): void;
   /** Schedule the tooltip to close after `closeDelay` ms (instant on `escape` and `press`). */
   scheduleClose(reason: TooltipScheduleReason): void;

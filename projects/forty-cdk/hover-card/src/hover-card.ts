@@ -1,24 +1,25 @@
 import {
   booleanAttribute,
-  computed,
   DestroyRef,
   Directive,
   inject,
   input,
   model,
-  numberAttribute,
   output,
   signal,
 } from '@angular/core';
 
 import {
-  ANCHORED_POSITIONING_DEFAULTS,
-  type FloatingAlign,
-  type FloatingSide,
+  AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
   emitVetoableNativeEvent,
+  injectPrefersReducedMotion,
+  attachPointerGrace,
+  buildSubmenuGracePolygon,
+  type Point,
+  resolveGraceSide,
   ScrollDismissDispatcher,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -62,11 +63,12 @@ import { FOR_HOVER_CARD_DEFAULTS, HoverCardCoordinator } from './hover-card-defa
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-reduced-motion]': 'reducedMotion() ? "" : null',
   },
   providers: [{ provide: FOR_HOVER_CARD_CONTEXT, useExisting: ForHoverCard }],
 })
-export class ForHoverCard implements ForHoverCardContext {
-  readonly #defaults = inject(FOR_HOVER_CARD_DEFAULTS);
+export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForHoverCardContext {
+  protected readonly positioningDefaults = inject(FOR_HOVER_CARD_DEFAULTS);
 
   /**
    * Two-way bindable. Whether the card is currently shown. The `model()`
@@ -75,107 +77,6 @@ export class ForHoverCard implements ForHoverCardContext {
    * flips to true), never on consumer writes through `[(open)]`.
    */
   readonly open = model<boolean>(false);
-
-  /**
-   * Per-card override for the side the card is anchored to. Pair with
-   * `align` for the full positioning API. When `undefined` (default), falls
-   * back to `ForHoverCardDefaults.side` from the surrounding
-   * `provideForHoverCardDefaults` scope (`'top'` unless configured).
-   *
-   * The input is aliased to `side`; consumers bind `[side]="..."` and read
-   * the effective value via the public `side` computed below.
-   */
-  readonly _sideInput = input<FloatingSide | undefined>(undefined, { alias: 'side' });
-
-  /** Effective anchor side: the `side` input when set, else the scope default. */
-  readonly side = computed<FloatingSide>(() => this._sideInput() ?? this.#defaults.side);
-
-  /**
-   * Per-card override for the alignment along the chosen `side`. When
-   * `undefined` (default), falls back to `ForHoverCardDefaults.align` from the
-   * surrounding `provideForHoverCardDefaults` scope (`'center'` unless
-   * configured).
-   *
-   * The input is aliased to `align`; consumers bind `[align]="..."` and read
-   * the effective value via the public `align` computed below.
-   */
-  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
-
-  /** Effective alignment: the `align` input when set, else the scope default. */
-  readonly align = computed<FloatingAlign>(() => this._alignInput() ?? this.#defaults.align);
-
-  /**
-   * Per-card override for the gap (px) between trigger and card along the
-   * main axis. When `undefined` (default),
-   * falls back to `ForHoverCardDefaults.sideOffset` from the surrounding
-   * `provideForHoverCardDefaults` scope (`8` unless configured).
-   *
-   * The input is aliased to `sideOffset`; consumers bind `[sideOffset]="..."`
-   * and read the effective value via the public `sideOffset` computed below.
-   */
-  readonly _sideOffsetInput = input(undefined, {
-    alias: 'sideOffset',
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-
-  /** Effective main-axis gap (px): the `sideOffset` input when set, else the scope default. */
-  readonly sideOffset = computed<number>(
-    () => this._sideOffsetInput() ?? this.#defaults.sideOffset,
-  );
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(ANCHORED_POSITIONING_DEFAULTS.alignOffset, {
-    transform: numberAttribute,
-  });
-
-  /** When `true` (default), `flip` and `shift` keep the card inside the viewport. */
-  readonly avoidCollisions = input(ANCHORED_POSITIONING_DEFAULTS.avoidCollisions, {
-    transform: booleanAttribute,
-  });
-
-  /**
-   * Per-card override for the padding (px) applied uniformly to the `flip`,
-   * `shift`, and `size` middlewares. When `undefined` (default), falls back
-   * to `ForHoverCardDefaults.collisionPadding` from the surrounding
-   * `provideForHoverCardDefaults` scope (`8` unless configured).
-   *
-   * The input is aliased to `collisionPadding`; consumers bind
-   * `[collisionPadding]="..."` and read the effective value via the public
-   * `collisionPadding` computed below.
-   */
-  readonly _collisionPaddingInput = input(undefined, {
-    alias: 'collisionPadding',
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-
-  /** Effective collision padding (px): the `collisionPadding` input when set, else the scope default. */
-  readonly collisionPadding = computed<number>(
-    () => this._collisionPaddingInput() ?? this.#defaults.collisionPadding,
-  );
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(ANCHORED_POSITIONING_DEFAULTS.arrowPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>(ANCHORED_POSITIONING_DEFAULTS.sticky);
-
-  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached, {
-    transform: booleanAttribute,
-  });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame (the
-   * surface may flash briefly at the unresolved position while positioning
-   * computes).
-   */
-  readonly clipUntilPositioned = input(ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned, {
-    transform: booleanAttribute,
-  });
 
   /** Per-card override for open delay (ms). Falls back to coordinator (700ms). */
   readonly openDelay = input<number | undefined>(undefined);
@@ -196,6 +97,17 @@ export class ForHoverCard implements ForHoverCardContext {
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
+  /**
+   * Whether the user has requested reduced motion via the OS
+   * `prefers-reduced-motion: reduce` media query. Reflected as the boolean
+   * `data-reduced-motion` attribute on the root and content so consumers can
+   * disable their own `animate.enter` / `animate.leave` and CSS transitions
+   * without re-deriving the media query. The card's JS-coordinated timing (the
+   * open / close hover-intent delays) is intent debouncing, not motion, so it
+   * is deliberately unchanged under reduced motion.
+   */
+  readonly reducedMotion = injectPrefersReducedMotion();
+
   readonly #triggerEl = signal<HTMLElement | null>(null);
   readonly trigger = this.#triggerEl.asReadonly();
 
@@ -209,9 +121,14 @@ export class ForHoverCard implements ForHoverCardContext {
   readonly #scrollDismissDispatcher = inject(ScrollDismissDispatcher);
   readonly #hoverIntent: HoverIntentScheduler;
 
+  #triggerHovered = false;
+  #triggerFocused = false;
+  #contentHovered = false;
+  #detachGrace: (() => void) | null = null;
   #unregisterScrollDismiss: () => void = () => {};
 
   constructor() {
+    super();
     forceCloseWhenDisabled({
       open: this.open,
       disabled: this.disabled,
@@ -266,6 +183,45 @@ export class ForHoverCard implements ForHoverCardContext {
     }
   }
 
+  pointerEnterTrigger(): void {
+    this.#triggerHovered = true;
+    this.#disarmContentGrace();
+    this.scheduleOpen('hover-trigger');
+  }
+
+  pointerLeaveTrigger(cursor: Point): void {
+    this.#triggerHovered = false;
+    if (this.#triggerFocused) {
+      return;
+    }
+    if (this.open() && this.#contentEl()) {
+      this.#armContentGrace(cursor);
+      return;
+    }
+    this.#scheduleCloseIfInactive();
+  }
+
+  focusTrigger(): void {
+    this.#triggerFocused = true;
+    this.scheduleOpen('focus');
+  }
+
+  blurTrigger(): void {
+    this.#triggerFocused = false;
+    this.#scheduleCloseIfInactive();
+  }
+
+  pointerEnterContent(): void {
+    this.#contentHovered = true;
+    this.#disarmContentGrace();
+    this.cancelPending();
+  }
+
+  pointerLeaveContent(): void {
+    this.#contentHovered = false;
+    this.#scheduleCloseIfInactive();
+  }
+
   scheduleOpen(reason: HoverCardScheduleReason): void {
     if (reason !== 'focus' && this.#scrollSuppressed()) {
       return;
@@ -274,10 +230,12 @@ export class ForHoverCard implements ForHoverCardContext {
   }
 
   scheduleClose(reason: HoverCardScheduleReason): void {
+    this.#disarmContentGrace();
     this.#hoverIntent.scheduleClose(reason === 'escape');
   }
 
   cancelPending(): void {
+    this.#disarmContentGrace();
     this.#hoverIntent.cancelPending();
   }
 
@@ -315,6 +273,62 @@ export class ForHoverCard implements ForHoverCardContext {
       event.preventDefault();
       event.stopPropagation();
       this.scheduleClose('escape');
+    }
+  }
+
+  /**
+   * Imperatively opens the card — for programmatic control beyond hover and
+   * focus (e.g. a design-system wrapper opening the card from an external
+   * event). Schedules the show after the resolved `openDelay` (instant when the
+   * delay is `0` or the scope's skip-delay window is active) and applies the
+   * same gates as a hover open: a no-op while `disabled`, and a no-op while an
+   * ancestor is scrolling (the scroll-dismiss suppression window). For an
+   * instant, unconditional open that bypasses the delay and every gate, write
+   * the `[(open)]` model directly (`open.set(true)`).
+   */
+  show(): void {
+    this.scheduleOpen('hover-trigger');
+  }
+
+  /**
+   * Imperatively closes the card, mirroring a hover-leave / blur close:
+   * schedules the hide after the resolved `closeDelay` (instant when the delay
+   * is `0`) and disarms the pointer-grace bridge. For an instant close that
+   * ignores `closeDelay`, write the `[(open)]` model directly
+   * (`open.set(false)`).
+   */
+  hide(): void {
+    this.scheduleClose('hover-trigger');
+  }
+
+  #scheduleCloseIfInactive(): void {
+    if (this.#triggerHovered || this.#triggerFocused || this.#contentHovered) {
+      return;
+    }
+    this.#hoverIntent.scheduleClose(false);
+  }
+
+  #armContentGrace(cursor: Point): void {
+    const content = this.#contentEl();
+    if (!content) {
+      this.#scheduleCloseIfInactive();
+      return;
+    }
+    const rect = content.getBoundingClientRect();
+    const trigger = this.#triggerEl();
+    const side = trigger ? resolveGraceSide(trigger.getBoundingClientRect(), rect) : this.side();
+    const polygon = buildSubmenuGracePolygon(cursor, rect, side);
+    this.#disarmContentGrace();
+    this.#detachGrace = attachPointerGrace(content.ownerDocument, polygon, () => {
+      this.#disarmContentGrace();
+      this.#scheduleCloseIfInactive();
+    });
+  }
+
+  #disarmContentGrace(): void {
+    if (this.#detachGrace) {
+      this.#detachGrace();
+      this.#detachGrace = null;
     }
   }
 }

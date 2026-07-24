@@ -168,7 +168,7 @@ export class ForDrawerScaleCoordinator {
           continue;
         }
         node.host.style.transform = this.#nestedTransform(
-          node.side,
+          node.side(),
           node.nestedScaleAmount,
           node.nestedTranslateYpx,
         );

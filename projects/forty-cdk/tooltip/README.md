@@ -83,19 +83,19 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 ### `ForTooltip`
 
-| Property           | Type                                | Description                                                                                                                                                                   |
-| ------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `open`             | `model<boolean>`                    | Two-way bindable visibility.<br>**Default:** —                                                                                                                                |
-| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).<br>**Default:** —                                             |
-| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).<br>**Default:** —                                          |
-| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                                  |
-| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                            |
-| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                      |
-| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                              |
-| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).<br>**Default:** —                                          |
-| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.<br>**Default:** —                                                                                                                    |
-| `showOnOverflow`   | `input<boolean \| undefined>`       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** —                      |
-| `hoverableContent` | `input<boolean \| undefined>`       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** — |
+| Property           | Type                                | Description                                                                                                                                                                  |
+| ------------------ | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`             | `model<boolean>`                    | Two-way bindable visibility.<br>**Default:** —                                                                                                                               |
+| `side`             | `input<FloatingSide \| undefined>`  | Anchor side (`'top'` / `'right'` / `'bottom'` / `'left'`). Falls back to `provideForTooltipDefaults` (`'top'`).<br>**Default:** —                                            |
+| `align`            | `input<FloatingAlign \| undefined>` | Alignment along `side` (`'start'` / `'center'` / `'end'`). Falls back to `provideForTooltipDefaults` (`'center'`).<br>**Default:** —                                         |
+| `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                                 |
+| `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                           |
+| `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                     |
+| `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                             |
+| `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).<br>**Default:** —                                         |
+| `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.<br>**Default:** —                                                                                                                   |
+| `showOnOverflow`   | `input<boolean \| undefined>`       | Show only when the trigger's own text is truncated (`scrollWidth > clientWidth`). Falls back to `provideForTooltipDefaults` (`false`).<br>**Default:** —                     |
+| `hoverableContent` | `input<boolean \| undefined>`       | Let the pointer move into the content without dismissing it (drops `pointer-events: none` while open). Falls back to `provideForTooltipDefaults` (`true`).<br>**Default:** — |
 
 | Data attribute        | Values             |
 | --------------------- | ------------------ |
@@ -138,7 +138,7 @@ No inputs of its own — coordinates via the `ForTooltip` context.
 | `sideOffset`        | `8`              | Main-axis gap (px) for tooltips that don't set `sideOffset` themselves.                    |
 | `collisionPadding`  | `8`              | Collision-middleware padding (px) for tooltips that don't set it themselves.               |
 | `showOnOverflow`    | `false`          | Show only when the trigger's text is truncated, for tooltips that don't set it themselves. |
-| `hoverableContent`  | `false`          | Allow hovering into the content, for tooltips that don't set it themselves.                |
+| `hoverableContent`  | `true`           | Allow hovering into the content, for tooltips that don't set it themselves.                |
 
 Per-instance inputs always win over the scope defaults.
 
@@ -200,7 +200,7 @@ For an **instant, unconditional** open or close that ignores the delays and both
 - **Activating the trigger dismisses the tooltip.** A press (`pointerdown`) on the trigger closes an open tooltip immediately — the user is acting on the control, not asking for its description, so the bubble shouldn't cover the result of the click. This mirrors Radix and Base UI. The focus the same press induces does **not** reopen it (see below); the tooltip stays dismissed until the pointer leaves and re-enters, or the trigger is focused again from the keyboard. To keep the tooltip open across a click, drive `[(open)]` yourself.
 - **Only keyboard focus opens via the focus path.** Open-on-focus fires only when focus arrives **without** a preceding pointer interaction — i.e. a real keyboard `Tab`. A mouse, pen, or touch press that focuses the trigger never opens (or reopens) the tooltip, because hover already covers pointer users. This generalises the original touch-only guard to every pointer type.
 - **Portal**: the content element is moved to `document.body` on first render. Any styles you scope to the wrapper won't reach it — style the bubble globally or via a class on the content directive itself.
-- **`pointer-events: none`** is applied by default so hovering the bubble doesn't extend its lifetime and clicks pass through to whatever is behind. Setting `hoverableContent` drops it while open (see below). Override with your own CSS if your design needs a different behavior.
+- **`pointer-events: none`** is applied only when `hoverableContent` is set to `false`. By default (`hoverableContent` is `true`) the pointer may rest over the bubble (WCAG 2.1 SC 1.4.13 "Hoverable"), and clicks land on the bubble rather than passing through to whatever is behind. Set `hoverableContent` to `false` (per-instance or via `provideForTooltipDefaults`) to restore the pass-through behavior, and keep the content non-interactive per APG regardless.
 - **Keep content non-interactive**. Tooltips don't trap focus and won't survive a click into them — APG explicitly forbids interactive children.
 - **`hoverableContent`** lets the pointer move into the bubble without dismissing it — useful for descriptive text the user may want to select. It drops the default `pointer-events: none` while open and bridges the trigger / content gap with a pointer-grace "safe triangle" so a slow diagonal traversal doesn't close the tooltip. The content must still stay non-interactive per APG.
 - **`showOnOverflow`** gates the tooltip on the trigger being truncated (`scrollWidth > clientWidth`) — the common pattern for ellipsized labels, where the tooltip adds nothing once the full text already fits. When the trigger's text fits, hover and focus are ignored.

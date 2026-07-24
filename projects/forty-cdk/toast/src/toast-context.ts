@@ -136,6 +136,12 @@ export interface ForToastTemplateContext<D = unknown> {
 export interface ForToastInstance<D = unknown> {
   readonly id: string;
   readonly config: ForToastConfig<D>;
+  /**
+   * @internal Monotonic dedupe generation. The viewport binds it to the
+   * toast's `[restartToken]` so a re-show via `ForToastManager.show({ id })`
+   * (or a direct `ForToastRef.resetTimer()`) restarts the auto-dismiss timer.
+   */
+  readonly generation: number;
   /** Dismiss this toast. Idempotent. */
   dismiss(reason?: ForToastCloseReason): void;
 }

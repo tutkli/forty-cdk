@@ -8,13 +8,19 @@ import {
   withReducedMotion,
 } from '../../src/test-utils';
 import { ForDrawer } from './drawer';
-import type { ForDrawerCloseReason } from './drawer-context';
+import type { ForDrawerCloseReason, ForDrawerSide } from './drawer-context';
 
 @Component({
   imports: [ForDrawer],
   template: `
     @if (parentOpen()) {
-      <div forDrawer id="parent-drawer" ariaLabel="Parent" (dismiss)="onParentClose($event)">
+      <div
+        forDrawer
+        id="parent-drawer"
+        [side]="parentSide()"
+        ariaLabel="Parent"
+        (dismiss)="onParentClose($event)"
+      >
         <button id="parent-first" type="button">Parent first</button>
         <button id="open-child" type="button" (click)="childOpen.set(true)">Open child</button>
 
@@ -31,6 +37,7 @@ import type { ForDrawerCloseReason } from './drawer-context';
 class NestedHost {
   readonly parentOpen = signal(false);
   readonly childOpen = signal(false);
+  readonly parentSide = signal<ForDrawerSide>('bottom');
   readonly parentReasons: ForDrawerCloseReason[] = [];
   readonly childReasons: ForDrawerCloseReason[] = [];
 
@@ -105,6 +112,21 @@ describe('ForDrawer nested', () => {
       await flush(r.fixture);
 
       expect(parent.style.transform).toBe('');
+    });
+
+    it('parent nested transform tracks a runtime [side] flip', async () => {
+      const r = renderHost(NestedHost);
+      r.instance.parentOpen.set(true);
+      r.instance.childOpen.set(true);
+      await flush(r.fixture);
+
+      const parent = document.querySelector<HTMLElement>('#parent-drawer')!;
+      expect(parent.style.transform).toContain('-8px');
+
+      r.instance.parentSide.set('right');
+      await flush(r.fixture);
+
+      expect(parent.style.transform).toContain('translate3d(8px, 0px, 0)');
     });
   });
 

@@ -1,6 +1,7 @@
 import { inject, Injectable, type Provider } from '@angular/core';
 
 import {
+  type AnchoredPositioningSeedDefaults,
   createDefaults,
   type FloatingAlign,
   type FloatingSide,
@@ -12,7 +13,7 @@ import {
  * scope. Configure with `provideForHoverCardDefaults` at the app root or in
  * any component's `providers`.
  */
-export interface ForHoverCardDefaults {
+export interface ForHoverCardDefaults extends AnchoredPositioningSeedDefaults {
   /** Open delay (ms) for cards that don't override `openDelay` locally. */
   openDelay: number;
   /** Close delay (ms) for cards that don't override `closeDelay` locally. */

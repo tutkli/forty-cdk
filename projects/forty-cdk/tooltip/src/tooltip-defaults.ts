@@ -1,6 +1,7 @@
 import { inject, Injectable, type Provider } from '@angular/core';
 
 import {
+  type AnchoredPositioningSeedDefaults,
   createDefaults,
   type FloatingAlign,
   type FloatingSide,
@@ -13,7 +14,7 @@ import {
  * or in any component's `providers` array; partial overrides merge with
  * the parent scope.
  */
-export interface ForTooltipDefaults {
+export interface ForTooltipDefaults extends AnchoredPositioningSeedDefaults {
   /** Open delay (ms) for tooltips that don't override `openDelay` locally. */
   openDelay: number;
   /** Close delay (ms) for tooltips that don't override `closeDelay` locally. */
@@ -55,7 +56,9 @@ export interface ForTooltipDefaults {
   /**
    * Whether the pointer may move into the content without dismissing the
    * tooltip, for tooltips that don't override `hoverableContent` locally.
-   * Library fallback `false`.
+   * Library fallback `true`, which satisfies the WCAG 2.1 SC 1.4.13
+   * "Hoverable" requirement by default; opt out per scope with
+   * `provideForTooltipDefaults({ hoverableContent: false })`.
    */
   hoverableContent: boolean;
 }
@@ -74,7 +77,7 @@ export const FOR_TOOLTIP_FALLBACK_DEFAULTS: ForTooltipDefaults = {
   sideOffset: 8,
   collisionPadding: 8,
   showOnOverflow: false,
-  hoverableContent: false,
+  hoverableContent: true,
 };
 
 const { token, provideDefaults } = createDefaults<ForTooltipDefaults>(

@@ -365,4 +365,107 @@ describe('attachSwipeDismiss', () => {
     expect(rec.ends).toEqual([]);
     expect(rec.cancels).toEqual([]);
   });
+
+  it('canBegin returning false aborts the gesture — no pointer capture and no swallowed click', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const rec: Recorder = { starts: [], moves: [], ends: [], cancels: [] };
+    const captured: number[] = [];
+    el.setPointerCapture = (id: number): void => {
+      captured.push(id);
+    };
+    el.hasPointerCapture = (): boolean => false;
+    el.releasePointerCapture = (): void => {};
+
+    const dispose = attachSwipeDismiss({
+      element: el,
+      getDirections: () => ['right'],
+      getThreshold: () => 50,
+      canBegin: () => false,
+      onSwipeStart: (d) => rec.starts.push(d),
+      onSwipeMove: (d) => rec.moves.push(d),
+      onSwipeEnd: (d) => rec.ends.push(d),
+      onSwipeCancel: (d) => rec.cancels.push(d),
+    });
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 40, clientY: 0, pointerId: 1 });
+
+    expect(rec.starts).toEqual([]);
+    expect(rec.moves).toEqual([]);
+    expect(rec.ends).toEqual([]);
+    expect(rec.cancels).toEqual([]);
+    expect(captured).toEqual([]);
+
+    pointer(el, 'pointerup', { clientX: 40, clientY: 0, pointerId: 1 });
+
+    let clicked = false;
+    const observer = (): void => {
+      clicked = true;
+    };
+    el.addEventListener('click', observer);
+    try {
+      el.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 40, clientY: 0 }),
+      );
+    } finally {
+      el.removeEventListener('click', observer);
+    }
+    expect(clicked).toBe(true);
+
+    dispose();
+    el.remove();
+  });
+
+  it('canBegin returning true arms the gesture normally', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const rec: Recorder = { starts: [], moves: [], ends: [], cancels: [] };
+    const dispose = attachSwipeDismiss({
+      element: el,
+      getDirections: () => ['right'],
+      getThreshold: () => 50,
+      canBegin: () => true,
+      onSwipeStart: (d) => rec.starts.push(d),
+      onSwipeMove: (d) => rec.moves.push(d),
+      onSwipeEnd: (d) => rec.ends.push(d),
+      onSwipeCancel: (d) => rec.cancels.push(d),
+    });
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(rec.starts).toHaveLength(1);
+    pointer(el, 'pointerup', { clientX: 60, clientY: 0, pointerId: 1 });
+    expect(rec.ends).toHaveLength(1);
+
+    dispose();
+    el.remove();
+  });
+
+  it('canBegin is consulted with the resolved direction and the originating event', () => {
+    const el = document.createElement('div');
+    document.body.appendChild(el);
+    const seen: SwipeEventDetail[] = [];
+    const dispose = attachSwipeDismiss({
+      element: el,
+      getDirections: () => ['down'],
+      getThreshold: () => 50,
+      canBegin: (detail) => {
+        seen.push(detail);
+        return true;
+      },
+      onSwipeStart: () => {},
+    });
+
+    pointer(el, 'pointerdown', { clientX: 0, clientY: 0, pointerId: 1 });
+    pointer(el, 'pointermove', { clientX: 3, clientY: 40, pointerId: 1 });
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.direction).toBe('down');
+    expect(seen[0]!.originalEvent.type).toBe('pointermove');
+    expect(seen[0]!.delta).toEqual({ x: 0, y: 40 });
+
+    dispose();
+    el.remove();
+  });
 });

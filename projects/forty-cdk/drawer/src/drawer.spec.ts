@@ -274,7 +274,7 @@ describe('ForDrawer (declarative)', () => {
   describe('swipe gesture wiring', () => {
     function dispatchPointer(
       el: HTMLElement,
-      type: 'pointerdown' | 'pointermove' | 'pointerup',
+      type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
       clientX: number,
       clientY: number,
     ): void {
@@ -411,6 +411,37 @@ describe('ForDrawer (declarative)', () => {
 
       expect(r.instance.dragCount).toBe(0);
       expect(drawer.hasAttribute('data-dragging')).toBe(false);
+
+      const upEvent = new PointerEvent('pointerup', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 0,
+        clientY: 20,
+        pointerId: 1,
+        pointerType: 'touch',
+        button: 0,
+      });
+      Object.defineProperty(upEvent, 'target', { value: surface, configurable: true });
+      Object.defineProperty(upEvent, 'composedPath', {
+        value: () => [surface],
+        configurable: true,
+      });
+      surface.dispatchEvent(upEvent);
+      await flush(r.fixture);
+
+      let clicked = false;
+      const observer = (): void => {
+        clicked = true;
+      };
+      surface.addEventListener('click', observer);
+      try {
+        surface.dispatchEvent(
+          new MouseEvent('click', { bubbles: true, cancelable: true, clientX: 0, clientY: 20 }),
+        );
+      } finally {
+        surface.removeEventListener('click', observer);
+      }
+      expect(clicked).toBe(true);
     });
 
     it('with snapPoints, an upward swipe (away from the edge) arms the gesture', async () => {
@@ -451,6 +482,47 @@ describe('ForDrawer (declarative)', () => {
 
       dispatchPointer(drawer, 'pointerup', 0, 10);
       await flush(r.fixture);
+    });
+
+    it('springs back without dismissing when the gesture is cancelled (pointercancel)', async () => {
+      const r = renderHost(DrawerHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+
+      dispatchPointer(drawer, 'pointerdown', 0, 0);
+      dispatchPointer(drawer, 'pointermove', 0, 20);
+      await flush(r.fixture);
+      expect(drawer.getAttribute('data-dragging')).toBe('');
+
+      dispatchPointer(drawer, 'pointercancel', 0, 20);
+      await flush(r.fixture);
+
+      expect(drawer.hasAttribute('data-dragging')).toBe(false);
+      expect(document.querySelector('[forDrawer]')).not.toBeNull();
+      expect(r.instance.reasons).toEqual([]);
+    });
+
+    it('a cancelled snap-point gesture does not commit a snap change', async () => {
+      const r = renderHost(SnapPointsHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+      const mountDefault = r.instance.active();
+
+      dispatchPointer(drawer, 'pointerdown', 0, 40);
+      dispatchPointer(drawer, 'pointermove', 0, 10);
+      await flush(r.fixture);
+      expect(drawer.getAttribute('data-dragging')).toBe('');
+
+      dispatchPointer(drawer, 'pointercancel', 0, 10);
+      await flush(r.fixture);
+
+      expect(r.instance.active()).toBe(mountDefault);
+      expect(document.querySelector('[forDrawer]')).not.toBeNull();
+      expect(r.instance.open()).toBe(true);
     });
   });
 
@@ -1123,9 +1195,7 @@ describe('ForDrawer (declarative)', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoBackdropsHost);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/drawer\] Multiple \[forDrawerBackdrop\]/,
-      );
+      expect(() => fixture.detectChanges()).toThrow(/\[forty-cdk\/drawer\] Multiple/);
     });
 
     it('does not throw when a handle is re-registered after the previous unmounted', async () => {
@@ -1730,6 +1800,44 @@ describe('ForDrawer scaleBackground / ForDrawerWrapper', () => {
 
     const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
     expect(drawer.hasAttribute('data-scale-background')).toBe(false);
+  });
+
+  it('registers with the coordinator when scaleBackground flips true at runtime', async () => {
+    const r = renderHost(ScaleHost);
+    r.instance.scaleBackground.set(false);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const shell = r.query<HTMLElement>('#shell')!;
+    expect(shell.style.transform).toBe('');
+    expect(document.querySelector('[forDrawer]')!.hasAttribute('data-scale-background')).toBe(
+      false,
+    );
+
+    r.instance.scaleBackground.set(true);
+    await flush(r.fixture);
+
+    expect(shell.style.transform).toContain('scale(0.95)');
+    expect(document.querySelector('[forDrawer]')!.getAttribute('data-scale-background')).toBe('');
+  });
+
+  it('reverts the wrapper when scaleBackground flips false at runtime', async () => {
+    const r = renderHost(ScaleHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const shell = r.query<HTMLElement>('#shell')!;
+    expect(shell.style.transform).toContain('scale(0.95)');
+
+    r.instance.scaleBackground.set(false);
+    await flush(r.fixture);
+
+    expect(shell.style.transform).toBe('');
+    expect(shell.getAttribute('data-state')).toBe('idle');
+    expect(document.body.style.backgroundColor).toBe('');
+    expect(document.querySelector('[forDrawer]')!.hasAttribute('data-scale-background')).toBe(
+      false,
+    );
   });
 
   it('respects provideForDrawerDefaults({ scaleAmount }) override', async () => {

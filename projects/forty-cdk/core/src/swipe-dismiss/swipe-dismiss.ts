@@ -71,6 +71,15 @@ export interface SwipeDismissOptions {
   readonly getDirections: () => readonly SwipeDirection[];
   /** Reactive getter for the dismiss threshold in CSS pixels. */
   readonly getThreshold: () => number;
+  /**
+   * Pre-arm predicate consulted once per gesture, after the dominant-axis
+   * direction has been picked but before the session arms or captures the
+   * pointer. Return `false` to decline this gesture: the underlying pointer
+   * session is aborted, so the pointer is never captured and no post-release
+   * click trap is installed, leaving native text selection / inner scrolling
+   * intact for the rest of the press. Omit it to always begin.
+   */
+  readonly canBegin?: (detail: SwipeEventDetail) => boolean;
   readonly onSwipeStart?: (detail: SwipeEventDetail) => void;
   readonly onSwipeMove?: (detail: SwipeEventDetail) => void;
   /** Pointer-up while projection along direction `>= threshold`. */
@@ -168,8 +177,12 @@ export function attachSwipeDismiss(opts: SwipeDismissOptions): () => void {
       if (!dir) {
         return 'skip';
       }
+      const detail = detailFor(event, dir);
+      if (opts.canBegin && !opts.canBegin(detail)) {
+        return false;
+      }
       direction = dir;
-      opts.onSwipeStart?.(detailFor(event, dir));
+      opts.onSwipeStart?.(detail);
       return true;
     },
     onMove: (event) => {

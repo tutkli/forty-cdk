@@ -6,15 +6,12 @@ import {
   inject,
   input,
   model,
-  numberAttribute,
   output,
   signal,
 } from '@angular/core';
 
 import {
-  ANCHORED_POSITIONING_DEFAULTS,
-  type FloatingAlign,
-  type FloatingSide,
+  AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
@@ -57,9 +54,9 @@ import { FOR_TOOLTIP_DEFAULTS, TooltipCoordinator } from './tooltip-defaults';
   },
   providers: [{ provide: FOR_TOOLTIP_CONTEXT, useExisting: ForTooltip }],
 })
-export class ForTooltip implements ForTooltipContext {
+export class ForTooltip extends AnchoredOverlayPositioningBase implements ForTooltipContext {
   readonly #idGen = inject(IdGenerator);
-  readonly #defaults = inject(FOR_TOOLTIP_DEFAULTS);
+  protected readonly positioningDefaults = inject(FOR_TOOLTIP_DEFAULTS);
 
   /**
    * Two-way bindable. Whether the tooltip is currently shown. The `model()`
@@ -69,117 +66,6 @@ export class ForTooltip implements ForTooltipContext {
    * state changes without binding back.
    */
   readonly open = model<boolean>(false);
-
-  /**
-   * Per-tooltip override for the side the tooltip is anchored to. Pair with
-   * `align` for the full positioning API. When `undefined` (default), falls
-   * back to `ForTooltipDefaults.side` from the surrounding
-   * `provideForTooltipDefaults` scope (`'top'` unless configured).
-   *
-   * The input is aliased to `side`; consumers bind `[side]="..."` and read
-   * the effective value via the public `side` computed below.
-   */
-  readonly _sideInput = input<FloatingSide | undefined>(undefined, { alias: 'side' });
-
-  /** Effective anchor side: the `side` input when set, else the scope default. */
-  readonly side = computed<FloatingSide>(() => this._sideInput() ?? this.#defaults.side);
-
-  /**
-   * Per-tooltip override for the alignment along the chosen `side`. When
-   * `undefined` (default), falls back to `ForTooltipDefaults.align` from the
-   * surrounding `provideForTooltipDefaults` scope (`'center'` unless
-   * configured).
-   *
-   * The input is aliased to `align`; consumers bind `[align]="..."` and read
-   * the effective value via the public `align` computed below.
-   */
-  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
-
-  /** Effective alignment: the `align` input when set, else the scope default. */
-  readonly align = computed<FloatingAlign>(() => this._alignInput() ?? this.#defaults.align);
-
-  /**
-   * Per-tooltip override for the gap (px) between trigger and content along
-   * the main axis. When `undefined` (default),
-   * falls back to `ForTooltipDefaults.sideOffset` from the surrounding
-   * `provideForTooltipDefaults` scope (`8` unless configured).
-   *
-   * The input is aliased to `sideOffset`; consumers bind `[sideOffset]="..."`
-   * and read the effective value via the public `sideOffset` computed below.
-   */
-  readonly _sideOffsetInput = input(undefined, {
-    alias: 'sideOffset',
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-
-  /** Effective main-axis gap (px): the `sideOffset` input when set, else the scope default. */
-  readonly sideOffset = computed<number>(
-    () => this._sideOffsetInput() ?? this.#defaults.sideOffset,
-  );
-
-  /** Gap (px) along the cross axis (parallel to `side`). Default `0`. */
-  readonly alignOffset = input(ANCHORED_POSITIONING_DEFAULTS.alignOffset, {
-    transform: numberAttribute,
-  });
-
-  /**
-   * When `true` (default), `flip` and `shift` keep the tooltip inside the
-   * viewport. Disable for strict positioning where overflow is acceptable.
-   */
-  readonly avoidCollisions = input(ANCHORED_POSITIONING_DEFAULTS.avoidCollisions, {
-    transform: booleanAttribute,
-  });
-
-  /**
-   * Per-tooltip override for the padding (px) applied uniformly to the
-   * `flip`, `shift`, and `size` middlewares. When `undefined` (default),
-   * falls back to `ForTooltipDefaults.collisionPadding` from the surrounding
-   * `provideForTooltipDefaults` scope (`8` unless configured).
-   *
-   * The input is aliased to `collisionPadding`; consumers bind
-   * `[collisionPadding]="..."` and read the effective value via the public
-   * `collisionPadding` computed below.
-   */
-  readonly _collisionPaddingInput = input(undefined, {
-    alias: 'collisionPadding',
-    transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
-  });
-
-  /** Effective collision padding (px): the `collisionPadding` input when set, else the scope default. */
-  readonly collisionPadding = computed<number>(
-    () => this._collisionPaddingInput() ?? this.#defaults.collisionPadding,
-  );
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(ANCHORED_POSITIONING_DEFAULTS.arrowPadding, {
-    transform: numberAttribute,
-  });
-
-  /**
-   * Stickiness behaviour for `shift`. `'partial'` (default) lets the
-   * tooltip shift to stay visible. `'always'` keeps the requested
-   * placement even off-screen.
-   */
-  readonly sticky = input<'partial' | 'always' | false>(ANCHORED_POSITIONING_DEFAULTS.sticky);
-
-  /**
-   * When `true`, sets `data-detached=""` while the trigger has scrolled
-   * off all clipping ancestors.
-   */
-  readonly hideWhenDetached = input(ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached, {
-    transform: booleanAttribute,
-  });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame (the
-   * surface may flash briefly at the unresolved position while positioning
-   * computes).
-   */
-  readonly clipUntilPositioned = input(ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned, {
-    transform: booleanAttribute,
-  });
 
   /**
    * Per-tooltip override for the open delay (ms). When `undefined`
@@ -218,7 +104,7 @@ export class ForTooltip implements ForTooltipContext {
 
   /** Effective overflow gate: the `showOnOverflow` input when set, else the scope default. */
   readonly showOnOverflow = computed<boolean>(
-    () => this._showOnOverflowInput() ?? this.#defaults.showOnOverflow,
+    () => this._showOnOverflowInput() ?? this.positioningDefaults.showOnOverflow,
   );
 
   /**
@@ -228,7 +114,7 @@ export class ForTooltip implements ForTooltipContext {
    * triangle" bridges the gap between trigger and content so a slow diagonal
    * traversal doesn't close it. When `undefined` (default), falls back to
    * `ForTooltipDefaults.hoverableContent` from the surrounding
-   * `provideForTooltipDefaults` scope (`false` unless configured).
+   * `provideForTooltipDefaults` scope (`true` unless configured).
    *
    * Per APG the content must stay non-interactive; this only allows the
    * pointer to rest over descriptive text (e.g. to select it).
@@ -244,7 +130,7 @@ export class ForTooltip implements ForTooltipContext {
 
   /** Effective hoverable-content flag: the `hoverableContent` input when set, else the scope default. */
   readonly hoverableContent = computed<boolean>(
-    () => this._hoverableContentInput() ?? this.#defaults.hoverableContent,
+    () => this._hoverableContentInput() ?? this.positioningDefaults.hoverableContent,
   );
 
   /**
@@ -298,6 +184,7 @@ export class ForTooltip implements ForTooltipContext {
   #unregisterScrollDismiss: () => void = () => {};
 
   constructor() {
+    super();
     forceCloseWhenDisabled({
       open: this.open,
       disabled: this.disabled,
@@ -415,8 +302,8 @@ export class ForTooltip implements ForTooltipContext {
     this.#scheduleCloseIfInactive();
   }
 
-  scheduleOpen(_reason: TooltipScheduleReason): void {
-    if (this.#scrollSuppressed()) {
+  scheduleOpen(reason: TooltipScheduleReason): void {
+    if (reason !== 'focus' && this.#scrollSuppressed()) {
       return;
     }
     this.#hoverIntent.scheduleOpen();

@@ -67,8 +67,6 @@ export class ForHoverCardTrigger {
 
   protected readonly ctx = injectHoverCardTriggerContext(this.forHoverCardTrigger);
 
-  #hovered = false;
-  #focused = false;
   #lastPointerType: string | null = null;
 
   constructor() {
@@ -87,8 +85,7 @@ export class ForHoverCardTrigger {
     if (event.pointerType === 'touch') {
       return;
     }
-    this.#hovered = true;
-    this.ctx().scheduleOpen('hover-trigger');
+    this.ctx().pointerEnterTrigger();
   }
 
   protected onPointerDown(event: PointerEvent): void {
@@ -96,12 +93,7 @@ export class ForHoverCardTrigger {
   }
 
   protected onPointerLeave(event: PointerEvent): void {
-    this.#hovered = false;
-    const content = this.ctx().content();
-    if (content?.contains(event.relatedTarget as Node | null)) {
-      return;
-    }
-    this.#scheduleCloseIfInactive('hover-trigger');
+    this.ctx().pointerLeaveTrigger({ x: event.clientX, y: event.clientY });
   }
 
   protected onFocus(): void {
@@ -110,20 +102,11 @@ export class ForHoverCardTrigger {
     if (pointerInduced) {
       return;
     }
-    this.#focused = true;
-    this.ctx().scheduleOpen('focus');
+    this.ctx().focusTrigger();
   }
 
   protected onBlur(): void {
     this.#lastPointerType = null;
-    this.#focused = false;
-    this.#scheduleCloseIfInactive('focus');
-  }
-
-  #scheduleCloseIfInactive(reason: 'hover-trigger' | 'focus'): void {
-    if (this.#hovered || this.#focused) {
-      return;
-    }
-    this.ctx().scheduleClose(reason);
+    this.ctx().blurTrigger();
   }
 }

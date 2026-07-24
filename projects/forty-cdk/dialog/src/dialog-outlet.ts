@@ -37,12 +37,12 @@ export type ForDialogOutletHost = OverlayManagerOutletHost<ForDialogEntry>;
 export interface ForDialogEntry extends OverlayManagerEntry {
   readonly component: Type<unknown>;
   readonly hostClass: string;
-  readonly dismissible: boolean | undefined;
-  readonly modal: boolean | undefined;
+  readonly dismissible: boolean;
+  readonly modal: boolean;
   readonly alert: boolean | undefined;
-  readonly returnFocus: boolean | undefined;
+  readonly returnFocus: boolean;
   readonly returnFocusTarget: HTMLElement | null | undefined;
-  readonly initialFocus: 'first' | 'container' | undefined;
+  readonly initialFocus: 'first' | 'container';
   readonly ariaLabel: string | undefined;
   readonly container: HTMLElement | null | undefined;
   readonly animateEnter: string | undefined;
@@ -131,12 +131,12 @@ export class ForDialogSurface {
         [attr.data-for-dialog-id]="entry.id"
         [animate.enter]="entry.animateEnter ?? ''"
         [class]="entry.hostClass"
-        [dismissible]="entry.dismissible ?? true"
-        [modal]="entry.modal ?? true"
+        [dismissible]="entry.dismissible"
+        [modal]="entry.modal"
         [alert]="entry.alert ?? false"
-        [returnFocus]="entry.returnFocus ?? true"
+        [returnFocus]="entry.returnFocus"
         [returnFocusTarget]="entry.returnFocusTarget ?? null"
-        [initialFocus]="entry.initialFocus ?? 'first'"
+        [initialFocus]="entry.initialFocus"
         [ariaLabel]="entry.ariaLabel ?? null"
         [container]="entry.container ?? null"
         [autoFocusOnOpen]="entry.autoFocusOnOpen"

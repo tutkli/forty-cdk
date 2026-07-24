@@ -19,14 +19,18 @@ import { ANCHORED_POSITIONING_DEFAULTS } from './anchored-positioning-inputs';
 class PositioningHost {}
 
 /**
- * Drift guard (issue #962): NG8110 stops the three trigger-anchored overlay
- * roots from declaring their positioning inputs through a shared factory, so
- * each declares them inline. This asserts the inputs they share keep identical
- * default values — the place the audit found copy-paste drift. The non-seed
- * defaults come from the single `ANCHORED_POSITIONING_DEFAULTS` source; the
- * seeds (`side`, `align`, `sideOffset`, `collisionPadding`) come from each
- * root's defaults provider, where only `side` legitimately varies (popover
- * `'bottom'`, tooltip / hover-card `'top'`).
+ * Drift guard (issues #962, #1391): the three trigger-anchored overlay roots
+ * now single-source their positioning inputs by extending the shared
+ * `AnchoredOverlayPositioningBase` class, rather than each declaring the block
+ * inline against `ANCHORED_POSITIONING_DEFAULTS` plus this guard (the earlier
+ * NG8110 workaround, before inheritance was applied). This still asserts the
+ * inputs they share keep identical default values — a cheap guard against a
+ * root shadowing an inherited input with a divergent default, or a future 4th
+ * overlay diverging. The non-seed defaults come from the single
+ * `ANCHORED_POSITIONING_DEFAULTS` source; the seeds (`side`, `align`,
+ * `sideOffset`, `collisionPadding`) come from each root's defaults provider,
+ * where only `side` legitimately varies (popover `'bottom'`, tooltip /
+ * hover-card `'top'`).
  */
 describe('anchored positioning inputs drift guard', () => {
   function setup(): { popover: ForPopover; tooltip: ForTooltip; hoverCard: ForHoverCard } {
@@ -68,5 +72,45 @@ describe('anchored positioning inputs drift guard', () => {
     expect(popover.side()).toBe('bottom');
     expect(tooltip.side()).toBe('top');
     expect(hoverCard.side()).toBe('top');
+  });
+});
+
+@Component({
+  imports: [ForTooltip],
+  template: `
+    <div
+      forTooltip
+      side="left"
+      [sideOffset]="20"
+      [collisionPadding]="24"
+      [avoidCollisions]="false"
+      [hideWhenDetached]="true"
+      [clipUntilPositioned]="false"
+    ></div>
+  `,
+})
+class InheritedInputsHost {}
+
+/**
+ * Proves the positioning inputs declared on `AnchoredOverlayPositioningBase`
+ * actually bind through the base on a concrete root: alias (`side` /
+ * `sideOffset` / `collisionPadding`), transform (`numberAttribute` /
+ * `booleanAttribute`), and inheritance all survive the compile.
+ */
+describe('anchored positioning inputs inherited from the base', () => {
+  it('binds the inherited positioning inputs through the base on a forTooltip host', () => {
+    TestBed.configureTestingModule({
+      providers: [provideZonelessChangeDetection()],
+    });
+    const fixture = TestBed.createComponent(InheritedInputsHost);
+    fixture.detectChanges();
+    const tooltip = fixture.debugElement.query(By.directive(ForTooltip)).injector.get(ForTooltip);
+
+    expect(tooltip.side()).toBe('left');
+    expect(tooltip.sideOffset()).toBe(20);
+    expect(tooltip.collisionPadding()).toBe(24);
+    expect(tooltip.avoidCollisions()).toBe(false);
+    expect(tooltip.hideWhenDetached()).toBe(true);
+    expect(tooltip.clipUntilPositioned()).toBe(false);
   });
 });

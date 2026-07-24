@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   Directive,
+  effect,
   ElementRef,
   inject,
   input,
@@ -16,8 +17,7 @@ import {
   ForDrawerScaleCoordinator,
   ForDrawerStack,
   injectModalShell,
-  type VetoableEvent,
-  type VetoableNativeEvent,
+  ModalSurfaceBase,
 } from 'forty-cdk/core';
 import {
   FOR_DRAWER_CONTEXT,
@@ -56,24 +56,19 @@ import { injectDrawerDrag } from './drawer-drag';
   selector: '[forDrawer]',
   exportAs: 'forDrawer',
   host: {
-    '[attr.role]': 'alert() ? "alertdialog" : "dialog"',
-    '[attr.aria-modal]': 'modal() ? "true" : null',
-    '[attr.aria-label]': 'ariaLabel() || null',
-    '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-side]': 'side()',
     '[attr.data-active-snap-point]': 'activeSnapPointAttr()',
     '[attr.data-dragging]': 'dragging() ? "" : null',
     '[attr.data-scale-background]': 'scaleBackgroundActive() ? "" : null',
     '[attr.data-depth]': 'depthAttr()',
     '[attr.data-state-nested]': 'hasChild() ? "true" : null',
-    'data-state': 'open',
-    tabindex: '-1',
   },
   providers: [{ provide: FOR_DRAWER_CONTEXT, useExisting: ForDrawer }],
 })
-export class ForDrawer implements ForDrawerContext {
+export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements ForDrawerContext {
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);
+
+  protected readonly errorPrefix = '[forty-cdk/drawer]';
 
   /**
    * Edge the drawer is anchored to. Default `'bottom'` — the most common
@@ -98,26 +93,10 @@ export class ForDrawer implements ForDrawerContext {
    */
   readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
 
-  /** When true, role becomes `alertdialog` (interrupts assistive tech). */
-  readonly alert = input(false, { transform: booleanAttribute });
-
   /** When true (default), focus returns to the previously focused element on close. */
   readonly returnFocus = input(this.#defaults.returnFocus ?? true, {
     transform: booleanAttribute,
   });
-
-  /**
-   * Explicit element focus returns to on close, read at close time. Overrides
-   * the element the directive captures at construction — supply it when this
-   * drawer can be constructed while focus lives inside a *different, doomed*
-   * surface, the canonical case being a close→open swap in one change-detection
-   * pass. `ForDrawerManager` threads the true origin through this input
-   * automatically; declarative consumers driving such a swap by hand can bind
-   * it too. `null` (default) keeps the construction-time capture, so ordinary
-   * usage is unaffected. Has no effect in non-modal mode (the directive never
-   * moves focus on close then).
-   */
-  readonly returnFocusTarget = input<HTMLElement | null>(null);
 
   /**
    * Where to send focus on mount. `'first'` (default) finds the first
@@ -125,33 +104,6 @@ export class ForDrawer implements ForDrawerContext {
    * (useful when there's nothing focusable inside).
    */
   readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus ?? 'first');
-
-  /** Manual `aria-label`. Use this when no visible title element exists. */
-  readonly ariaLabel = input<string | null>(null);
-
-  /**
-   * Portal target for the surface. Defaults to `document.body`. Pass a
-   * positioned (`position: relative`) container — paired with
-   * `[modal]="false"` — for a drawer scoped to a region instead of the
-   * viewport. Read once at mount (the portal moves the host once); changing
-   * it after open has no effect. The backdrop portals to the same container.
-   */
-  readonly container = input<HTMLElement | null>(null);
-
-  /**
-   * Callback invoked just before focus moves into the drawer on mount.
-   * `event.preventDefault()` skips the imperative move (Tab cycling and
-   * return-focus capture still wire up). See Dialog for the same shape and
-   * the rationale for `input<>` rather than `output<>` on free-floating
-   * overlays.
-   */
-  readonly autoFocusOnOpen = input<((event: VetoableEvent) => void) | undefined>(undefined);
-
-  /**
-   * Callback invoked just before focus returns to the previously focused
-   * element on unmount. `event.preventDefault()` skips the return-focus.
-   */
-  readonly autoFocusOnClose = input<((event: VetoableEvent) => void) | undefined>(undefined);
 
   /** When true (default), swipe toward the anchored edge dismisses past `closeThreshold`. */
   readonly swipeToDismiss = input(this.#defaults.swipeToDismiss ?? true, {
@@ -222,28 +174,6 @@ export class ForDrawer implements ForDrawerContext {
    */
   readonly fadeFromIndex = input<number | undefined>(undefined);
 
-  /**
-   * Emitted when the drawer wants to close. Consumer wires this to flip
-   * the signal that gates the surrounding `@if`.
-   */
-  readonly dismiss = output<ForDrawerCloseReason>();
-
-  /** Vetoable Escape. `preventDefault()` suppresses the auto `(dismiss)`. */
-  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
-
-  /** Vetoable pointer-down outside. `preventDefault()` suppresses the auto `(dismiss)`. */
-  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
-
-  /** Vetoable focus-outside. `preventDefault()` suppresses the auto `(dismiss)`. */
-  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
-
-  /**
-   * Composite event: fires alongside `pointerDownOutside` and `focusOutside`
-   * and shares their veto state — `preventDefault()` on either suppresses
-   * the auto `(dismiss)`.
-   */
-  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
-
   /** Drag stream. `percentageDragged` ∈ `[0, 1]`. */
   readonly dragMove = output<ForDrawerDragEvent>();
 
@@ -251,24 +181,8 @@ export class ForDrawer implements ForDrawerContext {
   readonly release = output<ForDrawerReleaseEvent>();
 
   // ---- Internal reactive state ----
-  readonly #labelIds = signal<readonly string[]>([]);
-  readonly #describedByIds = signal<readonly string[]>([]);
   readonly #handleEl = signal<HTMLElement | null>(null);
-  readonly #backdropEl = signal<HTMLElement | null>(null);
-  // Captures the `value` argument from the most recent `requestClose(reason, value)`
-  // call. Read by `ForDrawerManager` to bridge `[forDrawerClose] [closeWith]`
-  // into `ForDrawerRef.close(value)`. Plain in declarative usage (no consumer
-  // ever reads it), so the API surface is unchanged.
-  readonly #lastCloseValue = signal<unknown>(undefined);
 
-  readonly labelledBy = computed<string | null>(() => {
-    const ids = this.#labelIds();
-    return ids.length === 0 ? null : ids.join(' ');
-  });
-  readonly describedBy = computed<string | null>(() => {
-    const ids = this.#describedByIds();
-    return ids.length === 0 ? null : ids.join(' ');
-  });
   readonly activeSnapPointAttr = computed<string | null>(() => {
     const v = this.activeSnapPoint();
     return v == null ? null : String(v);
@@ -388,10 +302,13 @@ export class ForDrawer implements ForDrawerContext {
   // afterNextRender so descendants see consistent topology, scale runs AFTER so
   // the coordinator composes on a fully-wired surface — and both are torn down
   // from a single `DestroyRef.onDestroy` (see the constructor).
+  readonly #scaleReady = signal(false);
   #scaleCleanup: (() => void) | null = null;
   #stackCleanup: (() => void) | null = null;
 
   constructor() {
+    super();
+
     // ---- Pre-shell setup. Runs in its own afterNextRender registered BEFORE
     // injectModalShell so the drawer-stack push, closeThreshold validation, and
     // snap-point validation precede the shell's dismissable / focus /
@@ -405,8 +322,7 @@ export class ForDrawer implements ForDrawerContext {
       //    and reads scope-local defaults through this node.
       const handle = this.#drawerStack.push({
         host: this.#host.nativeElement,
-        side: this.side(),
-        scaleBackground: this.scaleBackground(),
+        side: this.side,
         parent: this.#parentDrawer?.hostElement ?? null,
         dragging: this.dragging,
         nestedScaleAmount: this.#defaults.nestedScaleAmount ?? 0.93,
@@ -436,46 +352,31 @@ export class ForDrawer implements ForDrawerContext {
     // `interactOutside`), modal vs non-modal branching (focus trap + scroll
     // lock + inert siblings), and the `autoFocusOnOpen` / `autoFocusOnClose`
     // veto hooks. Anything drawer-specific (drag gesture, snap points, scale
-    // coordinator, drawer-stack registration, backdrop exemption) stays in
-    // this directive / the gesture engine.
-    injectModalShell({
-      modal: this.modal,
-      returnFocus: this.returnFocus,
-      returnFocusTarget: this.returnFocusTarget,
-      initialFocus: this.initialFocus,
-      container: this.container,
-      autoFocusOnOpen: () => this.autoFocusOnOpen(),
-      autoFocusOnClose: () => this.autoFocusOnClose(),
-      dismiss: {
-        dismissible: this.dismissible,
-        requestClose: (reason) => this.requestClose(reason),
-        emitEscapeKeyDown: (veto) => this.escapeKeyDown.emit(veto),
-        emitPointerDownOutside: (veto) => this.pointerDownOutside.emit(veto),
-        emitFocusOutside: (veto) => this.focusOutside.emit(veto),
-        emitInteractOutside: (veto) => this.interactOutside.emit(veto),
-        // The backdrop is portaled to body (sibling of the drawer host), so
-        // without exemption a pointer-down on it fires `pointerDownOutside`
-        // BEFORE the backdrop's click handler runs — the drawer would close
-        // with the wrong reason. Marking it exempt routes the gesture
-        // through the backdrop's own click → `requestClose('backdrop')`
-        // path instead. The handle is a child of the host so it is already
-        // covered by `host.contains(target)`.
-        exemptElements: () => {
-          const backdrop = this.#backdropEl();
-          return backdrop ? [backdrop] : [];
-        },
-      },
-    });
+    // coordinator, drawer-stack registration) stays in this directive / the
+    // gesture engine. The backdrop exemption (so a backdrop pointer-down
+    // routes through the backdrop's own click → `requestClose('backdrop')`
+    // instead of firing `pointerDownOutside`) is owned by the shared
+    // ModalSurfaceBase config.
+    injectModalShell(this.modalShellConfig());
 
     // ---- Post-shell setup. Runs in its own afterNextRender registered
     // AFTER injectModalShell so swipe-dismiss arms on a host already attached
     // to body via the shell's portal, and the scale coordinator composes on
     // top of a fully-wired surface.
     afterNextRender(() => {
-      // Register with the scale coordinator last so the wrapper transition
-      // composes after every other side effect has stabilised. The coordinator
-      // enforces the reduced-motion + wrapper-presence gates.
-      if (this.scaleBackground()) {
+      this.#scaleReady.set(true);
+
+      // Arm the swipe gate now that the surface is fully wired. The gesture
+      // engine's effect owns the actual attach/detach; arming unblocks it.
+      this.#drag.arm();
+    });
+
+    effect(() => {
+      if (!this.#scaleReady()) {
+        return;
+      }
+      const want = this.scaleBackground();
+      if (want && this.#scaleCleanup === null) {
         this.#scaleCleanup = this.#scaleCoordinator.registerDrawer({
           setBackgroundColorOnScale: this.setBackgroundColorOnScale(),
           scaleAmount: this.#defaults.scaleAmount ?? 0.95,
@@ -483,11 +384,10 @@ export class ForDrawer implements ForDrawerContext {
           scaleBorderRadiusPx: this.#defaults.scaleBorderRadiusPx ?? 8,
           scaleBackgroundColor: this.#defaults.scaleBackgroundColor ?? 'black',
         });
+      } else if (!want && this.#scaleCleanup !== null) {
+        this.#scaleCleanup();
+        this.#scaleCleanup = null;
       }
-
-      // Arm the swipe gate now that the surface is fully wired. The gesture
-      // engine's effect owns the actual attach/detach; arming unblocks it.
-      this.#drag.arm();
     });
 
     // ---- Drawer-owned teardown, in one hook. Neither step depends on
@@ -512,18 +412,6 @@ export class ForDrawer implements ForDrawerContext {
 
   // ---- Context implementation ----
 
-  registerLabel(id: string): void {
-    this.#labelIds.update((arr) => (arr.includes(id) ? arr : [...arr, id]));
-  }
-  unregisterLabel(id: string): void {
-    this.#labelIds.update((arr) => arr.filter((x) => x !== id));
-  }
-  registerDescription(id: string): void {
-    this.#describedByIds.update((arr) => (arr.includes(id) ? arr : [...arr, id]));
-  }
-  unregisterDescription(id: string): void {
-    this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
-  }
   registerHandle(el: HTMLElement | null): void {
     const current = this.#handleEl();
     if (el !== null && current !== null && current !== el) {
@@ -533,41 +421,4 @@ export class ForDrawer implements ForDrawerContext {
     }
     this.#handleEl.set(el);
   }
-  registerBackdrop(el: HTMLElement | null): void {
-    const current = this.#backdropEl();
-    if (el !== null && current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/drawer] Multiple [forDrawerBackdrop] inside the same [forDrawer]; only one is allowed.',
-      );
-    }
-    this.#backdropEl.set(el);
-  }
-
-  requestClose(reason: ForDrawerCloseReason, value?: unknown): void {
-    if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
-      return;
-    }
-    this.#lastCloseValue.set(value);
-    this.dismiss.emit(reason);
-  }
-
-  /**
-   * The `value` argument from the most recent `requestClose(reason, value)`
-   * call. Read by `ForDrawerManager` to bridge `[forDrawerClose] [closeWith]`
-   * into `ForDrawerRef.close(value)`. Declarative consumers never need this —
-   * it is plumbing for the imperative bootstrap path.
-   *
-   * @internal
-   */
-  readonly lastCloseValue = this.#lastCloseValue.asReadonly();
-
-  /**
-   * The registered `[forDrawerBackdrop]` element, or `null` when none is
-   * rendered. Read by `ForDrawerManager`'s surface registrar so `beginLeave`
-   * drives the backdrop's exit animation by direct reference instead of a
-   * document query. Declarative consumers never need this.
-   *
-   * @internal
-   */
-  readonly backdropElement = this.#backdropEl.asReadonly();
 }

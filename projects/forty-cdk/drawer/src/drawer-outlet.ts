@@ -8,6 +8,7 @@ import {
   Injector,
   inject,
   input,
+  type Signal,
   type Type,
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
@@ -43,25 +44,25 @@ export type ForDrawerOutletHost = OverlayManagerOutletHost<ForDrawerEntry>;
 export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly component: Type<unknown>;
   readonly hostClass: string;
-  readonly side: ForDrawerSide | undefined;
-  readonly dismissible: boolean | undefined;
-  readonly modal: boolean | undefined;
+  readonly side: ForDrawerSide;
+  readonly dismissible: boolean;
+  readonly modal: boolean;
   readonly alert: boolean | undefined;
-  readonly returnFocus: boolean | undefined;
+  readonly returnFocus: boolean;
   readonly returnFocusTarget: HTMLElement | null | undefined;
-  readonly initialFocus: 'first' | 'container' | undefined;
+  readonly initialFocus: 'first' | 'container';
   readonly ariaLabel: string | undefined;
   readonly container: HTMLElement | null | undefined;
   readonly animateEnter: string | undefined;
   readonly autoFocusOnOpen: ((e: VetoableEvent) => void) | undefined;
   readonly autoFocusOnClose: ((e: VetoableEvent) => void) | undefined;
-  readonly swipeToDismiss: boolean | undefined;
-  readonly closeThreshold: number | undefined;
-  readonly handleOnly: boolean | undefined;
-  readonly scaleBackground: boolean | undefined;
-  readonly setBackgroundColorOnScale: boolean | undefined;
+  readonly swipeToDismiss: boolean;
+  readonly closeThreshold: number;
+  readonly handleOnly: boolean;
+  readonly scaleBackground: boolean;
+  readonly setBackgroundColorOnScale: boolean;
   readonly snapPoints: ReadonlyArray<ForDrawerSnapPoint> | undefined;
-  readonly activeSnapPoint: ForDrawerSnapPoint | undefined;
+  readonly activeSnapPoint: Signal<ForDrawerSnapPoint | null>;
   readonly fadeFromIndex: number | undefined;
   readonly escapeKeyDown: ((e: VetoableNativeEvent<KeyboardEvent>) => void) | undefined;
   readonly pointerDownOutside: ((e: VetoableNativeEvent<PointerEvent>) => void) | undefined;
@@ -71,8 +72,8 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
     | undefined;
   readonly dragMove: ((e: ForDrawerDragEvent) => void) | undefined;
   readonly release: ((e: ForDrawerReleaseEvent) => void) | undefined;
-  readonly activeSnapPointChange: ((snap: ForDrawerSnapPoint | null) => void) | undefined;
   handleClose(reason: ForDrawerCloseReason, value: unknown): void;
+  onActiveSnapPointChange(snap: ForDrawerSnapPoint | null): void;
   injectorFor(parent: Injector): Injector;
 }
 
@@ -149,24 +150,24 @@ export class ForDrawerSurface {
         [attr.data-for-drawer-id]="entry.id"
         [animate.enter]="entry.animateEnter ?? ''"
         [class]="entry.hostClass"
-        [side]="entry.side ?? 'bottom'"
-        [dismissible]="entry.dismissible ?? true"
-        [modal]="entry.modal ?? true"
+        [side]="entry.side"
+        [dismissible]="entry.dismissible"
+        [modal]="entry.modal"
         [alert]="entry.alert ?? false"
-        [returnFocus]="entry.returnFocus ?? true"
+        [returnFocus]="entry.returnFocus"
         [returnFocusTarget]="entry.returnFocusTarget ?? null"
-        [initialFocus]="entry.initialFocus ?? 'first'"
+        [initialFocus]="entry.initialFocus"
         [ariaLabel]="entry.ariaLabel ?? null"
         [container]="entry.container ?? null"
         [autoFocusOnOpen]="entry.autoFocusOnOpen"
         [autoFocusOnClose]="entry.autoFocusOnClose"
-        [swipeToDismiss]="entry.swipeToDismiss ?? true"
-        [closeThreshold]="entry.closeThreshold ?? 0.25"
-        [handleOnly]="entry.handleOnly ?? false"
-        [scaleBackground]="entry.scaleBackground ?? false"
-        [setBackgroundColorOnScale]="entry.setBackgroundColorOnScale ?? true"
+        [swipeToDismiss]="entry.swipeToDismiss"
+        [closeThreshold]="entry.closeThreshold"
+        [handleOnly]="entry.handleOnly"
+        [scaleBackground]="entry.scaleBackground"
+        [setBackgroundColorOnScale]="entry.setBackgroundColorOnScale"
         [snapPoints]="entry.snapPoints"
-        [activeSnapPoint]="entry.activeSnapPoint ?? null"
+        [activeSnapPoint]="entry.activeSnapPoint()"
         [fadeFromIndex]="entry.fadeFromIndex"
         (dismiss)="entry.handleClose($event, fd.lastCloseValue())"
         (escapeKeyDown)="entry.escapeKeyDown?.($event)"
@@ -175,7 +176,7 @@ export class ForDrawerSurface {
         (interactOutside)="entry.interactOutside?.($event)"
         (dragMove)="entry.dragMove?.($event)"
         (release)="entry.release?.($event)"
-        (activeSnapPointChange)="entry.activeSnapPointChange?.($event)"
+        (activeSnapPointChange)="entry.onActiveSnapPointChange($event)"
         #fd="forDrawer"
       >
         <ng-container forDrawerContextInjector #ctx="forDrawerContextInjector">

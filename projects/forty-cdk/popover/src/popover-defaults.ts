@@ -1,13 +1,18 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type FloatingAlign, type FloatingSide } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant popovers in the surrounding injector
  * scope. Configure with `provideForPopoverDefaults` at the app root or in
  * any component's `providers`; partial overrides merge with the parent scope.
  */
-export interface ForPopoverDefaults {
+export interface ForPopoverDefaults extends AnchoredPositioningSeedDefaults {
   /**
    * Side the popover is anchored to for popovers that don't override `side`
    * locally. Library fallback `'bottom'`.

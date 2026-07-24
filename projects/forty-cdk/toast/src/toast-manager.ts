@@ -81,6 +81,7 @@ export class ForToastManager {
     const existing = this.#byId.get(id);
     if (existing) {
       (existing.ref as ForToastRef<R, D>).update(config);
+      (existing.ref as ForToastRef<R, D>).resetTimer();
       return existing.ref as ForToastRef<R, D>;
     }
 
@@ -193,6 +194,9 @@ export class ForToastManager {
       id: entry.id,
       get config() {
         return ref.config();
+      },
+      get generation() {
+        return ref.generation();
       },
       dismiss(reason: ForToastCloseReason = 'manual') {
         ref.dismiss(reason);

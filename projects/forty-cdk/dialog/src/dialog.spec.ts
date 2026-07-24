@@ -14,6 +14,7 @@ import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
 import type { ForDialogCloseReason } from './dialog-context';
+import { provideForDialogDefaults } from './dialog-defaults';
 import { ForDialogDescription } from './dialog-description';
 import { ForDialogTitle } from './dialog-title';
 import { ForDialogTrigger } from './dialog-trigger';
@@ -502,8 +503,64 @@ describe('ForDialog (declarative)', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(DoubleBackdropHost)).toThrow(
-        /\[forty-cdk\/dialog\] Multiple \[forDialogBackdrop\]/,
+        /\[forty-cdk\/dialog\] Multiple/,
       );
+    });
+  });
+
+  describe('provideForDialogDefaults (declarative, issue #1)', () => {
+    it('honors a scoped dismissible:false so Escape does not dismiss', async () => {
+      @Component({
+        imports: [ForDialog],
+        providers: [provideForDialogDefaults({ dismissible: false })],
+        template: `
+          @if (open()) {
+            <div forDialog (dismiss)="open.set(false)" ariaLabel="t">
+              <button id="inside">In</button>
+            </div>
+          }
+        `,
+      })
+      class DefaultsHost {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(DefaultsHost);
+      await flush(r.fixture);
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      // The scoped default suppressed the Escape-dismiss — the dialog stays
+      // mounted (a hardcoded dismissible=true would have unmounted it).
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
+    });
+
+    it('lets a per-instance [dismissible]="true" override the scoped default', async () => {
+      @Component({
+        imports: [ForDialog],
+        providers: [provideForDialogDefaults({ dismissible: false })],
+        template: `
+          @if (open()) {
+            <div forDialog [dismissible]="true" (dismiss)="open.set(false)" ariaLabel="t">
+              <button id="inside">In</button>
+            </div>
+          }
+        `,
+      })
+      class OverrideHost {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(OverrideHost);
+      await flush(r.fixture);
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(document.querySelector('[forDialog]')).toBeNull();
     });
   });
 

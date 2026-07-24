@@ -152,9 +152,12 @@ class SomeComponent {
 
 - `ref.dismiss(reason?, result?)` — close imperatively.
 - `ref.update(patch)` — mutate config in place (text, duration, variant). `id` and `region` are fixed at `show()` and ignored here — `id` is the toast's identity, and `region` decides which viewport renders it, so changing it would silently remount the toast (resetting its timer and announcement). Dismiss and re-`show()` to move a toast between regions.
+- `ref.resetTimer()` — restart the auto-dismiss countdown from the full `duration`. No-op once dismissed. Runs automatically when a live toast is re-shown via `show({ id })` (dedupe); also callable directly to extend a toast's life on demand.
 - `ref.closed` — `Promise<{ reason, result }>` resolved on first dismiss.
 - `ref.isClosed()` — reactive boolean.
 - `ref.config()` — reactive config snapshot.
+
+Calling `show({ id })` with the id of a live toast updates it in place (dedupe) **and** restarts its auto-dismiss countdown from the full `duration` — the same as calling `ref.resetTimer()`. So a recurring identical toast (e.g. repeated "Message sent") stays visible for a fresh `duration` after each occurrence rather than expiring on the first one's timer.
 
 ## Composition + styling model
 
@@ -331,7 +334,7 @@ Outputs:
 - Timer starts on mount and fires `(dismiss)` with reason `'auto'` after `duration` ms.
 - Hovering or focusing inside the toast pauses the timer; leaving / blurring resumes with the remaining time.
 - The timer also pauses while `document.visibilityState !== 'visible'` (tab backgrounded, window hidden) and resumes when the page becomes visible again, so toasts don't silently expire while the user is not looking. The `visibilitychange` listener is shared across all live toasts (refcounted) — one document-level handler regardless of stack depth.
-- A hover/focus/visibility pause captures the **remaining** time and resumes with it. A `ref.update()` that re-renders the toast while it is paused does not reset that captured time — resume always continues the countdown, never restarts it at the full duration.
+- A hover/focus/visibility pause captures the **remaining** time and resumes with it. A `ref.update()` that does **not** change `duration` preserves that captured countdown — resume continues from where it paused. Changing `duration` (via `ref.update({ duration })` or a `[duration]` change) restarts the countdown at the full new duration; if the toast is paused when the change lands, the restart is applied on resume.
 - `duration: 0` keeps the toast sticky — only manual / action / programmatic close ends it.
 
 > **`maxVisible` parks overflow, it does not expire it.** A toast pushed out of the visible window by `[maxVisible]` is unmounted, so its auto-dismiss timer is not running while it waits. When a newer toast is dismissed it re-enters the window and its `duration` countdown restarts from full (a fresh `[forToast]` mounts). If you need overflow toasts to clear on a deadline, dismiss them explicitly (`ForToastRef.dismiss()` / `dismissAll()` / the action / close button) rather than relying on the timer.

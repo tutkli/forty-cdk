@@ -1,11 +1,12 @@
-import { booleanAttribute, computed, Directive, input, output, signal } from '@angular/core';
+import { booleanAttribute, Directive, inject, input } from '@angular/core';
 
-import { injectModalShell, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { injectModalShell, ModalSurfaceBase } from 'forty-cdk/core';
 import {
   FOR_DIALOG_CONTEXT,
   type ForDialogCloseReason,
   type ForDialogContext,
 } from './dialog-context';
+import { FOR_DIALOG_DEFAULTS } from './dialog-defaults';
 
 /**
  * Headless implementation of the [WAI-ARIA Modal Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/).
@@ -45,236 +46,44 @@ import {
 @Directive({
   selector: '[forDialog]',
   exportAs: 'forDialog',
-  host: {
-    '[attr.role]': 'alert() ? "alertdialog" : "dialog"',
-    '[attr.aria-modal]': 'modal() ? "true" : null',
-    '[attr.aria-label]': 'ariaLabel() || null',
-    '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-describedby]': 'describedBy()',
-    'data-state': 'open',
-    tabindex: '-1',
-  },
   providers: [{ provide: FOR_DIALOG_CONTEXT, useExisting: ForDialog }],
 })
-export class ForDialog implements ForDialogContext {
+export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements ForDialogContext {
+  readonly #defaults = inject(FOR_DIALOG_DEFAULTS);
+
   /**
    * When true (default), Escape, backdrop click, pointer-down outside, and
    * focus outside emit `(dismiss)`. Disable for critical confirm flows that
    * must be answered explicitly via `[forDialogClose]`.
    */
-  readonly dismissible = input(true, { transform: booleanAttribute });
+  readonly dismissible = input(this.#defaults.dismissible ?? true, { transform: booleanAttribute });
 
   /**
    * When true (default), sets `aria-modal="true"`, locks body scroll, and
    * traps focus. Set to `false` for non-modal popups (rare for dialogs).
    */
-  readonly modal = input(true, { transform: booleanAttribute });
-
-  /** When true, role becomes `alertdialog` (interrupts assistive tech). */
-  readonly alert = input(false, { transform: booleanAttribute });
+  readonly modal = input(this.#defaults.modal ?? true, { transform: booleanAttribute });
 
   /** When true (default), focus returns to the previously focused element on close. */
-  readonly returnFocus = input(true, { transform: booleanAttribute });
-
-  /**
-   * Explicit element focus returns to on close, read at close time. Overrides
-   * the element the directive captures at construction — supply it when this
-   * dialog can be constructed while focus lives inside a *different, doomed*
-   * surface, the canonical case being a close→open swap in one change-detection
-   * pass (a confirm dialog replacing a form dialog). `ForDialogManager` threads
-   * the true origin through this input automatically; declarative consumers
-   * driving such a swap by hand can bind it too. `null` (default) keeps the
-   * construction-time capture, so ordinary usage is unaffected. Has no effect
-   * in non-modal mode (the directive never moves focus on close then).
-   */
-  readonly returnFocusTarget = input<HTMLElement | null>(null);
+  readonly returnFocus = input(this.#defaults.returnFocus ?? true, { transform: booleanAttribute });
 
   /**
    * Where to send focus on mount. `'first'` (default) finds the first
    * focusable descendant; `'container'` focuses the dialog box itself
    * (useful when there's nothing focusable inside).
    */
-  readonly initialFocus = input<'first' | 'container'>('first');
+  readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus ?? 'first');
 
-  /** Manual `aria-label`. Use this when no visible title element exists. */
-  readonly ariaLabel = input<string | null>(null);
-
-  /**
-   * Portal target for the dialog surface. Defaults to `document.body`. Pair
-   * with `[modal]="false"` for a dialog scoped to a positioned region
-   * instead of the viewport. Read once at mount. The backdrop portals to the
-   * same container.
-   */
-  readonly container = input<HTMLElement | null>(null);
-
-  /**
-   * Emitted when the dialog wants to close. Consumers wire this to flip
-   * the signal that gates the surrounding `@if`. Reasons: `'escape'`,
-   * `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`,
-   * `'closeButton'`, `'programmatic'`.
-   */
-  readonly dismiss = output<ForDialogCloseReason>();
-
-  /**
-   * Fires when the user presses Escape while this dialog is the topmost
-   * dismissable layer. Call `preventDefault()` on the emitted veto to
-   * suppress the subsequent `(dismiss)` emission (e.g. to ask for
-   * confirmation first). The original `KeyboardEvent` is available on
-   * `.event` for inspection.
-   */
-  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
-
-  /**
-   * Fires when a pointer goes down outside the dialog. Call
-   * `preventDefault()` on the emitted veto to suppress the auto `(dismiss)`.
-   * The native `PointerEvent` is available on `.event`.
-   */
-  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
-
-  /**
-   * Fires when focus moves outside the dialog (e.g. user tabs out of a
-   * non-modal dialog). `preventDefault()` on the veto suppresses the auto
-   * `(dismiss)`. The native `FocusEvent` is available on `.event`.
-   */
-  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
-
-  /**
-   * Composite event: fires alongside `pointerDownOutside` and
-   * `focusOutside` and shares their veto state — `preventDefault()` on
-   * either one suppresses the auto `(dismiss)`.
-   */
-  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
-
-  /**
-   * Callback invoked just before the dialog moves focus into itself on
-   * mount. Receives a `VetoableEvent`; call `event.preventDefault()` to
-   * skip the imperative focus move — useful when opening a dialog from
-   * an input you want to keep focused. The focus trap (modal mode) still
-   * cycles Tab inside the dialog once focus enters it.
-   *
-   * Bound as a function reference (`[autoFocusOnOpen]="onOpen"`), not as
-   * an event binding. Symmetric with `ForDialogManager`'s
-   * `config.autoFocusOnOpen`. The callback shape (rather than an
-   * `output()`) lets the directive invoke it during the destroy hook
-   * without depending on Angular's `OutputEmitterRef` lifecycle.
-   */
-  readonly autoFocusOnOpen = input<((event: VetoableEvent) => void) | undefined>(undefined);
-
-  /**
-   * Callback invoked just before focus returns to the previously
-   * focused element on unmount. Receives a `VetoableEvent`; call
-   * `event.preventDefault()` to skip the return-focus — useful when
-   * the consumer wants to send focus elsewhere imperatively (e.g. a
-   * confirmation toast).
-   *
-   * Bound as a function reference (`[autoFocusOnClose]="onClose"`), not
-   * as an event binding. Fires reliably on both close paths: the
-   * `(dismiss)` output flow AND a direct `open.set(false)` from the
-   * consumer. Symmetric with `ForDialogManager`'s
-   * `config.autoFocusOnClose`.
-   */
-  readonly autoFocusOnClose = input<((event: VetoableEvent) => void) | undefined>(undefined);
-
-  readonly #labelIds = signal<readonly string[]>([]);
-  readonly #describedByIds = signal<readonly string[]>([]);
-  readonly #backdropEl = signal<HTMLElement | null>(null);
-  // Captures the `value` argument from the most recent `requestClose(reason, value)`
-  // call. Read by `ForDialogManager` to bridge `[forDialogClose] [closeWith]`
-  // into `ForDialogRef.close(value)`. Plain in declarative usage (no consumer
-  // ever reads it), so the API surface is unchanged.
-  readonly #lastCloseValue = signal<unknown>(undefined);
-
-  readonly labelledBy = computed<string | null>(() => {
-    const ids = this.#labelIds();
-    return ids.length === 0 ? null : ids.join(' ');
-  });
-  readonly describedBy = computed<string | null>(() => {
-    const ids = this.#describedByIds();
-    return ids.length === 0 ? null : ids.join(' ');
-  });
+  protected readonly errorPrefix = '[forty-cdk/dialog]';
 
   constructor() {
     // The shared modal-shell handles portal + dismissable layer (with the
     // triple-veto pattern this directive used to implement inline) + modal
     // vs non-modal branching (focus trap + scroll lock + inert siblings) +
     // return-focus on destroy + the WebKit-#136 sync return-target capture.
-    // Anything dialog-specific (label / description registration, role
-    // binding, ariaLabel) stays here.
-    injectModalShell({
-      modal: this.modal,
-      returnFocus: this.returnFocus,
-      returnFocusTarget: this.returnFocusTarget,
-      initialFocus: this.initialFocus,
-      container: this.container,
-      autoFocusOnOpen: () => this.autoFocusOnOpen(),
-      autoFocusOnClose: () => this.autoFocusOnClose(),
-      dismiss: {
-        dismissible: this.dismissible,
-        requestClose: (reason) => this.requestClose(reason),
-        emitEscapeKeyDown: (veto) => this.escapeKeyDown.emit(veto),
-        emitPointerDownOutside: (veto) => this.pointerDownOutside.emit(veto),
-        emitFocusOutside: (veto) => this.focusOutside.emit(veto),
-        emitInteractOutside: (veto) => this.interactOutside.emit(veto),
-        exemptElements: () => {
-          const backdrop = this.#backdropEl();
-          return backdrop ? [backdrop] : [];
-        },
-      },
-    });
+    // Anything dialog-specific (role binding, ariaLabel, label / description
+    // registration) lives on the shared ModalSurfaceBase.
+    super();
+    injectModalShell(this.modalShellConfig());
   }
-
-  registerLabel(id: string): void {
-    this.#labelIds.update((arr) => (arr.includes(id) ? arr : [...arr, id]));
-  }
-  unregisterLabel(id: string): void {
-    this.#labelIds.update((arr) => arr.filter((x) => x !== id));
-  }
-  registerDescription(id: string): void {
-    this.#describedByIds.update((arr) => (arr.includes(id) ? arr : [...arr, id]));
-  }
-  unregisterDescription(id: string): void {
-    this.#describedByIds.update((arr) => arr.filter((x) => x !== id));
-  }
-  registerBackdrop(el: HTMLElement | null): void {
-    const current = this.#backdropEl();
-    if (el !== null && current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/dialog] Multiple [forDialogBackdrop] inside the same [forDialog]; only one is allowed.',
-      );
-    }
-    this.#backdropEl.set(el);
-  }
-
-  requestClose(reason: ForDialogCloseReason, value?: unknown): void {
-    if (reason !== 'closeButton' && reason !== 'programmatic' && !this.dismissible()) {
-      return;
-    }
-    this.#lastCloseValue.set(value);
-    // The `autoFocusOnClose` callback fires from the destroy hook (after
-    // the consumer's `(dismiss)` listener flips the `@if`-gating signal),
-    // so it stays consistent across both close paths: this output-driven
-    // flow AND a direct `open.set(false)` that bypasses `requestClose`
-    // entirely.
-    this.dismiss.emit(reason);
-  }
-
-  /**
-   * The `value` argument from the most recent `requestClose(reason, value)`
-   * call. Read by `ForDialogManager` to bridge `[forDialogClose] [closeWith]`
-   * into `ForDialogRef.close(value)`. Declarative consumers never need this —
-   * it is plumbing for the imperative bootstrap path.
-   *
-   * @internal
-   */
-  readonly lastCloseValue = this.#lastCloseValue.asReadonly();
-
-  /**
-   * The registered `[forDialogBackdrop]` element, or `null` when none is
-   * rendered. Read by `ForDialogManager`'s surface registrar so `beginLeave`
-   * drives the backdrop's exit animation by direct reference instead of a
-   * document query. Declarative consumers never need this.
-   *
-   * @internal
-   */
-  readonly backdropElement = this.#backdropEl.asReadonly();
 }
