@@ -457,4 +457,33 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
       await context.close();
     }
   });
+
+  test('a normal viewport drag captures the pointer (baseline for the bail below)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel');
+    await dragFromSteps(page, el(page, 'viewport'), { dx: -50, dy: 0 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
+    await expect(el(page, 'capture-count')).not.toHaveText('0');
+  });
+
+  test('scrollable-at-edge drag is declined: no pointer capture, inner click intact', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel', { scrollable: '1' });
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+
+    await dragFromSteps(page, el(page, 'scroll-content'), { dx: -50, dy: 0 }, 3, {
+      stepDelayMs: 50,
+      flickRelease: true,
+    });
+
+    await expect(el(page, 'capture-count')).toHaveText('0');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+
+    await el(page, 'scroll-click').click();
+    await expect(el(page, 'scroll-click-count')).toHaveText('1');
+  });
 });

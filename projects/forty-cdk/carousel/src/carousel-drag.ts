@@ -17,11 +17,12 @@ import {
   type SwipeEventDetail,
   isScrollableAtEdge,
   injectPrefersReducedMotion,
+  flickVelocity,
+  FLICK_STALE_VELOCITY_MS,
 } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 const FLICK_VELOCITY_PX_PER_MS = 0.4;
-const FLICK_STALE_VELOCITY_MS = 100;
 
 /**
  * Opt-in pointer drag / swipe directive for the Carousel viewport. Apply on the
@@ -87,6 +88,7 @@ export class ForCarouselDrag {
       element: this.#host.nativeElement,
       getDirections: () => this.#directions(),
       getThreshold: () => 1,
+      canBegin: (d) => this.#canBegin(d),
       onSwipeStart: (d) => this.#onStart(d),
       onSwipeMove: (d) => this.#onMove(d),
       onSwipeEnd: (d) => this.#onRelease(d),
@@ -116,12 +118,12 @@ export class ForCarouselDrag {
     return this.ctx.orientation() === 'horizontal' && this.ctx.dir() === 'rtl' ? 1 : -1;
   }
 
-  #onStart(detail: SwipeEventDetail): void {
+  #canBegin(detail: SwipeEventDetail): boolean {
     const target = detail.originalEvent.target as Element | null;
-    if (target && isScrollableAtEdge(target, detail.direction, this.#host.nativeElement)) {
-      this.#dragging.set(false);
-      return;
-    }
+    return !(target && isScrollableAtEdge(target, detail.direction, this.#host.nativeElement));
+  }
+
+  #onStart(detail: SwipeEventDetail): void {
     const rect = this.#host.nativeElement.getBoundingClientRect();
     const axisSize = this.ctx.orientation() === 'vertical' ? rect.height : rect.width;
     this.#slideSizePx = axisSize / Math.max(1, this.ctx.slidesPerView());
@@ -163,15 +165,6 @@ export class ForCarouselDrag {
     const target = resolveDragIndex(this.ctx.activeIndex(), slidesDragged, velocityTowardNext);
     this.ctx.scrollTo(target);
   }
-}
-
-/**
- * Zeroes the flick velocity when the release is stale (its last move sample is older than
- * `FLICK_STALE_VELOCITY_MS`), so a pause before lifting can't carry a stale sample into the snap.
- * Returns the effective velocity fed to `resolveDragIndex`.
- */
-export function flickVelocity(rawVelocityTowardNext: number, stale: boolean): number {
-  return stale ? 0 : rawVelocityTowardNext;
 }
 
 /**

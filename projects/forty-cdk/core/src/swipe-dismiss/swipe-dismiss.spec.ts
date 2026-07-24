@@ -1,4 +1,10 @@
-import { attachSwipeDismiss, type SwipeDirection, type SwipeEventDetail } from './swipe-dismiss';
+import {
+  attachSwipeDismiss,
+  FLICK_STALE_VELOCITY_MS,
+  flickVelocity,
+  type SwipeDirection,
+  type SwipeEventDetail,
+} from './swipe-dismiss';
 
 function pointer(
   el: HTMLElement | Window,
@@ -467,5 +473,27 @@ describe('attachSwipeDismiss', () => {
 
     dispose();
     el.remove();
+  });
+});
+
+describe('flickVelocity', () => {
+  it('keeps a fresh positive sample untouched', () => {
+    expect(flickVelocity(0.5, false)).toBe(0.5);
+  });
+
+  it('keeps a fresh negative sample untouched', () => {
+    expect(flickVelocity(-0.9, false)).toBe(-0.9);
+  });
+
+  it('zeroes a stale positive sample', () => {
+    expect(flickVelocity(0.5, true)).toBe(0);
+  });
+
+  it('zeroes a stale negative sample', () => {
+    expect(flickVelocity(-0.5, true)).toBe(0);
+  });
+
+  it('exposes a 100 ms staleness cutoff', () => {
+    expect(FLICK_STALE_VELOCITY_MS).toBe(100);
   });
 });
