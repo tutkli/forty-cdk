@@ -7,6 +7,123 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-07-24
+
+The second resolution wave for the July 18, 2026 deep audit — three large sweeps across the date & time
+family (including the shared field engines), select / combobox / listbox, and the overlay family
+(dialog, drawer, toast, tooltip, hover-card), plus carousel, table, stepper and virtualization fixes.
+Breaking changes in the date / time field value contract and contexts, select / combobox behavior, and
+the tooltip / toast defaults.
+
+### Added
+
+- **Core (swipe dismiss)** — `SwipeDismissOptions` gains an optional `canBegin(detail)` pre-arm
+  predicate, so a gesture can be vetoed before the pointer session arms — no pointer capture is taken
+  and no post-release click trap is installed. The flick thresholds are now shared named exports:
+  `FLICK_VELOCITY_PX_PER_MS`, `FLICK_STALE_VELOCITY_MS` and the pure `flickVelocity(raw, stale)` helper.
+- **Core (accessible text)** — new `accessibleTextContent()` helper: an element's text content with
+  `aria-hidden="true"` subtrees excluded.
+- **Select** — new optional `selectedIndex` input: a virtualized open-time reveal hint that scrolls to
+  the committed selection on first open (`[(value)]` stays authoritative).
+- **Toast** — `ForToastRef.resetTimer()` restarts the auto-dismiss countdown.
+- **Drawer** — `ForDrawerRef` gains `setActiveSnapPoint()` and a readonly `activeSnapPoint`, wired
+  two-way through the outlet — programmatic parity with the declarative `[(activeSnapPoint)]`.
+- **Hover-card** — ports tooltip's imperative `show()` / `hide()`, the `data-reduced-motion` reflection
+  and the pointer-grace safe triangle.
+- **Tooltip** — the public `scheduleOpen(reason)` threads the open reason.
+- **Stepper** — `ForStepperContent` gains an optional `[step]` input declaring the panel's step index, so
+  `data-state` / `inert` / `aria-hidden` / `aria-labelledby` follow the declared step rather than the
+  panel's position among its siblings — the only way to pair panels when a middle one is `@if`'d out.
+  Unbound, the positional contract is unchanged.
+- **Virtualization** — `measureElement()` accepts `null` to trigger the virtualizer's eviction sweep for
+  consumers doing manual dynamic measurement.
+
+### Changed
+
+- **Date & time fields** — **BREAKING.** Commit-on-settle: `value` / `(valueChange)` emit only on settled
+  commits (segment completion / blur); mid-typing transients stay confined to the engine and are no
+  longer observable. Blur flushes a pending transient as a settled, clamped commit, so a bound `minDate`
+  / `maxDate` is never silently violated and the date-picker time bridge only ever sees settled values.
+- **Date & time fields** — **BREAKING.** `data-empty` reflects the all-editable-segments-empty state (an
+  AND across both endpoints for range fields) instead of `value() === null`.
+- **Date & time fields** — **BREAKING.** `SegmentEditorContext` — and `ForDateFieldContext` /
+  `ForTimeFieldContext` plus the range contexts that expose it — reach the per-segment methods through
+  `ctx.delegate.*` (`SegmentEditorDelegate`) rather than directly on the context.
+- **Date & time fields** — `Backspace` removes the last entered digit of the focused segment;
+  `Delete` remains the whole-segment clear.
+- **Combobox** — **BREAKING.** `[forComboboxAction]` dev-throws when used without a `[forComboboxList]`:
+  `[forComboboxContent]` carries `role="listbox"`, so a `role="button"` placed directly inside it is an
+  invalid listbox child. Wrap the options in a `[forComboboxList]` so the action becomes a sibling of the
+  listbox.
+- **Select** — **BREAKING.** The popup no longer returns focus to the trigger when dismissed by
+  pointer-down-outside / focus-outside — focus follows where the user clicked, matching native
+  `<select>`, popover, menu and the combobox picker (this reverses the narrow 0.9.0 select decision).
+  Return-focus on selection / `Escape` / programmatic close is unchanged; modal select is untouched.
+- **Select, combobox & listbox** — **BREAKING.** Option label and typeahead text exclude
+  `aria-hidden="true"` subtrees, so a selected option's indicator glyph no longer breaks prefix matching
+  (`[forListboxOptionIndicator]` is now `aria-hidden="true"` for parity). Consumer text marked
+  `aria-hidden` is likewise excluded — the correct accessible-name semantics.
+- **Tooltip** — **BREAKING.** The `hoverableContent` library default flips `false` → `true`, so tooltip
+  content is hoverable by default (WCAG 1.4.13).
+- **Toast** — **BREAKING.** A `duration` change while the toast is paused now applies on resume
+  (reversing the earlier hold-until-restart behavior), and the auto-dismiss timer restarts on a dedupe
+  re-show.
+- **Dialog** — **BREAKING.** The declarative `[forDialog]` honors `provideForDialogDefaults`; it
+  previously re-defaulted at the outlet and ignored the scope provider.
+- **Drawer** — **BREAKING.** Internal composition surfaces changed: `ForDrawerRef`'s constructor gains a
+  required third argument, `DrawerStackNode.side` is now a `Signal`, and the dead
+  `DrawerStackNode.scaleBackground` field is removed.
+- **Table** — **BREAKING.** `aria-multiselectable` is gated on mode: a `mode="table"` root no longer
+  emits it under `selectionMode="multiple"` (WAI-ARIA permits the attribute only on selection-bearing
+  composites — `grid`, `treegrid`, `listbox`, `tree`). Root-level twin of the 0.12.0 `aria-selected`
+  gating.
+- **Stepper** — **BREAKING.** `ForStepperContentHandle` gains a required `index: Signal<number>` member;
+  a consumer implementing a custom content handle must supply it.
+
+### Fixed
+
+- **Date & time fields** — `granularity="day"` preserves the value's time-of-day, matching the calendar,
+  instead of zeroing it.
+- **Date & time fields** — `setDayPeriod` no longer fabricates an hour: an AM/PM chosen while the hour is
+  empty stores the day period as its own nullable part.
+- **Date & time fields** — segments accept Unicode digits (e.g. Arabic-Indic), and typed AM/PM matches
+  non-Latin day-period names (午前 / 午後, 오전 / 오후, ص / م) with a Latin `a` / `p` fallback.
+- **Date & time range fields** — `focus()` targets the first null endpoint.
+- **Time picker** — around a DST spring-forward the slot list no longer duplicates labels or loses its
+  single `aria-selected`: slots are generated off a DST-stable sentinel and grafted onto the value at
+  activation, so activating a slot commits the time it displays.
+- **Select** — typeahead cycles on a repeated keystroke and anchors at the active / selected option
+  across all three paths (open, virtualized, closed) — the fix listbox already had.
+- **Combobox** — virtualized inline completion resolves options outside the rendered window and never
+  offers a disabled option.
+- **Combobox** — the label cache keys by serialized value rather than the per-mount option id, so
+  renaming an option's label between opens updates the chip and selected labels.
+- **Combobox** — `Tab` off an action is guarded on `open()`, resolves a stale source id against the full
+  collection, and keeps a just-disabled focused action in the ring; `Escape` on a chip closes an open
+  popup, consistent with action `Escape`.
+- **Listbox & combobox** — re-selecting the already-selected option no longer re-emits `valueChange`
+  (the guard select already had).
+- **Drawer** — a vetoed swipe (handle-only, or a scrollable region that is not at its edge) is declined
+  before the pointer session arms, so it no longer captures the pointer or swallows the next click;
+  `pointercancel` mid-swipe springs the drawer back instead of requesting a close; flick velocity is
+  zeroed when the last `pointermove` is older than 100 ms; and the swipe-start snap cache is validated by
+  dimension as the release path already did.
+- **Drawer** — `[side]` and `[scaleBackground]` are reactive at runtime; the background-scale coordinator
+  re-registers when the side flips.
+- **Toast** — pausing at the expiry instant no longer sticks the toast open.
+- **Tooltip** — a `'focus'` open is exempt from scroll suppression.
+- **Hover-card** — traversing the gap between anchor and content no longer breaks at `closeDelay: 0`; the
+  root owns the reconciliation, as in tooltip.
+- **Carousel** — a drag starting on a scrollable slide that is not at its scroll edge is declined before
+  the pointer session arms, so it takes no pointer capture and leaves the next click on that slide intact.
+- **Virtualization** — `[forVirtualViewport]` sweeps detached recycled rows from the measurement cache
+  once per render, so a monotonically scrolling list no longer retains one detached element plus a live
+  `ResizeObserver` entry for every row scrolled past. Twin of the 0.12.0 table `measureRows` fix.
+- **Stepper** — the trigger / panel ARIA pairing is keyed by step index rather than collection position,
+  so a structurally hidden (`@if`) trigger or panel no longer shifts `aria-labelledby` / `aria-controls`
+  past it, drops the whole `role="tablist"` out of the Tab order, or leaves two `tabindex="0"` entry
+  points.
+
 ## [0.12.0] - 2026-07-23
 
 The resolution wave for the July 18, 2026 deep audit — sweeps across the core state/navigation
@@ -540,7 +657,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/tutkli/forty-cdk/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/tutkli/forty-cdk/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/tutkli/forty-cdk/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/tutkli/forty-cdk/compare/v0.10.0...v0.11.0
