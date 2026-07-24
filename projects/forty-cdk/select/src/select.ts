@@ -22,12 +22,15 @@ import {
   FormUiControlBase,
   injectHiddenInput,
   IdGenerator,
+  isRangeSelectShortcut,
   resolveListNavigation,
+  resolveListTypeahead,
+  throwUnsupportedVirtualizedRangeSelect,
   type WritingDirection,
   ListboxOverlayController,
+  RangeSelectionEngine,
   defaultItemToFormValue,
   isInArray,
-  nextEnabledHandle,
   singleSelected,
   toggleInArray,
   tryReadHandle,
@@ -374,17 +377,6 @@ export class ForSelect<T = string>
   readonly #activeId = signal<string | null>(null);
 
   /**
-   * Anchor value for APG range-selection actions (Shift+Space). Stored as the
-   * option's *value* (resolved to its current index at range time via
-   * {@link isItemEqualToValue}) rather than a DOM index, so reordering or
-   * removing options before the anchor can't silently shift the range to the
-   * wrong span. Set on every unmodified activation (click / Space / Enter); not
-   * affected by Shift+Arrow, which APG defines as per-option toggle. Only
-   * meaningful in the non-virtualized multi-select path.
-   */
-  readonly #anchorValue = signal<T | null>(null);
-
-  /**
    * Shared overlay-listbox state machine: option collection, trigger / anchor /
    * content registries + ids, DOM-focus navigation, the open / close machine,
    * the initial-focus / close-reason state, and the dismiss / auto-focus emit
@@ -428,7 +420,7 @@ export class ForSelect<T = string>
     onNavigateFocus: (target) => {
       target.host.scrollIntoView?.({ block: 'nearest' });
       if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-        this.#setSingle(target.value());
+        this.#rangeEngine.selectSingle(target.value());
       }
     },
     onUnregisterOption: (handle) => {
@@ -448,6 +440,23 @@ export class ForSelect<T = string>
    * registered, otherwise floating-ui falls back to the trigger.
    */
   readonly overlay: ForSelectOverlayContext<T> = this.#controller;
+
+  /**
+   * Shared APG range-selection state machine: owns the range anchor and the
+   * Shift+Arrow / Shift+Space / Ctrl+A / Ctrl+Shift+Home/End actions plus the
+   * single-mode idempotent select guard. The value-specific `activate` (which
+   * also closes the listbox in single mode) and the virtualized activedescendant
+   * path stay in this root; the range methods one-line delegate here.
+   */
+  readonly #rangeEngine = new RangeSelectionEngine<T, ForSelectOptionHandle<T>>({
+    options: this.#controller.options,
+    value: this.value,
+    setValue: (v) => this.value.set(v),
+    isItemEqualToValue: this.isItemEqualToValue,
+    multiple: this.multiple,
+    effectiveDisabled: this.effectiveDisabled,
+    readonly: this.readonly,
+  });
 
   /** The active option's `id` in the virtualized path, `null` in the default path. */
   readonly activeDescendantId = computed<string | null>(() =>
@@ -685,152 +694,44 @@ export class ForSelect<T = string>
     return isInArray(this.value(), v, this.isItemEqualToValue());
   }
 
-  #setSingle(v: T): void {
-    if (this.value().length === 1 && this.isSelected(v)) {
-      return;
-    }
-    this.value.set([v]);
-  }
-
   activate(v: T): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
     if (this.multiple()) {
       this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
-      this.#anchorValue.set(v);
-      // Multi-select stays open — consumer closes via outside pointer / Escape / Tab.
+      this.#rangeEngine.setAnchor(v);
       return;
     }
-    // Single-mode: idempotent select + close. Skip the redundant set (and its
-    // `valueChange` emission) when the same sole value is already selected.
-    this.#setSingle(v);
-    this.#anchorValue.set(v);
+    this.#rangeEngine.selectSingle(v);
+    this.#rangeEngine.setAnchor(v);
     this.#controller.closeMenu('select');
   }
 
   extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
-    if (this.effectiveDisabled() || !this.multiple()) {
-      return;
-    }
-    const target = nextEnabledHandle(this.#controller.options(), currentOption, action, {
-      loop: false,
-    });
-    if (target === null) {
-      return;
-    }
-    target.host.focus();
-    target.host.scrollIntoView?.({ block: 'nearest' });
-    if (this.readonly()) {
-      return;
-    }
-    this.value.set(toggleInArray(this.value(), target.value(), this.isItemEqualToValue()));
+    this.#rangeEngine.extendByArrow(currentOption, action);
   }
 
   selectRangeToFocused(currentOption: HTMLElement): void {
-    if (this.effectiveDisabled() || this.readonly() || !this.multiple()) {
-      return;
-    }
-    const options = this.#controller.options();
-    const currentIndex = options.findIndex((o) => o.host === currentOption);
-    if (currentIndex < 0) {
-      return;
-    }
-    const anchorValue = this.#anchorValue();
-    const equals = this.isItemEqualToValue();
-    const anchorIndex =
-      anchorValue === null ? -1 : options.findIndex((o) => equals(o.value(), anchorValue));
-    const start = anchorIndex < 0 ? currentIndex : anchorIndex;
-    const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
-
-    const next = [...this.value()];
-    for (let i = lo; i <= hi; i++) {
-      const opt = options[i];
-      if (!opt || opt.disabled()) {
-        continue;
-      }
-      const v = opt.value();
-      if (!next.some((x) => equals(x, v))) {
-        next.push(v);
-      }
-    }
-    this.value.set(next);
+    this.#rangeEngine.selectRangeToFocused(currentOption);
   }
 
   selectAll(): void {
-    if (this.effectiveDisabled() || this.readonly() || !this.multiple()) {
-      return;
-    }
-    const enabled: T[] = [];
-    for (const opt of this.#controller.options()) {
-      if (opt.disabled()) {
-        continue;
-      }
-      enabled.push(opt.value());
-    }
-    if (enabled.length === 0) {
-      return;
-    }
-    const equals = this.isItemEqualToValue();
-    const current = this.value();
-    const allSelected = enabled.every((v) => current.some((x) => equals(x, v)));
-    this.value.set(allSelected ? [] : enabled);
+    this.#rangeEngine.selectAll();
   }
 
   selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
-    if (this.effectiveDisabled() || !this.multiple()) {
-      return;
-    }
-    const options = this.#controller.options();
-    const currentIndex = options.findIndex((o) => o.host === currentOption);
-    if (currentIndex < 0) {
-      return;
-    }
-    const [lo, hi] = edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
-
-    const equals = this.isItemEqualToValue();
-    const next = [...this.value()];
-    let firstEnabled: HTMLElement | null = null;
-    let lastEnabled: HTMLElement | null = null;
-    for (let i = lo; i <= hi; i++) {
-      const opt = options[i];
-      if (!opt || opt.disabled()) {
-        continue;
-      }
-      const v = opt.value();
-      if (!next.some((x) => equals(x, v))) {
-        next.push(v);
-      }
-      if (firstEnabled === null) {
-        firstEnabled = opt.host;
-      }
-      lastEnabled = opt.host;
-    }
-    const edgeFocusTarget = edge === 'first' ? firstEnabled : lastEnabled;
-    edgeFocusTarget?.focus();
-    edgeFocusTarget?.scrollIntoView?.({ block: 'nearest' });
-    if (this.readonly()) {
-      return;
-    }
-    this.value.set(next);
+    this.#rangeEngine.selectFromCurrentToEdge(currentOption, edge);
   }
 
   handleTypeahead(event: KeyboardEvent): void {
-    if (!this.#typeahead.handle(event)) {
-      return;
-    }
     const options = this.#controller.options();
-    const currentIndex = options.findIndex((o) => o.host === event.target);
-    const match = findTypeaheadMatch(
-      options,
-      {
-        buffer: this.#typeahead.buffer(),
-        repeated: this.#typeahead.isRepeatedChar(),
-        anchorIndex: currentIndex,
-      },
-      (o) => accessibleTextContent(o.host),
-      (o) => o.disabled(),
-    );
+    const { match } = resolveListTypeahead(this.#typeahead, event, {
+      items: options,
+      anchorIndex: options.findIndex((o) => o.host === event.target),
+      getText: (o) => accessibleTextContent(o.host),
+      isDisabled: (o) => o.disabled(),
+    });
     match?.host.focus();
   }
 
@@ -892,7 +793,7 @@ export class ForSelect<T = string>
       return;
     }
     if (!this.multiple() && !this.readonly()) {
-      this.#setSingle(value);
+      this.#rangeEngine.selectSingle(value);
     }
     // Move focus to the trigger BEFORE the unmount + close so the browser's
     // Tab default action has a stable active element to advance from. The
@@ -929,9 +830,12 @@ export class ForSelect<T = string>
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
-    if (this.multiple() && this.#isMultiSelectShortcut(event)) {
+    if (
+      this.multiple() &&
+      isRangeSelectShortcut(event, { orientation: this.orientation(), dir: this.dir() })
+    ) {
       event.preventDefault();
-      this.#throwUnsupportedVirtualizedMultiSelect();
+      throwUnsupportedVirtualizedRangeSelect({ primitive: 'select', focusModel: 'DOM-focus' });
       return;
     }
     if (event.key === 'Tab') {
@@ -1008,43 +912,6 @@ export class ForSelect<T = string>
     this.activate(handle.value());
   }
 
-  #isMultiSelectShortcut(event: KeyboardEvent): boolean {
-    if (event.altKey) {
-      return false;
-    }
-    const mod = event.ctrlKey || event.metaKey;
-    if (mod && !event.shiftKey) {
-      return event.key === 'a' || event.key === 'A';
-    }
-    if (mod && event.shiftKey) {
-      return event.key === 'Home' || event.key === 'End';
-    }
-    if (event.shiftKey) {
-      if (event.key === ' ' || event.key === 'Spacebar') {
-        return true;
-      }
-      const action = resolveListNavigation(event, {
-        orientation: this.orientation(),
-        dir: this.dir(),
-      });
-      return action === 'next' || action === 'prev';
-    }
-    return false;
-  }
-
-  #throwUnsupportedVirtualizedMultiSelect(): void {
-    if (isDevMode()) {
-      throw new Error(
-        '[forty-cdk/select] Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, ' +
-          'Ctrl+Shift+Home/End) is not supported together with virtualization (`totalCount` set). ' +
-          'Range selection needs the full set of enabled options across the range, which is ' +
-          'unavailable while the list is partially unmounted. Toggle options individually with ' +
-          'Enter, Space, or click, or drop `totalCount` to use the non-virtualized DOM-focus ' +
-          'listbox.',
-      );
-    }
-  }
-
   #commitActiveDescendantOnTab(): void {
     const id = this.#activeId();
     const handle = id === null ? undefined : this.#controller.options().find((o) => o.id() === id);
@@ -1056,22 +923,14 @@ export class ForSelect<T = string>
   }
 
   #typeaheadVirtualized(event: KeyboardEvent): void {
-    if (!this.#typeahead.handle(event)) {
-      return;
-    }
     const options = this.#controller.options();
     const activeId = this.#activeId();
-    const anchor = activeId === null ? -1 : options.findIndex((o) => o.id() === activeId);
-    const match = findTypeaheadMatch(
-      options,
-      {
-        buffer: this.#typeahead.buffer(),
-        repeated: this.#typeahead.isRepeatedChar(),
-        anchorIndex: anchor,
-      },
-      (o) => accessibleTextContent(o.host),
-      (o) => o.disabled(),
-    );
+    const { match } = resolveListTypeahead(this.#typeahead, event, {
+      items: options,
+      anchorIndex: activeId === null ? -1 : options.findIndex((o) => o.id() === activeId),
+      getText: (o) => accessibleTextContent(o.host),
+      isDisabled: (o) => o.disabled(),
+    });
     if (match) {
       this.#activeId.set(match.id());
       match.host.scrollIntoView?.({ block: 'nearest' });

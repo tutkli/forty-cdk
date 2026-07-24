@@ -266,6 +266,15 @@ export {
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export {
+  isRangeSelectShortcut,
+  type ListTypeaheadConfig,
+  type ListTypeaheadResult,
+  type RangeSelectShortcutContext,
+  resolveListTypeahead,
+  throwUnsupportedVirtualizedRangeSelect,
+  type UnsupportedVirtualizedRangeSelectContext,
+} from './list-typeahead/list-typeahead';
+export {
   type ListboxOverlayContext,
   ListboxOverlayController,
   type ListboxOverlayControllerDeps,
@@ -364,6 +373,11 @@ export {
   type PointerSuppression,
 } from './pointer-suppression/pointer-suppression';
 export { injectPortal, type PortalConfig } from './portal/portal';
+export {
+  RangeSelectionEngine,
+  type RangeSelectionEngineDeps,
+  type RangeSelectionOptionHandle,
+} from './range-selection/range-selection-engine';
 export { clampToRange, DRAG_DEAD_ZONE_PX } from './resize-geometry/resize-geometry';
 export {
   FOR_HOST_ROVING_CONTEXT,
