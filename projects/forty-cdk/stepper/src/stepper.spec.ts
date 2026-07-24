@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form, required } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
@@ -177,6 +177,40 @@ class HiddenTriggerHost {
   readonly activationMode = signal<'automatic' | 'manual'>('manual');
   readonly hideMiddleTrigger = signal(false);
   readonly steps = signal(['A', 'B', 'C']);
+}
+
+@Component({
+  imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+  template: `
+    <div forStepper [(selectedIndex)]="selectedIndex">
+      <ol forStepperList>
+        @for (s of steps(); track $index) {
+          <li forStepperItem [attr.data-step]="$index">
+            <button type="button" forStepperTrigger [attr.data-trigger]="$index">{{ s }}</button>
+          </li>
+        }
+      </ol>
+      @for (i of mountedPanels(); track i) {
+        <section forStepperContent [step]="explicitStep() ? i : null" [attr.data-content]="i">
+          Panel {{ i }}
+        </section>
+      }
+    </div>
+  `,
+})
+class ExplicitStepPanelHost {
+  readonly selectedIndex = signal(0);
+  readonly steps = signal(['A', 'B', 'C']);
+  readonly explicitStep = signal(true);
+  readonly hideMiddlePanel = signal(false);
+  readonly onlyCurrentPanel = signal(false);
+  readonly mountedPanels = computed<readonly number[]>(() => {
+    const all = this.steps().map((_, i) => i);
+    if (this.onlyCurrentPanel()) {
+      return all.filter((i) => i === this.selectedIndex());
+    }
+    return this.hideMiddlePanel() ? all.filter((i) => i !== 1) : all;
+  });
 }
 
 describe('ForStepper', () => {
@@ -624,6 +658,141 @@ describe('ForStepper', () => {
       await flush();
       expect(document.activeElement).toBe(triggerAt(el, 2));
       expect(instance.selectedIndex()).toBe(0);
+    });
+  });
+
+  describe('item-keyed aria pairing and tab stop (#1430)', () => {
+    const withHiddenMiddleTrigger = async (selected: number) => {
+      const r = renderHost(HiddenTriggerHost);
+      r.instance.hideMiddleTrigger.set(true);
+      r.instance.selectedIndex.set(selected);
+      r.fixture.detectChanges();
+      await r.flush();
+      return r;
+    };
+
+    it('panel aria-labelledby resolves to its own step trigger when an earlier trigger is hidden', async () => {
+      const { el } = await withHiddenMiddleTrigger(0);
+      expect(contentAt(el, 2).getAttribute('aria-labelledby')).toBe(triggerAt(el, 2).id);
+      expect(contentAt(el, 0).getAttribute('aria-labelledby')).toBe(triggerAt(el, 0).id);
+    });
+
+    it('panel of the hidden-trigger step has no aria-labelledby instead of borrowing another trigger', async () => {
+      const { el } = await withHiddenMiddleTrigger(0);
+      expect(contentAt(el, 1).hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('the tablist keeps a resting tab stop when the selected step has no trigger', async () => {
+      const { el } = await withHiddenMiddleTrigger(1);
+      expect(triggerAt(el, 0).getAttribute('tabindex')).toBe('0');
+      expect(triggerAt(el, 2).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('the selected step past a hidden trigger owns the only tab stop', async () => {
+      const { el } = await withHiddenMiddleTrigger(2);
+      expect(triggerAt(el, 2).getAttribute('tabindex')).toBe('0');
+      expect(triggerAt(el, 0).getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('zoneless: the tab stop follows the selected step across a hidden trigger', async () => {
+      const { el, instance, fixture, flush } = await withHiddenMiddleTrigger(2);
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      await flush();
+      expect(triggerAt(el, 0).getAttribute('tabindex')).toBe('0');
+      expect(triggerAt(el, 2).getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
+  describe('explicit [step] panel pairing (#1430)', () => {
+    const mount = async (configure: (i: ExplicitStepPanelHost) => void) => {
+      const r = renderHost(ExplicitStepPanelHost);
+      configure(r.instance);
+      r.fixture.detectChanges();
+      await r.flush();
+      return r;
+    };
+
+    it('trigger aria-controls resolves to its own panel when an earlier panel is absent', async () => {
+      const { el } = await mount((i) => {
+        i.hideMiddlePanel.set(true);
+        i.selectedIndex.set(2);
+      });
+      expect(triggerAt(el, 2).getAttribute('aria-controls')).toBe(contentAt(el, 2).id);
+    });
+
+    it('trigger of the absent-panel step emits no aria-controls instead of a wrong panel id', async () => {
+      const { el } = await mount((i) => {
+        i.hideMiddlePanel.set(true);
+        i.selectedIndex.set(1);
+      });
+      expect(triggerAt(el, 1).hasAttribute('aria-controls')).toBe(false);
+    });
+
+    it('panels declared in reverse DOM order still pair with their own step', async () => {
+      @Component({
+        imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+        template: `
+          <div forStepper [(selectedIndex)]="selectedIndex">
+            <ol forStepperList>
+              @for (s of steps(); track $index) {
+                <li forStepperItem>
+                  <button type="button" forStepperTrigger [attr.data-trigger]="$index">
+                    {{ s }}
+                  </button>
+                </li>
+              }
+            </ol>
+            <section forStepperContent [step]="2" data-content="2">C</section>
+            <section forStepperContent [step]="1" data-content="1">B</section>
+            <section forStepperContent [step]="0" data-content="0">A</section>
+          </div>
+        `,
+      })
+      class ReversedPanelHost {
+        readonly selectedIndex = signal(0);
+        readonly steps = signal(['A', 'B', 'C']);
+      }
+
+      const { el, instance, fixture, flush } = renderHost(ReversedPanelHost);
+      await flush();
+      expect(triggerAt(el, 0).getAttribute('aria-controls')).toBe(contentAt(el, 0).id);
+      expect(contentAt(el, 2).getAttribute('aria-labelledby')).toBe(triggerAt(el, 2).id);
+      expect(contentAt(el, 0).getAttribute('data-state')).toBe('active');
+      expect(contentAt(el, 2).getAttribute('data-state')).toBe('inactive');
+
+      instance.selectedIndex.set(2);
+      fixture.detectChanges();
+      await flush();
+      expect(triggerAt(el, 2).getAttribute('aria-controls')).toBe(contentAt(el, 2).id);
+      expect(contentAt(el, 2).getAttribute('data-state')).toBe('active');
+      expect(contentAt(el, 0).getAttribute('data-state')).toBe('inactive');
+    });
+
+    it('zoneless: a lone mounted panel is active for its own step, not for position 0', async () => {
+      const { el, instance, fixture, flush } = await mount((i) => {
+        i.onlyCurrentPanel.set(true);
+        i.selectedIndex.set(2);
+      });
+      const panel = contentAt(el, 2);
+      expect(panel.getAttribute('data-state')).toBe('active');
+      expect(panel.hasAttribute('inert')).toBe(false);
+      expect(panel.hasAttribute('aria-hidden')).toBe(false);
+      expect(panel.getAttribute('aria-labelledby')).toBe(triggerAt(el, 2).id);
+
+      instance.selectedIndex.set(1);
+      fixture.detectChanges();
+      await flush();
+      const next = contentAt(el, 1);
+      expect(next.getAttribute('data-state')).toBe('active');
+      expect(next.hasAttribute('inert')).toBe(false);
+      expect(next.getAttribute('aria-labelledby')).toBe(triggerAt(el, 1).id);
+    });
+
+    it('unset [step] keeps the positional pairing', async () => {
+      const { el } = await mount((i) => i.explicitStep.set(false));
+      expect(triggerAt(el, 0).getAttribute('aria-controls')).toBe(contentAt(el, 0).id);
+      expect(contentAt(el, 1).getAttribute('aria-labelledby')).toBe(triggerAt(el, 1).id);
     });
   });
 
