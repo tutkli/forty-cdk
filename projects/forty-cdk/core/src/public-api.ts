@@ -414,6 +414,7 @@ export {
 export {
   attachSwipeDismiss,
   FLICK_STALE_VELOCITY_MS,
+  FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
   type SwipeDirection,
   type SwipeDismissOptions,

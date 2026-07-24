@@ -19,10 +19,9 @@ import {
   injectPrefersReducedMotion,
   flickVelocity,
   FLICK_STALE_VELOCITY_MS,
+  FLICK_VELOCITY_PX_PER_MS,
 } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
-
-const FLICK_VELOCITY_PX_PER_MS = 0.4;
 
 /**
  * Opt-in pointer drag / swipe directive for the Carousel viewport. Apply on the

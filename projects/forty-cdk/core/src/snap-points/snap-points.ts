@@ -1,3 +1,5 @@
+import { FLICK_VELOCITY_PX_PER_MS } from '../swipe-dismiss/swipe-dismiss';
+
 /**
  * Resolved snap target. The caller decides what to do with it: either close
  * the drawer (`willClose: true`) or transition to `nextSnapPoint` and update
@@ -33,8 +35,8 @@ export interface ResolveSnapTargetOptions<S> {
   /**
    * Pointer velocity at release in CSS pixels per millisecond, signed so
    * positive == moving away from the anchored edge (i.e. toward larger
-   * `position`). The threshold for "fast flick" is hard-coded to
-   * `0.4` px/ms inside the helper.
+   * `position`). The threshold for "fast flick" is the library-wide
+   * {@link FLICK_VELOCITY_PX_PER_MS}.
    */
   readonly velocity: number;
   /**
@@ -48,8 +50,6 @@ export interface ResolveSnapTargetOptions<S> {
   readonly closeThreshold: number;
 }
 
-const VELOCITY_THRESHOLD_PX_PER_MS = 0.4;
-
 /**
  * Pure function that picks the snap target for a release gesture, combining
  * the final pointer position with the gesture velocity. Pulled into
@@ -59,7 +59,7 @@ const VELOCITY_THRESHOLD_PX_PER_MS = 0.4;
  * Algorithm:
  *
  *   1. Pick the snap point with `snapPositions[i]` closest to `position`.
- *   2. If the velocity is fast enough (`|velocity| >= 0.4 px/ms`), bias one
+ *   2. If the velocity is fast enough (`|velocity| >= FLICK_VELOCITY_PX_PER_MS`), bias one
  *      step in the velocity direction. Negative velocity = toward edge,
  *      positive = away from edge. Clamped at the array bounds.
  *   3. If the chosen target is the closest-to-edge snap point AND the gesture
@@ -111,7 +111,7 @@ export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapRes
   const anchorIdx = activeIdx >= 0 ? activeIdx : closestIdx;
 
   let targetIdx = closestIdx;
-  if (Math.abs(velocity) >= VELOCITY_THRESHOLD_PX_PER_MS) {
+  if (Math.abs(velocity) >= FLICK_VELOCITY_PX_PER_MS) {
     if (velocity < 0) {
       // Fast move toward edge — bias one snap closer.
       targetIdx = Math.max(0, anchorIdx - 1);
