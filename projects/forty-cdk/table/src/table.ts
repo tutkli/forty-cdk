@@ -73,7 +73,8 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
     '[style.--for-table-header-height.px]': 'headerSize()?.height ?? null',
     '[attr.aria-rowcount]': 'rowCountAttr()',
     '[attr.aria-colcount]': 'colCountAttr()',
-    '[attr.aria-multiselectable]': 'selectionMode() === "multiple" ? "true" : null',
+    '[attr.aria-multiselectable]':
+      'mode() !== "table" && selectionMode() === "multiple" ? "true" : null',
   },
   providers: [{ provide: FOR_TABLE_CONTEXT, useExisting: ForTable }],
 })

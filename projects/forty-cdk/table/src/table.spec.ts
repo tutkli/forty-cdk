@@ -2022,6 +2022,67 @@ describe('ForTable', () => {
       }
     });
 
+    it('mode="table" never emits aria-multiselectable on role="table", even with selectionMode="multiple" (#1426)', () => {
+      const { el } = renderHost(TableModeSelectionHost);
+      const root = rootEl(el);
+      expect(root.getAttribute('role')).toBe('table');
+      expect(root.hasAttribute('aria-multiselectable')).toBe(false);
+    });
+
+    it('grid / treegrid modes emit aria-multiselectable="true" in multiple mode (#1426)', async () => {
+      @Component({
+        imports: [ForTable, ForTableRow, ForTableCell],
+        template: `
+          <div forTable [mode]="mode()" selectionMode="multiple">
+            <div role="rowgroup">
+              <div forTableRow [value]="1">
+                <div forTableCell name="a">Ada</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class MultiselectableModeHost {
+        readonly mode = signal<TableMode>('grid');
+      }
+
+      const { el, instance, flush } = renderHost(MultiselectableModeHost);
+      expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
+
+      instance.mode.set('treegrid');
+      await flush();
+      expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
+    });
+
+    it('reactively drops/re-adds aria-multiselectable when mode toggles between grid and table (zoneless) (#1426)', async () => {
+      @Component({
+        imports: [ForTable, ForTableRow, ForTableCell],
+        template: `
+          <div forTable [mode]="mode()" selectionMode="multiple">
+            <div role="rowgroup">
+              <div forTableRow [value]="1">
+                <div forTableCell name="a">Ada</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class MultiselectableToggleHost {
+        readonly mode = signal<TableMode>('grid');
+      }
+
+      const { el, instance, flush } = renderHost(MultiselectableToggleHost);
+      expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
+
+      instance.mode.set('table');
+      await flush();
+      expect(rootEl(el).hasAttribute('aria-multiselectable')).toBe(false);
+
+      instance.mode.set('grid');
+      await flush();
+      expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
+    });
+
     it('selection-enabled: a row without [value] emits no aria-selected, a valued row keeps "false"', () => {
       @Component({
         imports: [ForTable, ForTableRow, ForTableCell],
