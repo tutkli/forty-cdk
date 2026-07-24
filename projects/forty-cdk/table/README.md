@@ -827,7 +827,7 @@ Add `selectionMode` to `[forTable]` to enable row selection. Use `[forTableRowSe
 
 - `'none'` (default) — selection is disabled. No `aria-selected` or `aria-multiselectable` is emitted.
 - `'single'` — at most one row can be selected. Selectable rows emit `aria-selected="true"` or `"false"`.
-- `'multiple'` — any number of rows can be selected. The root emits `aria-multiselectable="true"`.
+- `'multiple'` — any number of rows can be selected. In `grid` / `treegrid` mode the root emits `aria-multiselectable="true"`; in `table` mode it is never emitted (WAI-ARIA does not permit `aria-multiselectable` on `role="table"`).
 
 Only rows carrying a `[value]` are selectable and emit `aria-selected`. A row without a `[value]` (e.g. a full-span variant row — group header, separator, summary) is non-selectable by contract and emits no `aria-selected`, even when `selectionMode` is not `'none'`.
 
@@ -1492,7 +1492,7 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 | `aria-colindex`                | header / data cell                              | 1-based column index within the row. Absent in table mode.                                                                                          |
 | `aria-selected`                | `[forTableRow]`                                 | `"true"` / `"false"` (always-emit) on selectable rows (with a `[value]`) when `selectionMode` is not `'none'`; absent on rows without a `[value]`.  |
 | `data-selected`                | `[forTableRow]`                                 | Present (`""`) when selected; absent when not. Boolean present/absent hook.                                                                         |
-| `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"`; absent otherwise.                                                                                         |
+| `aria-multiselectable`         | `[forTable]`                                    | `"true"` when `selectionMode="multiple"` in `grid` / `treegrid` mode; absent otherwise (including `table` mode, where `role="table"` forbids it).   |
 | `aria-checked`                 | `[forTableRowSelector]`                         | `"true"` / `"false"` (always-emit) reflecting the row's selection. The selector is `role="checkbox"`; the enclosing row still owns `aria-selected`. |
 | `tabindex`                     | `[forTableRowSelector]`                         | `"0"` in table mode (focusable keyboard selection path); `"-1"` in grid / treegrid mode (yields to the roving grid).                                |
 | `data-state`                   | `[forTableRowSelector]`                         | `"checked"` or `"unchecked"`. Styling hook alongside `aria-checked`.                                                                                |
@@ -1512,7 +1512,7 @@ Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 - **`mode="table"`** sets `role="table"` with semantic `role="columnheader"` / `role="cell"` cells. Screen readers announce row and column counts from native semantics.
 - **`mode="grid"`** sets `role="grid"` with `role="gridcell"` cells. The root emits `aria-rowcount` / `aria-colcount`; the header row and every data row emit `aria-rowindex` (the header row is `1`, so data rows start at `2` and `aria-rowcount` counts the header); header and data cells emit `aria-colindex`. Header and body share one composite roving tab stop; `PageUp` / `PageDown` page by rows, and `Enter` / `F2` enter an interactive cell's widget (`Escape` exits). Override `[rowCount]` / `[colCount]` for server-paged or virtualized datasets so screen readers announce correct totals.
 - **`mode="treegrid"`** sets `role="treegrid"`. Expandable rows emit `aria-expanded="true"|"false"` and `aria-level` / `aria-posinset` / `aria-setsize`; leaf rows emit none of these, matching APG "end nodes lack `aria-expanded`".
-- **Row selection** (`selectionMode` not `'none'`): each selectable row (one with a `[value]`) emits `aria-selected="true"|"false"`; rows without a `[value]` (full-span variant rows) are non-selectable and emit no `aria-selected`; `'multiple'` mode adds `aria-multiselectable="true"` on the root. `[forTableSelectAll]` emits `aria-checked` in tri-state.
+- **Row selection** (`selectionMode` not `'none'`): each selectable row (one with a `[value]`) emits `aria-selected="true"|"false"`; rows without a `[value]` (full-span variant rows) are non-selectable and emit no `aria-selected`; in `grid` / `treegrid` mode `'multiple'` adds `aria-multiselectable="true"` on the root (never in `table` mode, where `role="table"` forbids it). `[forTableSelectAll]` emits `aria-checked` in tri-state.
 - **Sortable headers** emit `aria-sort="ascending"|"descending"` while sorted; the attribute is absent (not `"none"`) when unsorted, per APG.
 - **Column resizers** must be focusable elements with an `aria-label` naming the column — e.g. `aria-label="Resize Name column"`.
 - **Disabled cells** use `aria-disabled="true"` + `data-disabled`; they are skipped during grid navigation but remain focusable, consistent with the APG disabled pattern.
