@@ -161,6 +161,15 @@ export class ForCombobox<T = string>
    * input gets inline-completed with the first match. Renamed from
    * `autocomplete` so consumers don't conflate it with the native HTML
    * `autocomplete` attribute (which the directive forces to `"off"`).
+   *
+   * Pure `'inline'` never opens the popup (per APG), so in the default
+   * `@if (open())` anatomy no `[forComboboxOption]` renders and the label
+   * cache starts cold — a first keystroke into a never-opened inline combobox
+   * completes against nothing. Inline completion only works once the options
+   * have rendered at least once (the user opened the popup via ArrowDown /
+   * `openOnFocus`, warming the cache). Prefer `'both'` when a popup is
+   * acceptable, or keep the options mounted, if completion must work from the
+   * very first keystroke.
    */
   readonly autocompleteMode = input<ForComboboxAutocomplete>('list');
 
@@ -415,6 +424,7 @@ export class ForCombobox<T = string>
   readonly #labelCache = new OptionLabelCache<T>({
     items: this.#items.items,
     totalCount: this.totalCount,
+    itemToFormValue: this.itemToFormValue,
   });
 
   /**
@@ -579,9 +589,6 @@ export class ForCombobox<T = string>
   }
   unregisterOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.unregister(handle);
-    if (this.#activeId() === handle.id()) {
-      this.#activeId.set(null);
-    }
   }
 
   registerChip(handle: ForComboboxChipHandle<T>): void {
@@ -599,29 +606,44 @@ export class ForCombobox<T = string>
   }
 
   moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void {
-    const enabled = this.#actions.items().filter((a) => !a.disabled());
-    if (enabled.length === 0) {
+    const all = this.#actions.items();
+    const inputEl = this.input();
+    const stops: { key: number; focus: () => void }[] = [];
+    if (inputEl) {
+      stops.push({ key: -1, focus: () => inputEl.focus() });
+    }
+    for (let i = 0; i < all.length; i++) {
+      const a = all[i]!;
+      if (!a.disabled()) {
+        stops.push({ key: i, focus: () => a.host.focus() });
+      }
+    }
+    if (stops.length === 0) {
       return;
     }
-    const ringLength = enabled.length + 1;
-    let current: number;
+    let sourceKey: number;
     if (fromActionId === null) {
-      current = 0;
+      sourceKey = -1;
     } else {
-      const idx = enabled.findIndex((a) => a.id() === fromActionId);
-      current = idx === -1 ? 0 : idx + 1;
+      const idx = all.findIndex((a) => a.id() === fromActionId);
+      sourceKey = idx === -1 ? -1 : idx;
     }
-    const delta = direction === 'next' ? 1 : -1;
-    const next = (current + delta + ringLength) % ringLength;
-    if (next === 0) {
-      this.input()?.focus();
-    } else {
-      enabled[next - 1]!.host.focus();
-    }
+    const target =
+      direction === 'next'
+        ? (stops.find((s) => s.key > sourceKey) ?? stops[0]!)
+        : ([...stops].reverse().find((s) => s.key < sourceKey) ?? stops[stops.length - 1]!);
+    target.focus();
   }
 
   isSelected(v: T): boolean {
     return isInArray(this.value(), v, this.isItemEqualToValue());
+  }
+
+  #setSingle(v: T): void {
+    if (this.value().length === 1 && this.isSelected(v)) {
+      return;
+    }
+    this.value.set([v]);
   }
 
   isActive(id: string): boolean {
@@ -649,7 +671,7 @@ export class ForCombobox<T = string>
       return;
     }
     // Single mode: replace + close + commit label.
-    this.value.set([v]);
+    this.#setSingle(v);
     if (this.commitOnSelect() && this.trigger() === null) {
       this.query.set(handle.label());
       this.#syncInputValue(handle.label());
@@ -799,7 +821,7 @@ export class ForCombobox<T = string>
   }
 
   readonly #inlineCompletionOptionsMemo = computed<
-    readonly { id: string; value: T; label: string }[]
+    readonly { id: string; value: T; label: string; disabled: boolean }[]
   >(() => {
     if (this.totalCount() === undefined) {
       return this.#labelCache.liveEntries();
@@ -807,7 +829,7 @@ export class ForCombobox<T = string>
     return this.#labelCache.mergedEntries(this.#requireNavigator().snapshotByPos());
   });
 
-  inlineCompletionOptions(): readonly { id: string; value: T; label: string }[] {
+  inlineCompletionOptions(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
     return this.#inlineCompletionOptionsMemo();
   }
 

@@ -1,4 +1,4 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { Directive, effect, ElementRef, inject, isDevMode } from '@angular/core';
 
 import { registerHandle, injectOverlayShell, type OverlayShellConfig } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
@@ -77,7 +77,25 @@ export class ForComboboxContent {
     // that gates this content, so it has already registered by the time the
     // surface mounts. Without a trigger (editable anatomy) the bundles are
     // omitted entirely and focus stays in the input — byte-for-byte unchanged.
+    // That assumption is dev-verified: a trigger that registers late (after this
+    // content was constructed) trips a dev-mode `console.warn`.
     const hasTrigger = ctx.trigger() !== null;
+
+    if (isDevMode() && !hasTrigger) {
+      let warned = false;
+      effect(() => {
+        if (!warned && ctx.trigger() !== null) {
+          warned = true;
+          console.warn(
+            '[forty-cdk/combobox] [forComboboxTrigger] registered after [forComboboxContent] was constructed, ' +
+              'so the picker focus behavior was not wired for this content: focus will not move into ' +
+              '[forComboboxInput] on open, will not return to the trigger on close, and (autoFocusOnOpen) / ' +
+              '(autoFocusOnClose) will not fire. Declare [forComboboxTrigger] before (and outside) the ' +
+              '@if (open()) block that gates [forComboboxContent] so it registers first.',
+          );
+        }
+      });
+    }
 
     const config: OverlayShellConfig = {
       positioner: {
@@ -142,9 +160,16 @@ export class ForComboboxContent {
               enabled: ctx.returnFocus,
               target: () => ctx.trigger(),
               veto: () => ctx.emitAutoFocusOnClose(),
-              // Tab already advanced focus past the closing surface; re-focusing
-              // the trigger would steal it back.
-              skip: () => ctx.lastCloseReason() === 'tab',
+              // On Tab and on outside dismissal (pointer-down-outside /
+              // focus-outside) focus already landed where the user tabbed or
+              // clicked; re-focusing the trigger would steal it back (native
+              // <select> parity, mirroring popover #1310).
+              skip: () => {
+                const reason = ctx.lastCloseReason();
+                return (
+                  reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside'
+                );
+              },
             },
           }
         : {}),

@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import {
+  clickOutside,
   el,
   expectFocused,
   gotoFixture,
@@ -225,6 +226,16 @@ test.describe('Combobox', () => {
       await expect(el(page, 'content')).toHaveCount(0);
       await expectFocused(el(page, 'after'));
     });
+
+    test('clicking an outside input does not steal focus back to the trigger', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { picker: '1' });
+      await el(page, 'trigger').click();
+      await expectFocused(el(page, 'combo-input'));
+
+      await el(page, 'after').click();
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'after'));
+    });
   });
 
   // #1325 — a pinned, non-selecting `[forComboboxAction]` reachable by Tab
@@ -321,6 +332,82 @@ test.describe('Combobox', () => {
       await el(page, 'after').click();
       await expect(el(page, 'content')).toHaveCount(0);
     });
+
+    // #1389 item 9, CLAIM 1: an action kept mounted while the popup is closed
+    // must let native Tab move focus out — the Tab handler is gated on open().
+    test('Tab from a mounted-but-closed action lets focus leave the popup', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { actionMounted: '1', open: '1' });
+      await el(page, 'combo-input').click();
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      await clickOutside(page);
+
+      await el(page, 'action').press('Tab');
+      await expect(el(page, 'content').locator('*:focus')).toHaveCount(0);
+    });
+
+    // #1389 item 9, CLAIM 2: a disabled action still traps Tab (its handler runs
+    // despite its own disabled state) and the ring steps to the nearest enabled
+    // neighbor resolved against the full action collection.
+    test('Shift+Tab from a disabled-while-focused action lands on the previous enabled action', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', {
+        action: '1',
+        action2: '1',
+        action2disabled: '1',
+        open: '1',
+      });
+      await el(page, 'action2').focus();
+
+      await el(page, 'action2').press('Shift+Tab');
+
+      await expectFocused(el(page, 'action'));
+    });
+
+    test('Tab from a disabled-while-focused action wraps to the input', async ({ page }) => {
+      await gotoFixture(page, 'combobox', {
+        action: '1',
+        action2: '1',
+        action2disabled: '1',
+        open: '1',
+      });
+      await el(page, 'action2').focus();
+
+      await el(page, 'action2').press('Tab');
+
+      await expectFocused(el(page, 'combo-input'));
+    });
+
+    test('Tab steps through the input and both enabled actions in DOM order', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { action: '1', action2: '1', open: '1' });
+      await el(page, 'combo-input').click();
+
+      await el(page, 'combo-input').press('Tab');
+      await expectFocused(el(page, 'action'));
+
+      await el(page, 'action').press('Tab');
+      await expectFocused(el(page, 'action2'));
+
+      await el(page, 'action2').press('Tab');
+      await expectFocused(el(page, 'combo-input'));
+    });
+
+    // #1389 item 9, CLAIM 3: with no `[forComboboxInput]` the ring drops the
+    // input slot and cycles among the enabled actions instead of stranding.
+    test('with no input the ring cycles among the actions', async ({ page }) => {
+      await gotoFixture(page, 'combobox', { noinput: '1' });
+      await el(page, 'trigger').click();
+      await expect(el(page, 'content')).toBeVisible();
+
+      await el(page, 'action').focus();
+      await el(page, 'action').press('Tab');
+      await expectFocused(el(page, 'action2'));
+
+      await el(page, 'action2').press('Tab');
+      await expectFocused(el(page, 'action'));
+    });
   });
 
   test.describe('editable multi-select (chips)', () => {
@@ -343,6 +430,23 @@ test.describe('Combobox', () => {
 
       await el(page, 'after').click();
       await expect(el(page, 'content')).toHaveCount(0);
+    });
+
+    // #1389 item 12: Escape on a focused chip closes the open popup (routed
+    // through the vetoable close path) and returns focus to the input.
+    test('Escape on a focused chip closes the open popup and refocuses the input', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { multi: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+
+      await el(page, 'chip-apple').focus();
+      await expectFocused(el(page, 'chip-apple'));
+
+      await el(page, 'chip-apple').press('Escape');
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(el(page, 'combo-input'));
     });
   });
 });

@@ -8,13 +8,21 @@ import { injectComboboxContext } from './combobox-context';
  * keep it inline in the template — no `@if` needed. Visibility is enforced
  * with an inline `display: none` (which beats any author `display` rule a
  * consumer applies via a class) in addition to the `hidden` attribute that
- * removes it from the a11y tree:
+ * removes it from the a11y tree.
+ *
+ * Place it inside `[forComboboxContent]` but **outside** the
+ * `[forComboboxList]` that owns the options: content carries `role="listbox"`
+ * in the editable anatomy, so wrapping the options in a `[forComboboxList]`
+ * keeps this `role="status"` region a sibling of the listbox rather than an
+ * invalid listbox child.
  *
  * ```html
  * <div forComboboxContent>
- *   @for (option of filtered(); track option.id) {
- *     <div forComboboxOption [value]="option.id">{{ option.label }}</div>
- *   }
+ *   <div forComboboxList>
+ *     @for (option of filtered(); track option.id) {
+ *       <div forComboboxOption [value]="option.id">{{ option.label }}</div>
+ *     }
+ *   </div>
  *   <div forComboboxEmpty>No matches.</div>
  * </div>
  * ```

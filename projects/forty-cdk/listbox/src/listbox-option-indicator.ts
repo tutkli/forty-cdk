@@ -15,6 +15,7 @@ import { FOR_LISTBOX_OPTION, type ForListboxOption } from './listbox-option';
   selector: '[forListboxOptionIndicator]',
   exportAs: 'forListboxOptionIndicator',
   host: {
+    'aria-hidden': 'true',
     '[attr.data-state]': 'parent.selected() ? "checked" : "unchecked"',
     '[attr.hidden]': 'parent.selected() ? null : ""',
     '[style.display]': 'parent.selected() ? null : "none"',

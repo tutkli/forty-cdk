@@ -191,10 +191,15 @@ export class ForSelectContent {
         target: () => ctx.overlay.trigger(),
         // `(autoFocusOnClose)` lets the consumer veto the return-focus.
         veto: () => ctx.overlay.emitAutoFocusOnClose(),
-        // Skip on `'tab'` closes — Tab already moved focus to the trigger
-        // and let the browser advance from there; re-focusing would steal
-        // it back.
-        skip: () => ctx.overlay.lastCloseReason() === 'tab',
+        // Skip on `'tab'` and on outside dismissal (pointer-down-outside /
+        // focus-outside): focus already landed where the user tabbed or clicked,
+        // so re-focusing the trigger would steal it back (native <select>
+        // parity, mirroring popover #1310). 'select' / 'escape' / 'programmatic'
+        // still return focus to the trigger.
+        skip: () => {
+          const reason = ctx.overlay.lastCloseReason();
+          return reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside';
+        },
       },
     });
   }

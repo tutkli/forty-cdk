@@ -6,24 +6,27 @@ import type { ForComboboxOptionHandle } from './combobox-context';
 /**
  * Plain entry in the label cache / position-keyed map. Mirrors what inline
  * autocomplete and the chip / `selected` fallback paths need: a stable id, the
- * underlying value, and the resolved label string.
+ * underlying value, the resolved label string, and the `disabled` flag so
+ * inline autocomplete can skip disabled options scrolled out of view.
  */
 export interface SnapshotEntry<T> {
   readonly id: string;
   readonly value: T;
   readonly label: string;
+  readonly disabled: boolean;
 }
 
 /**
  * Fold accumulator: the accumulated entries (persisted across close / open for
- * the `selected` fallback) plus the set of ids that were live in the most
- * recent non-empty window. `liveIds` is what lets {@link OptionLabelCache.liveEntries}
- * drop options the consumer removed from the source without disturbing the
- * accumulated snapshot the chip / `selected` fallback relies on.
+ * the `selected` fallback) plus the set of serialized values that were live in
+ * the most recent non-empty window. `liveKeys` is what lets
+ * {@link OptionLabelCache.liveEntries} drop options the consumer removed from
+ * the source without disturbing the accumulated snapshot the chip / `selected`
+ * fallback relies on.
  */
 interface LabelCacheState<T> {
   readonly entries: readonly SnapshotEntry<T>[];
-  readonly liveIds: ReadonlySet<string>;
+  readonly liveKeys: ReadonlySet<string>;
 }
 
 /**
@@ -52,27 +55,31 @@ interface LabelCacheState<T> {
  */
 export class OptionLabelCache<T> {
   readonly #state: Signal<LabelCacheState<T>>;
+  readonly #itemToFormValue: Signal<(item: T) => string>;
 
   constructor(deps: {
     readonly items: Signal<readonly ForComboboxOptionHandle<T>[]>;
     readonly totalCount: Signal<number | undefined>;
+    readonly itemToFormValue: Signal<(item: T) => string>;
   }) {
+    this.#itemToFormValue = deps.itemToFormValue;
     this.#state = foldSnapshotOnTotalCountTransition<
       ForComboboxOptionHandle<T>,
       LabelCacheState<T>
     >(
       deps.items,
       deps.totalCount,
-      () => ({ entries: [], liveIds: new Set<string>() }),
+      () => ({ entries: [], liveKeys: new Set<string>() }),
       (prev, items) => {
         if (items.length === 0) {
           return prev;
         }
+        const toFormValue = deps.itemToFormValue();
         const merged = new Map<string, SnapshotEntry<T>>();
         for (const entry of prev.entries) {
-          merged.set(entry.id, entry);
+          merged.set(toFormValue(entry.value), entry);
         }
-        const liveIds = new Set<string>();
+        const liveKeys = new Set<string>();
         for (const item of items) {
           // A static option (rendered outside `@for`) registers before its
           // `[value]` binding is written; skip it this fold and pick it up on
@@ -81,14 +88,16 @@ export class OptionLabelCache<T> {
             id: item.id(),
             value: item.value(),
             label: item.label(),
+            disabled: item.disabled(),
           }));
           if (entry === null) {
             continue;
           }
-          merged.set(entry.id, entry);
-          liveIds.add(entry.id);
+          const key = toFormValue(entry.value);
+          merged.set(key, entry);
+          liveKeys.add(key);
         }
-        return { entries: [...merged.values()], liveIds };
+        return { entries: [...merged.values()], liveKeys };
       },
       { deferOnTotalTransition: true },
     );
@@ -101,7 +110,7 @@ export class OptionLabelCache<T> {
    * pulls it in non-virtualized usage), and persistence across close → re-open
    * would start from an empty `prev`. Priming on every live window is also what
    * keeps {@link liveEntries} purge-aware: a removed option is dropped from
-   * `liveIds` on the fold that runs while the shrunken window is mounted.
+   * `liveKeys` on the fold that runs while the shrunken window is mounted.
    */
   prime(): void {
     this.#state();
@@ -125,8 +134,9 @@ export class OptionLabelCache<T> {
    * `selected` fallback.
    */
   liveEntries(): readonly SnapshotEntry<T>[] {
-    const { entries, liveIds } = this.#state();
-    return entries.filter((entry) => liveIds.has(entry.id));
+    const { entries, liveKeys } = this.#state();
+    const toFormValue = this.#itemToFormValue();
+    return entries.filter((entry) => liveKeys.has(toFormValue(entry.value)));
   }
 
   /**
@@ -142,15 +152,21 @@ export class OptionLabelCache<T> {
     if (indexed.size === 0) {
       return accumulated;
     }
-    const seen = new Set(accumulated.map((o) => o.id));
+    const toFormValue = this.#itemToFormValue();
+    const seen = new Set(accumulated.map((o) => toFormValue(o.value)));
     const merged: SnapshotEntry<T>[] = [...accumulated];
     const positions = [...indexed.keys()].sort((a, b) => a - b);
     for (const pos of positions) {
       const entry = indexed.get(pos)!;
-      if (seen.has(entry.id)) {
+      if (seen.has(toFormValue(entry.value))) {
         continue;
       }
-      merged.push({ id: entry.id, value: entry.value, label: entry.label });
+      merged.push({
+        id: entry.id,
+        value: entry.value,
+        label: entry.label,
+        disabled: entry.disabled,
+      });
     }
     return merged;
   }

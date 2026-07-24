@@ -29,7 +29,11 @@ export type ForComboboxCloseReason =
  * - `'list'`: the listbox shows filtered options; the input value reflects
  *   the user's typed query verbatim.
  * - `'inline'`: the rest of the first matching option is auto-completed
- *   into the input as selected text; the listbox does not auto-open.
+ *   into the input as selected text; the listbox does not auto-open. Because
+ *   the popup never opens, the default `@if (open())` anatomy renders no
+ *   options and the label cache stays cold — inline completion only kicks in
+ *   after the options have rendered once (the popup was opened some other way,
+ *   e.g. ArrowDown / `openOnFocus`). Use `'both'` when a popup is acceptable.
  * - `'both'`: combines `'list'` and `'inline'` — listbox opens with the
  *   filtered options *and* the first match auto-completes inline.
  */
@@ -241,8 +245,13 @@ export interface ForComboboxContext<T = unknown> {
    * focus cycles among the input and the pinned actions without ever leaving
    * (or dismissing) the open popup — Escape / outside-pointer remain the way
    * out. `fromActionId === null` means the move originates from the input; pass
-   * the action's own id when moving from an action. No-op when no action is
-   * enabled.
+   * the action's own id when moving from an action. A stale or disabled
+   * `fromActionId` (e.g. an action disabled while it held focus) is resolved
+   * against the full action collection, stepping to the nearest enabled
+   * neighbor in the requested direction rather than snapping to the input. The
+   * ring omits the input slot when no `[forComboboxInput]` is registered, so
+   * focus cycles among the enabled actions instead of stranding. No-op when no
+   * action is enabled.
    */
   moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void;
 
@@ -285,9 +294,10 @@ export interface ForComboboxContext<T = unknown> {
    * input directive. Non-virtualized: a purge-aware, live-only projection so an
    * option removed from the source stops being offered as a completion.
    * Virtualized: the full merged snapshot, so completion still matches options
-   * scrolled out of view.
+   * scrolled out of view. Entries carry `disabled` so completion skips disabled
+   * options.
    */
-  inlineCompletionOptions(): readonly { id: string; value: T; label: string }[];
+  inlineCompletionOptions(): readonly { id: string; value: T; label: string; disabled: boolean }[];
 
   /**
    * Total number of options in the consumer's source array. Used for

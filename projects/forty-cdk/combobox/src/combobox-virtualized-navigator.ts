@@ -5,14 +5,6 @@ import type { ForComboboxOptionHandle } from './combobox-context';
 import type { SnapshotEntry } from './combobox-label-cache';
 
 /**
- * Position-keyed entry. Adds the `disabled` flag so virtualized navigation can
- * skip over off-window disabled options.
- */
-export interface IndexedSnapshotEntry<T> extends SnapshotEntry<T> {
-  readonly disabled: boolean;
-}
-
-/**
  * Dependencies for `VirtualizedNavigator`. Wires the helper to the host
  * directive's signal graph + a small set of imperative callbacks. The host is
  * the only owner of the activedescendant, so the helper reads / writes it
@@ -61,7 +53,7 @@ export interface VirtualizedNavigatorDeps<T> {
 export class VirtualizedNavigator<T> {
   readonly #deps: VirtualizedNavigatorDeps<T>;
 
-  readonly #core: VirtualizedNavigatorCore<ForComboboxOptionHandle<T>, IndexedSnapshotEntry<T>>;
+  readonly #core: VirtualizedNavigatorCore<ForComboboxOptionHandle<T>, SnapshotEntry<T>>;
 
   constructor(deps: VirtualizedNavigatorDeps<T>) {
     this.#deps = deps;
@@ -93,7 +85,7 @@ export class VirtualizedNavigator<T> {
    * Position-keyed snapshot for `ForCombobox.selected`'s scrolled-out-of-view
    * fallback and for the merged-label lookup. Read-only for callers.
    */
-  snapshotByPos(): ReadonlyMap<number, IndexedSnapshotEntry<T>> {
+  snapshotByPos(): ReadonlyMap<number, SnapshotEntry<T>> {
     return this.#core.snapshotByPos();
   }
 

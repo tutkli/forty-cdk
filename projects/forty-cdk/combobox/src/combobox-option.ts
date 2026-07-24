@@ -8,7 +8,7 @@ import {
   input,
 } from '@angular/core';
 
-import { registerHandle, hostId } from 'forty-cdk/core';
+import { accessibleTextContent, registerHandle, hostId } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -138,7 +138,7 @@ export class ForComboboxOption<T = string> {
       // String mode: the trimmed `textContent` is the canonical fallback,
       // identical to the pre-generic behaviour. Lets consumers omit
       // `[label]` and have it just work for projected text.
-      return (this.#host.nativeElement.textContent ?? '').trim();
+      return accessibleTextContent(this.#host.nativeElement).trim();
     }
     // Object mode: lean on the parent's `itemToStringLabel` so the
     // resolved label is consistent with chip rendering and `commitOnSelect`.

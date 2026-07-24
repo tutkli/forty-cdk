@@ -379,18 +379,19 @@ For selects with thousands of options, bind `[totalCount]` to enable the **virtu
 
 ### Inputs and output
 
-| Binding                | Type                        | Description                                                                                                 |
-| ---------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option. |
-| `[visibleRange]`       | `readonly [number, number]` | Inclusive-exclusive rendered window provided by `injectVirtualizer`'s `.range()`.                           |
-| `(scrollToIndex)`      | `number`                    | Emitted when navigation reaches an off-screen option. Pass to `injectVirtualizer`'s `scrollToIndex()`.      |
-| `[posInSet]` on option | `number`                    | Zero-based absolute index of the option in the full source. Required per option in the virtualized path.    |
+| Binding                | Type                        | Description                                                                                                                                                                                                                      |
+| ---------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[totalCount]`         | `number`                    | Full source length. Switches to the virtualized path and populates `aria-setsize` on every rendered option.                                                                                                                      |
+| `[visibleRange]`       | `readonly [number, number]` | Inclusive-exclusive rendered window provided by `injectVirtualizer`'s `.range()`.                                                                                                                                                |
+| `[selectedIndex]`      | `number`                    | Absolute index of the committed option in the full source. Consulted on open to scroll an off-window, never-rendered selection into view. Bind from your value→index lookup. Reveal hint only — `[(value)]` stays authoritative. |
+| `(scrollToIndex)`      | `number`                    | Emitted when navigation reaches an off-screen option. Pass to `injectVirtualizer`'s `scrollToIndex()`.                                                                                                                           |
+| `[posInSet]` on option | `number`                    | Zero-based absolute index of the option in the full source. Required per option in the virtualized path.                                                                                                                         |
 
 ### Navigation flow
 
 Arrow / Home / End keys are handled by `[forSelectContent]` (not the individual options) in the virtualized path. The content delegates to an internal navigator that walks `moveIndex` against the full `totalCount`, using the persisted position snapshot to handle disabled options outside the rendered window. When navigation lands outside the current window, `(scrollToIndex)` fires with the target index; once the option mounts the bridge effect resolves the pending activedescendant.
 
-On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed option (scrolling it into view), or the first enabled option when nothing is selected.
+On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed option and scrolls it into view when its position is known — in the rendered window, previously rendered (in the snapshot), or supplied via `[selectedIndex]`. An off-window committed value that was never rendered and has no `[selectedIndex]` falls back to focusing the first enabled option; when nothing is selected it also focuses the first enabled option.
 
 ### Example with `injectVirtualizer`
 
@@ -401,6 +402,7 @@ On open, `[forSelectContent]` seeds `aria-activedescendant` to the committed opt
   [(value)]="value"
   [totalCount]="items.length"
   [visibleRange]="v.range()"
+  [selectedIndex]="selectedIndex()"
   (scrollToIndex)="v.scrollToIndex($event, { align: 'auto' })"
 >
   <button forSelectTrigger>

@@ -15,6 +15,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  accessibleTextContent,
   Collection,
   firstEnabledHost,
   FormUiControlBase,
@@ -391,6 +392,13 @@ export class ForListbox<T = string>
     return isInArray(this.value(), v, this.isItemEqualToValue());
   }
 
+  #setSingle(v: T): void {
+    if (this.value().length === 1 && this.isSelected(v)) {
+      return;
+    }
+    this.value.set([v]);
+  }
+
   activate(v: T): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
@@ -399,7 +407,7 @@ export class ForListbox<T = string>
       this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
     } else {
       // Single-mode: idempotent select (no deselect on click of selected).
-      this.value.set([v]);
+      this.#setSingle(v);
     }
     this.#anchorValue.set(v);
   }
@@ -526,7 +534,7 @@ export class ForListbox<T = string>
     target.host.focus();
     target.host.scrollIntoView?.({ block: 'nearest' });
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
-      this.value.set([target.value()]);
+      this.#setSingle(target.value());
     }
   }
 
@@ -543,7 +551,7 @@ export class ForListbox<T = string>
         repeated: this.#typeahead.isRepeatedChar(),
         anchorIndex: currentIndex,
       },
-      (o) => o.host.textContent ?? '',
+      (o) => accessibleTextContent(o.host),
       (o) => o.disabled(),
     );
     match?.host.focus();
@@ -683,7 +691,7 @@ export class ForListbox<T = string>
         repeated: this.#typeahead.isRepeatedChar(),
         anchorIndex: anchor,
       },
-      (o) => o.host.textContent ?? '',
+      (o) => accessibleTextContent(o.host),
       (o) => o.disabled(),
     );
     if (match) {

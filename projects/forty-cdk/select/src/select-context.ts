@@ -263,8 +263,10 @@ export interface ForSelectContext<T = unknown> {
   /**
    * Virtualized-path open hook. Called by `[forSelectContent]` after it
    * focuses its own surface on open: seeds `aria-activedescendant` to the
-   * committed option (scrolling it into view via `(scrollToIndex)`), or the
-   * first enabled option when nothing is selected.
+   * committed option (scrolling it into view via `(scrollToIndex)`) when its
+   * position is known — in the rendered window, previously rendered, or
+   * supplied via the root's `[selectedIndex]`; otherwise focuses the first
+   * enabled option.
    */
   seedVirtualizedInitialFocus(): void;
   /**

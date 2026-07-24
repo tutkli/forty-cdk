@@ -1170,6 +1170,140 @@ describe('ForSelect', () => {
       expect(r.instance.value()).toEqual(['evora']);
       expect(r.instance.open()).toBe(false);
     });
+
+    describe('cycling and anchoring (issue #1389 item 1)', () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value">
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                <button data-test-id="apple" forSelectOption value="apple">Apple</button>
+                <button
+                  data-test-id="apricot"
+                  forSelectOption
+                  value="apricot"
+                  [disabled]="apricotDisabled()"
+                >
+                  Apricot
+                </button>
+                <button data-test-id="avocado" forSelectOption value="avocado">Avocado</button>
+                <button data-test-id="banana" forSelectOption value="banana">Banana</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class TypeaheadSelectHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>([]);
+        readonly apricotDisabled = signal(false);
+      }
+
+      it('open: cycles through same-initial options on repeated key with wrap', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const apple = getOption('apple');
+        apple.focus();
+        pressKey(apple, 'a');
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apricot');
+
+        pressKey(getOption('apricot'), 'a');
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('avocado');
+
+        pressKey(getOption('avocado'), 'a');
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apple');
+      });
+
+      it('open: skips disabled options while cycling on repeated key', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.apricotDisabled.set(true);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const apple = getOption('apple');
+        apple.focus();
+        pressKey(apple, 'a');
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('avocado');
+
+        pressKey(getOption('avocado'), 'a');
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apple');
+      });
+
+      it('open: re-anchors the prefix scan at the focused option (does not restart from the top)', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const apricot = getOption('apricot');
+        apricot.focus();
+        pressKey(apricot, 'a');
+        await flush(r.fixture);
+        pressKey(apricot, 'p');
+        await flush(r.fixture);
+        expect(activeTestId()).toBe('apricot');
+      });
+
+      it('closed: cycles through same-initial options on repeated key', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apple']);
+        expect(r.instance.open()).toBe(false);
+
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['apricot']);
+        expect(r.instance.open()).toBe(false);
+
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['avocado']);
+        expect(r.instance.open()).toBe(false);
+      });
+
+      it('closed: anchors the next match on the current selection', async () => {
+        const r = renderHost(TypeaheadSelectHost);
+        r.instance.value.set(['apricot']);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.open.set(false);
+        await flush(r.fixture);
+
+        const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+        pressKey(trigger, 'a');
+        await flush(r.fixture);
+        expect(r.instance.value()).toEqual(['avocado']);
+        expect(r.instance.open()).toBe(false);
+      });
+
+      it('open: cycles typeahead without Zone.js', async () => {
+        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+        const fixture = TestBed.createComponent(TypeaheadSelectHost);
+        fixture.componentInstance.open.set(true);
+        await flush(fixture);
+
+        const apple = getOption('apple');
+        apple.focus();
+        pressKey(apple, 'a');
+        await flush(fixture);
+        expect(activeTestId()).toBe('apricot');
+      });
+    });
   });
 
   describe('Escape', () => {
@@ -1243,6 +1377,57 @@ describe('ForSelect', () => {
       document.dispatchEvent(event);
       await flush(r.fixture);
       expect(r.instance.open()).toBe(true);
+    });
+
+    it('does NOT return focus to the trigger on an outside pointer-down close (#1389 item 4)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: outside, configurable: true });
+      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
+      document.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).not.toHaveBeenCalled();
+      outside.remove();
+    });
+
+    it('returns focus to the trigger on an Escape close (unchanged)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalled();
+    });
+
+    it('returns focus to the trigger on an option-select close (unchanged)', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      const focusSpy = vi.spyOn(trigger, 'focus');
+
+      getOption('apple').click();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(false);
+      expect(focusSpy).toHaveBeenCalled();
     });
   });
 
@@ -2210,6 +2395,45 @@ describe('ForSelect', () => {
 
       expect(r.instance.value()).toEqual(['banana']);
     });
+
+    it('closed typeahead can still select an option removed while the listbox was closed (documented limitation)', async () => {
+      @Component({
+        imports: BASE_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value">
+            <button forSelectTrigger>x</button>
+            @if (open()) {
+              <div forSelectContent>
+                @for (opt of options(); track opt) {
+                  <button [attr.data-test-id]="opt" forSelectOption [value]="opt">{{ opt }}</button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class DynamicHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>([]);
+        readonly options = signal<readonly string[]>(['apple', 'banana', 'cherry']);
+      }
+
+      const r = renderHost(DynamicHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      r.instance.options.set(['apple', 'banana']);
+      await flush(r.fixture);
+
+      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
+      pressKey(trigger, 'c');
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['cherry']);
+    });
   });
 
   describe('position input', () => {
@@ -2581,6 +2805,50 @@ describe('ForSelectIndicator', () => {
     expect(indicator('apple-ind').getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('excludes the aria-hidden indicator glyph from typeahead matching', async () => {
+    const r = renderHost(IndicatorHost);
+    await flush(r.fixture);
+
+    const apple = document.querySelector<HTMLButtonElement>('[data-test-id="apple"]')!;
+    apple.focus();
+    pressKey(apple, 'a');
+    await flush(r.fixture);
+
+    expect(document.activeElement).toBe(apple);
+  });
+
+  it('excludes the aria-hidden indicator glyph from the displayed label', async () => {
+    @Component({
+      imports: [...BASE_IMPORTS, ForSelectValue, ForSelectIndicator],
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value">
+          <button forSelectTrigger>
+            <span forSelectValue placeholder="Pick"></span>
+          </button>
+          @if (open()) {
+            <div forSelectContent>
+              <button data-test-id="apple" forSelectOption value="apple">
+                <span forSelectIndicator>✓</span>
+                Apple
+              </button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class IndicatorValueHost {
+      readonly open = signal(true);
+      readonly value = signal<readonly string[]>([]);
+    }
+
+    const r = renderHost(IndicatorValueHost);
+    r.instance.value.set(['apple']);
+    await flush(r.fixture);
+
+    const value = r.query<HTMLElement>('[forSelectValue]')!;
+    expect(value.textContent).toBe('Apple');
+  });
+
   it('throws when used outside [forSelectOption]', () => {
     @Component({
       imports: [ForSelectIndicator],
@@ -2834,6 +3102,7 @@ describe('ForSelectIndicator', () => {
           [(value)]="value"
           [totalCount]="total()"
           [visibleRange]="range()"
+          [selectedIndex]="selIndex()"
           (scrollToIndex)="onScrollToIndex($event)"
         >
           <button forSelectTrigger data-test-id="trigger">
@@ -2861,6 +3130,7 @@ describe('ForSelectIndicator', () => {
       readonly value = signal<readonly string[]>([]);
       readonly total = signal<number | undefined>(50);
       readonly range = signal<readonly [number, number]>([0, 10]);
+      readonly selIndex = signal<number | undefined>(undefined);
       readonly scrolled = signal<number | null>(null);
       windowIndices() {
         const [s, e] = this.range();
@@ -2968,6 +3238,23 @@ describe('ForSelectIndicator', () => {
       const activeId = content.getAttribute('aria-activedescendant');
       expect(activeId).toBe(voptOf(1).getAttribute('id'));
       expect(voptOf(1).getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('typeahead cycles aria-activedescendant on repeated key', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'i', bubbles: true }));
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(1).getAttribute('id'));
+
+      content.dispatchEvent(new KeyboardEvent('keydown', { key: 'i', bubbles: true }));
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(2).getAttribute('id'));
     });
 
     it('End to an off-window index emits scrollToIndex, pending resolves when option mounts', async () => {
@@ -3079,6 +3366,63 @@ describe('ForSelectIndicator', () => {
       await flush(r.fixture);
 
       expect(r.instance.scrolled()).toBe(49);
+    });
+
+    it('[selectedIndex] reveals an off-window committed value on first open', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.value.set(['item-40']);
+      r.instance.selIndex.set(40);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.scrolled()).toBe(40);
+
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(40).getAttribute('id'));
+    });
+
+    it('off-window committed value with no [selectedIndex] that was never rendered falls back to the first option', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.value.set(['item-40']);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.scrolled()).toBeNull();
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(0).getAttribute('id'));
+    });
+
+    it('[selectedIndex] out of range is ignored and falls back to the first option', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.value.set(['item-40']);
+      r.instance.selIndex.set(999);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.scrolled()).toBeNull();
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(0).getAttribute('id'));
+    });
+
+    it('committed value inside the initial window seeds directly even with [selectedIndex] set', async () => {
+      const r = renderHost(VirtualSelectHost);
+      r.instance.value.set(['item-3']);
+      r.instance.selIndex.set(3);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const content = contentEl();
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.scrolled()).toBeNull();
+      expect(content.getAttribute('aria-activedescendant')).toBe(voptOf(3).getAttribute('id'));
     });
 
     it('unmounting the active option clears aria-activedescendant', async () => {

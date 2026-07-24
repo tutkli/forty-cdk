@@ -14,6 +14,12 @@ import { injectComboboxContext } from './combobox-context';
  * `count` signal (or `forComboboxStatus` template ref) to interpolate
  * the option count when relevant.
  *
+ * Place it inside `[forComboboxContent]` but **outside** the
+ * `[forComboboxList]` that owns the options: content carries `role="listbox"`
+ * in the editable anatomy, so wrapping the options in a `[forComboboxList]`
+ * keeps this `role="status"` region a sibling of the listbox rather than an
+ * invalid listbox child.
+ *
  * ```html
  * <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">
  *   <input forComboboxInput placeholder="Search…" />
@@ -28,9 +34,11 @@ import { injectComboboxContext } from './combobox-context';
  *           {{ status.count() }} results.
  *         }
  *       </div>
- *       @for (it of filtered(); track it.id) {
- *         <div forComboboxOption [value]="it.id">{{ it.label }}</div>
- *       }
+ *       <div forComboboxList>
+ *         @for (it of filtered(); track it.id) {
+ *           <div forComboboxOption [value]="it.id">{{ it.label }}</div>
+ *         }
+ *       </div>
  *     </div>
  *   }
  * </div>

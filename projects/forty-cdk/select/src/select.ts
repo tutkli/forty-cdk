@@ -16,6 +16,7 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  accessibleTextContent,
   type FloatingAlign,
   type FloatingSide,
   FormUiControlBase,
@@ -32,7 +33,6 @@ import {
   tryReadHandle,
   injectTextDirection,
   findTypeaheadMatch,
-  foldTypeaheadText,
   injectTypeahead,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -280,6 +280,25 @@ export class ForSelect<T = string>
   readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
 
   /**
+   * Virtualized-only open-time reveal hint: the absolute index of the currently
+   * committed option within the full source dataset. Consulted on open by the
+   * scroll-to-selected algorithm as the authoritative index when the committed
+   * value's option lies outside the rendered window and has never been rendered
+   * (so its position is absent from the navigator snapshot). Bind it from the
+   * consumer's own value→index lookup.
+   *
+   * This is a reveal hint, **not** a selection source — `value` / `[(value)]`
+   * stay authoritative; it only decides which option is scrolled into view on
+   * open. It is singular: in multiple mode it seeds the first committed option.
+   * Leave unset (default) for a non-virtualized select, or when the committed
+   * option is always inside the initial window. An off-window committed value
+   * with no `[selectedIndex]` that was never rendered falls back to focusing the
+   * first enabled option; an out-of-range index (or an empty selection) is
+   * silently ignored.
+   */
+  readonly selectedIndex = input<number | undefined>(undefined);
+
+  /**
    * Optional virtualized-only seam that tells the directive the source dataset
    * changed **without** a `totalCount` transition — a same-length re-sort or
    * refresh (e.g. sorting a 1000-row list). Bind any value that changes on such
@@ -291,9 +310,11 @@ export class ForSelect<T = string>
    */
   readonly dataVersion = input<unknown>();
   /**
-   * Emitted when navigation (or open-time scroll-to-selected) reaches an
-   * option outside the rendered window. Pass to `injectVirtualizer`'s
-   * `scrollToIndex` so the correct option mounts.
+   * Emitted when navigation reaches an option outside the rendered window, or
+   * on open-time scroll-to-selected when the committed option's absolute index
+   * is resolvable — it is in the rendered window, was previously rendered (in
+   * the snapshot), or was supplied via `[selectedIndex]`. Pass to
+   * `injectVirtualizer`'s `scrollToIndex` so the correct option mounts.
    */
   readonly scrollToIndex = output<number>();
 
@@ -473,8 +494,15 @@ export class ForSelect<T = string>
    * previous accumulator unchanged so labels stay resolvable while closed. When
    * mounted, the fold is virtualization-aware: the non-virtualized path renders
    * the full option set, so the snapshot is rebuilt from the live options alone
-   * — an option the consumer removed is purged rather than lingering forever, so
-   * closed typeahead can only select an option that still exists. The
+   * — an option the consumer removes *while the listbox is open* is purged on
+   * that fold rather than lingering forever. This purge only runs while the
+   * content is mounted: under the documented `@if (open())` pattern the options
+   * unregister on close, so a data refresh performed *while the listbox is
+   * closed* cannot re-run the fold and the removed option stays in the snapshot
+   * until the next open. Closed-state typeahead reads that snapshot, so after a
+   * while-closed removal it can still commit a value that no longer exists;
+   * re-open the listbox (or keep the content mounted) to refresh the snapshot
+   * before relying on the purge. The
    * virtualized path renders one window at a time, so it carries the previous
    * accumulator forward and merges the window in, keeping off-window labels
    * resolvable. Each option's `label` is itself a `Signal<string>`, so this
@@ -791,10 +819,16 @@ export class ForSelect<T = string>
     if (!this.#typeahead.handle(event)) {
       return;
     }
+    const options = this.#controller.options();
+    const currentIndex = options.findIndex((o) => o.host === event.target);
     const match = findTypeaheadMatch(
-      this.#controller.options(),
-      { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
-      (o) => o.host.textContent ?? '',
+      options,
+      {
+        buffer: this.#typeahead.buffer(),
+        repeated: this.#typeahead.isRepeatedChar(),
+        anchorIndex: currentIndex,
+      },
+      (o) => accessibleTextContent(o.host),
       (o) => o.disabled(),
     );
     match?.host.focus();
@@ -809,15 +843,20 @@ export class ForSelect<T = string>
     if (!this.#closedTypeahead.handle(event)) {
       return false;
     }
-    const buffer = foldTypeaheadText(this.#closedTypeahead.buffer());
-    if (!buffer) {
-      return true;
-    }
-    // Closed-state lookup goes through the cached snapshot — `[forSelectContent]`
-    // is unmounted, so the live `options` registry is empty here. The cache
-    // populates the first time the listbox opens and renders options.
     const cached = this.#cachedOptions();
-    const match = cached.find((o) => foldTypeaheadText(o.label).startsWith(buffer));
+    const selected = this.selected();
+    const equals = this.isItemEqualToValue();
+    const anchorIndex = selected === null ? -1 : cached.findIndex((o) => equals(o.value, selected));
+    const match = findTypeaheadMatch(
+      cached,
+      {
+        buffer: this.#closedTypeahead.buffer(),
+        repeated: this.#closedTypeahead.isRepeatedChar(),
+        anchorIndex,
+      },
+      (o) => o.label,
+      () => false,
+    );
     if (match) {
       this.value.set([match.value]);
     }
@@ -876,6 +915,11 @@ export class ForSelect<T = string>
     const committed = this.#committedIndex(navigator);
     if (committed !== null) {
       navigator.seedActive(committed);
+      return;
+    }
+    const hinted = this.#hintedSelectedIndex();
+    if (hinted !== null) {
+      navigator.seedActive(hinted);
       return;
     }
     navigator.navigate('first');
@@ -938,6 +982,18 @@ export class ForSelect<T = string>
       }
     }
     return null;
+  }
+
+  #hintedSelectedIndex(): number | null {
+    if (this.value().length === 0) {
+      return null;
+    }
+    const idx = this.selectedIndex();
+    const total = this.totalCount();
+    if (idx === undefined || total === undefined || idx < 0 || idx >= total) {
+      return null;
+    }
+    return idx;
   }
 
   #activateActiveDescendant(): void {
@@ -1003,10 +1059,17 @@ export class ForSelect<T = string>
     if (!this.#typeahead.handle(event)) {
       return;
     }
+    const options = this.#controller.options();
+    const activeId = this.#activeId();
+    const anchor = activeId === null ? -1 : options.findIndex((o) => o.id() === activeId);
     const match = findTypeaheadMatch(
-      this.#controller.options(),
-      { buffer: this.#typeahead.buffer(), repeated: false, anchorIndex: -1 },
-      (o) => o.host.textContent ?? '',
+      options,
+      {
+        buffer: this.#typeahead.buffer(),
+        repeated: this.#typeahead.isRepeatedChar(),
+        anchorIndex: anchor,
+      },
+      (o) => accessibleTextContent(o.host),
       (o) => o.disabled(),
     );
     if (match) {

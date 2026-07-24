@@ -36,6 +36,21 @@ The editable (default) anatomy — an `<input>` that filters a portaled listbox 
 </div>
 ```
 
+**Editable + list (no trigger).** Wrapping the options in a `[forComboboxList]` without adding a `[forComboboxTrigger]` is a supported shape, and the a11y-clean way to add non-option pieces (`[forComboboxEmpty]`, `[forComboboxStatus]`, `[forComboboxAction]`) to the editable anatomy. Because content carries `role="listbox"` (which may only own `option` / `group` children), moving the options into `[forComboboxList]` makes those pieces siblings of the listbox instead of invalid listbox children — content becomes role-less and the list owns the listbox role. The role split keys off `hasList`, the focus model off `trigger()`, so focus still stays on the input the whole time:
+
+```html
+<div forComboboxContent>
+  <div forComboboxList>
+    <div forComboboxOption [value]="item.id" [label]="item.label">{{ item.label }}</div>
+  </div>
+  <div forComboboxEmpty>No matches.</div>
+</div>
+```
+
+A `[forComboboxAction]` **requires** this shape — see [Action items](#action-items).
+
+> **Editable-anatomy caveat.** For the common case of options plus only a `[forComboboxEmpty]` / `[forComboboxStatus]` message (the bare anatomy above, no `[forComboboxList]`), the message sits directly inside `[forComboboxContent]`. This is still supported and does not throw, but it leaves the `role="status"` message as an owned child of `role="listbox"`, a minor `aria-required-owned` compromise; wrap the options in a `[forComboboxList]` (the "editable + list" shape) when you want the strictly-clean tree.
+
 The picker anatomy adds a `[forComboboxTrigger]` `<button>` showing the committed selection, with the search input and a `[forComboboxList]` (`role="listbox"`) nested inside the popup — see [Picker anatomy](#picker-anatomy). Multi mode wraps the chips + input in `[forComboboxChips]` — see [Multi mode](#multi-mode). Optional `[forComboboxAnchor]`, `[forComboboxStatus]`, `[forComboboxGroup]` / `[forComboboxGroupLabel]`, and `[forComboboxSeparator]` pieces are covered in their own sections below.
 
 ## Examples
@@ -204,15 +219,24 @@ A combobox popup often needs an entry that is an **action**, not a value —
 `role="button"` actions, not `role="option"` selections, so `[forComboboxAction]`
 renders one that stays out of the option/value collection entirely.
 
+`[forComboboxAction]` **requires a `[forComboboxList]`**: content carries
+`role="listbox"` in the editable anatomy, so a `role="button"` placed directly
+inside it would be an invalid listbox child (`aria-required-owned`). Wrap the
+options in a `[forComboboxList]` so the action becomes a sibling of the listbox.
+An action rendered without a `[forComboboxList]` throws `[forty-cdk/combobox]` at
+runtime. This is the "editable + list" shape (no `[forComboboxTrigger]` needed).
+
 ```html
 <div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
   <input forComboboxInput placeholder="Search…" />
   @if (combobox.open()) {
   <div forComboboxContent>
     <button forComboboxAction (action)="createNew(query())">Create "{{ query() }}"</button>
-    @for (it of filtered; track it.id) {
-    <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
-    }
+    <div forComboboxList>
+      @for (it of filtered; track it.id) {
+      <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
+      }
+    </div>
   </div>
   }
 </div>
@@ -249,9 +273,9 @@ returns focus to the input (editable anatomy) or the `[forComboboxTrigger]`
 only. With no action registered, Tab keeps its default "close and let Tab flow on"
 behaviour, so existing comboboxes are unchanged.
 
-Actions live inside `[forComboboxContent]` (beside `[forComboboxList]` in the
-picker anatomy), so they are naturally "inside" the outside-pointer / outside-focus
-dismissal checks, exactly like the input.
+Actions live inside `[forComboboxContent]` and beside `[forComboboxList]` (never
+inside it, in either anatomy), so they are naturally "inside" the outside-pointer /
+outside-focus dismissal checks, exactly like the input.
 
 ### API
 
@@ -381,6 +405,8 @@ The `autocompleteMode` input mirrors the WAI-ARIA `aria-autocomplete` property:
 - **`'both'`** — combines `'list'` and `'inline'`: listbox opens _and_ the input is auto-completed.
 
 Inline completion preserves the user's typed prefix as unselected and selects the appended remainder, so the next keystroke replaces the selection (matching native browser autofill behavior). Backspace deletes the selection without re-completing, so the user can always shorten the query.
+
+> **Pure `'inline'` needs a warm cache.** `'inline'` never opens the popup (per APG — `aria-autocomplete="inline"` has no listbox), so in the default `@if (open())` anatomy no `[forComboboxOption]` ever renders and the label cache starts cold. A first keystroke into a combobox that has never been opened completes against nothing; inline completion only works once the options have rendered at least once (the user opened the popup via ArrowDown or `[openOnFocus]`, warming the cache). If completion must work from the very first keystroke, use `'both'` (which opens the popup) or keep the options mounted rather than gating them behind `@if (open())`.
 
 ## Dismiss events
 
@@ -585,6 +611,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - `[forComboboxSeparator]` is decorative and never registers with the listbox's option collection — keyboard navigation skips it automatically.
 - `[forComboboxGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
 - `[forComboboxEmpty]` carries `role="status"` + `aria-live="polite"` so the empty-state message is announced when filtering removes all matches.
+- Non-option pieces (`[forComboboxAction]`, and ideally `[forComboboxEmpty]` / `[forComboboxStatus]`) belong inside `[forComboboxContent]` but **outside** `[forComboboxList]` — `role="listbox"` may only own `option` / `group` children (`aria-required-owned-elements`). Wrapping the options in a `[forComboboxList]` (the "editable + list" shape) makes those pieces siblings of the listbox. `[forComboboxAction]` **requires** a `[forComboboxList]` and throws `[forty-cdk/combobox]` without one; `[forComboboxEmpty]` / `[forComboboxStatus]` stay lenient in the bare editable anatomy (documented compromise) — see the [editable-anatomy caveat](#anatomy).
 - The input element is exempt from the listbox's outside-pointer dismissal layer, so a click on the input while the listbox is open routes through `(click)` (toggle / focus open) instead of double-firing as an outside dismissal.
 
 ## Styling

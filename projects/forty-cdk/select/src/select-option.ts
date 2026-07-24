@@ -9,7 +9,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import {
+  accessibleTextContent,
+  registerHandle,
+  hostId,
+  resolveListNavigation,
+} from 'forty-cdk/core';
 import { injectSelectContext } from './select-context';
 
 /**
@@ -133,7 +138,7 @@ export class ForSelectOption<T = string> {
    * value change — supply `[forSelect][itemToLabel]` for a pure signal
    * derivation when the label can change without the value.
    */
-  readonly #effectiveLabel = computed(() => (this.#host.nativeElement.textContent ?? '').trim());
+  readonly #effectiveLabel = computed(() => accessibleTextContent(this.#host.nativeElement).trim());
 
   constructor() {
     const handle = {

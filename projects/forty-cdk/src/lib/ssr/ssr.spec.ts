@@ -121,6 +121,7 @@ import {
   ForComboboxAction,
   ForComboboxContent,
   ForComboboxInput,
+  ForComboboxList,
   ForComboboxOption,
 } from 'forty-cdk/combobox';
 import { ForListbox, ForListboxOption, ForListboxReorder } from 'forty-cdk/listbox';
@@ -982,6 +983,7 @@ class SelectVirtualizedOpenFixture {
     ForCombobox,
     ForComboboxInput,
     ForComboboxContent,
+    ForComboboxList,
     ForComboboxOption,
     ForComboboxAction,
   ],
@@ -990,7 +992,9 @@ class SelectVirtualizedOpenFixture {
       <input forComboboxInput />
       <div forComboboxContent>
         <button forComboboxAction>Create new</button>
-        <div forComboboxOption value="a" label="A">A</div>
+        <div forComboboxList>
+          <div forComboboxOption value="a" label="A">A</div>
+        </div>
       </div>
     </div>
   `,
@@ -2312,7 +2316,11 @@ describe('SSR smoke tests', () => {
     const f = TestBed.createComponent(ComboboxOpenFixture);
     f.detectChanges();
     const content = f.nativeElement.querySelector('[forComboboxContent]') as HTMLElement;
-    expect(content.getAttribute('role')).toBe('listbox');
+    // With a [forComboboxList] present the list carries role="listbox" and the
+    // content surface is role-less, so the action is a sibling of the listbox.
+    expect(content.getAttribute('role')).toBeNull();
+    const list = f.nativeElement.querySelector('[forComboboxList]') as HTMLElement;
+    expect(list.getAttribute('role')).toBe('listbox');
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forComboboxContent]')).toBeNull();
