@@ -1,4 +1,5 @@
 import { Directive, effect, ElementRef, inject, input } from '@angular/core';
+import { isNonTouchPointer } from 'forty-cdk/core';
 
 import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover-card-context';
 
@@ -10,10 +11,10 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
  * Reflects `data-state` so consumers can style the trigger when its card is
  * open (e.g. an underline that turns solid).
  *
- * A touch tap does not open the card: a `pointerenter` with
- * `pointerType === 'touch'` is ignored, and the focus that a tap induces is
- * ignored too — only keyboard focus (focus not preceded by a pointer
- * interaction) opens the card. Because the trigger must already convey full
+ * A touch tap does not open the card: a `pointerenter` rejected by the shared
+ * `isNonTouchPointer` predicate is ignored (a pen still hovers), and the focus
+ * that a tap induces is ignored too — only keyboard focus (focus not preceded
+ * by a pointer interaction) opens the card. Because the trigger must already convey full
  * meaning on its own, touch / keyboard-only users miss nothing when the
  * preview stays closed, and keyboard focus is the touch-accessible way to
  * reveal it. This mirrors `ForTooltipTrigger`.
@@ -82,7 +83,7 @@ export class ForHoverCardTrigger {
   }
 
   protected onPointerEnter(event: PointerEvent): void {
-    if (event.pointerType === 'touch') {
+    if (!isNonTouchPointer(event)) {
       return;
     }
     this.ctx().pointerEnterTrigger();

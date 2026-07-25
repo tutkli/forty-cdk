@@ -231,7 +231,7 @@ export {
   forceCloseWhenDisabled,
   type ForceCloseWhenDisabledOptions,
 } from './hover-intent/force-close-when-disabled';
-export { isHoverCapablePointer } from './hover-intent/hover-capable-pointer';
+export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/hover-capable-pointer';
 export {
   createHoverIntent,
   type HoverIntentCoordinator,

@@ -401,6 +401,19 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
 
+    it('opens on a pen pointerenter (only touch is suppressed, a pen hovers)', async () => {
+      const { fixture, query, flush } = renderHost(HoverCardHost);
+      await flush();
+      const trigger = query<HTMLAnchorElement>('a')!;
+
+      const event = new PointerEvent('pointerenter', { pointerType: 'pen' });
+      expect(event.pointerType).toBe('pen');
+      trigger.dispatchEvent(event);
+      await flush();
+
+      expect(fixture.componentInstance.isOpen()).toBe(true);
+    });
+
     it('does not open on a touch-induced focus (a tap focuses the trigger)', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       await flush();
