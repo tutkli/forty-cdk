@@ -1013,6 +1013,26 @@ Seed the initial width through the bound signal (`nameWidth = signal(200)`); the
 
 Arrow-key resize (`ArrowLeft` / `ArrowRight`) moves the width by `[step]` pixels per press, respecting `[min]` / `[max]`. In RTL, the directions are mirrored.
 
+`Escape` (or a `pointercancel`) mid-drag restores the pre-drag width through `[(width)]` and emits no `resizeCommit`. Unmounting the handle mid-drag — the column is dropped, or `resizable` is toggled off — reverts too, but the destroyed `[(width)]` model can no longer emit, so the pre-drag width is reported through the `[widthRevert]` callback instead. Bind it as a function reference when you persist widths and columns can disappear during a gesture:
+
+```html
+<button
+  forTableColumnResizer
+  column="name"
+  [(width)]="nameWidth"
+  [widthRevert]="onWidthRevert"
+  aria-label="Resize Name column"
+></button>
+```
+
+```ts
+readonly onWidthRevert = ({ column, width }: TableResizeDescriptor): void => {
+  this.persistedWidths.update((widths) => ({ ...widths, [column]: width }));
+};
+```
+
+`<for-table-body>` wires this internally: a stamped handle destroyed mid-drag folds its pre-drag width back into `[(columnWidths)]`, so the declarative layer needs no extra binding.
+
 ### Size-to-content (auto-fit)
 
 Opt in with `[autoFit]` to add the "double-click the handle to fit the column to its content" gesture. When set, a `dblclick` on the handle measures the widest natural width across the column's data cells (resolved through the table context, browser-only), clamps it to `[min]` / `[max]`, applies it as the new `[(width)]`, and emits `resizeCommit` — exactly like a drag or arrow press. Unset (default), `dblclick` is a no-op and the resize behaviour is unchanged.
@@ -1463,15 +1483,16 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 
 ### `ForTableColumnResizer`
 
-| Property            | Type                | Description                                                                                                                                                                                                                   |
-| ------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `column`            | `string` (required) | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                               |
-| `width`             | `model<number>()`   | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                 |
-| `min`               | `number`            | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                  |
-| `max`               | `number`            | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                |
-| `step`              | `number`            | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                     |
-| `autoFit`           | `boolean`           | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                           |
-| `fitIncludesHeader` | `boolean`           | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false` |
+| Property            | Type                                                         | Description                                                                                                                                                                                                                                   |
+| ------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `column`            | `string` (required)                                          | Column identity; included in the `resizeCommit` payload and the CSS var name.<br>**Default:** —                                                                                                                                               |
+| `width`             | `model<number>()`                                            | Current column width in pixels. Two-way bindable via `[(width)]`. Fires `widthChange` on every live update.<br>**Default:** —                                                                                                                 |
+| `min`               | `number`                                                     | Minimum width in pixels.<br>**Default:** `0`                                                                                                                                                                                                  |
+| `max`               | `number`                                                     | Maximum width in pixels. No upper bound by default.<br>**Default:** `Infinity`                                                                                                                                                                |
+| `step`              | `number`                                                     | Pixels applied per `ArrowLeft` / `ArrowRight` press.<br>**Default:** `10`                                                                                                                                                                     |
+| `autoFit`           | `boolean`                                                    | Opt-in: `dblclick` on the handle fits the column to its content width via `fitToContent()`. No behaviour change when unset.<br>**Default:** `false`                                                                                           |
+| `fitIncludesHeader` | `boolean`                                                    | Opt-in: auto-fit also accounts for the header label (marked with a sibling `[forTableColumnLabel]`), fitting to `max(header label, …data cells)`. Degrades to data-cells-only with no marker present.<br>**Default:** `false`                 |
+| `widthRevert`       | `((descriptor: TableResizeDescriptor) => void) \| undefined` | Teardown-only revert callback, bound as a function reference. Called with the pre-drag width when the handle is destroyed mid-drag, where `[(width)]` can no longer emit. Silent on the `Escape` / `pointercancel` reverts.<br>**Default:** — |
 
 ### Data attributes
 

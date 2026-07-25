@@ -36,7 +36,9 @@ export interface TableResizeDescriptor {
  * handle. Supports pointer drag (with a dead-zone so a plain click is a no-op) and
  * `ArrowLeft` / `ArrowRight` keyboard resize, both constrained to `[min, max]`.
  * Pressing `Escape` (or a `pointercancel`) during a drag reverts the width to where
- * the gesture started and emits no `resizeCommit`.
+ * the gesture started and emits no `resizeCommit`. Being destroyed mid-drag reverts
+ * too, reporting the pre-drag width through the `[widthRevert]` callback because the
+ * `[(width)]` model can no longer emit during teardown.
  *
  * On every change it publishes the resolved width as the CSS custom property
  * `--for-table-col-<column>-width` on the table root, so the consumer can apply it
@@ -139,6 +141,21 @@ export class ForTableColumnResizer {
    */
   readonly resizeCommit = output<TableResizeDescriptor>();
 
+  /**
+   * Teardown-only revert channel. Called with the pre-drag width when the handle is
+   * destroyed mid-drag — the column is removed, or `resizable` is toggled off — so the
+   * transient drag width never survives as the consumer's persisted value. On every
+   * other revert path (`Escape`, `pointercancel`) the pre-drag width arrives through
+   * `[(width)]` / `widthChange` as usual and this callback does not fire.
+   *
+   * Bound as a function reference (`[widthRevert]="onRevert"`), not as an event binding:
+   * the `[(width)]` model — like any `output()` on this directive — is already destroyed
+   * when the unmount revert happens, so an emitter-based channel cannot deliver it.
+   */
+  readonly widthRevert = input<((descriptor: TableResizeDescriptor) => void) | undefined>(
+    undefined,
+  );
+
   /** `aria-valuemax`, omitted when `max` is non-finite (the default unbounded case). */
   protected readonly ariaValueMax = computed<number | null>(() =>
     Number.isFinite(this.max()) ? this.max() : null,
@@ -169,6 +186,8 @@ export class ForTableColumnResizer {
 
   #publishedColumn: string | null = null;
 
+  #destroying = false;
+
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
@@ -197,13 +216,17 @@ export class ForTableColumnResizer {
         armThreshold: DRAG_DEAD_ZONE_PX,
         capturePointer: true,
         cancelOnEscape: true,
+        cancelOnDestroy: true,
         canStart: (event) => this.#onDragStart(event),
         onLift: () => true,
         onMove: (event) => this.#onDragMove(event),
         onCommit: () => this.#onDragCommit(),
         onCancel: () => this.#onDragCancel(),
       });
-      destroyRef.onDestroy(() => this.#pointerSession?.destroy());
+      destroyRef.onDestroy(() => {
+        this.#destroying = true;
+        this.#pointerSession?.destroy();
+      });
     }
   }
 
@@ -266,6 +289,10 @@ export class ForTableColumnResizer {
       return;
     }
     this.#dragCurrent = this.#dragStartValue;
+    if (this.#destroying) {
+      this.widthRevert()?.({ column: this.column(), width: this.#dragStartValue });
+      return;
+    }
     this.width.set(this.#dragStartValue);
   }
 

@@ -227,6 +227,7 @@ class UnseededResizeTableHost {}
               forTableColumnResizer
               column="name"
               [(width)]="width"
+              [widthRevert]="onWidthRevert"
               data-testid="resizer"
             ></button>
           }
@@ -238,6 +239,11 @@ class UnseededResizeTableHost {}
 class RemovableResizeTableHost {
   readonly show = signal(true);
   readonly width = signal<number | undefined>(100);
+  readonly reverts: TableResizeDescriptor[] = [];
+  readonly onWidthRevert = (descriptor: TableResizeDescriptor): void => {
+    this.reverts.push(descriptor);
+    this.width.set(descriptor.width);
+  };
 }
 
 @Component({
@@ -3379,6 +3385,48 @@ describe('ForTable', () => {
       instance.show.set(true);
       await flush();
       expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+    });
+
+    it('destroying the handle mid-drag reverts the width through [widthRevert] with no destroyed-output warning', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 260 }));
+      await flush();
+      expect(instance.width()).toBe(160);
+
+      instance.show.set(false);
+      await flush();
+      expect(instance.reverts).toEqual([{ column: 'name', width: 100 }]);
+      expect(instance.width()).toBe(100);
+      expect(tableRootEl(el).style.getPropertyValue('--for-table-col-name-width')).toBe('');
+      expect(warn.mock.calls.flat().join(' ')).not.toContain('NG0953');
+    });
+
+    it('destroying the handle while idle fires no [widthRevert]', async () => {
+      const { instance, flush } = renderHost(RemovableResizeTableHost);
+      await flush();
+      instance.show.set(false);
+      await flush();
+      expect(instance.reverts).toEqual([]);
+      expect(instance.width()).toBe(100);
+    });
+
+    it('Escape mid-drag reverts through [(width)] and does not fire [widthRevert]', async () => {
+      const { el, instance, flush } = renderHost(RemovableResizeTableHost);
+      const r = resizerEl(el);
+
+      r.dispatchEvent(pointerEvent('pointerdown', { clientX: 200 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 260 }));
+      await flush();
+      expect(instance.width()).toBe(160);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(instance.width()).toBe(100);
+      expect(instance.reverts).toEqual([]);
     });
 
     it('throws a prefixed error for a CSS-unsafe resizer column name', () => {
