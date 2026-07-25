@@ -41,6 +41,33 @@ class PaneResizerHost {
   readonly commitEvents: number[] = [];
 }
 
+@Component({
+  imports: [ForPaneResizer],
+  template: `
+    @if (show()) {
+      <div
+        forPaneResizer
+        orientation="vertical"
+        [(value)]="value"
+        [min]="0"
+        [max]="100"
+        [valueRevert]="onValueRevert"
+        (resizeCommit)="commitEvents.push($event)"
+      ></div>
+    }
+  `,
+})
+class RemovablePaneResizerHost {
+  readonly show = signal(true);
+  readonly value = signal(50);
+  readonly commitEvents: number[] = [];
+  readonly reverts: number[] = [];
+  readonly onValueRevert = (value: number): void => {
+    this.reverts.push(value);
+    this.value.set(value);
+  };
+}
+
 /**
  * Pane resizers react to both keydown (the actual step) and keyup (the
  * "release" that fires `(resizeCommit)`). The shared `pressKey` helper only
@@ -419,6 +446,51 @@ describe('ForPaneResizer', () => {
       await flush();
       expect(inst.value()).toBe(50);
       expect(inst.commitEvents).toEqual([]);
+    });
+
+    it('destroying the resizer mid-drag reverts through [valueRevert] with no destroyed-output warning', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, query, flush } = renderHost(RemovablePaneResizerHost);
+      const inst = fixture.componentInstance;
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      await flush();
+      expect(inst.value()).toBe(70);
+
+      inst.show.set(false);
+      await flush();
+      expect(inst.reverts).toEqual([50]);
+      expect(inst.value()).toBe(50);
+      expect(inst.commitEvents).toEqual([]);
+      expect(warn.mock.calls.flat().join(' ')).not.toContain('NG0953');
+    });
+
+    it('destroying the resizer while idle fires no [valueRevert]', async () => {
+      const { fixture, flush } = renderHost(RemovablePaneResizerHost);
+      const inst = fixture.componentInstance;
+      await flush();
+      inst.show.set(false);
+      await flush();
+      expect(inst.reverts).toEqual([]);
+      expect(inst.value()).toBe(50);
+    });
+
+    it('Escape mid-drag reverts through [(value)] and does not fire [valueRevert]', async () => {
+      const { fixture, query, flush } = renderHost(RemovablePaneResizerHost);
+      const inst = fixture.componentInstance;
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      await flush();
+      expect(inst.value()).toBe(70);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(inst.value()).toBe(50);
+      expect(inst.reverts).toEqual([]);
     });
 
     it('suppresses the click that follows an armed pointer release', async () => {

@@ -40,7 +40,10 @@ import {
  * few px), so a plain click that fires a stray sub-threshold `pointermove`
  * never mutates the value — `(resizing)` won't fire on a jittery click.
  * Pressing `Escape` (or a `pointercancel`) during a drag reverts the value to
- * where the gesture started and emits no `(resizeCommit)`.
+ * where the gesture started and emits no `(resizeCommit)`. Being destroyed
+ * mid-drag reverts too, reporting the pre-drag value through the
+ * `[valueRevert]` callback because `[(value)]` can no longer emit during
+ * teardown.
  *
  * @example
  * ```html
@@ -187,6 +190,20 @@ export class ForPaneResizer {
    */
   readonly resizeCommit = output<number>();
 
+  /**
+   * Teardown-only revert channel. Called with the pre-drag value when the resizer is
+   * destroyed mid-drag (the pane layout is unmounted while the pointer is still down),
+   * so the transient drag value never survives as the consumer's persisted size. On
+   * every other revert path (`Escape`, `pointercancel`) the pre-drag value arrives
+   * through `[(value)]` / `(resizing)` as usual and this callback does not fire.
+   *
+   * Bound as a function reference (`[valueRevert]="onRevert"`), not as an event binding:
+   * the `[(value)]` model — like `(resizing)` and every other `output()` here — is
+   * already destroyed when the unmount revert happens, so an emitter-based channel
+   * cannot deliver it.
+   */
+  readonly valueRevert = input<((value: number) => void) | undefined>(undefined);
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -206,6 +223,8 @@ export class ForPaneResizer {
   /** True between the first kbd-driven mutation and the next `keyup`. */
   #pendingKeyboardCommit = false;
 
+  #destroying = false;
+
   constructor() {
     if (this.#isBrowser) {
       this.#pointerSession = createPointerDragSession({
@@ -214,13 +233,17 @@ export class ForPaneResizer {
         armThreshold: DRAG_DEAD_ZONE_PX,
         capturePointer: true,
         cancelOnEscape: true,
+        cancelOnDestroy: true,
         canStart: (event) => this.#onDragStart(event),
         onLift: () => true,
         onMove: (event) => this.#onDragMove(event),
         onCommit: () => this.#onDragCommit(),
         onCancel: () => this.#onDragCancel(),
       });
-      this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
+      this.#destroyRef.onDestroy(() => {
+        this.#destroying = true;
+        this.#pointerSession?.destroy();
+      });
     }
   }
 
@@ -334,6 +357,10 @@ export class ForPaneResizer {
       return;
     }
     this.#dragCurrent = this.#dragStartValue;
+    if (this.#destroying) {
+      this.valueRevert()?.(this.#dragStartValue);
+      return;
+    }
     this.value.set(this.#dragStartValue);
     this.resizing.emit(this.#dragStartValue);
   }

@@ -183,6 +183,7 @@ interface RenderRow<T> {
           [step]="col.resizeStep()"
           [autoFit]="col.autoFit()"
           [fitIncludesHeader]="col.fitIncludesHeader()"
+          [widthRevert]="onColumnWidthRevert"
           [attr.aria-label]="col.resizeAriaLabel()"
           (widthChange)="onColumnWidthChange(col.name(), $event)"
           (resizeCommit)="resizeCommit.emit($event)"
@@ -483,7 +484,8 @@ export class ForTableBody<T = unknown> {
    * handle exposes `aria-valuenow` from the first render and the column's grid
    * track picks up the seeded width immediately — and is updated immutably on
    * every live width change the handle reports (pointer drag, keyboard resize,
-   * auto-fit). Only `resizable` columns participate; other names are ignored.
+   * auto-fit), including the pre-drag revert of a handle destroyed mid-drag. Only
+   * `resizable` columns participate; other names are ignored.
    *
    * The map is JSON-serializable, so persisting a user's column layout is
    * `[(columnWidths)]` plus one storage write. Together with `[displayedColumns]`
@@ -709,6 +711,18 @@ export class ForTableBody<T = unknown> {
     }
     this.columnWidths.set({ ...current, [column]: width });
   }
+
+  /**
+   * Folds a stamped resizer's teardown revert into `[(columnWidths)]`. A handle
+   * destroyed mid-drag (its column dropped from `displayedColumns`, or `resizable`
+   * toggled off) can no longer report through `widthChange`, so without this the map
+   * would keep the transient drag width. Bound as a function reference because the
+   * revert happens during the handle's teardown; the body itself outlives it, so its
+   * own `columnWidthsChange` still reaches the consumer.
+   */
+  protected readonly onColumnWidthRevert = (descriptor: TableResizeDescriptor): void => {
+    this.onColumnWidthChange(descriptor.column, descriptor.width);
+  };
 
   protected onRowClick(row: RenderRow<T>, event: MouseEvent): void {
     this.#activateRow(row, event);

@@ -32,6 +32,18 @@ interface Row {
   role: string;
 }
 
+function pointerEvent(
+  type: string,
+  init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
+): PointerEvent {
+  const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
+  Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
+  Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
+  Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
+  Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
+  return ev;
+}
+
 function buildRows(): Row[] {
   return [
     { id: 1, name: 'Ada', role: 'Engineer' },
@@ -657,7 +669,7 @@ class BadColumnNameHost {
       >
         <ng-container
           forColumnDef="name"
-          resizable
+          [resizable]="resizable()"
           resizeAriaLabel="Resize name"
           [resizeMin]="min()"
           [resizeMax]="max()"
@@ -680,6 +692,7 @@ class ResizeOptionsHost {
   readonly rows = signal<Row[]>(buildRows());
   readonly rowKey = (row: Row): number => row.id;
   readonly widths = signal<Readonly<Record<string, number>>>({ name: 150 });
+  readonly resizable = signal(true);
   readonly min = signal(0);
   readonly max = signal(Infinity);
   readonly step = signal(25);
@@ -1916,6 +1929,24 @@ describe('ForTableBody', () => {
       instance.widths.set({ name: 320 });
       fixture.detectChanges();
       expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('320');
+    });
+
+    it('folds the pre-drag width back into columnWidths when the handle is destroyed mid-drag', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      const handle = query('[forTableColumnResizer]')!;
+
+      handle.dispatchEvent(pointerEvent('pointerdown', { clientX: 300 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 340 }));
+      await flush();
+      expect(instance.widths()['name']).toBe(190);
+
+      instance.resizable.set(false);
+      await flush();
+      expect(query('[forTableColumnResizer]')).toBeNull();
+      expect(instance.widths()['name']).toBe(150);
+      expect(instance.lastCommit()).toBeNull();
+      expect(warn.mock.calls.flat().join(' ')).not.toContain('NG0953');
     });
 
     it('clears the track var when a column width is removed from columnWidths', async () => {
