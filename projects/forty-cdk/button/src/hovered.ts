@@ -8,6 +8,7 @@ import {
   signal,
   type Signal,
 } from '@angular/core';
+import { isNonTouchPointer } from 'forty-cdk/core';
 
 /** Options for {@link injectHovered}. */
 export interface HoveredOptions {
@@ -23,10 +24,12 @@ export interface HoveredOptions {
  * hovering the host element. State is set on `pointerenter` and cleared on
  * `pointerleave`.
  *
- * Touch is suppressed: a `pointerenter` whose `pointerType` is `'touch'` does
- * not set the hovered state, so the emulated mouse-enter a tap produces on a
- * touchscreen never leaves the element stuck in a hovered state after the
- * finger lifts. Only `'mouse'` / `'pen'` pointers report hover.
+ * Touch is suppressed through the shared `isNonTouchPointer` predicate: a
+ * `pointerenter` whose `pointerType` is `'touch'` does not set the hovered
+ * state, so the emulated mouse-enter a tap produces on a touchscreen never
+ * leaves the element stuck in a hovered state after the finger lifts. Only
+ * `'mouse'` / `'pen'` pointers report hover — this is the pen-inclusive hover
+ * vocabulary, not the menu family's mouse-only `isHoverCapablePointer`.
  *
  * Attaches `pointerenter` / `pointerleave` listeners to the host element. The
  * `disabled` option short-circuits the result reactively (a pure `computed`,
@@ -50,7 +53,7 @@ export function injectHovered(opts?: HoveredOptions): Signal<boolean> {
   const hovered = signal(false);
 
   const onPointerEnter = (event: PointerEvent): void => {
-    if (event.pointerType === 'touch') {
+    if (!isNonTouchPointer(event)) {
       return;
     }
     if (disabled?.()) {

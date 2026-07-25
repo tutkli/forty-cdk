@@ -338,6 +338,21 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
+    it('opens on a pen pointerenter (only touch is suppressed, a pen hovers)', async () => {
+      const r = renderHost(TooltipHost);
+      r.instance.openDelay.set(0);
+      r.instance.closeDelay.set(0);
+      await flush(r.fixture);
+      const trigger = r.query<HTMLButtonElement>('button')!;
+
+      const event = new PointerEvent('pointerenter', { pointerType: 'pen' });
+      expect(event.pointerType).toBe('pen');
+      trigger.dispatchEvent(event);
+      await flush(r.fixture);
+
+      expect(r.instance.isOpen()).toBe(true);
+    });
+
     it('reopens on a later keyboard focus after a suppressed touch tap', async () => {
       const r = renderHost(TooltipHost);
       r.instance.openDelay.set(0);
