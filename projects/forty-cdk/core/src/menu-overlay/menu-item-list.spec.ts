@@ -268,6 +268,58 @@ describe('MenuItemList', () => {
     });
   });
 
+  describe('focusInitialEnabledItem', () => {
+    it("routes 'first' to the first enabled item and 'last' to the last enabled one", () => {
+      const list = build();
+      const a = makeItem('a', { disabled: true });
+      const b = makeItem('b');
+      const c = makeItem('c');
+      const d = makeItem('d', { disabled: true });
+      list.registerItem(a);
+      list.registerItem(b);
+      list.registerItem(c);
+      list.registerItem(d);
+
+      expect(list.focusInitialEnabledItem('first')).toBe(true);
+      expect(document.activeElement).toBe(b.host);
+
+      expect(list.focusInitialEnabledItem('last')).toBe(true);
+      expect(document.activeElement).toBe(c.host);
+    });
+
+    it('returns false when no enabled items exist, for either target', () => {
+      const list = build();
+      list.registerItem(makeItem('a', { disabled: true }));
+      expect(list.focusInitialEnabledItem('first')).toBe(false);
+      expect(list.focusInitialEnabledItem('last')).toBe(false);
+    });
+
+    it('forwards the highlight suppression to the resolved target', () => {
+      const list = build();
+      const suppressA = vi.fn();
+      const suppressB = vi.fn();
+      list.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppressA });
+      list.registerItem({ ...makeItem('b'), suppressHighlightOnNextFocus: suppressB });
+
+      expect(list.focusInitialEnabledItem('last', false)).toBe(true);
+      expect(suppressB).toHaveBeenCalledTimes(1);
+      expect(suppressA).not.toHaveBeenCalled();
+
+      expect(list.focusInitialEnabledItem('first', false)).toBe(true);
+      expect(suppressA).toHaveBeenCalledTimes(1);
+    });
+
+    it('highlights when the flag is omitted', () => {
+      const list = build();
+      const suppress = vi.fn();
+      list.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      expect(list.focusInitialEnabledItem('first')).toBe(true);
+      expect(list.focusInitialEnabledItem('last')).toBe(true);
+      expect(suppress).not.toHaveBeenCalled();
+    });
+  });
+
   describe('clearHighlights', () => {
     it('invokes clearHighlight on every registered item without moving focus', () => {
       const list = build();

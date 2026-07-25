@@ -111,14 +111,11 @@ export class ForMenuContent {
         exemptElements: () => this.ctx.dismissableExemptions(),
         nesting: menuLayerNesting(this.ctx),
       },
-      // Primitive-owned move: focusFirstEnabledItem / focusLastEnabledItem
-      // each return `true` on success. The shell falls back to focusing the
-      // host element on miss, which mirrors the previous hand-rolled code.
+      // Primitive-owned move: focusInitialEnabledItem resolves the ctx's
+      // `initialFocus` target and returns `true` on success. The shell falls
+      // back to focusing the host element on miss, as the hand-rolled code did.
       initialFocus: {
-        move: () =>
-          this.ctx.initialFocus() === 'last'
-            ? this.ctx.focusLastEnabledItem()
-            : this.ctx.focusFirstEnabledItem(),
+        move: () => this.ctx.focusInitialEnabledItem(this.ctx.initialFocus()),
         veto: () => this.ctx.emitAutoFocusOnOpen(),
       },
       returnFocus: {

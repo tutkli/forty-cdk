@@ -203,6 +203,15 @@ export interface ForMenuContext {
   /** Returns `true` if focus moved; `false` when no enabled items exist. */
   focusFirstEnabledItem(): boolean;
   focusLastEnabledItem(): boolean;
+  /**
+   * Focuses the first or last enabled item per `target` — the contract-level
+   * resolution of {@link initialFocus}, so a piece that reads that signal hands
+   * the value straight back instead of re-deriving which of the two granular
+   * calls it maps to. `[forMenuContent]` uses it for the mount-time initial
+   * focus; the mapping itself is owned once by core's `MenuItemList`. Returns
+   * `true` if focus moved; `false` when no enabled items exist.
+   */
+  focusInitialEnabledItem(target: 'first' | 'last'): boolean;
 
   /**
    * Trigger entry points — toggle/open honour `disabled`. `modality`
