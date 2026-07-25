@@ -155,11 +155,13 @@ The menu items, content surface, radio groups, separators, and groups live in th
 
 ## Keyboard
 
-| Key                         | Behavior                                                          |
-| --------------------------- | ----------------------------------------------------------------- |
-| `Click` / `Enter` / `Space` | Toggles the menu. On open, focus moves to the first enabled item. |
-| `ArrowDown`                 | Opens the menu and focuses the first enabled item.                |
-| `ArrowUp`                   | Opens the menu and focuses the last enabled item.                 |
+| Key                             | Behavior                                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `Click`                         | Toggles the menu. On open, focus moves to the first enabled item.                              |
+| `Enter` / `Space` / `ArrowDown` | Opens the menu and focuses the first enabled item; on an already-open menu, moves focus there. |
+| `ArrowUp`                       | Opens the menu and focuses the last enabled item; on an already-open menu, moves focus there.  |
+
+The open keys never close the menu — the APG menu-button pattern gives them no close semantics (that's `Escape`, or a pointer click on the trigger). Pressing one while the menu is already open moves focus into it, which is what makes them useful after an `(autoFocusOnOpen)`-vetoed open left focus on the trigger. A menu with no enabled item moves nothing.
 
 Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-menu keyboard.
 
@@ -188,5 +190,5 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 - **Mount equals open.** The directive does not toggle `[hidden]` — `@if (open())` controls presence so `animate.enter` / `animate.leave` fire on the natural mount cycle.
 - **Trigger is exempt** from outside-pointer / outside-focus checks. Without this, clicking the trigger to close would race with its own toggle handler and reopen immediately.
-- **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item.
+- **Initial focus depends on the opening key.** Click / Space / Enter / ArrowDown focus the first enabled item; ArrowUp focuses the last enabled item. The same keys re-focus that item when the menu is already open.
 - **Selecting an item closes the menu** by default. To keep the menu open after activation (multi-select pattern), call `$event.preventDefault()` in the item's `(activate)` handler.

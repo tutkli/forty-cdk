@@ -85,12 +85,16 @@ export interface MenuOverlayHooks {
   readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
 
   /**
-   * Optional side effect run after `openMenu` flips `open` to `true`,
-   * receiving the resolved initial-focus target. `[forMenuSub]` uses it to
-   * cancel in-flight hover scheduling and set its focus-suppression flags from
+   * Optional side effect run after `openMenu` resolves the open, receiving the
+   * resolved initial-focus target. `[forMenuSub]` uses it to cancel in-flight
+   * hover scheduling and set its focus-suppression flags from
    * `options.suppressFocusMoves` (a keyboard / click open supersedes hover).
    * Top-level roots (`[forDropdownMenu]` / `[forContextMenu]`) pass neither
    * hook.
+   *
+   * It also runs when `openMenu` re-targets an **already-open** menu (no model
+   * write, focus moved instead), so a pending hover-close is still cancelled by
+   * an open key pressed on a mounted submenu.
    */
   readonly onOpen?: (initialFocus: 'first' | 'last', options: MenuOverlayTransitionOptions) => void;
 
@@ -292,6 +296,19 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * `options` is forwarded verbatim to the `onOpen` hook — `[forMenuSub]`'s
    * hover-open passes `{ suppressFocusMoves: true }` so the mount does not
    * pull focus off whatever the user was on.
+   *
+   * When the menu is **already open** there is no state transition (and
+   * therefore no `(openChange)` emit): focus moves straight to the requested
+   * first / last enabled item instead, so an APG open key pressed on a trigger
+   * whose menu is already mounted is never a dead key. The menu is never
+   * toggled closed — the open keys have no close semantics in the APG patterns
+   * — and a menu with no enabled item moves nothing rather than pulling focus
+   * onto an item-less surface. The re-focus is deliberately not gated on the
+   * `(autoFocusOnOpen)` veto: that veto covers the mount's automatic focus
+   * move, and honouring it here would silently restore the dead key for
+   * consumers who opted out of auto-focus-on-open. It *is* skipped for a
+   * `{ suppressFocusMoves: true }` transition, whose whole contract is that no
+   * imperative focus move may happen (`[forMenuSub]`'s hover-open).
    */
   openMenu(
     initialFocus: 'first' | 'last' = 'first',
@@ -301,10 +318,24 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     if (this.#hooks.disabled()) {
       return;
     }
+    const alreadyOpen = this.#hooks.open();
     this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
     this.#closeReasonState.reset();
-    this.#hooks.open.set(true);
+    if (!alreadyOpen) {
+      this.#hooks.open.set(true);
+    }
     this.#hooks.onOpen?.(initialFocus, options);
+    if (alreadyOpen && !options.suppressFocusMoves) {
+      this.#focusInitialItem(initialFocus);
+    }
+  }
+
+  #focusInitialItem(initialFocus: 'first' | 'last'): void {
+    if (initialFocus === 'last') {
+      this.focusLastEnabledItem();
+    } else {
+      this.focusFirstEnabledItem();
+    }
   }
 
   /**

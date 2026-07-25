@@ -45,12 +45,18 @@ function injectDropdownMenuTriggerContext(
 }
 
 /**
- * Button that toggles the dropdown menu when clicked, opens via ArrowDown
- * (focus first item) or ArrowUp (focus last item).
+ * Button that toggles the dropdown menu when clicked, opens via Enter / Space
+ * / ArrowDown (focus first item) or ArrowUp (focus last item).
  *
- * Apply on a `<button>` so Space / Enter dispatch native click events
- * automatically — those open the menu via `(click)`. Wires `aria-haspopup`,
- * `aria-expanded`, and `aria-controls` per the menu-button pattern.
+ * Apply on a `<button>`. Wires `aria-haspopup`, `aria-expanded`, and
+ * `aria-controls` per the menu-button pattern.
+ *
+ * The open keys are handled on `keydown` and `preventDefault()`-ed, so Enter /
+ * Space never reach the button's native click: per the APG menu-button pattern
+ * they only ever *open* (the pointer click keeps its toggle semantics). When the
+ * menu is already open they move focus to the requested first / last enabled
+ * item instead of being dead keys — for instance after an
+ * `(autoFocusOnOpen)`-vetoed open left focus on the trigger.
  *
  * The trigger distinguishes pointer from keyboard activation (a `pointerdown`
  * preceding the click marks it pointer-driven): both move focus to the first
@@ -144,7 +150,7 @@ export class ForDropdownMenuTrigger {
     if (this.effectiveDisabled()) {
       return;
     }
-    if (event.key === 'ArrowDown') {
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
       event.preventDefault();
       this.ctx().openMenu('first');
     } else if (event.key === 'ArrowUp') {

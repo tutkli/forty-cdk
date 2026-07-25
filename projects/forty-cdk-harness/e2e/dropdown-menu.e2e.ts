@@ -67,6 +67,18 @@ test.describe('DropdownMenu', () => {
     await expect(el(page, 'menu').locator('*:focus')).toHaveCount(0);
   });
 
+  test('an open key moves focus in when a vetoed open left it on the trigger', async ({ page }) => {
+    await gotoFixture(page, 'menu', { vetoOpen: '1' });
+    await el(page, 'trigger').focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'trigger')).toBeFocused();
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'menu')).toBeVisible();
+    await expect(el(page, 'item-1')).toBeFocused();
+  });
+
   test('Tab closes the menu and advances focus to the next tabbable element', async ({ page }) => {
     await gotoFixture(page, 'menu');
     await el(page, 'trigger').click();

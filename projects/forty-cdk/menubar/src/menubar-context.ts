@@ -106,6 +106,11 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * first / last enabled item instead, so an APG open key pressed on a trigger
    * whose menu is already mounted is never a dead key. Closing from the trigger
    * is the click toggle's job, not the open keys'.
+   *
+   * The other three menu roots get the same already-open branch from core
+   * `MenuOverlay.openMenu`. The bar keeps its own: its open path is keyed by a
+   * trigger `value` and runs through the multiplexed `MenubarMenuContext`, which
+   * is not a `MenuOverlay`, so there is no shared entry point to inherit it from.
    */
   openTrigger(
     value: string,

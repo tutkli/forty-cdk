@@ -230,6 +230,23 @@ describe('ForMenuSub', () => {
       expect(document.querySelector('#advanced')!.getAttribute('data-highlighted')).toBe('');
     });
 
+    it('ArrowRight on an already-open SubTrigger moves focus into the submenu', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+      await flush(r.fixture);
+
+      pressKey(more, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(document.activeElement?.id).toBe('advanced');
+    });
+
     it('disabled SubTrigger is a no-op on click and ArrowRight', async () => {
       @Component({
         imports: IMPORTS,
