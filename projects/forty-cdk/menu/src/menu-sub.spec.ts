@@ -324,6 +324,34 @@ describe('ForMenuSub', () => {
     });
   });
 
+  describe('same-render-pass mount (#1450)', () => {
+    it('keeps the whole chain open when the first focus lands inside the submenu', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      document.querySelector<HTMLElement>('#advanced')!.focus();
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(true);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('dispatches Escape to the submenu, not the parent menu', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.subOpen()).toBe(false);
+      expect(r.instance.open()).toBe(true);
+    });
+  });
+
   describe('closing', () => {
     it('ArrowLeft inside the submenu closes only the submenu', async () => {
       const r = renderHost(SubMenuHost);

@@ -2,6 +2,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../collection/collection';
+import type { DismissableLayerNesting } from '../dismissable-layer/dismissable-layer';
 import type {
   FloatingAlign,
   FloatingFallbackAxisSideDirection,
@@ -276,6 +277,29 @@ export interface ForMenuContext {
 }
 
 export type { MenuActivationModality };
+
+/**
+ * Nesting descriptor for a menu level's dismissable layer, derived from the
+ * `parentMenu` chain: the chain identity is the outermost menu context and the
+ * depth is the number of hops needed to reach it (`0` for a top-level
+ * `[forDropdownMenu]` / `[forContextMenu]` / `[forMenubar]` menu, `1` for its
+ * first `[forMenuSub]`, and so on).
+ *
+ * Menu levels are ordered on the layer stack by this depth rather than by the
+ * order their `afterNextRender` callbacks ran, because a menu and its submenu
+ * mounted in the same render pass activate child-before-parent — which would
+ * put the parent above its own submenu and make the submenu's first focus close
+ * the whole chain with reason `'focusOutside'` (#1450).
+ */
+export function menuLayerNesting(ctx: ForMenuContext): DismissableLayerNesting {
+  let chain: ForMenuContext = ctx;
+  let depth = 0;
+  while (chain.parentMenu) {
+    chain = chain.parentMenu;
+    depth++;
+  }
+  return { chain, depth };
+}
 
 export const FOR_MENU_CONTEXT = new InjectionToken<ForMenuContext>('FOR_MENU_CONTEXT');
 

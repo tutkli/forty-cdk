@@ -5,6 +5,7 @@ import {
   injectOverlayShell,
   injectMenuContext,
   isHoverCapablePointer,
+  menuLayerNesting,
 } from 'forty-cdk/core';
 
 /**
@@ -108,6 +109,7 @@ export class ForMenuContent {
         // ContextMenu exempts nothing so left-clicks on the region close the
         // menu like any other outside click.
         exemptElements: () => this.ctx.dismissableExemptions(),
+        nesting: menuLayerNesting(this.ctx),
       },
       // Primitive-owned move: focusFirstEnabledItem / focusLastEnabledItem
       // each return `true` on success. The shell falls back to focusing the

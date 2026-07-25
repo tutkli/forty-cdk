@@ -1340,6 +1340,33 @@ describe('ForMenubar', () => {
       expect(r.instance.recent()).toBe(false);
     });
 
+    it('survives the first focus inside a submenu mounted in the same render pass as its parent', async () => {
+      const r = renderHost(MenubarWithSubmenuHost);
+      r.instance.open.set('file');
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('recent-a')!;
+      item.focus();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+      expect(r.instance.recent()).toBe(true);
+    });
+
+    it('dispatches Escape to the submenu, not the parent menu, after a same-render-pass mount', async () => {
+      const r = renderHost(MenubarWithSubmenuHost);
+      r.instance.open.set('file');
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.recent()).toBe(false);
+      expect(r.instance.open()).toBe('file');
+    });
+
     it('RTL ArrowRight inside a submenu still collapses only that level', async () => {
       const r = renderHost(MenubarNestedSubmenuHost);
       r.instance.dir.set('rtl');
