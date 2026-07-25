@@ -116,6 +116,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forSelectOption]`    | `data-disabled`    | present \| absent          |
 | `[forSelectOption]`    | `data-highlighted` | present \| absent          |
 | `[forSelectIndicator]` | `data-state`       | `checked` \| `unchecked`   |
+| `[forSelectSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
 
 `data-highlighted` marks the keyboard-focused option (shared vocabulary with the listbox / menu / combobox primitives). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../../../docs/styling-floating-content.md).
 
@@ -473,7 +474,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 
 - Apply each option directive to a `<button>` so Space / Enter activation come from native button behavior — the listbox doesn't intercept them.
 - Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.
-- `[forSelectSeparator]` is decorative and never registers with the listbox's option collection — it's skipped during navigation and typeahead automatically.
+- `[forSelectSeparator]` never registers with the listbox's option collection — it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
 - `[forSelectGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
 - The trigger is exempt from the dismissable layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.
 - **`data-highlighted=""`** is reflected on the focused `[forSelectOption]` so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives.
