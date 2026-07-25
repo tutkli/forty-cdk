@@ -1,6 +1,6 @@
-import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
+import { booleanAttribute, computed, Directive, input } from '@angular/core';
 
-import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
+import { injectToolbarContext } from './toolbar-context';
 
 /**
  * Visual separator inside a toolbar. Defaults `orientation` to the opposite
@@ -21,7 +21,7 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
   },
 })
 export class ForToolbarSeparator {
-  readonly #toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true });
+  readonly #toolbar = injectToolbarContext('ForToolbarSeparator');
 
   /**
    * Axis the separator divides along. When omitted, falls back to the
@@ -42,7 +42,7 @@ export class ForToolbarSeparator {
    * separator inherits.
    */
   readonly defaultOrientation = computed<'horizontal' | 'vertical'>(() =>
-    this.#toolbar?.orientation() === 'vertical' ? 'horizontal' : 'vertical',
+    this.#toolbar.orientation() === 'vertical' ? 'horizontal' : 'vertical',
   );
 
   protected readonly effectiveOrientation = computed<'horizontal' | 'vertical'>(
@@ -54,13 +54,5 @@ export class ForToolbarSeparator {
       return null;
     }
     return this.effectiveOrientation() === 'vertical' ? 'vertical' : null;
-  }
-
-  constructor() {
-    if (!this.#toolbar) {
-      throw new Error(
-        '[forty-cdk/toolbar] ForToolbarSeparator must be used inside a [forToolbar] element.',
-      );
-    }
   }
 }

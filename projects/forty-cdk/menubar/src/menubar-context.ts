@@ -3,6 +3,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
   type CollectionHandle,
   type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
   type FloatingSide,
   type ListNavigationAction,
   type WritingDirection,
@@ -27,12 +28,20 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
   readonly sideOffset: Signal<number>;
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
+  readonly fallbackAxisSideDirection: Signal<FloatingFallbackAxisSideDirection>;
   readonly collisionPadding: Signal<number>;
   readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;
   readonly ariaLabel: Signal<string | null>;
+  /**
+   * Adopts a consumer-set static `id` on the mounted `[forMenuContent]` host
+   * into this trigger's {@link ForMenubarTriggerHandle.contentId}, so the
+   * surface's `[id]` binding re-emits the consumer id instead of clobbering it.
+   * Invoked by the menubar's multiplexed menu context on content registration.
+   */
+  adoptContentId(el: HTMLElement): void;
 }
 
 /**
@@ -91,6 +100,12 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * `'pointer'` open (click, hover-after-open) keeps the programmatic
    * initial focus from reflecting `data-highlighted`, while a `'keyboard'`
    * open highlights the focused item.
+   *
+   * When `value` is already the open trigger there is no state transition (and
+   * therefore no `(valueChange)` emit): focus moves straight to the requested
+   * first / last enabled item instead, so an APG open key pressed on a trigger
+   * whose menu is already mounted is never a dead key. Closing from the trigger
+   * is the click toggle's job, not the open keys'.
    */
   openTrigger(
     value: string,

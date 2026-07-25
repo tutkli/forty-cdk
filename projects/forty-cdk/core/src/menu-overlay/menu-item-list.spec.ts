@@ -293,4 +293,87 @@ describe('MenuItemList', () => {
       expect(() => list.clearHighlights()).not.toThrow();
     });
   });
+
+  describe('focus scroll policy', () => {
+    it('moves arrow navigation focus with preventScroll and a nearest scroll', () => {
+      const list = build();
+      const a = makeItem('a');
+      const b = makeItem('b');
+      list.registerItem(a);
+      list.registerItem(b);
+      const focusSpy = vi.spyOn(b.host, 'focus');
+      const scrollSpy = vi.fn();
+      b.host.scrollIntoView = scrollSpy;
+
+      list.navigate(a.host, 'next');
+
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(document.activeElement).toBe(b.host);
+    });
+
+    it('moves typeahead focus with preventScroll and a nearest scroll', () => {
+      const list = build();
+      const apple = makeItem('apple');
+      const banana = makeItem('banana');
+      list.registerItem(apple);
+      list.registerItem(banana);
+      const focusSpy = vi.spyOn(banana.host, 'focus');
+      const scrollSpy = vi.fn();
+      banana.host.scrollIntoView = scrollSpy;
+
+      list.handleTypeahead(new KeyboardEvent('keydown', { key: 'b' }));
+
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+      expect(document.activeElement).toBe(banana.host);
+    });
+
+    it('moves the initial first-item focus with preventScroll', () => {
+      const list = build();
+      const a = makeItem('a', { disabled: true });
+      const b = makeItem('b');
+      list.registerItem(a);
+      list.registerItem(b);
+      const focusSpy = vi.spyOn(b.host, 'focus');
+      const scrollSpy = vi.fn();
+      b.host.scrollIntoView = scrollSpy;
+
+      expect(list.focusFirstEnabledItem()).toBe(true);
+
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
+
+    it('moves the initial last-item focus with preventScroll', () => {
+      const list = build();
+      const a = makeItem('a');
+      const b = makeItem('b');
+      const c = makeItem('c', { disabled: true });
+      list.registerItem(a);
+      list.registerItem(b);
+      list.registerItem(c);
+      const focusSpy = vi.spyOn(b.host, 'focus');
+      const scrollSpy = vi.fn();
+      b.host.scrollIntoView = scrollSpy;
+
+      expect(list.focusLastEnabledItem()).toBe(true);
+
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
+
+    it('still suppresses the highlight while passing preventScroll', () => {
+      const list = build();
+      const suppress = vi.fn();
+      const a = makeItem('a');
+      list.registerItem({ ...a, suppressHighlightOnNextFocus: suppress });
+      const focusSpy = vi.spyOn(a.host, 'focus');
+
+      expect(list.focusFirstEnabledItem(false)).toBe(true);
+
+      expect(suppress).toHaveBeenCalledTimes(1);
+      expect(focusSpy).toHaveBeenCalledWith({ preventScroll: true });
+    });
+  });
 });

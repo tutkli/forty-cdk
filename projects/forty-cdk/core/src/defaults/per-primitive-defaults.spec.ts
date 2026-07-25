@@ -353,7 +353,7 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_MENUBAR_DEFAULTS,
     fallback: FOR_MENUBAR_FALLBACK_DEFAULTS,
     provide: provideForMenubarDefaults,
-    override: { closeDelay: 300 },
+    override: { sideOffset: 12 },
   }),
   defaultsCase({
     name: 'provideForTreeDefaults',

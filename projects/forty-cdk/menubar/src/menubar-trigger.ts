@@ -10,15 +10,19 @@ import {
 } from '@angular/core';
 
 import {
+  adoptHostId,
   registerHandle,
   type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
   type FloatingSide,
   hostId,
   IdGenerator,
+  MENU_POSITIONING_DEFAULTS,
   resolveListNavigation,
   type MenuActivationModality,
 } from 'forty-cdk/core';
 import { injectMenubarContext } from './menubar-context';
+import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
 
 /**
  * One trigger inside `[forMenubar]`. Apply on a `<button>` so Space / Enter
@@ -31,7 +35,9 @@ import { injectMenubarContext } from './menubar-context';
  * Each trigger registers its per-menu floating-ui inputs (side, align,
  * sideOffset, …) with the menubar so the multiplexed `[forMenuContent]`
  * reads the right values when this trigger's menu is the one currently
- * open.
+ * open. Their defaults come from the shared `MENU_POSITIONING_DEFAULTS`
+ * source, with `sideOffset` / `collisionPadding` seeded from
+ * `provideForMenubarDefaults`.
  *
  * Keyboard (orientation-aware):
  * - **Click** — toggle this trigger's menu (focus first item on open).
@@ -79,6 +85,7 @@ export class ForMenubarTrigger {
   protected readonly menubar = injectMenubarContext('ForMenubarTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);
+  readonly #defaults = inject(FOR_MENUBAR_DEFAULTS);
   #pointerActivation = false;
 
   /** Identifies this trigger in the menubar's `value` model. */
@@ -89,19 +96,66 @@ export class ForMenubarTrigger {
 
   // -- Floating-ui inputs (forwarded to the multiplexed [forMenuContent]) --
 
-  /** Anchor side. Default `'bottom'`. */
-  readonly side = input<FloatingSide | undefined>('bottom');
-  /** Alignment along `side`. Default `'start'`. */
-  readonly align = input<FloatingAlign | undefined>('start');
-  /** Gap (px) along the main axis. Default `4`. */
-  readonly sideOffset = input(4, { transform: numberAttribute });
+  /**
+   * Side this trigger's menu is anchored to. Defaults to `'bottom'`.
+   *
+   * One of the floating-ui positioning inputs shared verbatim with the three
+   * menu roots — their non-seed defaults come from the single
+   * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
+   * guards trigger and roots against drift.
+   */
+  readonly side = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side);
+
+  /** Alignment along the chosen `side`. Defaults to `'start'`. */
+  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
+
+  /**
+   * Gap (px) between trigger and menu along the main axis. Default `4`. The
+   * default is read from `provideForMenubarDefaults` for the surrounding scope.
+   */
+  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
+
   /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
-  readonly collisionPadding = input(8, { transform: numberAttribute });
-  readonly arrowPadding = input(0, { transform: numberAttribute });
-  readonly sticky = input<'partial' | 'always' | false>('partial');
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
+  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+    transform: numberAttribute,
+  });
+
+  /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
+  readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
+    transform: booleanAttribute,
+  });
+
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides of
+   * the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let the menu drop to a
+   * perpendicular side on a narrow viewport. Only consulted when
+   * `avoidCollisions` is on.
+   */
+  readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
+    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+  );
+
+  /**
+   * Padding (px) applied uniformly to flip / shift / size. Default `8`. The
+   * default is read from `provideForMenubarDefaults` for the surrounding scope.
+   */
+  readonly collisionPadding = input(this.#defaults.collisionPadding, {
+    transform: numberAttribute,
+  });
+
+  /** Padding (px) for the `arrow` middleware. Default `0`. */
+  readonly arrowPadding = input(MENU_POSITIONING_DEFAULTS.arrowPadding, {
+    transform: numberAttribute,
+  });
+
+  /** Stickiness behaviour for `shift`. Default `'partial'`. */
+  readonly sticky = input<'partial' | 'always' | false>(MENU_POSITIONING_DEFAULTS.sticky);
+
+  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
+  readonly hideWhenDetached = input(MENU_POSITIONING_DEFAULTS.hideWhenDetached, {
+    transform: booleanAttribute,
+  });
 
   /**
    * When `true` (default), the content is clipped until floating-ui resolves
@@ -110,13 +164,23 @@ export class ForMenubarTrigger {
    * surface may flash briefly at the unresolved position while positioning
    * computes).
    */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+  readonly clipUntilPositioned = input(MENU_POSITIONING_DEFAULTS.clipUntilPositioned, {
+    transform: booleanAttribute,
+  });
 
   /** Manual `aria-label` on `[forMenuContent]` when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
   readonly triggerId = hostId('for-menubar-trigger');
-  readonly contentId = signal(this.#idGen.next('for-menubar-content'));
+  readonly #contentId = signal(this.#idGen.next('for-menubar-content'));
+
+  /**
+   * Id of this trigger's `[forMenuContent]` surface — the `aria-controls`
+   * target while open, and the surface's own `id`. Seeded with a generated id;
+   * a consumer-set static `id` on the mounted content host is adopted instead
+   * (see {@link adoptContentId}).
+   */
+  readonly contentId = this.#contentId.asReadonly();
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menubar.disabled());
 
@@ -141,18 +205,32 @@ export class ForMenubarTrigger {
       sideOffset: this.sideOffset,
       alignOffset: this.alignOffset,
       avoidCollisions: this.avoidCollisions,
+      fallbackAxisSideDirection: this.fallbackAxisSideDirection,
       collisionPadding: this.collisionPadding,
       arrowPadding: this.arrowPadding,
       sticky: this.sticky,
       hideWhenDetached: this.hideWhenDetached,
       clipUntilPositioned: this.clipUntilPositioned,
       ariaLabel: this.ariaLabel,
+      adoptContentId: (el: HTMLElement) => this.adoptContentId(el),
     };
     registerHandle(
       handle,
       (h) => this.menubar.registerTrigger(h),
       (h) => this.menubar.unregisterTrigger(h),
     );
+  }
+
+  /**
+   * Adopts a consumer-set static `id` on the mounted `[forMenuContent]` host
+   * into {@link contentId}, so `aria-controls` and any external
+   * `aria-labelledby` / `aria-describedby` references keep resolving instead of
+   * being clobbered by the generated fallback. Called by the menubar's
+   * multiplexed menu context when the content registers; a no-op when the
+   * content host carries no static `id`.
+   */
+  adoptContentId(el: HTMLElement): void {
+    adoptHostId(el, this.#contentId);
   }
 
   protected onPointerDown(): void {

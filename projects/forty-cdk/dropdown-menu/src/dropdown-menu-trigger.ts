@@ -58,10 +58,13 @@ function injectDropdownMenuTriggerContext(
  * no `data-highlighted` until keyboard navigation.
  *
  * Disabling: the trigger merges its own `disabled` input OR the root's
- * `disabled`. The native `disabled` attribute is reflected imperatively and
+ * `disabled`. The native `disabled` attribute is the single reflection channel
+ * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
+ * trigger the native attribute already conveys the state to assistive
+ * technology (rule #561 D2). It is reflected imperatively and
  * non-destructively — the directive only removes the attribute when it set it
  * itself, so a consumer-set `disabled` on the same button always survives an
- * enabled menu context.
+ * enabled menu context. `data-disabled=""` stays as the styling hook.
  *
  * The root is normally resolved via DI from the enclosing `[forDropdownMenu]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
@@ -81,7 +84,6 @@ function injectDropdownMenuTriggerContext(
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '(pointerdown)': 'onPointerDown()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',

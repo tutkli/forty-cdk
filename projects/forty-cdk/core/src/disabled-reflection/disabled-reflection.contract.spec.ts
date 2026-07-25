@@ -34,12 +34,6 @@ import { ForDialogTrigger } from 'forty-cdk/dialog';
 import { ForDrawerTrigger } from 'forty-cdk/drawer';
 import { ForPopover, ForPopoverTrigger } from 'forty-cdk/popover';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import {
-  ForNavigationMenu,
-  ForNavigationMenuItem,
-  ForNavigationMenuList,
-  ForNavigationMenuTrigger,
-} from 'forty-cdk/navigation-menu';
 
 /**
  * Library-wide contract for the non-destructive `disabled` reflection rolled
@@ -125,25 +119,6 @@ function expectImperativeDisabledSurvives<T extends { disabled: { set(v: boolean
 class AccordionTriggerHost {
   readonly value = signal<readonly string[]>([]);
 }
-
-@Component({
-  imports: [
-    ForNavigationMenu,
-    ForNavigationMenuList,
-    ForNavigationMenuItem,
-    ForNavigationMenuTrigger,
-  ],
-  template: `
-    <nav forNavigationMenu [ariaLabel]="'Nav'">
-      <ul forNavigationMenuList>
-        <li forNavigationMenuItem value="a">
-          <button forNavigationMenuTrigger data-testid="target" disabled>A</button>
-        </li>
-      </ul>
-    </nav>
-  `,
-})
-class NavigationMenuTriggerHost {}
 
 @Component({
   imports: [ForSelect, ForSelectTrigger],
@@ -352,11 +327,6 @@ describe('disabled reflection — library-wide contract', () => {
     it('accordion trigger', () => {
       configure();
       expectStaticDisabledSurvives(mount(AccordionTriggerHost));
-    });
-
-    it('navigation-menu trigger', () => {
-      configure();
-      expectStaticDisabledSurvives(mount(NavigationMenuTriggerHost));
     });
 
     it('select trigger', () => {

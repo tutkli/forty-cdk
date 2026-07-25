@@ -17,6 +17,7 @@ import {
   Collection,
   injectDismissableLayer,
   createDebouncedAction,
+  createSkipDelayWindow,
   type ListNavigationAction,
   type WritingDirection,
   nextEnabledHandle,
@@ -175,15 +176,14 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     }
   });
   readonly #closeAction = createDebouncedAction(() => this.close());
-  #skipDelayTimer: ReturnType<typeof setTimeout> | null = null;
-  #skipDelayActive = false;
+  readonly #skipDelayWindow = createSkipDelayWindow(this.skipDelayDuration);
 
   readonly #dismiss = injectDismissableLayer();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.#cancelPending();
-      this.#cancelSkipDelay();
+      this.#skipDelayWindow.cancel();
       this.#dismiss.deactivate();
     });
   }
@@ -209,13 +209,9 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.value.set(value);
     this.#dismiss.activate({
       channels: ['pointer'],
+      exemptElements: () => this.#surfaceElements(),
       onEscapeKeyDown: () => {
-        const active = this.#document.activeElement;
-        const content = this.activeContentHost();
-        const focusWithin =
-          !!active &&
-          (this.#host.nativeElement.contains(active) || (!!content && content.contains(active)));
-        if (!focusWithin) {
+        if (!this.#containsFocusTarget(this.#document.activeElement)) {
           return;
         }
         const current = this.value();
@@ -233,7 +229,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.#recordMotion(this.value(), '');
     this.value.set('');
     this.#dismiss.deactivate();
-    this.#startSkipDelay();
+    this.#skipDelayWindow.start();
   }
 
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void {
@@ -246,7 +242,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       return;
     }
     this.#pendingOpenValue = value;
-    this.#openAction.schedule(this.#skipDelayActive ? 0 : this.delayDuration());
+    this.#openAction.schedule(this.#skipDelayWindow.active() ? 0 : this.delayDuration());
   }
 
   scheduleClose(reason: NavigationMenuScheduleReason, value?: string): void {
@@ -281,18 +277,45 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * or when something else steals focus. The dismissable layer already
    * handles Escape and outside pointerdown; this covers the keyboard-tab
    * case the layer can't see.
+   *
+   * Containment spans the nav host plus the registered viewport and the
+   * active content panel: a `[forNavigationMenuViewport]` stamped outside
+   * the nav re-parents the panel out of the nav's subtree, so Tab into it
+   * must not read as focus leaving the navigation. A `null` `relatedTarget`
+   * means focus is leaving the document or moving to a non-focusable area —
+   * both qualify as "outside".
    */
   protected onFocusOut(event: FocusEvent): void {
     if (this.value() === '') {
       return;
     }
-    const next = event.relatedTarget as HTMLElement | null;
-    // `null` means focus is leaving the document (e.g. browser chrome) or
-    // moving to a non-focusable area — both qualify as "outside the nav".
-    if (next && this.#host.nativeElement.contains(next)) {
+    if (this.#containsFocusTarget(event.relatedTarget as Node | null)) {
       return;
     }
     this.close();
+  }
+
+  #containsFocusTarget(node: Node | null): boolean {
+    if (!node) {
+      return false;
+    }
+    if (this.#host.nativeElement.contains(node)) {
+      return true;
+    }
+    return this.#surfaceElements().some((el) => el.contains(node));
+  }
+
+  #surfaceElements(): readonly HTMLElement[] {
+    const elements: HTMLElement[] = [];
+    const viewport = this.#viewport();
+    if (viewport) {
+      elements.push(viewport.host);
+    }
+    const content = this.activeContentHost();
+    if (content) {
+      elements.push(content);
+    }
+    return elements;
   }
 
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void {
@@ -482,25 +505,5 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   #clearOpenTimer(): void {
     this.#openAction.cancel();
     this.#pendingOpenValue = null;
-  }
-
-  #startSkipDelay(): void {
-    this.#cancelSkipDelay();
-    this.#skipDelayActive = true;
-    this.#skipDelayTimer = setTimeout(
-      () => {
-        this.#skipDelayTimer = null;
-        this.#skipDelayActive = false;
-      },
-      Math.max(0, this.skipDelayDuration()),
-    );
-  }
-
-  #cancelSkipDelay(): void {
-    if (this.#skipDelayTimer !== null) {
-      clearTimeout(this.#skipDelayTimer);
-      this.#skipDelayTimer = null;
-    }
-    this.#skipDelayActive = false;
   }
 }

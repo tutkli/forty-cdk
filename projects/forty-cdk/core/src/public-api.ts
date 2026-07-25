@@ -230,6 +230,7 @@ export {
   forceCloseWhenDisabled,
   type ForceCloseWhenDisabledOptions,
 } from './hover-intent/force-close-when-disabled';
+export { isHoverCapablePointer } from './hover-intent/hover-capable-pointer';
 export {
   createHoverIntent,
   type HoverIntentCoordinator,
@@ -240,6 +241,7 @@ export {
   SkipDelayCoordinator,
   type SkipDelayCoordinatorDefaults,
 } from './hover-intent/skip-delay-coordinator';
+export { createSkipDelayWindow, type SkipDelayWindow } from './hover-intent/skip-delay-window';
 export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
 export {
   type InertSiblingsHandle,
@@ -316,6 +318,7 @@ export {
   type MenuOverlayCloseReason,
   type MenuOverlayHooks,
   type MenuOverlayItemHandle,
+  type MenuOverlayTransitionOptions,
 } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
 export { MENU_POSITIONING_DEFAULTS } from './menu-overlay/menu-positioning-inputs';

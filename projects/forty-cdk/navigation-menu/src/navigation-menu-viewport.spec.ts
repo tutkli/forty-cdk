@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { Component, signal } from '@angular/core';
 
 import { flush as flushAsync } from '../../src/test-utils/flush';
@@ -204,6 +205,55 @@ class LateTriggerMegaMenuHost {
   readonly mountCompanyTrigger = signal(true);
 }
 
+/**
+ * Declares the viewport inside the root — so `FOR_NAVIGATION_MENU_CONTEXT`
+ * resolves at the template's declaration site — but stamps it OUTSIDE the
+ * `<nav>` element, the mega-menu shape where the re-parented panel is not a
+ * DOM descendant of the nav.
+ */
+@Component({
+  selector: 'external-viewport-mega-menu-host',
+  imports: [
+    NgTemplateOutlet,
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+    ForNavigationMenuViewport,
+  ],
+  template: `
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products">
+          <button forNavigationMenuTrigger>Products</button>
+          @if (open() === 'products') {
+            <div forNavigationMenuContent data-id="products">
+              <a href="/p/a" data-id="products-link">A</a>
+              <span data-id="products-static">filters</span>
+            </div>
+          }
+        </li>
+        <li forNavigationMenuItem value="solutions">
+          <button forNavigationMenuTrigger>Solutions</button>
+          @if (open() === 'solutions') {
+            <div forNavigationMenuContent data-id="solutions">solutions panel</div>
+          }
+        </li>
+      </ul>
+      <ng-template #externalViewport>
+        <div forNavigationMenuViewport data-id="viewport"></div>
+      </ng-template>
+    </nav>
+    <div data-id="outside">
+      <ng-container [ngTemplateOutlet]="externalViewport"></ng-container>
+    </div>
+  `,
+})
+class ExternalViewportMegaMenuHost {
+  readonly open = signal('');
+}
+
 describe('ForNavigationMenuViewport', () => {
   let originalRO: typeof ResizeObserver;
 
@@ -258,6 +308,91 @@ describe('ForNavigationMenuViewport', () => {
       const products = query<HTMLElement>('[data-id="products"]')!;
       // Without a viewport, the content stays under its [forNavigationMenuItem] parent.
       expect(products.parentElement?.getAttribute('forNavigationMenuItem')).toBe('');
+    });
+  });
+
+  describe('containment with a viewport outside the nav', () => {
+    it('keeps the panel open when focus moves into a panel hosted outside the nav', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const root = query<HTMLElement>('[forNavigationMenu]')!;
+      const viewport = query<HTMLElement>('[data-id="viewport"]')!;
+      const panel = query<HTMLElement>('[data-id="products"]')!;
+      expect(panel.parentElement).toBe(viewport);
+      expect(root.contains(panel)).toBe(false);
+
+      const link = query<HTMLElement>('[data-id="products-link"]')!;
+      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link }));
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(root.getAttribute('data-state')).toBe('open');
+      expect(query<HTMLElement>('[data-id="products"]')).toBe(panel);
+    });
+
+    it('still closes when focus moves outside the nav, the viewport and the panel', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const root = query<HTMLElement>('[forNavigationMenu]')!;
+        trigger.dispatchEvent(
+          new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
+        );
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBe('');
+        expect(root.getAttribute('data-state')).toBe('closed');
+        expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('keeps the panel open on a pointerdown inside a panel hosted outside the nav', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const inner = query<HTMLElement>('[data-id="products-static"]')!;
+      inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(query<HTMLElement>('[data-id="products"]')).not.toBeNull();
+    });
+
+    it('still closes on a pointerdown outside the nav, the viewport and the panel', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const stranger = document.createElement('div');
+      document.body.appendChild(stranger);
+      try {
+        stranger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        await flush();
+        expect(fixture.componentInstance.open()).toBe('');
+      } finally {
+        stranger.remove();
+      }
     });
   });
 

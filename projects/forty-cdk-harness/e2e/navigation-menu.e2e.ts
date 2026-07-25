@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture, isMobileProject } from './_helpers';
 
 /** Move the mouse to the centre of `target` in `steps` intermediate hops. */
 async function hoverTo(page: Page, target: Locator, steps = 8): Promise<void> {
@@ -173,6 +173,24 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expect(el(page, 'active')).toHaveText('none');
   });
 
+  test('a disabled trigger stays in the tab order and announces aria-disabled', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'navigation-menu', { disabledSolutions: '1' });
+
+    await expect(el(page, 'trigger-solutions')).toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'trigger-solutions')).not.toHaveAttribute('disabled');
+
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-products'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'trigger-solutions'));
+
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'active')).toHaveText('none');
+  });
+
   test('ArrowDown opens the focused trigger (horizontal orientation)', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');
 
@@ -278,6 +296,30 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expect(el(page, 'active')).toHaveText('products');
   });
 
+  test.describe('@mobile no-hover-on-touch', () => {
+    test('@mobile a tap opens the panel once and a follow-up tap does not invert', async ({
+      page,
+    }, testInfo) => {
+      test.skip(
+        !isMobileProject(testInfo),
+        'locator.tap() requires hasTouch:true; desktop projects cover the mouse-hover path above',
+      );
+      await gotoFixture(page, 'navigation-menu');
+
+      await el(page, 'trigger-products').tap();
+      await expect(el(page, 'active')).toHaveText('products');
+      await page.waitForTimeout(400);
+      await expect(el(page, 'active')).toHaveText('products');
+
+      await el(page, 'trigger-products').tap();
+      await expect(el(page, 'active')).toHaveText('none');
+
+      await page.waitForTimeout(50);
+      await el(page, 'trigger-products').tap();
+      await expect(el(page, 'active')).toHaveText('products');
+    });
+  });
+
   test('Tab from inside an open panel closes it once focus leaves the nav', async ({ page }) => {
     await gotoFixture(page, 'navigation-menu');
 
@@ -294,5 +336,26 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expectFocused(el(page, 'after'));
     await expect(el(page, 'content-products')).toHaveCount(0);
     await expect(el(page, 'active')).toHaveText('none');
+  });
+
+  test('Tab into a panel hosted by an external viewport keeps it open', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu', { externalViewport: '1' });
+
+    // The viewport is stamped outside the <nav>, so the re-parented panel is
+    // not a DOM descendant of the nav host. The host collapses to zero size
+    // until a panel mounts into it, so assert presence rather than visibility.
+    await expect(el(page, 'external-viewport-host')).toHaveCount(1);
+
+    await el(page, 'trigger-company').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'content-company')).toBeVisible();
+
+    // Tab off the last trigger lands in the externally-hosted panel. Focus is
+    // still inside the widget's surface, so the panel must not close.
+    await page.keyboard.press('Tab');
+
+    await expectFocused(el(page, 'link-company-1'));
+    await expect(el(page, 'content-company')).toBeVisible();
+    await expect(el(page, 'active')).toHaveText('company');
   });
 });

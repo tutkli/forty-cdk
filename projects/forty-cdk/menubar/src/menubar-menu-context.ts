@@ -1,10 +1,12 @@
-import { computed, type Signal, signal } from '@angular/core';
+import { computed, type OutputEmitterRef, type Signal, signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   CloseReasonState,
   InitialFocusState,
   createMenuItemList,
+  emitVetoableEvent,
+  emitVetoableNativeEvent,
   MENU_POSITIONING_DEFAULTS,
   type MenuActivationModality,
   type ListNavigationAction,
@@ -12,8 +14,20 @@ import {
   type ForMenuContext,
   type ForMenuItemHandle,
   type MenuSiblingNavigator,
+  type VetoableEvent,
+  type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import type { ForMenubarTriggerHandle } from './menubar-context';
+
+/**
+ * Per-scope positioning seeds (`provideForMenubarDefaults`) the multiplexed
+ * context falls back to while no trigger is active, keeping them identical to
+ * the values `[forMenubarTrigger]` seeds its own inputs from.
+ */
+export interface MenubarPositioningSeeds {
+  readonly sideOffset: number;
+  readonly collisionPadding: number;
+}
 
 /**
  * The slice of `[forMenubar]` the multiplexed `ForMenuContext` reads. Passed to
@@ -26,6 +40,18 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
   readonly dismissible: Signal<boolean>;
   readonly dir: ForMenuContext['dir'];
   readonly loop: Signal<boolean>;
+  /** Bar-level `(escapeKeyDown)` output the multiplexed context emits through. */
+  readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
+  /** Bar-level `(pointerDownOutside)` output the multiplexed context emits through. */
+  readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
+  /** Bar-level `(focusOutside)` output the multiplexed context emits through. */
+  readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;
+  /** Bar-level `(interactOutside)` output the multiplexed context emits through. */
+  readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
+  /** Bar-level `(autoFocusOnOpen)` output the multiplexed context emits through. */
+  readonly autoFocusOnOpen: OutputEmitterRef<VetoableEvent>;
+  /** Bar-level `(autoFocusOnClose)` output the multiplexed context emits through. */
+  readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
   /** Currently-open trigger handle, or `null` when no menu is open. */
   readonly activeTrigger: Signal<ForMenubarTriggerHandle | null>;
   /** All registered triggers in DOM order; their hosts are the dismissable exemptions. */
@@ -37,10 +63,6 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
   readonly lastTriggerHost: Signal<HTMLElement | null>;
   /** Close the currently-open menu (clears `value`, snapshots the last trigger). */
   closeOpen(): void;
-  /** Attach the bar's hover-keepalive listeners to a mounted content element. */
-  attachContentPointer(el: HTMLElement): void;
-  /** Detach the bar's hover-keepalive listeners from the content element. */
-  detachContentPointer(): void;
 }
 
 /**
@@ -57,17 +79,17 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * composed by `MenuOverlay`), so this only has to cover the parts the
  * single-owner overlay can't — the `activeTrigger`-derived multiplexing.
  *
- * A bar-level menu has no per-trigger dismiss / auto-focus outputs and no
- * per-context trigger registration (triggers register with the bar directly),
- * so the corresponding `ForMenuContext` members are deliberately inert here:
- * the outside-interaction emit forwarders have nowhere to surface (the implicit
- * close runs through {@link requestClose}), the auto-focus emitters never veto
- * (bar menus follow APG-prescribed focus movement), and trigger
- * register/unregister are owned by the bar. They stay as documented members of
- * this one implementation rather than scattered no-op literals.
+ * The dismiss / auto-focus channels forward to the bar-level outputs declared
+ * on `[forMenubar]` — `(escapeKeyDown)`, `(pointerDownOutside)`,
+ * `(focusOutside)`, `(interactOutside)`, `(autoFocusOnOpen)` and
+ * `(autoFocusOnClose)` — so the same `[forMenuContent]` / `[forMenuItem]`
+ * markup keeps the full shell contract, and its vetoes, under a menubar. Only
+ * trigger register / unregister stay inert here: triggers register with the bar
+ * directly.
  */
 export class MenubarMenuContext implements ForMenuContext {
   readonly #host: MenubarMenuHost;
+  readonly #positioning: MenubarPositioningSeeds;
   readonly #itemList = createMenuItemList<ForMenuItemHandle>(() => this.#host.loop());
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly #initialFocusState = new InitialFocusState();
@@ -80,7 +102,9 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly dir: ForMenuContext['dir'];
   readonly side = computed(() => this.#host.activeTrigger()?.side());
   readonly align = computed(() => this.#host.activeTrigger()?.align());
-  readonly sideOffset = computed(() => this.#host.activeTrigger()?.sideOffset() ?? 4);
+  readonly sideOffset = computed(
+    () => this.#host.activeTrigger()?.sideOffset() ?? this.#positioning.sideOffset,
+  );
   readonly alignOffset = computed(
     () => this.#host.activeTrigger()?.alignOffset() ?? MENU_POSITIONING_DEFAULTS.alignOffset,
   );
@@ -88,16 +112,14 @@ export class MenubarMenuContext implements ForMenuContext {
     () =>
       this.#host.activeTrigger()?.avoidCollisions() ?? MENU_POSITIONING_DEFAULTS.avoidCollisions,
   );
-  /**
-   * The bar has no per-trigger `fallbackAxisSideDirection` input (that lever is
-   * exposed only on the three menu roots — #1306), so a bar-level menu keeps the
-   * shared default. A nested `[forMenuSub]` opened from a bar menu reads its own
-   * input, not this context, so vertical-fallback opt-in still works there.
-   */
-  readonly fallbackAxisSideDirection = signal(
-    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
-  ).asReadonly();
-  readonly collisionPadding = computed(() => this.#host.activeTrigger()?.collisionPadding() ?? 8);
+  readonly fallbackAxisSideDirection = computed(
+    () =>
+      this.#host.activeTrigger()?.fallbackAxisSideDirection() ??
+      MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+  );
+  readonly collisionPadding = computed(
+    () => this.#host.activeTrigger()?.collisionPadding() ?? this.#positioning.collisionPadding,
+  );
   readonly arrowPadding = computed(
     () => this.#host.activeTrigger()?.arrowPadding() ?? MENU_POSITIONING_DEFAULTS.arrowPadding,
   );
@@ -136,8 +158,9 @@ export class MenubarMenuContext implements ForMenuContext {
     this.#host.triggers().map((t) => t.host),
   );
 
-  constructor(host: MenubarMenuHost) {
+  constructor(host: MenubarMenuHost, positioning: MenubarPositioningSeeds) {
     this.#host = host;
+    this.#positioning = positioning;
     this.disabled = host.disabled;
     this.dismissible = host.dismissible;
     this.dir = host.dir;
@@ -161,24 +184,18 @@ export class MenubarMenuContext implements ForMenuContext {
     this.#closeReasonState.reset();
   }
 
-  /** Read by the bar's pointer-driven close so the content skips its return-focus. */
-  setLastCloseReason(reason: ForMenuCloseReason): void {
-    this.#closeReasonState.set(reason);
-  }
-
   registerTrigger(): void {
     // Triggers register with the menubar itself, not with this menu context.
   }
   unregisterTrigger(): void {}
 
   registerContent(el: HTMLElement): void {
+    this.#host.activeTrigger()?.adoptContentId(el);
     this.#contentEl.set(el);
-    this.#host.attachContentPointer(el);
   }
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
-      this.#host.detachContentPointer();
     }
   }
 
@@ -223,19 +240,23 @@ export class MenubarMenuContext implements ForMenuContext {
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    if (!event.defaultPrevented && this.#host.dismissible()) {
+    const vetoed = emitVetoableNativeEvent(this.#host.escapeKeyDown, event);
+    if (!vetoed && this.#host.dismissible()) {
       event.stopPropagation();
       this.#closeReasonState.set('escape');
       this.#host.closeOpen();
     }
   }
 
-  // The menubar has no per-trigger `(pointerDownOutside)` / `(focusOutside)` /
-  // `(interactOutside)` outputs, so these emit forwarders have nowhere to
-  // surface; the implicit close runs through `requestClose` below.
-  emitPointerDownOutside(): void {}
-  emitFocusOutside(): void {}
-  emitInteractOutside(): void {}
+  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
+    this.#host.pointerDownOutside.emit(veto);
+  }
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
+    this.#host.focusOutside.emit(veto);
+  }
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.#host.interactOutside.emit(veto);
+  }
 
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
     if (this.#host.value() === '') {
@@ -245,13 +266,10 @@ export class MenubarMenuContext implements ForMenuContext {
     this.#host.closeOpen();
   }
 
-  // Bar-level menus follow APG-prescribed focus movement and expose no
-  // `(autoFocusOnOpen)` / `(autoFocusOnClose)` outputs, so the vetoes never
-  // fire — the content's focus moves always run.
   emitAutoFocusOnOpen(): boolean {
-    return false;
+    return emitVetoableEvent(this.#host.autoFocusOnOpen);
   }
   emitAutoFocusOnClose(): boolean {
-    return false;
+    return emitVetoableEvent(this.#host.autoFocusOnClose);
   }
 }

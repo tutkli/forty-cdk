@@ -1,4 +1,4 @@
-import { InjectionToken, type Signal } from '@angular/core';
+import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import { type HostRovingContext, type HostRovingItemHandle } from 'forty-cdk/core';
 
@@ -29,3 +29,11 @@ export interface ForToolbarContext extends HostRovingContext {
 }
 
 export const FOR_TOOLBAR_CONTEXT = new InjectionToken<ForToolbarContext>('FOR_TOOLBAR_CONTEXT');
+
+export function injectToolbarContext(piece: string): ForToolbarContext {
+  const ctx = inject(FOR_TOOLBAR_CONTEXT, { optional: true });
+  if (!ctx) {
+    throw new Error(`[forty-cdk/toolbar] ${piece} must be used inside a [forToolbar] element.`);
+  }
+  return ctx;
+}

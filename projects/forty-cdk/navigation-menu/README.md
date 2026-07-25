@@ -162,6 +162,12 @@ The Viewport owns panel ordering: each Content is inserted in its **trigger's do
 
 Measurement always tracks the **active** panel. The Viewport's `--for-navigation-menu-viewport-width` / `--for-navigation-menu-viewport-height` reflect the entering panel as soon as it becomes active; a non-active panel kept mounted by `animate.leave` is intentionally no longer measured, so a leaving panel's size never drives the Viewport box mid-transition.
 
+### Rendering the Viewport outside the `<nav>`
+
+The Viewport must be **declared** inside `[forNavigationMenu]` (DI resolves at the template's declaration site), but it may be **stamped** elsewhere — declare it in an `<ng-template>` inside the root and render that template into a page-level container via `ngTemplateOutlet` when the panel needs to escape the header's stacking or overflow context. Dismiss containment follows the panel rather than the nav subtree: focus or a pointerdown landing inside the Viewport or the active panel counts as inside the navigation, so Tab into an externally-hosted panel does not close it.
+
+Note the remaining boundary: with an external Viewport, a `focusout` fired _inside_ the panel never bubbles to the nav host, so tabbing **out** of an external panel to an unrelated element does not close the menu (the APG close-on-leave rule still applies from the trigger row). Escape and outside pointerdown work in both placements.
+
 ## Limitations
 
 - Submenús anidados — not implemented; tracked separately.
@@ -221,8 +227,10 @@ Measurement always tracks the **active** panel. The Viewport's `--for-navigation
 Implements the [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/examples/disclosure-navigation/).
 
 - **Not an ARIA menu.** This implements the _disclosure_ pattern: `<nav>` + buttons + landmark panels. ARIA `role="menu"` is for application menus where Tab leaves but arrows do everything. Site navigation expects Tab to move through links, which is what this primitive supports.
-- **Focus alone does not open.** A trigger opens on hover, click, Enter / Space, or the cross-axis arrow (ArrowDown horizontal / ArrowRight vertical) — never on plain focus. This matches the APG disclosure-navigation pattern: Tabbing across the trigger row does not auto-expand panels, and the return-focus after Escape cannot synchronously re-open the panel that just closed.
+- **Focus alone does not open.** A trigger opens on mouse hover, click, Enter / Space, or the cross-axis arrow (ArrowDown horizontal / ArrowRight vertical) — never on plain focus. This matches the APG disclosure-navigation pattern: Tabbing across the trigger row does not auto-expand panels, and the return-focus after Escape cannot synchronously re-open the panel that just closed.
+- **Hover is a mouse affordance.** The `pointerenter` / `pointerleave` open-and-close path on both the trigger and the panel is gated to `pointerType === 'mouse'`. Touch and pen fire those events around every tap, so honouring them would open a panel mid-press and let the follow-up tap toggle it straight back shut; on those devices a tap drives the panel through the native `click` instead.
 - **Trigger labels are mandatory.** Each `[forNavigationMenuTrigger]` needs visible text or an `aria-label`. The directive does not invent one.
+- **Disabled triggers stay focusable.** A trigger is disabled by its own item's `[disabled]` or by the root's — the two are OR'd — and the state is reflected on the trigger as `aria-disabled="true"` + `data-disabled`, never as the native `disabled` attribute. The trigger therefore keeps its place in the tab order and screen readers still announce it as unavailable, while clicks, hover-opens and keyboard activation are no-ops and arrow navigation skips it. Key disabled styling off `[data-disabled]`, not `:disabled`. The `[forNavigationMenuItem]` host's own `data-disabled` reflects its per-item `[disabled]` only; the merged state lives on the trigger.
 - **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
 - **Indicator follows the active trigger.** A `ResizeObserver` (browser-only) watches the active trigger and the surrounding list and re-measures only when the active trigger switches or one of those boxes resizes — reactive, not per-render polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.
 - **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).

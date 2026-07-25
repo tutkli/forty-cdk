@@ -19,6 +19,10 @@ import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './me
  * Reason a menu requested close. Mirrors `ForMenuCloseReason` from
  * `_internal/menu-overlay/menu-context.ts` structurally so primitives can pass either type
  * across the helper boundary without re-declaration.
+ *
+ * `'hover'` is a pointer-driven (hover-leave) close: like `'escape'` and
+ * `'programmatic'` it affects only the level that scheduled it and never
+ * propagates up the menu chain.
  */
 export type MenuOverlayCloseReason =
   | 'escape'
@@ -26,6 +30,7 @@ export type MenuOverlayCloseReason =
   | 'focusOutside'
   | 'select'
   | 'tab'
+  | 'hover'
   | 'programmatic';
 
 /**
@@ -44,6 +49,22 @@ export type MenuOverlayItemHandle = MenuItemHandle;
  * is identical in both modalities.
  */
 export type MenuActivationModality = 'pointer' | 'keyboard';
+
+/**
+ * Per-transition options for {@link MenuOverlay.openMenu} /
+ * {@link MenuOverlay.closeMenu}, forwarded verbatim to the `onOpen` / `onClose`
+ * lifecycle hooks so a host directive can react to *how* the transition was
+ * driven without re-deriving it from outside the pipeline.
+ */
+export interface MenuOverlayTransitionOptions {
+  /**
+   * When `true`, the transition is pointer-driven (hover) and the surface's
+   * imperative focus move must be suppressed — an open must not pull focus into
+   * the menu, and a close must not return focus to the trigger. Defaults to
+   * `false`, so keyboard / click / programmatic transitions move focus as usual.
+   */
+  readonly suppressFocusMoves?: boolean;
+}
 
 /**
  * Wiring the directive forwards into the helper. Inputs / outputs / models
@@ -66,20 +87,25 @@ export interface MenuOverlayHooks {
   /**
    * Optional side effect run after `openMenu` flips `open` to `true`,
    * receiving the resolved initial-focus target. `[forMenuSub]` uses it to
-   * cancel in-flight hover scheduling and reset its focus-suppression flag
-   * (a keyboard / click open supersedes hover). Top-level roots
-   * (`[forDropdownMenu]` / `[forContextMenu]`) pass neither hook.
+   * cancel in-flight hover scheduling and set its focus-suppression flags from
+   * `options.suppressFocusMoves` (a keyboard / click open supersedes hover).
+   * Top-level roots (`[forDropdownMenu]` / `[forContextMenu]`) pass neither
+   * hook.
    */
-  readonly onOpen?: (initialFocus: 'first' | 'last') => void;
+  readonly onOpen?: (initialFocus: 'first' | 'last', options: MenuOverlayTransitionOptions) => void;
 
   /**
    * Optional side effect run after `closeMenu` flips `open` to `false`,
-   * receiving the close reason. `[forMenuSub]` uses it to cancel in-flight
-   * hover scheduling, reset its focus-suppression flag, and propagate the
-   * close upward through the menu chain for every reason except `'escape'`
-   * / `'programmatic'`. Top-level roots pass neither hook.
+   * receiving the close reason and the transition options. `[forMenuSub]` uses
+   * it to cancel in-flight hover scheduling, set its focus-suppression flags
+   * from `options.suppressFocusMoves`, and propagate the close upward through
+   * the menu chain for every reason except `'escape'` / `'hover'` /
+   * `'programmatic'`. Top-level roots pass neither hook.
    */
-  readonly onClose?: (reason: MenuOverlayCloseReason) => void;
+  readonly onClose?: (
+    reason: MenuOverlayCloseReason,
+    options: MenuOverlayTransitionOptions,
+  ) => void;
 }
 
 /**
@@ -263,10 +289,14 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * Opens the menu, recording where the initial focus should land and how
    * the open was activated. A `'pointer'` modality keeps that one initial
    * focus move from reflecting `data-highlighted` on the focused item.
+   * `options` is forwarded verbatim to the `onOpen` hook — `[forMenuSub]`'s
+   * hover-open passes `{ suppressFocusMoves: true }` so the mount does not
+   * pull focus off whatever the user was on.
    */
   openMenu(
     initialFocus: 'first' | 'last' = 'first',
     modality: MenuActivationModality = 'keyboard',
+    options: MenuOverlayTransitionOptions = {},
   ): void {
     if (this.#hooks.disabled()) {
       return;
@@ -274,13 +304,19 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
     this.#closeReasonState.reset();
     this.#hooks.open.set(true);
-    this.#hooks.onOpen?.(initialFocus);
+    this.#hooks.onOpen?.(initialFocus, options);
   }
 
-  closeMenu(reason: MenuOverlayCloseReason): void {
+  /**
+   * Closes the menu, recording `reason` as the `lastCloseReason` the content
+   * pieces read. `options` is forwarded verbatim to the `onClose` hook —
+   * `[forMenuSub]`'s hover-close passes `{ suppressFocusMoves: true }` so the
+   * unmount does not yank focus back to the sub-trigger.
+   */
+  closeMenu(reason: MenuOverlayCloseReason, options: MenuOverlayTransitionOptions = {}): void {
     this.#closeReasonState.set(reason);
     this.#hooks.open.set(false);
-    this.#hooks.onClose?.(reason);
+    this.#hooks.onClose?.(reason, options);
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {

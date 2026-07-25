@@ -1,13 +1,18 @@
 import { computed, Directive, ElementRef, inject, type Signal } from '@angular/core';
 
-import { registerHandle, reflectDisabled, hostId, resolveListNavigation } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostId,
+  isHoverCapablePointer,
+  resolveListNavigation,
+} from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,
 } from './navigation-menu-context';
 
 /**
- * Disclosure trigger. Apply on `<button>`. Hover / click open the paired
+ * Disclosure trigger. Apply on `<button>`. Mouse hover / click open the paired
  * `[forNavigationMenuContent]`; arrow keys move focus across siblings;
  * ArrowDown (horizontal) / ArrowRight (vertical) open; Escape closes;
  * Enter / Space toggle.
@@ -16,6 +21,20 @@ import {
  * focus: Tabbing across the trigger row must not auto-expand panels, and a
  * programmatic return-focus (e.g. after Escape) must not synchronously
  * re-open the panel that just closed.
+ *
+ * Hover is a mouse affordance: the `pointerenter` / `pointerleave` path is
+ * gated to hover-capable pointers, so a touch or pen tap drives the panel
+ * through the native `click` instead of opening it mid-press.
+ *
+ * Disabling: {@link effectiveDisabled} merges the owning
+ * `[forNavigationMenuItem]`'s `[disabled]` with the root
+ * `[forNavigationMenu]`'s. It is reflected through a single channel,
+ * `aria-disabled="true"` + `data-disabled`, and enforced by the click / hover /
+ * keyboard guards; arrow navigation skips the trigger. The native `disabled`
+ * attribute is deliberately NOT emitted (rule #561 D2): every trigger is its
+ * own tab stop in this pattern, so a disabled trigger stays focusable and
+ * announceable instead of vanishing from the trigger row — which a menu-level
+ * `disabled` would otherwise do to the entire nav.
  */
 @Directive({
   selector: '[forNavigationMenuTrigger]',
@@ -25,12 +44,12 @@ import {
     '[id]': 'id()',
     '[attr.aria-expanded]': 'isOpen() ? "true" : "false"',
     '[attr.aria-controls]': 'isOpen() ? contentId() : null',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
+    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'isOpen() ? "open" : "closed"',
-    '[attr.data-disabled]': 'disabled() ? "" : null',
+    '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',
-    '(pointerenter)': 'onPointerEnter()',
-    '(pointerleave)': 'onPointerLeave()',
+    '(pointerenter)': 'onPointerEnter($event)',
+    '(pointerleave)': 'onPointerLeave($event)',
     '(keydown)': 'onKeyDown($event)',
   },
 })
@@ -41,7 +60,17 @@ export class ForNavigationMenuTrigger {
 
   readonly id = hostId('for-navigation-menu-trigger');
   protected readonly value: Signal<string> = this.#item.value;
-  protected readonly disabled: Signal<boolean> = this.#item.disabled;
+
+  /**
+   * Effective disabled state: the owning `[forNavigationMenuItem]`'s
+   * `[disabled]` OR the root `[forNavigationMenu]`'s `disabled`. Everything
+   * that gates on the trigger's disabled state reads this — the
+   * `aria-disabled` / `data-disabled` reflection, the click / hover / keyboard
+   * guards, and the arrow-navigation skip.
+   */
+  readonly effectiveDisabled: Signal<boolean> = computed(
+    () => this.#item.disabled() || this.menu.disabled(),
+  );
 
   protected readonly isOpen = computed(() => this.menu.isOpen(this.value()));
   protected readonly contentId = computed(() => this.menu.contentIdFor(this.value()) ?? '');
@@ -50,7 +79,7 @@ export class ForNavigationMenuTrigger {
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,
-      disabled: this.disabled,
+      disabled: this.effectiveDisabled,
       id: this.id,
     };
     // Defer registration so the parent's `triggerIdFor` / `contentIdFor` /
@@ -64,26 +93,27 @@ export class ForNavigationMenuTrigger {
       (h) => this.menu.unregisterTrigger(h),
       'afterNextRender',
     );
-    reflectDisabled(this.disabled);
   }
 
   protected onClick(): void {
-    if (this.disabled()) return;
+    if (this.effectiveDisabled()) return;
     this.menu.toggle(this.value());
   }
 
-  protected onPointerEnter(): void {
-    if (this.disabled()) return;
+  protected onPointerEnter(event: PointerEvent): void {
+    if (!isHoverCapablePointer(event)) return;
+    if (this.effectiveDisabled()) return;
     this.menu.scheduleOpen(this.value(), 'hover');
   }
 
-  protected onPointerLeave(): void {
-    if (this.disabled()) return;
+  protected onPointerLeave(event: PointerEvent): void {
+    if (!isHoverCapablePointer(event)) return;
+    if (this.effectiveDisabled()) return;
     this.menu.scheduleClose('hover', this.value());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled()) return;
+    if (this.effectiveDisabled()) return;
     // Activation: Enter / Space toggle the disclosure.
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();

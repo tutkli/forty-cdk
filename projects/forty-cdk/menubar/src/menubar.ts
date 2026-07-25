@@ -1,19 +1,17 @@
 import {
   booleanAttribute,
   computed,
-  DestroyRef,
   Directive,
   inject,
   input,
   model,
-  numberAttribute,
+  output,
   signal,
 } from '@angular/core';
 
 import {
   Collection,
   firstEnabledHost,
-  createDebouncedAction,
   findTypeaheadMatch,
   type ListNavigationAction,
   type WritingDirection,
@@ -23,6 +21,8 @@ import {
   injectTextDirection,
   injectTypeahead,
   FOR_MENU_CONTEXT,
+  type VetoableEvent,
+  type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
@@ -39,9 +39,9 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
  * A horizontal (or vertical) bar of triggers, each opening a dropdown menu.
  * The bar owns "which child menu is open" — opening another implicitly
  * closes the previous. Cross-menu ArrowLeft / ArrowRight navigation,
- * hover-after-first-open (switch siblings instantly, dismiss on hover-leave
- * after `closeDelay`), and roving tabindex among triggers are wired
- * automatically.
+ * hover-after-first-open (switch siblings instantly), and roving tabindex
+ * among triggers are wired automatically. Per the APG Menubar pattern the
+ * pointer leaving the bar does not dismiss the open menu.
  *
  * Surface composition:
  *
@@ -79,9 +79,6 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
-    '(pointerenter)': 'cancelPendingClose()',
-    '(pointermove)': 'cancelPendingClose()',
-    '(pointerleave)': 'onBarPointerLeave($event)',
   },
   providers: [
     { provide: FOR_MENUBAR_CONTEXT, useExisting: ForMenubar },
@@ -118,11 +115,10 @@ export class ForMenubar implements ForMenubarContext {
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
-   * Whether the open menu closes on Escape, an outside interaction, or the
-   * pointer leaving the bar. When `false`, the menu stays open until the
-   * consumer flips `value` (or a trigger / item interaction switches it).
-   * Matches the dismiss contract of `[forDropdownMenu]` / `[forContextMenu]`.
-   * Default `true`.
+   * Whether the open menu closes on Escape or an outside interaction. When
+   * `false`, the menu stays open until the consumer flips `value` (or a
+   * trigger / item interaction switches it). Matches the dismiss contract of
+   * `[forDropdownMenu]` / `[forContextMenu]`. Default `true`.
    */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
@@ -130,11 +126,50 @@ export class ForMenubar implements ForMenubarContext {
   readonly ariaLabel = input<string | null>(null);
 
   /**
-   * ms before the open menu closes after the pointer leaves the bar (and any
-   * open menu). Default `150`. The default is read from
-   * `provideForMenubarDefaults` for the surrounding scope.
+   * Fires when Escape is pressed while one of the bar's menus is the topmost
+   * dismissable layer, just before it closes. Call `preventDefault()` on the
+   * emitted veto to keep the menu open and suppress the Escape-driven close.
+   * Bar-level: the same output covers whichever trigger's menu is open.
    */
-  readonly closeDelay = input<number>(this.#defaults.closeDelay, { transform: numberAttribute });
+  readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /**
+   * Fires on a pointer-down outside the open menu and outside every menubar
+   * trigger, just before the menu closes. Call `preventDefault()` on the veto
+   * to keep it open.
+   */
+  readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+
+  /**
+   * Fires when focus moves outside the open menu and outside every menubar
+   * trigger, just before the menu closes. Call `preventDefault()` on the veto
+   * to keep it open.
+   */
+  readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+
+  /**
+   * Composite outside-interaction channel: fires for either a
+   * pointer-down-outside or a focus-outside, just before the menu closes, and
+   * shares the veto state of the specific channel. Call `preventDefault()` on
+   * the veto to keep the menu open regardless of which interaction fired.
+   */
+  readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
+
+  /**
+   * Fires just before an opening menu sends focus to its first / last enabled
+   * item on mount. Call `preventDefault()` on the emitted veto to skip the
+   * imperative focus move. Also fires on a hover-switch between sibling
+   * triggers, since that remounts the content.
+   */
+  readonly autoFocusOnOpen = output<VetoableEvent>();
+
+  /**
+   * Fires just before focus returns to the trigger on unmount. Call
+   * `preventDefault()` on the veto to suppress the return-focus. Not fired
+   * when the close already moved focus on purpose (Tab, or an outside
+   * pointer-down / focus).
+   */
+  readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly #triggerCollection = new Collection<ForMenubarTriggerHandle>();
   readonly triggers = this.#triggerCollection.items;
@@ -187,16 +222,6 @@ export class ForMenubar implements ForMenubarContext {
 
   readonly #triggerTypeahead = injectTypeahead();
 
-  readonly #closeAction = createDebouncedAction(() => this.#closeByPointer());
-  #detachContentPointerFn: (() => void) | null = null;
-
-  constructor() {
-    inject(DestroyRef).onDestroy(() => {
-      this.#closeAction.cancel();
-      this.detachContentPointer();
-    });
-  }
-
   // -- Multiplexed ForMenuContext for the currently-active menu -------------
 
   /**
@@ -208,7 +233,7 @@ export class ForMenubar implements ForMenubarContext {
    * (the same mechanics that back `MenuOverlay`), so the multiplexing only
    * covers the parts the single-owner overlay can't.
    */
-  readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this);
+  readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this, this.#defaults);
 
   // -- ForMenubarContext ----------------------------------------------------
 
@@ -270,9 +295,15 @@ export class ForMenubar implements ForMenubarContext {
     }
     this.menuCtx.prepareOpen(initialFocus, modality);
     this.#lastValue.set(value);
-    if (this.value() !== value) {
-      this.value.set(value);
+    if (this.value() === value) {
+      if (initialFocus === 'last') {
+        this.menuCtx.focusLastEnabledItem();
+      } else {
+        this.menuCtx.focusFirstEnabledItem();
+      }
+      return;
     }
+    this.value.set(value);
   }
 
   closeOpen(): void {
@@ -310,91 +341,12 @@ export class ForMenubar implements ForMenubarContext {
     if (this.disabled()) {
       return;
     }
-    // Entering any trigger aborts a pending hover-leave close — the pointer
-    // is still travelling across the bar, so keep the open menu alive.
-    this.#closeAction.cancel();
     // Hover-after-open opens siblings instantly; while no menu is
     // open, hover does nothing (first open requires keyboard / click).
     if (this.value() === '' || this.value() === value) {
       return;
     }
     this.openTrigger(value, 'first', 'pointer');
-  }
-
-  /**
-   * Abort a scheduled hover-leave close, if any. Bound to the bar's
-   * `pointerenter` / `pointermove` so re-entering the bar (or its open menu)
-   * keeps the menu open. Also called by the multiplexed content's
-   * `pointerenter` so travelling from a trigger into its portaled menu does
-   * not trip the close timer.
-   */
-  cancelPendingClose(): void {
-    this.#closeAction.cancel();
-  }
-
-  /**
-   * The pointer left the bar. Schedule a close after `closeDelay`; entering
-   * the bar, a trigger, or the open menu again cancels it. No-op while no
-   * menu is open or for non-mouse pointers (touch / pen drive open/close via
-   * tap, not hover).
-   */
-  protected onBarPointerLeave(event: PointerEvent): void {
-    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
-      return;
-    }
-    this.#scheduleCloseByPointer();
-  }
-
-  #scheduleCloseByPointer(): void {
-    this.#closeAction.cancel();
-    // A non-dismissible menu stays pinned open: hover-leave is held to the
-    // same contract as Escape / outside interaction.
-    if (this.value() === '' || !this.dismissible()) {
-      return;
-    }
-    this.#closeAction.schedule(this.closeDelay());
-  }
-
-  #closeByPointer(): void {
-    if (this.value() === '') {
-      return;
-    }
-    this.menuCtx.setLastCloseReason('pointerDownOutside');
-    this.closeOpen();
-  }
-
-  /**
-   * Attach the bar's hover-keepalive listeners to the mounted multiplexed
-   * content element so travelling from a trigger into its portaled menu keeps
-   * the open chain alive. Called by {@link MenubarMenuContext} on content
-   * registration.
-   */
-  attachContentPointer(el: HTMLElement): void {
-    this.detachContentPointer();
-    const onEnter = (event: PointerEvent): void => {
-      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
-        return;
-      }
-      this.#closeAction.cancel();
-    };
-    const onLeave = (event: PointerEvent): void => {
-      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
-        return;
-      }
-      this.#scheduleCloseByPointer();
-    };
-    el.addEventListener('pointerenter', onEnter);
-    el.addEventListener('pointerleave', onLeave);
-    this.#detachContentPointerFn = () => {
-      el.removeEventListener('pointerenter', onEnter);
-      el.removeEventListener('pointerleave', onLeave);
-    };
-  }
-
-  /** Detach the bar's hover-keepalive listeners. Called by {@link MenubarMenuContext}. */
-  detachContentPointer(): void {
-    this.#detachContentPointerFn?.();
-    this.#detachContentPointerFn = null;
   }
 
   handleTriggerTypeahead(event: KeyboardEvent): void {

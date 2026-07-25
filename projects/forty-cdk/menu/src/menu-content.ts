@@ -1,6 +1,11 @@
-import { Directive, ElementRef, inject } from '@angular/core';
+import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, injectOverlayShell, injectMenuContext } from 'forty-cdk/core';
+import {
+  registerHandle,
+  injectOverlayShell,
+  injectMenuContext,
+  isHoverCapablePointer,
+} from 'forty-cdk/core';
 
 /**
  * The menu surface. Carries `role="menu"`, is portaled to `document.body`,
@@ -21,6 +26,14 @@ import { registerHandle, injectOverlayShell, injectMenuContext } from 'forty-cdk
  * The lifecycle (positioner + dismissable layer + initial focus + return
  * focus) is owned by the shared `injectOverlayShell` helper.
  *
+ * Accessible name: a consumer-set **static** `aria-labelledby` on the surface
+ * always wins and is preserved. Otherwise an explicit `ariaLabel` on the root
+ * is reflected as `aria-label`, and with neither the surface falls back to
+ * `aria-labelledby="<triggerId>"` — but only when the root's trigger is a
+ * labelling control (`[forDropdownMenu]`, `[forMenubar]`, `[forMenuSub]`).
+ * `[forContextMenu]` opts out of that fallback (its trigger is the whole
+ * right-click region), so name a context menu with `[ariaLabel]`.
+ *
  * Navigation is vertical-only (Up / Down between items, per the APG Menu
  * pattern), so the surface reflects `aria-orientation="vertical"` explicitly.
  * Horizontal menus are out of scope; a horizontal *bar* of menus is modelled
@@ -35,7 +48,7 @@ import { registerHandle, injectOverlayShell, injectMenuContext } from 'forty-cdk
   host: {
     role: 'menu',
     '[id]': 'ctx.contentId()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'ctx.ariaLabel() || null',
     '[attr.aria-orientation]': '"vertical"',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
@@ -46,6 +59,18 @@ import { registerHandle, injectOverlayShell, injectMenuContext } from 'forty-cdk
 export class ForMenuContent {
   protected readonly ctx = injectMenuContext('ForMenuContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  readonly #staticLabelledBy = this.#host.nativeElement.getAttribute('aria-labelledby');
+
+  protected readonly labelledBy = computed(() => {
+    if (this.#staticLabelledBy) {
+      return this.#staticLabelledBy;
+    }
+    if (this.ctx.ariaLabel() || this.ctx.triggerLabelsMenu === false) {
+      return null;
+    }
+    return this.ctx.triggerId();
+  });
 
   constructor() {
     registerHandle(
@@ -119,7 +144,7 @@ export class ForMenuContent {
    * clears. Gated to mouse — touch / pen never hover.
    */
   protected onPointerLeave(event: PointerEvent): void {
-    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+    if (!isHoverCapablePointer(event)) {
       return;
     }
     this.ctx.clearItemHighlights();

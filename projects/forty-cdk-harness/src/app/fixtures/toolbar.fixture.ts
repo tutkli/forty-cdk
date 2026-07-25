@@ -1,7 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ForToggleGroup, ForToggleGroupItem } from 'forty-cdk/toggle';
-import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/toolbar';
+import {
+  ForToolbar,
+  ForToolbarButton,
+  ForToolbarLink,
+  ForToolbarSeparator,
+} from 'forty-cdk/toolbar';
 
 /**
  * Fixture for the real-browser keyboard contract of `[forToolbar]`:
@@ -29,6 +34,9 @@ import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/too
  *                         (registers with the parent toolbar's roving).
  *  6. `tg-italic`       — same group, second item.
  *  7. `btn-2`           — trailing `[forToolbarButton]`.
+ *  8. `link`            — trailing `[forToolbarLink]` on `<a href="#help">`,
+ *                         so specs can assert real navigation is suppressed
+ *                         when the toolbar (or the link) is disabled.
  *
  * Query params:
  *  - `?orientation=vertical` — switch the toolbar to vertical (ArrowUp /
@@ -37,6 +45,9 @@ import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/too
  *    inverts ArrowLeft / ArrowRight.
  *  - `?disabled=N` — 0-based index of the focusable child to mark
  *    disabled. Defaults to `3` (the dedicated disabled-button slot).
+ *  - `?toolbarDisabled=1` — set `disabled` on the toolbar root, so every
+ *    item (buttons, toggle-group items and the link) reports disabled and
+ *    the bar takes no place in the tab order.
  *
  * `before` / `after` `<input>` elements sit on either side of the toolbar
  * so specs can assert that the toolbar is a single Tab stop (Tab from
@@ -45,7 +56,14 @@ import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/too
 @Component({
   selector: 'app-toolbar-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForToolbar, ForToolbarButton, ForToolbarSeparator, ForToggleGroup, ForToggleGroupItem],
+  imports: [
+    ForToolbar,
+    ForToolbarButton,
+    ForToolbarLink,
+    ForToolbarSeparator,
+    ForToggleGroup,
+    ForToggleGroupItem,
+  ],
   template: `
     <input data-testid="before" placeholder="before-toolbar" />
     <button data-testid="remove-active" type="button" (click)="removeBtn1()">remove</button>
@@ -55,6 +73,7 @@ import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/too
       forToolbar
       [orientation]="orientation"
       [dir]="dir"
+      [disabled]="toolbarDisabled"
       aria-label="Formatting"
     >
       @if (!btn1Removed()) {
@@ -87,6 +106,7 @@ import { ForToolbar, ForToolbarButton, ForToolbarSeparator } from 'forty-cdk/too
         </button>
       </div>
       <button data-testid="btn-2" forToolbarButton [disabled]="isDisabled(6)">B2</button>
+      <a data-testid="link" forToolbarLink href="#help" [disabled]="isDisabled(7)">Help</a>
     </div>
     <input data-testid="after" placeholder="after-toolbar" />
   `,
@@ -101,6 +121,9 @@ export class ToolbarFixture {
 
   protected readonly dir: 'ltr' | 'rtl' =
     this.#route.snapshot.queryParamMap.get('dir') === 'rtl' ? 'rtl' : 'ltr';
+
+  protected readonly toolbarDisabled =
+    this.#route.snapshot.queryParamMap.get('toolbarDisabled') === '1';
 
   protected readonly disabledIndex = computed(() => {
     const raw = this.#route.snapshot.queryParamMap.get('disabled');

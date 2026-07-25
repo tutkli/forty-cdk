@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { assertDismissableLayerContract } from '../../src/test-utils/contract';
 import { FOR_MENU_CONTEXT, type VetoableNativeEvent } from 'forty-cdk/core';
-import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
 import { ForContextMenu } from './context-menu';
 import { FOR_CONTEXT_MENU_CONTEXT } from './context-menu-context';
@@ -505,17 +505,93 @@ describe('ForContextMenu', () => {
     });
   });
 
-  describe('accessible name (aria-labelledby → trigger id)', () => {
-    it('binds the trigger id so the content aria-labelledby resolves to a real element', async () => {
+  describe('accessible name (no labelledby fallback to the trigger region)', () => {
+    it('exposes no aria-labelledby on the content when no ariaLabel is set', async () => {
+      const r = renderHost(ContextMenuHost);
+      rightClick(r.query<HTMLElement>('#region')!, 0, 0);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+      expect(content.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('never points the menu name at the right-click region', async () => {
       const r = renderHost(ContextMenuHost);
       const region = r.query<HTMLElement>('#region')!;
       rightClick(region, 0, 0);
       await flush(r.fixture);
 
+      expect(region.id).toBe('region');
+      expect(document.querySelector('[aria-labelledby="region"]')).toBeNull();
+    });
+
+    it('preserves a consumer-set static aria-labelledby on the content', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <h2 id="heading">Row actions</h2>
+          <div forContextMenu [(open)]="open">
+            <div forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent aria-labelledby="heading">
+                <button forMenuItem>Cut</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class StaticLabelledByHost {
+        readonly open = signal(false);
+      }
+
+      const r = renderHost(StaticLabelledByHost);
+      rightClick(r.query<HTMLElement>('[forContextMenuTrigger]')!, 0, 0);
+      await flush(r.fixture);
+
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      const labelledby = content.getAttribute('aria-labelledby');
-      expect(labelledby).toBeTruthy();
-      expect(document.getElementById(labelledby!)).toBe(region);
+      expect(content.getAttribute('aria-labelledby')).toBe('heading');
+    });
+
+    it('still labels a nested submenu by its sub-trigger', async () => {
+      @Component({
+        imports: [...IMPORTS, ForMenuSub, ForMenuSubTrigger],
+        template: `
+          <div forContextMenu [(open)]="open">
+            <div forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen">
+                  <button id="more" forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div id="sub-content" forMenuSubContent>
+                      <button forMenuItem>Leaf</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class NestedSubHost {
+        readonly open = signal(false);
+        readonly subOpen = signal(false);
+      }
+
+      const r = renderHost(NestedSubHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+
+      const subTrigger = document.querySelector<HTMLElement>('#more')!;
+      const subContent = document.querySelector<HTMLElement>('#sub-content')!;
+      expect(subTrigger.id).toBeTruthy();
+      expect(subContent.getAttribute('aria-labelledby')).toBe(subTrigger.id);
     });
 
     it('generates and mirrors a trigger id when the consumer sets none', async () => {
@@ -544,11 +620,11 @@ describe('ForContextMenu', () => {
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
       expect(document.getElementById(trigger.id)).toBe(trigger);
     });
 
-    it('drops aria-labelledby in favour of an explicit ariaLabel', async () => {
+    it('exposes the explicit ariaLabel as the menu name', async () => {
       @Component({
         imports: IMPORTS,
         template: `

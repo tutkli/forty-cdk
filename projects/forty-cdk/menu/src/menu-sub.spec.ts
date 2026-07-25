@@ -10,7 +10,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import { assertDismissableLayerContract } from '../../src/test-utils/contract';
-import { type VetoableNativeEvent } from 'forty-cdk/core';
+import { type VetoableNativeEvent, type WritingDirection } from 'forty-cdk/core';
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
@@ -117,8 +117,8 @@ class SubMenuDismissContractHost {
 /**
  * Builds a pointer event with an explicit `pointerType`. jsdom's
  * `PointerEvent` constructor doesn't populate `pointerType` / `clientX` /
- * `clientY` from its init dict, and the hover listeners gate on
- * `pointerType === 'mouse'`, so the spec defines them directly.
+ * `clientY` from its init dict, and the hover listeners gate on the pointer
+ * being hover-capable, so the spec defines them directly.
  */
 function pointerEvent(
   type: 'pointerenter' | 'pointerleave' | 'pointermove',
@@ -154,6 +154,19 @@ describe('ForMenuSub', () => {
       expect(more.getAttribute('aria-expanded')).toBe('true');
       const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
       expect(more.getAttribute('aria-controls')).toBe(subContent.id);
+    });
+
+    it('labels submenu content by its sub-trigger', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('#more')!;
+      const subContent = document.querySelector<HTMLElement>('#sub-content')!;
+      expect(more.id).toBeTruthy();
+      expect(subContent.getAttribute('aria-labelledby')).toBe(more.id);
     });
 
     it('reflects data-state on SubTrigger and SubContent', async () => {
@@ -325,6 +338,23 @@ describe('ForMenuSub', () => {
       await flush(r.fixture);
 
       expect(r.instance.subOpen()).toBe(false);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('ArrowRight inside the submenu is a no-op without an enclosing menubar (LTR)', async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      r.instance.subOpen.set(true);
+      await flush(r.fixture);
+
+      const advanced = document.querySelector<HTMLElement>('#advanced')!;
+      advanced.focus();
+      const event = pressKey(advanced, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(r.instance.subOpen()).toBe(true);
       expect(r.instance.open()).toBe(true);
     });
 
@@ -538,6 +568,34 @@ describe('ForMenuSub', () => {
       expect(instance.subOpen()).toBe(false);
     });
 
+    it('ignores a pen pointer enter (pen opens via tap, not hover)', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter', { pointerType: 'pen' }));
+      await flush();
+      vi.advanceTimersByTime(500);
+      await flush();
+
+      expect(instance.subOpen()).toBe(false);
+    });
+
+    it('a synthetic pointer enter with no pointerType opens the submenu (hover parity)', async () => {
+      const { instance, flush } = renderHost(SubMenuHost);
+      instance.open.set(true);
+      await flush();
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.dispatchEvent(pointerEvent('pointerenter', { pointerType: '' }));
+      await flush();
+      vi.advanceTimersByTime(500);
+      await flush();
+
+      expect(instance.subOpen()).toBe(true);
+    });
+
     it('hovering a disabled SubTrigger never opens', async () => {
       @Component({
         imports: IMPORTS,
@@ -693,6 +751,122 @@ describe('ForMenuSub', () => {
         vi.advanceTimersByTime(1);
         await flush();
         expect(instance.subOpen()).toBe(true);
+      });
+    });
+
+    describe('pointer paths route through the open/close pipeline (#1390 item 3)', () => {
+      async function hoverOpen(flush: () => Promise<void>): Promise<void> {
+        const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+        more.dispatchEvent(pointerEvent('pointerenter'));
+        await flush();
+        vi.advanceTimersByTime(100);
+        await flush();
+      }
+
+      async function hoverCloseFromContent(flush: () => Promise<void>): Promise<void> {
+        const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
+        subContent.dispatchEvent(pointerEvent('pointerleave', { clientX: 999, clientY: 999 }));
+        await flush();
+        vi.advanceTimersByTime(100);
+        await flush();
+      }
+
+      it('a programmatic open after a hover-close still moves focus into the submenu', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        await hoverOpen(flush);
+        expect(instance.subOpen()).toBe(true);
+
+        await hoverCloseFromContent(flush);
+        expect(instance.subOpen()).toBe(false);
+
+        instance.subOpen.set(true);
+        await flush();
+
+        expect(document.activeElement?.id).toBe('advanced');
+      });
+
+      it('a hover-open still leaves focus outside the submenu', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        await hoverOpen(flush);
+
+        expect(instance.subOpen()).toBe(true);
+        expect(document.activeElement?.id).not.toBe('advanced');
+      });
+
+      it('a hover-close still does not return focus to the sub-trigger', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        const more = document.querySelector<HTMLElement>('#more')!;
+        more.focus();
+        pressKey(more, 'ArrowRight');
+        await flush();
+        expect(document.activeElement?.id).toBe('advanced');
+
+        await hoverCloseFromContent(flush);
+
+        expect(instance.subOpen()).toBe(false);
+        expect(document.activeElement?.id).not.toBe('more');
+      });
+
+      it('a keyboard close after a hover-open returns focus to the sub-trigger', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        await hoverOpen(flush);
+        expect(instance.subOpen()).toBe(true);
+
+        const advanced = document.querySelector<HTMLElement>('#advanced')!;
+        advanced.focus();
+        pressKey(advanced, 'ArrowLeft');
+        await flush();
+
+        expect(instance.subOpen()).toBe(false);
+        expect(document.activeElement?.id).toBe('more');
+      });
+
+      it('resets lastCloseReason on a hover-open', async () => {
+        const r = renderHost(SubMenuHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+
+        const sub = r.fixture.debugElement.query(By.directive(ForMenuSub)).injector.get(ForMenuSub);
+
+        const more = document.querySelector<HTMLElement>('#more')!;
+        more.focus();
+        pressKey(more, 'ArrowRight');
+        await flush(r.fixture);
+        expect(r.instance.subOpen()).toBe(true);
+
+        pressKey(document, 'Escape');
+        await flush(r.fixture);
+        expect(r.instance.subOpen()).toBe(false);
+        expect(sub.lastCloseReason()).toBe('escape');
+
+        await hoverOpen(() => flush(r.fixture));
+        expect(r.instance.subOpen()).toBe(true);
+        expect(sub.lastCloseReason()).toBeNull();
+      });
+
+      it('a hover-close collapses only the submenu, leaving the parent menu open', async () => {
+        const { instance, flush } = renderHost(SubMenuHost);
+        instance.open.set(true);
+        await flush();
+
+        await hoverOpen(flush);
+        await hoverCloseFromContent(flush);
+
+        expect(instance.subOpen()).toBe(false);
+        expect(instance.open()).toBe(true);
+        expect(document.querySelector('#parent-content')).not.toBeNull();
       });
     });
   });
@@ -889,6 +1063,57 @@ describe('ForMenuSub', () => {
       more.focus();
       // Sub overrides to rtl; ArrowLeft opens.
       pressKey(more, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(true);
+    });
+
+    it('accepts an explicit [dir]="null" and falls back to the parent menu direction', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forDropdownMenu [(open)]="open" dir="rtl">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent>
+                <div forMenuSub [(open)]="subOpen" [dir]="subDir()">
+                  <button id="more" forMenuSubTrigger>More</button>
+                  @if (subOpen()) {
+                    <div forMenuSubContent>
+                      <button id="advanced" forMenuItem>Advanced</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(false);
+        readonly subOpen = signal(false);
+        readonly subDir = signal<WritingDirection | null>(null);
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
+      more.focus();
+
+      pressKey(more, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(true);
+
+      r.instance.subOpen.set(false);
+      r.instance.subDir.set('ltr');
+      await flush(r.fixture);
+      more.focus();
+      pressKey(more, 'ArrowLeft');
+      await flush(r.fixture);
+      expect(r.instance.subOpen()).toBe(false);
+
+      pressKey(more, 'ArrowRight');
       await flush(r.fixture);
       expect(r.instance.subOpen()).toBe(true);
     });

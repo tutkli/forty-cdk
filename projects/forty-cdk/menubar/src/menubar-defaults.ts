@@ -9,8 +9,17 @@ import { createDefaults } from 'forty-cdk/core';
  * overrides merge with the parent scope.
  */
 export interface ForMenubarDefaults {
-  /** ms before the open menu closes after the pointer leaves the bar. */
-  closeDelay: number;
+  /**
+   * Distance (px) between a menubar trigger and its floating menu along the
+   * resolved `side` axis.
+   */
+  sideOffset: number;
+  /**
+   * Padding (px) added to the viewport edges for collision-aware positioning.
+   * Higher values keep the open menu further from the edge when `flip` /
+   * `shift` runs.
+   */
+  collisionPadding: number;
 }
 
 /**
@@ -19,7 +28,8 @@ export interface ForMenubarDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
-  closeDelay: 150,
+  sideOffset: 4,
+  collisionPadding: 8,
 };
 
 const { token, provideDefaults } = createDefaults<ForMenubarDefaults>(

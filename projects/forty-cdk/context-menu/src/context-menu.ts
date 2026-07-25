@@ -181,7 +181,13 @@ export class ForContextMenu
   /** When true (default), focus returns to the right-click target on close. */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
-  /** Manual `aria-label` on `[forMenuContent]`. Use when there is no meaningful labelling element. */
+  /**
+   * Accessible name reflected as `aria-label` on `[forMenuContent]`. This is
+   * the only name hook the root exposes for a context menu: the right-click
+   * region is never used as an `aria-labelledby` target, so with no
+   * `ariaLabel` (and no consumer-set static `aria-labelledby` on the content)
+   * the surface exposes no accessible name at all.
+   */
   readonly ariaLabel = input<string | null>(null);
 
   /**
@@ -245,6 +251,14 @@ export class ForContextMenu
    * while the menu is open should close it like any other outside click.
    */
   readonly dismissableExemptions = signal<readonly HTMLElement[]>([]).asReadonly();
+
+  /**
+   * The right-click region is not a labelling element, so `[forMenuContent]`
+   * emits no `aria-labelledby` fallback for this flavor — pointing the menu's
+   * name at the region would announce its entire text. Name the menu with
+   * `[ariaLabel]` instead.
+   */
+  readonly triggerLabelsMenu = false;
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;

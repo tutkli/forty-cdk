@@ -30,7 +30,9 @@ export interface MenuSiblingNavigator {
  * focus-routing decision baked in. `'programmatic'` also
  * covers the user-initiated trigger toggle-close (clicking an open menu's
  * trigger): the toggle path reuses this reason by design rather than
- * exposing a distinct `'trigger'` reason.
+ * exposing a distinct `'trigger'` reason. `'hover'` is a pointer-driven
+ * (hover-leave) close and, like `'escape'` / `'programmatic'`, affects only
+ * the level that scheduled it — it never propagates up the menu chain.
  */
 export type ForMenuCloseReason =
   | 'escape'
@@ -38,6 +40,7 @@ export type ForMenuCloseReason =
   | 'focusOutside'
   | 'select'
   | 'tab'
+  | 'hover'
   | 'programmatic';
 
 /**
@@ -123,6 +126,20 @@ export interface ForMenuContext {
   readonly triggerId: Signal<string>;
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
+
+  /**
+   * Whether the trigger's own accessible name is a valid name for the menu
+   * surface. `true` — the default when a root omits it — lets
+   * `[forMenuContent]` fall back to `aria-labelledby="<triggerId>"` when no
+   * `ariaLabel` is set, which is correct for a discrete labelling control (a
+   * `[forDropdownMenuTrigger]` button, a `[forMenubarTrigger]` or
+   * `[forMenuSubTrigger]` menuitem). `[forContextMenu]` sets it to `false`:
+   * its trigger is the whole right-click region, so an `aria-labelledby`
+   * pointing at it would make screen readers announce the entire row / card
+   * text as the menu's name. A root that sets it to `false` must expose
+   * `ariaLabel` as the way to name the menu.
+   */
+  readonly triggerLabelsMenu?: boolean;
 
   /** Anchor passed to floating-ui — `HTMLElement` (Dropdown) or `VirtualElement` (Context). */
   readonly anchor: Signal<ReferenceElement | null>;

@@ -367,6 +367,80 @@ describe('ForToolbar', () => {
       expect(link.getAttribute('aria-disabled')).toBe('true');
       expect(link.hasAttribute('disabled')).toBe(false);
     });
+
+    it('disabled toolbar announces the link disabled and drops its tab stop', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      expect(link.getAttribute('aria-disabled')).toBe('true');
+      expect(link.getAttribute('data-disabled')).toBe('');
+      expect(link.hasAttribute('disabled')).toBe(false);
+      expect(link.getAttribute('tabindex')).toBe('-1');
+
+      const stops = [...queryAll<HTMLElement>('[forToolbarButton]'), link].filter(
+        (item) => item.getAttribute('tabindex') === '0',
+      );
+      expect(stops).toEqual([]);
+    });
+
+    it('disabled toolbar keeps the link out of the roving active slot', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      link.focus();
+      await flush();
+      expect(link.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('disabled toolbar suppresses link activation and stops later click listeners', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const spy = vi.fn();
+      link.addEventListener('click', spy);
+      try {
+        const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+        link.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        link.removeEventListener('click', spy);
+      }
+    });
+
+    it('per-item disabled link suppresses activation with stopImmediatePropagation', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.linkDisabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const spy = vi.fn();
+      link.addEventListener('click', spy);
+      try {
+        const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+        link.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(true);
+        expect(spy).not.toHaveBeenCalled();
+      } finally {
+        link.removeEventListener('click', spy);
+      }
+    });
+
+    it('disabled toolbar leaves arrow keys on the link unconsumed', async () => {
+      const { fixture, query, flush } = renderHost(ToolbarHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const link = query<HTMLAnchorElement>('a')!;
+
+      const event = pressKey(link, 'ArrowRight');
+      expect(event.defaultPrevented).toBe(false);
+    });
   });
 
   describe('separator', () => {
@@ -387,6 +461,44 @@ describe('ForToolbar', () => {
       expect(sep.getAttribute('role')).toBe('separator');
       expect(sep.getAttribute('data-orientation')).toBe('horizontal');
       expect(sep.getAttribute('aria-orientation')).toBeNull();
+    });
+  });
+
+  describe('orphan usage', () => {
+    it('throws a prefixed error when ForToolbarButton is used outside a toolbar', () => {
+      @Component({
+        imports: [ForToolbarButton],
+        template: `<button forToolbarButton>x</button>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrowError(
+        /\[forty-cdk\/toolbar\] ForToolbarButton must be used inside a \[forToolbar\] element\./,
+      );
+    });
+
+    it('throws a prefixed error when ForToolbarLink is used outside a toolbar', () => {
+      @Component({
+        imports: [ForToolbarLink],
+        template: `<a forToolbarLink href="/x">x</a>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrowError(
+        /\[forty-cdk\/toolbar\] ForToolbarLink must be used inside a \[forToolbar\] element\./,
+      );
+    });
+
+    it('throws a prefixed error when ForToolbarSeparator is used outside a toolbar', () => {
+      @Component({
+        imports: [ForToolbarSeparator],
+        template: `<span forToolbarSeparator></span>`,
+      })
+      class Orphan {}
+
+      expect(() => renderHost(Orphan)).toThrowError(
+        /\[forty-cdk\/toolbar\] ForToolbarSeparator must be used inside a \[forToolbar\] element\./,
+      );
     });
   });
 
