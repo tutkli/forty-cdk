@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { assertDismissableLayerContract } from '../../src/test-utils/contract';
-import { FOR_MENU_CONTEXT, type VetoableNativeEvent } from 'forty-cdk/core';
+import { FOR_MENU_CONTEXT, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
 import { ForContextMenu } from './context-menu';
@@ -757,6 +757,44 @@ describe('ForContextMenu', () => {
       pressKey(region, 'F10', { shiftKey: true });
       await flush(r.fixture);
 
+      expect(document.activeElement?.id).toBe('cut');
+    });
+
+    it('a second Shift+F10 moves focus into a menu whose mount focus was vetoed', async () => {
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forContextMenu [(open)]="open" (autoFocusOnOpen)="onAutoOpen($event)">
+            <div id="region" forContextMenuTrigger>Right-click here</div>
+            @if (open()) {
+              <div forMenuContent>
+                <button id="cut" forMenuItem>Cut</button>
+                <button id="copy" forMenuItem>Copy</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class VetoedFocusHost {
+        readonly open = signal(false);
+        onAutoOpen(event: VetoableEvent): void {
+          event.preventDefault();
+        }
+      }
+
+      const r = renderHost(VetoedFocusHost);
+      const region = r.query<HTMLElement>('#region')!;
+      region.focus();
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(region);
+
+      pressKey(region, 'F10', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
       expect(document.activeElement?.id).toBe('cut');
     });
   });

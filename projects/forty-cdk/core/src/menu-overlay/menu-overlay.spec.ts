@@ -405,6 +405,101 @@ describe('MenuOverlay', () => {
     });
   });
 
+  describe('openMenu over an already-open menu', () => {
+    function openWithItems(
+      items: readonly { id: string; disabled?: boolean }[],
+    ): BuiltOverlay & { outside: HTMLElement } {
+      const built = build();
+      for (const spec of items) {
+        built.overlay.registerItem(makeItem(spec.id, { disabled: spec.disabled }));
+      }
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      built.overlay.openMenu('first');
+      outside.focus();
+      return { ...built, outside };
+    }
+
+    it('moves focus to the first enabled item instead of doing nothing', () => {
+      const { overlay, hooks } = openWithItems([{ id: 'a', disabled: true }, { id: 'b' }]);
+
+      overlay.openMenu('first');
+
+      expect(hooks.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('b');
+    });
+
+    it('moves focus to the last enabled item for an ArrowUp-style re-open', () => {
+      const { overlay, hooks } = openWithItems([
+        { id: 'a' },
+        { id: 'b' },
+        { id: 'c', disabled: true },
+      ]);
+
+      overlay.openMenu('last');
+
+      expect(hooks.open()).toBe(true);
+      expect(overlay.initialFocus()).toBe('last');
+      expect(document.activeElement?.id).toBe('b');
+    });
+
+    it('still runs the onOpen hook so in-flight hover scheduling is cancelled', () => {
+      const { overlay, lifecycle } = openWithItems([{ id: 'a' }]);
+
+      overlay.openMenu('last');
+
+      expect(lifecycle.opens).toEqual([
+        { initialFocus: 'first', options: {} },
+        { initialFocus: 'last', options: {} },
+      ]);
+    });
+
+    it('leaves focus alone for a suppressFocusMoves transition (hover-open)', () => {
+      const { overlay, hooks, outside } = openWithItems([{ id: 'a' }]);
+
+      overlay.openMenu('first', 'pointer', { suppressFocusMoves: true });
+
+      expect(hooks.open()).toBe(true);
+      expect(document.activeElement).toBe(outside);
+    });
+
+    it('suppresses the highlight on a pointer re-open and keeps it on a keyboard one', () => {
+      const built = build();
+      const suppress = vi.fn();
+      built.overlay.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+      built.overlay.openMenu('first');
+
+      built.overlay.openMenu('first', 'pointer');
+      expect(suppress).toHaveBeenCalledTimes(1);
+      expect(document.activeElement?.id).toBe('a');
+
+      built.overlay.openMenu('first', 'keyboard');
+      expect(suppress).toHaveBeenCalledTimes(1);
+    });
+
+    it('moves nothing when the open menu has no enabled item', () => {
+      const { overlay, hooks, outside } = openWithItems([
+        { id: 'a', disabled: true },
+        { id: 'b', disabled: true },
+      ]);
+
+      expect(() => overlay.openMenu('first')).not.toThrow();
+
+      expect(hooks.open()).toBe(true);
+      expect(document.activeElement).toBe(outside);
+    });
+
+    it('never closes the menu, whichever open key drove it', () => {
+      const { overlay, hooks, lifecycle } = openWithItems([{ id: 'a' }]);
+
+      overlay.openMenu('first');
+      overlay.openMenu('last');
+
+      expect(hooks.open()).toBe(true);
+      expect(lifecycle.closes).toHaveLength(0);
+    });
+  });
+
   describe('lastCloseReason', () => {
     it('is null initially', () => {
       const { overlay } = build();

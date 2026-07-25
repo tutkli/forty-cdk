@@ -136,6 +136,27 @@ describe('ForDropdownMenu', () => {
       expect(r.instance.open()).toBe(false);
     });
 
+    it('opens on Enter and Space and focuses the first item', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      const enter = pressKey(trigger, 'Enter');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+      expect(enter.defaultPrevented).toBe(true);
+
+      r.instance.open.set(false);
+      await flush(r.fixture);
+
+      const space = pressKey(trigger, ' ');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+      expect(space.defaultPrevented).toBe(true);
+    });
+
     it('opens on ArrowDown and focuses the first item', async () => {
       const r = renderHost(DropdownHost);
       const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
@@ -173,6 +194,123 @@ describe('ForDropdownMenu', () => {
       expect(trigger.getAttribute('data-disabled')).toBe('');
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
+    });
+  });
+
+  describe('open keys over an already-open trigger', () => {
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open" (openChange)="onOpenChange()">
+          <button forDropdownMenuTrigger>Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="a" forMenuItem>A</button>
+              <button id="b" forMenuItem>B</button>
+              <button id="c" forMenuItem>C</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class CountingHost {
+      readonly open = signal(false);
+      readonly openChanges = signal(0);
+      onOpenChange(): void {
+        this.openChanges.update((n) => n + 1);
+      }
+    }
+
+    @Component({
+      imports: IMPORTS,
+      template: `
+        <div forDropdownMenu [(open)]="open">
+          <button forDropdownMenuTrigger>Options</button>
+          @if (open()) {
+            <div forMenuContent>
+              <button id="a" forMenuItem disabled>A</button>
+              <button id="b" forMenuItem disabled>B</button>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class AllDisabledHost {
+      readonly open = signal(false);
+    }
+
+    it('ArrowDown moves focus to the first item without a second open transition', async () => {
+      const r = renderHost(CountingHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.openChanges()).toBe(1);
+
+      trigger.focus();
+      await flush(r.fixture);
+      expect(document.querySelector('#a')!.hasAttribute('data-highlighted')).toBe(false);
+
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+      expect(document.querySelector('#a')!.getAttribute('data-highlighted')).toBe('');
+      expect(r.instance.openChanges()).toBe(1);
+    });
+
+    it('ArrowUp moves focus to the last item', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+      trigger.focus();
+      await flush(r.fixture);
+
+      pressKey(trigger, 'ArrowUp');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('c');
+    });
+
+    it('Enter and Space move focus to the first item and never close the menu', async () => {
+      const r = renderHost(DropdownHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowUp');
+      await flush(r.fixture);
+      expect(document.activeElement?.id).toBe('c');
+
+      trigger.focus();
+      await flush(r.fixture);
+      pressKey(trigger, 'Enter');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+
+      trigger.focus();
+      await flush(r.fixture);
+      pressKey(trigger, ' ');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement?.id).toBe('a');
+    });
+
+    it('leaves focus on the trigger when the open menu has no enabled item', async () => {
+      const r = renderHost(AllDisabledHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+      pressKey(trigger, 'ArrowDown');
+      await flush(r.fixture);
+      trigger.focus();
+      await flush(r.fixture);
+
+      expect(() => pressKey(trigger, 'ArrowDown')).not.toThrow();
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe(true);
+      expect(document.activeElement).toBe(trigger);
     });
   });
 
