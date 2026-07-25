@@ -4,6 +4,7 @@ import { afterNextRenderCancellable } from '../after-next-render-cancellable/aft
 import {
   injectDismissableLayer,
   type DismissableLayerActivateOptions,
+  type DismissableLayerNesting,
 } from '../dismissable-layer/dismissable-layer';
 import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
@@ -86,6 +87,13 @@ export interface OverlayShellDismissConfig {
    * picked up.
    */
   readonly exemptElements?: () => readonly Element[];
+  /**
+   * Declared nesting position of this surface inside a chain of structurally
+   * nested overlays (a menu and its submenus). Forwarded verbatim to the
+   * dismissable layer so the stack orders the chain by depth instead of by the
+   * order the levels happened to render in. Omit for a standalone overlay.
+   */
+  readonly nesting?: DismissableLayerNesting;
 }
 
 /**
@@ -291,6 +299,9 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
 
       if (dismissCfg.exemptElements) {
         options.exemptElements = dismissCfg.exemptElements;
+      }
+      if (dismissCfg.nesting) {
+        options.nesting = dismissCfg.nesting;
       }
       // Escape: forwarded verbatim. The consumer owns the emit + close
       // decision (combobox routes it through its input directive instead and

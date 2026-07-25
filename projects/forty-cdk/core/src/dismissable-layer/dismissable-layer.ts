@@ -12,6 +12,29 @@ import { isPlatformBrowser } from '@angular/common';
 export type DismissableLayerChannel = 'pointer' | 'focus';
 
 /**
+ * Declared nesting position of a layer inside a chain of layers that are
+ * structurally nested (a menubar menu and its submenus, a submenu and its own
+ * submenu). {@link DismissableLayerStack} orders such a chain by `depth` rather
+ * than by activation order, so a deeper level is always dispatched to before
+ * its ancestors even when both levels mount in the same render pass and the
+ * `afterNextRender` callbacks fire child-before-parent (#1450).
+ *
+ * A layer that declares no nesting keeps the plain LIFO behaviour: it is pushed
+ * on top of everything, and never reorders relative to a chain it does not
+ * belong to (a Dialog opened from inside a submenu still lands topmost).
+ */
+export interface DismissableLayerNesting {
+  /**
+   * Identity of the chain this layer belongs to — typically the coordination
+   * context of the outermost level. Only layers sharing a chain are ordered
+   * against each other by `depth`.
+   */
+  readonly chain: object;
+  /** `0` for the outermost level, `+1` per nesting level below it. */
+  readonly depth: number;
+}
+
+/**
  * Options passed to `DismissableLayer.activate`. Each handler receives the
  * native event; the consumer owns the close decision inside its own handler
  * (there is no separate default-dismiss callback).
@@ -26,6 +49,15 @@ export interface DismissableLayerActivateOptions {
    * to the literal topmost layer regardless of this declaration.
    */
   channels: readonly DismissableLayerChannel[];
+
+  /**
+   * Declared position of this layer inside a chain of structurally nested
+   * layers. When present, {@link DismissableLayerStack} inserts the layer by
+   * depth within its chain instead of pushing it on top, so the stack order
+   * reflects the nesting rather than the order the levels happened to activate
+   * in. Omit for a standalone overlay.
+   */
+  nesting?: DismissableLayerNesting;
 
   /** Fired when the user presses `Escape` while this is the topmost layer. */
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
@@ -73,6 +105,15 @@ const EMPTY_ACTIVATE_OPTIONS: DismissableLayerActivateOptions = { channels: [] }
  *   a no-op when `PLATFORM_ID` is not the browser; nothing about this code
  *   path is reachable until an overlay calls `activate()`, which only happens
  *   from `afterNextRender`.
+ *
+ * Stack order is activation order (LIFO) for standalone layers, but a layer
+ * that declares a {@link DismissableLayerNesting} is inserted by nesting depth
+ * within its chain. Activation order is a render-timing artifact — a menubar
+ * menu and its submenu mounted in the same render pass run their
+ * `afterNextRender` callbacks child-before-parent — and ordering the chain by
+ * timing would put an ancestor above its own descendant, so the descendant's
+ * first focus reads as `focusOutside` on the ancestor and collapses the whole
+ * chain (#1450). Declared depth removes the dependency on render timing.
  *
  * Listener phases — intentional asymmetry: `pointerdown` and `focusin`
  * register on the **capture** phase so outside-interaction is detected even
@@ -133,7 +174,7 @@ export class DismissableLayerStack {
 
   /** @internal */
   push(layer: DismissableLayer): void {
-    this.#stack.push(layer);
+    this.#stack.splice(this.#insertionIndex(layer), 0, layer);
     if (this.#stack.length === 1) {
       this.#installListeners();
     }
@@ -202,6 +243,31 @@ export class DismissableLayerStack {
     this.#document.removeEventListener('keydown', this.#onKeyDown);
     this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
     this.#document.removeEventListener('focusin', this.#onFocusIn, true);
+  }
+
+  /**
+   * Where a newly activated layer belongs. Plain LIFO (the top of the stack)
+   * unless the layer declared a {@link DismissableLayerNesting}: then it slides
+   * down past the trailing run of layers from the same chain that sit deeper
+   * than it, so an ancestor activating after its own descendant still lands
+   * below it (#1450). The scan stops at the first layer that is not a deeper
+   * level of the same chain, so an unrelated overlay (a Dialog opened from
+   * inside a submenu) is never jumped over.
+   */
+  #insertionIndex(layer: DismissableLayer): number {
+    const nesting = layer.nesting;
+    let idx = this.#stack.length;
+    if (!nesting) {
+      return idx;
+    }
+    while (idx > 0) {
+      const below = this.#stack[idx - 1]?.nesting;
+      if (!below || below.chain !== nesting.chain || below.depth <= nesting.depth) {
+        break;
+      }
+      idx--;
+    }
+    return idx;
   }
 
   #topmost(): DismissableLayer | undefined {
@@ -273,6 +339,16 @@ export class DismissableLayer {
 
   get isActive(): boolean {
     return this.#active;
+  }
+
+  /**
+   * @internal The nesting position declared at `activate`, or `undefined` for a
+   * standalone layer. Read by {@link DismissableLayerStack} to place the layer
+   * by nesting depth instead of activation order. Public only so the stack can
+   * read it, not part of the supported API.
+   */
+  get nesting(): DismissableLayerNesting | undefined {
+    return this.#options.nesting;
   }
 
   /**

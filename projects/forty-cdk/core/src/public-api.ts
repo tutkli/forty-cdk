@@ -111,6 +111,7 @@ export {
   DismissableLayer,
   type DismissableLayerActivateOptions,
   type DismissableLayerChannel,
+  type DismissableLayerNesting,
   DismissableLayerStack,
   injectDismissableLayer,
 } from './dismissable-layer/dismissable-layer';
@@ -296,6 +297,7 @@ export {
   type ForMenuContext,
   type ForMenuItemHandle,
   injectMenuContext,
+  menuLayerNesting,
   type MenuActivationModality,
   type MenuSiblingNavigator,
 } from './menu-overlay/menu-context';

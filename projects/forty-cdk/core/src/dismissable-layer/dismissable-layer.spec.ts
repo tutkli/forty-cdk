@@ -284,6 +284,154 @@ describe('DismissableLayer', () => {
     });
   });
 
+  describe('declared nesting ordering (#1450)', () => {
+    let inner: HTMLElement;
+    let sibling: HTMLElement;
+
+    beforeEach(() => {
+      inner = document.createElement('div');
+      inner.innerHTML = `<button id="deep">deep</button>`;
+      document.body.appendChild(inner);
+      sibling = document.createElement('div');
+      document.body.appendChild(sibling);
+    });
+
+    afterEach(() => {
+      inner.remove();
+      sibling.remove();
+    });
+
+    it('places a deeper level above its ancestor even when the ancestor activates last', () => {
+      const chain = {};
+      const calls: string[] = [];
+      const child = makeLayer(inner);
+      child.activate({
+        channels: ['focus'],
+        nesting: { chain, depth: 1 },
+        onEscapeKeyDown: () => calls.push('child-escape'),
+        onFocusOutside: () => calls.push('child-focus'),
+      });
+      const parent = makeLayer(host);
+      parent.activate({
+        channels: ['focus'],
+        nesting: { chain, depth: 0 },
+        onEscapeKeyDown: () => calls.push('parent-escape'),
+        onFocusOutside: () => calls.push('parent-focus'),
+      });
+
+      pressKey(document, 'Escape');
+      document.dispatchEvent(focusIn(inner.querySelector('#deep')!));
+
+      expect(calls).toEqual(['child-escape']);
+
+      parent.deactivate();
+      child.deactivate();
+    });
+
+    it('keeps activation order for levels of the same chain that arrive parent-first', () => {
+      const chain = {};
+      const calls: string[] = [];
+      const parent = makeLayer(host);
+      parent.activate({
+        channels: [],
+        nesting: { chain, depth: 0 },
+        onEscapeKeyDown: () => calls.push('parent'),
+      });
+      const child = makeLayer(inner);
+      child.activate({
+        channels: [],
+        nesting: { chain, depth: 1 },
+        onEscapeKeyDown: () => calls.push('child'),
+      });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['child']);
+
+      child.deactivate();
+      parent.deactivate();
+    });
+
+    it('never reorders a layer past a chain it does not belong to', () => {
+      const chain = {};
+      const calls: string[] = [];
+      const deep = makeLayer(inner);
+      deep.activate({
+        channels: [],
+        nesting: { chain, depth: 1 },
+        onEscapeKeyDown: () => calls.push('deep'),
+      });
+      const unrelated = makeLayer(sibling);
+      unrelated.activate({ channels: [], onEscapeKeyDown: () => calls.push('unrelated') });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['unrelated']);
+
+      unrelated.deactivate();
+      deep.deactivate();
+    });
+
+    it('never reorders a layer past a deeper level of a different chain', () => {
+      const calls: string[] = [];
+      const deep = makeLayer(inner);
+      deep.activate({
+        channels: [],
+        nesting: { chain: {}, depth: 2 },
+        onEscapeKeyDown: () => calls.push('deep-other-chain'),
+      });
+      const root = makeLayer(host);
+      root.activate({
+        channels: [],
+        nesting: { chain: {}, depth: 0 },
+        onEscapeKeyDown: () => calls.push('root'),
+      });
+
+      pressKey(document, 'Escape');
+
+      expect(calls).toEqual(['root']);
+
+      root.deactivate();
+      deep.deactivate();
+    });
+
+    it('orders three levels of one chain by depth regardless of activation order', () => {
+      const chain = {};
+      const calls: string[] = [];
+      const middle = makeLayer(inner);
+      middle.activate({
+        channels: [],
+        nesting: { chain, depth: 1 },
+        onEscapeKeyDown: () => calls.push('middle'),
+      });
+      const deepest = makeLayer(sibling);
+      deepest.activate({
+        channels: [],
+        nesting: { chain, depth: 2 },
+        onEscapeKeyDown: () => calls.push('deepest'),
+      });
+      const root = makeLayer(host);
+      root.activate({
+        channels: [],
+        nesting: { chain, depth: 0 },
+        onEscapeKeyDown: () => calls.push('root'),
+      });
+
+      pressKey(document, 'Escape');
+      expect(calls).toEqual(['deepest']);
+
+      deepest.deactivate();
+      pressKey(document, 'Escape');
+      expect(calls).toEqual(['deepest', 'middle']);
+
+      middle.deactivate();
+      pressKey(document, 'Escape');
+      expect(calls).toEqual(['deepest', 'middle', 'root']);
+
+      root.deactivate();
+    });
+  });
+
   describe('channel ownership is declared, not inferred from handler presence', () => {
     let inner: HTMLElement;
 
