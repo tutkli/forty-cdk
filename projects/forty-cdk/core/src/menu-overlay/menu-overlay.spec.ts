@@ -10,8 +10,10 @@ import {
 import {
   createMenuOverlay,
   type MenuOverlay,
+  type MenuOverlayCloseReason,
   type MenuOverlayHooks,
   type MenuOverlayItemHandle,
+  type MenuOverlayTransitionOptions,
 } from './menu-overlay';
 
 interface TestItem extends MenuOverlayItemHandle {
@@ -61,6 +63,10 @@ interface BuiltOverlay {
     autoFocusOnOpen: VetoableEvent[];
     autoFocusOnClose: VetoableEvent[];
   };
+  lifecycle: {
+    opens: { initialFocus: 'first' | 'last'; options: MenuOverlayTransitionOptions }[];
+    closes: { reason: MenuOverlayCloseReason; options: MenuOverlayTransitionOptions }[];
+  };
 }
 
 /**
@@ -94,6 +100,8 @@ function build(idPrefix = 'test'): BuiltOverlay {
     host.autoFocusOnOpen.subscribe((e) => emitted.autoFocusOnOpen.push(e));
     host.autoFocusOnClose.subscribe((e) => emitted.autoFocusOnClose.push(e));
 
+    const lifecycle: BuiltOverlay['lifecycle'] = { opens: [], closes: [] };
+
     const hooks = {
       open: open as MenuOverlayHooks['open'] & ReturnType<typeof signal<boolean>>,
       disabled,
@@ -105,9 +113,15 @@ function build(idPrefix = 'test'): BuiltOverlay {
       interactOutside: host.interactOutside,
       autoFocusOnOpen: host.autoFocusOnOpen,
       autoFocusOnClose: host.autoFocusOnClose,
+      onOpen: (initialFocus: 'first' | 'last', options: MenuOverlayTransitionOptions) => {
+        lifecycle.opens.push({ initialFocus, options });
+      },
+      onClose: (reason: MenuOverlayCloseReason, options: MenuOverlayTransitionOptions) => {
+        lifecycle.closes.push({ reason, options });
+      },
     };
     const overlay = createMenuOverlay<TestItem>(idPrefix, hooks);
-    result = { overlay, hooks, emitted };
+    result = { overlay, hooks, emitted, lifecycle };
   });
   return result;
 }
@@ -429,6 +443,73 @@ describe('MenuOverlay', () => {
       hooks.open.set(true);
       overlay.emitEscapeKeyDown(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
       expect(overlay.lastCloseReason()).toBe('escape');
+    });
+
+    it('records the hover reason from a pointer-driven close', () => {
+      const { overlay, hooks } = build();
+      hooks.open.set(true);
+      overlay.closeMenu('hover');
+      expect(overlay.lastCloseReason()).toBe('hover');
+      expect(hooks.open()).toBe(false);
+    });
+
+    it('resets to null on a pointer-driven open (transition options do not skip the reset)', () => {
+      const { overlay, hooks } = build();
+      overlay.closeMenu('hover', { suppressFocusMoves: true });
+      expect(overlay.lastCloseReason()).toBe('hover');
+
+      overlay.openMenu('first', 'pointer', { suppressFocusMoves: true });
+      expect(overlay.lastCloseReason()).toBeNull();
+      expect(hooks.open()).toBe(true);
+    });
+  });
+
+  describe('transition options', () => {
+    it('forwards the open options verbatim to the onOpen hook', () => {
+      const { overlay, lifecycle } = build();
+      overlay.openMenu('last', 'pointer', { suppressFocusMoves: true });
+      expect(lifecycle.opens).toEqual([
+        { initialFocus: 'last', options: { suppressFocusMoves: true } },
+      ]);
+    });
+
+    it('defaults the open options to an empty object', () => {
+      const { overlay, lifecycle } = build();
+      overlay.openMenu('first');
+      expect(lifecycle.opens[0]!.options.suppressFocusMoves).toBeUndefined();
+    });
+
+    it('forwards the close options verbatim to the onClose hook', () => {
+      const { overlay, lifecycle } = build();
+      overlay.closeMenu('hover', { suppressFocusMoves: true });
+      expect(lifecycle.closes).toEqual([
+        { reason: 'hover', options: { suppressFocusMoves: true } },
+      ]);
+    });
+
+    it('defaults the close options to an empty object for the existing close paths', () => {
+      const { overlay, lifecycle } = build();
+      overlay.closeMenu('select');
+      expect(lifecycle.closes[0]!.options.suppressFocusMoves).toBeUndefined();
+
+      overlay.openMenu();
+      overlay.toggle();
+      expect(lifecycle.closes[1]!.reason).toBe('programmatic');
+      expect(lifecycle.closes[1]!.options.suppressFocusMoves).toBeUndefined();
+    });
+
+    it('arms the initial-focus target on a pointer-driven open', () => {
+      const { overlay } = build();
+      overlay.openMenu('last', 'pointer', { suppressFocusMoves: true });
+      expect(overlay.initialFocus()).toBe('last');
+    });
+
+    it('still honours disabled — a pointer-driven open is a no-op', () => {
+      const { overlay, hooks, lifecycle } = build();
+      hooks.disabled.set(true);
+      overlay.openMenu('first', 'pointer', { suppressFocusMoves: true });
+      expect(hooks.open()).toBe(false);
+      expect(lifecycle.opens).toHaveLength(0);
     });
   });
 

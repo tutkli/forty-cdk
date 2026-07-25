@@ -161,7 +161,7 @@ test.describe('Menubar', () => {
     await expect(el(page, 'menu-view')).toBeVisible();
   });
 
-  test('moving the pointer off the bar closes the open menu after the close delay', async ({
+  test('moving the pointer off the bar keeps the open menu mounted and focused', async ({
     page,
   }) => {
     await gotoFixture(page, 'menubar');
@@ -169,29 +169,49 @@ test.describe('Menubar', () => {
     await el(page, 'trigger-file').focus();
     await page.keyboard.press('ArrowDown');
     await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
 
     // Move the pointer onto the bar first (so the subsequent leave fires from
     // a real hover state), then off to empty space far below the bar / menu.
     await el(page, 'trigger-file').hover();
     await page.mouse.move(5, 600);
+    await page.waitForTimeout(300);
 
-    // The menu dismisses after the configured closeDelay (default 150ms).
-    await expect(el(page, 'menu-file')).toHaveCount(0);
+    // Per the APG Menubar pattern there is no hover-leave dismissal: the menu
+    // stays open and the keyboard user keeps their place inside it.
+    await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
+    await expect(el(page, 'trigger-file')).toHaveAttribute('aria-expanded', 'true');
   });
 
-  test('hovering from a trigger into its open menu does not close it', async ({ page }) => {
+  test('a pointer-opened menu also survives the pointer leaving the bar', async ({ page }) => {
     await gotoFixture(page, 'menubar');
 
-    await el(page, 'trigger-file').focus();
-    await page.keyboard.press('ArrowDown');
+    await el(page, 'trigger-file').click();
     await expect(el(page, 'menu-file')).toBeVisible();
 
-    // Travelling from the trigger down into the portaled menu must keep it
-    // open — the hover-bridge cancels the close that the bar-leave schedules.
-    await el(page, 'item-file-1').hover();
-    // Give well past the close delay; the menu must still be there.
+    await page.mouse.move(5, 600);
+    await page.waitForTimeout(300);
+
+    await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
+  });
+
+  test('hovering from a trigger into its open menu keeps it open and does not steal focus', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+
+    await el(page, 'trigger-file').click();
+    await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
+
+    // Travelling from the trigger down into the portaled menu keeps it open;
+    // hovering an item focuses it (the shared menu-item hover contract).
+    await el(page, 'item-file-3').hover();
     await page.waitForTimeout(300);
     await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-3'));
   });
 
   test('[dismissible]="false" keeps the menu open on Escape and outside click', async ({
@@ -208,10 +228,31 @@ test.describe('Menubar', () => {
     await expect(el(page, 'menu-file')).toBeVisible();
 
     // An outside pointer-down in empty space (far from the bar and the menu,
-    // which is anchored top-left) is likewise ignored. A pointer-leave of the
-    // bar would also be ignored, so the menu stays open.
+    // which is anchored top-left) is likewise ignored.
     await page.mouse.click(1100, 500);
     await expect(el(page, 'menu-file')).toBeVisible();
+  });
+
+  test('(autoFocusOnOpen) preventDefault skips the imperative focus move', async ({ page }) => {
+    await gotoFixture(page, 'menubar', { vetoOpen: '1' });
+    await el(page, 'trigger-file').click();
+    await expect(el(page, 'menu-file')).toBeVisible();
+    // The veto suppresses the mount focus move, so nothing inside the menu is
+    // focused and the click leaves focus on the trigger itself.
+    await expect(el(page, 'menu-file').locator('*:focus')).toHaveCount(0);
+    await expectFocused(el(page, 'trigger-file'));
+  });
+
+  test('(autoFocusOnClose) preventDefault suppresses the Escape return-focus', async ({ page }) => {
+    await gotoFixture(page, 'menubar', { vetoClose: '1' });
+    await el(page, 'trigger-file').click();
+    await expect(el(page, 'menu-file')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    // The close still runs — only the return-focus move is vetoed.
+    await expect(el(page, 'menu-file')).toHaveCount(0);
+    await expect(el(page, 'trigger-file')).not.toBeFocused();
   });
 
   test.describe('vertical orientation', () => {

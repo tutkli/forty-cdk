@@ -32,7 +32,13 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
   /** Identifier matched against the menu's `value`. Required. */
   readonly value = input.required<string>();
 
-  /** Per-item disabled (in addition to the menu-level `disabled`). */
+  /**
+   * Per-item disabled. Stands on its own — the root `[forNavigationMenu]`'s
+   * `disabled` is merged with this value by the item's trigger
+   * (`ForNavigationMenuTrigger.effectiveDisabled`), which is what reflects the
+   * composed state and gates activation. This host's `data-disabled` reflects
+   * the per-item value only.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   protected readonly state = computed(() => (this.#ctx.isOpen(this.value()) ? 'open' : 'closed'));

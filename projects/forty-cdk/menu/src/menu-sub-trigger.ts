@@ -5,6 +5,7 @@ import {
   resolveListNavigation,
   type MenuActivationModality,
   injectMenuContext,
+  isHoverCapablePointer,
 } from 'forty-cdk/core';
 import { handleMenuTabOut } from './menu-tab-out';
 
@@ -112,8 +113,7 @@ export class ForMenuSubTrigger {
   }
 
   protected onPointerEnter(event: PointerEvent): void {
-    // Hover is a mouse affordance; touch / pen open the submenu by tap (click).
-    if (event.pointerType !== 'mouse') {
+    if (!isHoverCapablePointer(event)) {
       return;
     }
     if (this.effectiveDisabled()) {
@@ -123,7 +123,7 @@ export class ForMenuSubTrigger {
   }
 
   protected onPointerMove(event: PointerEvent): void {
-    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+    if (!isHoverCapablePointer(event)) {
       return;
     }
     if (this.effectiveDisabled()) {
@@ -137,7 +137,7 @@ export class ForMenuSubTrigger {
   }
 
   protected onPointerLeave(event: PointerEvent): void {
-    if (event.pointerType !== 'mouse') {
+    if (!isHoverCapablePointer(event)) {
       return;
     }
     this.submenu.onTriggerPointerLeave?.({ x: event.clientX, y: event.clientY });

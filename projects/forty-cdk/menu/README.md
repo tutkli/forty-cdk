@@ -159,22 +159,23 @@ A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in 
 
 ### Data attributes
 
-| Piece                                      | Attribute          | Values                   |
-| ------------------------------------------ | ------------------ | ------------------------ |
-| `[forMenuContent]` / `[forMenuSubContent]` | `data-state`       | `open` \| `closed`       |
-| `[forMenuItem]`                            | `data-disabled`    | present \| absent        |
-| `[forMenuItem]`                            | `data-highlighted` | present \| absent        |
-| `[forMenuCheckboxItem]`                    | `data-state`       | `checked` \| `unchecked` |
-| `[forMenuCheckboxItem]`                    | `data-disabled`    | present \| absent        |
-| `[forMenuCheckboxItem]`                    | `data-highlighted` | present \| absent        |
-| `[forMenuRadioItem]`                       | `data-state`       | `checked` \| `unchecked` |
-| `[forMenuRadioItem]`                       | `data-disabled`    | present \| absent        |
-| `[forMenuRadioItem]`                       | `data-highlighted` | present \| absent        |
-| `[forMenuItemIndicator]`                   | `data-state`       | `checked` \| `unchecked` |
-| `[forMenuSub]`                             | `data-state`       | `open` \| `closed`       |
-| `[forMenuSub]`                             | `data-disabled`    | present \| absent        |
-| `[forMenuSubTrigger]`                      | `data-state`       | `open` \| `closed`       |
-| `[forMenuSubTrigger]`                      | `data-disabled`    | present \| absent        |
+| Piece                                      | Attribute          | Values                     |
+| ------------------------------------------ | ------------------ | -------------------------- |
+| `[forMenuContent]` / `[forMenuSubContent]` | `data-state`       | `open` \| `closed`         |
+| `[forMenuItem]`                            | `data-disabled`    | present \| absent          |
+| `[forMenuItem]`                            | `data-highlighted` | present \| absent          |
+| `[forMenuCheckboxItem]`                    | `data-state`       | `checked` \| `unchecked`   |
+| `[forMenuCheckboxItem]`                    | `data-disabled`    | present \| absent          |
+| `[forMenuCheckboxItem]`                    | `data-highlighted` | present \| absent          |
+| `[forMenuRadioItem]`                       | `data-state`       | `checked` \| `unchecked`   |
+| `[forMenuRadioItem]`                       | `data-disabled`    | present \| absent          |
+| `[forMenuRadioItem]`                       | `data-highlighted` | present \| absent          |
+| `[forMenuItemIndicator]`                   | `data-state`       | `checked` \| `unchecked`   |
+| `[forMenuSub]`                             | `data-state`       | `open` \| `closed`         |
+| `[forMenuSub]`                             | `data-disabled`    | present \| absent          |
+| `[forMenuSubTrigger]`                      | `data-state`       | `open` \| `closed`         |
+| `[forMenuSubTrigger]`                      | `data-disabled`    | present \| absent          |
+| `[forMenuSeparator]`                       | `data-orientation` | `horizontal` \| `vertical` |
 
 ## Accessibility
 
@@ -182,7 +183,8 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 - Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.
 - Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (never the native `disabled` attribute) — they are skipped by arrow-key navigation, typeahead, Home/End, and pointer hover, and click / keyboard activation are no-ops, but they stay in the DOM so screen readers can still announce them.
-- `[forMenuSeparator]` is decorative and never registers with the menu's item collection — it's skipped during navigation and typeahead automatically.
+- The `role="menu"` surface takes its accessible name from a consumer-set static `aria-labelledby` on `[forMenuContent]` when present (it is preserved, never clobbered), else from the root's `ariaLabel` (reflected as `aria-label`); with neither it falls back to `aria-labelledby` pointing at the trigger — the `[forDropdownMenuTrigger]` button, the `[forMenubarTrigger]`, or the `[forMenuSubTrigger]`. `[forContextMenu]` is the exception: its trigger is the whole right-click region, so no fallback is emitted there and `[ariaLabel]` (or your own `aria-labelledby`) is the way to name the menu.
+- `[forMenuSeparator]` never registers with the menu's item collection — it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding items already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching `[forSeparator]` and `[forToolbarSeparator]`.
 - `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
 - `[forMenuGroup]` and `[forMenuRadioGroup]` both expose `role="group"`; give either an accessible name by projecting a `[forMenuGroupLabel]` inside it, which the group references via `aria-labelledby`.
 - Submenus use `side="right"` `align="start"` by default in LTR and `side="left"` `align="start"` in RTL — set `[dir]="'rtl'"` on the top-level `[forDropdownMenu]` / `[forContextMenu]` and every nested `[forMenuSub]` inherits it (and flips `side`, ArrowLeft/Right semantics, etc.). Override per-submenu with `[dir]` or `[side]` if a specific submenu needs to render against the opposite direction.

@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import type { VetoableEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
+import { queryFlag } from './_query-flag';
 
 /**
  * Three-trigger menubar fixture (File / Edit / View). Each menu has four
@@ -22,6 +24,8 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
       [orientation]="orientation()"
       [dismissible]="dismissible()"
       aria-label="Main"
+      (autoFocusOnOpen)="onAutoOpen($event)"
+      (autoFocusOnClose)="onAutoClose($event)"
     >
       @for (menu of menus; track menu.value) {
         <button [attr.data-testid]="'trigger-' + menu.value" forMenubarTrigger [value]="menu.value">
@@ -49,6 +53,17 @@ export class MenubarFixture {
   readonly #route = inject(ActivatedRoute);
 
   protected readonly open = signal('');
+
+  readonly #vetoOpen = queryFlag('vetoOpen');
+  readonly #vetoClose = queryFlag('vetoClose');
+
+  protected onAutoOpen(event: VetoableEvent): void {
+    if (this.#vetoOpen) event.preventDefault();
+  }
+
+  protected onAutoClose(event: VetoableEvent): void {
+    if (this.#vetoClose) event.preventDefault();
+  }
 
   /**
    * `?dismissible=false` flips off Escape / outside-interaction dismissal so

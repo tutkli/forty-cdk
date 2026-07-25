@@ -22,7 +22,7 @@ import type {
  * without hand-written `.bind()` forwarding in each. Subclasses override only
  * the members that need extra behaviour (e.g. `[forMenuSub]` wraps
  * `registerContent` to attach pointer listeners and overrides the auto-focus
- * emitters to honour its hover focus-suppression flag).
+ * emitters to honour its hover focus-suppression flags).
  *
  * Kept generic over the item handle so the subclass's `MenuOverlay<H>` flows
  * through `registerItem` / `unregisterItem` without a cast.

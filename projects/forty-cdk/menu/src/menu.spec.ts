@@ -193,6 +193,25 @@ class RadioFirstHost {
   readonly alignment = signal('left');
 }
 
+@Component({
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuSeparator],
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Options</button>
+      @if (open()) {
+        <div forMenuContent>
+          <hr id="sep" forMenuSeparator [orientation]="orientation()" [decorative]="decorative()" />
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuSeparatorHost {
+  readonly open = signal(true);
+  readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+  readonly decorative = signal(false);
+}
+
 describe('Menu items / content', () => {
   afterEachOverlayCleanup();
 
@@ -245,6 +264,32 @@ describe('Menu items / content', () => {
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
 
+    it('preserves a consumer-set static aria-labelledby over the trigger fallback', async () => {
+      @Component({
+        imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+        template: `
+          <h2 id="heading">Document actions</h2>
+          <div forDropdownMenu [(open)]="open">
+            <button forDropdownMenuTrigger>Options</button>
+            @if (open()) {
+              <div forMenuContent aria-labelledby="heading">
+                <button id="cut" forMenuItem>Cut</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-labelledby')).toBe('heading');
+    });
+
     it('sets the right role on each item type', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
@@ -258,44 +303,48 @@ describe('Menu items / content', () => {
       );
     });
 
-    it('defaults the separator aria-orientation to horizontal', async () => {
+    it('omits aria-orientation for the default horizontal separator and stamps data-orientation', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      expect(document.querySelector('hr[forMenuSeparator]')!.getAttribute('aria-orientation')).toBe(
-        'horizontal',
-      );
+      const sep = document.querySelector<HTMLElement>('hr[forMenuSeparator]')!;
+      expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
     });
 
-    it('reflects a configurable separator orientation to aria-orientation', async () => {
-      @Component({
-        imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuSeparator],
-        template: `
-          <div forDropdownMenu [(open)]="open">
-            <button forDropdownMenuTrigger>Options</button>
-            @if (open()) {
-              <div forMenuContent>
-                <hr id="sep" forMenuSeparator [orientation]="orientation()" />
-              </div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-        readonly orientation = signal<'horizontal' | 'vertical'>('vertical');
-      }
-
-      const r = renderHost(Host);
+    it('emits aria-orientation only for a vertical separator', async () => {
+      const r = renderHost(MenuSeparatorHost);
+      r.instance.orientation.set('vertical');
       await flush(r.fixture);
 
       const sep = document.querySelector<HTMLElement>('#sep')!;
+      expect(sep.getAttribute('role')).toBe('separator');
       expect(sep.getAttribute('aria-orientation')).toBe('vertical');
+      expect(sep.getAttribute('data-orientation')).toBe('vertical');
 
       r.instance.orientation.set('horizontal');
       await flush(r.fixture);
-      expect(sep.getAttribute('aria-orientation')).toBe('horizontal');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
+    });
+
+    it('switches to role=none and drops aria-orientation when decorative', async () => {
+      const r = renderHost(MenuSeparatorHost);
+      r.instance.decorative.set(true);
+      r.instance.orientation.set('vertical');
+      await flush(r.fixture);
+
+      const sep = document.querySelector<HTMLElement>('#sep')!;
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('vertical');
+
+      r.instance.decorative.set(false);
+      await flush(r.fixture);
+      expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.getAttribute('aria-orientation')).toBe('vertical');
     });
 
     it('reflects aria-checked on checkbox items', async () => {

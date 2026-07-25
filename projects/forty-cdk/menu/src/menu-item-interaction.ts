@@ -1,6 +1,11 @@
 import { ElementRef, inject, signal, type Signal } from '@angular/core';
 
-import { registerHandle, resolveListNavigation, type ForMenuContext } from 'forty-cdk/core';
+import {
+  registerHandle,
+  resolveListNavigation,
+  type ForMenuContext,
+  isHoverCapablePointer,
+} from 'forty-cdk/core';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 
@@ -89,7 +94,7 @@ export function createMenuItemInteraction(config: {
       highlighted.set(false);
     },
     onPointerMove(event: PointerEvent): void {
-      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      if (!isHoverCapablePointer(event)) {
         return;
       }
       if (effectiveDisabled()) {

@@ -100,9 +100,9 @@ Plain push button. Apply on `<button>` so Enter / Space activate via native sema
 
 Hyperlink. Apply on `<a>`; `Enter` follows the link via native semantics.
 
-| Property   | Type             | Description                                                                                     |
-| ---------- | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | When true the link is announced as `aria-disabled` and clicks are suppressed.<br>**Default:** — |
+| Property   | Type             | Description                                                                                                                                                                                                                                                  |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `disabled` | `input<boolean>` | Per-item disabled, in addition to the toolbar's `disabled`. When true the link is announced as `aria-disabled` and activation is suppressed — `<a>` has no native `disabled`, so it stays focusable and assistive tech still announces it.<br>**Default:** — |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |

@@ -103,8 +103,15 @@ class OverlappingNavMenuHost {
   readonly mountAbout = signal(false);
 }
 
-function pointer(type: 'pointerenter' | 'pointerleave' | 'pointerdown'): PointerEvent {
-  return new PointerEvent(type, { bubbles: true });
+function pointer(
+  type: 'pointerenter' | 'pointerleave' | 'pointerdown',
+  pointerType?: string,
+): PointerEvent {
+  const event = new PointerEvent(type, { bubbles: true });
+  if (pointerType !== undefined) {
+    Object.defineProperty(event, 'pointerType', { value: pointerType, configurable: true });
+  }
+  return event;
 }
 
 describe('ForNavigationMenu', () => {
@@ -355,6 +362,161 @@ describe('ForNavigationMenu', () => {
 
       // The pending open is cancelled — the menu must not open after the pointer left.
       vi.advanceTimersByTime(1000);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
+  });
+
+  describe('skip-delay window', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('reopens instantly while the skip-delay window is open', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+    });
+
+    it('requires the full delayDuration again once the skip-delay window expires', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      await flush();
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      vi.advanceTimersByTime(300);
+      await flush();
+
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      vi.advanceTimersByTime(199);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      vi.advanceTimersByTime(1);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+    });
+  });
+
+  describe('touch pointer gate', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('a touch press-and-hold never opens an item via the hover path', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.dispatchEvent(pointer('pointerenter', 'touch'));
+      await flush();
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
+
+    it('a touch press-and-hold then release opens the item exactly once', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.dispatchEvent(pointer('pointerenter', 'touch'));
+      await flush();
+      vi.advanceTimersByTime(400);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      trigger.dispatchEvent(pointer('pointerleave', 'touch'));
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('a tap inside the skip-delay window does not invert the toggle', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      const tap = async (): Promise<void> => {
+        trigger.dispatchEvent(pointer('pointerenter', 'touch'));
+        trigger.dispatchEvent(pointer('pointerleave', 'touch'));
+        trigger.click();
+        await flush();
+      };
+
+      await tap();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      await tap();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      vi.advanceTimersByTime(50);
+      await tap();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('a touch pointerleave on the panel does not schedule a close', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      const content = query<HTMLElement>('[forNavigationMenuContent]')!;
+      content.dispatchEvent(pointer('pointerleave', 'touch'));
+      await flush();
+      vi.advanceTimersByTime(1000);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('a touch pointerenter on the panel does not cancel a pending mouse close', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.click();
+      await flush();
+      trigger.dispatchEvent(pointer('pointerleave'));
+      await flush();
+
+      const content = query<HTMLElement>('[forNavigationMenuContent]')!;
+      content.dispatchEvent(pointer('pointerenter', 'touch'));
+      await flush();
+
+      vi.advanceTimersByTime(150);
       await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
@@ -742,6 +904,145 @@ describe('ForNavigationMenu', () => {
       expect(panel(q, 'products').getAttribute('data-motion')).toBe('from-start');
       // C is now the leaving panel and freezes its own to-* direction.
       expect(panel(q, 'about').getAttribute('data-motion')).toBe('to-end');
+    });
+  });
+
+  describe('disabled', () => {
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+      ],
+      template: `
+        <nav forNavigationMenu [(value)]="open" [disabled]="menuDisabled()">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products" [disabled]="itemDisabled()">
+              <button forNavigationMenuTrigger>Products</button>
+            </li>
+            <li forNavigationMenuItem value="solutions">
+              <button forNavigationMenuTrigger>Solutions</button>
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class DisabledNavMenuHost {
+      readonly open = signal('');
+      readonly menuDisabled = signal(false);
+      readonly itemDisabled = signal(false);
+    }
+
+    it('merges the menu-level disabled into every trigger', async () => {
+      const { fixture, queryAll, flush } = renderHost(DisabledNavMenuHost);
+      await flush();
+      const items = queryAll<HTMLElement>('[forNavigationMenuItem]');
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      for (const item of items) {
+        expect(item.hasAttribute('data-disabled')).toBe(false);
+      }
+      for (const trigger of triggers) {
+        expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+        expect(trigger.hasAttribute('data-disabled')).toBe(false);
+      }
+
+      fixture.componentInstance.menuDisabled.set(true);
+      await flush();
+
+      for (const trigger of triggers) {
+        expect(trigger.getAttribute('aria-disabled')).toBe('true');
+        expect(trigger.getAttribute('data-disabled')).toBe('');
+      }
+    });
+
+    it('reflects a menu-disabled trigger without the native disabled attribute', async () => {
+      const { fixture, queryAll, flush } = renderHost(DisabledNavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      fixture.componentInstance.menuDisabled.set(true);
+      await flush();
+
+      for (const trigger of triggers) {
+        expect(trigger.getAttribute('aria-disabled')).toBe('true');
+        expect(trigger.hasAttribute('disabled')).toBe(false);
+      }
+    });
+
+    it('reflects a per-item disabled trigger without the native disabled attribute', async () => {
+      const { fixture, queryAll, flush } = renderHost(DisabledNavMenuHost);
+      await flush();
+      const items = queryAll<HTMLElement>('[forNavigationMenuItem]');
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      fixture.componentInstance.itemDisabled.set(true);
+      await flush();
+
+      expect(items[0]!.getAttribute('data-disabled')).toBe('');
+      expect(triggers[0]!.getAttribute('aria-disabled')).toBe('true');
+      expect(triggers[0]!.getAttribute('data-disabled')).toBe('');
+      expect(triggers[0]!.hasAttribute('disabled')).toBe(false);
+    });
+
+    it('leaves sibling items enabled when only one item is disabled', async () => {
+      const { fixture, queryAll, flush } = renderHost(DisabledNavMenuHost);
+      await flush();
+      const items = queryAll<HTMLElement>('[forNavigationMenuItem]');
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      fixture.componentInstance.itemDisabled.set(true);
+      await flush();
+
+      expect(items[1]!.hasAttribute('data-disabled')).toBe(false);
+      expect(triggers[1]!.hasAttribute('aria-disabled')).toBe(false);
+      expect(triggers[1]!.hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('ignores activation on a trigger disabled by the menu', async () => {
+      const { fixture, queryAll, flush } = renderHost(DisabledNavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      fixture.componentInstance.menuDisabled.set(true);
+      await flush();
+
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+
+      pressKey(triggers[0]!, 'Enter');
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+    });
+
+    it('preserves a consumer-set static disabled attribute on the trigger', async () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+        ],
+        template: `
+          <nav forNavigationMenu>
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="products">
+                <button forNavigationMenuTrigger disabled>Products</button>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class StaticDisabledNavMenuHost {}
+
+      const { query, flush } = renderHost(StaticDisabledNavMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      expect(trigger.getAttribute('disabled')).toBe('');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
     });
   });
 

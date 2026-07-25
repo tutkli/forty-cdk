@@ -9,11 +9,11 @@ import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
  * (button → toggle → separator → disabled → toggle-group item →
  * button), or the orientation / RTL keymap end-to-end. Those live here.
  *
- * Fixture layout (see `toolbar.fixture.ts`): seven host elements, of
+ * Fixture layout (see `toolbar.fixture.ts`): eight host elements, of
  * which two are non-focusable for navigation purposes — the separator
  * (never registers) and the disabled-button slot (registers as
- * disabled). The roving cycle visits five focusable items:
- * `btn-1 → toggle → tg-bold → tg-italic → btn-2 → btn-1`.
+ * disabled). The roving cycle visits six focusable items:
+ * `btn-1 → toggle → tg-bold → tg-italic → btn-2 → link → btn-1`.
  */
 test.describe('Toolbar', () => {
   test('Tab lands on the first enabled focusable child (single Tab stop)', async ({ page }) => {
@@ -38,11 +38,15 @@ test.describe('Toolbar', () => {
     await expectFocused(el(page, 'tg-italic'));
     await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'btn-2'));
+    await page.keyboard.press('ArrowRight');
+    await expectFocused(el(page, 'link'));
   });
 
   test('ArrowLeft cycles backward through the same items', async ({ page }) => {
     await gotoFixture(page, 'toolbar');
-    await el(page, 'btn-2').focus();
+    await el(page, 'link').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expectFocused(el(page, 'btn-2'));
     await page.keyboard.press('ArrowLeft');
     await expectFocused(el(page, 'tg-italic'));
     await page.keyboard.press('ArrowLeft');
@@ -58,7 +62,7 @@ test.describe('Toolbar', () => {
     await gotoFixture(page, 'toolbar');
     await el(page, 'toggle').focus();
     await page.keyboard.press('End');
-    await expectFocused(el(page, 'btn-2'));
+    await expectFocused(el(page, 'link'));
     await page.keyboard.press('Home');
     await expectFocused(el(page, 'btn-1'));
   });
@@ -91,8 +95,8 @@ test.describe('Toolbar', () => {
     await gotoFixture(page, 'toolbar', { dir: 'rtl' });
     await expect(el(page, 'toolbar')).toHaveAttribute('dir', 'rtl');
 
-    // Visual right == logical previous in RTL. Starting at btn-2 (logical
-    // last), ArrowRight should walk back through the cycle.
+    // Visual right == logical previous in RTL. Starting at btn-2,
+    // ArrowRight should walk back through the cycle.
     await el(page, 'btn-2').focus();
     await page.keyboard.press('ArrowRight');
     await expectFocused(el(page, 'tg-italic'));
@@ -176,5 +180,47 @@ test.describe('Toolbar', () => {
     // shares the toolbar's roving tracker.
     await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'tg-bold'));
+  });
+});
+
+/**
+ * A root-level `disabled` must reach every item, `[forToolbarLink]`
+ * included. jsdom can assert the attributes, but only a real browser
+ * proves the consequences: the bar drops out of the Tab cycle entirely
+ * and a disabled `<a href>` does not navigate when clicked.
+ */
+test.describe('Toolbar — disabled root', () => {
+  test('the link is announced disabled and holds no tab stop', async ({ page }) => {
+    await gotoFixture(page, 'toolbar', { toolbarDisabled: '1' });
+
+    const link = el(page, 'link');
+    await expect(link).toHaveAttribute('aria-disabled', 'true');
+    await expect(link).toHaveAttribute('data-disabled', '');
+    await expect(link).toHaveAttribute('tabindex', '-1');
+    await expect(page.locator('[data-testid="toolbar"] [tabindex="0"]')).toHaveCount(0);
+  });
+
+  test('Tab skips the whole toolbar, so the link is unfocusable by keyboard', async ({ page }) => {
+    await gotoFixture(page, 'toolbar', { toolbarDisabled: '1' });
+
+    await el(page, 'before').focus();
+    await page.keyboard.press('Tab');
+    // `remove-active` / `disable-active` are plain buttons outside the bar.
+    await expectFocused(el(page, 'remove-active'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'disable-active'));
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+  });
+
+  test('clicking the link does not activate it', async ({ page }) => {
+    await gotoFixture(page, 'toolbar', { toolbarDisabled: '1' });
+
+    const before = page.url();
+    // `force` bypasses Playwright's actionability wait, which treats
+    // `aria-disabled="true"` as not-enabled — the point of the test is that the
+    // directive itself suppresses the activation once the click does land.
+    await el(page, 'link').click({ force: true });
+    expect(page.url()).toBe(before);
   });
 });

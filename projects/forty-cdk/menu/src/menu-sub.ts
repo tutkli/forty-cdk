@@ -26,6 +26,7 @@ import {
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
+  isHoverCapablePointer,
   emitVetoableEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -45,10 +46,12 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  * outside-veto logic is owned by the `_internal/menu-overlay` helper (the
  * same one `[forDropdownMenu]` / `[forContextMenu]` compose). The submenu
  * contributes only its genuine differences on top: pointer-driven (hover)
- * open/close scheduling, the `#suppressFocusMoves` autofocus vetoes that
- * keep hover from stealing / returning focus, and the reason-dependent
- * upward `closeMenu` propagation — the latter two wired through the
- * overlay's `onOpen` / `onClose` lifecycle hooks.
+ * open/close scheduling, the autofocus vetoes that keep hover from stealing /
+ * returning focus, and the reason-dependent upward `closeMenu` propagation.
+ * The pointer paths run through the overlay's own `openMenu` / `closeMenu`
+ * (with `{ suppressFocusMoves: true }`, closing with reason `'hover'`), so all
+ * three concerns are wired through the `onOpen` / `onClose` lifecycle hooks and
+ * `lastCloseReason` / the initial-focus state stay correct on every transition.
  *
  * The parent menu's content is added to this submenu's dismissable
  * exemptions so a click on a parent menu item doesn't fire the
@@ -56,9 +59,9 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  * everything via propagated `closeMenu`).
  *
  * Closing this submenu propagates `closeMenu` upward for every reason
- * except `'escape'` and `'programmatic'` — Escape inside a submenu
- * closes only that level, while activating an item or clicking outside
- * everything tears down the entire chain.
+ * except `'escape'`, `'hover'` and `'programmatic'` — Escape inside a submenu
+ * and a hover-leave close only that level, while activating an item or
+ * clicking outside everything tears down the entire chain.
  *
  * ```html
  * <div forDropdownMenu [(open)]="open">
@@ -106,7 +109,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
    * The input is aliased to `dir`; consumers bind `[dir]="..."` and read
    * the effective value via the public `dir` computed below.
    */
-  readonly _dirInput = input<WritingDirection | undefined>(undefined, { alias: 'dir' });
+  readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = computed<WritingDirection>(() => this._dirInput() ?? this.parentMenu.dir());
 
   /**
@@ -270,19 +273,16 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     interactOutside: this.interactOutside,
     autoFocusOnOpen: this.autoFocusOnOpen,
     autoFocusOnClose: this.autoFocusOnClose,
-    // A keyboard / click open supersedes any in-flight hover scheduling and
-    // moves focus into the submenu (unlike the pointer path).
-    onOpen: () => {
+    onOpen: (_initialFocus, options) => {
       this.#cancelPointerScheduling();
-      this.#suppressFocusMoves = false;
+      this.#suppressOpenFocus = options.suppressFocusMoves ?? false;
+      this.#suppressCloseFocus = false;
     },
-    // Propagate up so item activation, Tab, and outside-pointer collapse
-    // the entire menu chain. `'escape'` collapses only this level (per APG);
-    // `'programmatic'` is the consumer's own write — no propagation either.
-    onClose: (reason) => {
+    onClose: (reason, options) => {
       this.#cancelPointerScheduling();
-      this.#suppressFocusMoves = false;
-      if (reason !== 'escape' && reason !== 'programmatic') {
+      this.#suppressOpenFocus = false;
+      this.#suppressCloseFocus = options.suppressFocusMoves ?? false;
+      if (reason !== 'escape' && reason !== 'hover' && reason !== 'programmatic') {
         this.parentMenu.closeMenu(reason);
       }
     },
@@ -296,13 +296,8 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   #graceTimer: ReturnType<typeof setTimeout> | null = null;
   #detachGrace: (() => void) | null = null;
   #detachContentPointer: (() => void) | null = null;
-  /**
-   * True while the current open/close transition is pointer-driven, so the
-   * shared content's auto-focus-on-open and return-focus-on-close are vetoed:
-   * hovering must never steal focus into the submenu nor yank it back to the
-   * trigger. Reset to `false` by every keyboard / click / programmatic path.
-   */
-  #suppressFocusMoves = false;
+  #suppressOpenFocus = false;
+  #suppressCloseFocus = false;
 
   /**
    * Submenus exempt the parent menu's content. Clicks on parent menu items
@@ -392,22 +387,17 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   }
 
   #openByPointer(): void {
-    if (this.disabled()) {
-      return;
-    }
-    this.cancelPendingClose();
     // Hover-open never steals focus — it stays on whatever the user was on.
-    this.#suppressFocusMoves = true;
-    this.open.set(true);
+    this._overlay.openMenu('first', 'pointer', { suppressFocusMoves: true });
   }
 
   #closeByPointer(): void {
-    this.#disarmPointerGrace();
-    this.#closeAction.cancel();
+    if (!this.open()) {
+      return;
+    }
     // Hover-close affects only this level (like Escape / programmatic — no
     // upward propagation) and suppresses the trigger return-focus.
-    this.#suppressFocusMoves = true;
-    this.open.set(false);
+    this._overlay.closeMenu('hover', { suppressFocusMoves: true });
   }
 
   #armPointerGrace(cursor: Point): void {
@@ -479,13 +469,13 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   #attachContentPointer(el: HTMLElement): void {
     this.#detachContentPointer?.();
     const onEnter = (event: PointerEvent): void => {
-      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      if (!isHoverCapablePointer(event)) {
         return;
       }
       this.#onContentPointerEnter();
     };
     const onLeave = (event: PointerEvent): void => {
-      if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+      if (!isHoverCapablePointer(event)) {
         return;
       }
       this.#onContentPointerLeave();
@@ -508,7 +498,8 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
 
   override emitAutoFocusOnOpen(): boolean {
     // Hover-open leaves focus where it is — only keyboard / click moves it in.
-    if (this.#suppressFocusMoves) {
+    if (this.#suppressOpenFocus) {
+      this.#suppressOpenFocus = false;
       return true;
     }
     return emitVetoableEvent(this.autoFocusOnOpen);
@@ -516,7 +507,8 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
 
   override emitAutoFocusOnClose(): boolean {
     // Hover-close must not yank focus back to the trigger.
-    if (this.#suppressFocusMoves) {
+    if (this.#suppressCloseFocus) {
+      this.#suppressCloseFocus = false;
       return true;
     }
     return emitVetoableEvent(this.autoFocusOnClose);

@@ -42,8 +42,6 @@ describe('ForDropdownMenu', () => {
       expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
       expect(trigger.hasAttribute('aria-controls')).toBe(false);
-      // Disabled-related attributes are absent when not disabled — never
-      // emitted as "false". Consumers must select on `:not([aria-disabled])`.
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.hasAttribute('disabled')).toBe(false);
@@ -173,7 +171,7 @@ describe('ForDropdownMenu', () => {
       expect(r.instance.open()).toBe(false);
 
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
     });
   });
@@ -317,8 +315,26 @@ describe('ForDropdownMenu', () => {
       expect(r.instance.open()).toBe(false);
 
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
+    });
+
+    it('reflects disabled through the native attribute only — never aria-disabled', async () => {
+      const r = renderHost(TriggerDisabledHost);
+      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
+
+      r.instance.triggerDisabled.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('disabled')).toBe('');
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
+
+      r.instance.triggerDisabled.set(false);
+      r.instance.rootDisabled.set(true);
+      await flush(r.fixture);
+      expect(trigger.getAttribute('disabled')).toBe('');
+      expect(trigger.getAttribute('data-disabled')).toBe('');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
     });
 
     it('removes the disabled attribute it set once the trigger is re-enabled', async () => {
@@ -351,7 +367,7 @@ describe('ForDropdownMenu', () => {
       expect(r.instance.open()).toBe(false);
 
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
 
       r.instance.rootDisabled.set(false);

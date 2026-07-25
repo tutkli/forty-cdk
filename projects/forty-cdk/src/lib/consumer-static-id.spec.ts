@@ -296,20 +296,26 @@ describe('consumer-set static id preservation (#659)', () => {
 
   describe('Menubar', () => {
     @Component({
-      imports: [ForMenubar, ForMenubarTrigger],
+      imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `<div forMenubar [(value)]="value">
         <button forMenubarTrigger value="file" id="probe">File</button>
+        @if (value() === 'file') {
+          <div forMenuContent id="probe-content">
+            <button forMenuItem>New</button>
+          </div>
+        }
       </div>`,
     })
     class Host {
-      readonly value = signal('');
+      readonly value = signal('file');
     }
 
-    it('trigger preserves a consumer-set static id', async () => {
+    it('trigger and menu content preserve a consumer-set static id', async () => {
       const fixture = mount(Host);
       await flush(fixture);
       expect(idOf(fixture, '[forMenubarTrigger]')).toBe('probe');
+      expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
     });
   });
 

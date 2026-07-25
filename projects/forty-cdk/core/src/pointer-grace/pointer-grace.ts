@@ -1,4 +1,5 @@
 import type { FloatingSide } from '../floating/floating';
+import { isHoverCapablePointer } from '../hover-intent/hover-capable-pointer';
 
 /**
  * Pointer-grace ("safe triangle") helper.
@@ -183,7 +184,7 @@ export function attachPointerGrace(
   onExit: () => void,
 ): () => void {
   const onMove = (event: PointerEvent): void => {
-    if (event.pointerType !== '' && event.pointerType !== 'mouse') {
+    if (!isHoverCapablePointer(event)) {
       return;
     }
     if (!isPointInPolygon({ x: event.clientX, y: event.clientY }, polygon)) {

@@ -21,5 +21,7 @@ export type {
   MenuActivationModality,
   MenuSiblingNavigator,
   RovingTabindex,
+  VetoableEvent,
+  VetoableNativeEvent,
   WritingDirection,
 } from 'forty-cdk/core';

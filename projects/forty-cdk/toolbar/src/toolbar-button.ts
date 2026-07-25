@@ -1,7 +1,7 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import { registerHandle, resolveListNavigation } from 'forty-cdk/core';
-import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
+import { injectToolbarContext } from './toolbar-context';
 
 /**
  * Plain push button inside `[forToolbar]`. Apply on `<button>` so Enter /
@@ -16,32 +16,36 @@ import { FOR_TOOLBAR_CONTEXT } from './toolbar-context';
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
-    '[attr.data-orientation]': 'toolbar?.orientation()',
+    '[attr.data-orientation]': 'toolbar.orientation()',
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
     '(click)': 'onClick($event)',
   },
 })
 export class ForToolbarButton {
-  protected readonly toolbar = inject(FOR_TOOLBAR_CONTEXT, { optional: true });
+  protected readonly toolbar = injectToolbarContext('ForToolbarButton');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Per-item disabled (in addition to the toolbar's `disabled`). */
   readonly disabled = input(false, { transform: booleanAttribute });
 
-  readonly effectiveDisabled = computed(
-    () => this.disabled() || (this.toolbar?.disabled() ?? false),
-  );
+  /**
+   * Whether the button is effectively disabled — its own `disabled` input or
+   * the surrounding `[forToolbar]`'s `disabled`. Drives `aria-disabled`,
+   * `data-disabled`, the roving tab stop, and activation suppression.
+   */
+  readonly effectiveDisabled = computed(() => this.disabled() || this.toolbar.disabled());
 
   /**
    * Tabindex per APG: once any toolbar item has been focused, the roving
    * tracker owns the tab stop so re-entry restores the last focused item;
    * before that, fall back to the first-enabled entry point. Disabled items
-   * are always -1; a button used outside a toolbar keeps its natural 0.
+   * are always -1 — they stay arrow-reachable and focusable, they just never
+   * own the toolbar's single Tab stop.
    */
   readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled() || !this.toolbar) {
-      return this.effectiveDisabled() ? -1 : 0;
+    if (this.effectiveDisabled()) {
+      return -1;
     }
     if (this.toolbar.roving.hasActive()) {
       return this.toolbar.roving.tabindexFor(this.#host.nativeElement);
@@ -50,20 +54,14 @@ export class ForToolbarButton {
   });
 
   constructor() {
-    if (!this.toolbar) {
-      throw new Error(
-        '[forty-cdk/toolbar] ForToolbarButton must be used inside a [forToolbar] element.',
-      );
-    }
-    const toolbar = this.toolbar;
     const handle = {
       host: this.#host.nativeElement,
       disabled: this.effectiveDisabled,
     };
     registerHandle(
       handle,
-      (h) => toolbar.registerItem(h),
-      (h) => toolbar.unregisterItem(h),
+      (h) => this.toolbar.registerItem(h),
+      (h) => this.toolbar.unregisterItem(h),
     );
   }
 
@@ -75,14 +73,14 @@ export class ForToolbarButton {
   }
 
   protected onFocus(): void {
-    if (this.effectiveDisabled() || !this.toolbar) {
+    if (this.effectiveDisabled()) {
       return;
     }
     this.toolbar.roving.setActive(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (this.effectiveDisabled() || !this.toolbar) {
+    if (this.effectiveDisabled()) {
       return;
     }
     const action = resolveListNavigation(event, {

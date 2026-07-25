@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle, hostId } from 'forty-cdk/core';
+import { registerHandle, hostId, isHoverCapablePointer } from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,
@@ -52,8 +52,8 @@ import {
     '[attr.aria-labelledby]': 'triggerId()',
     '[attr.data-state]': 'menu.isOpen(value()) ? "open" : "closed"',
     '[attr.data-motion]': 'motion()',
-    '(pointerenter)': 'menu.cancelPending()',
-    '(pointerleave)': 'menu.scheduleClose("hover")',
+    '(pointerenter)': 'onPointerEnter($event)',
+    '(pointerleave)': 'onPointerLeave($event)',
     '(keydown.escape)': 'onEscape($any($event))',
   },
 })
@@ -125,6 +125,16 @@ export class ForNavigationMenuContent {
     const viewport = this.menu.viewport();
     if (!viewport) return;
     viewport.insertPanel(this.#host, this.menu.triggerHostFor(this.value()));
+  }
+
+  protected onPointerEnter(event: PointerEvent): void {
+    if (!isHoverCapablePointer(event)) return;
+    this.menu.cancelPending();
+  }
+
+  protected onPointerLeave(event: PointerEvent): void {
+    if (!isHoverCapablePointer(event)) return;
+    this.menu.scheduleClose('hover');
   }
 
   protected onEscape(event: KeyboardEvent): void {

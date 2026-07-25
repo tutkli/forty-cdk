@@ -71,11 +71,21 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     return this.#items.items();
   }
 
+  /**
+   * Moves focus to the next enabled item for an Arrow / Home / End action,
+   * honouring the owner's `loop`. The focus move passes `preventScroll` and
+   * then scrolls the target into view with `block: 'nearest'`, so a menu with
+   * its own overflow scrolls minimally while the page underneath the portaled
+   * surface never jumps.
+   */
   navigate(currentItem: HTMLElement, action: ListNavigationAction): void {
     const target = nextEnabledHandle(this.#items.items(), currentItem, action, {
       loop: this.#loop(),
     });
-    target?.host.focus();
+    if (!target) {
+      return;
+    }
+    focusMenuItemHost(target.host);
   }
 
   /**
@@ -84,7 +94,9 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
    * printable char, or Space while the buffer is already non-empty), `false`
    * otherwise. Items applied on a native `<button>` use the return value to
    * `preventDefault()` a mid-typeahead Space so it extends the buffer instead
-   * of triggering the button's activation.
+   * of triggering the button's activation. The focus move passes
+   * `preventScroll` and reveals the match with `scrollIntoView({ block:
+   * 'nearest' })`.
    */
   handleTypeahead(event: KeyboardEvent): boolean {
     if (!this.#typeahead.handle(event)) {
@@ -118,7 +130,7 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
       const override = item.textValue?.() ?? '';
       const source = override !== '' ? override : (item.host.textContent ?? '');
       if (source.trim().toLowerCase().startsWith(query)) {
-        item.host.focus();
+        focusMenuItemHost(item.host);
         return true;
       }
     }
@@ -128,7 +140,11 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
   /**
    * Focuses the first enabled item. Pass `highlight: false` when the move is
    * the programmatic initial focus of a pointer-driven open, so the item
-   * receives DOM focus without reflecting `data-highlighted`.
+   * receives DOM focus without reflecting `data-highlighted`. The move passes
+   * `preventScroll`: the menu surface is portaled and `position: fixed`, and
+   * floating-ui has not resolved its placement yet when the initial focus
+   * runs, so letting the browser scroll for it would move the page (and the
+   * anchor) under a pointer-driven open.
    */
   focusFirstEnabledItem(highlight = true): boolean {
     const target = this.#items.items().find((i) => !i.disabled());
@@ -142,7 +158,10 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
   /**
    * Focuses the last enabled item. Pass `highlight: false` when the move is
    * the programmatic initial focus of a pointer-driven open, so the item
-   * receives DOM focus without reflecting `data-highlighted`.
+   * receives DOM focus without reflecting `data-highlighted`. Like
+   * {@link focusFirstEnabledItem} the move passes `preventScroll` and reveals
+   * the item with `scrollIntoView({ block: 'nearest' })`, so a scrollable menu
+   * still scrolls its own overflow to the last item.
    */
   focusLastEnabledItem(highlight = true): boolean {
     const items = this.#items.items();
@@ -160,7 +179,7 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     if (!highlight) {
       item.suppressHighlightOnNextFocus?.();
     }
-    item.host.focus();
+    focusMenuItemHost(item.host);
   }
 
   /**
@@ -185,4 +204,9 @@ export function createMenuItemList<H extends MenuItemHandle = MenuItemHandle>(
   loop: () => boolean,
 ): MenuItemList<H> {
   return new MenuItemList<H>(loop, injectTypeahead());
+}
+
+function focusMenuItemHost(host: HTMLElement): void {
+  host.focus({ preventScroll: true });
+  host.scrollIntoView?.({ block: 'nearest' });
 }

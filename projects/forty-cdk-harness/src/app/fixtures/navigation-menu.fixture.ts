@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
   ForNavigationMenu,
@@ -13,6 +14,7 @@ import { queryFlag } from './_query-flag';
   selector: 'app-navigation-menu-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    NgTemplateOutlet,
     ForNavigationMenu,
     ForNavigationMenuList,
     ForNavigationMenuItem,
@@ -77,10 +79,19 @@ import { queryFlag } from './_query-flag';
           }
         </li>
       </ul>
-      @if (!noViewport) {
+      <ng-template #viewportTpl>
         <div forNavigationMenuViewport data-testid="viewport"></div>
+      </ng-template>
+      @if (!noViewport && !externalViewport) {
+        <ng-container [ngTemplateOutlet]="viewportTpl" />
       }
     </nav>
+
+    @if (externalViewport) {
+      <div data-testid="external-viewport-host">
+        <ng-container [ngTemplateOutlet]="viewportTpl" />
+      </div>
+    }
 
     <input data-testid="after" type="text" />
 
@@ -90,6 +101,7 @@ import { queryFlag } from './_query-flag';
 export class NavigationMenuFixture {
   protected readonly open = signal('');
   protected readonly noViewport = queryFlag('noViewport');
+  protected readonly externalViewport = queryFlag('externalViewport');
   protected readonly disabledSolutions = queryFlag('disabledSolutions');
   protected readonly activeDisplay = computed(() => this.open() || 'none');
 }

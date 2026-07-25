@@ -29,10 +29,12 @@ export interface ForContextMenuContext {
   readonly disabled: Signal<boolean>;
 
   /**
-   * Id mirrored to the trigger's host `[id]`. `[forMenuContent]` points its
-   * `aria-labelledby` at this id when no explicit `ariaLabel` is set, so the
-   * trigger must carry it for the menu's accessible name to resolve to a real
-   * element instead of a dangling IDREF.
+   * Id mirrored to the trigger's host `[id]`, adopting a consumer-set static
+   * `id` when present. It is deliberately **not** used as the menu's
+   * `aria-labelledby` target — the trigger is the whole right-click region, so
+   * naming the menu after it would announce the region's entire text; name the
+   * menu with `ariaLabel` instead. The id stays exposed as a stable hook for
+   * the consumer's own references and test selectors.
    */
   readonly triggerId: Signal<string>;
 

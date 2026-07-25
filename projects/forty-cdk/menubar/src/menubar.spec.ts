@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import { assertRovingTabindexContract } from '../../src/test-utils/contract';
+import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
 import { ForMenubar } from './menubar';
@@ -105,6 +106,54 @@ class MenubarWithSubmenuHost {
 }
 
 @Component({
+  imports: [
+    ForMenubar,
+    ForMenubarTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  template: `
+    <div forMenubar [(value)]="open" [dir]="dir()">
+      <button forMenubarTrigger value="file">File</button>
+      @if (open() === 'file') {
+        <div forMenuContent>
+          <div forMenuSub [(open)]="recent">
+            <button id="nested-recent" forMenuSubTrigger>Open recent</button>
+            @if (recent()) {
+              <div forMenuSubContent>
+                <button id="nested-a" forMenuItem>a.txt</button>
+                <div forMenuSub [(open)]="deep">
+                  <button id="nested-more" forMenuSubTrigger>More</button>
+                  @if (deep()) {
+                    <div forMenuSubContent>
+                      <button id="nested-deep" forMenuItem>deep.txt</button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+      <button forMenubarTrigger value="edit">Edit</button>
+      @if (open() === 'edit') {
+        <div forMenuContent>
+          <button id="nested-edit-undo" forMenuItem>Undo</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarNestedSubmenuHost {
+  readonly open = signal<string>('');
+  readonly dir = signal<'ltr' | 'rtl'>('ltr');
+  readonly recent = signal(false);
+  readonly deep = signal(false);
+}
+
+@Component({
   imports: [ForMenubar, ForMenubarTrigger],
   template: `
     <div forMenubar [(value)]="open">
@@ -139,21 +188,152 @@ class MenubarRovingHost {
   ]);
 }
 
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file" id="file-trigger">File</button>
+      @if (open() === 'file') {
+        <div forMenuContent id="file-menu">
+          <button forMenuItem>New</button>
+        </div>
+      }
+
+      <button forMenubarTrigger value="edit">Edit</button>
+      @if (open() === 'edit') {
+        <div forMenuContent>
+          <button forMenuItem>Undo</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarStaticIdHost {
+  readonly open = signal<string>('');
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file" id="file-trigger">File</button>
+      <div forMenuContent id="always-mounted">
+        <button forMenuItem>New</button>
+      </div>
+    </div>
+  `,
+})
+class MenubarAlwaysMountedContentHost {
+  readonly open = signal<string>('');
+}
+
+type MenubarVetoChannel =
+  | 'none'
+  | 'escape'
+  | 'pointerDownOutside'
+  | 'focusOutside'
+  | 'interactOutside'
+  | 'autoFocusOnOpen'
+  | 'autoFocusOnClose';
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div
+      forMenubar
+      [(value)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointerDownOutside($event)"
+      (focusOutside)="onFocusOutside($event)"
+      (interactOutside)="onInteractOutside($event)"
+      (autoFocusOnOpen)="onAutoFocusOnOpen($event)"
+      (autoFocusOnClose)="onAutoFocusOnClose($event)"
+    >
+      <button forMenubarTrigger value="file">File</button>
+      @if (open() === 'file') {
+        <div forMenuContent>
+          <button id="file-new" forMenuItem>New</button>
+          <button id="file-open" forMenuItem>Open</button>
+        </div>
+      }
+      <button forMenubarTrigger value="edit">Edit</button>
+      @if (open() === 'edit') {
+        <div forMenuContent>
+          <button id="edit-undo" forMenuItem>Undo</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarOutputsHost {
+  readonly open = signal<string>('');
+  readonly dismissible = signal(true);
+  readonly veto = signal<MenubarVetoChannel>('none');
+
+  escapeCount = 0;
+  pointerDownOutsideCount = 0;
+  focusOutsideCount = 0;
+  interactOutsideCount = 0;
+  autoFocusOnOpenCount = 0;
+  autoFocusOnCloseCount = 0;
+  lastEscapeEvent: KeyboardEvent | null = null;
+  lastOutsideEvents: Event[] = [];
+
+  onEscape(e: VetoableNativeEvent<KeyboardEvent>): void {
+    this.escapeCount++;
+    this.lastEscapeEvent = e.event;
+    if (this.veto() === 'escape') e.preventDefault();
+  }
+  onPointerDownOutside(e: VetoableNativeEvent<PointerEvent>): void {
+    this.pointerDownOutsideCount++;
+    this.lastOutsideEvents.push(e.event);
+    if (this.veto() === 'pointerDownOutside') e.preventDefault();
+  }
+  onFocusOutside(e: VetoableNativeEvent<FocusEvent>): void {
+    this.focusOutsideCount++;
+    this.lastOutsideEvents.push(e.event);
+    if (this.veto() === 'focusOutside') e.preventDefault();
+  }
+  onInteractOutside(e: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.interactOutsideCount++;
+    this.lastOutsideEvents.push(e.event);
+    if (this.veto() === 'interactOutside') e.preventDefault();
+  }
+  onAutoFocusOnOpen(e: VetoableEvent): void {
+    this.autoFocusOnOpenCount++;
+    if (this.veto() === 'autoFocusOnOpen') e.preventDefault();
+  }
+  onAutoFocusOnClose(e: VetoableEvent): void {
+    this.autoFocusOnCloseCount++;
+    if (this.veto() === 'autoFocusOnClose') e.preventDefault();
+  }
+}
+
 const menubarTriggers = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forMenubarTrigger]'));
 
 /**
- * Builds a pointer event with an explicit `pointerType`. jsdom's
- * `PointerEvent` constructor doesn't populate `pointerType` from its init
- * dict, and the hover-close listeners gate on `pointerType === 'mouse'`, so
- * the spec defines it directly.
+ * Builds a mouse pointer event. jsdom's `PointerEvent` constructor doesn't
+ * populate `pointerType` from its init dict, so the spec defines it directly.
  */
-function pointerEvent(
-  type: 'pointerenter' | 'pointerleave' | 'pointermove',
-  { pointerType = 'mouse' } = {},
-): PointerEvent {
+function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
   const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-  Object.defineProperty(event, 'pointerType', { value: pointerType, configurable: true });
+  Object.defineProperty(event, 'pointerType', { value: 'mouse', configurable: true });
+  return event;
+}
+
+function outsidePointerDown(target: Node): PointerEvent {
+  const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'target', { value: target, configurable: true });
+  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
+  return event;
+}
+
+function outsideFocusIn(target: Node): FocusEvent {
+  const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'target', { value: target, configurable: true });
+  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
   return event;
 }
 
@@ -243,6 +423,64 @@ describe('ForMenubar', () => {
       r.instance.open.set('file');
       await flush(r.fixture);
       expect(r.query<HTMLElement>('[forMenubar]')!.getAttribute('data-state')).toBe('open');
+    });
+  });
+
+  describe('consumer static id (#659)', () => {
+    it('adopts a static id on the mounted [forMenuContent] and keeps the aria pairing', async () => {
+      const r = renderHost(MenubarStaticIdHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+
+      expect(content.id).toBe('file-menu');
+      expect(fileTrigger.id).toBe('file-trigger');
+      expect(fileTrigger.getAttribute('aria-controls')).toBe('file-menu');
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+    });
+
+    it('falls back to a generated content id when the content host has none', async () => {
+      const r = renderHost(MenubarStaticIdHost);
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const editTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+
+      expect(content.id).toMatch(/^for-menubar-content-/);
+      expect(editTrigger.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('adoption is per trigger — switching menus does not leak the adopted id', async () => {
+      const r = renderHost(MenubarStaticIdHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      expect(document.querySelector<HTMLElement>('[forMenuContent]')!.id).toBe('file-menu');
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.id).not.toBe('file-menu');
+      expect(content.id).toMatch(/^for-menubar-content-/);
+    });
+
+    it('content mounted while no trigger is active still wires aria on the next activation', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.id).toBe('');
+
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      expect(content.id).toMatch(/^for-menubar-content-/);
+      expect(fileTrigger.getAttribute('aria-controls')).toBe(content.id);
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
     });
   });
 
@@ -347,6 +585,38 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBe('file');
       expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('moves focus to the first item when an open key is pressed on an already-open trigger', async () => {
+      const r = renderHost(MenubarHost);
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowDown');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+
+      file.focus();
+      await flush(r.fixture);
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBeNull();
+
+      pressKey(file, 'Enter');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+      expect(document.activeElement?.id).toBe('file-new');
+      expect(document.querySelector('#file-new')!.getAttribute('data-highlighted')).toBe('');
+    });
+
+    it('moves focus to the last item on ArrowUp over an already-open trigger', async () => {
+      const r = renderHost(MenubarHost);
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowDown');
+      await flush(r.fixture);
+      file.focus();
+      await flush(r.fixture);
+
+      pressKey(file, 'ArrowUp');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBe('file');
+      expect(document.activeElement?.id).toBe('file-quit');
     });
 
     it('does nothing when menubar is disabled', async () => {
@@ -720,150 +990,252 @@ describe('ForMenubar', () => {
 
       expect(r.instance.open()).toBe('');
     });
+  });
 
-    it('[dismissible]="false" keeps the menu open when the pointer leaves the bar', async () => {
-      vi.useFakeTimers();
-      try {
-        const { instance, query, flush } = renderHost(MenubarHost);
-        instance.dismissible.set(false);
-        instance.open.set('file');
-        await flush();
+  describe('shell contract outputs (parity with the menu roots)', () => {
+    let outside: HTMLButtonElement | null = null;
 
-        const bar = query<HTMLElement>('[forMenubar]')!;
-        bar.dispatchEvent(pointerEvent('pointerleave'));
-        await flush();
-        vi.advanceTimersByTime(500);
-        await flush();
+    afterEach(() => {
+      outside?.remove();
+      outside = null;
+    });
 
-        expect(instance.open()).toBe('file');
-      } finally {
-        vi.useRealTimers();
-      }
+    function appendOutside(): HTMLButtonElement {
+      outside = document.createElement('button');
+      document.body.appendChild(outside);
+      return outside;
+    }
+
+    async function openFile() {
+      const r = renderHost(MenubarOutputsHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      return r;
+    }
+
+    it('(pointerDownOutside) and (interactOutside) fire with the same veto and close the menu', async () => {
+      const r = await openFile();
+      const target = appendOutside();
+
+      document.dispatchEvent(outsidePointerDown(target));
+      await flush(r.fixture);
+
+      expect(r.instance.pointerDownOutsideCount).toBe(1);
+      expect(r.instance.interactOutsideCount).toBe(1);
+      expect(r.instance.focusOutsideCount).toBe(0);
+      expect(r.instance.lastOutsideEvents[0]).toBe(r.instance.lastOutsideEvents[1]);
+      expect(r.instance.open()).toBe('');
+    });
+
+    it('preventDefault() on (pointerDownOutside) keeps the menu open', async () => {
+      const r = await openFile();
+      r.instance.veto.set('pointerDownOutside');
+      const target = appendOutside();
+
+      document.dispatchEvent(outsidePointerDown(target));
+      await flush(r.fixture);
+
+      expect(r.instance.pointerDownOutsideCount).toBe(1);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('preventDefault() on (interactOutside) keeps the menu open (shared veto)', async () => {
+      const r = await openFile();
+      r.instance.veto.set('interactOutside');
+      const target = appendOutside();
+
+      document.dispatchEvent(outsidePointerDown(target));
+      await flush(r.fixture);
+
+      expect(r.instance.pointerDownOutsideCount).toBe(1);
+      expect(r.instance.interactOutsideCount).toBe(1);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('(focusOutside) and (interactOutside) fire on an outside focusin and close the menu', async () => {
+      const r = await openFile();
+      const target = appendOutside();
+
+      document.dispatchEvent(outsideFocusIn(target));
+      await flush(r.fixture);
+
+      expect(r.instance.focusOutsideCount).toBe(1);
+      expect(r.instance.interactOutsideCount).toBe(1);
+      expect(r.instance.pointerDownOutsideCount).toBe(0);
+      expect(r.instance.open()).toBe('');
+    });
+
+    it('preventDefault() on (focusOutside) keeps the menu open', async () => {
+      const r = await openFile();
+      r.instance.veto.set('focusOutside');
+      const target = appendOutside();
+
+      document.dispatchEvent(outsideFocusIn(target));
+      await flush(r.fixture);
+
+      expect(r.instance.focusOutsideCount).toBe(1);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('a pointer-down on a sibling trigger emits nothing (exempt) and keeps the menu open', async () => {
+      const r = await openFile();
+      const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+
+      document.dispatchEvent(outsidePointerDown(edit));
+      await flush(r.fixture);
+
+      expect(r.instance.pointerDownOutsideCount).toBe(0);
+      expect(r.instance.interactOutsideCount).toBe(0);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('(escapeKeyDown) fires with the raw KeyboardEvent and closes the menu', async () => {
+      const r = await openFile();
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.escapeCount).toBe(1);
+      expect(r.instance.lastEscapeEvent?.key).toBe('Escape');
+      expect(r.instance.open()).toBe('');
+    });
+
+    it('preventDefault() on (escapeKeyDown) keeps the menu open', async () => {
+      const r = await openFile();
+      r.instance.veto.set('escape');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.escapeCount).toBe(1);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('(autoFocusOnOpen) fires once on mount and (autoFocusOnClose) once on an Escape close', async () => {
+      const r = await openFile();
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.autoFocusOnCloseCount).toBe(1);
+    });
+
+    it('honors a vetoed (autoFocusOnOpen) without throwing and leaves the menu open', async () => {
+      const r = renderHost(MenubarOutputsHost);
+      r.instance.veto.set('autoFocusOnOpen');
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(r.instance.open()).toBe('file');
+    });
+
+    it('honors a vetoed (autoFocusOnClose) without throwing', async () => {
+      const r = await openFile();
+      r.instance.veto.set('autoFocusOnClose');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.autoFocusOnCloseCount).toBe(1);
+      expect(r.instance.open()).toBe('');
+    });
+
+    it('a hover-switch to a sibling trigger re-fires (autoFocusOnOpen) for the remounted content', async () => {
+      const r = await openFile();
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+
+      const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+      edit.dispatchEvent(pointerEvent('pointerenter'));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+      expect(r.instance.autoFocusOnOpenCount).toBe(2);
     });
   });
 
-  describe('hover-close', () => {
+  describe('hover', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
 
-    it('closes the open menu after closeDelay when the pointer leaves the bar', async () => {
-      const { instance, query, flush } = renderHost(MenubarHost);
-      instance.open.set('file');
-      await flush();
-
-      const bar = query<HTMLElement>('[forMenubar]')!;
-      bar.dispatchEvent(pointerEvent('pointerleave'));
-      await flush();
-
-      vi.advanceTimersByTime(149);
+    it('the pointer leaving the bar does not close the open menu or move focus', async () => {
+      const { instance, query, queryAll, flush } = renderHost(MenubarHost);
+      const file = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      file.focus();
+      pressKey(file, 'ArrowDown');
       await flush();
       expect(instance.open()).toBe('file');
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
 
-      vi.advanceTimersByTime(1);
+      query<HTMLElement>('[forMenubar]')!.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
-      expect(instance.open()).toBe('');
-    });
-
-    it('re-entering the bar before closeDelay cancels the pending close', async () => {
-      const { instance, query, flush } = renderHost(MenubarHost);
-      instance.open.set('file');
-      await flush();
-
-      const bar = query<HTMLElement>('[forMenubar]')!;
-      bar.dispatchEvent(pointerEvent('pointerleave'));
-      await flush();
-      vi.advanceTimersByTime(100);
-
-      bar.dispatchEvent(pointerEvent('pointerenter'));
-      await flush();
-      vi.advanceTimersByTime(500);
+      vi.advanceTimersByTime(5_000);
       await flush();
 
       expect(instance.open()).toBe('file');
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
     });
 
-    it('entering the portaled menu content cancels the pending close', async () => {
-      const { instance, query, flush } = renderHost(MenubarHost);
-      instance.open.set('file');
-      await flush();
-
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      const bar = query<HTMLElement>('[forMenubar]')!;
-      bar.dispatchEvent(pointerEvent('pointerleave'));
-      await flush();
-      vi.advanceTimersByTime(100);
-
-      content.dispatchEvent(pointerEvent('pointerenter'));
-      await flush();
-      vi.advanceTimersByTime(500);
-      await flush();
-
-      expect(instance.open()).toBe('file');
-    });
-
-    it('leaving the portaled menu content schedules a close', async () => {
-      const { instance, flush } = renderHost(MenubarHost);
-      instance.open.set('file');
+    it('the pointer leaving the portaled menu content does not close it either', async () => {
+      const { instance, queryAll, flush } = renderHost(MenubarHost);
+      const file = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      file.focus();
+      pressKey(file, 'ArrowDown');
       await flush();
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
       content.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
-
-      vi.advanceTimersByTime(150);
+      vi.advanceTimersByTime(5_000);
       await flush();
-      expect(instance.open()).toBe('');
+
+      expect(instance.open()).toBe('file');
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
     });
 
-    it('ignores a non-mouse pointer leave (touch dismisses by tap, not hover)', async () => {
-      const { instance, query, flush } = renderHost(MenubarHost);
-      instance.open.set('file');
+    it('a pointer-opened menu is not closed by the pointer leaving the bar', async () => {
+      const { instance, query, queryAll, flush } = renderHost(MenubarHost);
+      const file = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      file.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      file.click();
       await flush();
+      expect(instance.open()).toBe('file');
 
-      const bar = query<HTMLElement>('[forMenubar]')!;
-      bar.dispatchEvent(pointerEvent('pointerleave', { pointerType: 'touch' }));
+      query<HTMLElement>('[forMenubar]')!.dispatchEvent(pointerEvent('pointerleave'));
       await flush();
-      vi.advanceTimersByTime(500);
+      vi.advanceTimersByTime(5_000);
       await flush();
 
       expect(instance.open()).toBe('file');
     });
 
-    it('hover-switch between open siblings stays instant (no close delay in between)', async () => {
+    it('hover-switch between open siblings stays instant', async () => {
       const { instance, queryAll, flush } = renderHost(MenubarHost);
       instance.open.set('file');
       await flush();
 
-      // Moving directly onto a sibling trigger (without leaving the bar) opens
-      // it immediately — the hover-bridge keeps the menu chain alive.
+      // Moving directly onto a sibling trigger opens it immediately.
       const view = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[2]!;
       view.dispatchEvent(pointerEvent('pointerenter'));
       await flush();
       expect(instance.open()).toBe('view');
+      expect(document.querySelector('#view-zoom')).not.toBeNull();
     });
 
-    it('hover-switch to a template-earlier sibling keeps its content keepalive alive so entering it cancels the pending close', async () => {
-      const { instance, query, queryAll, flush } = renderHost(MenubarHost);
+    it('hover-switch to a template-earlier sibling swaps the mounted content', async () => {
+      const { instance, queryAll, flush } = renderHost(MenubarHost);
       instance.open.set('view');
       await flush();
 
       const file = queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       file.dispatchEvent(pointerEvent('pointerenter'));
       await flush();
-      expect(instance.open()).toBe('file');
-
-      const bar = query<HTMLElement>('[forMenubar]')!;
-      bar.dispatchEvent(pointerEvent('pointerleave'));
-      await flush();
-      vi.advanceTimersByTime(100);
-
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      content.dispatchEvent(pointerEvent('pointerenter'));
-      await flush();
-      vi.advanceTimersByTime(500);
-      await flush();
 
       expect(instance.open()).toBe('file');
+      expect(document.querySelector('#view-zoom')).toBeNull();
+      expect(document.querySelector('#file-new')).not.toBeNull();
     });
   });
 
@@ -912,6 +1284,78 @@ describe('ForMenubar', () => {
 
       expect(r.instance.open()).toBe('edit');
     });
+
+    it('ArrowRight on a plain item inside a submenu collapses the chain and opens the next sibling menu (LTR)', async () => {
+      const r = renderHost(MenubarNestedSubmenuHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('nested-a')!;
+      item.focus();
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+      expect(r.instance.recent()).toBe(false);
+      expect(document.getElementById('nested-edit-undo')!.getAttribute('data-highlighted')).toBe(
+        '',
+      );
+    });
+
+    it('collapses every nested submenu level before switching siblings', async () => {
+      const r = renderHost(MenubarNestedSubmenuHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+      r.instance.deep.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('nested-deep')!;
+      item.focus();
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+      expect(r.instance.deep()).toBe(false);
+      expect(r.instance.recent()).toBe(false);
+    });
+
+    it('inverts the away-arrow inside a submenu in RTL', async () => {
+      const r = renderHost(MenubarNestedSubmenuHost);
+      r.instance.dir.set('rtl');
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('nested-a')!;
+      item.focus();
+      pressKey(item, 'ArrowLeft');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+      expect(r.instance.recent()).toBe(false);
+    });
+
+    it('RTL ArrowRight inside a submenu still collapses only that level', async () => {
+      const r = renderHost(MenubarNestedSubmenuHost);
+      r.instance.dir.set('rtl');
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('nested-a')!;
+      item.focus();
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.recent()).toBe(false);
+      expect(r.instance.open()).toBe('file');
+    });
   });
 
   describe('(valueChange) contract', () => {
@@ -947,6 +1391,43 @@ describe('ForMenubar', () => {
       pressKey(document, 'Escape');
       await flush(r.fixture);
       expect(internalEmits).toBe(1);
+    });
+
+    it('does not emit when an open key re-targets the already-open trigger', async () => {
+      let internalEmits = 0;
+
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forMenubar [(value)]="open" (valueChange)="onChange($event)">
+            <button forMenubarTrigger value="a">A</button>
+            @if (open() === 'a') {
+              <div forMenuContent>
+                <button id="a1" forMenuItem>1</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal<string>('');
+        onChange(_: string): void {
+          internalEmits++;
+        }
+      }
+
+      const r = renderHost(Host);
+      const trigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(trigger, 'Enter');
+      await flush(r.fixture);
+      expect(internalEmits).toBe(1);
+
+      trigger.focus();
+      await flush(r.fixture);
+      pressKey(trigger, 'Enter');
+      await flush(r.fixture);
+      expect(internalEmits).toBe(1);
+      expect(document.activeElement?.id).toBe('a1');
     });
   });
 

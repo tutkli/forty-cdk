@@ -120,6 +120,11 @@ export type NavigationMenuScheduleReason = 'hover' | 'keyboard' | 'click';
 /** Per-item context, consumed by the trigger and content. */
 export interface ForNavigationMenuItemContext {
   readonly value: Signal<string>;
+  /**
+   * The item's own `[disabled]`, without the root `[forNavigationMenu]`'s
+   * `disabled` folded in. The trigger composes the two into its
+   * `effectiveDisabled`.
+   */
   readonly disabled: Signal<boolean>;
 }
 
