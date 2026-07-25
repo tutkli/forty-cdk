@@ -271,6 +271,21 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   }
 
   /**
+   * Focuses the first or last enabled item per `target`, resolving the mapping
+   * through the shared `MenuItemList` rather than re-deriving it here. Used by
+   * the mount path (through the `ForMenuContext` contract) and by `openMenu`'s
+   * already-open re-focus branch. When the most recent `openMenu` was
+   * pointer-activated, this one move suppresses the item's focus-driven
+   * `data-highlighted` (one-shot — later calls highlight normally).
+   */
+  focusInitialEnabledItem(target: 'first' | 'last'): boolean {
+    return this.#itemList.focusInitialEnabledItem(
+      target,
+      this.#initialFocusState.consumeHighlight(),
+    );
+  }
+
+  /**
    * Toggle the menu open/closed from the trigger. The close branch reuses the
    * `'programmatic'` close reason by design — there is no distinct `'trigger'`
    * reason for the user-initiated toggle-close path.
@@ -326,15 +341,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
     }
     this.#hooks.onOpen?.(initialFocus, options);
     if (alreadyOpen && !options.suppressFocusMoves) {
-      this.#focusInitialItem(initialFocus);
-    }
-  }
-
-  #focusInitialItem(initialFocus: 'first' | 'last'): void {
-    if (initialFocus === 'last') {
-      this.focusLastEnabledItem();
-    } else {
-      this.focusFirstEnabledItem();
+      this.focusInitialEnabledItem(initialFocus);
     }
   }
 

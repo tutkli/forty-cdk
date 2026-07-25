@@ -296,11 +296,7 @@ export class ForMenubar implements ForMenubarContext {
     this.menuCtx.prepareOpen(initialFocus, modality);
     this.#lastValue.set(value);
     if (this.value() === value) {
-      if (initialFocus === 'last') {
-        this.menuCtx.focusLastEnabledItem();
-      } else {
-        this.menuCtx.focusFirstEnabledItem();
-      }
+      this.menuCtx.focusInitialEnabledItem(initialFocus);
       return;
     }
     this.value.set(value);

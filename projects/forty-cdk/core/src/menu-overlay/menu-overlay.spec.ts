@@ -312,6 +312,44 @@ describe('MenuOverlay', () => {
     });
   });
 
+  describe('focusInitialEnabledItem', () => {
+    it('resolves the target to the matching enabled item', () => {
+      const { overlay } = build();
+      const a = makeItem('a', { disabled: true });
+      const b = makeItem('b');
+      const c = makeItem('c');
+      overlay.registerItem(a);
+      overlay.registerItem(b);
+      overlay.registerItem(c);
+
+      expect(overlay.focusInitialEnabledItem('first')).toBe(true);
+      expect(document.activeElement).toBe(b.host);
+
+      expect(overlay.focusInitialEnabledItem('last')).toBe(true);
+      expect(document.activeElement).toBe(c.host);
+    });
+
+    it('consumes the one-shot pointer-open highlight suppression', () => {
+      const { overlay } = build();
+      const suppress = vi.fn();
+      overlay.registerItem({ ...makeItem('a'), suppressHighlightOnNextFocus: suppress });
+
+      overlay.openMenu('first', 'pointer');
+      expect(overlay.focusInitialEnabledItem('first')).toBe(true);
+      expect(suppress).toHaveBeenCalledTimes(1);
+
+      expect(overlay.focusInitialEnabledItem('first')).toBe(true);
+      expect(suppress).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns false when no enabled items exist', () => {
+      const { overlay } = build();
+      overlay.registerItem(makeItem('a', { disabled: true }));
+      expect(overlay.focusInitialEnabledItem('first')).toBe(false);
+      expect(overlay.focusInitialEnabledItem('last')).toBe(false);
+    });
+  });
+
   describe('activation modality', () => {
     it('suppresses the initial-focus highlight exactly once after a pointer open', () => {
       const { overlay } = build();

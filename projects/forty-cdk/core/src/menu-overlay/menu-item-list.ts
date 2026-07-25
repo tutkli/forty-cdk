@@ -175,6 +175,21 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
     return false;
   }
 
+  /**
+   * Focuses the first or last enabled item per `target`. The single owner of the
+   * `'first' | 'last'` → focus-call mapping every menu surface resolves its
+   * initial focus through — the mount path, the already-open re-focus branch of
+   * a `MenuOverlay`, and `[forMenubar]`'s equivalent — so the fallback ordering
+   * and any future widening of the target union live in one place instead of one
+   * copy per surface. `highlight` behaves exactly as on
+   * {@link focusFirstEnabledItem} / {@link focusLastEnabledItem}.
+   */
+  focusInitialEnabledItem(target: 'first' | 'last', highlight = true): boolean {
+    return target === 'last'
+      ? this.focusLastEnabledItem(highlight)
+      : this.focusFirstEnabledItem(highlight);
+  }
+
   #focusItem(item: H, highlight: boolean): void {
     if (!highlight) {
       item.suppressHighlightOnNextFocus?.();

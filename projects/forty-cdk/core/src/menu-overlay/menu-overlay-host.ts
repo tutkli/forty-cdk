@@ -103,6 +103,10 @@ export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOver
     return this._overlay.focusLastEnabledItem();
   }
 
+  focusInitialEnabledItem(target: 'first' | 'last'): boolean {
+    return this._overlay.focusInitialEnabledItem(target);
+  }
+
   toggle(
     initialFocus: 'first' | 'last' = 'first',
     modality: MenuActivationModality = 'keyboard',

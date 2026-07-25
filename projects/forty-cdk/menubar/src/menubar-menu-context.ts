@@ -221,6 +221,12 @@ export class MenubarMenuContext implements ForMenuContext {
   focusLastEnabledItem(): boolean {
     return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());
   }
+  focusInitialEnabledItem(target: 'first' | 'last'): boolean {
+    return this.#itemList.focusInitialEnabledItem(
+      target,
+      this.#initialFocusState.consumeHighlight(),
+    );
+  }
 
   toggle(): void {
     // Without a specific trigger value, toggle from the bar context can only
