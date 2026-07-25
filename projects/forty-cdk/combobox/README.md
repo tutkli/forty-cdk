@@ -129,6 +129,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forComboboxIndicator]` | `data-state`       | `checked` \| `unchecked` (mirrors the parent option)                |
 | `[forComboboxChip]`      | `data-value`       | the chip's serialized value (verbatim string, or `itemToFormValue`) |
 | `[forComboboxChip]`      | `data-disabled`    | present / absent                                                    |
+| `[forComboboxSeparator]` | `data-orientation` | `horizontal` \| `vertical`                                          |
 
 Focus stays on the `<input>` the whole time the listbox is open, so options never get `:focus` — `data-highlighted` is the canonical hook for styling the keyboard-active option.
 
@@ -608,7 +609,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - `data-state="checked" | "unchecked"` always reflects membership in `value()`, so consumers can paint a checkmark icon with pure CSS regardless of mode.
 - `data-highlighted=""` marks the option that is the current `aria-activedescendant`. Because focus stays on the `<input>`, there is no `:focus` on the option to style — `data-highlighted` is the canonical CSS hook.
 - Disabled options keep the host `aria-disabled="true"`. Click and hover (activedescendant pinning) are no-ops on disabled options.
-- `[forComboboxSeparator]` is decorative and never registers with the listbox's option collection — keyboard navigation skips it automatically.
+- `[forComboboxSeparator]` never registers with the listbox's option collection — keyboard navigation skips it automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
 - `[forComboboxGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
 - `[forComboboxEmpty]` carries `role="status"` + `aria-live="polite"` so the empty-state message is announced when filtering removes all matches.
 - Non-option pieces (`[forComboboxAction]`, and ideally `[forComboboxEmpty]` / `[forComboboxStatus]`) belong inside `[forComboboxContent]` but **outside** `[forComboboxList]` — `role="listbox"` may only own `option` / `group` children (`aria-required-owned-elements`). Wrapping the options in a `[forComboboxList]` (the "editable + list" shape) makes those pieces siblings of the listbox. `[forComboboxAction]` **requires** a `[forComboboxList]` and throws `[forty-cdk/combobox]` without one; `[forComboboxEmpty]` / `[forComboboxStatus]` stay lenient in the bare editable anatomy (documented compromise) — see the [editable-anatomy caveat](#anatomy).

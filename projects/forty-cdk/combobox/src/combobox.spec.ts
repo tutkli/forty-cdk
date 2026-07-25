@@ -1471,6 +1471,8 @@ describe('ForCombobox', () => {
 
       const sep = document.querySelector<HTMLElement>('[forComboboxSeparator]')!;
       expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
 
       const input = document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
       input.focus();
@@ -1478,6 +1480,56 @@ describe('ForCombobox', () => {
       pressKey(input, 'ArrowDown');
       await flush(r.fixture);
       expect(input.getAttribute('aria-activedescendant')).toBe(getOption('y').id);
+    });
+
+    it('separator emits aria-orientation only for vertical and switches to role=none when decorative', async () => {
+      @Component({
+        imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxSeparator],
+        template: `
+          <div forCombobox [(open)]="open">
+            <input forComboboxInput />
+            @if (open()) {
+              <div forComboboxContent>
+                <div
+                  data-testid="sep"
+                  forComboboxSeparator
+                  [orientation]="orientation()"
+                  [decorative]="decorative()"
+                ></div>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal(true);
+        readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
+        readonly decorative = signal(false);
+      }
+
+      const r = renderHost(Host);
+      await flush(r.fixture);
+
+      const sep = document.querySelector<HTMLElement>('[data-testid="sep"]')!;
+
+      r.instance.orientation.set('vertical');
+      await flush(r.fixture);
+      expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.getAttribute('aria-orientation')).toBe('vertical');
+      expect(sep.getAttribute('data-orientation')).toBe('vertical');
+
+      r.instance.decorative.set(true);
+      await flush(r.fixture);
+      expect(sep.getAttribute('role')).toBe('none');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('vertical');
+
+      r.instance.decorative.set(false);
+      r.instance.orientation.set('horizontal');
+      await flush(r.fixture);
+      expect(sep.getAttribute('role')).toBe('separator');
+      expect(sep.hasAttribute('aria-orientation')).toBe(false);
+      expect(sep.getAttribute('data-orientation')).toBe('horizontal');
     });
   });
 

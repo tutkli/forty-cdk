@@ -63,6 +63,7 @@ Implements the static [WAI-ARIA Separator pattern](https://www.w3.org/WAI/ARIA/a
 
 - **Static is the only mode.** `[forSeparator]` keeps `role="separator"` and (for vertical) `aria-orientation="vertical"`. Horizontal omits the attribute because it is the ARIA default.
 - **Use `decorative` when redundant.** If the section split is already announced (e.g. headings on either side), set `decorative` so the separator becomes `role="none"` and AT skips it.
+- **One emission policy across every separator in the library.** `[forSeparator]`, `[forToolbarSeparator]`, `[forMenuSeparator]`, `[forSelectSeparator]`, and `[forComboboxSeparator]` all share the same contract: `role="separator"` (or `role="none"` with `decorative`), `aria-orientation` emitted only for `orientation="vertical"`, and `data-orientation` always stamped for styling. `[forToolbarSeparator]` is the one variation — its `orientation` defaults to the toolbar's cross-axis instead of `horizontal`.
 - **Need a resizer?** Reach for [`ForPaneResizer`](../pane-resizer/README.md) — the focusable, draggable, value-carrying divider between two panes.
 
 ## Styling
