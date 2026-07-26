@@ -26,6 +26,7 @@
  */
 export const FOR_SEARCH_HOST_DIRECTIVE_INPUTS = [
   'value',
+  'clearOnEscape',
   'dirty',
   'disabled',
   'errors',

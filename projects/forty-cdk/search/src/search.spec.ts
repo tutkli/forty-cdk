@@ -6,8 +6,9 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { flush, pressKey } from '../../src/test-utils';
+import { afterEachOverlayCleanup, flush, pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
+import { ForDialog } from 'forty-cdk/dialog';
 import { ForField, ForLabel } from 'forty-cdk/field';
 import { ForSearchClear } from './search-clear';
 import { provideForSearchDefaults } from './search-defaults';
@@ -17,6 +18,18 @@ import { ForSearch } from './search';
 const typeInto = (el: HTMLInputElement, text: string): void => {
   el.value = text;
   el.dispatchEvent(new Event('input'));
+};
+
+const withDocumentEscapeSpy = (fn: () => void): KeyboardEvent[] => {
+  const seen: KeyboardEvent[] = [];
+  const onKeyDown = (e: Event) => seen.push(e as KeyboardEvent);
+  document.addEventListener('keydown', onKeyDown);
+  try {
+    fn();
+  } finally {
+    document.removeEventListener('keydown', onKeyDown);
+  }
+  return seen;
 };
 
 @Component({
@@ -34,6 +47,7 @@ const typeInto = (el: HTMLInputElement, text: string): void => {
         [(touched)]="isTouched"
         [dirty]="isDirty()"
         [name]="fieldName()"
+        [clearOnEscape]="clearOnEscape()"
       />
       <button forSearchClear data-test-id="clear">×</button>
     </div>
@@ -49,6 +63,7 @@ class SearchHost {
   readonly isTouched = signal(false);
   readonly isDirty = signal(false);
   readonly fieldName = signal<string>('');
+  readonly clearOnEscape = signal(true);
 }
 
 const searchOf = (host: HTMLElement) => host.querySelector<HTMLInputElement>('input[forSearch]')!;
@@ -281,18 +296,6 @@ describe('ForSearch', () => {
   });
 
   describe('Escape to clear (issue #1393 item 16)', () => {
-    const withDocumentEscapeSpy = (fn: () => void): KeyboardEvent[] => {
-      const seen: KeyboardEvent[] = [];
-      const onKeyDown = (e: Event) => seen.push(e as KeyboardEvent);
-      document.addEventListener('keydown', onKeyDown);
-      try {
-        fn();
-      } finally {
-        document.removeEventListener('keydown', onKeyDown);
-      }
-      return seen;
-    };
-
     it('clears a non-empty value and consumes the key', async () => {
       const { el, fixture, flush } = renderHost(SearchHost);
       const input = searchOf(el);
@@ -374,6 +377,134 @@ describe('ForSearch', () => {
       await flush();
       expect(fixture.componentInstance.text()).toBe('query');
       expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
+  describe('clearOnEscape opt-out (issue #1473)', () => {
+    afterEachOverlayCleanup();
+
+    it('clears and consumes the key with the default (no binding)', async () => {
+      @Component({
+        imports: [ForSearch],
+        template: `<input forSearch [(value)]="text" />`,
+      })
+      class DefaultHost {
+        readonly text = signal('');
+      }
+
+      const { el, fixture, flush } = renderHost(DefaultHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      const seen = withDocumentEscapeSpy(() => pressKey(input, 'Escape'));
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+      expect(seen).toHaveLength(0);
+    });
+
+    it('neither clears nor consumes a non-empty Escape when false', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      const event = pressKey(input, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(input.value).toBe('query');
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('lets a non-empty Escape reach the document when false', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      const seen = withDocumentEscapeSpy(() => pressKey(input, 'Escape'));
+      await flush();
+      expect(seen).toHaveLength(1);
+      expect(seen[0]?.defaultPrevented).toBe(false);
+      expect(fixture.componentInstance.text()).toBe('query');
+    });
+
+    it('honours a flip back to true at runtime', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      typeInto(input, 'query');
+      await flush();
+
+      pressKey(input, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+
+      fixture.componentInstance.clearOnEscape.set(true);
+      await flush();
+
+      pressKey(input, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+    });
+
+    @Component({
+      imports: [ForDialog, ForSearch],
+      template: `
+        @if (open()) {
+          <div forDialog ariaLabel="Command palette" (dismiss)="open.set(false)">
+            <input
+              forSearch
+              [(value)]="query"
+              [clearOnEscape]="clearOnEscape()"
+              data-test-id="palette"
+            />
+          </div>
+        }
+      `,
+    })
+    class CommandPaletteHost {
+      readonly open = signal(true);
+      readonly query = signal('git ');
+      readonly clearOnEscape = signal(false);
+    }
+
+    const paletteInput = () =>
+      document.querySelector<HTMLInputElement>('[data-test-id="palette"]')!;
+
+    it('dismisses the enclosing dialog on the first Escape', async () => {
+      const { fixture, flush } = renderHost(CommandPaletteHost);
+      await flush();
+      const input = paletteInput();
+      expect(document.querySelector('[forDialog]')).not.toBeNull();
+
+      pressKey(input, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.open()).toBe(false);
+      expect(document.querySelector('[forDialog]')).toBeNull();
+      expect(fixture.componentInstance.query()).toBe('git ');
+    });
+
+    it('keeps the dialog open on the first Escape with the default', async () => {
+      const { fixture, flush } = renderHost(CommandPaletteHost);
+      fixture.componentInstance.clearOnEscape.set(true);
+      await flush();
+      const input = paletteInput();
+
+      pressKey(input, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.open()).toBe(true);
+      expect(fixture.componentInstance.query()).toBe('');
+
+      pressKey(paletteInput(), 'Escape');
+      await flush();
+      expect(fixture.componentInstance.open()).toBe(false);
     });
   });
 
@@ -606,6 +737,25 @@ describe('ForSearch', () => {
       await flush(fixture);
       expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
+    });
+
+    it('respects [clearOnEscape]="false" without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(SearchHost);
+      await flush(fixture);
+      const input = searchOf(fixture.nativeElement);
+
+      fixture.componentInstance.clearOnEscape.set(false);
+      fixture.componentInstance.text.set('hello');
+      await flush(fixture);
+
+      const event = pressKey(input, 'Escape');
+      await flush(fixture);
+      expect(input.value).toBe('hello');
+      expect(fixture.componentInstance.text()).toBe('hello');
+      expect(event.defaultPrevented).toBe(false);
     });
   });
 });
