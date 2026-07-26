@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 /**
@@ -16,7 +16,7 @@ import { injectCarouselContext } from './carousel-context';
   exportAs: 'forCarouselNext',
   host: {
     type: 'button',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-controls]': 'ctx.viewportId()',
     '(click)': 'ctx.scrollNext()',
   },
@@ -30,6 +30,8 @@ export class ForCarouselNext {
    * visible label or set this input.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly isDisabled = computed(() => !this.ctx.canScrollNext());
 

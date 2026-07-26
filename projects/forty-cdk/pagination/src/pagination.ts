@@ -8,7 +8,7 @@ import {
   numberAttribute,
 } from '@angular/core';
 
-import { type WritingDirection, clamp, injectTextDirection } from 'forty-cdk/core';
+import { type WritingDirection, clamp, injectTextDirection, hostAriaLabel } from 'forty-cdk/core';
 import { FOR_PAGINATION_CONTEXT, type ForPaginationContext } from './pagination-context';
 import { FOR_PAGINATION_DEFAULTS } from './pagination-defaults';
 import { computePaginationItems, type PaginationItem } from './pagination-range';
@@ -47,7 +47,7 @@ import { computePaginationItems, type PaginationItem } from './pagination-range'
   exportAs: 'forPagination',
   host: {
     role: 'navigation',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
@@ -102,6 +102,8 @@ export class ForPagination implements ForPaginationContext {
    * than one `<nav>`. A `null` or empty value emits no attribute.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * `count` coerced to a non-negative integer. A non-finite (`NaN` /

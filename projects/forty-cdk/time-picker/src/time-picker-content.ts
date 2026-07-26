@@ -2,6 +2,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
+  hostAriaLabel,
   hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
@@ -32,7 +33,7 @@ import { injectTimePickerContext } from './time-picker-context';
     tabindex: '-1',
     '[id]': 'ctx.overlay.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
@@ -43,8 +44,10 @@ export class ForTimePickerContent {
   protected readonly ctx = injectTimePickerContext('ForTimePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+
   protected readonly labelledBy = hostLabelledBy(() =>
-    this.ctx.ariaLabel() ? null : this.ctx.overlay.triggerId(),
+    this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId(),
   );
 
   constructor() {

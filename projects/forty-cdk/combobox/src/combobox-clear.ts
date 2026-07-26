@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
@@ -24,7 +24,7 @@ import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
   exportAs: 'forComboboxClear',
   host: {
     type: 'button',
-    '[attr.aria-label]': 'ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
     '[attr.tabindex]': '-1',
@@ -42,6 +42,8 @@ export class ForComboboxClear {
    * or `null` to drop the attribute.
    */
   readonly ariaLabel = input<string | null>(this.#defaults.clearAriaLabel);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly hasContent = computed(
     () => this.ctx.value().length > 0 || this.ctx.query().length > 0,

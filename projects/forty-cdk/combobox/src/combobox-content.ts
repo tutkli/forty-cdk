@@ -2,6 +2,7 @@ import { Directive, effect, ElementRef, inject, isDevMode } from '@angular/core'
 
 import {
   registerHandle,
+  hostAriaLabel,
   hostLabelledBy,
   injectOverlayShell,
   type OverlayShellConfig,
@@ -57,7 +58,7 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.tabindex]': 'hasList() ? null : "-1"',
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-label]': 'hasList() ? null : ctx.ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
@@ -69,8 +70,12 @@ export class ForComboboxContent {
   /** When a `[forComboboxList]` is registered the listbox semantics live there, not here. */
   protected readonly hasList = this.ctx.hasList;
 
+  protected readonly resolvedAriaLabel = hostAriaLabel(() =>
+    this.hasList() ? null : this.ctx.ariaLabel(),
+  );
+
   protected readonly labelledBy = hostLabelledBy(() =>
-    this.hasList() || this.ctx.ariaLabel() ? null : this.ctx.inputId(),
+    this.hasList() || this.resolvedAriaLabel() ? null : this.ctx.inputId(),
   );
 
   constructor() {

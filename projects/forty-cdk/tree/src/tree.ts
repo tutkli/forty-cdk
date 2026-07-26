@@ -24,6 +24,7 @@ import {
   RovingTabindex,
   injectTextDirection,
   injectTypeahead,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import { ActiveDescendantFocusModel, type FocusModel, RovingFocusModel } from './focus-model';
 import {
@@ -68,7 +69,7 @@ type VisibleEntry = ForTreeVisibleNode;
   exportAs: 'forTree',
   host: {
     role: 'tree',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
@@ -187,6 +188,8 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * (default) or empty value emits no attribute.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient

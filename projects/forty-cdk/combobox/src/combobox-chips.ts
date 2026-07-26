@@ -1,5 +1,6 @@
 import { Directive, inject, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
@@ -33,7 +34,7 @@ import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
   exportAs: 'forComboboxChips',
   host: {
     role: 'group',
-    '[attr.aria-label]': 'ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
   },
 })
 export class ForComboboxChips {
@@ -48,4 +49,6 @@ export class ForComboboxChips {
    * override per-instance, or `null` to drop the attribute.
    */
   readonly ariaLabel = input<string | null>(this.#defaults.chipsAriaLabel);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

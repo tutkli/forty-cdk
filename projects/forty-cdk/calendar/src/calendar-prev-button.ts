@@ -1,5 +1,7 @@
 import { computed, Directive, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
+
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -22,7 +24,7 @@ import { injectCalendarContext } from './calendar-context';
   exportAs: 'forCalendarPrevButton',
   host: {
     type: 'button',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '(click)': 'page()',
@@ -33,6 +35,8 @@ export class ForCalendarPrevButton {
 
   /** Accessible name for the button. A `null` (default) or empty value emits no attribute. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly disabled = computed(
     () => this.ctx.disabled() || this.ctx.isPreviousDisabled(),

@@ -15,6 +15,7 @@ import {
   type TimeCapableDateAdapter,
   TimeFieldEngine,
   type WritingDirection,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import { type TimeGranularity, type TimeSegmentType } from './build-time-segments';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
@@ -84,7 +85,7 @@ import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
   host: {
     role: 'group',
     '[attr.dir]': 'dir()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
@@ -170,6 +171,8 @@ export class ForTimeField<D>
 
   /** Accessible name for the field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient

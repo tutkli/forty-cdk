@@ -1,5 +1,6 @@
 import { Directive, inject, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
 import { FOR_BREADCRUMBS_DEFAULTS } from './breadcrumbs-defaults';
 
 /**
@@ -36,7 +37,7 @@ import { FOR_BREADCRUMBS_DEFAULTS } from './breadcrumbs-defaults';
   exportAs: 'forBreadcrumbs',
   host: {
     role: 'navigation',
-    '[attr.aria-label]': 'ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
   },
 })
 export class ForBreadcrumbs {
@@ -53,4 +54,6 @@ export class ForBreadcrumbs {
    * the attribute and rely on `aria-labelledby`.
    */
   readonly ariaLabel = input<string | null>(this.#defaults.label);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

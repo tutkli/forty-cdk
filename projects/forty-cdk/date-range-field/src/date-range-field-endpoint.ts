@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input, type Signal } from '@angular/core';
 
-import { type FieldSegment, type WritingDirection } from 'forty-cdk/core';
+import { type FieldSegment, type WritingDirection, hostAriaLabel } from 'forty-cdk/core';
 import {
   type DateRangeFieldEndpoint,
   FOR_DATE_RANGE_FIELD_CONTEXT,
@@ -27,7 +27,7 @@ import {
   host: {
     role: 'group',
     '[attr.dir]': 'dir()',
-    '[attr.aria-label]': 'label() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
@@ -68,6 +68,12 @@ export abstract class ForDateRangeFieldEndpointBase {
   protected readonly label: Signal<string | null> = computed(
     () => this.ariaLabel() ?? this.root.endpointLabel(this.which)(),
   );
+
+  /**
+   * Emitted `aria-label`: a consumer-set static value on the endpoint group
+   * when present, else {@link label}.
+   */
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
 }
 
 /**

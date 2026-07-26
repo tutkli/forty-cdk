@@ -28,6 +28,40 @@ export function hostLabelledBy(fallback: () => string | null): Signal<string | n
 }
 
 /**
+ * Resolves the `aria-label` a piece should expose: the host element's
+ * pre-existing **static** `aria-label` when present, else the library's own
+ * value (an `ariaLabel` input, a scope default, or a computed name).
+ *
+ * Reuses {@link hostLabelledBy}'s **replace** semantics — a name has one owner,
+ * so composing two of them is meaningless and the consumer's is the one
+ * assistive tech should announce. This matters more here than for
+ * `aria-labelledby`: most of these host bindings resolve to `null` when the
+ * library has no name of its own, and a `null` `[attr.x]` binding calls
+ * `removeAttribute` on the first change-detection pass — so without adoption a
+ * consumer's `aria-label="Toppings"` is deleted and the widget ends up with no
+ * accessible name at all.
+ *
+ * When a piece emits both channels, keep the fallback of its
+ * {@link hostLabelledBy} gated on this signal rather than on the raw input:
+ * `aria-labelledby` wins over `aria-label` in ARIA, so a library-generated
+ * `aria-labelledby` fallback would silently outrank the consumer's adopted
+ * name.
+ *
+ * Only **static** values are adopted; see {@link hostLabelledBy} for the
+ * static-only boundary.
+ *
+ * Must be invoked in an injection context — internally injects
+ * {@link ElementRef}.
+ *
+ * @param fallback The library's own accessible name, evaluated only when the
+ *   host carries no static `aria-label`.
+ */
+export function hostAriaLabel(fallback: () => string | null): Signal<string | null> {
+  const consumer = staticHostAttribute('aria-label');
+  return computed(() => consumer ?? fallback());
+}
+
+/**
  * Resolves the `aria-describedby` a piece should expose: the host element's
  * pre-existing **static** `aria-describedby` **composed** with the library's
  * own description ids, consumer ids first.

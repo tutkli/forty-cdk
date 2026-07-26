@@ -2,6 +2,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
+  hostAriaLabel,
   hostLabelledBy,
   injectOverlayShell,
   injectMenuContext,
@@ -51,7 +52,7 @@ import {
     role: 'menu',
     '[id]': 'ctx.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-label]': 'ctx.ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': '"vertical"',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     tabindex: '-1',
@@ -62,8 +63,10 @@ export class ForMenuContent {
   protected readonly ctx = injectMenuContext('ForMenuContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel() || null);
+
   protected readonly labelledBy = hostLabelledBy(() => {
-    if (this.ctx.ariaLabel() || this.ctx.triggerLabelsMenu === false) {
+    if (this.resolvedAriaLabel() || this.ctx.triggerLabelsMenu === false) {
       return null;
     }
     return this.ctx.triggerId();

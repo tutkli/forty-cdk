@@ -225,7 +225,7 @@ export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
 export { type HiddenInputConfig, injectHiddenInput } from './hidden-input/hidden-input';
-export { composeIds, hostDescribedBy, hostLabelledBy } from './host-aria/host-aria';
+export { composeIds, hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria/host-aria';
 export { adoptHostId, hostId, resolveHostId } from './host-id/host-id';
 export { createDebouncedAction, type DebouncedAction } from './hover-intent/debounced-action';
 export {
