@@ -5,6 +5,7 @@ export { ForSliderThumb } from './slider-thumb';
 export {
   FOR_SLIDER_CONTEXT,
   type ForSliderContext,
+  type ForSliderThumbBounds,
   type ForSliderThumbHandle,
   type SliderArrowKey,
 } from './slider-context';

@@ -1,4 +1,5 @@
-import { Directive, signal } from '@angular/core';
+import { Directive, type Signal } from '@angular/core';
+import { createSingleSlot } from 'forty-cdk/core';
 
 import {
   FOR_SEARCH_GROUP,
@@ -31,17 +32,22 @@ import {
   providers: [{ provide: FOR_SEARCH_GROUP, useExisting: ForSearchGroup }],
 })
 export class ForSearchGroup implements ForSearchGroupContext {
-  readonly #field = signal<ForSearchContext | null>(null);
+  readonly #slot = createSingleSlot<ForSearchContext>({
+    primitive: 'search',
+    owner: '[forSearchGroup]',
+    claimant: '[forSearch]',
+  });
 
-  readonly field = this.#field.asReadonly();
+  /** The registered search field, or `null` while none is mounted. */
+  readonly field: Signal<ForSearchContext | null> = this.#slot.value;
 
+  /** Register the search field the group coordinates. */
   register(field: ForSearchContext): void {
-    this.#field.set(field);
+    this.#slot.register(field);
   }
 
+  /** Remove a previously registered search field. */
   unregister(field: ForSearchContext): void {
-    if (this.#field() === field) {
-      this.#field.set(null);
-    }
+    this.#slot.unregister(field);
   }
 }

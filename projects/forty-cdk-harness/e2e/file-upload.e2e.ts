@@ -85,6 +85,34 @@ test.describe('FileUpload', () => {
     expect(inputFiles).toBe('photo.png');
   });
 
+  test('drop of several valid files with multiple off keeps one and rejects the overflow', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'file-upload');
+
+    const dataTransfer = await page.evaluateHandle(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(['a'], 'a.txt', { type: 'text/plain' }));
+      dt.items.add(new File(['b'], 'b.txt', { type: 'text/plain' }));
+      dt.items.add(new File(['c'], 'c.txt', { type: 'text/plain' }));
+      return dt;
+    });
+
+    await el(page, 'zone').dispatchEvent('drop', { dataTransfer });
+
+    await expect(el(page, 'count')).toHaveText('1');
+    await expect(el(page, 'files')).toHaveText('a.txt');
+    await expect(el(page, 'rejected')).toHaveText('b.txt,c.txt');
+    await expect(el(page, 'rejected-reasons')).toHaveText('multiple,multiple');
+
+    const inputFiles = await el(page, 'input').evaluate((node) =>
+      Array.from((node as HTMLInputElement).files ?? [])
+        .map((file) => file.name)
+        .join(','),
+    );
+    expect(inputFiles).toBe('a.txt');
+  });
+
   test('dialog: a non-matching file chosen via the accept override is rejected, not emitted', async ({
     page,
   }) => {

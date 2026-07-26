@@ -1,4 +1,5 @@
-import { Directive, signal } from '@angular/core';
+import { Directive, type Signal } from '@angular/core';
+import { createSingleSlot } from 'forty-cdk/core';
 
 import {
   FOR_NUMBER_INPUT_GROUP,
@@ -34,17 +35,22 @@ import {
   providers: [{ provide: FOR_NUMBER_INPUT_GROUP, useExisting: ForNumberInputGroup }],
 })
 export class ForNumberInputGroup implements ForNumberInputGroupContext {
-  readonly #field = signal<ForNumberInputContext | null>(null);
+  readonly #slot = createSingleSlot<ForNumberInputContext>({
+    primitive: 'number-input',
+    owner: '[forNumberInputGroup]',
+    claimant: '[forNumberInput]',
+  });
 
-  readonly field = this.#field.asReadonly();
+  /** The registered spinbutton field, or `null` while none is mounted. */
+  readonly field: Signal<ForNumberInputContext | null> = this.#slot.value;
 
+  /** Register the spinbutton field the group coordinates. */
   register(field: ForNumberInputContext): void {
-    this.#field.set(field);
+    this.#slot.register(field);
   }
 
+  /** Remove a previously registered spinbutton field. */
   unregister(field: ForNumberInputContext): void {
-    if (this.#field() === field) {
-      this.#field.set(null);
-    }
+    this.#slot.unregister(field);
   }
 }

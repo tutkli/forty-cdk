@@ -81,7 +81,14 @@ export interface ForFieldContext {
   readonly touched: Signal<boolean>;
   /** The currently registered control handle, or null. */
   readonly control: Signal<FieldControlHandle | null>;
-  /** Register the control whose state the field reflects. */
+  /**
+   * Register the control whose state the field reflects. A field exposes a
+   * single `controlId` (not an id list), so one control per `[forField]` is the
+   * supported shape — group several under a `[forFieldset]`. Registrations are
+   * tracked so unmounting one of several accidental duplicates falls back to the
+   * previous still-mounted control; a duplicate is flagged with a dev-mode
+   * warning.
+   */
   registerControl(handle: FieldControlHandle): void;
   /** Remove a previously registered control. */
   unregisterControl(handle: FieldControlHandle): void;

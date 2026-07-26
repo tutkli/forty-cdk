@@ -30,7 +30,7 @@ The `disabled` input:
 
 - reflects `data-disabled` on the group host,
 - emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` on any other element),
-- and propagates to every descendant form control (`forSwitch`, `forCheckbox`, `forSelect`, `forSlider`, …) via context: each control ORs the group's disabled into its own effective disabled, so it becomes genuinely **inert** (interaction ignored, excluded from native form submission) and exposes `aria-disabled="true"` / `data-disabled`. This reaches custom-role controls that a native `<fieldset disabled>` cannot. A control outside any fieldset is unaffected.
+- and propagates to every descendant form control (`forSwitch`, `forCheckbox`, `forSelect`, `forSlider`, …) via context: each control ORs the group's disabled into its own effective disabled, so it becomes genuinely **inert** (interaction ignored, excluded from native form submission) and exposes `aria-disabled="true"` / `data-disabled`. This reaches custom-role controls that a native `<fieldset disabled>` cannot. It also reaches `[forButton]`, which is not a form value but composes the same group disabled state (activation suppressed, `aria-disabled` / `data-disabled` reflected). A control outside any fieldset is unaffected.
 
 Nesting composes like native fieldsets: a disabled outer `[forFieldset]` keeps every control inside disabled even under an inner, enabled `[forFieldset]` — the inner group cannot re-enable what the outer disabled.
 
@@ -77,9 +77,9 @@ On custom markup (no native `<fieldset>`), the same wiring yields `role="group"`
 
 ### `ForFieldset`
 
-| Property   | Type             | Description                                                                                                                                                                                                                      |
-| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Disables the group. Emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` elsewhere) and propagates to every descendant control via context, reaching custom-role controls.<br>**Default:** `false` |
+| Property   | Type             | Description                                                                                                                                                                                                                                        |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Disables the group. Emits the native `disabled` attribute on a `<fieldset>` (or `aria-disabled="true"` elsewhere) and propagates to every descendant control via context, reaching custom-role controls and `[forButton]`.<br>**Default:** `false` |
 
 | Data attribute  | Values           |
 | --------------- | ---------------- |

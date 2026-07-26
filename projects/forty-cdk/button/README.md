@@ -34,6 +34,15 @@ Disabled buttons stay focusable so assistive technology can announce them. The n
 <button forButton [disabled]="isSaving()" (activate)="save()">Save</button>
 ```
 
+A surrounding disabled `[forFieldset]` disables the button too — its `disabled` input is OR'd with the group's, so `aria-disabled` / `data-disabled` are reflected and activation is suppressed. This matters most on a non-native host (`<div forButton>`), which a native `<fieldset disabled>` cannot reach.
+
+```html
+<fieldset forFieldset [disabled]="locked()">
+  <legend forFieldsetLegend>Account</legend>
+  <button forButton (activate)="save()">Save</button>
+</fieldset>
+```
+
 ### Preserve consumer `type`
 
 A native `<button>` without an explicit `type` attribute defaults to `type="button"`. A consumer-set `type="submit"` is preserved:
@@ -46,10 +55,10 @@ A native `<button>` without an explicit `type` attribute defaults to `type="butt
 
 ### `ForButton`
 
-| Property   | Type             | Description                                                                                        |
-| ---------- | ---------------- | -------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Suppresses activation and reflects `aria-disabled` + `data-disabled`.<br>**Default:** `false`      |
-| `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** — |
+| Property   | Type             | Description                                                                                                                                             |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>` | Suppresses activation and reflects `aria-disabled` + `data-disabled`. OR'd with a surrounding `[forFieldset]`'s disabled state.<br>**Default:** `false` |
+| `activate` | `output<void>`   | Fires once per user activation (click, Enter, Space). Never fires when disabled.<br>**Default:** —                                                      |
 
 The directive reflects boolean `data-*` attributes (present with an empty-string value when true, absent when false). There is no `data-state` — this primitive has no open/closed or checked/unchecked logical state.
 

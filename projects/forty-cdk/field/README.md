@@ -24,6 +24,8 @@ It renders **nothing** and imposes no layout, and there is **no control contract
 
 `ForField` owns the control's `id` (it assigns one if the control has none, otherwise it adopts the existing id), so a `<label forLabel>`'s `for` always resolves to the control.
 
+**One control per field.** A `[forField]` owns a single `controlId`, so wrap each control in its own field and group related fields with `[forFieldset]`. Registering a second control logs a dev-mode warning; the last one registered wins, and unmounting it falls back to the previous still-mounted control.
+
 ## `ForFieldError` — automatic Signal Forms errors
 
 `ForFieldError` reads the control's `errors()` automatically and exposes them as signals:

@@ -99,6 +99,12 @@ const typeInto = (input: HTMLInputElement, text: string): void => {
   input.dispatchEvent(new Event('input', { bubbles: true }));
 };
 
+const typeIntoAt = (input: HTMLInputElement, text: string, caret: number): void => {
+  input.value = text;
+  input.setSelectionRange(caret, caret);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+};
+
 const pasteInto = (input: HTMLInputElement, text: string): void => {
   const event = new Event('paste', { bubbles: true, cancelable: true });
   Object.defineProperty(event, 'clipboardData', { value: { getData: () => text } });
@@ -274,6 +280,82 @@ describe('ForOtpInput', () => {
     });
   });
 
+  describe('caret preservation on rejected input', () => {
+    it('keeps the caret in place when a rejected character is typed mid-string', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '1236');
+      await flush();
+
+      typeIntoAt(input, '1a236', 2);
+      await flush();
+
+      expect(input.value).toBe('1236');
+      expect(input.selectionStart).toBe(1);
+      expect(input.selectionEnd).toBe(1);
+      expect(instance.code()).toBe('1236');
+      expect(instance.invalidEvents()).toEqual([{ value: '1a236' }]);
+    });
+
+    it('keeps the caret at the end when the rejected character is typed at the end', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '123');
+      await flush();
+
+      typeIntoAt(input, '123a', 4);
+      await flush();
+
+      expect(input.value).toBe('123');
+      expect(input.selectionStart).toBe(3);
+      expect(instance.code()).toBe('123');
+    });
+
+    it('leaves the caret at the start when the first typed character is rejected', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeIntoAt(input, 'a', 1);
+      await flush();
+
+      expect(input.value).toBe('');
+      expect(input.selectionStart).toBe(0);
+      expect(instance.code()).toBe('');
+      expect(instance.invalidEvents()).toEqual([{ value: 'a' }]);
+    });
+
+    it('collapses to the edit point when a selection is replaced by a rejected character', async () => {
+      const { input, instance, flush } = await mountOtp();
+      typeInto(input, '1234');
+      await flush();
+
+      typeIntoAt(input, '1a4', 2);
+      await flush();
+
+      expect(input.value).toBe('14');
+      expect(input.selectionStart).toBe(1);
+      expect(instance.code()).toBe('14');
+    });
+
+    it('clamps the restored caret to the truncated value', async () => {
+      const { input, flush } = await mountOtp();
+      typeIntoAt(input, '12345678', 8);
+      await flush();
+
+      expect(input.value).toBe('123456');
+      expect(input.selectionStart).toBe(6);
+    });
+
+    it('moves the active slot back to the restored caret', async () => {
+      const { group, input, flush } = await mountOtp();
+      input.dispatchEvent(new FocusEvent('focus'));
+      typeInto(input, '1236');
+      await flush();
+
+      typeIntoAt(input, '1a236', 2);
+      await flush();
+
+      expect(slot(group, 1).getAttribute('data-active')).toBe('');
+      expect(group.querySelectorAll('[data-active]').length).toBe(1);
+    });
+  });
+
   describe('paste', () => {
     it('fills all slots from a paste', async () => {
       const { input, instance, flush } = await mountOtp();
@@ -305,6 +387,15 @@ describe('ForOtpInput', () => {
       await flush();
       expect(instance.code()).toBe('1234');
       expect(instance.invalidEvents()).toEqual([{ value: '12ab34' }]);
+    });
+
+    it('leaves the caret at the end after a partially-rejected paste', async () => {
+      const { input, flush } = await mountOtp();
+      pasteInto(input, '12ab34');
+      await flush();
+      expect(input.value).toBe('1234');
+      expect(input.selectionStart).toBe(4);
+      expect(input.selectionEnd).toBe(4);
     });
   });
 
@@ -484,6 +575,7 @@ describe('ForOtpInput', () => {
       await flush();
       expect(input.value).toBe('12');
       expect(instance.code()).toBe('12');
+      expect(input.selectionStart).toBe(2);
     });
 
     it('resumes filtering plain input after composition ends', async () => {

@@ -116,6 +116,24 @@ describe('FormUiControlBase', () => {
       expect(control.hasAttribute('data-touched')).toBe(true);
       expect(fixture.componentInstance.touchCount()).toBe(1);
     });
+
+    it('re-emits touch when already touched (no once-guard in the base)', async () => {
+      const { el, fixture, flush } = renderHost(Host);
+      const control = q(el, 'control');
+      const directive = fixture.debugElement.query(
+        (node: DebugElement) => node.nativeElement === control,
+      ).references['ctrl'] as ForTestControl;
+
+      directive.fireTouch();
+      await flush();
+      expect(fixture.componentInstance.touchCount()).toBe(1);
+      expect(control.hasAttribute('data-touched')).toBe(true);
+
+      directive.fireTouch();
+      await flush();
+      expect(fixture.componentInstance.touchCount()).toBe(2);
+      expect(control.hasAttribute('data-touched')).toBe(true);
+    });
   });
 
   describe('effectiveDisabled inside a forFieldset', () => {

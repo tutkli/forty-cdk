@@ -82,8 +82,11 @@ export abstract class FormUiControlBase {
   readonly touched = model<boolean>(false);
 
   /**
-   * Emitted alongside every internal `touched` flip (blur, dismiss,
-   * selection-commit). `[formField]` listens to this output to mark the field
+   * Emitted on every touch-producing interaction (blur, dismiss,
+   * selection-commit) — including repeats once the control is already touched.
+   * The {@link touched} model itself only changes on the first, and Signal
+   * Forms' `markAsTouched()` is idempotent, so re-emission is safe. No control
+   * once-guards this. `[formField]` listens to this output to mark the field
    * touched — since Signal Forms v22 the `touched` input is write-only from the
    * form's perspective and never read back.
    */
@@ -137,6 +140,8 @@ export abstract class FormUiControlBase {
    * reflection) and emits {@link touch} (Signal Forms integration). Subclasses
    * call this from every touch-producing interaction instead of writing
    * `touched` directly, so both channels always fire together.
+   * Never once-guard this in a subclass: the emission cadence is part of the
+   * uniform form-control contract.
    */
   protected markTouched(): void {
     this.touched.set(true);

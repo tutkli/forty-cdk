@@ -339,6 +339,8 @@ export {
   roundToDecimals,
   roundToStepPrecision,
   snapToStep,
+  stepOnGrid,
+  type StepOnGridOptions,
 } from './numeric-step/numeric-step';
 export {
   type OverlayManagerConfig,
@@ -411,6 +413,11 @@ export {
   toggleInArray,
 } from './selection/selection';
 export { isRequiredInputUnset, tryReadHandle } from './signal-graph/read-handle';
+export {
+  createSingleSlot,
+  type SingleSlot,
+  type SingleSlotConfig,
+} from './single-slot/single-slot';
 export {
   resolveSnapTarget,
   type ResolveSnapTargetOptions,

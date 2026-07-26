@@ -42,6 +42,19 @@ standalone `[forSearch]` (no clear button) needs no group.
 `[formField]` auto-wires the `FormValueControl<string>` contract — `required`,
 `invalid`, `touched`, and the value itself flow in and out without extra glue.
 
+## Keyboard interaction
+
+| Key      | Behaviour                                                                         |
+| -------- | --------------------------------------------------------------------------------- |
+| `Escape` | Clears a non-empty value, matching the native `<input type="search">` affordance. |
+
+`Escape` is consumed (`preventDefault()` + `stopPropagation()`) **only** when it
+clears. When the field is already empty — or disabled / read-only, where
+clearing is a no-op — the key is left to propagate, so a `[forSearch]` placed
+inside a Dialog, Popover, or Combobox panel does not swallow that overlay's own
+Escape dismissal. A non-empty search box inside an overlay therefore takes two
+presses: the first clears the field, the second closes the overlay.
+
 ## API
 
 ### `ForSearch`
@@ -50,6 +63,10 @@ Applied to a native `<input>`. Sets `role="searchbox"`, mirrors the value to a
 signal, reflects validation state, and exposes `clear()` / `focusInput()` for
 the companion clear button. Implements `FormValueControl<string>`, so it
 auto-wires with `[formField]` and auto-associates inside a `[forField]`.
+
+`clear()` is a no-op while the field is disabled or read-only, whichever caller
+invokes it — the clear button, the `Escape` key, or your own code through the
+`[forSearchGroup]` context.
 
 | Data attribute  | Values                                  |
 | --------------- | --------------------------------------- |

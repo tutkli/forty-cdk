@@ -350,8 +350,37 @@ describe('ForSlider', () => {
       await flush();
       keyDown(thumb(el, 0), 'ArrowRight');
       await flush();
-      // 23 + 10 = 33 → snap to 30
+      // 23 is off the 10-grid → the next grid point up is 30.
       expect(fixture.componentInstance.picked()).toEqual([30]);
+    });
+
+    it('ArrowLeft from an off-step value lands on the next lower multiple', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(10);
+      fixture.componentInstance.picked.set([23]);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowLeft');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([20]);
+    });
+
+    it('a fractional off-grid value advances one grid point, not a step-and-a-half (#1393)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([0.55]);
+      await flush();
+      keyDown(thumb(el, 0), 'ArrowRight');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([1]);
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('1');
+    });
+
+    it('PageUp from an off-grid value lands on the adjacent grid point', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([0.55]);
+      await flush();
+      keyDown(thumb(el, 0), 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([1]);
     });
 
     it('rounds a fractional step to clean values without float noise (#590 F5)', async () => {
@@ -475,6 +504,64 @@ describe('ForSlider', () => {
       expect(fixture.componentInstance.picked()).toEqual([85, 90]);
     });
 
+    it('thumb aria-valuemin / aria-valuemax account for minStepsBetweenThumbs (#1393 item 9)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.gap.set(5);
+      fixture.componentInstance.picked.set([20, 80]);
+      await flush();
+      const lo = thumb(el, 0);
+      const hi = thumb(el, 1);
+      expect(lo.getAttribute('aria-valuemin')).toBe('0');
+      expect(lo.getAttribute('aria-valuemax')).toBe('75');
+      expect(hi.getAttribute('aria-valuemin')).toBe('25');
+      expect(hi.getAttribute('aria-valuemax')).toBe('100');
+    });
+
+    it('gap-aware aria bounds are rounded to the step precision', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.gap.set(3);
+      fixture.componentInstance.picked.set([0.1, 0.7]);
+      await flush();
+      expect(thumb(el, 0).getAttribute('aria-valuemax')).toBe('0.4');
+      expect(thumb(el, 1).getAttribute('aria-valuemin')).toBe('0.4');
+    });
+
+    it('aria bounds react to a runtime minStepsBetweenThumbs change', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.picked.set([20, 80]);
+      await flush();
+      expect(thumb(el, 0).getAttribute('aria-valuemax')).toBe('80');
+      fixture.componentInstance.gap.set(10);
+      await flush();
+      expect(thumb(el, 0).getAttribute('aria-valuemax')).toBe('70');
+    });
+
+    it('collapses an over-constrained range instead of inverting the aria bounds', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.gap.set(50);
+      fixture.componentInstance.picked.set([0, 1]);
+      await flush();
+      expect(thumb(el, 0).getAttribute('aria-valuemin')).toBe('0');
+      expect(thumb(el, 0).getAttribute('aria-valuemax')).toBe('0');
+      expect(thumb(el, 1).getAttribute('aria-valuemin')).toBe('50');
+      expect(thumb(el, 1).getAttribute('aria-valuemax')).toBe('100');
+    });
+
+    it('an over-constrained gap pins the thumb inside [min, max]', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.gap.set(50);
+      fixture.componentInstance.picked.set([0, 1]);
+      await flush();
+      fixture.componentInstance.valueChanges.length = 0;
+
+      keyDown(thumb(el, 0), 'End');
+      await flush();
+
+      expect(fixture.componentInstance.picked()).toEqual([0, 1]);
+      expect(fixture.componentInstance.valueChanges).toEqual([]);
+    });
+
     it('neighbor clamp is step-rounded — no float tail with a fractional step + gap (#1152)', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.step.set(0.1);
@@ -503,6 +590,61 @@ describe('ForSlider', () => {
       keyDown(thumb(el, 1), 'Home');
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([80, 80]);
+    });
+  });
+
+  describe('dev diagnostics (#1393 item 10)', () => {
+    it('warns once with the [forty-cdk/slider] prefix when min > max', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.min.set(200);
+      await flush();
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/slider]');
+      expect(warn.mock.calls[0]![0]).toContain('[min]');
+
+      fixture.componentInstance.min.set(300);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+
+    it('re-warns after min <= max is restored and inverted again', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.min.set(200);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      fixture.componentInstance.min.set(0);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(1);
+
+      fixture.componentInstance.min.set(200);
+      await flush();
+      expect(warn).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not warn for a valid min / max / step', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, flush } = renderHost(SliderHost);
+      await flush();
+      expect(warn).not.toHaveBeenCalled();
+
+      fixture.componentInstance.min.set(100);
+      await flush();
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('warns when step is not positive', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0);
+      await flush();
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/slider]');
+      expect(warn.mock.calls[0]![0]).toContain('[step]');
     });
   });
 
@@ -620,6 +762,84 @@ describe('ForSlider', () => {
       expect(fixture.componentInstance.valueCommits).toEqual([[70]]);
 
       rectSpy.mockRestore();
+    });
+  });
+
+  describe('track press focus (#1393 item 1)', () => {
+    const pointer = (type: string, init: PointerEventInit) =>
+      new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, ...init });
+
+    const release = () => document.dispatchEvent(pointer('pointerup', { clientX: 0, clientY: 0 }));
+
+    it('focuses the thumb when the press lands on bare track', async () => {
+      const { el, flush } = renderHost(SliderHost);
+      track(el).dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }));
+      release();
+      await flush();
+
+      expect(document.activeElement).toBe(thumb(el, 0));
+    });
+
+    it('arrow keys adjust the value immediately after a track press', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      track(el).dispatchEvent(pointer('pointerdown', { clientX: 0, clientY: 0 }));
+      release();
+      await flush();
+
+      const afterPress = fixture.componentInstance.picked()[0]!;
+      keyDown(document.activeElement as HTMLElement, 'ArrowRight');
+      await flush();
+
+      expect(fixture.componentInstance.picked()).toEqual([afterPress + 1]);
+    });
+
+    it('cancels the press default so the browser cannot pull focus back off the thumb', async () => {
+      const { el, flush } = renderHost(SliderHost);
+      const down = pointer('pointerdown', { clientX: 0, clientY: 0 });
+      track(el).dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+    });
+
+    it('claims the gesture and focuses the same way when the press lands on the thumb', async () => {
+      const { el, flush } = renderHost(SliderHost);
+      const down = pointer('pointerdown', { clientX: 0, clientY: 0 });
+      thumb(el, 0).dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(thumb(el, 0));
+    });
+
+    it('leaves focus and the press default alone while disabled', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+
+      const down = pointer('pointerdown', { clientX: 0, clientY: 0 });
+      track(el).dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(document.activeElement).not.toBe(thumb(el, 0));
+    });
+
+    it('leaves focus and the press default alone while readonly', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.readonly.set(true);
+      await flush();
+
+      const down = pointer('pointerdown', { clientX: 0, clientY: 0 });
+      track(el).dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(document.activeElement).not.toBe(thumb(el, 0));
     });
   });
 
@@ -775,6 +995,65 @@ describe('ForSlider', () => {
       a.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: b }));
       await flush();
       expect(fixture.componentInstance.touchedChanges).toEqual([]);
+    });
+
+    @Component({
+      imports: [ForSlider, ForSliderTrack, ForSliderThumb],
+      template: `
+        <div
+          forSlider
+          [(value)]="picked"
+          (touch)="touches.set(touches() + 1)"
+          (touchedChange)="touchedChanges.push($event)"
+        >
+          <span forSliderTrack>
+            @for (v of picked(); let i = $index; track i) {
+              <span forSliderThumb [index]="i" [attr.data-test-id]="'thumb-' + i"></span>
+            }
+          </span>
+        </div>
+      `,
+    })
+    class TouchOutputHost {
+      readonly picked = signal<readonly number[]>([50]);
+      readonly touches = signal(0);
+      readonly touchedChanges: boolean[] = [];
+    }
+
+    it('emits touch on every focus leave, not only the first (no once-guard)', async () => {
+      const { el, fixture, flush } = renderHost(TouchOutputHost);
+      const t = thumb(el, 0);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        t.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+        expect(fixture.componentInstance.touches()).toBe(1);
+
+        t.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+        expect(fixture.componentInstance.touches()).toBe(2);
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('keeps touchedChange edge-triggered while touch re-emits', async () => {
+      const { el, fixture, flush } = renderHost(TouchOutputHost);
+      const t = thumb(el, 0);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        t.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+        t.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+
+        expect(fixture.componentInstance.touches()).toBe(2);
+        expect(fixture.componentInstance.touchedChanges).toEqual([true]);
+      } finally {
+        outside.remove();
+      }
     });
 
     // "drag end marks touched" requires laid-out track geometry to drive a

@@ -40,6 +40,18 @@ No ARIA role is imposed on the drop zone — it is a plain container. The `<inpu
 </div>
 ```
 
+With `multiple` off the zone keeps the first accepted file and surfaces the extras on `filesRejected` with the reason `'multiple'` — nothing is discarded silently, so a consumer can tell the user why only one file went through. Combining `directory` with `multiple` off is therefore noisy by design: every file in the chosen folder past the first is reported as a `'multiple'` rejection.
+
+### Handling rejections
+
+```ts
+onRejected(rejections: ForFileUploadRejection[]): void {
+  for (const { file, reason } of rejections) {
+    console.warn(`${file.name} rejected: ${reason}`);
+  }
+}
+```
+
 ### Directory (folder) selection
 
 Set `directory` to switch the native picker into folder-selection mode (mirrored onto the input as `webkitdirectory`). The emitted `FileList` then contains every file inside the chosen folder, each carrying a `webkitRelativePath` the consumer reads to reconstruct the tree.
@@ -81,10 +93,10 @@ Despite the `webkit-` prefix the attribute is supported across modern Chromium, 
 | `directory` | `boolean`        | Whether the picker selects a whole folder (mirrored as `webkitdirectory`).<br>**Default:** `false`    |
 | `disabled`  | `boolean`        | Whether the zone and all its pieces are disabled.<br>**Default:** `false`                             |
 
-| Output          | Type       | Description                                                                                                                                                                              |
-| --------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `filesChange`   | `FileList` | Files chosen via the dialog or dropped onto the zone, filtered against `accept` before emission through either path.                                                                     |
-| `filesRejected` | `File[]`   | Files rejected by `accept` (file-extension / `type/*` MIME matching), from a drop or a dialog selection made through the "All files" override. Fires only when at least one is rejected. |
+| Output          | Type                       | Description                                                                                                                                                                                                                         |
+| --------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filesChange`   | `FileList`                 | Files chosen via the dialog or dropped onto the zone, filtered against `accept` before emission through either path.                                                                                                                |
+| `filesRejected` | `ForFileUploadRejection[]` | Files refused by `accept` or by the single-file cap of `multiple="false"`, each paired with the reason (`'accept'` / `'multiple'`). Fires only when at least one file was refused; every selected file lands in exactly one output. |
 
 | Data attribute  | Values                                                              |
 | --------------- | ------------------------------------------------------------------- |

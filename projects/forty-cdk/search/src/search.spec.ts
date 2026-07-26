@@ -1,4 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
@@ -6,7 +6,7 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { flush } from '../../src/test-utils';
+import { flush, pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForField, ForLabel } from 'forty-cdk/field';
 import { ForSearchClear } from './search-clear';
@@ -213,6 +213,170 @@ describe('ForSearch', () => {
     });
   });
 
+  describe('clear() through the context (issue #1393 item 2)', () => {
+    @Component({
+      imports: [ForSearchGroup, ForSearch],
+      template: `
+        <div forSearchGroup>
+          <input forSearch [(value)]="text" [disabled]="isDisabled()" [readonly]="isReadonly()" />
+        </div>
+      `,
+    })
+    class ContextClearHost {
+      readonly text = signal('');
+      readonly isDisabled = signal(false);
+      readonly isReadonly = signal(false);
+      readonly group = viewChild.required(ForSearchGroup);
+
+      clearViaContext(): void {
+        this.group().field()?.clear();
+      }
+    }
+
+    it('clears the value when the field is enabled', async () => {
+      const { el, fixture, flush } = renderHost(ContextClearHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      fixture.componentInstance.clearViaContext();
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+      expect(input.value).toBe('');
+      expect(input.getAttribute('data-empty')).toBe('');
+    });
+
+    it('is a no-op while the field is disabled', async () => {
+      const { el, fixture, flush } = renderHost(ContextClearHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      fixture.componentInstance.isDisabled.set(true);
+      await flush();
+
+      fixture.componentInstance.clearViaContext();
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(input.value).toBe('query');
+    });
+
+    it('is a no-op while the field is readonly', async () => {
+      const { el, fixture, flush } = renderHost(ContextClearHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      fixture.componentInstance.isReadonly.set(true);
+      await flush();
+
+      fixture.componentInstance.clearViaContext();
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(input.value).toBe('query');
+    });
+  });
+
+  describe('Escape to clear (issue #1393 item 16)', () => {
+    const withDocumentEscapeSpy = (fn: () => void): KeyboardEvent[] => {
+      const seen: KeyboardEvent[] = [];
+      const onKeyDown = (e: Event) => seen.push(e as KeyboardEvent);
+      document.addEventListener('keydown', onKeyDown);
+      try {
+        fn();
+      } finally {
+        document.removeEventListener('keydown', onKeyDown);
+      }
+      return seen;
+    };
+
+    it('clears a non-empty value and consumes the key', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      const event = pressKey(input, 'Escape');
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('');
+      expect(input.value).toBe('');
+      expect(input.getAttribute('data-empty')).toBe('');
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('does not let a clearing Escape reach the document', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      const seen = withDocumentEscapeSpy(() => pressKey(input, 'Escape'));
+      await flush();
+      expect(seen).toHaveLength(0);
+      expect(fixture.componentInstance.text()).toBe('');
+    });
+
+    it('propagates Escape when the value is already empty', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      const seen = withDocumentEscapeSpy(() => pressKey(input, 'Escape'));
+      await flush();
+      expect(seen.map((e) => e.defaultPrevented)).toEqual([false]);
+      expect(fixture.componentInstance.text()).toBe('');
+    });
+
+    it('is inert and propagates while readonly', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      fixture.componentInstance.isReadonly.set(true);
+      await flush();
+
+      const seen = withDocumentEscapeSpy(() => pressKey(input, 'Escape'));
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(seen.map((e) => e.defaultPrevented)).toEqual([false]);
+    });
+
+    it('is inert and propagates while disabled', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      fixture.componentInstance.isDisabled.set(true);
+      await flush();
+
+      const seen = withDocumentEscapeSpy(() => pressKey(input, 'Escape'));
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(seen.map((e) => e.defaultPrevented)).toEqual([false]);
+    });
+
+    it('ignores Escape during IME composition', async () => {
+      const { el, fixture, flush } = renderHost(SearchHost);
+      const input = searchOf(el);
+
+      typeInto(input, 'query');
+      await flush();
+
+      const event = pressKey(input, 'Escape', { isComposing: true });
+      await flush();
+      expect(fixture.componentInstance.text()).toBe('query');
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
+
   describe('clear button aria-label (issue #1159)', () => {
     it('carries the default aria-label "Clear"', () => {
       const { el } = renderHost(SearchHost);
@@ -286,6 +450,55 @@ describe('ForSearch', () => {
       expect(() => renderHost(OrphanClearHost)).toThrow(
         /\[forty-cdk\/search\] ForSearchClear must be used inside a \[forSearchGroup\]/,
       );
+    });
+
+    @Component({
+      imports: [ForSearchGroup, ForSearch, ForSearchClear],
+      template: `
+        <div forSearchGroup>
+          <input forSearch [(value)]="first" data-test-id="first" />
+          @if (showSecond()) {
+            <input forSearch [(value)]="second" data-test-id="second" />
+          }
+          <button forSearchClear data-test-id="clear">×</button>
+        </div>
+      `,
+    })
+    class DuplicateFieldHost {
+      readonly first = signal('a');
+      readonly second = signal('b');
+      readonly showSecond = signal(true);
+    }
+
+    it('warns when two [forSearch]es register under one [forSearchGroup]', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(DuplicateFieldHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain('[forty-cdk/search]');
+      expect(message).toContain('[forSearchGroup]');
+      expect(message).toContain('[forSearch]');
+    });
+
+    it('keeps the clear button bound to the surviving field when a duplicate unmounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, instance, flush: f } = renderHost(DuplicateFieldHost);
+      const clear = clearOf(el);
+
+      expect(clear.hasAttribute('hidden')).toBe(false);
+
+      instance.showSecond.set(false);
+      await f();
+
+      expect(el.querySelector('[data-test-id="second"]')).toBeNull();
+      expect(clear.hasAttribute('hidden')).toBe(false);
+      expect(clear.hasAttribute('disabled')).toBe(false);
+
+      clear.click();
+      await f();
+
+      expect(instance.first()).toBe('');
     });
   });
 
@@ -375,6 +588,23 @@ describe('ForSearch', () => {
 
       fixture.componentInstance.text.set('');
       await flush(fixture);
+      expect(input.getAttribute('data-empty')).toBe('');
+    });
+
+    it('clears on Escape without Zone.js', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(SearchHost);
+      await flush(fixture);
+      const input = searchOf(fixture.nativeElement);
+
+      fixture.componentInstance.text.set('hello');
+      await flush(fixture);
+
+      pressKey(input, 'Escape');
+      await flush(fixture);
+      expect(input.value).toBe('');
       expect(input.getAttribute('data-empty')).toBe('');
     });
   });

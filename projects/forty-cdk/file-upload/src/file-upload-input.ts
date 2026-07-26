@@ -1,4 +1,5 @@
 import { Directive, ElementRef, inject } from '@angular/core';
+import { registerHandle } from 'forty-cdk/core';
 
 import { injectFileUploadContext } from './file-upload-context';
 
@@ -36,7 +37,11 @@ export class ForFileUploadInput {
   protected readonly ctx = injectFileUploadContext('[forFileUploadInput]');
 
   constructor() {
-    this.ctx.registerInput(this.#el);
+    registerHandle(
+      this.#el,
+      (el) => this.ctx.registerInput(el),
+      (el) => this.ctx.unregisterInput(el),
+    );
   }
 
   protected onChange(): void {

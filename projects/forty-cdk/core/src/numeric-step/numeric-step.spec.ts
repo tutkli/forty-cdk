@@ -4,6 +4,7 @@ import {
   roundToDecimals,
   roundToStepPrecision,
   snapToStep,
+  stepOnGrid,
 } from './numeric-step';
 
 describe('clamp', () => {
@@ -112,5 +113,66 @@ describe('snapToStep', () => {
     it('snaps a raw in-between value onto the finer grid', () => {
       expect(snapToStep(0.17, 0.1, 0.05)).toBe(0.15);
     });
+  });
+});
+
+describe('stepOnGrid', () => {
+  it('moves an off-grid value to the next grid point in the direction of travel', () => {
+    expect(stepOnGrid(0.55, { step: 1, direction: 1 })).toBe(1);
+    expect(stepOnGrid(0.55, { step: 1, direction: -1 })).toBe(0);
+  });
+
+  it('advances a full step from a value already on the grid', () => {
+    expect(stepOnGrid(1, { step: 1, direction: 1 })).toBe(2);
+    expect(stepOnGrid(1, { step: 1, direction: -1 })).toBe(0);
+  });
+
+  it('measures the grid from origin, not from zero', () => {
+    expect(stepOnGrid(6, { step: 2, direction: 1, origin: 3 })).toBe(7);
+    expect(stepOnGrid(7, { step: 2, direction: 1, origin: 3 })).toBe(9);
+    expect(stepOnGrid(6, { step: 2, direction: -1, origin: 3 })).toBe(5);
+  });
+
+  it('keeps an origin finer than the step on the grid', () => {
+    expect(stepOnGrid(0.15, { step: 0.1, direction: 1, origin: 0.05 })).toBe(0.25);
+  });
+
+  it('keeps fractional stepping free of float noise', () => {
+    expect(stepOnGrid(0.1 + 0.2, { step: 0.1, direction: 1 })).toBe(0.4);
+    expect(stepOnGrid(0.7, { step: 0.1, direction: 1 })).toBe(0.8);
+    expect(stepOnGrid(0.3, { step: 0.1, direction: -1 })).toBe(0.2);
+  });
+
+  it('snaps a genuinely off-grid fraction to the adjacent grid point', () => {
+    expect(stepOnGrid(0.35, { step: 0.1, direction: 1 })).toBe(0.4);
+    expect(stepOnGrid(0.35, { step: 0.1, direction: -1 })).toBe(0.3);
+  });
+
+  it('steps cleanly with an exponential step', () => {
+    expect(stepOnGrid(2e-7, { step: 1e-7, direction: 1 })).toBe(3e-7);
+  });
+
+  it('travels by `by` from an on-grid value, keeping a finer `by`s precision', () => {
+    expect(stepOnGrid(0.2, { step: 0.1, direction: 1, by: 0.25 })).toBe(0.45);
+    expect(stepOnGrid(0.1, { step: 0.1, direction: 1, by: 0.3 })).toBe(0.4);
+  });
+
+  it('ignores `by` from an off-grid value, landing on the adjacent grid point', () => {
+    expect(stepOnGrid(0.55, { step: 1, direction: 1, by: 10 })).toBe(1);
+  });
+
+  it('crosses zero symmetrically', () => {
+    expect(stepOnGrid(-0.55, { step: 1, direction: 1 })).toBe(0);
+    expect(stepOnGrid(-0.55, { step: 1, direction: -1 })).toBe(-1);
+  });
+
+  it('falls back to plain addition when the step describes no grid', () => {
+    expect(stepOnGrid(23.7, { step: 0, direction: 1 })).toBe(23.7);
+    expect(stepOnGrid(5, { step: 0, direction: 1, by: 2 })).toBe(7);
+    expect(stepOnGrid(1.5, { step: NaN, direction: 1, by: 1 })).toBe(2.5);
+  });
+
+  it('returns the value unchanged for a zero travel', () => {
+    expect(stepOnGrid(0.55, { step: 1, direction: 1, by: 0 })).toBe(0.55);
   });
 });

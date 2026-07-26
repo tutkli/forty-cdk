@@ -83,3 +83,28 @@ test.describe('OTP input — IME composition', () => {
     expect(await selectionRange(input)).toEqual([2, 2]);
   });
 });
+
+/**
+ * Caret contract for a rejected character (#1393 item 15). The directive
+ * rewrites the real `<input>`'s value when the filter drops a character; the
+ * caret must stay at the pre-keystroke editing position instead of being
+ * slammed to the end of the new value. Driven with real keystrokes here —
+ * jsdom covers the synthetic `input` event, this proves the browser path.
+ */
+test.describe('OTP input — rejected character caret', () => {
+  test('keeps the caret in place when a rejected character is typed mid-string', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'otp-input');
+    const input = await focusOtp(page);
+
+    await page.keyboard.type('1236');
+    await input.evaluate((node) => (node as HTMLInputElement).setSelectionRange(1, 1));
+    await page.keyboard.press('a');
+
+    await expect(el(page, 'value')).toHaveText('1236');
+    expect(await inputValue(input)).toBe('1236');
+    expect(await selectionRange(input)).toEqual([1, 1]);
+    await expect(el(page, 'slot-1')).toHaveAttribute('data-active', '');
+  });
+});

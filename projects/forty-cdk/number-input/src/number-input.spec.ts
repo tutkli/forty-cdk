@@ -459,6 +459,54 @@ describe('ForNumberInput', () => {
       expect(fixture.componentInstance.qty()).toBe(0.3);
       expect(input.getAttribute('aria-valuenow')).toBe('0.3');
     });
+
+    it('ArrowUp from an off-grid value lands on the next multiple of step (#1393)', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.qty.set(0.55);
+      await flush();
+      const input = inputOf(el);
+
+      pressKey(input, 'ArrowUp');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1);
+      expect(input.getAttribute('aria-valuenow')).toBe('1');
+
+      fixture.componentInstance.qty.set(0.55);
+      await flush();
+      pressKey(input, 'ArrowDown');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(0);
+    });
+
+    it('measures the step grid from min, not from zero', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.min.set(3);
+      fixture.componentInstance.step.set(2);
+      fixture.componentInstance.qty.set(6);
+      await flush();
+      const input = inputOf(el);
+
+      pressKey(input, 'ArrowUp');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(7);
+
+      fixture.componentInstance.qty.set(6);
+      await flush();
+      pressKey(input, 'ArrowDown');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(5);
+    });
+
+    it('PageUp from an off-grid value lands on the adjacent grid point', async () => {
+      const { el, fixture, flush } = renderHost(NumberHost);
+      fixture.componentInstance.qty.set(0.55);
+      await flush();
+      const input = inputOf(el);
+
+      pressKey(input, 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.qty()).toBe(1);
+    });
   });
 
   describe('step precision', () => {
@@ -540,7 +588,14 @@ describe('ForNumberInput', () => {
       template: `
         <div forNumberInputGroup>
           <button forNumberInputDecrement ariaLabel="Decrease" data-test-id="dec">−</button>
-          <input forNumberInput [(value)]="qty" [min]="min()" [max]="max()" />
+          <input
+            forNumberInput
+            [(value)]="qty"
+            [min]="min()"
+            [max]="max()"
+            [(touched)]="isTouched"
+            (touch)="touchCount.set(touchCount() + 1)"
+          />
           <button forNumberInputIncrement ariaLabel="Increase" data-test-id="inc">+</button>
         </div>
       `,
@@ -549,6 +604,8 @@ describe('ForNumberInput', () => {
       readonly qty = signal<number | null>(5);
       readonly min = signal<number | undefined>(0);
       readonly max = signal<number | undefined>(10);
+      readonly isTouched = signal(false);
+      readonly touchCount = signal(0);
     }
 
     const incOf = (host: HTMLElement) =>
@@ -573,6 +630,63 @@ describe('ForNumberInput', () => {
       decOf(el).click();
       await flush();
       expect(fixture.componentInstance.qty()).toBe(5);
+    });
+
+    it('marks the field touched on an increment click without ever focusing the input', async () => {
+      const { el, fixture, flush } = renderHost(ButtonsHost);
+      expect(inputOf(el).hasAttribute('data-touched')).toBe(false);
+
+      incOf(el).click();
+      await flush();
+
+      expect(fixture.componentInstance.qty()).toBe(6);
+      expect(fixture.componentInstance.isTouched()).toBe(true);
+      expect(inputOf(el).getAttribute('data-touched')).toBe('');
+      expect(fixture.componentInstance.touchCount()).toBe(1);
+    });
+
+    it('marks the field touched on a decrement click', async () => {
+      const { el, fixture, flush } = renderHost(ButtonsHost);
+      expect(inputOf(el).hasAttribute('data-touched')).toBe(false);
+
+      decOf(el).click();
+      await flush();
+
+      expect(fixture.componentInstance.qty()).toBe(4);
+      expect(fixture.componentInstance.isTouched()).toBe(true);
+      expect(inputOf(el).getAttribute('data-touched')).toBe('');
+      expect(fixture.componentInstance.touchCount()).toBe(1);
+    });
+
+    it('leaves the field untouched when the disabled button at the bound is clicked', async () => {
+      const { el, fixture, flush } = renderHost(ButtonsHost);
+      fixture.componentInstance.qty.set(10);
+      await flush();
+
+      incOf(el).click();
+      await flush();
+
+      expect(fixture.componentInstance.qty()).toBe(10);
+      expect(fixture.componentInstance.isTouched()).toBe(false);
+      expect(inputOf(el).hasAttribute('data-touched')).toBe(false);
+      expect(fixture.componentInstance.touchCount()).toBe(0);
+    });
+
+    it('does not throw when no [forNumberInput] is registered in the group', () => {
+      @Component({
+        imports: [ForNumberInputGroup, ForNumberInputIncrement, ForNumberInputDecrement],
+        template: `
+          <div forNumberInputGroup>
+            <button forNumberInputDecrement data-test-id="dec">−</button>
+            <button forNumberInputIncrement data-test-id="inc">+</button>
+          </div>
+        `,
+      })
+      class FieldlessHost {}
+
+      const { el } = renderHost(FieldlessHost);
+      expect(() => incOf(el).click()).not.toThrow();
+      expect(() => decOf(el).click()).not.toThrow();
     });
 
     it('disables the increment button at max and the decrement button at min', async () => {
@@ -618,6 +732,56 @@ describe('ForNumberInput', () => {
       const { el } = renderHost(FieldlessHost);
       expect(incOf(el).hasAttribute('disabled')).toBe(true);
       expect(decOf(el).hasAttribute('disabled')).toBe(true);
+    });
+
+    @Component({
+      imports: [
+        ForNumberInputGroup,
+        ForNumberInput,
+        ForNumberInputIncrement,
+        ForNumberInputDecrement,
+      ],
+      template: `
+        <div forNumberInputGroup>
+          <button forNumberInputDecrement data-test-id="dec">−</button>
+          <input forNumberInput [(value)]="first" data-test-id="first" />
+          @if (showSecond()) {
+            <input forNumberInput [(value)]="second" data-test-id="second" />
+          }
+          <button forNumberInputIncrement data-test-id="inc">+</button>
+        </div>
+      `,
+    })
+    class DuplicateFieldHost {
+      readonly first = signal<number | null>(1);
+      readonly second = signal<number | null>(2);
+      readonly showSecond = signal(true);
+    }
+
+    it('warns when two [forNumberInput]s register under one [forNumberInputGroup]', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(DuplicateFieldHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain('[forty-cdk/number-input]');
+      expect(message).toContain('[forNumberInputGroup]');
+      expect(message).toContain('[forNumberInput]');
+    });
+
+    it('keeps the stepper buttons bound to the surviving spinbutton when a duplicate unmounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(DuplicateFieldHost);
+
+      fixture.componentInstance.showSecond.set(false);
+      await flush();
+
+      expect(el.querySelector('[data-test-id="second"]')).toBeNull();
+      expect(incOf(el).hasAttribute('disabled')).toBe(false);
+
+      incOf(el).click();
+      await flush();
+      expect(fixture.componentInstance.first()).toBe(2);
     });
   });
 

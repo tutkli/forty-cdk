@@ -130,6 +130,103 @@ describe('ForField', () => {
     });
   });
 
+  describe('duplicate control registration', () => {
+    @Component({
+      imports: [ForField, ForFieldControl],
+      template: `
+        <div forField data-test-id="field">
+          <input forFieldControl data-test-id="c1" />
+          <input forFieldControl data-test-id="c2" />
+        </div>
+      `,
+    })
+    class TwoControlsHost {}
+
+    @Component({
+      imports: [ForField, ForFieldControl],
+      template: `
+        <div forField data-test-id="field">
+          <input forFieldControl data-test-id="c1" />
+        </div>
+      `,
+    })
+    class OneControlHost {}
+
+    @Component({
+      imports: [ForField, ForFieldControl],
+      template: `
+        <div forField data-test-id="field">
+          @if (mode() === 'a') {
+            <input forFieldControl data-test-id="a" />
+          }
+          @if (mode() === 'b') {
+            <input forFieldControl data-test-id="b" />
+          }
+        </div>
+      `,
+    })
+    class SwapHost {
+      readonly mode = signal<'a' | 'b'>('b');
+    }
+
+    @Component({
+      imports: [ForField, ForFieldControl],
+      template: `
+        <div forField data-test-id="field">
+          <input forFieldControl [invalid]="firstInvalid()" data-test-id="c1" />
+          @if (showSecond()) {
+            <input forFieldControl data-test-id="c2" />
+          }
+        </div>
+      `,
+    })
+    class FallbackHost {
+      readonly firstInvalid = signal(true);
+      readonly showSecond = signal(true);
+    }
+
+    it('warns in dev mode when a second control registers under one field', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(TwoControlsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/field]');
+      expect(warn.mock.calls[0]![0]).toContain('supports a single control');
+      expect(warn.mock.calls[0]![0]).toContain('controlId');
+    });
+
+    it('does not warn for the single-control case', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(OneControlHost);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not warn when a structural swap mounts the replacement before the outgoing control is destroyed', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(SwapHost);
+      expect(warn).not.toHaveBeenCalled();
+
+      fixture.componentInstance.mode.set('a');
+      await flush();
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(q(el, 'a').id).toBeTruthy();
+      expect(el.querySelector('[data-test-id="b"]')).toBeNull();
+    });
+
+    it('falls back to the remaining control when the last-registered duplicate unmounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(FallbackHost);
+      const field = q(el, 'field');
+      expect(field.hasAttribute('data-invalid')).toBe(false);
+
+      fixture.componentInstance.showSecond.set(false);
+      await flush();
+
+      expect(field.hasAttribute('data-invalid')).toBe(true);
+    });
+  });
+
   describe('state reflection', () => {
     @Component({
       imports: [ForField, ForFieldError, ForSwitch],
