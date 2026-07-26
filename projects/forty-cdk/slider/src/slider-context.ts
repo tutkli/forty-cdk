@@ -94,12 +94,6 @@ export interface ForSliderContext {
 
   // form
   /**
-   * Flip the `touched` model and emit the `touch` output. Called from every
-   * touch-producing interaction (drag end, focus leaving the slider region),
-   * so it may fire more than once per gesture; it is never once-guarded.
-   */
-  markTouched(): void;
-  /**
    * Trailing-edge hook for value-changing interactions. Emits `(valueCommit)`
    * with the final value array if the running interaction has mutated the
    * value, then resets the internal flag. No-op otherwise. Pointer drags call

@@ -500,18 +500,6 @@ export class ForSlider
   }
 
   /**
-   * Widened to `public` so `ForSliderContext` consumers can mark the control
-   * touched; the behaviour is the base's. Fires on every touch-producing
-   * interaction — drag end and focus leaving the slider region — so a gesture
-   * that does both emits `touch` twice. `touched` / `data-touched` /
-   * `(touchedChange)` only change on the first, and Signal Forms'
-   * `markAsTouched()` is idempotent.
-   */
-  override markTouched(): void {
-    super.markTouched();
-  }
-
-  /**
    * Emit `valueCommit` if the running interaction mutated the value at least
    * once, and clear the flag. Pointer drags call this on pointerup with no
    * argument (the drag's own pointerup is already scoped to one thumb). Thumbs
