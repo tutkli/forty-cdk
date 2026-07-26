@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
 import { injectSearchGroup } from './search-context';
 import { FOR_SEARCH_DEFAULTS } from './search-defaults';
 
@@ -39,7 +39,7 @@ import { FOR_SEARCH_DEFAULTS } from './search-defaults';
   exportAs: 'forSearchClear',
   host: {
     type: 'button',
-    '[attr.aria-label]': 'ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
     '(click)': 'onClick()',
@@ -56,6 +56,8 @@ export class ForSearchClear {
    * `null` to drop the attribute.
    */
   readonly ariaLabel = input<string | null>(this.#defaults.clearAriaLabel);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /** `true` while there is text to clear; drives the self-hide logic. */
   protected readonly hasContent = computed(() => (this.group.field()?.value().length ?? 0) > 0);

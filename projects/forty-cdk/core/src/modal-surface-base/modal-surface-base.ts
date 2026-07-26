@@ -1,6 +1,6 @@
 import { booleanAttribute, Directive, input, output, signal, type Signal } from '@angular/core';
 
-import { hostDescribedBy, hostLabelledBy } from '../host-aria/host-aria';
+import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from '../host-aria/host-aria';
 import { type ModalShellConfig } from '../modal-shell/modal-shell';
 import { type VetoableEvent, type VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
@@ -43,7 +43,7 @@ import { type VetoableEvent, type VetoableNativeEvent } from '../vetoable-event/
   host: {
     '[attr.role]': 'alert() ? "alertdialog" : "dialog"',
     '[attr.aria-modal]': 'modal() ? "true" : null',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
     'data-state': 'open',
@@ -69,6 +69,12 @@ export abstract class ModalSurfaceBase<Reason extends string> {
 
   /** Manual `aria-label`. Use this when no visible title element exists. */
   readonly ariaLabel = input<string | null>(null);
+
+  /**
+   * Resolved `aria-label`: a consumer-set static value on the surface when
+   * present, else the {@link ariaLabel} input.
+   */
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Portal target for the surface. Defaults to `document.body`. Pair with

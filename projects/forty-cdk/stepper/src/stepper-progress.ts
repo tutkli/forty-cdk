@@ -1,5 +1,7 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
+
 import { injectStepperContext } from './stepper-context';
 import { FOR_STEPPER_DEFAULTS } from './stepper-defaults';
 
@@ -22,7 +24,7 @@ import { FOR_STEPPER_DEFAULTS } from './stepper-defaults';
     '[attr.aria-valuemax]': '100',
     '[attr.aria-valuenow]': 'percent()',
     '[attr.aria-valuetext]': 'valueText()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-orientation]': 'ctx.orientation()',
     '[style.--for-stepper-progress]': 'percent() / 100',
   },
@@ -48,6 +50,8 @@ export class ForStepperProgress {
    * one exists.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly #completedCount = computed<number>(() => {
     const total = this.ctx.count();

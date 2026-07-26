@@ -2,6 +2,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   toFloatingPositioner,
+  hostAriaLabel,
   hostDescribedBy,
   hostLabelledBy,
   injectOverlayShell,
@@ -36,7 +37,7 @@ import { injectPopoverContext } from './popover-context';
   host: {
     role: 'dialog',
     '[id]': 'ctx.contentId()',
-    '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
@@ -47,6 +48,7 @@ import { injectPopoverContext } from './popover-context';
 export class ForPopoverContent {
   protected readonly ctx = injectPopoverContext('ForPopoverContent');
 
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
   protected readonly labelledBy = hostLabelledBy(() => this.ctx.labelledBy());
   protected readonly describedBy = hostDescribedBy(() => this.ctx.describedBy());
 

@@ -36,6 +36,7 @@ import {
   injectTextDirection,
   injectTypeahead,
   tryReadHandle,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   FOR_LISTBOX_CONTEXT,
@@ -75,7 +76,7 @@ import { ListboxVirtualizedNavigator } from './listbox-virtualized-navigator';
   exportAs: 'forListbox',
   host: {
     role: 'listbox',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-multiselectable]': 'multiple() ? "true" : null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -160,6 +161,8 @@ export class ForListbox<T = string>
    * `null` (default) or empty value emits no attribute.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 

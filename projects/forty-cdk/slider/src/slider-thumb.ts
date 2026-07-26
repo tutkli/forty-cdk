@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
-import { registerHandle, hostLabelledBy } from 'forty-cdk/core';
+import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
 import {
   injectSliderContext,
   type ForSliderThumbBounds,
@@ -39,7 +39,7 @@ import {
     '[attr.aria-valuenow]': 'ariaValueNow()',
     '[attr.aria-valuetext]': 'ariaValueText()',
     '[attr.aria-orientation]': 'ctx.orientation()',
-    '[attr.aria-label]': 'label() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-labelledby]': 'ariaLabelledBy()',
     '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
@@ -66,6 +66,8 @@ export class ForSliderThumb {
    * instead if the label lives elsewhere in the DOM.
    */
   readonly label = input<string>('');
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
 
   /**
    * Id of an element that labels this thumb, mirrored as `aria-labelledby`.

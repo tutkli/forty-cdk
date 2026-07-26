@@ -2,6 +2,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
+  hostAriaLabel,
   hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
@@ -38,7 +39,7 @@ import { injectDatePickerContext } from './date-picker-context';
     role: 'dialog',
     tabindex: '-1',
     '[id]': 'ctx.contentId()',
-    '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
@@ -48,8 +49,10 @@ export class ForDatePickerContent {
   protected readonly ctx = injectDatePickerContext('ForDatePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+
   protected readonly labelledBy = hostLabelledBy(() =>
-    this.ctx.ariaLabel() ? null : this.ctx.triggerId(),
+    this.resolvedAriaLabel() ? null : this.ctx.triggerId(),
   );
 
   constructor() {

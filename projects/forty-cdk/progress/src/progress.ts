@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, effect, inject, input } from '@angular/core';
 
-import { LiveAnnouncer, clamp } from 'forty-cdk/core';
+import { LiveAnnouncer, clamp, hostAriaLabel } from 'forty-cdk/core';
 import {
   FOR_PROGRESS_CONTEXT,
   type ForProgressContext,
@@ -41,7 +41,7 @@ import { FOR_PROGRESS_DEFAULTS } from './progress-defaults';
     '[attr.aria-valuemax]': 'effectiveMax()',
     '[attr.aria-valuenow]': 'clampedValue() ?? null',
     '[attr.aria-valuetext]': 'ariaValueText()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-state]': 'state()',
     '[attr.data-value]': 'clampedValue() ?? null',
     '[attr.data-min]': '0',
@@ -87,6 +87,8 @@ export class ForProgress implements ForProgressContext {
    * one exists.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * When true, transitions to `value === max` are announced once via the

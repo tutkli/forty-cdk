@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
 import { injectNumberInputGroup } from './number-input-context';
 
 /**
@@ -27,7 +27,7 @@ import { injectNumberInputGroup } from './number-input-context';
   host: {
     type: 'button',
     tabindex: '-1',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'step()',
   },
@@ -37,6 +37,8 @@ export class ForNumberInputIncrement {
 
   /** Accessible name for the button. Emits `aria-label` only when truthy. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly isDisabled = computed(() => {
     const field = this.group.field();

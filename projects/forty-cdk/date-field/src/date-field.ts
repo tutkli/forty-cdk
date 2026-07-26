@@ -23,6 +23,7 @@ import {
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import { type DateTimeSegmentType, type FieldGranularity } from './build-segments';
 import { FOR_DATE_FIELD_CONTEXT, type ForDateFieldContext } from './date-field-context';
@@ -94,7 +95,7 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
   host: {
     role: 'group',
     '[attr.dir]': 'dir()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
@@ -169,6 +170,8 @@ export class ForDateField<D>
 
   /** Accessible name for the field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient

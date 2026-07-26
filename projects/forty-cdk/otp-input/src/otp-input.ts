@@ -17,7 +17,12 @@ import {
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { FOR_FIELD_CONTEXT, FormUiControlBase, mirrorUnfocusedValue } from 'forty-cdk/core';
+import {
+  FOR_FIELD_CONTEXT,
+  FormUiControlBase,
+  mirrorUnfocusedValue,
+  hostAriaLabel,
+} from 'forty-cdk/core';
 import { FOR_OTP_INPUT_CONTEXT, type ForOtpInputContext } from './otp-input-context';
 import { allowedCharForType, inputModeForType, type OtpInputType } from './otp-patterns';
 
@@ -82,7 +87,7 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
   exportAs: 'forOtpInput',
   host: {
     role: 'group',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-complete]': 'complete() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
   },
@@ -141,6 +146,8 @@ export class ForOtpInput
    * `aria-label` only when truthy; a field label always wins on the input.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /** Fires when every slot is filled (by typing or paste). */
   readonly valueComplete = output<string>();

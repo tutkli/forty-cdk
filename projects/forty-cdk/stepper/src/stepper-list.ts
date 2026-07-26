@@ -1,5 +1,7 @@
 import { Directive, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
+
 import { injectStepperContext } from './stepper-context';
 
 /**
@@ -16,7 +18,7 @@ import { injectStepperContext } from './stepper-context';
   host: {
     '[attr.role]': "ctx.mode() === 'interactive' ? 'tablist' : 'list'",
     '[attr.aria-orientation]': "ctx.mode() === 'interactive' ? ctx.orientation() : null",
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-orientation]': 'ctx.orientation()',
   },
 })
@@ -25,4 +27,6 @@ export class ForStepperList {
 
   /** Accessible name for the step list. Defers to a consumer `aria-labelledby`. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

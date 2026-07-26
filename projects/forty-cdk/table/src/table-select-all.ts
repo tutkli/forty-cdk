@@ -1,5 +1,7 @@
 import { computed, Directive, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
+
 import { injectTableContext } from './table-context';
 
 /**
@@ -24,7 +26,7 @@ import { injectTableContext } from './table-context';
     role: 'checkbox',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-checked]': 'ariaChecked()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-state]': 'dataState()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
@@ -35,6 +37,8 @@ export class ForTableSelectAll {
 
   /** Accessible label for the control (e.g. "Select all rows"). Truthy-only. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly tabindex = computed<0 | -1>(() => (this.ctx.mode() === 'table' ? 0 : -1));
 

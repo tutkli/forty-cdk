@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { clamp } from 'forty-cdk/core';
+import { clamp, hostAriaLabel } from 'forty-cdk/core';
 import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from './meter-context';
 
 /**
@@ -32,7 +32,7 @@ import { FOR_METER_CONTEXT, type ForMeterContext, type ForMeterQuality } from '.
     '[attr.aria-valuemax]': 'sanitizedMax()',
     '[attr.aria-valuenow]': 'clampedValue()',
     '[attr.aria-valuetext]': 'ariaValueText()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-quality]': 'quality()',
     '[attr.data-value]': 'clampedValue()',
     '[attr.data-min]': 'sanitizedMin()',
@@ -89,6 +89,8 @@ export class ForMeter implements ForMeterContext {
    * one exists.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly #range = computed(() => {
     const min = this.min();

@@ -23,6 +23,7 @@ import {
   FOR_MENU_CONTEXT,
   type VetoableEvent,
   type VetoableNativeEvent,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
@@ -73,7 +74,7 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
   host: {
     role: 'menubar',
     '[attr.aria-orientation]': 'orientation()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-state]': 'value() === "" ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
@@ -124,6 +125,8 @@ export class ForMenubar implements ForMenubarContext {
 
   /** Optional accessible name for the menubar. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Fires when Escape is pressed while one of the bar's menus is the topmost

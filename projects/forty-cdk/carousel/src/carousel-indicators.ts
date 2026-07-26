@@ -1,5 +1,7 @@
 import { Directive, input } from '@angular/core';
 
+import { hostAriaLabel } from 'forty-cdk/core';
+
 import { injectCarouselContext } from './carousel-context';
 
 /**
@@ -15,7 +17,7 @@ import { injectCarouselContext } from './carousel-context';
   exportAs: 'forCarouselIndicators',
   host: {
     role: 'group',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-orientation]': 'ctx.orientation()',
   },
 })
@@ -28,4 +30,6 @@ export class ForCarouselIndicators {
    * from other landmarks.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 }

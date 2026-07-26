@@ -2,6 +2,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
+  hostAriaLabel,
   hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
@@ -60,7 +61,7 @@ import { injectSelectContext } from './select-context';
     '[attr.aria-activedescendant]': 'ctx.activeDescendantId()',
     '[id]': 'ctx.overlay.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
-    '[attr.aria-label]': 'ctx.ariaLabel()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
@@ -73,8 +74,10 @@ export class ForSelectContent {
   protected readonly ctx = injectSelectContext('ForSelectContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
+
   protected readonly labelledBy = hostLabelledBy(() =>
-    this.ctx.ariaLabel() ? null : this.ctx.overlay.triggerId(),
+    this.resolvedAriaLabel() ? null : this.ctx.overlay.triggerId(),
   );
 
   constructor() {

@@ -9,6 +9,7 @@ import {
   FOR_HOST_ROVING_CONTEXT,
   RovingTabindex,
   injectTextDirection,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   FOR_TOOLBAR_CONTEXT,
@@ -51,7 +52,7 @@ import { FOR_TOOLBAR_DEFAULTS } from './toolbar-defaults';
   exportAs: 'forToolbar',
   host: {
     role: 'toolbar',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
@@ -73,6 +74,8 @@ export class ForToolbar implements ForToolbarContext {
    * input on `ForListbox` / `ForMenubar`.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 

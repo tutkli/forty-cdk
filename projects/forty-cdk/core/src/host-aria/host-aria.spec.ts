@@ -7,21 +7,24 @@ import {
 } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 
-import { composeIds, hostDescribedBy, hostLabelledBy } from './host-aria';
+import { composeIds, hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria';
 
 @Directive({
   selector: '[probe]',
   host: {
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-describedby]': 'describedBy()',
+    '[attr.aria-label]': 'ariaLabel()',
   },
 })
 class ProbeDir {
   readonly labelFallback = input<string | null>(null);
   readonly descriptionFallback = input<string | null>(null);
+  readonly nameFallback = input<string | null>(null);
 
   protected readonly labelledBy = hostLabelledBy(() => this.labelFallback());
   protected readonly describedBy = hostDescribedBy(() => this.descriptionFallback());
+  protected readonly ariaLabel = hostAriaLabel(() => this.nameFallback());
 }
 
 @Component({
@@ -57,6 +60,12 @@ class ProbeDir {
     ></div>
     <div data-testid="no-static-description" probe descriptionFallback="desc"></div>
     <div data-testid="static-description" probe aria-describedby="hint"></div>
+    <div data-testid="static-name" probe aria-label="Toppings" nameFallback="Library"></div>
+    <div data-testid="no-static-name" probe nameFallback="Library"></div>
+    <div data-testid="empty-static-name" probe aria-label="" nameFallback="Library"></div>
+    <div data-testid="null-fallback-name" probe aria-label="Toppings"></div>
+    <div data-testid="unnamed" probe></div>
+    <div data-testid="bound-name" probe [attr.aria-label]="'Toppings'" nameFallback="Library"></div>
   `,
 })
 class HostCmp {}
@@ -115,6 +124,35 @@ describe('host-aria', () => {
 
     it('preserves a consumer-set static value when the library has no ids', () => {
       expect(probe(fixture, 'static-description').getAttribute('aria-describedby')).toBe('hint');
+    });
+  });
+
+  describe('hostAriaLabel', () => {
+    it('preserves a consumer-set static aria-label over the library fallback', () => {
+      expect(probe(fixture, 'static-name').getAttribute('aria-label')).toBe('Toppings');
+    });
+
+    it('emits the library fallback when the host carries no static value', () => {
+      expect(probe(fixture, 'no-static-name').getAttribute('aria-label')).toBe('Library');
+    });
+
+    it('treats an empty static value as absent', () => {
+      expect(probe(fixture, 'empty-static-name').getAttribute('aria-label')).toBe('Library');
+    });
+
+    // The regression this seam exists for: a `null` fallback used to call
+    // `removeAttribute` on the first change-detection pass, deleting the name
+    // the consumer wrote in the template.
+    it('keeps the consumer value when the library fallback is null', () => {
+      expect(probe(fixture, 'null-fallback-name').getAttribute('aria-label')).toBe('Toppings');
+    });
+
+    it('emits no attribute when neither side has a name', () => {
+      expect(probe(fixture, 'unnamed').getAttribute('aria-label')).toBeNull();
+    });
+
+    it('does NOT adopt a consumer [attr.aria-label] binding (static-only boundary)', () => {
+      expect(probe(fixture, 'bound-name').getAttribute('aria-label')).toBe('Library');
     });
   });
 });

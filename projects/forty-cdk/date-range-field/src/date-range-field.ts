@@ -26,6 +26,7 @@ import {
   type SegmentType,
   serializeISODate,
   type WritingDirection,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   type DateRangeFieldEndpoint,
@@ -113,7 +114,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
   host: {
     role: 'group',
     '[attr.dir]': 'dir()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'ariaInvalid() ? "true" : null',
@@ -187,6 +188,8 @@ export class ForDateRangeField<D>
 
   /** Accessible name for the whole range field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient

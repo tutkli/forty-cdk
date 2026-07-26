@@ -22,6 +22,7 @@ import {
   computeFlatHierarchy,
   injectTextDirection,
   RovingTabindex,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   FOR_TABLE_CONTEXT,
@@ -67,7 +68,7 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
   exportAs: 'forTable',
   host: {
     '[attr.role]': 'mode()',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.dir]': 'dir()',
     '[attr.data-mode]': 'mode()',
     '[style.--for-table-header-height.px]': 'headerSize()?.height ?? null',
@@ -93,6 +94,8 @@ export class ForTable<T = unknown> implements ForTableContext {
    * hook for cases where no visible label element exists.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient

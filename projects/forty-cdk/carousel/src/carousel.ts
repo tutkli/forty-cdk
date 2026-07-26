@@ -28,6 +28,7 @@ import {
   type PauseController,
   RovingTabindex,
   injectTextDirection,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   type CarouselAlign,
@@ -56,7 +57,7 @@ import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
   host: {
     role: 'group',
     'aria-roledescription': 'carousel',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-align]': 'align()',
     '[attr.dir]': 'dir()',
@@ -127,6 +128,8 @@ export class ForCarousel implements ForCarouselContext {
    * instead when a visible heading labels the carousel.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Whether the carousel auto-rotates. When `true` and the user has not

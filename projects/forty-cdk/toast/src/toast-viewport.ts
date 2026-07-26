@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
-import { resolveConfigClass } from 'forty-cdk/core';
+import { hostAriaLabel, resolveConfigClass } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastCloseReason,
@@ -97,7 +97,7 @@ import { ForToastTitle } from './toast-title';
   host: {
     role: 'region',
     '[attr.data-for-modal-exempt]': "overModal === 'peer' ? '' : null",
-    '[attr.aria-label]': 'label()',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-region]': 'region()',
     tabindex: '-1',
     '[attr.data-toast-count]': 'visible().length',
@@ -161,6 +161,8 @@ export class ForToastViewport {
 
   /** Accessible name for the viewport region. Default `'Notifications'`. */
   readonly label = input<string>('Notifications');
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
 
   /**
    * The toast region this viewport renders. Only toasts whose `region` matches

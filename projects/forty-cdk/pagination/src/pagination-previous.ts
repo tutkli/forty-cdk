@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
 import { injectPaginationContext } from './pagination-context';
 
 /**
@@ -13,7 +13,7 @@ import { injectPaginationContext } from './pagination-context';
   exportAs: 'forPaginationPrevious',
   host: {
     type: 'button',
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'ctx.previous()',
   },
@@ -27,6 +27,8 @@ export class ForPaginationPrevious {
    * visible label or set this input.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   protected readonly isDisabled = computed(() => this.ctx.isFirst() || this.ctx.disabled());
 

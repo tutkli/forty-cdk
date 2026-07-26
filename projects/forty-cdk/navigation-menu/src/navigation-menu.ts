@@ -22,6 +22,7 @@ import {
   type WritingDirection,
   nextEnabledHandle,
   injectTextDirection,
+  hostAriaLabel,
 } from 'forty-cdk/core';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
@@ -67,7 +68,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
   selector: '[forNavigationMenu]',
   exportAs: 'forNavigationMenu',
   host: {
-    '[attr.aria-label]': 'ariaLabel() || null',
+    '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-state]': 'value() === "" ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
@@ -108,6 +109,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * A `null` (default) or empty value emits no attribute.
    */
   readonly ariaLabel = input<string | null>(null);
+
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * ms before a hover opens an item. Default `200`. The default is read from
