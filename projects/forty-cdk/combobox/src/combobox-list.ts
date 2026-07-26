@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { registerHandle, hostLabelledBy } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -37,7 +37,7 @@ import { injectComboboxContext } from './combobox-context';
     role: 'listbox',
     tabindex: '-1',
     '[id]': 'ctx.listId()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.inputId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
   },
@@ -45,6 +45,10 @@ import { injectComboboxContext } from './combobox-context';
 export class ForComboboxList {
   protected readonly ctx = injectComboboxContext('ForComboboxList');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  protected readonly labelledBy = hostLabelledBy(() =>
+    this.ctx.ariaLabel() ? null : this.ctx.inputId(),
+  );
 
   constructor() {
     registerHandle(

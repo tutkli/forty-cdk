@@ -2,6 +2,7 @@ import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
+  hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
   type OverlayShellPositionerConfig,
@@ -58,7 +59,7 @@ import { injectSelectContext } from './select-context';
     '[attr.tabindex]': 'ctx.totalCount() !== undefined ? "0" : "-1"',
     '[attr.aria-activedescendant]': 'ctx.activeDescendantId()',
     '[id]': 'ctx.overlay.contentId()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.overlay.triggerId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
@@ -71,6 +72,10 @@ import { injectSelectContext } from './select-context';
 export class ForSelectContent {
   protected readonly ctx = injectSelectContext('ForSelectContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  protected readonly labelledBy = hostLabelledBy(() =>
+    this.ctx.ariaLabel() ? null : this.ctx.overlay.triggerId(),
+  );
 
   constructor() {
     const ctx = this.ctx;

@@ -1,14 +1,16 @@
 import { Directive, effect, ElementRef, inject, input } from '@angular/core';
-import { isNonTouchPointer } from 'forty-cdk/core';
+import { hostDescribedBy, isNonTouchPointer } from 'forty-cdk/core';
 
 import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-context';
 
 /**
  * Element that activates the tooltip on pointer hover or keyboard focus. Apply
  * on a focusable element — preferably a `<button>` so keyboard users can reach
- * it. Receives `aria-describedby` only while the tooltip is open, per APG. The
- * hover path is gated by the shared `isNonTouchPointer` predicate, so a pen
- * hovers the tooltip while a touch tap does not.
+ * it. Receives `aria-describedby` only while the tooltip is open, per APG —
+ * composed after a consumer-set **static** `aria-describedby`, which is
+ * preserved rather than replaced. The hover path is gated by the shared
+ * `isNonTouchPointer` predicate, so a pen hovers the tooltip while a touch tap
+ * does not.
  *
  * Activating the trigger dismisses the tooltip: `pointerdown` schedules an
  * immediate close (mirroring Radix / Base UI), so the bubble doesn't cover the
@@ -39,7 +41,7 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
   exportAs: 'forTooltipTrigger',
   host: {
     '[id]': 'ctx().triggerId()',
-    '[attr.aria-describedby]': 'ctx().open() ? ctx().contentId() : null',
+    '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '(pointerenter)': 'onPointerEnter($event)',
     '(pointerdown)': 'onPointerDown($event)',
@@ -63,6 +65,10 @@ export class ForTooltipTrigger {
   readonly forTooltipTrigger = input<ForTooltipContext | ''>('');
 
   protected readonly ctx = injectTooltipTriggerContext(this.forTooltipTrigger);
+
+  protected readonly describedBy = hostDescribedBy(() =>
+    this.ctx().open() ? this.ctx().contentId() : null,
+  );
 
   #lastPointerType: string | null = null;
 

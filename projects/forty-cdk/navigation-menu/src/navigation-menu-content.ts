@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle, hostId, isHoverCapablePointer } from 'forty-cdk/core';
+import { registerHandle, hostId, hostLabelledBy, isHoverCapablePointer } from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,
@@ -21,7 +21,9 @@ import {
  * `forNavigationMenuItem`'s state) so animations work natively.
  *
  * Carries `aria-labelledby` pointing at the trigger and reflects
- * `data-state` for CSS hooks. No focus management is imposed — content
+ * `data-state` for CSS hooks. A consumer-set **static** `aria-labelledby` on
+ * the panel wins over that fallback and is preserved. No focus management is
+ * imposed — content
  * is a regular landmark; Tab moves through links inside, then out to the
  * next focusable element after the wrapper.
  *
@@ -49,7 +51,7 @@ import {
   exportAs: 'forNavigationMenuContent',
   host: {
     '[id]': 'id()',
-    '[attr.aria-labelledby]': 'triggerId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.data-state]': 'menu.isOpen(value()) ? "open" : "closed"',
     '[attr.data-motion]': 'motion()',
     '(pointerenter)': 'onPointerEnter($event)',
@@ -64,7 +66,7 @@ export class ForNavigationMenuContent {
 
   readonly id = hostId('for-navigation-menu-content');
   protected readonly value: Signal<string> = this.#item.value;
-  protected readonly triggerId = computed(() => this.menu.triggerIdFor(this.value()));
+  protected readonly labelledBy = hostLabelledBy(() => this.menu.triggerIdFor(this.value()));
   protected readonly motion = computed(() => this.menu.motionFor(this.value()));
 
   readonly #mounted = signal(false);

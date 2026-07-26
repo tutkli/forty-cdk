@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -15,13 +16,15 @@ import { injectCalendarContext } from './calendar-context';
   exportAs: 'forCalendarGrid',
   host: {
     role: 'grid',
-    '[attr.aria-labelledby]': 'ctx.headingId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
   },
 })
 export class ForCalendarGrid {
   protected readonly ctx = injectCalendarContext('ForCalendarGrid');
+
+  protected readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
 
   /** Weekday column headers for the visible month, starting at `firstDayOfWeek`. */
   readonly weekDays = this.ctx.weekDays;

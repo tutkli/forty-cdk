@@ -1,5 +1,6 @@
-import { computed, Directive, model, signal } from '@angular/core';
+import { Directive, model, signal } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
 import { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-context';
 import {
   FOR_MENU_RADIO_GROUP_CONTEXT,
@@ -36,10 +37,11 @@ export class ForMenuRadioGroup implements ForMenuRadioGroupContext, ForMenuGroup
   readonly #labelIds = signal<readonly string[]>([]);
 
   /**
-   * `aria-labelledby` target: the space-joined ids of every projected
+   * `aria-labelledby` target: a consumer-set static `aria-labelledby` when
+   * present, else the space-joined ids of every projected
    * `[forMenuGroupLabel]`, or `null` when none are present.
    */
-  readonly labelledBy = computed<string | null>(() => {
+  readonly labelledBy = hostLabelledBy(() => {
     const ids = this.#labelIds();
     return ids.length === 0 ? null : ids.join(' ');
   });

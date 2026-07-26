@@ -1,5 +1,6 @@
-import { computed, Directive, signal } from '@angular/core';
+import { Directive, signal } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
 import { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-context';
 
 /**
@@ -18,7 +19,7 @@ import { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-c
 })
 export class ForMenuGroup implements ForMenuGroupContext {
   readonly #labelIds = signal<readonly string[]>([]);
-  readonly labelledBy = computed<string | null>(() => {
+  readonly labelledBy = hostLabelledBy(() => {
     const ids = this.#labelIds();
     return ids.length === 0 ? null : ids.join(' ');
   });

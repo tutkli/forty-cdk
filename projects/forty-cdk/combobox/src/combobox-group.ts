@@ -1,5 +1,7 @@
 import { Directive, signal } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
+
 /**
  * Optional grouping wrapper inside a `[forComboboxContent]`. Renders
  * `role="group"` and references the descendant `[forComboboxGroupLabel]`
@@ -12,7 +14,7 @@ import { Directive, signal } from '@angular/core';
   exportAs: 'forComboboxGroup',
   host: {
     role: 'group',
-    '[attr.aria-labelledby]': 'labelId() || null',
+    '[attr.aria-labelledby]': 'labelledBy()',
   },
 })
 export class ForComboboxGroup {
@@ -20,6 +22,8 @@ export class ForComboboxGroup {
 
   /** The id of the registered group label (or `null` if none). */
   readonly labelId = this.#labelId.asReadonly();
+
+  protected readonly labelledBy = hostLabelledBy(() => this.labelId());
 
   /** Called by `ForComboboxGroupLabel` on mount. */
   registerLabel(id: string): void {

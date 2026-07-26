@@ -51,6 +51,9 @@ import {
 
 import { ForDialog, ForDialogDescription, ForDialogTitle } from 'forty-cdk/dialog';
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
+import { ForFieldset, ForFieldsetLegend } from 'forty-cdk/fieldset';
+import { ForSlider, ForSliderThumb } from 'forty-cdk/slider';
+import { ForTimePicker, ForTimePickerContent, ForTimePickerTrigger } from 'forty-cdk/time-picker';
 import { ForRadio, ForRadioGroup } from 'forty-cdk/radio-group';
 import { ForTabs, ForTabsContent, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import { ForDrawer, ForDrawerDescription, ForDrawerTitle } from 'forty-cdk/drawer';
@@ -69,6 +72,7 @@ import {
   ForMenuGroup,
   ForMenuGroupLabel,
   ForMenuItem,
+  ForMenuRadioGroup,
   ForMenuSub,
   ForMenuSubTrigger,
 } from 'forty-cdk/menu';
@@ -91,14 +95,25 @@ import {
 import { ForTree, ForTreeItem, ForTreeItemLabel } from 'forty-cdk/tree';
 
 /**
- * Library-wide contract for #659: every piece that host-binds `[id]` for aria
- * wiring must adopt a consumer-set **static** `id` instead of clobbering it
- * with its generated fallback. The static id is the contract for anchors,
- * external `aria-labelledby`/`aria-describedby` references, label `for`, and
- * test hooks.
+ * Library-wide contract for the consumer-set **static** attributes a directive
+ * must never clobber with its own host binding:
+ *
+ * - **#659 — `id`.** Every piece that host-binds `[id]` for aria wiring adopts
+ *   a consumer-set static `id` instead of overwriting it with the generated
+ *   fallback. The static id is the contract for anchors, external
+ *   `aria-labelledby` / `aria-describedby` references, label `for`, and test
+ *   hooks.
+ * - **#1454 — `aria-labelledby` / `aria-describedby`.** Every surface that
+ *   host-binds `[attr.aria-labelledby]` prefers a consumer-set static value
+ *   over its own fallback, and every surface that host-binds
+ *   `[attr.aria-describedby]` composes the consumer's ids before its own. Both
+ *   go through the single `hostLabelledBy` / `hostDescribedBy` core seam. A
+ *   `null` host binding removes the attribute outright, so the surfaces whose
+ *   fallback is `null` by default (group labels, dialog titles) were destroying
+ *   the consumer's value too — not just the ones emitting a generated id.
  *
  * Each case locates the audited element by its directive attribute (never by
- * id — that would beg the question) and asserts its rendered `id`.
+ * id — that would beg the question) and asserts its rendered attribute.
  */
 
 function mount<T>(host: Type<T>, extraProviders: Provider[] = []): ComponentFixture<T> {
@@ -110,17 +125,29 @@ function mount<T>(host: Type<T>, extraProviders: Provider[] = []): ComponentFixt
   return fixture;
 }
 
+function idOf<T>(fixture: ComponentFixture<T>, selector: string): string {
+  return elementOf(fixture, selector).id;
+}
+
+function attrOf<T>(
+  fixture: ComponentFixture<T>,
+  selector: string,
+  attribute: string,
+): string | null {
+  return elementOf(fixture, selector).getAttribute(attribute);
+}
+
 /**
  * Locates the audited element by its directive attribute. Checks the (detached)
  * fixture host first, then `document.body` for pieces portaled out of the host
  * (overlay content / dialog / drawer).
  */
-function idOf<T>(fixture: ComponentFixture<T>, selector: string): string {
+function elementOf<T>(fixture: ComponentFixture<T>, selector: string): HTMLElement {
   const el = fixture.nativeElement.querySelector(selector) ?? document.body.querySelector(selector);
   if (!el) {
     throw new Error(`No element matched "${selector}"`);
   }
-  return (el as HTMLElement).id;
+  return el as HTMLElement;
 }
 
 describe('consumer-set static id preservation (#659)', () => {
@@ -703,6 +730,579 @@ describe('consumer-set static id preservation (#659)', () => {
       const fixture = mount(Host);
       await flush(fixture);
       expect(idOf(fixture, '[forTreeItem]')).toBe('my-node');
+    });
+  });
+});
+
+describe('consumer-set static aria-labelledby / aria-describedby preservation (#1454)', () => {
+  afterEachOverlayCleanup();
+
+  describe('NavigationMenu', () => {
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<nav forNavigationMenu [(value)]="value">
+        <ul forNavigationMenuList>
+          <li forNavigationMenuItem value="products">
+            <button forNavigationMenuTrigger>Products</button>
+            @if (value() === 'products') {
+              <div forNavigationMenuContent aria-labelledby="my-heading">Panel</div>
+            }
+          </li>
+        </ul>
+      </nav>`,
+    })
+    class Host {
+      readonly value = signal('products');
+    }
+
+    it('content preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forNavigationMenuContent]', 'aria-labelledby')).toBe('my-heading');
+    });
+
+    it('falls back to the trigger id when the panel has none', async () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+          ForNavigationMenuContent,
+        ],
+        changeDetection: ChangeDetectionStrategy.OnPush,
+        template: `<nav forNavigationMenu [(value)]="value">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger id="trigger-id">Products</button>
+              @if (value() === 'products') {
+                <div forNavigationMenuContent>Panel</div>
+              }
+            </li>
+          </ul>
+        </nav>`,
+      })
+      class NoLabelHost {
+        readonly value = signal('products');
+      }
+      const fixture = mount(NoLabelHost);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forNavigationMenuContent]', 'aria-labelledby')).toBe('trigger-id');
+    });
+
+    // The static-only boundary of #659, carried over verbatim: a consumer
+    // `[attr.aria-labelledby]="expr"` binding evaluates after directive
+    // construction, so it is invisible to adoption and the directive's own host
+    // binding still wins.
+    it('does NOT adopt a consumer [attr.aria-labelledby] binding', async () => {
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+          ForNavigationMenuContent,
+        ],
+        changeDetection: ChangeDetectionStrategy.OnPush,
+        template: `<nav forNavigationMenu [(value)]="value">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger id="trigger-id">Products</button>
+              @if (value() === 'products') {
+                <div forNavigationMenuContent [attr.aria-labelledby]="bound">Panel</div>
+              }
+            </li>
+          </ul>
+        </nav>`,
+      })
+      class BoundHost {
+        readonly value = signal('products');
+        readonly bound = 'my-heading';
+      }
+      const fixture = mount(BoundHost);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forNavigationMenuContent]', 'aria-labelledby')).toBe('trigger-id');
+    });
+  });
+
+  describe('Accordion', () => {
+    @Component({
+      imports: [ForAccordion, ForAccordionItem, ForAccordionTrigger, ForAccordionContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forAccordion [(value)]="value">
+        <div forAccordionItem value="a">
+          <button forAccordionTrigger>A</button>
+          <section forAccordionContent aria-labelledby="my-heading">Panel A</section>
+        </div>
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<readonly string[]>(['a']);
+    }
+
+    it('content preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forAccordionContent]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Tabs', () => {
+    @Component({
+      imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forTabs [(value)]="value">
+        <div forTabsList>
+          <button forTabsTrigger value="a">A</button>
+        </div>
+        <section forTabsContent value="a" aria-labelledby="my-heading">Content A</section>
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<string | null>('a');
+    }
+
+    it('panel preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forTabsContent]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Stepper', () => {
+    @Component({
+      imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forStepper [(selectedIndex)]="index">
+        <div forStepperList>
+          <div forStepperItem>
+            <button forStepperTrigger>Step 1</button>
+          </div>
+        </div>
+        <section forStepperContent aria-labelledby="my-heading">Panel 1</section>
+      </div>`,
+    })
+    class Host {
+      readonly index = signal(0);
+    }
+
+    it('panel preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forStepperContent]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Calendar', () => {
+    @Component({
+      imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forCalendar [(value)]="value">
+        <h2 forCalendarHeading>Heading</h2>
+        <table forCalendarGrid #grid="forCalendarGrid" aria-labelledby="my-heading">
+          <tbody>
+            @for (week of grid.weeks(); track week.key) {
+              <tr>
+                @for (cell of week.days; track cell.key) {
+                  <td forCalendarCell [date]="cell.date">{{ cell.label }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<Date | null>(null);
+    }
+
+    it('grid preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host, [...provideNativeDateAdapter()]);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forCalendarGrid]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Fieldset', () => {
+    @Component({
+      imports: [ForFieldset, ForFieldsetLegend],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forFieldset aria-labelledby="my-heading">
+        <div forFieldsetLegend>Shipping</div>
+      </div>`,
+    })
+    class Host {}
+
+    it('group preserves a consumer-set static aria-labelledby over the legend id', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forFieldset]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Slider', () => {
+    @Component({
+      imports: [ForSlider, ForSliderThumb],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forSlider [(value)]="value">
+        <span forSliderThumb [index]="0" aria-labelledby="my-heading"></span>
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<readonly number[]>([50]);
+    }
+
+    it('thumb preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forSliderThumb]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Listbox', () => {
+    @Component({
+      imports: [ForListbox, ForListboxGroup, ForListboxGroupLabel, ForListboxOption],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<ul forListbox [(value)]="value">
+        <li forListboxGroup aria-labelledby="my-heading">
+          <div forListboxGroupLabel>Group</div>
+          <button type="button" forListboxOption value="a">A</button>
+        </li>
+      </ul>`,
+    })
+    class Host {
+      readonly value = signal<readonly string[]>([]);
+    }
+
+    it('group preserves a consumer-set static aria-labelledby over the group label id', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forListboxGroup]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('Select', () => {
+    @Component({
+      imports: [
+        ForSelect,
+        ForSelectTrigger,
+        ForSelectContent,
+        ForSelectGroup,
+        ForSelectGroupLabel,
+        ForSelectOption,
+      ],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forSelect [(value)]="value" [(open)]="open">
+        <button forSelectTrigger>Select</button>
+        @if (open()) {
+          <div forSelectContent aria-labelledby="my-heading">
+            <div forSelectGroup aria-labelledby="my-group-heading">
+              <div forSelectGroupLabel>Group</div>
+              <button forSelectOption value="a">A</button>
+            </div>
+          </div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(true);
+    }
+
+    it('content and group preserve a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forSelectContent]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forSelectGroup]', 'aria-labelledby')).toBe('my-group-heading');
+    });
+  });
+
+  describe('Combobox', () => {
+    @Component({
+      imports: [
+        ForCombobox,
+        ForComboboxInput,
+        ForComboboxList,
+        ForComboboxContent,
+        ForComboboxGroup,
+        ForComboboxGroupLabel,
+        ForComboboxOption,
+      ],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent aria-labelledby="my-heading">
+            <div forComboboxList aria-labelledby="my-list-heading">
+              <div forComboboxGroup aria-labelledby="my-group-heading">
+                <div forComboboxGroupLabel>Group</div>
+                <div forComboboxOption value="a">A</div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly query = signal('');
+      readonly value = signal<readonly string[]>([]);
+      readonly open = signal(true);
+    }
+
+    it('content, list, and group preserve a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forComboboxContent]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forComboboxList]', 'aria-labelledby')).toBe('my-list-heading');
+      expect(attrOf(fixture, '[forComboboxGroup]', 'aria-labelledby')).toBe('my-group-heading');
+    });
+  });
+
+  describe('DatePicker', () => {
+    @Component({
+      imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forDatePicker [(value)]="value" [(open)]="open">
+        <button forDatePickerTrigger>Pick</button>
+        @if (open()) {
+          <div forDatePickerContent aria-labelledby="my-heading">Calendar</div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(true);
+    }
+
+    it('content preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host, [...provideNativeDateAdapter()]);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forDatePickerContent]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('TimePicker', () => {
+    @Component({
+      imports: [ForTimePicker, ForTimePickerTrigger, ForTimePickerContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forTimePicker [(value)]="value" [(open)]="open">
+        <button forTimePickerTrigger>Pick</button>
+        @if (open()) {
+          <div forTimePickerContent aria-labelledby="my-heading">Slots</div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly value = signal<Date | null>(null);
+      readonly open = signal(true);
+    }
+
+    it('content preserves a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host, [...provideNativeDateAdapter()]);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forTimePickerContent]', 'aria-labelledby')).toBe('my-heading');
+    });
+  });
+
+  describe('DropdownMenu / Menu', () => {
+    @Component({
+      imports: [
+        ForDropdownMenu,
+        ForDropdownMenuTrigger,
+        ForMenuContent,
+        ForMenuItem,
+        ForMenuGroup,
+        ForMenuGroupLabel,
+        ForMenuRadioGroup,
+      ],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forDropdownMenu [(open)]="open">
+        <button forDropdownMenuTrigger>Options</button>
+        @if (open()) {
+          <div forMenuContent aria-labelledby="my-heading">
+            <div forMenuGroup aria-labelledby="my-group-heading">
+              <div forMenuGroupLabel>Group</div>
+              <button forMenuItem>A</button>
+            </div>
+            <div forMenuRadioGroup [(value)]="choice" aria-labelledby="my-radio-heading">
+              <button forMenuItem>B</button>
+            </div>
+          </div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly open = signal(true);
+      readonly choice = signal('');
+    }
+
+    it('content, group, and radio group preserve a consumer-set static aria-labelledby', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forMenuContent]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forMenuGroup]', 'aria-labelledby')).toBe('my-group-heading');
+      expect(attrOf(fixture, '[forMenuRadioGroup]', 'aria-labelledby')).toBe('my-radio-heading');
+    });
+  });
+
+  describe('Popover', () => {
+    @Component({
+      imports: [
+        ForPopover,
+        ForPopoverTrigger,
+        ForPopoverContent,
+        ForPopoverTitle,
+        ForPopoverDescription,
+      ],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forPopover [(open)]="open">
+        <button forPopoverTrigger>Toggle</button>
+        @if (open()) {
+          <div forPopoverContent aria-labelledby="my-heading" aria-describedby="my-hint">
+            <h2 forPopoverTitle id="title-id">Title</h2>
+            <p forPopoverDescription id="desc-id">Description</p>
+          </div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly open = signal(true);
+    }
+
+    it('content prefers the static label and composes the static description', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forPopoverContent]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forPopoverContent]', 'aria-describedby')).toBe('my-hint desc-id');
+    });
+  });
+
+  describe('Dialog', () => {
+    @Component({
+      imports: [ForDialog, ForDialogTitle, ForDialogDescription],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `@if (open()) {
+        <div
+          forDialog
+          (dismiss)="open.set(false)"
+          aria-labelledby="my-heading"
+          aria-describedby="my-hint"
+        >
+          <h2 forDialogTitle id="title-id">Confirm</h2>
+          <p forDialogDescription id="desc-id">Sure?</p>
+        </div>
+      }`,
+    })
+    class Host {
+      readonly open = signal(true);
+    }
+
+    it('surface prefers the static label and composes the static description', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forDialog]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forDialog]', 'aria-describedby')).toBe('my-hint desc-id');
+    });
+  });
+
+  describe('Drawer', () => {
+    @Component({
+      imports: [ForDrawer, ForDrawerTitle, ForDrawerDescription],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `@if (open()) {
+        <div
+          forDrawer
+          (dismiss)="open.set(false)"
+          aria-labelledby="my-heading"
+          aria-describedby="my-hint"
+        >
+          <h2 forDrawerTitle id="title-id">Title</h2>
+          <p forDrawerDescription id="desc-id">Description</p>
+        </div>
+      }`,
+    })
+    class Host {
+      readonly open = signal(true);
+    }
+
+    it('surface prefers the static label and composes the static description', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forDrawer]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forDrawer]', 'aria-describedby')).toBe('my-hint desc-id');
+    });
+  });
+
+  describe('Toast', () => {
+    @Component({
+      imports: [ForToast, ForToastTitle, ForToastDescription],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `@if (open()) {
+        <div
+          forToast
+          (dismiss)="open.set(false)"
+          aria-labelledby="my-heading"
+          aria-describedby="my-hint"
+        >
+          <div forToastTitle id="title-id">Saved</div>
+          <div forToastDescription id="desc-id">Changes are live.</div>
+        </div>
+      }`,
+    })
+    class Host {
+      readonly open = signal(true);
+    }
+
+    it('toast prefers the static label and composes the static description', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forToast]', 'aria-labelledby')).toBe('my-heading');
+      expect(attrOf(fixture, '[forToast]', 'aria-describedby')).toBe('my-hint desc-id');
+    });
+  });
+
+  describe('Tooltip', () => {
+    @Component({
+      imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forTooltip [(open)]="open" [openDelay]="0">
+        <button forTooltipTrigger aria-describedby="my-hint">Hover</button>
+        @if (open()) {
+          <div forTooltipContent id="content-id">Hint</div>
+        }
+      </div>`,
+    })
+    class Host {
+      readonly open = signal(true);
+    }
+
+    it('trigger composes the tooltip id after a consumer-set static description', async () => {
+      const fixture = mount(Host);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forTooltipTrigger]', 'aria-describedby')).toBe('my-hint content-id');
+    });
+
+    it('keeps the consumer description alone while the tooltip is closed', async () => {
+      @Component({
+        imports: [ForTooltip, ForTooltipTrigger],
+        changeDetection: ChangeDetectionStrategy.OnPush,
+        template: `<div forTooltip [(open)]="open" [openDelay]="0">
+          <button forTooltipTrigger aria-describedby="my-hint">Hover</button>
+        </div>`,
+      })
+      class ClosedHost {
+        readonly open = signal(false);
+      }
+      const fixture = mount(ClosedHost);
+      await flush(fixture);
+      expect(attrOf(fixture, '[forTooltipTrigger]', 'aria-describedby')).toBe('my-hint');
     });
   });
 });

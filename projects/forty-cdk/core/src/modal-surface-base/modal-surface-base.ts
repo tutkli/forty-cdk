@@ -1,13 +1,6 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  input,
-  output,
-  signal,
-  type Signal,
-} from '@angular/core';
+import { booleanAttribute, Directive, input, output, signal, type Signal } from '@angular/core';
 
+import { hostDescribedBy, hostLabelledBy } from '../host-aria/host-aria';
 import { type ModalShellConfig } from '../modal-shell/modal-shell';
 import { type VetoableEvent, type VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
@@ -179,14 +172,21 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   readonly #backdropEl = signal<HTMLElement | null>(null);
   readonly #lastCloseValue = signal<unknown>(undefined);
 
-  /** Space-joined `aria-labelledby` value, or `null` when no title registered. */
-  readonly labelledBy = computed<string | null>(() => {
+  /**
+   * Resolved `aria-labelledby`: a consumer-set static value when present, else
+   * the space-joined ids of the registered titles, or `null` when none.
+   */
+  readonly labelledBy = hostLabelledBy(() => {
     const ids = this.#labelIds();
     return ids.length === 0 ? null : ids.join(' ');
   });
 
-  /** Space-joined `aria-describedby` value, or `null` when no description registered. */
-  readonly describedBy = computed<string | null>(() => {
+  /**
+   * Resolved `aria-describedby`: a consumer-set static value composed with the
+   * space-joined ids of the registered descriptions, or `null` when neither is
+   * present.
+   */
+  readonly describedBy = hostDescribedBy(() => {
     const ids = this.#describedByIds();
     return ids.length === 0 ? null : ids.join(' ');
   });

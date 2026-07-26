@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -15,7 +16,7 @@ import { injectCalendarContext } from './calendar-context';
   exportAs: 'forCalendarMonthGrid',
   host: {
     role: 'grid',
-    '[attr.aria-labelledby]': 'ctx.headingId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-view]': '"month"',
@@ -23,6 +24,8 @@ import { injectCalendarContext } from './calendar-context';
 })
 export class ForCalendarMonthGrid {
   protected readonly ctx = injectCalendarContext('ForCalendarMonthGrid');
+
+  protected readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
 
   /** Rows of the month picker grid (3 columns) for the visible year. */
   readonly rows = this.ctx.monthRows;

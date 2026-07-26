@@ -1,6 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, injectModalShell, injectOverlayShell } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostLabelledBy,
+  injectModalShell,
+  injectOverlayShell,
+} from 'forty-cdk/core';
 import { injectDatePickerContext } from './date-picker-context';
 
 /**
@@ -34,7 +39,7 @@ import { injectDatePickerContext } from './date-picker-context';
     tabindex: '-1',
     '[id]': 'ctx.contentId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.triggerId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
   },
@@ -42,6 +47,10 @@ import { injectDatePickerContext } from './date-picker-context';
 export class ForDatePickerContent {
   protected readonly ctx = injectDatePickerContext('ForDatePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  protected readonly labelledBy = hostLabelledBy(() =>
+    this.ctx.ariaLabel() ? null : this.ctx.triggerId(),
+  );
 
   constructor() {
     const ctx = this.ctx;

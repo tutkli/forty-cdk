@@ -18,6 +18,8 @@ import {
 
 import {
   LiveAnnouncer,
+  hostDescribedBy,
+  hostLabelledBy,
   injectPauseController,
   type PauseController,
   attachSwipeDismiss,
@@ -184,13 +186,13 @@ export class ForToast implements ForToastContext {
   readonly #labels = signal<readonly ForToastTextHandle[]>([]);
   readonly #descriptions = signal<readonly ForToastTextHandle[]>([]);
   readonly #actions = signal<readonly ForToastActionHandle[]>([]);
-  readonly labelledBy = computed(
+  readonly labelledBy = hostLabelledBy(
     () =>
       this.#labels()
         .map((h) => h.id)
         .join(' ') || null,
   );
-  readonly describedBy = computed(
+  readonly describedBy = hostDescribedBy(
     () =>
       this.#descriptions()
         .map((h) => h.id)

@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -15,7 +16,7 @@ import { injectCalendarContext } from './calendar-context';
   exportAs: 'forCalendarYearGrid',
   host: {
     role: 'grid',
-    '[attr.aria-labelledby]': 'ctx.headingId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-view]': '"year"',
@@ -23,6 +24,8 @@ import { injectCalendarContext } from './calendar-context';
 })
 export class ForCalendarYearGrid {
   protected readonly ctx = injectCalendarContext('ForCalendarYearGrid');
+
+  protected readonly labelledBy = hostLabelledBy(() => this.ctx.headingId());
 
   /** Rows of the year picker grid (3 columns) for the aligned block containing the visible year. */
   readonly rows = this.ctx.yearRows;
