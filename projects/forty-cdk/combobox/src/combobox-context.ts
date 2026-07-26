@@ -104,8 +104,7 @@ export interface ForComboboxContext<T = unknown> {
   /**
    * The current selection, as a read-only signal. Mutate it through the guarded
    * methods (`activate` / `removeValue` / `clear`) or the root's `[(value)]`
-   * binding — a direct write would bypass the disabled / readonly guards and
-   * `markTouched`.
+   * binding — a direct write would bypass the disabled / readonly guards.
    */
   readonly value: Signal<readonly T[]>;
   /**
@@ -395,9 +394,6 @@ export interface ForComboboxContext<T = unknown> {
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void;
   /** Implicit close requested by the shell after an un-vetoed outside interaction. */
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void;
-
-  /** Flip the `touched` model. Called by input on blur-to-outside and by dismiss events. */
-  markTouched(): void;
 }
 
 /**

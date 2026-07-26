@@ -709,6 +709,67 @@ describe('ForCombobox', () => {
     { flags: ['disabled', 'required'] },
   );
 
+  describe('touched contract', () => {
+    @Component({
+      imports: [ForCombobox, ForComboboxInput],
+      template: `
+        <div
+          forCombobox
+          (touch)="touches.set(touches() + 1)"
+          (touchedChange)="touchedChanges.push($event)"
+        >
+          <input forComboboxInput />
+        </div>
+      `,
+    })
+    class TouchOutputHost {
+      readonly touches = signal(0);
+      readonly touchedChanges: boolean[] = [];
+    }
+
+    it('emits touch when focus leaves the combobox entirely', async () => {
+      const { el, fixture, flush } = renderHost(TouchOutputHost);
+      const input = el.querySelector('[forComboboxInput]')!;
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        input.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+        expect(fixture.componentInstance.touches()).toBe(1);
+        expect(fixture.componentInstance.touchedChanges).toEqual([true]);
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('does not emit touch when focus stays on the input', async () => {
+      const { el, fixture, flush } = renderHost(TouchOutputHost);
+      const input = el.querySelector('[forComboboxInput]')!;
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: input }));
+      await flush();
+      expect(fixture.componentInstance.touches()).toBe(0);
+      expect(fixture.componentInstance.touchedChanges).toEqual([]);
+    });
+
+    it('emits touch on every focus leave, not only the first (no once-guard)', async () => {
+      const { el, fixture, flush } = renderHost(TouchOutputHost);
+      const input = el.querySelector('[forComboboxInput]')!;
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        input.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+        input.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+
+        expect(fixture.componentInstance.touches()).toBe(2);
+        expect(fixture.componentInstance.touchedChanges).toEqual([true]);
+      } finally {
+        outside.remove();
+      }
+    });
+  });
+
   describe('selection (click)', () => {
     it('clicking an option commits value + label and closes', async () => {
       const r = renderHost(ComboboxHost);

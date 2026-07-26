@@ -927,10 +927,6 @@ export class ForCombobox<T = string>
     this.closeMenu(reason);
   }
 
-  override markTouched(): void {
-    super.markTouched();
-  }
-
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     const inputEl = this.#inputSlot.element();
