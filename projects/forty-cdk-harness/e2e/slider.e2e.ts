@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
-import { dragFrom, el, gotoFixture } from './_helpers';
+import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
 
 /**
  * Pointer / drag math coverage for `[forSlider]`. The Vitest layer used to
@@ -173,6 +173,65 @@ test.describe('Slider (track click)', () => {
     await page.mouse.click(trackBox!.x + trackBox!.width * 0.3, trackBox!.y + trackBox!.height / 2);
 
     await expect(el(page, 'last-value')).toHaveText('50');
+  });
+});
+
+test.describe('Slider (track press focus)', () => {
+  test('a bare-track press leaves the moved thumb focused and arrows adjust right after release', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'slider');
+    const trackBox = await el(page, 'track').boundingBox();
+    expect(trackBox).not.toBeNull();
+
+    // No `mouse.move` between down and up: the un-armed, no-commit path that
+    // previously left the slider without a focused thumb.
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.3, trackBox!.y + trackBox!.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expectFocused(el(page, 'thumb-0'));
+
+    const pressed = Number(await el(page, 'last-value').textContent());
+    await page.keyboard.press('ArrowRight');
+    await expect(el(page, 'last-value')).toHaveText(String(pressed + 1));
+  });
+
+  test('a bare-track press focuses the nearest thumb in a multi-thumb slider', async ({ page }) => {
+    await gotoFixture(page, 'slider', { initial: '20,80' });
+    const trackBox = await el(page, 'track').boundingBox();
+    expect(trackBox).not.toBeNull();
+
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expectFocused(el(page, 'thumb-1'));
+  });
+
+  test('pressing the thumb still leaves it focused', async ({ page }) => {
+    await gotoFixture(page, 'slider');
+    const thumbBox = await el(page, 'thumb-0').boundingBox();
+    expect(thumbBox).not.toBeNull();
+
+    await page.mouse.move(thumbBox!.x + thumbBox!.width / 2, thumbBox!.y + thumbBox!.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expectFocused(el(page, 'thumb-0'));
+  });
+
+  test('a track press does not move focus while disabled', async ({ page }) => {
+    await gotoFixture(page, 'slider', { disabled: '1' });
+    await page.locator('#before').focus();
+    const trackBox = await el(page, 'track').boundingBox();
+    expect(trackBox).not.toBeNull();
+
+    await page.mouse.move(trackBox!.x + trackBox!.width * 0.3, trackBox!.y + trackBox!.height / 2);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    await expect(el(page, 'thumb-0')).not.toBeFocused();
   });
 });
 

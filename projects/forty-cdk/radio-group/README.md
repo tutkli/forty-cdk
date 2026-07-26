@@ -102,9 +102,12 @@ export class DemoShipping {
 | ------------------ | -------------------------- |
 | `data-state`       | `checked` \| `unchecked`   |
 | `data-disabled`    | present \| absent          |
+| `data-readonly`    | present \| absent          |
 | `data-orientation` | `horizontal` \| `vertical` |
 
 A disabled radio reflects `aria-disabled="true"` + `data-disabled=""` (no native `disabled`, per APG) — announced but non-selectable, and skipped during arrow nav. Tabindex is `0` for the selected radio (or, when no radio is selected, the first enabled one) and `-1` for the rest.
+
+A read-only group reflects `data-readonly=""` on every radio for styling. `aria-readonly` is deliberately **not** emitted on `role="radio"` — WAI-ARIA supports that property on `radiogroup`, not on `radio` — so the read-only announcement lives on the `[forRadioGroup]` root, which reflects both `aria-readonly="true"` and `data-readonly=""`.
 
 ### `ForRadioIndicator`
 
@@ -132,6 +135,7 @@ Implements the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/pa
 - **Selection-on-focus** is the APG-mandated behavior for standard radio groups (toolbars use a different model). Be aware that arrow navigation immediately changes the form value.
 - **All four arrow keys navigate** regardless of `orientation`, matching the WAI-ARIA Radio Group pattern and native HTML radios; `orientation` is a visual / `aria-orientation` hint only.
 - **`role="radio"`** on a `<button>` is the most accessible host: it gets keyboard activation and SR-friendly semantics. Other host elements lose those defaults.
+- **`aria-readonly` belongs on the group, not the radios.** The `radiogroup` root carries it; each radio only gets the `data-readonly` styling hook, because WAI-ARIA does not support `aria-readonly` on `role="radio"`.
 
 ## Styling
 

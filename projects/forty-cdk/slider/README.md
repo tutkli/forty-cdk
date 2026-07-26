@@ -73,7 +73,8 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 | `readonly`              | `input<boolean>`                    | Allows focus + announcement, blocks updates.<br>**Default:** `false`                                                                                                                                                        |
 | `name`                  | `input<string>`                     | If non-empty, mirrors `value()` into N `<input type="hidden">` siblings for native form submit.<br>**Default:** `''`                                                                                                        |
 | `valueCommit`           | —                                   | Output. Fires once at the trailing edge of a value-changing interaction with the final value array — on `pointerup` / `pointercancel` after a drag, or on `keyup` after one or more keyboard adjustments.<br>**Default:** — |
-| `touchedChange`         | —                                   | Output. Fires when focus leaves the slider region the first time.<br>**Default:** —                                                                                                                                         |
+| `touchedChange`         | —                                   | Output. Fires once, the first time the slider is touched — drag end, or focus leaving the slider region.<br>**Default:** —                                                                                                  |
+| `touch`                 | —                                   | Output. Signal Forms touch notification. Fires on **every** touch-producing interaction (drag end, focus leaving the region), not only the first.<br>**Default:** —                                                         |
 
 `(valueChange)` (from `model<readonly number[]>`) fires only on internal updates (drag, keyboard, track click). It stays silent on consumer writes via `[(value)]`.
 
@@ -138,15 +139,18 @@ Focus a thumb, then:
 
 `inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
 
+Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `largeStep` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and `largeStep` is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20` — never an oversized first jump. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
+
 ## Accessibility
 
 Implements the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) (single thumb) and the [WAI-ARIA Slider (Multi-Thumb) pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multi-thumb/) (range / N thumbs).
 
 - `role="slider"` on each thumb with `aria-valuemin`, `aria-valuemax`, `aria-valuenow`, optional `aria-valuetext`, and `aria-orientation`.
-- Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values, matching the APG multi-thumb guidance.
+- Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values — offset by the `minStepsBetweenThumbs` gap — so the announced range is exactly the range the thumb can reach, matching the APG multi-thumb guidance.
 - The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
 - `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
 - Provide `[label]` (or `[labelledby]`) on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label.
+- A degenerate configuration (`min` greater than `max`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
 
 ## Styling
 

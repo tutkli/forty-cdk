@@ -8,6 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 
 import { injectFocusVisible } from './focus-visible';
 import { injectHovered } from './hovered';
@@ -26,7 +27,10 @@ import { injectPressed } from './pressed';
  *
  * Disabled stays focusable: per the APG a disabled button must remain reachable by assistive
  * technology, so the native `disabled` attribute is never set. Instead `aria-disabled="true"` and
- * `data-disabled=""` are reflected and the activation handler becomes a no-op.
+ * `data-disabled=""` are reflected and the activation handler becomes a no-op. `disabled` composes
+ * with a surrounding `[forFieldset]`: a disabled group disables the button too (`aria-disabled` +
+ * `data-disabled`, activation suppressed), which is what makes a non-native host (`<div forButton>`)
+ * behave like a native button inside a native `<fieldset disabled>`.
  *
  * Interaction state is reflected as `data-pressed`, `data-hovered`, and `data-focus-visible`
  * (present/absent boolean attributes). There is no `data-state` — this primitive has no
@@ -51,8 +55,8 @@ import { injectPressed } from './pressed';
     '[attr.type]': 'resolvedType()',
     '[attr.role]': 'resolvedRole()',
     '[attr.tabindex]': 'resolvedTabindex()',
-    '[attr.aria-disabled]': "disabled() ? 'true' : null",
-    '[attr.data-disabled]': "disabled() ? '' : null",
+    '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
+    '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '[attr.data-pressed]': "pressed() ? '' : null",
     '[attr.data-hovered]': "hovered() ? '' : null",
     '[attr.data-focus-visible]': "focusVisible() ? '' : null",
@@ -67,13 +71,28 @@ export class ForButton {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #isNativeButton = this.#host.tagName === 'BUTTON';
   readonly #initialType = this.#host.getAttribute('type');
+  readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
    * When `true`, activation (click, Enter, Space) is suppressed and the element
    * reflects `aria-disabled="true"` + `data-disabled=""`. The element remains
-   * focusable so assistive technology can announce it.
+   * focusable so assistive technology can announce it. Read
+   * {@link effectiveDisabled} for the value that actually gates behavior — it
+   * also folds in a surrounding disabled `[forFieldset]`.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
+
+  /**
+   * The button's own {@link disabled} OR'd with a surrounding disabled
+   * `[forFieldset]`. This is what gates activation and drives `aria-disabled` /
+   * `data-disabled`: a native `<fieldset disabled>` never reaches a non-native
+   * host (`<div forButton>`), so the group's disabled state has to compose in
+   * here. Mirrors `FormUiControlBase.effectiveDisabled`, so a `[forButton]` and
+   * a `[forSwitch]` inside the same disabled group behave identically.
+   */
+  readonly effectiveDisabled = computed(
+    () => this.disabled() || (this.#fieldset?.disabled() ?? false),
+  );
 
   /**
    * Emitted once per user activation: a pointer click on any host, or Enter / Space
@@ -86,8 +105,8 @@ export class ForButton {
   readonly #focused = signal(false);
   #spaceHeld = false;
   readonly #keyboardModality = injectFocusVisible();
-  protected readonly hovered = injectHovered({ disabled: this.disabled });
-  protected readonly pressed = injectPressed({ disabled: this.disabled });
+  protected readonly hovered = injectHovered({ disabled: this.effectiveDisabled });
+  protected readonly pressed = injectPressed({ disabled: this.effectiveDisabled });
   protected readonly focusVisible = computed(() => this.#focused() && this.#keyboardModality());
 
   protected readonly resolvedType = computed(
@@ -97,7 +116,7 @@ export class ForButton {
   protected readonly resolvedTabindex = computed(() => (this.#isNativeButton ? null : '0'));
 
   protected onClick(event: MouseEvent): void {
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       event.preventDefault();
       event.stopImmediatePropagation();
       return;
@@ -110,7 +129,7 @@ export class ForButton {
       return;
     }
     if (event.key === 'Enter') {
-      if (this.disabled()) {
+      if (this.effectiveDisabled()) {
         return;
       }
       event.preventDefault();
@@ -119,7 +138,7 @@ export class ForButton {
     }
     if (event.key === ' ') {
       event.preventDefault();
-      if (this.disabled()) {
+      if (this.effectiveDisabled()) {
         return;
       }
       this.#spaceHeld = true;
@@ -137,7 +156,7 @@ export class ForButton {
       return;
     }
     this.#spaceHeld = false;
-    if (this.disabled()) {
+    if (this.effectiveDisabled()) {
       return;
     }
     event.preventDefault();

@@ -5,6 +5,7 @@ import { flush } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForFileUpload } from './file-upload';
 import { ForFileUploadInput } from './file-upload-input';
+import type { ForFileUploadRejection } from './file-upload-rejection';
 import { ForFileUploadTrigger } from './file-upload-trigger';
 
 @Component({
@@ -30,12 +31,12 @@ class FileUploadHost {
   readonly directory = signal(false);
   readonly disabled = signal(false);
   readonly capturedFiles = signal<FileList | null>(null);
-  readonly rejectedFiles = signal<File[] | null>(null);
+  readonly rejectedFiles = signal<ForFileUploadRejection[] | null>(null);
   onFiles(files: FileList): void {
     this.capturedFiles.set(files);
   }
-  onRejected(files: File[]): void {
-    this.rejectedFiles.set(files);
+  onRejected(rejections: ForFileUploadRejection[]): void {
+    this.rejectedFiles.set(rejections);
   }
 }
 
@@ -51,6 +52,37 @@ class FileUploadDropOnlyHost {
   onFiles(files: FileList): void {
     this.capturedFiles.set(files);
   }
+}
+
+@Component({
+  imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
+  template: `
+    <div forFileUpload>
+      <button forFileUploadTrigger data-testid="trigger">Choose</button>
+      @if (showInput()) {
+        <input forFileUploadInput data-testid="input" aria-label="Upload" />
+      }
+    </div>
+  `,
+})
+class ToggleInputHost {
+  readonly showInput = signal(true);
+}
+
+@Component({
+  imports: [ForFileUpload, ForFileUploadInput, ForFileUploadTrigger],
+  template: `
+    <div forFileUpload>
+      <button forFileUploadTrigger data-testid="trigger">Choose</button>
+      <input forFileUploadInput data-testid="first" aria-label="First" />
+      @if (showSecond()) {
+        <input forFileUploadInput data-testid="second" aria-label="Second" />
+      }
+    </div>
+  `,
+})
+class DuplicateInputHost {
+  readonly showSecond = signal(true);
 }
 
 describe('ForFileUpload', () => {
@@ -200,12 +232,12 @@ describe('ForFileUpload', () => {
       readonly accept = signal<string | null>(null);
       readonly multiple = signal(false);
       readonly accepted = signal<FileList | null>(null);
-      readonly rejected = signal<File[] | null>(null);
+      readonly rejected = signal<ForFileUploadRejection[] | null>(null);
       onFiles(files: FileList): void {
         this.accepted.set(files);
       }
-      onRejected(files: File[]): void {
-        this.rejected.set(files);
+      onRejected(rejections: ForFileUploadRejection[]): void {
+        this.rejected.set(rejections);
       }
     }
 
@@ -241,7 +273,7 @@ describe('ForFileUpload', () => {
       await f();
 
       expect(instance.accepted()).toBeNull();
-      expect(instance.rejected()?.map((file) => file.name)).toEqual(['malware.exe']);
+      expect(instance.rejected()?.map((r) => r.file.name)).toEqual(['malware.exe']);
     });
 
     it('matches by file extension case-insensitively', async () => {
@@ -271,7 +303,169 @@ describe('ForFileUpload', () => {
       await f();
 
       expect(instance.accepted()).toBeNull();
-      expect(instance.rejected()?.map((file) => file.name)).toEqual(['a.exe', 'b.bat']);
+      expect(instance.rejected()?.map((r) => r.file.name)).toEqual(['a.exe', 'b.bat']);
+    });
+
+    describe('single-file overflow', () => {
+      beforeEach(() => {
+        vi.stubGlobal(
+          'DataTransfer',
+          class {
+            readonly #files: File[] = [];
+            readonly items = { add: (file: File): void => void this.#files.push(file) };
+            get files(): FileList {
+              return this.#files as unknown as FileList;
+            }
+          },
+        );
+      });
+
+      it('rejects the overflow files with reason "multiple" when multiple is false', async () => {
+        const { el, instance, flush: f } = renderHost(AcceptDropHost);
+        await f();
+        const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+        drop(zone, [
+          new File(['x'], 'a.txt', { type: 'text/plain' }),
+          new File(['x'], 'b.txt', { type: 'text/plain' }),
+          new File(['x'], 'c.txt', { type: 'text/plain' }),
+        ]);
+        await f();
+
+        expect(instance.accepted()!.length).toBe(1);
+        expect(instance.accepted()![0]!.name).toBe('a.txt');
+        expect(instance.rejected()!.map((r) => [r.file.name, r.reason])).toEqual([
+          ['b.txt', 'multiple'],
+          ['c.txt', 'multiple'],
+        ]);
+        expect(instance.accepted()!.length + instance.rejected()!.length).toBe(3);
+      });
+
+      it('mixes accept failures and overflow in one emission, in source order', async () => {
+        const { el, instance, flush: f } = renderHost(AcceptDropHost);
+        instance.accept.set('image/*');
+        await f();
+        const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+        drop(zone, [
+          new File(['x'], 'notes.txt', { type: 'text/plain' }),
+          new File(['x'], 'a.png', { type: 'image/png' }),
+          new File(['x'], 'b.png', { type: 'image/png' }),
+        ]);
+        await f();
+
+        expect(Array.from(instance.accepted()!).map((file) => file.name)).toEqual(['a.png']);
+        expect(instance.rejected()!.map((r) => [r.file.name, r.reason])).toEqual([
+          ['notes.txt', 'accept'],
+          ['b.png', 'multiple'],
+        ]);
+      });
+
+      it('keeps every accepted file when multiple is true', async () => {
+        const { el, instance, flush: f } = renderHost(AcceptDropHost);
+        instance.multiple.set(true);
+        await f();
+        const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+        drop(zone, [
+          new File(['x'], 'a.txt', { type: 'text/plain' }),
+          new File(['x'], 'b.txt', { type: 'text/plain' }),
+          new File(['x'], 'c.txt', { type: 'text/plain' }),
+        ]);
+        await f();
+
+        expect(instance.accepted()!.length).toBe(3);
+        expect(instance.rejected()).toBeNull();
+      });
+    });
+  });
+
+  describe('drag state while disabled', () => {
+    const dragEvent = (type: string): Event => new Event(type, { bubbles: true, cancelable: true });
+
+    it('clears data-dragging when disabled mid-drag and a dragleave arrives', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      zone.dispatchEvent(dragEvent('dragenter'));
+      await f();
+      expect(zone.getAttribute('data-dragging')).toBe('');
+
+      instance.disabled.set(true);
+      await f();
+
+      zone.dispatchEvent(dragEvent('dragleave'));
+      await f();
+      expect(zone.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('clears data-dragging and emits nothing when a drop lands after disabling mid-drag', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      zone.dispatchEvent(dragEvent('dragenter'));
+      await f();
+
+      instance.disabled.set(true);
+      await f();
+
+      const event = dragEvent('drop');
+      Object.defineProperty(event, 'dataTransfer', {
+        value: {
+          files: [new File(['x'], 'a.txt', { type: 'text/plain' })] as unknown as FileList,
+          dropEffect: 'none',
+        },
+      });
+      zone.dispatchEvent(event);
+      await f();
+
+      expect(zone.hasAttribute('data-dragging')).toBe(false);
+      expect(instance.capturedFiles()).toBeNull();
+      expect(instance.rejectedFiles()).toBeNull();
+    });
+
+    it('resets the drag depth counter so a later drag cycle toggles data-dragging once', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      zone.dispatchEvent(dragEvent('dragenter'));
+      await f();
+      zone.dispatchEvent(dragEvent('dragenter'));
+      await f();
+
+      instance.disabled.set(true);
+      await f();
+      zone.dispatchEvent(dragEvent('drop'));
+      await f();
+
+      instance.disabled.set(false);
+      await f();
+
+      zone.dispatchEvent(dragEvent('dragenter'));
+      await f();
+      expect(zone.getAttribute('data-dragging')).toBe('');
+
+      zone.dispatchEvent(dragEvent('dragleave'));
+      await f();
+      expect(zone.hasAttribute('data-dragging')).toBe(false);
+    });
+
+    it('does not mark itself a drop target while disabled', async () => {
+      const { el, instance, flush: f } = renderHost(FileUploadHost);
+      const zone = el.querySelector<HTMLElement>('[forFileUpload]')!;
+
+      const enabled = dragEvent('dragover');
+      zone.dispatchEvent(enabled);
+      await f();
+      expect(enabled.defaultPrevented).toBe(true);
+
+      instance.disabled.set(true);
+      await f();
+
+      const disabled = dragEvent('dragover');
+      zone.dispatchEvent(disabled);
+      await f();
+      expect(disabled.defaultPrevented).toBe(false);
     });
   });
 
@@ -327,7 +521,7 @@ describe('ForFileUpload', () => {
       await f();
 
       expect(instance.capturedFiles()).toBeNull();
-      expect(instance.rejectedFiles()?.map((file) => file.name)).toEqual(['notes.txt']);
+      expect(instance.rejectedFiles()?.map((r) => r.file.name)).toEqual(['notes.txt']);
     });
   });
 
@@ -348,7 +542,7 @@ describe('ForFileUpload', () => {
       input.dispatchEvent(new Event('change', { bubbles: true }));
       await f();
 
-      expect(instance.rejectedFiles()?.map((file) => file.name)).toEqual(['a.exe']);
+      expect(instance.rejectedFiles()?.map((r) => r.file.name)).toEqual(['a.exe']);
       expect(instance.capturedFiles()).toBeNull();
       expect(setValue).toHaveBeenCalledWith('');
     });
@@ -378,8 +572,64 @@ describe('ForFileUpload', () => {
       zone.dispatchEvent(event);
       await f();
 
-      expect(instance.rejectedFiles()?.map((file) => file.name)).toEqual(['b.exe']);
+      expect(instance.rejectedFiles()?.map((r) => r.file.name)).toEqual(['b.exe']);
       expect(setValue).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('input registration lifecycle', () => {
+    it('stops clicking a detached input once the [forFileUploadInput] unmounts', async () => {
+      const { el, instance, flush: f } = renderHost(ToggleInputHost);
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+      const trigger = el.querySelector<HTMLButtonElement>('[forFileUploadTrigger]')!;
+      const spy = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+
+      instance.showInput.set(false);
+      await f();
+
+      expect(el.querySelector('input[forFileUploadInput]')).toBeNull();
+      expect(() => trigger.click()).not.toThrow();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('opens the remounted input after the [forFileUploadInput] returns', async () => {
+      const { el, instance, flush: f } = renderHost(ToggleInputHost);
+
+      instance.showInput.set(false);
+      await f();
+      instance.showInput.set(true);
+      await f();
+
+      const input = el.querySelector<HTMLInputElement>('input[forFileUploadInput]')!;
+      const trigger = el.querySelector<HTMLButtonElement>('[forFileUploadTrigger]')!;
+      const spy = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+
+      trigger.click();
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('warns when a second [forFileUploadInput] registers under one [forFileUpload]', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(DuplicateInputHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      const message = String(warn.mock.calls[0]?.[0]);
+      expect(message).toContain('[forty-cdk/file-upload]');
+      expect(message).toContain('[forFileUploadInput]');
+    });
+
+    it('falls back to the surviving input when a duplicate unmounts', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, instance, flush: f } = renderHost(DuplicateInputHost);
+      const first = el.querySelector<HTMLInputElement>('[data-testid="first"]')!;
+      const trigger = el.querySelector<HTMLButtonElement>('[forFileUploadTrigger]')!;
+      const spy = vi.spyOn(first, 'click').mockImplementation(() => undefined);
+
+      instance.showSecond.set(false);
+      await f();
+
+      trigger.click();
+      expect(spy).toHaveBeenCalledTimes(1);
     });
   });
 

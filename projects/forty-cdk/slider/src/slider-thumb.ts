@@ -1,7 +1,11 @@
 import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
 import { registerHandle } from 'forty-cdk/core';
-import { injectSliderContext, type SliderArrowKey } from './slider-context';
+import {
+  injectSliderContext,
+  type ForSliderThumbBounds,
+  type SliderArrowKey,
+} from './slider-context';
 
 /**
  * One slider thumb. Apply on any focusable element (commonly `<span>` /
@@ -110,25 +114,17 @@ export class ForSliderThumb {
 
   protected readonly ariaValueText = computed(() => this.valueText() || null);
 
-  protected readonly ariaValueMin = computed(() => {
-    const i = this.index();
-    const values = this.ctx.value();
-    if (i > 0 && i < values.length) {
-      // Multi-thumb non-passing: this thumb's lower bound is the previous
-      // thumb's value (matches APG multi-thumb guidance).
-      return values[i - 1]!;
-    }
-    return this.ctx.minValue();
-  });
+  readonly #bounds = computed<ForSliderThumbBounds>(
+    () =>
+      this.ctx.thumbBounds()[this.index()] ?? {
+        min: this.ctx.minValue(),
+        max: this.ctx.maxValue(),
+      },
+  );
 
-  protected readonly ariaValueMax = computed(() => {
-    const i = this.index();
-    const values = this.ctx.value();
-    if (i >= 0 && i < values.length - 1) {
-      return values[i + 1]!;
-    }
-    return this.ctx.maxValue();
-  });
+  protected readonly ariaValueMin = computed(() => this.#bounds().min);
+
+  protected readonly ariaValueMax = computed(() => this.#bounds().max);
 
   constructor() {
     const handle = {

@@ -11,6 +11,7 @@ import {
   clamp,
   decimalPlaces,
   roundToDecimals,
+  stepOnGrid,
 } from 'forty-cdk/core';
 import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
@@ -106,12 +107,19 @@ export class ForNumberInput
    */
   readonly max = input<number | undefined>(undefined);
 
-  /** Increment applied by ArrowUp / ArrowDown and the inc/dec buttons. */
+  /**
+   * Increment applied by ArrowUp / ArrowDown and the inc/dec buttons. Values
+   * snap to the `min ?? 0` ± k·`step` grid: a value already on the grid moves a
+   * full step, an off-grid value lands on the adjacent grid point.
+   */
   readonly step = input(1);
 
   /**
    * Multiplier applied to `step` for `PageUp` / `PageDown`. Defaults to the
    * value from `provideForNumberInputDefaults` for the surrounding scope (10).
+   * It applies only from a value already on the `min ?? 0` ± k·`step` grid —
+   * from an off-grid value the key lands on the adjacent grid point instead,
+   * matching the platform `stepUp()` / `stepDown()` rule.
    */
   readonly stepMultiplier = input(this.#defaults.stepMultiplier);
 
@@ -222,30 +230,43 @@ export class ForNumberInput
 
   /**
    * Increase the value by `by` (defaults to `step`). From empty, lands on the
-   * clamped baseline (`min ?? 0`). Clamps to `[min, max]`. The result is rounded
-   * to the finer decimal precision of `step` and `by`, so a caller-supplied `by`
-   * finer than `step` (`increment(0.25)` with `step=0.1`) keeps its precision
-   * instead of being rounded back to the step grid.
+   * clamped baseline (`min ?? 0`). Stepping follows the shared grid-snap rule:
+   * a value already on the `min ?? 0` ± k·`step` grid advances a full `by` (so a
+   * caller-supplied `by` finer than `step` — `increment(0.25)` with `step=0.1` —
+   * keeps its own precision), while an off-grid value lands on the next grid
+   * point above it (ArrowUp from `0.55` with `step=1` gives `1`, not `1.55`).
+   * Clamps to `[min, max]`.
    */
   increment(by: number = this.step()): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
-    const current = this.value();
-    this.#applyValue(current === null ? this.#baseline() : this.#stepped(current + by, by));
+    this.#step(1, by);
   }
 
   /**
    * Decrease the value by `by` (defaults to `step`). From empty, lands on the
-   * clamped baseline (`min ?? 0`). Clamps to `[min, max]`. The result is rounded
-   * to the finer decimal precision of `step` and `by` (see {@link increment}).
+   * clamped baseline (`min ?? 0`). Follows the same grid-snap rule as
+   * {@link increment}, travelling downward. Clamps to `[min, max]`.
    */
   decrement(by: number = this.step()): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
-    const current = this.value();
-    this.#applyValue(current === null ? this.#baseline() : this.#stepped(current - by, by));
+    this.#step(-1, by);
+  }
+
+  /**
+   * Widened to `public` so `ForNumberInputContext` consumers — the
+   * `[forNumberInputIncrement]` / `[forNumberInputDecrement]` buttons — can mark
+   * the control touched on a pointer commit; the behaviour is the base's. Fires
+   * on every touch-producing interaction (a stepper click, and focus leaving the
+   * spinbutton), so a gesture that does both emits `touch` twice. `touched` /
+   * `data-touched` / `(touchedChange)` only change on the first, and Signal
+   * Forms' `markAsTouched()` is idempotent.
+   */
+  override markTouched(): void {
+    super.markTouched();
   }
 
   /** Live-parse the typed text into the value (unclamped — clamping waits for commit). */
@@ -323,8 +344,13 @@ export class ForNumberInput
     this.#writeDisplay();
   }
 
-  #stepped(next: number, by: number): number {
-    return roundToDecimals(next, Math.max(decimalPlaces(this.step()), decimalPlaces(by)));
+  #step(direction: 1 | -1, by: number): void {
+    const current = this.value();
+    this.#applyValue(
+      current === null
+        ? this.#baseline()
+        : stepOnGrid(current, { step: this.step(), direction, origin: this.min() ?? 0, by }),
+    );
   }
 
   #pageStep(): number {

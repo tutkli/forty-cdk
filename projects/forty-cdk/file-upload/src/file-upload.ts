@@ -1,6 +1,8 @@
 import { booleanAttribute, Directive, input, output, signal } from '@angular/core';
+import { createSingleSlot } from 'forty-cdk/core';
 
 import { FOR_FILE_UPLOAD_CONTEXT, type ForFileUploadContext } from './file-upload-context';
+import type { ForFileUploadRejection } from './file-upload-rejection';
 
 /**
  * Root drop zone for the FileUpload primitive. Composes with
@@ -16,7 +18,9 @@ import { FOR_FILE_UPLOAD_CONTEXT, type ForFileUploadContext } from './file-uploa
  * dialog's default filter, so a drop, or a dialog selection made through the
  * "All files" override, could otherwise leak a rejected file into `filesChange`
  * and into the input's `files` (native form submission). Files that fail the
- * filter are emitted on `filesRejected` instead.
+ * filter are emitted on `filesRejected` instead, as are valid files that
+ * arrive past the single-file cap of `multiple="false"` — every selected file
+ * lands in exactly one of the two outputs.
  *
  * Reflects `data-dragging` while files are dragged over the zone and
  * `data-disabled` when the input is disabled.
@@ -50,56 +54,76 @@ export class ForFileUpload implements ForFileUploadContext {
   /** Emitted when files are chosen via the dialog or dropped onto the zone. */
   readonly filesChange = output<FileList>();
   /**
-   * Emitted with the files that were rejected by `accept`, from either the
-   * drag&drop path or a dialog selection made through the "All files" override.
-   * Fires only when at least one selected file failed the filter.
+   * Emitted with the files that were not accepted, each paired with the
+   * constraint that refused it: `'accept'` for a file that failed the `accept`
+   * filter (from a drop or a dialog selection made through the "All files"
+   * override), `'multiple'` for a valid file that arrived past the single-file
+   * cap of `multiple="false"`. Fires only when at least one file was refused.
    */
-  readonly filesRejected = output<File[]>();
+  readonly filesRejected = output<ForFileUploadRejection[]>();
 
   readonly #dragging = signal(false);
   protected readonly dragging = this.#dragging.asReadonly();
   #dragDepth = 0;
-  #input: HTMLInputElement | null = null;
+  readonly #input = createSingleSlot<HTMLInputElement>({
+    primitive: 'file-upload',
+    owner: '[forFileUpload]',
+    claimant: '[forFileUploadInput]',
+  });
 
-  /** Registers the native input so the root can open the dialog and sync dropped files. */
+  /**
+   * Registers the native input so the root can open the dialog and sync
+   * dropped files. Pair with {@link unregisterInput} through the core
+   * `registerHandle` helper so an unmounted input is dropped.
+   */
   registerInput(el: HTMLInputElement): void {
-    this.#input = el;
+    this.#input.register(el);
+  }
+
+  /** Removes a previously registered native input (no-op unless it is registered). */
+  unregisterInput(el: HTMLInputElement): void {
+    this.#input.unregister(el);
   }
 
   /** Opens the native file chooser dialog if not disabled. */
   openFileDialog(): void {
     if (this.disabled()) return;
-    this.#input?.click();
+    this.#input.value()?.click();
   }
 
   /**
-   * Filters `files` against `accept`, caps the result to a single file when not
-   * `multiple`, syncs the registered input's `files` for native form submission,
-   * then emits `filesChange` with the accepted set and `filesRejected` with the
-   * rest. Shared by the drag&drop and dialog paths so `accept` is enforced
-   * identically through both entry points and they cannot diverge. When every
-   * file is rejected and `files` is the registered input's own `FileList` (the
-   * dialog path), the input is cleared so a native form submission cannot ship
-   * a file the primitive rejected.
+   * Filters `files` against `accept` and against the single-file cap of
+   * `multiple="false"`, syncs the registered input's `files` for native form
+   * submission, then emits `filesChange` with the accepted set and
+   * `filesRejected` with every refused file plus the reason it was refused.
+   * Shared by the drag&drop and dialog paths so both constraints are enforced
+   * identically through either entry point and they cannot diverge. Every
+   * selected file lands in exactly one of the two outputs. When nothing is
+   * accepted and `files` is the registered input's own `FileList` (the dialog
+   * path), the input is cleared so a native form submission cannot ship a file
+   * the primitive rejected.
    */
   acceptFiles(files: FileList): void {
     const all = Array.from(files);
     if (all.length === 0) return;
 
+    const input = this.#input.value();
+    const single = !this.multiple();
     const accepted: File[] = [];
-    const rejected: File[] = [];
+    const rejected: ForFileUploadRejection[] = [];
     for (const file of all) {
-      (this.#acceptsFile(file) ? accepted : rejected).push(file);
+      if (!this.#acceptsFile(file)) rejected.push({ file, reason: 'accept' });
+      else if (single && accepted.length === 1) rejected.push({ file, reason: 'multiple' });
+      else accepted.push(file);
     }
-    const limited = this.multiple() ? accepted : accepted.slice(0, 1);
 
-    if (limited.length > 0) {
-      const keptAll = limited.length === all.length;
-      const list = keptAll ? files : this.#toFileList(limited);
-      if (this.#input && this.#input.files !== list) this.#input.files = list;
+    if (accepted.length > 0) {
+      const keptAll = accepted.length === all.length;
+      const list = keptAll ? files : this.#toFileList(accepted);
+      if (input && input.files !== list) input.files = list;
       this.filesChange.emit(list);
-    } else if (this.#input && this.#input.files === files) {
-      this.#input.value = '';
+    } else if (input && input.files === files) {
+      input.value = '';
     }
     if (rejected.length > 0) this.filesRejected.emit(rejected);
   }
@@ -118,16 +142,15 @@ export class ForFileUpload implements ForFileUploadContext {
   }
 
   protected onDragLeave(): void {
-    if (this.disabled()) return;
     this.#dragDepth = Math.max(0, this.#dragDepth - 1);
     if (this.#dragDepth === 0) this.#dragging.set(false);
   }
 
   protected onDrop(event: DragEvent): void {
-    if (this.disabled()) return;
-    event.preventDefault();
     this.#dragDepth = 0;
     this.#dragging.set(false);
+    if (this.disabled()) return;
+    event.preventDefault();
     const dropped = event.dataTransfer?.files;
     if (!dropped || dropped.length === 0) return;
     this.acceptFiles(dropped);

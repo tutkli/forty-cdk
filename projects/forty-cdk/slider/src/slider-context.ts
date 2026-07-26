@@ -13,6 +13,20 @@ export interface ForSliderThumbHandle {
 }
 
 /**
+ * The reachable value range for one thumb: the slider's `[min, max]` narrowed
+ * by the adjacent thumbs and the `minStepsBetweenThumbs` gap, with both ends
+ * rounded to the step's decimal precision. `max` is never below `min` — an
+ * over-constrained configuration (a gap wider than the room the neighbors
+ * leave, or `min > max`) collapses the range to a single point rather than
+ * inverting it, so it is always safe to emit as `aria-valuemin` /
+ * `aria-valuemax`.
+ */
+export interface ForSliderThumbBounds {
+  readonly min: number;
+  readonly max: number;
+}
+
+/**
  * Coordination contract owned by `ForSlider`. Track and thumb pieces inject
  * this to read configuration, push value updates, and start drag flows.
  */
@@ -38,6 +52,13 @@ export interface ForSliderContext {
   readonly value: Signal<readonly number[]>;
   /** Per-thumb position as fraction `[0, 1]`, already inverted-aware. */
   readonly fractions: Signal<readonly number[]>;
+  /**
+   * Per-thumb reachable range, index-aligned with `value()`. The single source
+   * of truth for both the neighbor + `minStepsBetweenThumbs` clamp applied by
+   * {@link ForSliderContext.setValueAt} and the `aria-valuemin` /
+   * `aria-valuemax` each `[forSliderThumb]` reports.
+   */
+  readonly thumbBounds: Signal<readonly ForSliderThumbBounds[]>;
   /** Range start fraction `[0, 1]` for `[forSliderRange]`. */
   readonly rangeStart: Signal<number>;
   /** Range end fraction `[0, 1]` for `[forSliderRange]`. */
@@ -72,6 +93,11 @@ export interface ForSliderContext {
   trackElement(): HTMLElement | null;
 
   // form
+  /**
+   * Flip the `touched` model and emit the `touch` output. Called from every
+   * touch-producing interaction (drag end, focus leaving the slider region),
+   * so it may fire more than once per gesture; it is never once-guarded.
+   */
   markTouched(): void;
   /**
    * Trailing-edge hook for value-changing interactions. Emits `(valueCommit)`

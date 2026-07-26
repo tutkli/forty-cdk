@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { ForFieldset } from 'forty-cdk/fieldset';
 
 import { renderHost } from '../../src/test-utils/render';
 import { ForButton } from './button';
@@ -48,6 +49,45 @@ class ActivateHost {
 })
 class CustomActivateHost {
   readonly disabled = signal(false);
+  readonly count = signal(0);
+}
+
+@Component({
+  imports: [ForButton, ForFieldset],
+  template: `<div forFieldset [disabled]="groupDisabled()">
+    <button forButton [disabled]="ownDisabled()" (activate)="count.update((n) => n + 1)">
+      Btn
+    </button>
+  </div>`,
+})
+class FieldsetNativeHost {
+  readonly groupDisabled = signal(false);
+  readonly ownDisabled = signal(false);
+  readonly count = signal(0);
+}
+
+@Component({
+  imports: [ForButton, ForFieldset],
+  template: `<div forFieldset [disabled]="groupDisabled()">
+    <div forButton (activate)="count.update((n) => n + 1)">Custom</div>
+  </div>`,
+})
+class FieldsetCustomHost {
+  readonly groupDisabled = signal(false);
+  readonly count = signal(0);
+}
+
+@Component({
+  imports: [ForButton, ForFieldset],
+  template: `<div forFieldset [disabled]="outer()">
+    <div forFieldset [disabled]="inner()">
+      <button forButton (activate)="count.update((n) => n + 1)">Btn</button>
+    </div>
+  </div>`,
+})
+class NestedFieldsetHost {
+  readonly outer = signal(false);
+  readonly inner = signal(false);
   readonly count = signal(0);
 }
 
@@ -289,6 +329,131 @@ describe('ForButton', () => {
     });
   });
 
+  describe('fieldset disabled composition', () => {
+    it('reflects aria-disabled and data-disabled when the surrounding fieldset is disabled', async () => {
+      const r = renderHost(FieldsetNativeHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
+      expect(btn.getAttribute('data-disabled')).toBe('');
+    });
+
+    it('suppresses activate on click while the surrounding fieldset is disabled', async () => {
+      const r = renderHost(FieldsetNativeHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      btn.click();
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+
+      r.instance.groupDisabled.set(false);
+      await r.flush();
+
+      btn.click();
+      await r.flush();
+      expect(r.instance.count()).toBe(1);
+    });
+
+    it('never emits the native disabled attribute inside a disabled fieldset', async () => {
+      const r = renderHost(FieldsetNativeHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.hasAttribute('disabled')).toBe(false);
+      expect(btn.disabled).toBe(false);
+    });
+
+    it('a non-button host inside a disabled fieldset ignores Enter and still preventDefaults Space', async () => {
+      const r = renderHost(FieldsetCustomHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const div = r.query<HTMLElement>('[forButton]')!;
+      div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+
+      const down = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+      div.dispatchEvent(down);
+      await r.flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(r.instance.count()).toBe(0);
+
+      div.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+    });
+
+    it('a disabled fieldset suppresses data-hovered and data-pressed', async () => {
+      const r = renderHost(FieldsetCustomHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const div = r.query<HTMLElement>('[forButton]')!;
+      div.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse', bubbles: true }));
+      div.dispatchEvent(
+        new PointerEvent('pointerdown', { button: 0, pointerType: 'mouse', bubbles: true }),
+      );
+      await r.flush();
+
+      expect(div.hasAttribute('data-hovered')).toBe(false);
+      expect(div.hasAttribute('data-pressed')).toBe(false);
+    });
+
+    it('the button own disabled still wins when the fieldset is enabled', async () => {
+      const r = renderHost(FieldsetNativeHost);
+      r.instance.ownDisabled.set(true);
+      await r.flush();
+
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
+
+      btn.click();
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+    });
+
+    it('a disabled outer fieldset cannot be re-enabled by an inner one', async () => {
+      const r = renderHost(NestedFieldsetHost);
+      r.instance.outer.set(true);
+      r.instance.inner.set(true);
+      await r.flush();
+
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
+
+      r.instance.inner.set(false);
+      await r.flush();
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
+
+      btn.click();
+      await r.flush();
+      expect(r.instance.count()).toBe(0);
+
+      r.instance.outer.set(false);
+      await r.flush();
+      expect(btn.hasAttribute('aria-disabled')).toBe(false);
+
+      btn.click();
+      await r.flush();
+      expect(r.instance.count()).toBe(1);
+    });
+
+    it('a button outside any fieldset is unaffected', async () => {
+      const r = renderHost(NativeButtonHost);
+      await r.flush();
+
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.hasAttribute('aria-disabled')).toBe(false);
+      expect(btn.hasAttribute('data-disabled')).toBe(false);
+    });
+  });
+
   describe('zoneless reactivity', () => {
     it('fires activate on click and reflects disabled without Zone.js', async () => {
       const r = renderHost(ActivateHost);
@@ -307,6 +472,22 @@ describe('ForButton', () => {
       expect(r.instance.count()).toBe(1);
       expect(btn.hasAttribute('aria-disabled')).toBe(true);
       expect(btn.hasAttribute('data-disabled')).toBe(true);
+    });
+
+    it('reflects a fieldset disabled flip without Zone.js', async () => {
+      const r = renderHost(FieldsetNativeHost);
+      const btn = r.query<HTMLButtonElement>('[forButton]')!;
+      expect(btn.hasAttribute('aria-disabled')).toBe(false);
+
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+      expect(btn.getAttribute('aria-disabled')).toBe('true');
+      expect(btn.getAttribute('data-disabled')).toBe('');
+
+      r.instance.groupDisabled.set(false);
+      await r.flush();
+      expect(btn.hasAttribute('aria-disabled')).toBe(false);
+      expect(btn.hasAttribute('data-disabled')).toBe(false);
     });
   });
 });

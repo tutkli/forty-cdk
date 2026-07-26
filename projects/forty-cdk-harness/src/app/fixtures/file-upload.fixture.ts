@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { ForFileUpload, ForFileUploadInput, ForFileUploadTrigger } from 'forty-cdk/file-upload';
+import {
+  ForFileUpload,
+  ForFileUploadInput,
+  type ForFileUploadRejection,
+  ForFileUploadTrigger,
+} from 'forty-cdk/file-upload';
 
 import { queryFlag } from './_query-flag';
 
@@ -24,6 +29,7 @@ import { queryFlag } from './_query-flag';
     <output data-testid="files">{{ fileNames() }}</output>
     <output data-testid="count">{{ fileCount() }}</output>
     <output data-testid="rejected">{{ rejectedNames() }}</output>
+    <output data-testid="rejected-reasons">{{ rejectedReasons() }}</output>
   `,
 })
 export class FileUploadFixture {
@@ -35,6 +41,7 @@ export class FileUploadFixture {
   protected readonly fileNames = signal('');
   protected readonly fileCount = signal('0');
   protected readonly rejectedNames = signal('');
+  protected readonly rejectedReasons = signal('');
 
   protected onFiles(files: FileList): void {
     const names: string[] = [];
@@ -45,7 +52,8 @@ export class FileUploadFixture {
     this.fileCount.set(String(files.length));
   }
 
-  protected onRejected(files: File[]): void {
-    this.rejectedNames.set(files.map((file) => file.name).join(','));
+  protected onRejected(rejections: ForFileUploadRejection[]): void {
+    this.rejectedNames.set(rejections.map((r) => r.file.name).join(','));
+    this.rejectedReasons.set(rejections.map((r) => r.reason).join(','));
   }
 }

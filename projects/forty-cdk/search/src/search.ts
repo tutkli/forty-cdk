@@ -21,6 +21,13 @@ import { FOR_SEARCH_GROUP, type ForSearchContext } from './search-context';
  * void `<input>` can't contain the button as a descendant, so they coordinate
  * through the group registry rather than the DOM.
  *
+ * `Escape` clears a non-empty value, matching the native
+ * `<input type="search">` affordance. The key is consumed
+ * (`preventDefault()` + `stopPropagation()`) only when it actually clears:
+ * when the field is already empty — or disabled / read-only, where clearing is
+ * a no-op — `Escape` is left untouched so an enclosing overlay (Dialog,
+ * Popover, Combobox content) still receives its own dismissal.
+ *
  * @example
  * ```html
  * <div forSearchGroup>
@@ -53,6 +60,7 @@ import { FOR_SEARCH_GROUP, type ForSearchContext } from './search-context';
     '(input)': 'onInput($event)',
     '(compositionstart)': 'onCompositionStart()',
     '(compositionend)': 'onCompositionEnd()',
+    '(keydown)': 'onKeyDown($event)',
     '(blur)': 'onBlur()',
   },
 })
@@ -73,10 +81,15 @@ export class ForSearch
   }
 
   /**
-   * Resets the value to `''`. Typically called by `[forSearchClear]` when the
-   * user activates the clear button, but can also be called programmatically.
+   * Resets the value to `''`. No-op while the field is disabled or read-only —
+   * the guard lives here, so every caller (the `[forSearchClear]` button, the
+   * `Escape` key, a programmatic call, or the `[forSearchGroup]` context) gets
+   * the same behaviour.
    */
   clear(): void {
+    if (this.effectiveDisabled() || this.readonly()) {
+      return;
+    }
     this.value.set('');
     this.#host.nativeElement.value = '';
   }
@@ -87,5 +100,18 @@ export class ForSearch
    */
   focusInput(): void {
     this.#host.nativeElement.focus();
+  }
+
+  /** Clears a non-empty value on `Escape`, consuming the key only when it does. */
+  protected onKeyDown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || event.isComposing) {
+      return;
+    }
+    if (this.effectiveDisabled() || this.readonly() || this.value() === '') {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    this.clear();
   }
 }

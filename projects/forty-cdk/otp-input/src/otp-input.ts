@@ -335,9 +335,12 @@ export class ForOtpInput
     const raw = el.value;
     const { filtered, rejected } = this.#filter(raw);
     const clamped = filtered.slice(0, this.length());
-    if (el.value !== clamped) {
+    if (raw !== clamped) {
+      const max = clamped.length;
+      const start = this.#caretAfterFilter(raw, el.selectionStart ?? raw.length);
+      const end = this.#caretAfterFilter(raw, el.selectionEnd ?? raw.length);
       el.value = clamped;
-      el.setSelectionRange(clamped.length, clamped.length);
+      el.setSelectionRange(Math.min(start, max), Math.min(end, max));
     }
     this.#commit(clamped);
     this.#syncSelection();
@@ -387,6 +390,22 @@ export class ForOtpInput
       }
     }
     return { filtered, rejected };
+  }
+
+  #caretAfterFilter(raw: string, index: number): number {
+    const test = this.#allowed();
+    let consumed = 0;
+    let kept = 0;
+    for (const ch of raw) {
+      if (consumed >= index) {
+        break;
+      }
+      consumed += ch.length;
+      if (test(ch)) {
+        kept += ch.length;
+      }
+    }
+    return kept;
   }
 
   #syncSelection(): void {

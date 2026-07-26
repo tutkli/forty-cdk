@@ -498,6 +498,58 @@ describe('ForRadioGroup', () => {
       expect(radioOf(el, 'red').hasAttribute('disabled')).toBe(false);
     });
 
+    it('reflects group readonly on every radio as data-readonly, and clears it', async () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      await flush();
+
+      for (const radio of radioItems(el)) {
+        expect(radio.hasAttribute('data-readonly')).toBe(false);
+      }
+
+      fixture.componentInstance.groupReadonly.set(true);
+      await flush();
+      for (const radio of radioItems(el)) {
+        expect(radio.getAttribute('data-readonly')).toBe('');
+      }
+
+      fixture.componentInstance.groupReadonly.set(false);
+      await flush();
+      for (const radio of radioItems(el)) {
+        expect(radio.hasAttribute('data-readonly')).toBe(false);
+      }
+    });
+
+    it('never emits aria-readonly on role="radio" — the radiogroup root carries it', async () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.groupReadonly.set(true);
+      await flush();
+
+      expect(groupOf(el).getAttribute('aria-readonly')).toBe('true');
+      expect(groupOf(el).getAttribute('data-readonly')).toBe('');
+      for (const radio of radioItems(el)) {
+        expect(radio.hasAttribute('aria-readonly')).toBe(false);
+      }
+    });
+
+    it('keeps data-disabled and data-readonly orthogonal', async () => {
+      const { el, fixture, flush } = renderHost(RadioGroupHost);
+      fixture.componentInstance.options.set([
+        { value: 'red', label: 'Red', disabled: false },
+        { value: 'green', label: 'Green', disabled: true },
+        { value: 'blue', label: 'Blue', disabled: false },
+      ]);
+      await flush();
+
+      expect(radioOf(el, 'green').getAttribute('data-disabled')).toBe('');
+      expect(radioOf(el, 'green').hasAttribute('data-readonly')).toBe(false);
+
+      fixture.componentInstance.groupReadonly.set(true);
+      await flush();
+
+      expect(radioOf(el, 'red').getAttribute('data-readonly')).toBe('');
+      expect(radioOf(el, 'red').hasAttribute('data-disabled')).toBe(false);
+    });
+
     it('readonly group: arrow keys move focus but never change the value', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('red');

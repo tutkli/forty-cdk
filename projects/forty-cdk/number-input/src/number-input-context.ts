@@ -3,8 +3,8 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 /**
  * The coordination surface a `[forNumberInput]` exposes to its siblings. The
  * auxiliary `[forNumberInputIncrement]` / `[forNumberInputDecrement]` buttons
- * read it (through the group) to step the value and to reflect their disabled
- * state at the min / max bound.
+ * read it (through the group) to step the value, to mark the control touched,
+ * and to reflect their disabled state at the min / max bound.
  */
 export interface ForNumberInputContext {
   /** Current numeric value, or `null` while the field is empty. */
@@ -22,15 +22,26 @@ export interface ForNumberInputContext {
   /** `true` when the value sits at (or above) `max`. */
   readonly atMax: Signal<boolean>;
   /**
-   * Increase the value by `by` (defaults to `step`), clamping to `[min, max]`.
-   * No-op while disabled or read-only.
+   * Increase the value by `by` (defaults to `step`), snapping to the
+   * `min ?? 0` ± k·`step` grid and clamping to `[min, max]`. No-op while
+   * disabled or read-only.
    */
   increment(by?: number): void;
   /**
-   * Decrease the value by `by` (defaults to `step`), clamping to `[min, max]`.
-   * No-op while disabled or read-only.
+   * Decrease the value by `by` (defaults to `step`), snapping to the
+   * `min ?? 0` ± k·`step` grid and clamping to `[min, max]`. No-op while
+   * disabled or read-only.
    */
   decrement(by?: number): void;
+  /**
+   * Flip the `touched` model and emit the `touch` output. Called by the
+   * increment / decrement buttons on click: they are `tabindex="-1"`, so a
+   * pointer-only user never focuses the spinbutton and its `(blur)` handler
+   * never runs. Fires on every touch-producing interaction, so a gesture that
+   * blurs the spinbutton and then clicks a button emits `touch` twice; it is
+   * never once-guarded.
+   */
+  markTouched(): void;
 }
 
 /**

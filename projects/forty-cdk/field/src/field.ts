@@ -1,4 +1,4 @@
-import { computed, Directive, inject, isDevMode, signal } from '@angular/core';
+import { computed, Directive, effect, inject, isDevMode, type Signal, signal } from '@angular/core';
 
 import { adoptHostId, IdGenerator, FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
@@ -46,10 +46,21 @@ export class ForField implements ForFieldContext {
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   readonly #controlId = signal(this.#idGen.next('for-field-control'));
-  readonly #control = signal<FieldControlHandle | null>(null);
+  readonly #controls = signal<readonly FieldControlHandle[]>([]);
+  readonly #controlCount = computed(() => this.#controls().length);
+  readonly #control = computed<FieldControlHandle | null>(() => this.#controls().at(-1) ?? null);
   readonly #labelCount = signal(0);
   readonly #descriptionCount = signal(0);
   readonly #errorCount = signal(0);
+
+  constructor() {
+    if (isDevMode()) {
+      this.#warnOnDuplicateSlot(this.#controlCount, 'control', 'controlId');
+      this.#warnOnDuplicateSlot(this.#labelCount, '[forLabel]', 'labelId');
+      this.#warnOnDuplicateSlot(this.#descriptionCount, '[forFieldDescription]', 'descriptionId');
+      this.#warnOnDuplicateSlot(this.#errorCount, '[forFieldError]', 'errorId');
+    }
+  }
 
   /**
    * The element the field actually targets for `id` / `aria-*` association and
@@ -77,8 +88,13 @@ export class ForField implements ForFieldContext {
   readonly descriptionId = signal(this.#idGen.next('for-field-description'));
   /** Id of the error element. */
   readonly errorId = signal(this.#idGen.next('for-field-error'));
-  /** The currently registered control handle, or null. */
-  readonly control = this.#control.asReadonly();
+  /**
+   * The currently registered control handle, or null. A `[forField]` targets a
+   * single control; if several register, the last one wins and unregistering it
+   * falls back to the previous still-mounted one (mirroring the counted label /
+   * description / error slots). A duplicate emits a dev-mode warning.
+   */
+  readonly control = this.#control;
 
   /** Whether the registered control is currently invalid. */
   readonly invalid = computed(() => this.#control()?.invalid?.() ?? false);
@@ -120,9 +136,17 @@ export class ForField implements ForFieldContext {
     this.#errorCount() > 0 && this.invalid() ? this.errorId() : null,
   );
 
-  /** Register the control whose state the field reflects. */
+  /**
+   * Register the control whose state the field reflects. The field targets a
+   * single control — its `controlId` is one id, not an id list — so one control
+   * per `[forField]` is the supported shape; group several controls under a
+   * `[forFieldset]` instead. Registrations are tracked (mirroring the label /
+   * description / error slots), so unmounting one of several accidental
+   * duplicates never drops the association while another is still mounted; a
+   * duplicate emits a dev-mode warning.
+   */
   registerControl(handle: FieldControlHandle): void {
-    this.#control.set(handle);
+    this.#controls.update((controls) => [...controls, handle]);
     // Adopt a consumer-set id on the host (the host-is-the-control case). When
     // the control nominates a distinct labelled element it carries its own
     // `labelledElementId`, which `controlId` prefers — so a wrapper-host id, if
@@ -132,9 +156,7 @@ export class ForField implements ForFieldContext {
 
   /** Remove a previously registered control. */
   unregisterControl(handle: FieldControlHandle): void {
-    if (this.#control() === handle) {
-      this.#control.set(null);
-    }
+    this.#controls.update((controls) => controls.filter((c) => c !== handle));
   }
 
   /**
@@ -148,36 +170,44 @@ export class ForField implements ForFieldContext {
    */
   registerLabel(): () => void {
     this.#labelCount.update((n) => n + 1);
-    this.#warnDuplicateSlot(this.#labelCount(), 'forLabel', 'labelId');
     return () => this.#labelCount.update((n) => n - 1);
   }
 
   /** Register the description slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
   registerDescription(): () => void {
     this.#descriptionCount.update((n) => n + 1);
-    this.#warnDuplicateSlot(this.#descriptionCount(), 'forFieldDescription', 'descriptionId');
     return () => this.#descriptionCount.update((n) => n - 1);
   }
 
   /** Register the error slot; returns an unregister callback. See {@link registerLabel} for the counted single-instance-per-slot contract. */
   registerError(): () => void {
     this.#errorCount.update((n) => n + 1);
-    this.#warnDuplicateSlot(this.#errorCount(), 'forFieldError', 'errorId');
     return () => this.#errorCount.update((n) => n - 1);
   }
 
   /**
    * Dev-mode diagnostic: warn when more than one directive claims a slot that
    * maps to a single shared id, which would produce duplicate DOM ids and
-   * unstable aria wiring. No-op in production and for the first registration.
+   * unstable aria wiring. Sibling of the core `createSingleSlot` warning, in
+   * the same `[forty-cdk/<primitive>] A <owner> … a single <claimant>, but N
+   * are registered` shape.
+   *
+   * Evaluated from an `effect` rather than inline in the `register…` call so it
+   * reads the *settled* count for the change-detection pass: a structural swap
+   * that mounts the replacement before destroying the outgoing piece (two
+   * sibling `@if` blocks under one field) is not a duplicate and must not warn.
+   * Only ever created in dev mode.
    */
-  #warnDuplicateSlot(count: number, selector: string, idName: string): void {
-    if (isDevMode() && count > 1) {
-      console.warn(
-        `[forty-cdk/field] A [forField] supports a single [${selector}], but ${count} are registered. ` +
-          `They share one ${idName}, producing duplicate DOM ids and unstable aria wiring — keep one per field.`,
-      );
-    }
+  #warnOnDuplicateSlot(count: Signal<number>, slot: string, idName: string): void {
+    effect(() => {
+      const registered = count();
+      if (registered > 1) {
+        console.warn(
+          `[forty-cdk/field] A [forField] supports a single ${slot}, but ${registered} are registered. ` +
+            `They share one ${idName}, producing duplicate DOM ids and unstable aria wiring — keep one per field.`,
+        );
+      }
+    });
   }
 
   /**

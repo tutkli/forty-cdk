@@ -8,7 +8,9 @@ import { injectNumberInputGroup } from './number-input-context';
  * (the directive forces `type="button"` to prevent form submission). It stays
  * `tabindex="-1"` — focus belongs on the spinbutton input, which carries the
  * full keyboard map — and reflects `[disabled]` + `data-disabled` when the
- * value is at `max` (or the control is disabled / read-only).
+ * value is at `max` (or the control is disabled / read-only). A click also marks
+ * the spinbutton touched, so a pointer-only user still engages touched-gated
+ * error display.
  *
  * Takes the uniform `ariaLabel` input so consumers can name it (e.g.
  * "Increase quantity").
@@ -46,6 +48,11 @@ export class ForNumberInputIncrement {
   }
 
   protected step(): void {
-    this.group.field()?.increment();
+    const field = this.group.field();
+    if (!field) {
+      return;
+    }
+    field.increment();
+    field.markTouched();
   }
 }

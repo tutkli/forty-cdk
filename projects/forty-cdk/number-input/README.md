@@ -69,6 +69,8 @@ Keyboard-only (no buttons, no group):
 <!-- value() === 1234.5 → displayed "$1,234.50", aria-valuenow="1234.5" -->
 ```
 
+> **Percent style needs a matching `step`.** With `{ style: 'percent' }` the model value is the fraction Intl formats from (`0.5` displays as `"50%"`), while `step` still defaults to `1`. Because stepping snaps to the `min ?? 0` ± k·`step` grid, ArrowUp from `0.5` would jump to `1` (100%). Set `[step]="0.01"` so one arrow press moves one percentage point. `step` is never derived from `formatOptions` — the grid is always exactly what you bind.
+
 ### Field composition
 
 Drop the spinbutton inside a `[forField]` and it auto-associates with the label, description, and error region — no `id` / `aria-*` wiring by hand.
@@ -116,7 +118,7 @@ export class DemoOrder {
 | `locale`                                                               | `input<string \| null>`                   | BCP 47 locale for parsing and formatting. Defaults to the runtime locale.<br>**Default:** —                           |
 | `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                          | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** —                                        |
 | `name`                                                                 | `input<string>`                           | Mounts a hidden `<input>` carrying the **raw** number for native form submission.<br>**Default:** —                   |
-| `touched`                                                              | `model<boolean>`                          | Set to `true` on blur.<br>**Default:** —                                                                              |
+| `touched`                                                              | `model<boolean>`                          | Set to `true` on blur, and on an increment / decrement button click.<br>**Default:** —                                |
 
 | Data attribute  | Values                                       |
 | --------------- | -------------------------------------------- |
@@ -130,7 +132,7 @@ export class DemoOrder {
 
 ### Stepper buttons
 
-Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform `ariaLabel` input for their accessible name and stay `tabindex="-1"` (focus belongs on the spinbutton). They reflect `[disabled]` + `data-disabled` at the bound (`max` for increment, `min` for decrement) or when the control is disabled / read-only.
+Both `[forNumberInputIncrement]` / `[forNumberInputDecrement]` take the uniform `ariaLabel` input for their accessible name and stay `tabindex="-1"` (focus belongs on the spinbutton). They reflect `[disabled]` + `data-disabled` at the bound (`max` for increment, `min` for decrement) or when the control is disabled / read-only. Clicking either button also marks the spinbutton touched — the buttons are outside the tab order, so a pointer-only user would otherwise never blur the input and never engage touched-gated error display.
 
 > Set the accessible name with the `ariaLabel` **input** (`ariaLabel="Increase"`), not the native `aria-label` attribute — like every forty-cdk primitive, the directive host-binds `aria-label` from that input and clears it when empty.
 
@@ -161,6 +163,8 @@ The following shortcuts implement the Spinbutton APG keyboard map.
 | typing                  | Numeric characters parsed live; clamped on blur / Enter / step. |
 
 Stepping from an empty field lands on the clamped baseline (`min ?? 0`).
+
+Values live on the `min ?? 0` ± k·`step` grid. A value already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a value **off** the grid — a server-supplied `37.4` with `[step]="5"`, say — lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, exactly as the platform's `HTMLInputElement.stepUp()` / `stepDown()` behave. So ArrowUp from `0.55` with `[step]="1"` gives `1`, not `1.55`, and one arrow press is all it takes to correct an off-grid value.
 
 ## Accessibility
 

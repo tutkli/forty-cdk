@@ -5,9 +5,11 @@ import {
   DestroyRef,
   Directive,
   DOCUMENT,
+  effect,
   ElementRef,
   inject,
   input,
+  isDevMode,
   model,
   output,
   PLATFORM_ID,
@@ -23,12 +25,14 @@ import {
   type PointerDragSession,
   type WritingDirection,
   snapToStep,
+  stepOnGrid,
   roundToStepPrecision,
   injectTextDirection,
 } from 'forty-cdk/core';
 import {
   FOR_SLIDER_CONTEXT,
   type ForSliderContext,
+  type ForSliderThumbBounds,
   type ForSliderThumbHandle,
   type SliderArrowKey,
 } from './slider-context';
@@ -118,15 +122,20 @@ export class ForSlider
       typeof value === 'number' ? value : undefined,
   });
   /**
-   * Increment values snap to. Fractional steps (e.g. `0.1`) are supported: the
-   * snapped value is rounded to the step's decimal precision so float noise
-   * (`0.1 * 3`) can't spuriously emit `valueCommit` or leak into
-   * `aria-valuenow`.
+   * Increment values snap to. Values live on the `min` ± k·`step` grid: arrow
+   * keys move to the next grid point in the direction of travel, so a value
+   * that starts off the grid snaps onto it instead of taking an oversized first
+   * jump. Fractional steps (e.g. `0.1`) are supported: the snapped value is
+   * rounded to the step's decimal precision so float noise (`0.1 * 3`) can't
+   * spuriously emit `valueCommit` or leak into `aria-valuenow`.
    */
   readonly step = input<number>(1);
   /**
    * Step used for PageUp / PageDown. Defaults to 10× `step`. The default is
-   * read from `provideForSliderDefaults` for the surrounding scope.
+   * read from `provideForSliderDefaults` for the surrounding scope. It applies
+   * only from a value already on the `min` ± k·`step` grid — from an off-grid
+   * value the key lands on the adjacent grid point instead, matching the
+   * platform `stepUp()` / `stepDown()` rule.
    */
   readonly largeStep = input<number>(this.#defaults.largeStep);
 
@@ -197,6 +206,34 @@ export class ForSlider
   });
 
   /**
+   * Per-thumb reachable range — `[min, max]` narrowed by the adjacent thumbs
+   * and the `minStepsBetweenThumbs` gap, rounded to the step's decimal
+   * precision. Drives both the clamp applied on every value write and the
+   * `aria-valuemin` / `aria-valuemax` each thumb reports, so assistive tech
+   * never announces a range the thumb cannot reach. An over-constrained
+   * configuration collapses the range to a single point instead of inverting
+   * it.
+   */
+  readonly thumbBounds = computed<readonly ForSliderThumbBounds[]>(() => {
+    const values = this.value();
+    const min = this.minValue();
+    const max = this.maxValue();
+    const step = this.step();
+    const gap = this.minStepsBetweenThumbs() * step;
+    return values.map((_, index) => {
+      let lo = min;
+      let hi = max;
+      if (index > 0) {
+        lo = Math.max(lo, roundToStepPrecision(values[index - 1]! + gap, step));
+      }
+      if (index < values.length - 1) {
+        hi = Math.min(hi, roundToStepPrecision(values[index + 1]! - gap, step));
+      }
+      return { min: lo, max: hi < lo ? lo : hi };
+    });
+  });
+
+  /**
    * Range start fraction. Visual semantics: in single-thumb mode the range
    * always grows from the min edge to the thumb (`0 → fraction[0]`); in
    * multi-thumb mode it spans `min(values) → max(values)`. `inverted` is
@@ -246,6 +283,35 @@ export class ForSlider
       });
       this.#destroyRef.onDestroy(() => this.#pointerSession?.destroy());
     }
+    if (isDevMode()) {
+      let warnedBounds = false;
+      let warnedStep = false;
+      effect(() => {
+        const min = this.minValue();
+        const max = this.maxValue();
+        const step = this.step();
+        if (min <= max) {
+          warnedBounds = false;
+        } else if (!warnedBounds) {
+          warnedBounds = true;
+          console.warn(
+            `[forty-cdk/slider] [min]=${min} is greater than [max]=${max}. Every thumb pins to the ` +
+              `inverted bound and its aria-valuemin / aria-valuemax collapse to a single point, so the ` +
+              `slider is not operable. Set [min] <= [max].`,
+          );
+        }
+        if (step > 0) {
+          warnedStep = false;
+        } else if (!warnedStep) {
+          warnedStep = true;
+          console.warn(
+            `[forty-cdk/slider] [step]=${step} must be greater than 0. A non-positive step disables ` +
+              `grid snapping and makes arrow-key adjustment a no-op (each bump adds 0); a negative step ` +
+              `also inverts the [minStepsBetweenThumbs] gap. Use a positive [step].`,
+          );
+        }
+      });
+    }
   }
 
   setValueAt(index: number, raw: number): void {
@@ -256,7 +322,7 @@ export class ForSlider
     if (index < 0 || index >= current.length) {
       return;
     }
-    const next = this.#clampForIndex(current, index, raw);
+    const next = this.#clampForIndex(index, raw);
     if (next === current[index]) {
       return;
     }
@@ -279,8 +345,12 @@ export class ForSlider
     if (direction === 0) {
       return;
     }
-    const stepUnit = large ? this.largeStep() : this.step();
-    const target = current[index]! + direction * stepUnit;
+    const target = stepOnGrid(current[index]!, {
+      step: this.step(),
+      direction,
+      origin: this.minValue(),
+      by: large ? this.largeStep() : this.step(),
+    });
     this.setValueAt(index, target);
   }
 
@@ -374,7 +444,7 @@ export class ForSlider
     const hit = this.#resolveThumb(event.target);
     if (hit) {
       this.#dragIndex = hit.index();
-      hit.host.focus();
+      this.#engageThumb(event, hit.host);
       return true;
     }
     if (!trackEl || !(event.target instanceof Node) || !trackEl.contains(event.target)) {
@@ -387,7 +457,22 @@ export class ForSlider
     }
     this.#dragIndex = index;
     this.setValueAt(index, target);
+    this.#engageThumb(event, this.#thumbHostAt(index));
     return true;
+  }
+
+  #thumbHostAt(index: number): HTMLElement | null {
+    for (const handle of this.#thumbs.items()) {
+      if (handle.index() === index) {
+        return handle.host;
+      }
+    }
+    return null;
+  }
+
+  #engageThumb(event: PointerEvent, host: HTMLElement | null): void {
+    event.preventDefault();
+    host?.focus();
   }
 
   #onDragMove(event: PointerEvent): void {
@@ -410,10 +495,16 @@ export class ForSlider
     return this.#trackEl();
   }
 
+  /**
+   * Widened to `public` so `ForSliderContext` consumers can mark the control
+   * touched; the behaviour is the base's. Fires on every touch-producing
+   * interaction — drag end and focus leaving the slider region — so a gesture
+   * that does both emits `touch` twice. `touched` / `data-touched` /
+   * `(touchedChange)` only change on the first, and Signal Forms'
+   * `markAsTouched()` is idempotent.
+   */
   override markTouched(): void {
-    if (!this.touched()) {
-      super.markTouched();
-    }
+    super.markTouched();
   }
 
   /**
@@ -468,22 +559,14 @@ export class ForSlider
     this.markTouched();
   }
 
-  /** Snap, clamp, and (multi-thumb) keep within neighbor bounds. */
-  #clampForIndex(values: readonly number[], index: number, raw: number): number {
-    const min = this.minValue();
-    const max = this.maxValue();
-    const step = this.step();
-    const gap = this.minStepsBetweenThumbs() * step;
-    const snapped = snapToStep(raw, step, min);
-    let lo = min;
-    let hi = max;
-    if (index > 0) {
-      lo = Math.max(lo, roundToStepPrecision(values[index - 1]! + gap, step));
+  /** Snap to the step grid, then clamp into the thumb's reachable range. */
+  #clampForIndex(index: number, raw: number): number {
+    const snapped = snapToStep(raw, this.step(), this.minValue());
+    const bounds = this.thumbBounds()[index];
+    if (!bounds) {
+      return snapped;
     }
-    if (index < values.length - 1) {
-      hi = Math.min(hi, roundToStepPrecision(values[index + 1]! - gap, step));
-    }
-    return snapped < lo ? lo : snapped > hi ? hi : snapped;
+    return snapped < bounds.min ? bounds.min : snapped > bounds.max ? bounds.max : snapped;
   }
 
   /**

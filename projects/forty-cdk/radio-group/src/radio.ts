@@ -27,6 +27,12 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
  * The directive reflects ARIA + roving tabindex for the WAI-ARIA Radio
  * pattern: only the selected radio (or the first enabled one when nothing
  * is selected) gets `tabindex=0`.
+ *
+ * A read-only group is reflected here as the boolean `data-readonly`
+ * styling hook only. `aria-readonly` is not a supported property of
+ * `role="radio"` (WAI-ARIA 1.2 lists it on `radiogroup`, not `radio`), so
+ * the ARIA announcement stays on the `[forRadioGroup]` root, which does
+ * support it.
  */
 @Directive({
   selector: '[forRadio]',
@@ -41,6 +47,7 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
     '[attr.tabindex]': 'tabindex()',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'group.readonly() ? "" : null',
     '[attr.data-orientation]': 'group.orientation()',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',

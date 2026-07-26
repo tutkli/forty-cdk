@@ -69,3 +69,79 @@ export function snapToStep(raw: number, step: number, min: number): number {
     Math.max(decimalPlaces(step), decimalPlaces(min)),
   );
 }
+
+/** Configuration for a single {@link stepOnGrid} move. */
+export interface StepOnGridOptions {
+  /**
+   * Grid spacing. The grid is `origin ± k · step`. A non-positive or
+   * non-finite `step` disables snapping (see {@link stepOnGrid}).
+   */
+  readonly step: number;
+  /** Direction of travel: `1` toward `+∞`, `-1` toward `-∞`. */
+  readonly direction: 1 | -1;
+  /**
+   * Grid origin — the value the grid is measured from, normally the control's
+   * `min`. Defaults to `0`.
+   */
+  readonly origin?: number;
+  /**
+   * Distance travelled from a value that is already on the grid (a page step,
+   * or a caller-supplied amount finer than `step`). Defaults to `step`. It is
+   * ignored when the value is off the grid.
+   */
+  readonly by?: number;
+}
+
+/**
+ * Moves `value` one grid position in `direction` along the
+ * `origin ± k · step` grid, matching the platform `stepUp()` / `stepDown()`
+ * rule so a spinbutton and a slider answer the same key the same way:
+ *
+ * - **Off the grid** → the nearest grid point strictly in `direction`
+ *   (`0.55` with `step: 1` gives `1` up / `0` down), so an arbitrary consumer
+ *   value is corrected onto the grid instead of carrying its offset forever.
+ *   `by` is deliberately ignored here — a page-sized jump from an off-grid
+ *   value still only lands on the adjacent grid point, exactly as
+ *   `HTMLInputElement.stepUp(n)` behaves.
+ * - **On the grid** → `value ± by` (`1` with `step: 1` gives `2`, never `1`),
+ *   so a `by` finer than `step` keeps its own precision.
+ *
+ * The result is rounded to the greatest decimal precision of `step`, `by` and
+ * `origin`, so repeated fractional stepping cannot accumulate float noise
+ * (`0.1 + 0.2` stepped up by `0.1` yields `0.4`, not `0.4000000000000001`) and
+ * a value carrying that noise is still recognised as on-grid. A `by` of `0`
+ * returns `value` unchanged; a non-positive or non-finite `step` (and a
+ * non-finite `value` / `origin`) disables snapping and falls back to plain
+ * `value + direction · by` at the same precision. Clamping to an outer range
+ * is the caller's responsibility — pass the result to {@link clamp}. Use
+ * {@link snapToStep} instead when the input is a continuous measurement with
+ * no direction of travel (a pointer drag), which snaps to the *nearest* grid
+ * point rather than the next one.
+ */
+export function stepOnGrid(value: number, options: StepOnGridOptions): number {
+  const { step, direction, origin = 0, by = step } = options;
+  const precision = Math.max(decimalPlaces(step), decimalPlaces(by), decimalPlaces(origin));
+  if (by === 0) {
+    return value;
+  }
+  if (
+    !(step > 0) ||
+    !Number.isFinite(step) ||
+    !Number.isFinite(value) ||
+    !Number.isFinite(origin)
+  ) {
+    return roundToDecimals(value + direction * by, precision);
+  }
+  const index = (value - origin) / step;
+  if (!Number.isFinite(index)) {
+    return roundToDecimals(value + direction * by, precision);
+  }
+  const onGrid =
+    roundToDecimals(Math.round(index) * step + origin, precision) ===
+    roundToDecimals(value, precision);
+  if (onGrid) {
+    return roundToDecimals(value + direction * by, precision);
+  }
+  const gridIndex = direction > 0 ? Math.ceil(index) : Math.floor(index);
+  return roundToDecimals(gridIndex * step + origin, precision);
+}

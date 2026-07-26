@@ -10,14 +10,23 @@ export interface ForFileUploadContext {
   readonly multiple: Signal<boolean>;
   readonly directory: Signal<boolean>;
   readonly disabled: Signal<boolean>;
-  /** Registers the native `<input type="file">` so the root can open the dialog and sync dropped files. */
+  /**
+   * Registers the native `<input type="file">` so the root can open the dialog
+   * and sync dropped files. Pair with {@link ForFileUploadContext.unregisterInput}
+   * so an unmounted input is dropped instead of leaving the root holding a
+   * detached element.
+   */
   registerInput(el: HTMLInputElement): void;
+  /** Removes a previously registered native `<input type="file">` (no-op unless it is registered). */
+  unregisterInput(el: HTMLInputElement): void;
   /** Opens the native file chooser dialog by programmatically clicking the registered input. */
   openFileDialog(): void;
   /**
-   * Filters the given `FileList` against `accept`, syncs the registered input's
-   * `files` for native form submission, then emits `filesChange` (accepted) and
-   * `filesRejected` (rejected). Shared by the drag&drop and dialog paths.
+   * Filters the given `FileList` against `accept` and against the single-file
+   * cap of `multiple="false"`, syncs the registered input's `files` for native
+   * form submission, then emits `filesChange` (accepted) and `filesRejected`
+   * (every refused file plus the constraint that refused it). Shared by the
+   * drag&drop and dialog paths.
    */
   acceptFiles(files: FileList): void;
 }
