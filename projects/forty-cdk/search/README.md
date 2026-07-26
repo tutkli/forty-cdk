@@ -42,6 +42,21 @@ standalone `[forSearch]` (no clear button) needs no group.
 `[formField]` auto-wires the `FormValueControl<string>` contract — `required`,
 `invalid`, `touched`, and the value itself flow in and out without extra glue.
 
+### Command palette
+
+```html
+@if (paletteOpen()) {
+<div forDialog ariaLabel="Command palette" (dismiss)="paletteOpen.set(false)">
+  <input forSearch [(value)]="query" [clearOnEscape]="false" placeholder="Type a command…" />
+  <!-- results… -->
+</div>
+}
+```
+
+When the search box **is** the overlay's only content, `[clearOnEscape]="false"`
+makes the first `Escape` dismiss the palette instead of clearing the query
+first — see [Keyboard interaction](#keyboard-interaction) below.
+
 ## Keyboard interaction
 
 | Key      | Behaviour                                                                         |
@@ -55,6 +70,20 @@ inside a Dialog, Popover, or Combobox panel does not swallow that overlay's own
 Escape dismissal. A non-empty search box inside an overlay therefore takes two
 presses: the first clears the field, the second closes the overlay.
 
+That is the right default for a searchbox alongside other content, and the wrong
+one for a **command palette**, where the search box is the dialog's only content
+and one `Escape` should close it. Opt out with `[clearOnEscape]="false"`: the
+directive then neither acts on nor consumes `Escape`, so the enclosing
+dismissable layer sees it on the first press even with a non-empty query.
+
+```html
+<input forSearch [(value)]="query" [clearOnEscape]="false" />
+```
+
+The propagation rule for an empty, disabled, or read-only field is unchanged —
+`Escape` passes through untouched in all three cases regardless of
+`clearOnEscape`.
+
 ## API
 
 ### `ForSearch`
@@ -67,6 +96,10 @@ auto-wires with `[formField]` and auto-associates inside a `[forField]`.
 `clear()` is a no-op while the field is disabled or read-only, whichever caller
 invokes it — the clear button, the `Escape` key, or your own code through the
 `[forSearchGroup]` context.
+
+| Input           | Type      | Default | Description                                                                                                    |
+| --------------- | --------- | ------- | -------------------------------------------------------------------------------------------------------------- |
+| `clearOnEscape` | `boolean` | `true`  | Whether `Escape` clears a non-empty value before propagating. Set to `false` for command-palette compositions. |
 
 | Data attribute  | Values                                  |
 | --------------- | --------------------------------------- |

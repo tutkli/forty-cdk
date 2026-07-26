@@ -1,4 +1,4 @@
-import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
+import { booleanAttribute, DestroyRef, Directive, ElementRef, inject, input } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import { TextValueControlBase } from 'forty-cdk/core';
@@ -26,7 +26,10 @@ import { FOR_SEARCH_GROUP, type ForSearchContext } from './search-context';
  * (`preventDefault()` + `stopPropagation()`) only when it actually clears:
  * when the field is already empty — or disabled / read-only, where clearing is
  * a no-op — `Escape` is left untouched so an enclosing overlay (Dialog,
- * Popover, Combobox content) still receives its own dismissal.
+ * Popover, Combobox content) still receives its own dismissal. Set
+ * `[clearOnEscape]="false"` to opt out entirely, so the first `Escape` reaches
+ * the enclosing layer even with a non-empty query — the command-palette shape,
+ * where the search box is the overlay's only content.
  *
  * @example
  * ```html
@@ -70,6 +73,16 @@ export class ForSearch
 {
   readonly #host = inject<ElementRef<HTMLInputElement>>(ElementRef);
 
+  /**
+   * Whether `Escape` clears a non-empty value before propagating. Defaults to
+   * `true`, the native `<input type="search">` affordance. Set it to `false`
+   * for a command palette, where the search box is the enclosing overlay's only
+   * content and one `Escape` should dismiss it rather than clear the query
+   * first: the directive then neither acts on nor consumes the key, so the
+   * enclosing dismissable layer sees it on the first press.
+   */
+  readonly clearOnEscape = input(true, { transform: booleanAttribute });
+
   constructor() {
     super();
 
@@ -104,7 +117,7 @@ export class ForSearch
 
   /** Clears a non-empty value on `Escape`, consuming the key only when it does. */
   protected onKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || event.isComposing) {
+    if (event.key !== 'Escape' || event.isComposing || !this.clearOnEscape()) {
       return;
     }
     if (this.effectiveDisabled() || this.readonly() || this.value() === '') {
