@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, injectHasFocusableContent, hostId } from 'forty-cdk/core';
+import { registerHandle, injectHasFocusableContent, hostId, hostLabelledBy } from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
 /**
@@ -56,7 +56,7 @@ export class ForTabsContent {
   readonly #hasFocusableContent = injectHasFocusableContent();
 
   readonly selected = computed(() => this.group.isSelected(this.value()));
-  protected readonly labelledBy = computed(() => this.group.triggerIdFor(this.value()));
+  protected readonly labelledBy = hostLabelledBy(() => this.group.triggerIdFor(this.value()));
 
   /**
    * APG tabindex: `0` only when the panel has no focusable content of its

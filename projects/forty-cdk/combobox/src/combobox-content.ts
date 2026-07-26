@@ -1,6 +1,11 @@
 import { Directive, effect, ElementRef, inject, isDevMode } from '@angular/core';
 
-import { registerHandle, injectOverlayShell, type OverlayShellConfig } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostLabelledBy,
+  injectOverlayShell,
+  type OverlayShellConfig,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -51,7 +56,7 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.role]': 'hasList() ? null : "listbox"',
     '[attr.tabindex]': 'hasList() ? null : "-1"',
     '[id]': 'ctx.contentId()',
-    '[attr.aria-labelledby]': 'hasList() ? null : (ctx.ariaLabel() ? null : ctx.inputId())',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'hasList() ? null : ctx.ariaLabel()',
     '[attr.aria-multiselectable]': 'hasList() ? null : (ctx.multiple() ? "true" : null)',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
@@ -63,6 +68,10 @@ export class ForComboboxContent {
 
   /** When a `[forComboboxList]` is registered the listbox semantics live there, not here. */
   protected readonly hasList = this.ctx.hasList;
+
+  protected readonly labelledBy = hostLabelledBy(() =>
+    this.hasList() || this.ctx.ariaLabel() ? null : this.ctx.inputId(),
+  );
 
   constructor() {
     const ctx = this.ctx;

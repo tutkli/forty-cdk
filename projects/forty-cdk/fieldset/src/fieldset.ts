@@ -10,6 +10,7 @@ import {
 
 import {
   reflectDisabled,
+  hostLabelledBy,
   IdGenerator,
   FOR_FIELDSET_CONTEXT,
   type ForFieldsetContext,
@@ -99,11 +100,12 @@ export class ForFieldset implements ForFieldsetContext {
   protected readonly roleAttr = computed(() => (this.isNativeFieldset() ? null : 'group'));
 
   /**
-   * Resolved `aria-labelledby`: the legend id on a non-`<fieldset>` element when
-   * a legend is registered, else null (a native `<fieldset>`/`<legend>` groups
-   * implicitly and needs none).
+   * Resolved `aria-labelledby`: a consumer-set static value when present, else
+   * the legend id on a non-`<fieldset>` element when a legend is registered,
+   * else null (a native `<fieldset>`/`<legend>` groups implicitly and needs
+   * none).
    */
-  protected readonly labelledBy = computed(() =>
+  protected readonly labelledBy = hostLabelledBy(() =>
     !this.isNativeFieldset() && this.#legends() > 0 ? this.legendId() : null,
   );
 

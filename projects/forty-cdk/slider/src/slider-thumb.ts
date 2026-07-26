@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { registerHandle, hostLabelledBy } from 'forty-cdk/core';
 import {
   injectSliderContext,
   type ForSliderThumbBounds,
@@ -40,7 +40,7 @@ import {
     '[attr.aria-valuetext]': 'ariaValueText()',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.aria-label]': 'label() || null',
-    '[attr.aria-labelledby]': 'labelledby() || null',
+    '[attr.aria-labelledby]': 'ariaLabelledBy()',
     '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
@@ -66,7 +66,15 @@ export class ForSliderThumb {
    * instead if the label lives elsewhere in the DOM.
    */
   readonly label = input<string>('');
+
+  /**
+   * Id of an element that labels this thumb, mirrored as `aria-labelledby`.
+   * A consumer-set **static** `aria-labelledby` on the host wins over this
+   * input — write one or the other, never both.
+   */
   readonly labelledby = input<string>('');
+
+  protected readonly ariaLabelledBy = hostLabelledBy(() => this.labelledby() || null);
 
   /**
    * Optional human-readable value override (e.g. "$1,200" instead of "1200").

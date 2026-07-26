@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, injectHasFocusableContent, hostId } from 'forty-cdk/core';
+import { registerHandle, injectHasFocusableContent, hostId, hostLabelledBy } from 'forty-cdk/core';
 import { injectStepperContext } from './stepper-context';
 
 /**
@@ -58,8 +58,11 @@ export class ForStepperContent {
   /** True when this panel corresponds to the currently selected step. */
   readonly current = computed(() => this.ctx.isCurrent(this.index()));
 
-  /** Id of the trigger that labels this panel (`aria-labelledby`). */
-  protected readonly labelledBy = computed(() => this.ctx.triggerIdFor(this.index()));
+  /**
+   * Resolved `aria-labelledby`: a consumer-set static value when present, else
+   * the id of the trigger that labels this panel.
+   */
+  protected readonly labelledBy = hostLabelledBy(() => this.ctx.triggerIdFor(this.index()));
 
   /**
    * APG tabindex: `'0'` only when in interactive mode and the panel has no

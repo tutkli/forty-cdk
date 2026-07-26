@@ -1,6 +1,8 @@
 import { DestroyRef, effect, ElementRef, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
+import { composeIds } from '../host-aria/host-aria';
+
 /**
  * A form control's contribution to its surrounding `[forField]`. The control
  * exposes the signals the field needs to reflect state (`data-invalid` etc.)
@@ -208,24 +210,6 @@ export function injectFieldWiring(handle: Omit<FieldControlHandle, 'host'> = {})
       clearFieldAttrs(previousTarget, ownsId, field.controlId(), consumerDescribedBy);
     }
   });
-}
-
-/**
- * Composes the consumer's own `aria-describedby` (captured before the field
- * touched the target) with the field's description / error ids: the consumer's
- * ids first, then any field id not already present. Returns `null` when both
- * sides are empty so the attribute is removed rather than set to `""`.
- */
-function composeIds(consumer: string | null, fieldIds: string | null): string | null {
-  if (!consumer) {
-    return fieldIds;
-  }
-  if (!fieldIds) {
-    return consumer;
-  }
-  const seen = new Set(consumer.split(/\s+/).filter(Boolean));
-  const extra = fieldIds.split(/\s+/).filter((id) => id && !seen.has(id));
-  return extra.length > 0 ? `${consumer} ${extra.join(' ')}` : consumer;
 }
 
 /**

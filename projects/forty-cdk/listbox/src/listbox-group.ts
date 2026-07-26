@@ -1,5 +1,7 @@
 import { Directive, signal } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
+
 /**
  * Optional grouping wrapper inside a `ForListbox`. Renders `role="group"`
  * and references the descendant `[forListboxGroupLabel]` (if any) via
@@ -12,7 +14,7 @@ import { Directive, signal } from '@angular/core';
   exportAs: 'forListboxGroup',
   host: {
     role: 'group',
-    '[attr.aria-labelledby]': 'labelId() || null',
+    '[attr.aria-labelledby]': 'labelledBy()',
   },
 })
 export class ForListboxGroup {
@@ -20,6 +22,8 @@ export class ForListboxGroup {
 
   /** The id of the registered group label (or `null` if none). */
   readonly labelId = this.#labelId.asReadonly();
+
+  protected readonly labelledBy = hostLabelledBy(() => this.labelId());
 
   /** Called by `ForListboxGroupLabel` on mount. */
   registerLabel(id: string): void {

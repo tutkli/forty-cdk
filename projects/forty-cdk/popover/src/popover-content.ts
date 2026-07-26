@@ -1,6 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { toFloatingPositioner, injectOverlayShell } from 'forty-cdk/core';
+import {
+  toFloatingPositioner,
+  hostDescribedBy,
+  hostLabelledBy,
+  injectOverlayShell,
+} from 'forty-cdk/core';
 import { injectPopoverContext } from './popover-context';
 
 /**
@@ -32,8 +37,8 @@ import { injectPopoverContext } from './popover-context';
     role: 'dialog',
     '[id]': 'ctx.contentId()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
-    '[attr.aria-labelledby]': 'ctx.labelledBy()',
-    '[attr.aria-describedby]': 'ctx.describedBy()',
+    '[attr.aria-labelledby]': 'labelledBy()',
+    '[attr.aria-describedby]': 'describedBy()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-reduced-motion]': 'ctx.reducedMotion() ? "" : null',
     tabindex: '-1',
@@ -41,6 +46,9 @@ import { injectPopoverContext } from './popover-context';
 })
 export class ForPopoverContent {
   protected readonly ctx = injectPopoverContext('ForPopoverContent');
+
+  protected readonly labelledBy = hostLabelledBy(() => this.ctx.labelledBy());
+  protected readonly describedBy = hostDescribedBy(() => this.ctx.describedBy());
 
   constructor() {
     this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);

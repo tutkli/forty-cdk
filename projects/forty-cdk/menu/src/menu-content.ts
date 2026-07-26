@@ -1,7 +1,8 @@
-import { computed, Directive, ElementRef, inject } from '@angular/core';
+import { Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
+  hostLabelledBy,
   injectOverlayShell,
   injectMenuContext,
   isHoverCapablePointer,
@@ -61,12 +62,7 @@ export class ForMenuContent {
   protected readonly ctx = injectMenuContext('ForMenuContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  readonly #staticLabelledBy = this.#host.nativeElement.getAttribute('aria-labelledby');
-
-  protected readonly labelledBy = computed(() => {
-    if (this.#staticLabelledBy) {
-      return this.#staticLabelledBy;
-    }
+  protected readonly labelledBy = hostLabelledBy(() => {
     if (this.ctx.ariaLabel() || this.ctx.triggerLabelsMenu === false) {
       return null;
     }

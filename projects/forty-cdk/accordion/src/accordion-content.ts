@@ -1,5 +1,6 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
+import { hostLabelledBy } from 'forty-cdk/core';
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
 /**
@@ -22,7 +23,7 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   host: {
     '[id]': 'item.contentId()',
     '[attr.role]': '"region"',
-    '[attr.aria-labelledby]': 'item.triggerId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-hidden]': 'item.expanded() ? null : "true"',
     '[attr.inert]': 'item.expanded() ? null : ""',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
@@ -33,6 +34,8 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
 export class ForAccordionContent {
   protected readonly parent = injectAccordionContext('ForAccordionContent');
   protected readonly item = injectAccordionItemContext('ForAccordionContent');
+
+  protected readonly labelledBy = hostLabelledBy(() => this.item.triggerId());
 
   constructor() {
     this.item.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);

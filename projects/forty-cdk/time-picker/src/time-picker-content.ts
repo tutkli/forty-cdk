@@ -1,6 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, injectModalShell, injectOverlayShell } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostLabelledBy,
+  injectModalShell,
+  injectOverlayShell,
+} from 'forty-cdk/core';
 import { injectTimePickerContext } from './time-picker-context';
 
 /**
@@ -26,7 +31,7 @@ import { injectTimePickerContext } from './time-picker-context';
     role: 'listbox',
     tabindex: '-1',
     '[id]': 'ctx.overlay.contentId()',
-    '[attr.aria-labelledby]': 'ctx.ariaLabel() ? null : ctx.overlay.triggerId()',
+    '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'ctx.ariaLabel()',
     '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
@@ -37,6 +42,10 @@ import { injectTimePickerContext } from './time-picker-context';
 export class ForTimePickerContent {
   protected readonly ctx = injectTimePickerContext('ForTimePickerContent');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  protected readonly labelledBy = hostLabelledBy(() =>
+    this.ctx.ariaLabel() ? null : this.ctx.overlay.triggerId(),
+  );
 
   constructor() {
     const ctx = this.ctx;
