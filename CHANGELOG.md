@@ -7,6 +7,151 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-07-26
+
+The third resolution wave for the July 18, 2026 deep audit — the menu family + toolbar sweep (19 items),
+the form-primitives sweep (15 of 16 items) and three cross-cutting accessibility contracts: a consumer's
+static `aria-label` / `aria-labelledby` / `aria-describedby` is now adopted instead of erased, and
+`aria-readonly` is role-gated. Breaking changes in the menubar defaults, the separator emission policy,
+the file-upload rejection payload, several public contexts, and the ARIA emitted by nine form hosts.
+
+### Added
+
+- **Search** — `Escape` clears a non-empty value (the native `<input type="search">` affordance),
+  consuming the key only when it actually clears — an empty, disabled or read-only box lets it through to
+  the enclosing overlay. The new `clearOnEscape` input (default `true`) opts out entirely, so a command
+  palette inside a dialog dismisses on the first press.
+- **Menu, select & combobox separators** — `<hr forMenuSeparator>`, `[forSelectSeparator]` and
+  `[forComboboxSeparator]` gain `orientation` and `decorative` inputs, `role="none"` when decorative and
+  an always-stamped `data-orientation`. All five separators in the library now share one emission policy.
+- **Table & pane-resizer** — new teardown-safe revert channels: `[widthRevert]` on
+  `[forTableColumnResizer]` (payload `TableResizeDescriptor`) and `[valueRevert]` on `[forPaneResizer]`
+  (payload `number`) report the pre-drag value when a handle is destroyed mid-drag. They are callback
+  inputs rather than outputs because an `output()` / `model()` emitter is already destroyed at teardown
+  time. `<for-table-body>` binds `[widthRevert]` internally and folds the value back into
+  `[(columnWidths)]`, so declarative consumers need no new wiring.
+- **Menubar** — `provideForMenubarDefaults` can now tune the menu positioning (`sideOffset`,
+  `collisionPadding`, …): the shell seeds from `MENU_POSITIONING_DEFAULTS` instead of hardcoded literals.
+- **Button** — honours an enclosing `[forFieldset]`'s `disabled` through a new public `effectiveDisabled`.
+- **Slider** — dev-mode `[forty-cdk/slider]` warnings for `min > max` and `step <= 0`.
+- **Radio & toggle group** — `data-readonly` styling hooks on `[forRadio]` and `[forToggleGroup]`, the
+  supported channel now that `aria-readonly` is gone from those roles.
+
+### Changed
+
+- **Accessibility (`aria-label`)** — **BREAKING.** 45 host bindings adopt a consumer's static
+  `aria-label` instead of erasing it. An `[attr.aria-label]` binding resolving to `null` calls
+  `removeAttribute`, so `<ul forListbox aria-label="Toppings">` previously ended up with **no** accessible
+  name. On the six surfaces that also emit a generated `aria-labelledby` fallback, that fallback is now
+  gated on the resolved name. Six hosts deliberately **keep** their computed name (`[forCalendarCell]`,
+  `[forCarouselSlide]`, `[forCarouselIndicator]`, `[forCarouselRotationControl]`,
+  `[forComboboxChipRemove]` and the date / time segments) because each is stamped per datum in a repeat or
+  swaps with state; override those through their reactive `[ariaLabel]` input.
+- **Accessibility (`aria-labelledby` / `aria-describedby`)** — **BREAKING.** The same adoption for all 18
+  `aria-labelledby` hosts (the consumer's value **replaces** the library fallback) and all 4
+  `aria-describedby` hosts (the consumer's value is **composed** first, since descriptions are additive).
+  Markup that previously had its static value silently replaced now announces the consumer's name.
+  `[forTooltipTrigger]` appends the open tooltip's id after a consumer hint instead of replacing it. The
+  static-only boundary is unchanged: an `[attr.aria-labelledby]="expr"` property binding is not adopted.
+- **Accessibility (`aria-readonly`)** — **BREAKING.** Nine hosts whose role does not support the property
+  stop emitting it: `role="group"` on `[forSlider]`, `[forDateField]`, `[forTimeField]`,
+  `[forDateRangeField]`, `[forTimeRangeField]` (plus both range endpoint groups) and `[forToggleGroup]`,
+  and `role="button"` on `button[forToggle]`. Every one was an axe `aria-allowed-attr` violation; the
+  announcement already lives where ARIA puts it (`role="slider"` on the thumb, `role="spinbutton"` on each
+  segment, `role="radiogroup"` on the radio root). Style and assert on `[data-readonly]` instead.
+- **Menubar** — **BREAKING.** The `closeDelay` input and its `ForMenubarDefaults` key are removed: the bar
+  scheduled a hover-leave close with no focus check and stamped `'pointerDownOutside'`, so a wandering
+  mouse unmounted a keyboard-focused menu and dropped focus on `<body>`. The APG Menubar pattern
+  prescribes no hover-leave close, so the feature is gone rather than patched — hover-_switch_ between
+  sibling triggers is unchanged. `ForMenubarDefaults` also gains two required keys.
+- **Navigation menu** — **BREAKING.** `[forNavigationMenuTrigger]` no longer emits native `disabled`; the
+  doubled reflection collapses to `aria-disabled`, and a root-disabled navigation menu stamps it on every
+  trigger.
+- **Dropdown menu** — **BREAKING.** `[forDropdownMenuTrigger]` no longer emits `aria-disabled` — one
+  reflection channel, not two.
+- **Menu, select & combobox separators** — **BREAKING.** None of the three emits the default
+  `aria-orientation="horizontal"` any more; the ARIA default is omitted and the attribute is emitted only
+  for `orientation="vertical"`. Selectors keyed on `[aria-orientation="horizontal"]` should move to
+  `data-orientation`.
+- **Menu close reasons** — **BREAKING.** `ForMenuCloseReason` and `MenuOverlayCloseReason` gain a
+  `'hover'` member, so an exhaustive consumer `switch` sees a new case.
+- **Menu context** — **BREAKING.** `ForMenuContext` gains `focusInitialEnabledItem(target)`, the single
+  owner of the `'first' | 'last'` → focus-call mapping that was hand-written in three places. The contract
+  already published the target vocabulary (`initialFocus` / `setInitialFocus`) but no way to act on it.
+  Source-breaking for anyone implementing the interface themselves; `focusFirstEnabledItem` /
+  `focusLastEnabledItem` stay as the granular pair.
+- **Slider & combobox contexts** — **BREAKING.** `markTouched()` is removed from `ForSliderContext` and
+  `ForComboboxContext` — nothing outside the owning primitive called either, and both revert to the
+  inherited `protected` member. Select, time-picker, date-picker and number-input keep theirs (real
+  external callers).
+- **File upload** — **BREAKING.** `filesRejected` emits `ForFileUploadRejection[]` (`{ file, reason }`)
+  instead of `File[]`.
+- **Form contexts** — **BREAKING.** `ForFileUploadContext` gains `unregisterInput`,
+  `ForNumberInputContext` gains `markTouched` and `ForSliderContext` gains `thumbBounds` — required
+  members, so external implementers of those interfaces break.
+- **Number input** — **BREAKING.** Keyboard stepping snaps to the step grid instead of precision-rounding:
+  `ArrowUp` from `0.55` with `step=1` lands on `1`, not `1.55`. Off-grid page-sized travel follows the
+  platform `HTMLInputElement.stepUp(n)` rule — snap to the adjacent grid point, discard the multiplier.
+- **Slider** — **BREAKING.** `touch` emits on every touch-producing interaction (the once-guard is gone),
+  matching the other 20 controls, and a `pointerdown` on the track or thumb is now `preventDefault()`ed —
+  ancestor pointer-drag sessions stand down and no compat mouse events fire for that gesture.
+
+### Fixed
+
+- **Menubar** — the away-arrow on a plain item inside a nested submenu was a dead key: menu content is
+  portaled to `<body>`, so the keydown never reached the bar. It now collapses every submenu level and
+  switches to the adjacent menubar menu, both directions, RTL covered. `Enter` / `Space` / `ArrowDown` on
+  an already-open trigger move focus to the first item (last for `ArrowUp`) instead of `preventDefault`ing
+  into a no-op.
+- **Menubar** — the same `[forMenuContent]` / `[forMenuItem]` markup no longer silently loses behaviour
+  under a menubar: the six dismiss / auto-focus channels are declared on `ForMenubar` and forwarded, the
+  Escape veto reads `VetoableNativeEvent` instead of raw `defaultPrevented`, and `registerContent` adopts
+  a consumer's static `id`.
+- **Menu (dropdown, context menu, submenu)** — an APG open key pressed on an already-open menu moves
+  focus into the menu instead of being a consumed-but-dead keystroke that stranded focus on the trigger.
+  `Enter` / `Space` on `[forDropdownMenuTrigger]` are handled on `keydown` and, per the APG menu-button
+  pattern, only ever open — previously `Enter` on an open trigger fell through to the native click and
+  closed the menu. Pointer click keeps its toggle semantics.
+- **Dismissable layer** — a parent menu and one of its submenus mounted in the **same** render pass (a
+  state-restore or hydration path) inverted the layer stack, because the two `afterNextRender` callbacks
+  fire child-before-parent: the first focus inside the submenu then read as `focusOutside` on the parent
+  and collapsed the whole chain. Nested layers now order by declared nesting depth; unrelated overlays
+  keep plain LIFO, so a dialog opened from a submenu item still lands topmost.
+- **Menu submenu** — the pointer paths route through the overlay pipeline instead of writing `open.set()`
+  directly, so `lastCloseReason` is genuinely reset on every open and a programmatic open after a
+  hover-close no longer inherits suppressed auto-focus.
+- **Navigation menu** — hover handlers are gated by pointer type, so a touch press-and-hold no longer
+  opens the panel mid-press and inverts it on the follow-up tap. `focusout` containment — plus the
+  `'pointer'` dismiss channel and the Escape guard, all three now sharing one predicate — counts a panel
+  rendered in an external viewport, so Tab into it keeps the panel open. The trigger finally honours the
+  `item || menu` disabled merge its JSDoc promised.
+- **Context menu** — a context menu is no longer named after its entire right-click region.
+- **Toolbar** — `[forToolbarLink]` honours toolbar-level `disabled`: a disabled toolbar left links
+  clickable, tabbable and unannounced, with arrow navigation dead around them. It now mirrors
+  `ForToolbarButton` exactly, `stopImmediatePropagation` included.
+- **Menus** — every focus move in the shared item list passes `preventScroll`.
+- **Table & pane-resizer** — a resize handle destroyed mid-drag (its column dropped from
+  `displayedColumns`, `resizable` toggled off) left the transient drag width committed and logged
+  `NG0953: Unexpected emit for destroyed OutputRef`. Both resizers now cancel the pointer session on
+  destroy and report the pre-drag value through the new revert channel; `Escape` / `pointercancel` keep
+  reverting through `[(width)]` / `[(value)]` exactly as before.
+- **Slider** — a track press focuses the thumb (the `pointerdown` is `preventDefault()`ed so the compat
+  `mousedown` cannot clear the focus just set), and a thumb's `aria-valuemin` / `aria-valuemax` respect
+  the neighbour gap enforced by `minStepsBetweenThumbs`, so assistive tech no longer announces a range the
+  thumb cannot reach.
+- **File upload** — under `multiple=false` the overflow files no longer vanish from both outputs: one
+  source-ordered pass partitions them and the extras surface in `filesRejected` with reason `'multiple'`.
+  Disabling mid-drag always resets `data-dragging` and the drag-depth counter. The input now unregisters
+  on unmount, so an `@if`'d input no longer leaves `openFileDialog()` clicking a detached node.
+- **Search** — the documented disabled / read-only no-op moved inside `clear()`, so every caller gets it.
+- **Field** — the duplicate-control warning fires from a settled count, so two sibling `@if`s that
+  transiently reach count 2 within one template pass no longer false-positive; all four slot warnings
+  (control / label / description / error) share that path.
+- **Number input** — the spinner buttons mark the field touched, so a pointer-only user no longer leaves
+  it dirty-but-untouched with error display disengaged.
+- **OTP input** — a rejected mid-string character preserves the caret: the pre-write selection is mapped
+  through the filter and restored instead of being slammed to the end.
+
 ## [0.13.0] - 2026-07-24
 
 The second resolution wave for the July 18, 2026 deep audit — three large sweeps across the date & time
@@ -657,7 +802,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/tutkli/forty-cdk/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/tutkli/forty-cdk/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/tutkli/forty-cdk/compare/v0.11.1...v0.12.0
 [0.11.1]: https://github.com/tutkli/forty-cdk/compare/v0.11.0...v0.11.1
