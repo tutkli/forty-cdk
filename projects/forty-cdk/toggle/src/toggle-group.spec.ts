@@ -62,6 +62,7 @@ const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forTogg
     <div
       forToggleGroup
       [(value)]="value"
+      [readonly]="isReadonly()"
       [required]="isRequired()"
       [invalid]="isInvalid()"
       [pending]="isPending()"
@@ -74,6 +75,7 @@ const groupOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forTogg
 })
 class ToggleGroupFormControlHost {
   readonly value = signal<readonly string[]>([]);
+  readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
   readonly isInvalid = signal(false);
   readonly isPending = signal(false);
@@ -90,6 +92,9 @@ describe('ForToggleGroup', () => {
         flush: r.flush,
         setFlag: (flag, value) => {
           switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
             case 'required':
               r.instance.isRequired.set(value);
               return;
@@ -110,7 +115,10 @@ describe('ForToggleGroup', () => {
       };
       return result;
     },
-    { flags: ['required', 'invalid', 'pending', 'touched', 'dirty'] },
+    {
+      flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
+      roleSupportsAriaReadonly: false,
+    },
   );
 
   describe('focus (focus-on-error)', () => {
@@ -681,7 +689,8 @@ describe('ForToggleGroup', () => {
       r.el.querySelector<HTMLButtonElement>('[data-test-id="a"]')!.click();
       await r.flush();
       expect(r.instance.value()).toEqual([]);
-      expect(r.el.querySelector('[forToggleGroup]')!.getAttribute('aria-readonly')).toBe('true');
+      expect(groupOf(r.el).hasAttribute('aria-readonly')).toBe(false);
+      expect(groupOf(r.el).getAttribute('data-readonly')).toBe('');
     });
   });
 

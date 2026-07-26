@@ -60,6 +60,11 @@ import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
  * For trailing-edge work (network calls, undo entries) bind `(valueCommit)`
  * instead — it fires once at the end of an interaction with the final value
  * array, never per drag step.
+ *
+ * A read-only slider is reflected on this `role="group"` root as the boolean
+ * `data-readonly` styling hook only. `aria-readonly` is not a supported
+ * property of `role="group"`, so the ARIA announcement lives on each
+ * `[forSliderThumb]` — `role="slider"` does support it.
  */
 @Directive({
   selector: '[forSlider]',
@@ -67,7 +72,6 @@ import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
   host: {
     role: 'group',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',

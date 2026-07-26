@@ -67,6 +67,12 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
  * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`);
  * `granularity = 'day'` (default) works with any adapter.
  *
+ * A read-only field is reflected on this `role="group"` root — and on each
+ * endpoint group — as the boolean `data-readonly` styling hook only.
+ * `aria-readonly` is not a supported property of `role="group"`, so the ARIA
+ * announcement lives on each `[forDateRangeFieldSegment]` —
+ * `role="spinbutton"` does support it.
+ *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
  *   date-time) type.
  *
@@ -109,7 +115,6 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'ariaInvalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',

@@ -149,6 +149,7 @@ Implements the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 - Multi-thumb non-passing: each thumb's `aria-valuemin` / `aria-valuemax` automatically squeeze to its neighbors' values — offset by the `minStepsBetweenThumbs` gap — so the announced range is exactly the range the thumb can reach, matching the APG multi-thumb guidance.
 - The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
 - `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
+- **`aria-readonly` belongs on the thumb, not the root.** WAI-ARIA supports it on `role="slider"` but not on `role="group"`, so each thumb carries `aria-readonly="true"` while the root reflects the `data-readonly` styling hook only.
 - Provide `[label]` (or `[labelledby]`) on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label.
 - A degenerate configuration (`min` greater than `max`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
 

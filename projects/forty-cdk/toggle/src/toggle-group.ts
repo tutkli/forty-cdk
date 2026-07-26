@@ -60,6 +60,11 @@ import {
  * control, but a `FormCheckboxControl` carrying a single boolean value.
  * Use `ForToggleGroup` (in single or multiple mode) when you need a set
  * of pressed values as the form value.
+ *
+ * A read-only group is reflected as the boolean `data-readonly` styling hook
+ * on this root only: `aria-readonly` is a supported property of neither
+ * `role="group"` nor the items' `role="button"`, so there is no ARIA channel
+ * for the state. Clicks stay no-ops and the items stay focusable.
  */
 @Directive({
   selector: '[forToggleGroup]',
@@ -67,12 +72,12 @@ import {
   host: {
     role: 'group',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },

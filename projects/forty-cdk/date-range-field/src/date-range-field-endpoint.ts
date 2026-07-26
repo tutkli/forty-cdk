@@ -17,6 +17,11 @@ import {
  * for its host bindings. The concrete `[forDateRangeFieldStart]` /
  * `[forDateRangeFieldEnd]` subclasses bind the matching start / end engine and
  * provide the per-endpoint `SegmentEditorContext` their segments inject.
+ *
+ * A read-only field is reflected on the endpoint group as the boolean
+ * `data-readonly` styling hook only. `aria-readonly` is not a supported
+ * property of `role="group"`, so the ARIA announcement lives on each
+ * `[forDateRangeFieldSegment]` — `role="spinbutton"` does support it.
  */
 @Directive({
   host: {
@@ -24,7 +29,6 @@ import {
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'label() || null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
   },

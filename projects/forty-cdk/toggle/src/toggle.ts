@@ -17,6 +17,11 @@ import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
  * For a set of toggles with arrow-key navigation and single / multiple
  * selection semantics, use `[forToggleGroup]` + `[forToggleGroupItem]`.
  *
+ * A read-only toggle is reflected as the boolean `data-readonly` styling hook
+ * only: `aria-readonly` is not a supported property of `role="button"`, so
+ * there is no ARIA channel for the state on a toggle button. Click stays a
+ * no-op and the button stays focusable.
+ *
  * @example
  * ```html
  * <button forToggle [(checked)]="bold">B</button>
@@ -32,7 +37,6 @@ import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
     type: 'button',
     '[attr.aria-pressed]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',

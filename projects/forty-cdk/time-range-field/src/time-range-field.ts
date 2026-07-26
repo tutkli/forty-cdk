@@ -64,6 +64,12 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
  * place (each endpoint's calendar day is preserved — except under
  * {@link allowOvernight}, where both endpoints re-anchor on the sentinel).
  *
+ * A read-only field is reflected on this `role="group"` root — and on each
+ * endpoint group — as the boolean `data-readonly` styling hook only.
+ * `aria-readonly` is not a supported property of `role="group"`, so the ARIA
+ * announcement lives on each `[forTimeRangeFieldSegment]` —
+ * `role="spinbutton"` does support it.
+ *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
  * Note: the bounds are named `minTime` / `maxTime`, not `min` / `max` — the
@@ -106,7 +112,6 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'ariaInvalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
