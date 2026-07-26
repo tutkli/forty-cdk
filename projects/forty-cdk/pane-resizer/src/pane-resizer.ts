@@ -39,6 +39,9 @@ import {
  * Pointer drag arms only after the pointer travels past a small dead-zone (a
  * few px), so a plain click that fires a stray sub-threshold `pointermove`
  * never mutates the value — `(resizing)` won't fire on a jittery click.
+ * A press also focuses the divider (the drag's `preventDefault` suppresses the
+ * browser's native focus-on-press), so arrow-key fine-tuning works immediately
+ * after a release and AT tracks `aria-valuenow` during the gesture.
  * Pressing `Escape` (or a `pointercancel`) during a drag reverts the value to
  * where the gesture started and emits no `(resizeCommit)`. Being destroyed
  * mid-drag reverts too, reporting the pre-drag value through the
@@ -79,6 +82,7 @@ import {
     '[style.touch-action]': 'touchAction()',
     '(keydown)': 'onKeyDown($event)',
     '(keyup)': 'onKeyUp($event)',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForPaneResizer {
@@ -141,8 +145,11 @@ export class ForPaneResizer {
   readonly controls = input<string | null>(null);
 
   /**
-   * Opt-in `Enter` (and `Space`) toggle: collapses the value to `min` and
-   * restores the last non-min value on the next press. APG-optional behaviour
+   * Opt-in `Enter` (and `Space`) toggle: collapses the value to `min`, and on
+   * the next press restores the last size the resizer itself settled on above
+   * `min` — whether that came from a pointer drag, a keyboard burst, or a
+   * previous collapse. It falls back to `max` only when no such size exists
+   * yet (nothing above `min` has ever been committed). APG-optional behaviour
    * for resizers that back a collapsible pane. Off by default — enabling it
    * changes the meaning of `Enter`.
    */
@@ -184,9 +191,10 @@ export class ForPaneResizer {
 
   /**
    * Fires once at the end of a resize burst — when the user releases the
-   * pointer (or it is cancelled) or releases an arrow / page key. Useful for
-   * persisting the final size after a drag, where `(resizing)` may fire 60+
-   * times per second.
+   * pointer (or it is cancelled), releases an arrow / page key, or the burst
+   * ends because focus left the divider before the key was released
+   * (Tab-away). Useful for persisting the final size after a drag, where
+   * `(resizing)` may fire 60+ times per second.
    */
   readonly resizeCommit = output<number>();
 
@@ -222,6 +230,8 @@ export class ForPaneResizer {
 
   /** True between the first kbd-driven mutation and the next `keyup`. */
   #pendingKeyboardCommit = false;
+
+  #keyBurstStartValue = 0;
 
   #destroying = false;
 
@@ -300,20 +310,24 @@ export class ForPaneResizer {
     }
 
     event.preventDefault();
-    if (next === this.value()) {
+    const current = this.value();
+    if (next === current) {
       return;
+    }
+    if (!this.#pendingKeyboardCommit) {
+      this.#keyBurstStartValue = current;
+      this.#pendingKeyboardCommit = true;
     }
     this.value.set(next);
     this.resizing.emit(next);
-    this.#pendingKeyboardCommit = true;
   }
 
   protected onKeyUp(_event: KeyboardEvent): void {
-    if (!this.#pendingKeyboardCommit) {
-      return;
-    }
-    this.#pendingKeyboardCommit = false;
-    this.resizeCommit.emit(this.value());
+    this.#flushKeyboardCommit();
+  }
+
+  protected onBlur(): void {
+    this.#flushKeyboardCommit();
   }
 
   #onDragStart(event: PointerEvent): boolean {
@@ -324,6 +338,7 @@ export class ForPaneResizer {
       return false;
     }
     event.preventDefault();
+    this.#host.focus();
     const ltr = this.dir() !== 'rtl';
     this.#dragAxis = this.orientation() === 'vertical' ? 'x' : 'y';
     this.#dragInvert = this.orientation() === 'vertical' && !ltr;
@@ -349,6 +364,7 @@ export class ForPaneResizer {
   }
 
   #onDragCommit(): void {
+    this.#recordNonMin(this.#dragCurrent, this.#dragStartValue);
     this.resizeCommit.emit(this.#dragCurrent);
   }
 
@@ -374,7 +390,7 @@ export class ForPaneResizer {
       // not produced one yet (initial value === min).
       next = this.#clamp(this.#lastNonMinValue > min ? this.#lastNonMinValue : this.max());
     } else {
-      this.#lastNonMinValue = current;
+      this.#recordNonMin(min, current);
       next = min;
     }
     if (next === current) {
@@ -383,6 +399,25 @@ export class ForPaneResizer {
     this.value.set(next);
     this.resizing.emit(next);
     this.resizeCommit.emit(next);
+  }
+
+  #flushKeyboardCommit(): void {
+    if (!this.#pendingKeyboardCommit) {
+      return;
+    }
+    this.#pendingKeyboardCommit = false;
+    const committed = this.value();
+    this.#recordNonMin(committed, this.#keyBurstStartValue);
+    this.resizeCommit.emit(committed);
+  }
+
+  #recordNonMin(committed: number, burstStart: number): void {
+    const min = this.min();
+    if (committed > min) {
+      this.#lastNonMinValue = committed;
+    } else if (burstStart > min) {
+      this.#lastNonMinValue = burstStart;
+    }
   }
 
   #clamp(n: number): number {

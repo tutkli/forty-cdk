@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { el, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture } from './_helpers';
 
 test.describe('drag-drop boundary + lockAxis', () => {
   test('lockAxis="y" — preview y tracks pointer while x stays at lift-time x', async ({ page }) => {
@@ -229,5 +229,30 @@ test.describe('drag-drop pointer dragging', () => {
 
     await expect(page.locator('[data-testid="a-item-0"]')).toHaveText(/Beta/);
     await expect(page.locator('[data-testid="a-item-1"]')).toHaveText(/Alpha/);
+  });
+
+  test('keyboard cross-list drop leaves focus on the transferred item in list B', async ({
+    page,
+  }) => {
+    await el(page, 'a-item-0').focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'b-item-0')).toHaveText(/Alpha/);
+    await expectFocused(el(page, 'b-item-0'));
+  });
+
+  test('keyboard same-list drop keeps focus on the moved item', async ({ page }) => {
+    await el(page, 'a-item-0').focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'a-item-1')).toHaveText(/Alpha/);
+    await expectFocused(el(page, 'a-item-1'));
   });
 });

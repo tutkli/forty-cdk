@@ -97,11 +97,11 @@ interface Slide {
       cursor: pointer;
     }
 
-    .mcar-btn:hover:not([disabled]) {
+    .mcar-btn:hover:not([data-disabled]) {
       background: var(--pg-surface-2);
     }
 
-    .mcar-btn[disabled] {
+    .mcar-btn[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }

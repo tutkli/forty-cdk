@@ -7,6 +7,7 @@ export { ForScrollAreaCorner } from './scroll-area-corner';
 export {
   FOR_SCROLL_AREA_CONTEXT,
   type ForScrollAreaContext,
+  type ForScrollAreaTrackPress,
   type ForScrollAreaType,
   type ForScrollbarOrientation,
 } from './scroll-area-context';

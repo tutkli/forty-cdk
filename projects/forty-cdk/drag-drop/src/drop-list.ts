@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   booleanAttribute,
   computed,
   DestroyRef,
@@ -36,6 +37,7 @@ import {
   createAutoScroller,
   type AutoScroller,
   PreviewController,
+  resolveBoundaryElement,
 } from 'forty-cdk/core';
 import {
   FOR_DRAG_DROP_CONTEXT,
@@ -160,8 +162,10 @@ export class ForDropList implements ForDropListContext {
    * `[forDragPlaceholder]` template, and none on keyboard dragging.
    *
    * A `dragDisabled` sibling acts as a hard fence: the placeholder stops at the first
-   * pinned item instead of travelling past it. This is purely visual — the committed drop
-   * index emitted by `dragDrop` is resolved separately and unaffected.
+   * pinned item instead of travelling past it. Live sorting is purely visual: the drop index
+   * is resolved from the container geometry measured at lift — before the placeholder is
+   * rendered — so the placeholder's live position never feeds back into resolution and a given
+   * pointer path commits the same index whether `liveSort` is on or off.
    */
   readonly liveSort = input(false, { transform: booleanAttribute });
 
@@ -195,6 +199,11 @@ export class ForDropList implements ForDropListContext {
    * Emitted by the **source** list when a drop commits (keyboard or pointer) — whether
    * the item stays in this list (reorder) or moves to a connected list (transfer). Apply
    * `moveItemInArray` or `transferArrayItem` to your data signal inside the handler.
+   *
+   * After a **keyboard** drop whose lifted item held document focus, the list restores focus
+   * to the item at `currentIndex` in the target container on the next render, so a re-render
+   * that detaches the lifted element does not strand the keyboard user on `<body>`. Focus
+   * something else inside this handler to keep it; pointer drops never move focus.
    */
   readonly dragDrop = output<ForDragDropEvent>();
 
@@ -212,6 +221,8 @@ export class ForDropList implements ForDropListContext {
   readonly #dragOver = signal<number | null>(null);
 
   #previewController: PreviewController | null = null;
+  #handedOffPreview: DragPreview | null = null;
+  #pointerDrag = false;
   #sorter: PlaceholderSorter | null = null;
   #autoScroller: AutoScroller | null = null;
   #lastPoint: { x: number; y: number } | null = null;
@@ -250,6 +261,8 @@ export class ForDropList implements ForDropListContext {
         }
         this.#previewController?.destroy();
         this.#previewController = null;
+        this.#handedOffPreview?.destroy();
+        this.#handedOffPreview = null;
       });
     }
   }
@@ -325,6 +338,7 @@ export class ForDropList implements ForDropListContext {
       connected.map((c) => c.items().length),
     );
     const flatIndex = indexOfSlot(slots, 0, from);
+    this.#pointerDrag = false;
     this.#liftedHost.set(el);
     this.#flatIndex.set(flatIndex < 0 ? 0 : flatIndex);
     this.#dragOver.set(from);
@@ -349,13 +363,14 @@ export class ForDropList implements ForDropListContext {
     if (from < 0) {
       return -1;
     }
+    this.#pointerDrag = true;
     if (this.#isBrowser) {
       this.#previewController = new PreviewController({
         source: el,
         point,
         preview,
         doc: this.#document,
-        boundary: this.#resolveBoundary(),
+        boundary: resolveBoundaryElement(this.host, this.boundary()),
         lockAxis: this.lockAxis,
       });
       if (this.liveSort()) {
@@ -404,7 +419,7 @@ export class ForDropList implements ForDropListContext {
     const connected = this.#effectiveConnected();
     const containers = [this as ForDropListContext, ...connected];
     const geoms: DropContainerGeometry[] = containers.map((ctx) => this.#geometryFor(ctx, lifted));
-    const target = resolveDropTarget(point, geoms, this.orientation(), this.dir());
+    const target = resolveDropTarget(point, geoms);
     if (!target) {
       this.#previewController?.moveTo(point);
       return;
@@ -426,13 +441,10 @@ export class ForDropList implements ForDropListContext {
     );
     this.#flatIndex.set(flat);
     if (changed) {
-      if (this.#sorter) {
-        this.#sorter.onTargetChange(targetCtx, target.index);
-        this.#invalidateGeometry(targetCtx);
-      }
+      this.#sorter?.onTargetChange(targetCtx, target.index);
       const label = (lifted.textContent ?? '').trim();
       this.#announcer.announce(
-        this.#defaults.announceMove(label, target.index + 1, targetCtx.items().length),
+        this.#defaults.announceMove(label, target.index + 1, this.#positionCount(targetCtx)),
         'polite',
       );
     }
@@ -463,26 +475,29 @@ export class ForDropList implements ForDropListContext {
     const cache = this.#geomCache;
     const cached = cache?.get(ctx);
     const itemCount = ctx.items().filter((h) => h.host !== lifted).length;
+    const axis = { orientation: ctx.orientation(), dir: ctx.dir() } as const;
     if (!cache || !cached || cached.itemRects.length !== itemCount) {
       const fresh = this.#snapshotContainer(ctx, lifted);
       cache?.set(ctx, fresh);
-      return { rect: fresh.containerRect, itemRects: fresh.itemRects };
+      return { rect: fresh.containerRect, itemRects: fresh.itemRects, ...axis };
     }
     const freshRect = ctx.host.getBoundingClientRect();
     const dx =
       freshRect.left - cached.containerRect.left - (ctx.host.scrollLeft - cached.scrollLeft);
     const dy = freshRect.top - cached.containerRect.top - (ctx.host.scrollTop - cached.scrollTop);
     if (dx === 0 && dy === 0) {
-      return { rect: freezeRect(freshRect), itemRects: cached.itemRects };
+      return { rect: freezeRect(freshRect), itemRects: cached.itemRects, ...axis };
     }
     return {
       rect: freezeRect(freshRect),
       itemRects: cached.itemRects.map((r) => shiftRect(r, dx, dy)),
+      ...axis,
     };
   }
 
-  #invalidateGeometry(ctx: ForDropListContext): void {
-    this.#geomCache?.delete(ctx);
+  #positionCount(ctx: ForDropListContext): number {
+    const count = ctx.items().length;
+    return ctx === (this as ForDropListContext) ? count : count + 1;
   }
 
   #flushResolve(lifted: HTMLElement): void {
@@ -494,14 +509,6 @@ export class ForDropList implements ForDropListContext {
     if (this.#lastPoint !== null) {
       this.#resolveDrop(this.#lastPoint, lifted);
     }
-  }
-
-  #resolveBoundary(): HTMLElement | null {
-    const boundary = this.boundary();
-    if (boundary === null) {
-      return null;
-    }
-    return typeof boundary === 'string' ? this.host.closest<HTMLElement>(boundary) : boundary;
   }
 
   #onAutoScrollFrame(): void {
@@ -577,10 +584,9 @@ export class ForDropList implements ForDropListContext {
     }
     this.#flatIndex.set(next);
     if (nextTarget) {
-      const targetItems = nextTarget.items();
       const label = (liftedHost.textContent ?? '').trim();
       this.#announcer.announce(
-        this.#defaults.announceMove(label, nextSlot.index + 1, targetItems.length),
+        this.#defaults.announceMove(label, nextSlot.index + 1, this.#positionCount(nextTarget)),
         'polite',
       );
     }
@@ -610,12 +616,13 @@ export class ForDropList implements ForDropListContext {
     const handle = items.find((h) => h.host === liftedHost);
     const item = handle ? handle.data() : undefined;
     const label = (liftedHost.textContent ?? '').trim();
-    const targetItems = container.items();
 
     const moved = !(previousIndex === currentIndex && container === (this as ForDropListContext));
     const animate =
       this.animateReorder() && this.#isBrowser && !this.#prefersReducedMotion() && moved;
     const preview = this.#previewController?.preview ?? null;
+    const restoreFocus =
+      this.#isBrowser && !this.#pointerDrag && this.#document.activeElement === liftedHost;
     const animator = animate
       ? new ReorderAnimator({
           containers: [this, ...connected],
@@ -633,16 +640,45 @@ export class ForDropList implements ForDropListContext {
       currentIndex,
     });
     this.#announcer.announce(
-      this.#defaults.announceDrop(label, currentIndex + 1, targetItems.length),
+      this.#defaults.announceDrop(label, currentIndex + 1, this.#positionCount(container)),
       'assertive',
     );
 
+    if (restoreFocus) {
+      this.#restoreFocusAfterRender(container, currentIndex);
+    }
+
     if (animator) {
+      this.#handedOffPreview = preview;
       animator.schedule(liftedHost, preview);
       this.#teardown(connected, true);
     } else {
       this.#teardown(connected);
     }
+  }
+
+  #restoreFocusAfterRender(container: ForDropListContext, index: number): void {
+    afterNextRender(
+      () => {
+        if (this.#liftedHost() !== null) {
+          return;
+        }
+        const active = this.#document.activeElement;
+        if (
+          active !== null &&
+          active !== this.#document.body &&
+          active !== this.#document.documentElement
+        ) {
+          return;
+        }
+        const items = container.items();
+        if (items.length === 0) {
+          return;
+        }
+        items[Math.max(0, Math.min(index, items.length - 1))]?.host.focus();
+      },
+      { injector: this.#injector },
+    );
   }
 
   cancel(): void {
@@ -697,5 +733,6 @@ export class ForDropList implements ForDropListContext {
     }
     this.#previewController = null;
     this.#sorter = null;
+    this.#pointerDrag = false;
   }
 }

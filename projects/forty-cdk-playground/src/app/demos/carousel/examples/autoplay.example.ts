@@ -149,11 +149,11 @@ interface Slide {
       cursor: pointer;
     }
 
-    .acar-btn:hover:not([disabled]) {
+    .acar-btn:hover:not([data-disabled]) {
       background: var(--pg-surface-2);
     }
 
-    .acar-btn[disabled] {
+    .acar-btn[data-disabled] {
       opacity: 0.4;
       cursor: not-allowed;
     }

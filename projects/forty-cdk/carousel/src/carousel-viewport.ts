@@ -1,7 +1,7 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
-import { hostId } from 'forty-cdk/core';
-import { injectCarouselContext } from './carousel-context';
+import { hostId, registerHandle } from 'forty-cdk/core';
+import { type ForCarouselViewportHandle, injectCarouselContext } from './carousel-context';
 
 /**
  * Clips the visible window of the carousel track. Acts as the APG-mandated
@@ -13,7 +13,9 @@ import { injectCarouselContext } from './carousel-context';
  *
  * Registers itself with the carousel root on construction so the root's
  * `injectElementSize` observer starts and prev/next's `aria-controls` resolves.
- * There must be exactly one viewport per carousel.
+ * There must be exactly one viewport per carousel. Unregisters on destroy, so
+ * an unmounted viewport stops being observed and prev / next stop pointing
+ * `aria-controls` at a dead id.
  */
 @Directive({
   selector: '[forCarouselViewport]',
@@ -33,6 +35,11 @@ export class ForCarouselViewport {
   readonly id = hostId('for-carousel-viewport');
 
   constructor() {
-    this.ctx.setViewport(this.#host.nativeElement, this.id());
+    const handle: ForCarouselViewportHandle = { host: this.#host.nativeElement, id: this.id() };
+    registerHandle(
+      handle,
+      (h) => this.ctx.registerViewport(h),
+      (h) => this.ctx.unregisterViewport(h),
+    );
   }
 }

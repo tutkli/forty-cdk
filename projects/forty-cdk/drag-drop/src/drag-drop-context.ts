@@ -46,7 +46,16 @@ export interface ForDropListContext {
   isLifted(el: HTMLElement): boolean;
   /** Step the logical drop target while lifted. */
   moveLifted(action: ListNavigationAction): void;
-  /** Commit the current drag (emits `dragDrop` on the source list). No-op if nothing lifted. */
+  /**
+   * Commit the current drag (emits `dragDrop` on the source list). No-op if nothing lifted.
+   *
+   * After a **keyboard** drop whose lifted item held document focus, focus is restored to the
+   * item at `currentIndex` in the target container on the next render — so a cross-list transfer
+   * or a `@for` re-render that detaches the lifted element does not strand the keyboard user on
+   * `<body>`. The restore is skipped when focus already sits somewhere other than `<body>`, so a
+   * consumer who moves focus inside their `(dragDrop)` handler keeps it. Pointer drops never
+   * move focus.
+   */
   drop(): void;
   /** Abort the current drag without emitting `dragDrop`. */
   cancel(): void;

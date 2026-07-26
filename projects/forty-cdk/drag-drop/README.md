@@ -7,15 +7,15 @@ whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).
 
 ## Keyboard
 
-| State  | Key         | Action                                            |
-| ------ | ----------- | ------------------------------------------------- |
-| Idle   | Arrow keys  | Move roving focus between items                   |
-| Idle   | Home / End  | Jump to first / last item                         |
-| Idle   | Space/Enter | **Lift** the focused item                         |
-| Lifted | Arrow keys  | Step the logical drop position                    |
-| Lifted | Home / End  | Jump the lifted item to the first / last position |
-| Lifted | Space/Enter | **Drop** (commits and emits `(dragDrop)`)         |
-| Lifted | Escape      | **Cancel** (no event, focus stays on item)        |
+| State  | Key         | Action                                                         |
+| ------ | ----------- | -------------------------------------------------------------- |
+| Idle   | Arrow keys  | Move roving focus between items                                |
+| Idle   | Home / End  | Jump to first / last item                                      |
+| Idle   | Space/Enter | **Lift** the focused item                                      |
+| Lifted | Arrow keys  | Step the logical drop position                                 |
+| Lifted | Home / End  | Jump the lifted item to the first / last position              |
+| Lifted | Space/Enter | **Drop** (commits, emits `(dragDrop)`, focus follows the item) |
+| Lifted | Escape      | **Cancel** (no event, focus stays on item)                     |
 
 Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 `orientation="mixed"` every arrow key steps the lifted item linearly in DOM order.
@@ -23,6 +23,21 @@ Arrow direction follows the list's `orientation` and respects RTL via `dir`. In
 ## Accessibility
 
 Keyboard lifting, stepping, dropping, and cancellation are announced via ARIA live regions. Override the default messages at any injector scope via `provideForDragDropDefaults` (see Announcement customisation below). Free-drag is pointer-only — there is no WAI-ARIA pattern for "reposition an element", so `[forFreeDrag]` owns no role or ARIA state; the consumer is responsible for keeping the moved element fully usable at its default position.
+
+### Focus after a keyboard drop
+
+Applying the move in `(dragDrop)` destroys or re-inserts the lifted element, which would otherwise
+leave focus on `<body>`. So after a **keyboard** drop whose lifted item held focus, `[forDropList]`
+restores focus to the item at `currentIndex` in the target container on the next render — the same
+element the user just placed, whether it stayed in this list or transferred to a connected one.
+
+Two escape hatches:
+
+- **Focus something yourself** inside the `(dragDrop)` handler (a status region, a toolbar, the next
+  row). The restore only fires when focus has already fallen to `<body>`, so whatever you focus wins.
+- **Pointer drops are untouched** — focus is never moved after a mouse / touch / pen drop.
+
+If your handler leaves the data unchanged, nothing is detached and focus simply stays on the item.
 
 ## Pointer dragging
 
@@ -119,7 +134,8 @@ stays in the dragged item's source slot.
 ```
 
 `[liveSort]` has no visible effect without a `[forDragPlaceholder]` template, and has no effect
-on keyboard dragging.
+on keyboard dragging. The drop index is resolved from the geometry measured at lift, so
+`[liveSort]` never changes which index a pointer path commits — it only moves the placeholder.
 
 ### Boundary & axis lock
 
@@ -197,6 +213,10 @@ preview is destroyed promptly.
   row **and** column instead of mis-resolving to the nearest single-axis slot. A `"mixed"` list that
   happens to render as a single row or single column resolves identically to `"horizontal"` /
   `"vertical"`.
+
+In a cross-list transfer each container resolves the drop index on **its own** `orientation` and
+`dir`, so a vertical list can be connected to a horizontal one (or to one in the opposite writing
+direction) and the pointer index lands on the target's axis.
 
 ```html
 <ul class="grid" forDropList orientation="mixed" (dragDrop)="onDrop($event)">
@@ -413,3 +433,7 @@ providers: [
   }),
 ];
 ```
+
+`total` is the number of valid drop positions in the list being announced: the item count for a
+same-list reorder, and one more than the item count for a transfer into a connected list (the
+append gap counts).

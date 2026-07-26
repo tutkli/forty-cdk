@@ -11,6 +11,14 @@ export interface DropContainerGeometry {
   readonly rect: DragRect;
   /** Item rects in DOM order, EXCLUDING the lifted item. */
   readonly itemRects: readonly DragRect[];
+  /**
+   * This container's own layout axis — the insertion index is resolved against it. `'mixed'` is
+   * 2D resolution for wrapping grids of uniformly-sized items, considering both axes; it reduces
+   * to the single-axis result when the items form a single row or a single column.
+   */
+  readonly orientation: 'horizontal' | 'vertical' | 'mixed';
+  /** This container's own resolved writing direction. */
+  readonly dir: 'ltr' | 'rtl';
 }
 
 /** A resolved pointer drop target: a container plus the insertion index within it. */
@@ -103,19 +111,18 @@ function isSingleColumn(itemRects: readonly DragRect[]): boolean {
 /**
  * Resolves the drop target container and insertion index from a pointer position.
  *
+ * Each container carries its own `orientation` / `dir`, and the insertion index is resolved
+ * against the axis of the container that won the selection — so a transfer into a connected
+ * container whose orientation or writing direction differs from the source's resolves the index
+ * on the TARGET's axis.
+ *
  * @param point Viewport pointer coordinates.
  * @param containers Ordered `[source, ...connected]` container geometries.
- * @param orientation List axis — `'horizontal'`, `'vertical'`, or `'mixed'` (2D resolution for
- *   wrapping grids of uniformly-sized items, considering both axes). `'mixed'` reduces to the
- *   single-axis result when the items form a single row or a single column.
- * @param dir Writing direction for horizontal / mixed insertion-index math.
  * @returns The resolved `DropTarget`, or `null` when `containers` is empty.
  */
 export function resolveDropTarget(
   point: { readonly x: number; readonly y: number },
   containers: readonly DropContainerGeometry[],
-  orientation: 'horizontal' | 'vertical' | 'mixed',
-  dir: 'ltr' | 'rtl',
 ): DropTarget | null {
   if (containers.length === 0) {
     return null;
@@ -142,7 +149,13 @@ export function resolveDropTarget(
   }
 
   const container = containers[containerIndex]!;
-  const index = insertionIndex(container.itemRects, point.x, point.y, orientation, dir);
+  const index = insertionIndex(
+    container.itemRects,
+    point.x,
+    point.y,
+    container.orientation,
+    container.dir,
+  );
 
   return { containerIndex, index };
 }

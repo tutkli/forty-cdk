@@ -127,6 +127,7 @@ export {
   clampPreviewPosition,
   type PreviewPoint,
   type PreviewSize,
+  resolveBoundaryElement,
 } from './drag-session/clamp-preview';
 export {
   type DragRect,

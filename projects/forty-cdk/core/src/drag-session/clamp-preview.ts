@@ -41,3 +41,24 @@ export function clampPreviewPosition(
   }
   return { x, y };
 }
+
+/**
+ * Resolves a drag `boundary` input into the element that confines the movement.
+ *
+ * `null` is unbounded and yields `null`; an `HTMLElement` is returned as-is; a string is treated as
+ * a selector resolved with `host.closest(...)`, so it matches the host itself or the nearest
+ * matching ancestor and yields `null` when nothing matches.
+ *
+ * Unlike {@link clampPreviewPosition} this reads the DOM, so the caller decides *when* the lookup
+ * happens: `[forDropList]` resolves once at lift time and hands the element to
+ * `PreviewController`; `[forFreeDrag]` re-resolves on every move.
+ */
+export function resolveBoundaryElement(
+  host: HTMLElement,
+  boundary: HTMLElement | string | null,
+): HTMLElement | null {
+  if (boundary === null) {
+    return null;
+  }
+  return typeof boundary === 'string' ? host.closest<HTMLElement>(boundary) : boundary;
+}

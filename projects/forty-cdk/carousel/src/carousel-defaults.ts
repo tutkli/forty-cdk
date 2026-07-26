@@ -49,6 +49,20 @@ export interface ForCarouselDefaults {
    * per-indicator `ariaLabel` still takes precedence.
    */
   indicatorLabel: (position: number) => string;
+  /**
+   * Accessible name for `[forCarouselRotationControl]` while rotation is
+   * **stopped** (activating the control starts it), for controls that don't set
+   * `[startLabel]` locally. Localize it here to translate every carousel
+   * rotation control in the scope.
+   */
+  rotationStartLabel: string;
+  /**
+   * Accessible name for `[forCarouselRotationControl]` while rotation is
+   * **playing** (activating the control stops it), for controls that don't set
+   * `[stopLabel]` locally. Localize it here to translate every carousel
+   * rotation control in the scope.
+   */
+  rotationStopLabel: string;
 }
 
 /**
@@ -65,6 +79,8 @@ export const FOR_CAROUSEL_FALLBACK_DEFAULTS: ForCarouselDefaults = {
   autoplayInterval: 5000,
   slideLabel: (position, total) => `${position} of ${total}`,
   indicatorLabel: (position) => `Go to slide ${position}`,
+  rotationStartLabel: 'Start automatic slide show',
+  rotationStopLabel: 'Stop automatic slide show',
 };
 
 const { token, provideDefaults } = createDefaults<ForCarouselDefaults>(

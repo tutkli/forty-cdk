@@ -251,12 +251,14 @@ export class ForListboxReorder {
       .options()
       .filter((option) => option.host !== lifted)
       .map((option) => option.host.getBoundingClientRect());
-    const target = resolveDropTarget(
-      point,
-      [{ rect: this.#host.getBoundingClientRect(), itemRects }],
-      'mixed',
-      this.#ctx.dir(),
-    );
+    const target = resolveDropTarget(point, [
+      {
+        rect: this.#host.getBoundingClientRect(),
+        itemRects,
+        orientation: 'mixed',
+        dir: this.#ctx.dir(),
+      },
+    ]);
     return target ? target.index : this.#targetIndex;
   }
 

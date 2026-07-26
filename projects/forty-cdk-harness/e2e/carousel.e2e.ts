@@ -129,23 +129,58 @@ test.describe('Carousel (prev / next buttons)', () => {
     await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'inactive');
   });
 
-  test('prev is disabled at index 0 without loop', async ({ page }) => {
+  test('prev is aria-disabled at index 0 without loop', async ({ page }) => {
     await gotoFixture(page, 'carousel');
-    await expect(el(page, 'prev')).toBeDisabled();
+    await expect(el(page, 'prev')).toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'prev')).not.toHaveAttribute('disabled');
   });
 
-  test('next is disabled at the last index without loop', async ({ page }) => {
+  test('next is aria-disabled at the last index without loop', async ({ page }) => {
     await gotoFixture(page, 'carousel');
     await el(page, 'next').click();
     await el(page, 'next').click();
     await el(page, 'next').click();
-    await expect(el(page, 'next')).toBeDisabled();
+    await expect(el(page, 'next')).toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'next')).not.toHaveAttribute('disabled');
   });
 
   test('with loop=1 neither prev nor next is ever disabled', async ({ page }) => {
     await gotoFixture(page, 'carousel', { loop: '1' });
-    await expect(el(page, 'prev')).not.toBeDisabled();
-    await expect(el(page, 'next')).not.toBeDisabled();
+    await expect(el(page, 'prev')).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'prev')).not.toHaveAttribute('disabled');
+    await expect(el(page, 'next')).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(el(page, 'next')).not.toHaveAttribute('disabled');
+  });
+
+  test('reaching the last slide keeps DOM focus on next (aria-disabled, not native disabled) (#1392)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel');
+    const next = el(page, 'next');
+    await next.focus();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'slide-3')).toHaveAttribute('data-state', 'active');
+    await expect(next).toHaveAttribute('aria-disabled', 'true');
+    await expect(next).not.toHaveAttribute('disabled');
+    await expectFocused(next);
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'slide-3')).toHaveAttribute('data-state', 'active');
+    await expectFocused(next);
+  });
+
+  test('prev at index 0 keeps DOM focus (aria-disabled, not native disabled) (#1392)', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'carousel');
+    const prev = el(page, 'prev');
+    await prev.focus();
+    await page.keyboard.press('Enter');
+    await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
+    await expect(prev).toHaveAttribute('aria-disabled', 'true');
+    await expect(prev).not.toHaveAttribute('disabled');
+    await expectFocused(prev);
   });
 
   test('with loop=1, next past the last slide wraps to slide-0', async ({ page }) => {

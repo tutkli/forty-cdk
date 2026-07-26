@@ -7,6 +7,16 @@ import { createDefaults } from 'forty-cdk/core';
  * scope. Configure with `provideForDragDropDefaults` either at the application
  * root or in any component's `providers` array; partial overrides merge with
  * the parent scope.
+ *
+ * The three positional announcement builders share one contract: `label` is the
+ * dragged item's accessible text, `index` is the 1-based position being
+ * announced, and `total` is the number of **valid drop positions** in the list
+ * the announcement describes — never a bare item count. For a reorder inside
+ * one list that is its item count (the item is re-inserted among the existing
+ * ones); for a transfer into a connected list it is one more than the target's
+ * item count, because the append gap past the last item is also a valid
+ * position. `index` therefore never exceeds `total`, and an empty transfer
+ * target announces `1 of 1` rather than `1 of 0`.
  */
 export interface ForDragDropDefaults {
   /**
@@ -15,18 +25,19 @@ export interface ForDragDropDefaults {
    */
   itemRoleDescription: string;
   /**
-   * Announcement when an item is lifted. `index` and `total` describe the source
-   * list and are 1-based.
+   * Announcement when an item is lifted. `index` / `total` describe the source
+   * list, per the positional contract above.
    */
   announceLift: (label: string, index: number, total: number) => string;
   /**
-   * Announcement when the drop target position changes. `index` and `total`
-   * describe the target list and are 1-based.
+   * Announcement when the drop target position changes. `index` / `total`
+   * describe the target list (the list under the resolved drop position, which
+   * may be a connected list), per the positional contract above.
    */
   announceMove: (label: string, index: number, total: number) => string;
   /**
-   * Announcement on a committed drop. `index` and `total` describe the
-   * destination list and are 1-based.
+   * Announcement on a committed drop. `index` / `total` describe the destination
+   * list, per the positional contract above.
    */
   announceDrop: (label: string, index: number, total: number) => string;
   /** Announcement when a drag is cancelled. */

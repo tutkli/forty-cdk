@@ -8,7 +8,7 @@ import { ForScrollAreaCorner } from './scroll-area-corner';
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 import { ForScrollAreaThumb } from './scroll-area-thumb';
 import { ForScrollAreaViewport } from './scroll-area-viewport';
-import type { ForScrollAreaType } from './scroll-area-context';
+import type { ForScrollAreaTrackPress, ForScrollAreaType } from './scroll-area-context';
 
 @Component({
   imports: [
@@ -79,6 +79,23 @@ class ScrollAreaFocusableHost {
 })
 class ScrollAreaWiringHost {
   readonly root = viewChild.required(ForScrollArea);
+}
+
+@Component({
+  imports: [ForScrollArea, ForScrollAreaViewport, ForScrollAreaScrollbar, ForScrollAreaThumb],
+  template: `
+    <div forScrollArea type="always" [trackPress]="trackPress()">
+      <div forScrollAreaViewport data-testid="viewport">
+        <div style="width: 1000px; height: 1000px;">content</div>
+      </div>
+      <div forScrollAreaScrollbar orientation="vertical" data-testid="vbar">
+        <div forScrollAreaThumb data-testid="vthumb"></div>
+      </div>
+    </div>
+  `,
+})
+class ScrollAreaTrackPressHost {
+  readonly trackPress = signal<ForScrollAreaTrackPress>('page');
 }
 
 // Geometry — thumb size / position, overflow-driven visibility, hover / scroll
@@ -348,6 +365,183 @@ describe('ForScrollArea', () => {
       fixture.componentInstance.focusable.set(true);
       await flush(fixture);
       expect(viewport.getAttribute('tabindex')).toBe('0');
+    });
+  });
+
+  describe('track press (#1392 item 13)', () => {
+    const pointer = (type: string, init: PointerEventInit = {}): PointerEvent =>
+      new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1, ...init });
+
+    const release = (): void => {
+      document.dispatchEvent(pointer('pointerup'));
+    };
+
+    const stubPointerCapture = (el: HTMLElement): number[] => {
+      const captured: number[] = [];
+      el.setPointerCapture = (id: number): void => {
+        captured.push(id);
+      };
+      el.hasPointerCapture = (): boolean => false;
+      el.releasePointerCapture = (): void => {};
+      return captured;
+    };
+
+    it('claims a primary-button press on the track so the browser cannot start a text selection', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      stubPointerCapture(vbar);
+
+      const down = pointer('pointerdown', { clientY: 100 });
+      vbar.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+    });
+
+    it('leaves a track press untouched when trackPress="none"', async () => {
+      const { fixture, query, flush } = renderHost(ScrollAreaTrackPressHost);
+      fixture.componentInstance.trackPress.set('none');
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      const captured = stubPointerCapture(vbar);
+
+      const down = pointer('pointerdown', { clientY: 100 });
+      vbar.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(captured).toEqual([]);
+    });
+
+    it('ignores a non-primary-button press on the track', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      const captured = stubPointerCapture(vbar);
+
+      const down = pointer('pointerdown', { button: 1, clientY: 100 });
+      vbar.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(captured).toEqual([]);
+    });
+
+    it('does not claim a press that originated on the thumb', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      const vthumb = query<HTMLElement>('[data-testid="vthumb"]')!;
+      const trackCaptured = stubPointerCapture(vbar);
+      const thumbCaptured = stubPointerCapture(vthumb);
+
+      vthumb.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
+      release();
+      await flush();
+
+      expect(thumbCaptured).toEqual([1]);
+      expect(trackCaptured).toEqual([]);
+    });
+
+    it('keeps out of a thumb gesture even when the press cannot be default-prevented', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      const vthumb = query<HTMLElement>('[data-testid="vthumb"]')!;
+      const trackCaptured = stubPointerCapture(vbar);
+      const thumbCaptured = stubPointerCapture(vthumb);
+
+      vthumb.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: false, pointerId: 1 }),
+      );
+      release();
+      await flush();
+
+      expect(thumbCaptured).toEqual([1]);
+      expect(trackCaptured).toEqual([]);
+    });
+
+    it('does not claim a press a consumer handler already default-prevented', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      const captured = stubPointerCapture(vbar);
+
+      const down = pointer('pointerdown', { clientY: 100 });
+      down.preventDefault();
+      vbar.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(captured).toEqual([]);
+    });
+
+    it('detaches the document listeners on pointerup so a later move is inert', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      stubPointerCapture(vbar);
+
+      const addSpy = vi.spyOn(document, 'addEventListener');
+      const removeSpy = vi.spyOn(document, 'removeEventListener');
+
+      vbar.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
+      const moveListener = addSpy.mock.calls.find(([type]) => type === 'pointermove')?.[1];
+      expect(moveListener).toBeDefined();
+
+      release();
+      await flush();
+
+      expect(
+        removeSpy.mock.calls.some(
+          ([type, listener]) => type === 'pointermove' && listener === moveListener,
+        ),
+      ).toBe(true);
+      expect(removeSpy.mock.calls.some(([type]) => type === 'pointerup')).toBe(true);
+      expect(removeSpy.mock.calls.some(([type]) => type === 'pointercancel')).toBe(true);
+
+      expect(() => document.dispatchEvent(pointer('pointermove', { clientY: 300 }))).not.toThrow();
+    });
+
+    describe('repeat timer teardown', () => {
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('clears a pending repeat timer when the scroll area is destroyed mid-press', async () => {
+        const { fixture, query, flush } = renderHost(ScrollAreaTrackPressHost);
+        await flush();
+        const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+        stubPointerCapture(vbar);
+
+        vi.useFakeTimers();
+        vbar.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
+        fixture.destroy();
+
+        expect(() => vi.advanceTimersByTime(2_000)).not.toThrow();
+      });
+    });
+
+    it('zoneless: a track press under provideZonelessChangeDetection does not throw', async () => {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection()],
+      });
+      const fixture = TestBed.createComponent(ScrollAreaTrackPressHost);
+      await flush(fixture);
+
+      const vbar = fixture.nativeElement.querySelector('[data-testid="vbar"]') as HTMLElement;
+      stubPointerCapture(vbar);
+
+      const down = pointer('pointerdown', { clientY: 100 });
+      expect(() => vbar.dispatchEvent(down)).not.toThrow();
+      release();
+      await flush(fixture);
+
+      expect(down.defaultPrevented).toBe(true);
     });
   });
 

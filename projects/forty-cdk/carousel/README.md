@@ -110,6 +110,11 @@ the defaults with `startLabel` / `stopLabel` inputs:
 <button forCarouselRotationControl startLabel="Play slideshow" stopLabel="Pause slideshow"></button>
 ```
 
+Both defaults come from the scope's `rotationStartLabel` / `rotationStopLabel`
+(see [Localizing the default labels](#localizing-the-default-labels)); set either
+input to `null` when the button carries a visible text label and you don't want
+an `aria-label` overriding it.
+
 **Programmatic control** via `exportAs`:
 
 ```html
@@ -189,16 +194,19 @@ captured, so page scrolling on the perpendicular axis is unaffected.
 
 ## Localizing the default labels
 
-Each slide's default `aria-label` is the positional `"N of M"` string, and each
-indicator's is `"Go to slide N"`. Localize both centrally with
-`provideForCarouselDefaults` instead of setting `ariaLabel` on every slide and
-indicator:
+Each slide's default `aria-label` is the positional `"N of M"` string, each
+indicator's is `"Go to slide N"`, and the rotation control's swaps between
+`"Start automatic slide show"` and `"Stop automatic slide show"`. Localize them
+all centrally with `provideForCarouselDefaults` instead of setting `ariaLabel` on
+every slide and indicator:
 
 ```ts
 providers: [
   provideForCarouselDefaults({
     slideLabel: (position, total) => `Diapositiva ${position} de ${total}`,
     indicatorLabel: (position) => `Ir a la diapositiva ${position}`,
+    rotationStartLabel: 'Iniciar la presentación',
+    rotationStopLabel: 'Detener la presentación',
   }),
 ];
 ```
@@ -206,7 +214,8 @@ providers: [
 `position` is the 1-based slide index and `total` is the slide count. Overrides
 merge with the parent scope, so you can localize just the labels and inherit the
 rest of the defaults. A per-element `ariaLabel` on `[forCarouselSlide]` /
-`[forCarouselIndicator]` still takes precedence over the localized default.
+`[forCarouselIndicator]` still takes precedence over the localized default, as do
+`[startLabel]` / `[stopLabel]` on `[forCarouselRotationControl]`.
 
 ## API
 
@@ -229,8 +238,8 @@ All inputs are on `[forCarousel]` unless noted.
 | `ariaLabel` (on `[forCarouselIndicators]`)       | `string \| null`               | Label for the picker group.<br>**Default:** `null`                                                                                                         |
 | `ariaLabel` (on `[forCarouselSlide]`)            | `string \| null`               | Override the positional "N of M" label.<br>**Default:** `null`                                                                                             |
 | `disabled` (on `[forCarouselIndicator]`)         | `boolean`                      | Disable this indicator.<br>**Default:** `false`                                                                                                            |
-| `startLabel` (on `[forCarouselRotationControl]`) | `string`                       | Accessible name while rotation is stopped.<br>**Default:** `'Start automatic slide show'`                                                                  |
-| `stopLabel` (on `[forCarouselRotationControl]`)  | `string`                       | Accessible name while rotation is playing.<br>**Default:** `'Stop automatic slide show'`                                                                   |
+| `startLabel` (on `[forCarouselRotationControl]`) | `string \| null`               | Accessible name while rotation is stopped.<br>**Default:** scope `rotationStartLabel` (`'Start automatic slide show'`)                                     |
+| `stopLabel` (on `[forCarouselRotationControl]`)  | `string \| null`               | Accessible name while rotation is playing.<br>**Default:** scope `rotationStopLabel` (`'Stop automatic slide show'`)                                       |
 
 Reflected on the `[forCarousel]` host:
 
@@ -298,8 +307,10 @@ Implements the [WAI-ARIA Carousel pattern](https://www.w3.org/WAI/ARIA/apg/patte
   accessibility tree and focus order.
 - The indicator group should be labelled (e.g. `ariaLabel="Choose slide to display"`).
 - The current indicator is marked with `aria-current="true"`.
-- Prev/next buttons use native `disabled` so they are removed from the tab order when
-  at the boundary without loop.
+- Prev/next buttons never use the native `disabled` attribute. At a boundary without `loop`
+  they reflect `aria-disabled="true"` + `data-disabled` and ignore activation, so a keyboard
+  user who reaches the last slide keeps focus on the button instead of being dropped to
+  `<body>`. Style the boundary state off `[data-disabled]`, never `:disabled`.
 - The viewport carries `aria-live` and `aria-atomic="false"`. While the carousel is actively
   auto-rotating, `aria-live` is `"off"` so advancing slides do not bombard the screen reader.
   When stopped or paused, it is `"polite"` so manual navigation announces. The per-slide
@@ -364,6 +375,13 @@ children, unless noted otherwise:
 | `data-playing`  | On `[forCarouselRotationControl]` — user intent is "on" |
 | `data-rotating` | On `[forCarousel]` — actively rotating right now        |
 | `data-autoplay` | On `[forCarousel]` — the `autoplay` input is `true`     |
+
+### Boundary styling hooks
+
+| Attribute       | When present                                              |
+| --------------- | --------------------------------------------------------- |
+| `data-disabled` | On `[forCarouselPrevious]` — at index 0 without `loop`    |
+| `data-disabled` | On `[forCarouselNext]` — at the last index without `loop` |
 
 ### Drag styling hooks
 
