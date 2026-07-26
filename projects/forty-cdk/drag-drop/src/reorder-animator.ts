@@ -22,9 +22,13 @@ export interface ReorderAnimatorOptions {
  * animator and tears down instantly, replacing the former inline `animate && first` gate.
  *
  * {@link captureFirst} measures every item's pre-change position and must run **before** the
- * `dragDrop` event mutates the DOM; {@link schedule} runs the Invert + Play after the consumer's
- * data change has rendered. Constructed directly (`new ReorderAnimator(options)`); it holds no
- * injection context beyond the injector handed in for `afterNextRender`.
+ * `dragDrop` event mutates the DOM **and before the pointer-drag placeholder is torn down**, so
+ * the First rects are the parted positions the user last saw — a live-sorted drop then has nothing
+ * to animate instead of snapping the siblings back. Hosts that measure zero-area (a `display:none`
+ * item standing behind its placeholder) are skipped: they have no First position to invert from.
+ * {@link schedule} runs the Invert + Play after the consumer's data change has rendered.
+ * Constructed directly (`new ReorderAnimator(options)`); it holds no injection context beyond the
+ * injector handed in for `afterNextRender`.
  */
 export class ReorderAnimator {
   readonly #containers: readonly ForDropListContext[];
@@ -44,6 +48,9 @@ export class ReorderAnimator {
     for (const ctx of this.#containers) {
       for (const h of ctx.items()) {
         const r = h.host.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) {
+          continue;
+        }
         map.set(h.host, { left: r.left, top: r.top });
       }
     }

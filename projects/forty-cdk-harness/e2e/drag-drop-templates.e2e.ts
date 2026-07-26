@@ -148,6 +148,73 @@ test.describe('drag-drop live-sort placeholder', () => {
     await expect(el(page, 'item-1')).toHaveText(/Alpha/);
   });
 
+  test('liveSort + animateReorder — the released drop animates no sibling back', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'drag-drop-templates', { liveSort: 'true', animate: 'true' });
+
+    const item0 = el(page, 'item-0');
+    const item1 = el(page, 'item-1');
+
+    const box0 = await item0.boundingBox();
+    const box1 = await item1.boundingBox();
+    if (!box0 || !box1) throw new Error('Items not found');
+
+    const startX = box0.x + box0.width / 2;
+    const startY = box0.y + box0.height / 2;
+    const targetY = box1.y + box1.height - 4;
+
+    const readOrder = () =>
+      page
+        .locator('[data-testid="list"] > *')
+        .evaluateAll((nodes) => nodes.map((n) => (n as HTMLElement).getAttribute('data-testid')));
+    const placeholderPastItem1 = async () => {
+      const order = await readOrder();
+      return order.indexOf('custom-placeholder') > order.indexOf('item-1');
+    };
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+
+    let crossed = false;
+    for (let y = startY + 12; y <= targetY && !crossed; y += 5) {
+      await page.mouse.move(startX, y);
+      for (let attempt = 0; attempt < 4 && !crossed; attempt++) {
+        crossed = await placeholderPastItem1();
+        if (!crossed) await page.waitForTimeout(25);
+      }
+    }
+    expect(crossed).toBe(true);
+
+    await page.evaluate(() => {
+      const win = window as unknown as { __flipStamps?: number };
+      win.__flipStamps = 0;
+      new MutationObserver((records) => {
+        for (const record of records) {
+          if ((record.target as HTMLElement).hasAttribute('data-drag-animating')) {
+            win.__flipStamps = (win.__flipStamps ?? 0) + 1;
+          }
+        }
+      }).observe(document.body, {
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['data-drag-animating'],
+      });
+    });
+
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+
+    const stamps = await page.evaluate(
+      () => (window as unknown as { __flipStamps?: number }).__flipStamps ?? -1,
+    );
+    expect(stamps).toBe(0);
+
+    await expect(el(page, 'item-0')).toHaveText(/Beta/);
+    await expect(el(page, 'item-1')).toHaveText(/Alpha/);
+  });
+
   test('liveSort OFF (default) — placeholder stays at source slot mid-drag', async ({ page }) => {
     await gotoFixture(page, 'drag-drop-templates');
 

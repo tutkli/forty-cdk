@@ -1,16 +1,6 @@
-import {
-  computed,
-  DestroyRef,
-  DOCUMENT,
-  Directive,
-  ElementRef,
-  inject,
-  signal,
-} from '@angular/core';
+import { DestroyRef, DOCUMENT, Directive, ElementRef, inject, signal } from '@angular/core';
 
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
-
-const MIN_THUMB_SIZE = 8;
 
 function injectRequiredScrollbar(): ForScrollAreaScrollbar {
   const scrollbar = inject(ForScrollAreaScrollbar, { optional: true });
@@ -51,70 +41,21 @@ export class ForScrollAreaThumb {
 
   readonly #dragging = signal(false);
   #dragStartPointer = 0;
-  #dragStartScroll = 0;
+  #dragStartPosition = 0;
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.#endDrag());
-  }
-
-  /** Track length in CSS pixels (reactive — derived from the scrollbar's measured size). */
-  readonly #trackLength = computed<number>(() => {
-    const size = this.scrollbar.size();
-    if (!size) return 0;
-    return this.scrollbar.orientation() === 'horizontal' ? size.width : size.height;
-  });
-
-  readonly #ratio = computed<number>(() => {
-    const ctx = this.scrollbar.ctx;
-    if (this.scrollbar.orientation() === 'horizontal') {
-      const sw = ctx.scrollWidth();
-      if (sw <= 0) return 0;
-      return Math.min(1, ctx.clientWidth() / sw);
-    }
-    const sh = ctx.scrollHeight();
-    if (sh <= 0) return 0;
-    return Math.min(1, ctx.clientHeight() / sh);
-  });
-
-  readonly #thumbSize = computed<number>(() => {
-    const tl = this.#trackLength();
-    const r = this.#ratio();
-    if (tl === 0 || r === 0) return 0;
-    return Math.max(MIN_THUMB_SIZE, Math.floor(tl * r));
-  });
-
-  readonly #thumbOffset = computed<number>(() => {
-    const ctx = this.scrollbar.ctx;
-    const tl = this.#trackLength();
-    const tsz = this.#thumbSize();
-    if (this.scrollbar.orientation() === 'horizontal') {
-      const max = ctx.scrollWidth() - ctx.clientWidth();
-      if (max <= 0) return 0;
-      const left = this.#normalizeScrollLeft(ctx.scrollLeft(), max);
-      return (left / max) * (tl - tsz) || 0;
-    }
-    const max = ctx.scrollHeight() - ctx.clientHeight();
-    if (max <= 0) return 0;
-    return (ctx.scrollTop() / max) * (tl - tsz) || 0;
-  });
-
-  /**
-   * Normalise the viewport's `scrollLeft` to a left-edge-origin value in
-   * `[0, max]`. In LTR `scrollLeft` is already left-origin. In RTL the browser
-   * reports `scrollLeft` in the negative model (`0` at rest with the content's
-   * right edge flush, `-max` when scrolled fully left), so a left-origin
-   * position is `scrollLeft + max` — `max` at rest (thumb pinned to the right)
-   * down to `0` when scrolled forward.
-   */
-  #normalizeScrollLeft(scrollLeft: number, max: number): number {
-    return this.scrollbar.ctx.dir() === 'rtl' ? scrollLeft + max : scrollLeft;
+    this.scrollbar.registerThumb(this.#host);
+    inject(DestroyRef).onDestroy(() => {
+      this.scrollbar.unregisterThumb(this.#host);
+      this.#endDrag();
+    });
   }
 
   protected widthPx(): number | null {
-    return this.scrollbar.orientation() === 'horizontal' ? this.#thumbSize() : null;
+    return this.scrollbar.orientation() === 'horizontal' ? this.scrollbar.thumbSize() : null;
   }
   protected heightPx(): number | null {
-    return this.scrollbar.orientation() === 'vertical' ? this.#thumbSize() : null;
+    return this.scrollbar.orientation() === 'vertical' ? this.scrollbar.thumbSize() : null;
   }
   protected leftPx(): number | null {
     return this.scrollbar.orientation() === 'horizontal' ? 0 : null;
@@ -124,9 +65,9 @@ export class ForScrollAreaThumb {
   }
   protected transformValue(): string {
     if (this.scrollbar.orientation() === 'horizontal') {
-      return `translateX(${this.#thumbOffset()}px)`;
+      return `translateX(${this.scrollbar.thumbOffset()}px)`;
     }
-    return `translateY(${this.#thumbOffset()}px)`;
+    return `translateY(${this.scrollbar.thumbOffset()}px)`;
   }
 
   protected onPointerDown(event: PointerEvent): void {
@@ -137,9 +78,7 @@ export class ForScrollAreaThumb {
     this.#host.setPointerCapture(event.pointerId);
     this.#dragStartPointer =
       this.scrollbar.orientation() === 'horizontal' ? event.clientX : event.clientY;
-    const ctx = this.scrollbar.ctx;
-    this.#dragStartScroll =
-      this.scrollbar.orientation() === 'horizontal' ? ctx.scrollLeft() : ctx.scrollTop();
+    this.#dragStartPosition = this.scrollbar.scrollPosition();
     // Listen on the owner document, not the thumb element: pointer capture is
     // set on the thumb (so the gesture stays bound to this pointer), but the
     // captured node can be removed mid-drag when the scrollbar self-hides
@@ -158,23 +97,15 @@ export class ForScrollAreaThumb {
 
   readonly #onPointerMove = (event: PointerEvent): void => {
     if (!this.#dragging()) return;
-    const ctx = this.scrollbar.ctx;
-    const viewport = ctx.viewport();
-    if (!viewport) return;
-    const tl = this.#trackLength();
-    const tsz = this.#thumbSize();
-    if (tl - tsz <= 0) return;
-    if (this.scrollbar.orientation() === 'horizontal') {
-      const delta = event.clientX - this.#dragStartPointer;
-      const scrollMax = ctx.scrollWidth() - ctx.clientWidth();
-      const scrollDelta = (delta / (tl - tsz)) * scrollMax;
-      viewport.scrollLeft = this.#dragStartScroll + scrollDelta;
-    } else {
-      const delta = event.clientY - this.#dragStartPointer;
-      const scrollMax = ctx.scrollHeight() - ctx.clientHeight();
-      const scrollDelta = (delta / (tl - tsz)) * scrollMax;
-      viewport.scrollTop = this.#dragStartScroll + scrollDelta;
-    }
+    const usable = this.scrollbar.usableTrack();
+    if (usable <= 0) return;
+    const delta =
+      this.scrollbar.orientation() === 'horizontal'
+        ? event.clientX - this.#dragStartPointer
+        : event.clientY - this.#dragStartPointer;
+    this.scrollbar.scrollToPosition(
+      this.#dragStartPosition + (delta / usable) * this.scrollbar.maxScroll(),
+    );
   };
 
   readonly #onPointerUp = (event: PointerEvent): void => {

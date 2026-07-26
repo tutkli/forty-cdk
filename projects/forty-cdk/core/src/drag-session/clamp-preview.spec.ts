@@ -1,4 +1,4 @@
-import { clampPreviewPosition } from './clamp-preview';
+import { clampPreviewPosition, resolveBoundaryElement } from './clamp-preview';
 
 describe('clampPreviewPosition', () => {
   it('no-op when boundary is null and lockAxis is null — returns desired unchanged', () => {
@@ -80,5 +80,43 @@ describe('clampPreviewPosition', () => {
     );
     expect(result.x).toBe(160);
     expect(result.y).toBe(30);
+  });
+});
+
+describe('resolveBoundaryElement', () => {
+  function tree(): { outer: HTMLElement; inner: HTMLElement } {
+    const outer = document.createElement('div');
+    outer.className = 'viewport';
+    const inner = document.createElement('span');
+    inner.className = 'box';
+    outer.appendChild(inner);
+    return { outer, inner };
+  }
+
+  it('returns null for a null boundary — unbounded movement', () => {
+    expect(resolveBoundaryElement(tree().inner, null)).toBeNull();
+  });
+
+  it('returns an HTMLElement boundary unchanged, without touching the host', () => {
+    const { outer, inner } = tree();
+    expect(resolveBoundaryElement(inner, outer)).toBe(outer);
+
+    const unrelated = document.createElement('div');
+    expect(resolveBoundaryElement(inner, unrelated)).toBe(unrelated);
+  });
+
+  it('resolves a selector boundary to the nearest matching ancestor via closest()', () => {
+    const { outer, inner } = tree();
+    expect(resolveBoundaryElement(inner, '.viewport')).toBe(outer);
+  });
+
+  it('resolves a selector boundary to the host itself when the host matches', () => {
+    const { inner } = tree();
+    expect(resolveBoundaryElement(inner, '.box')).toBe(inner);
+  });
+
+  it('returns null when a selector boundary matches no ancestor', () => {
+    const { inner } = tree();
+    expect(resolveBoundaryElement(inner, '.nope')).toBeNull();
   });
 });

@@ -445,4 +445,162 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await expect(scrollbar).toHaveAttribute('data-state', 'hidden');
     });
   });
+
+  test.describe('track press', () => {
+    async function trackPoint(
+      page: Page,
+      testid: string,
+      offset: number,
+      axis: 'x' | 'y',
+    ): Promise<{ x: number; y: number }> {
+      const box = (await el(page, testid).boundingBox())!;
+      return axis === 'y'
+        ? { x: box.x + box.width / 2, y: box.y + offset }
+        : { x: box.x + offset, y: box.y + box.height / 2 };
+    }
+
+    async function pressAndRelease(page: Page, at: { x: number; y: number }): Promise<void> {
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.down();
+      await page.mouse.up();
+    }
+
+    const scrollTopOf = (page: Page): Promise<number> =>
+      el(page, 'viewport').evaluate((node) => (node as HTMLElement).scrollTop);
+
+    const scrollLeftOf = (page: Page): Promise<number> =>
+      el(page, 'viewport').evaluate((node) => (node as HTMLElement).scrollLeft);
+
+    test('pressing the track below the thumb pages the viewport down by about one page', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', { trackPressRepeatDelay: '3000' });
+      await waitForOverflowMeasured(page);
+      expect(await scrollTopOf(page)).toBe(0);
+
+      await pressAndRelease(page, await trackPoint(page, 'scrollbar-vertical', 150, 'y'));
+
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(155);
+      expect(await scrollTopOf(page)).toBeLessThan(195);
+    });
+
+    test('pressing the track above the thumb pages back up', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { trackPressRepeatDelay: '3000' });
+      await waitForOverflowMeasured(page);
+
+      await el(page, 'viewport').evaluate((node) => {
+        (node as HTMLElement).scrollTop = 400;
+      });
+      await expect.poll(() => scrollTopOf(page)).toBe(400);
+
+      await pressAndRelease(page, await trackPoint(page, 'scrollbar-vertical', 10, 'y'));
+
+      await expect.poll(() => scrollTopOf(page)).toBeLessThan(245);
+      expect(await scrollTopOf(page)).toBeGreaterThan(205);
+    });
+
+    test('holding the press repeats the paging and stops when the thumb reaches the pointer', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', {
+        trackPressRepeatDelay: '50',
+        trackPressRepeatInterval: '20',
+      });
+      await waitForOverflowMeasured(page);
+
+      const at = await trackPoint(page, 'scrollbar-vertical', 185, 'y');
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.down();
+
+      await page.waitForTimeout(600);
+      const afterRepeat = await scrollTopOf(page);
+      expect(afterRepeat).toBeGreaterThan(400);
+      expect(afterRepeat).toBeLessThan(580);
+
+      await page.waitForTimeout(400);
+      expect(await scrollTopOf(page)).toBe(afterRepeat);
+
+      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      expect(thumbBox.y).toBeLessThanOrEqual(at.y + 2);
+      expect(thumbBox.y + thumbBox.height).toBeGreaterThanOrEqual(at.y - 2);
+
+      await page.mouse.up();
+    });
+
+    test('trackPress="none" leaves the viewport untouched on a track press', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { trackPress: 'none' });
+      await waitForOverflowMeasured(page);
+
+      await pressAndRelease(page, await trackPoint(page, 'scrollbar-vertical', 150, 'y'));
+      await page.waitForTimeout(200);
+
+      expect(await scrollTopOf(page)).toBe(0);
+    });
+
+    test('trackPress="jump" centres the thumb on the press point', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { trackPress: 'jump' });
+      await waitForOverflowMeasured(page);
+
+      const at = await trackPoint(page, 'scrollbar-vertical', 150, 'y');
+      await pressAndRelease(page, at);
+
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(0);
+
+      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      const centre = thumbBox.y + thumbBox.height / 2;
+      expect(centre).toBeGreaterThanOrEqual(at.y - 4);
+      expect(centre).toBeLessThanOrEqual(at.y + 4);
+    });
+
+    test('trackPress="jump" scrubs while the pointer is held and moved', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { trackPress: 'jump' });
+      await waitForOverflowMeasured(page);
+
+      const start = await trackPoint(page, 'scrollbar-vertical', 100, 'y');
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(0);
+      const afterJump = await scrollTopOf(page);
+
+      await page.mouse.move(start.x, start.y + 60);
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(afterJump + 50);
+
+      await page.mouse.up();
+    });
+
+    test('RTL: pressing before the horizontal thumb pages the logical scroll forward', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'scroll-area', { dir: 'rtl', trackPressRepeatDelay: '3000' });
+      await waitForOverflowMeasured(page);
+      expect(await scrollLeftOf(page)).toBe(0);
+
+      await pressAndRelease(page, await trackPoint(page, 'scrollbar-horizontal', 100, 'x'));
+
+      await expect.poll(() => scrollLeftOf(page)).toBeLessThan(-50);
+    });
+
+    test('a press that lands on the thumb still drags instead of paging', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { trackPressRepeatDelay: '3000' });
+      await waitForOverflowMeasured(page);
+
+      await dragFrom(page, el(page, 'thumb-vertical'), { dx: 0, dy: 60 });
+
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(220);
+      expect(await scrollTopOf(page)).toBeLessThan(260);
+    });
+
+    test('@mobile a touch press on the track pages the viewport', async ({ page }) => {
+      await gotoFixture(page, 'scroll-area', { trackPressRepeatDelay: '3000' });
+      await waitForOverflowMeasured(page);
+
+      const at = await trackPoint(page, 'scrollbar-vertical', 150, 'y');
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.down();
+      await page.mouse.up();
+
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(155);
+      expect(await scrollTopOf(page)).toBeLessThan(195);
+    });
+  });
 });

@@ -31,6 +31,23 @@ test.describe('PaneResizer (focus + tab order)', () => {
     await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'resizer'));
   });
+
+  test('a pointer drag leaves the resizer focused so arrows fine-tune immediately', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'pane-resizer', { initial: '200', step: '10' });
+
+    await dragFrom(page, el(page, 'resizer'), { dx: 50, dy: 0 });
+    await expectFocused(el(page, 'resizer'));
+
+    // The drag's preventDefault suppresses native focus-on-press, and WebKit
+    // never focuses a tabindex div on mouse press at all — the arrow only lands
+    // because the directive focuses the host imperatively.
+    await page.keyboard.press('ArrowRight');
+    const readValue = async (): Promise<number> => Number(await el(page, 'value').textContent());
+    await expect.poll(readValue).toBeGreaterThanOrEqual(255);
+    expect(await readValue()).toBeLessThanOrEqual(265);
+  });
 });
 
 test.describe('PaneResizer (pointer drag)', () => {
@@ -179,6 +196,23 @@ test.describe('PaneResizer (keyboard navigation)', () => {
     await page.keyboard.press('ArrowRight');
     await expect(el(page, 'resize-commit-count')).toHaveText('1');
     await expect(el(page, 'last-resize-commit')).toHaveText('210');
+  });
+
+  test('Tab-away between keydown and keyup still fires resizeCommit', async ({ page }) => {
+    await gotoFixture(page, 'pane-resizer', { initial: '200', step: '10' });
+    await el(page, 'resizer').focus();
+
+    await page.keyboard.down('ArrowRight');
+    // Key-repeat can push the value past 210 on some platforms, so assert the
+    // lower bound rather than the exact text.
+    await expect(el(page, 'value')).not.toHaveText('200');
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'after'));
+    await page.keyboard.up('ArrowRight');
+
+    await expect(el(page, 'resize-commit-count')).toHaveText('1');
+    const committed = Number(await el(page, 'last-resize-commit').textContent());
+    expect(committed).toBeGreaterThanOrEqual(210);
   });
 });
 

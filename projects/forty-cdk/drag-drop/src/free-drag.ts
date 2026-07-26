@@ -20,6 +20,7 @@ import {
   createPointerDragSession,
   createPointerHandleGuard,
   type PointerDragSession,
+  resolveBoundaryElement,
 } from 'forty-cdk/core';
 import { FOR_DRAGGABLE_CONTEXT, type ForDraggableContext } from './drag-drop-context';
 
@@ -158,16 +159,6 @@ export class ForFreeDrag implements ForDraggableContext {
     return typeof root === 'string' ? (host.closest<HTMLElement>(root) ?? host) : root;
   });
 
-  #resolveBoundary(): HTMLElement | null {
-    const boundary = this.boundary();
-    if (boundary === null) {
-      return null;
-    }
-    return typeof boundary === 'string'
-      ? this.#host.nativeElement.closest<HTMLElement>(boundary)
-      : boundary;
-  }
-
   #onLift(event: PointerEvent): boolean {
     const rect = this.#resolvedRoot().getBoundingClientRect();
     const position = this.position();
@@ -191,7 +182,8 @@ export class ForFreeDrag implements ForDraggableContext {
       x: lift.topLeft.x + (event.clientX - lift.point.x),
       y: lift.topLeft.y + (event.clientY - lift.point.y),
     };
-    const boundaryRect = this.#resolveBoundary()?.getBoundingClientRect() ?? null;
+    const boundaryEl = resolveBoundaryElement(this.#host.nativeElement, this.boundary());
+    const boundaryRect = boundaryEl?.getBoundingClientRect() ?? null;
     const clamped = clampPreviewPosition(
       desired,
       lift.size,

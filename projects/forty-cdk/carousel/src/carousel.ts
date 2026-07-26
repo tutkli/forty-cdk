@@ -18,6 +18,7 @@ import { isPlatformBrowser } from '@angular/common';
 
 import {
   Collection,
+  createSingleSlot,
   firstEnabledHost,
   injectElementSize,
   type ListNavigationAction,
@@ -36,6 +37,7 @@ import {
   type ForCarouselContext,
   type ForCarouselIndicatorHandle,
   type ForCarouselSlideHandle,
+  type ForCarouselViewportHandle,
 } from './carousel-context';
 import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
 
@@ -186,8 +188,12 @@ export class ForCarousel implements ForCarouselContext {
   readonly #slides = new Collection<ForCarouselSlideHandle>();
   readonly #indicators = new Collection<ForCarouselIndicatorHandle>();
 
-  readonly #viewportEl = signal<HTMLElement | null>(null);
-  readonly #viewportId = signal<string | null>(null);
+  readonly #viewport = createSingleSlot<ForCarouselViewportHandle>({
+    primitive: 'carousel',
+    owner: '[forCarousel]',
+    claimant: '[forCarouselViewport]',
+  });
+  readonly #viewportEl = computed(() => this.#viewport.value()?.host ?? null);
   readonly #viewportBox = injectElementSize(this.#viewportEl);
 
   /** Total number of registered slides. Reactive. */
@@ -328,14 +334,21 @@ export class ForCarousel implements ForCarouselContext {
   }
 
   /** Called by `ForCarouselViewport` at construction to wire the geometry observer. */
-  setViewport(el: HTMLElement, id: string): void {
-    this.#viewportEl.set(el);
-    this.#viewportId.set(id);
+  registerViewport(handle: ForCarouselViewportHandle): void {
+    this.#viewport.register(handle);
+  }
+
+  /**
+   * Called by `ForCarouselViewport` on destroy so an unmounted viewport stops
+   * being observed and prev / next drop their stale `aria-controls`.
+   */
+  unregisterViewport(handle: ForCarouselViewportHandle): void {
+    this.#viewport.unregister(handle);
   }
 
   /** The id of the registered viewport element, or `null` if none is mounted. */
   viewportId(): string | null {
-    return this.#viewportId();
+    return this.#viewport.value()?.id ?? null;
   }
 
   /** DOM-order index of the registered slide whose host equals `host`, or -1. */

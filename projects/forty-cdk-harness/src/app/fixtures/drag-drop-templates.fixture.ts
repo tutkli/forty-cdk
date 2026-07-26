@@ -42,6 +42,9 @@ interface Item {
       [forDraggable][data-dragging] {
         opacity: 0.4;
       }
+      [forDraggable][data-drag-animating] {
+        transition: transform 150ms linear;
+      }
       .custom-placeholder {
         height: 40px;
         background: #d0e8ff;
@@ -51,7 +54,13 @@ interface Item {
     `,
   ],
   template: `
-    <ul forDropList data-testid="list" [liveSort]="liveSort" (dragDrop)="onDrop($event)">
+    <ul
+      forDropList
+      data-testid="list"
+      [liveSort]="liveSort"
+      [animateReorder]="animate"
+      (dragDrop)="onDrop($event)"
+    >
       @for (item of items(); track item.id; let i = $index) {
         <li forDraggable [dragData]="item" [attr.data-testid]="'item-' + i">
           {{ item.label }}
@@ -70,6 +79,8 @@ export class DragDropTemplatesFixture {
   readonly #route = inject(ActivatedRoute);
 
   protected readonly liveSort = this.#route.snapshot.queryParamMap.get('liveSort') === 'true';
+
+  protected readonly animate = this.#route.snapshot.queryParamMap.get('animate') === 'true';
 
   protected readonly items = signal<Item[]>([
     { id: 1, label: 'Alpha' },

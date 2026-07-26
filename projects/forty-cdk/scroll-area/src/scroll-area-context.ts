@@ -5,10 +5,25 @@ import { type WritingDirection } from 'forty-cdk/core';
 export type ForScrollAreaType = 'auto' | 'always' | 'scroll' | 'hover';
 export type ForScrollbarOrientation = 'horizontal' | 'vertical';
 
+/**
+ * What a primary-button press on bare scrollbar track does:
+ * - `'page'` — step one page toward the press and auto-repeat while held,
+ *   stopping when the thumb reaches the pointer (platform default).
+ * - `'jump'` — centre the thumb on the press point, then scrub while held.
+ * - `'none'` — the library ignores track presses entirely.
+ */
+export type ForScrollAreaTrackPress = 'none' | 'page' | 'jump';
+
 export interface ForScrollAreaContext {
   readonly type: Signal<ForScrollAreaType>;
   readonly scrollHideDelay: Signal<number>;
   readonly dir: Signal<WritingDirection>;
+  /** Behaviour of a primary-button press on bare scrollbar track. */
+  readonly trackPress: Signal<ForScrollAreaTrackPress>;
+  /** ms a `trackPress="page"` hold waits before the first auto-repeat step. */
+  readonly trackPressRepeatDelay: Signal<number>;
+  /** ms between auto-repeat steps of a held `trackPress="page"` gesture. */
+  readonly trackPressRepeatInterval: Signal<number>;
 
   /** The scrolling element (registered by `ForScrollAreaViewport`). */
   readonly viewport: Signal<HTMLElement | null>;

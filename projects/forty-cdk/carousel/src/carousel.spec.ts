@@ -127,6 +127,38 @@ class LocalizedCarouselHost {
   readonly indicatorOverride = signal<string | null>(null);
 }
 
+@Component({
+  imports: [
+    ForCarousel,
+    ForCarouselViewport,
+    ForCarouselTrack,
+    ForCarouselSlide,
+    ForCarouselPrevious,
+    ForCarouselNext,
+  ],
+  template: `
+    <div forCarousel>
+      <button forCarouselPrevious data-testid="prev"></button>
+      @if (mounted()) {
+        @if (swapped()) {
+          <div forCarouselViewport id="vp-b">
+            <div forCarouselTrack><div forCarouselSlide>b</div></div>
+          </div>
+        } @else {
+          <div forCarouselViewport id="vp-a">
+            <div forCarouselTrack><div forCarouselSlide>a</div></div>
+          </div>
+        }
+      }
+      <button forCarouselNext data-testid="next"></button>
+    </div>
+  `,
+})
+class ViewportLifecycleHost {
+  readonly mounted = signal(true);
+  readonly swapped = signal(false);
+}
+
 const slide = (host: HTMLElement, i: number) =>
   host.querySelector<HTMLElement>(`[data-slide="${i}"]`)!;
 
@@ -250,16 +282,20 @@ describe('ForCarousel', () => {
       expect(slide(el, 1).getAttribute('data-state')).toBe('active');
     });
 
-    it('prev is disabled at index 0 without loop', () => {
+    it('prev reflects aria-disabled + data-disabled at index 0 without loop, never native disabled (#1392)', () => {
       const { el } = renderHost(CarouselHost);
-      expect(prev(el).hasAttribute('disabled')).toBe(true);
+      expect(prev(el).hasAttribute('disabled')).toBe(false);
+      expect(prev(el).getAttribute('aria-disabled')).toBe('true');
+      expect(prev(el).getAttribute('data-disabled')).toBe('');
     });
 
-    it('next is disabled at the last index without loop', () => {
+    it('next reflects aria-disabled + data-disabled at the last index without loop, never native disabled (#1392)', () => {
       const { el, instance, fixture } = renderHost(CarouselHost);
       instance.active.set(2);
       fixture.detectChanges();
-      expect(next(el).hasAttribute('disabled')).toBe(true);
+      expect(next(el).hasAttribute('disabled')).toBe(false);
+      expect(next(el).getAttribute('aria-disabled')).toBe('true');
+      expect(next(el).getAttribute('data-disabled')).toBe('');
     });
 
     it('with loop neither prev nor next is ever disabled', () => {
@@ -267,9 +303,42 @@ describe('ForCarousel', () => {
       instance.loop.set(true);
       fixture.detectChanges();
       expect(prev(el).hasAttribute('disabled')).toBe(false);
+      expect(prev(el).getAttribute('aria-disabled')).toBeNull();
+      expect(prev(el).hasAttribute('data-disabled')).toBe(false);
       instance.active.set(2);
       fixture.detectChanges();
       expect(next(el).hasAttribute('disabled')).toBe(false);
+      expect(next(el).getAttribute('aria-disabled')).toBeNull();
+      expect(next(el).hasAttribute('data-disabled')).toBe(false);
+    });
+
+    it('a boundary-disabled next is inoperable: clicking does not move the active slide (#1392)', async () => {
+      const { el, instance, fixture, flush } = renderHost(CarouselHost);
+      instance.active.set(2);
+      fixture.detectChanges();
+      next(el).click();
+      await flush();
+      expect(slide(el, 2).getAttribute('data-state')).toBe('active');
+      expect(root(el).style.getPropertyValue('--for-carousel-active-index')).toBe('2');
+    });
+
+    it('a boundary-disabled prev is inoperable: clicking does not move the active slide (#1392)', async () => {
+      const { el, flush } = renderHost(CarouselHost);
+      prev(el).click();
+      await flush();
+      expect(slide(el, 0).getAttribute('data-state')).toBe('active');
+      expect(root(el).style.getPropertyValue('--for-carousel-active-index')).toBe('0');
+    });
+
+    it('re-enables both channels when the boundary is left', () => {
+      const { el, instance, fixture } = renderHost(CarouselHost);
+      instance.active.set(2);
+      fixture.detectChanges();
+      expect(next(el).getAttribute('aria-disabled')).toBe('true');
+      instance.active.set(1);
+      fixture.detectChanges();
+      expect(next(el).getAttribute('aria-disabled')).toBeNull();
+      expect(next(el).hasAttribute('data-disabled')).toBe(false);
     });
 
     it('with loop, next past the last slide wraps to slide 0', async () => {
@@ -280,6 +349,56 @@ describe('ForCarousel', () => {
       next(el).click();
       await flush();
       expect(slide(el, 0).getAttribute('data-state')).toBe('active');
+    });
+  });
+
+  describe('viewport registration lifecycle', () => {
+    it('unmounting the viewport clears aria-controls on prev and next (#1392)', async () => {
+      const { el, instance, flush } = renderHost(ViewportLifecycleHost);
+      expect(prev(el).getAttribute('aria-controls')).toBe('vp-a');
+      expect(next(el).getAttribute('aria-controls')).toBe('vp-a');
+      instance.mounted.set(false);
+      await flush();
+      expect(prev(el).hasAttribute('aria-controls')).toBe(false);
+      expect(next(el).hasAttribute('aria-controls')).toBe(false);
+    });
+
+    it('unmounting the viewport stops publishing the measured viewport CSS vars (#1392)', async () => {
+      const { el, instance, flush } = renderHost(ViewportLifecycleHost);
+      await flush();
+      expect(root(el).style.getPropertyValue('--for-carousel-viewport-width')).toBe('0px');
+      expect(root(el).style.getPropertyValue('--for-carousel-viewport-height')).toBe('0px');
+      instance.mounted.set(false);
+      await flush();
+      expect(root(el).style.getPropertyValue('--for-carousel-viewport-width')).toBe('');
+      expect(root(el).style.getPropertyValue('--for-carousel-viewport-height')).toBe('');
+    });
+
+    it('re-mounting a viewport re-wires aria-controls to the new id (#1392)', async () => {
+      const { el, instance, flush } = renderHost(ViewportLifecycleHost);
+      instance.mounted.set(false);
+      await flush();
+      instance.swapped.set(true);
+      instance.mounted.set(true);
+      await flush();
+      expect(prev(el).getAttribute('aria-controls')).toBe('vp-b');
+      expect(next(el).getAttribute('aria-controls')).toBe('vp-b');
+    });
+
+    it('swapping the viewport in place re-points aria-controls at the surviving viewport (#1392)', async () => {
+      const { el, instance, flush } = renderHost(ViewportLifecycleHost);
+      instance.swapped.set(true);
+      await flush();
+      expect(prev(el).getAttribute('aria-controls')).toBe('vp-b');
+      expect(next(el).getAttribute('aria-controls')).toBe('vp-b');
+    });
+
+    it('the surviving viewport keeps publishing the measured CSS vars after a swap', async () => {
+      const { el, instance, flush } = renderHost(ViewportLifecycleHost);
+      await flush();
+      instance.swapped.set(true);
+      await flush();
+      expect(root(el).style.getPropertyValue('--for-carousel-viewport-width')).toBe('0px');
     });
   });
 
@@ -726,6 +845,138 @@ describe('ForCarousel', () => {
       btn.click();
       await flush();
       expect(btn.getAttribute('aria-label')).toBe('Stop');
+    });
+
+    it('unbound labels resolve from provideForCarouselDefaults rotationStartLabel / rotationStopLabel', async () => {
+      @Component({
+        imports: [
+          ForCarousel,
+          ForCarouselViewport,
+          ForCarouselTrack,
+          ForCarouselSlide,
+          ForCarouselRotationControl,
+        ],
+        providers: [
+          provideForCarouselDefaults({
+            rotationStartLabel: 'Iniciar',
+            rotationStopLabel: 'Detener',
+          }),
+        ],
+        template: `
+          <div forCarousel ariaLabel="test">
+            <button forCarouselRotationControl></button>
+            <div forCarouselViewport>
+              <div forCarouselTrack>
+                <div forCarouselSlide>A</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class LocalizedRotationHost {}
+
+      const { el, flush } = renderHost(LocalizedRotationHost);
+      const btn = el.querySelector<HTMLButtonElement>('[forCarouselRotationControl]')!;
+      expect(btn.getAttribute('aria-label')).toBe('Iniciar');
+      btn.click();
+      await flush();
+      expect(btn.getAttribute('aria-label')).toBe('Detener');
+    });
+
+    it('startLabel / stopLabel inputs still win over the scope defaults', async () => {
+      @Component({
+        imports: [
+          ForCarousel,
+          ForCarouselViewport,
+          ForCarouselTrack,
+          ForCarouselSlide,
+          ForCarouselRotationControl,
+        ],
+        providers: [
+          provideForCarouselDefaults({
+            rotationStartLabel: 'Iniciar',
+            rotationStopLabel: 'Detener',
+          }),
+        ],
+        template: `
+          <div forCarousel ariaLabel="test">
+            <button forCarouselRotationControl startLabel="Play" stopLabel="Stop"></button>
+            <div forCarouselViewport>
+              <div forCarouselTrack>
+                <div forCarouselSlide>A</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class LocalizedOverriddenRotationHost {}
+
+      const { el, flush } = renderHost(LocalizedOverriddenRotationHost);
+      const btn = el.querySelector<HTMLButtonElement>('[forCarouselRotationControl]')!;
+      expect(btn.getAttribute('aria-label')).toBe('Play');
+      btn.click();
+      await flush();
+      expect(btn.getAttribute('aria-label')).toBe('Stop');
+    });
+
+    it('[startLabel]="null" / [stopLabel]="null" emit no aria-label', async () => {
+      @Component({
+        imports: [
+          ForCarousel,
+          ForCarouselViewport,
+          ForCarouselTrack,
+          ForCarouselSlide,
+          ForCarouselRotationControl,
+        ],
+        template: `
+          <div forCarousel ariaLabel="test">
+            <button forCarouselRotationControl [startLabel]="null" [stopLabel]="null"></button>
+            <div forCarouselViewport>
+              <div forCarouselTrack>
+                <div forCarouselSlide>A</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class NullLabelRotationHost {}
+
+      const { el, flush } = renderHost(NullLabelRotationHost);
+      const btn = el.querySelector<HTMLButtonElement>('[forCarouselRotationControl]')!;
+      expect(btn.hasAttribute('aria-label')).toBe(false);
+      btn.click();
+      await flush();
+      expect(btn.hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('the rotation control does not adopt a consumer static aria-label', async () => {
+      @Component({
+        imports: [
+          ForCarousel,
+          ForCarouselViewport,
+          ForCarouselTrack,
+          ForCarouselSlide,
+          ForCarouselRotationControl,
+        ],
+        template: `
+          <div forCarousel ariaLabel="test">
+            <button forCarouselRotationControl aria-label="Consumer name"></button>
+            <div forCarouselViewport>
+              <div forCarouselTrack>
+                <div forCarouselSlide>A</div>
+              </div>
+            </div>
+          </div>
+        `,
+      })
+      class StaticAriaLabelRotationHost {}
+
+      const { el, flush } = renderHost(StaticAriaLabelRotationHost);
+      const btn = el.querySelector<HTMLButtonElement>('[forCarouselRotationControl]')!;
+      expect(btn.getAttribute('aria-label')).toBe('Start automatic slide show');
+      btn.click();
+      await flush();
+      expect(btn.getAttribute('aria-label')).toBe('Stop automatic slide show');
     });
   });
 

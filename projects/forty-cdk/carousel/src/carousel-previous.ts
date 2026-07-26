@@ -1,12 +1,17 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
+import { hostAriaLabel } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 /**
  * Previous-slide button. Apply on a `<button>` so Enter/Space activation is
- * native. Disabled (via the native `disabled` attribute) at index 0 when the
- * carousel is not looping. When `loop` is `true` it is never disabled.
+ * native. Disabled at index 0 when the carousel is not looping; when `loop` is
+ * `true` it is never disabled.
+ *
+ * Reflects the disabled state through `aria-disabled` + `data-disabled` only —
+ * never the native `disabled` attribute — so a button that auto-disables at
+ * index 0 while focused keeps DOM focus instead of being ejected from the focus
+ * order. Activation is a no-op while disabled.
  *
  * Points `aria-controls` at the viewport's id so screen readers announce the
  * relationship. Clicking does not move focus (APG).
@@ -18,7 +23,9 @@ import { injectCarouselContext } from './carousel-context';
     type: 'button',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-controls]': 'ctx.viewportId()',
-    '(click)': 'ctx.scrollPrev()',
+    '[attr.aria-disabled]': 'isDisabled() ? "true" : null',
+    '[attr.data-disabled]': 'isDisabled() ? "" : null',
+    '(click)': 'activate()',
   },
 })
 export class ForCarouselPrevious {
@@ -35,7 +42,10 @@ export class ForCarouselPrevious {
 
   protected readonly isDisabled = computed(() => !this.ctx.canScrollPrev());
 
-  constructor() {
-    reflectDisabled(this.isDisabled);
+  protected activate(): void {
+    if (this.isDisabled()) {
+      return;
+    }
+    this.ctx.scrollPrev();
   }
 }

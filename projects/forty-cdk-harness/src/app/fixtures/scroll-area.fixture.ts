@@ -6,6 +6,7 @@ import {
   ForScrollAreaCorner,
   ForScrollAreaScrollbar,
   ForScrollAreaThumb,
+  type ForScrollAreaTrackPress,
   type ForScrollAreaType,
   ForScrollAreaViewport,
 } from 'forty-cdk/scroll-area';
@@ -43,6 +44,12 @@ import {
  *  - `?hideOnLeave=1` — collapse a `data-state="hidden"` scrollbar to
  *    `display:none` (a consumer fade rule), used by the drag-survives-self-hide
  *    spec to prove an in-flight drag pins the track painted.
+ *  - `?trackPress=none|page|jump` — behaviour of a press on bare track
+ *    (default `page`, the library default). The track-press block asserts the
+ *    paging step, the jump centring and the `none` opt-out against real layout.
+ *  - `?trackPressRepeatDelay=N` / `?trackPressRepeatInterval=N` — auto-repeat
+ *    cadence in ms (defaults 300 / 50). The hold specs shorten both so a test
+ *    doesn't have to wait out the platform cadence.
  */
 @Component({
   selector: 'app-scroll-area-fixture',
@@ -146,6 +153,9 @@ import {
       forScrollArea
       [type]="type"
       [dir]="dir"
+      [trackPress]="trackPress"
+      [trackPressRepeatDelay]="trackPressRepeatDelay"
+      [trackPressRepeatInterval]="trackPressRepeatInterval"
       [style.width.px]="viewportWidth"
       [style.height.px]="viewportHeight"
     >
@@ -180,6 +190,9 @@ export class ScrollAreaFixture {
   protected readonly contentHeight = this.#numParam('contentHeight', 800);
   protected readonly type = this.#typeParam();
   protected readonly dir = this.#dirParam();
+  protected readonly trackPress = this.#trackPressParam();
+  protected readonly trackPressRepeatDelay = this.#numParam('trackPressRepeatDelay', 300);
+  protected readonly trackPressRepeatInterval = this.#numParam('trackPressRepeatInterval', 50);
 
   /**
    * Opt-in consumer fade: when `?hideOnLeave=1` the host collapses any
@@ -207,6 +220,11 @@ export class ScrollAreaFixture {
   #typeParam(): ForScrollAreaType {
     const raw = this.#route.snapshot.queryParamMap.get('type');
     return raw === 'hover' || raw === 'scroll' || raw === 'auto' ? raw : 'always';
+  }
+
+  #trackPressParam(): ForScrollAreaTrackPress {
+    const raw = this.#route.snapshot.queryParamMap.get('trackPress');
+    return raw === 'none' || raw === 'jump' ? raw : 'page';
   }
 
   #dirParam(): 'ltr' | 'rtl' | null {

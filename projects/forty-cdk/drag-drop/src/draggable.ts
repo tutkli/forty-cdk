@@ -192,8 +192,11 @@ export class ForDraggable implements ForDraggableContext {
 
   #onPointerCommit(): void {
     this.#pointerDragging = false;
-    this.#clearPlaceholder();
-    this.#list.drop();
+    try {
+      this.#list.drop();
+    } finally {
+      this.#clearPlaceholder();
+    }
     this.dragEnd.emit({ dropped: true });
   }
 

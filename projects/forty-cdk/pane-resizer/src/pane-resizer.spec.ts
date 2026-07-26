@@ -79,6 +79,18 @@ function press(el: HTMLElement, key: string, init: KeyboardEventInit = {}): Keyb
   return down;
 }
 
+function pointerEvent(
+  type: string,
+  init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
+): PointerEvent {
+  const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
+  Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
+  Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
+  Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
+  Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
+  return ev;
+}
+
 describe('ForPaneResizer', () => {
   describe('ARIA', () => {
     it('exposes role="separator", tabindex, aria-orientation, and aria-value*', () => {
@@ -307,6 +319,59 @@ describe('ForPaneResizer', () => {
     });
   });
 
+  describe('keyboard commit flush (#1392 item 10)', () => {
+    it('flushes a pending resizeCommit on blur when focus leaves before keyup', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      pressKey(el, 'ArrowRight');
+      await flush();
+      expect(inst.value()).toBe(51);
+      expect(inst.commitEvents).toEqual([]);
+
+      el.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(inst.value()).toBe(51);
+      expect(inst.commitEvents).toEqual([51]);
+    });
+
+    it('emits exactly one resizeCommit when blur follows a keyup that already committed', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      press(el, 'ArrowRight');
+      el.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(inst.commitEvents).toEqual([51]);
+    });
+
+    it('emits no resizeCommit on a blur with no pending keyboard mutation', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      el.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(inst.commitEvents).toEqual([]);
+      expect(inst.resizeEvents).toEqual([]);
+    });
+
+    it('emits no resizeCommit on blur after a key that did not change the value', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const inst = fixture.componentInstance;
+      inst.value.set(100);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      pressKey(el, 'End');
+      el.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(inst.commitEvents).toEqual([]);
+    });
+  });
+
   describe('collapsible', () => {
     it('Enter toggles between min and the previous value when collapsible', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
@@ -346,6 +411,108 @@ describe('ForPaneResizer', () => {
       await flush();
       expect(fixture.componentInstance.value()).toBe(100);
     });
+
+    it('Enter after a drag to min restores the pre-drag size, not max (#1392 item 11)', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const inst = fixture.componentInstance;
+      inst.collapsible.set(true);
+      inst.value.set(50);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 40 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 40 }));
+      await flush();
+      expect(inst.value()).toBe(0);
+
+      press(el, 'Enter');
+      await flush();
+      expect(inst.value()).toBe(50);
+      expect(inst.commitEvents).toEqual([0, 50]);
+    });
+
+    it('Enter after a keyboard Home to min restores the pre-Home size', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const inst = fixture.componentInstance;
+      inst.collapsible.set(true);
+      inst.value.set(50);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      press(el, 'Home');
+      await flush();
+      expect(inst.value()).toBe(0);
+
+      press(el, 'Enter');
+      await flush();
+      expect(inst.value()).toBe(50);
+    });
+
+    it('Enter after one held keyboard burst down to min restores the burst-start size', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const inst = fixture.componentInstance;
+      inst.collapsible.set(true);
+      inst.value.set(3);
+      inst.step.set(1);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      pressKey(el, 'ArrowLeft');
+      pressKey(el, 'ArrowLeft');
+      pressKey(el, 'ArrowLeft');
+      pressKey(el, 'ArrowLeft', { type: 'keyup' });
+      await flush();
+      expect(inst.value()).toBe(0);
+
+      press(el, 'Enter');
+      await flush();
+      expect(inst.value()).toBe(3);
+    });
+
+    it('Enter after a drag that settles above min restores that committed size, not the pre-drag one', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const inst = fixture.componentInstance;
+      inst.collapsible.set(true);
+      inst.value.set(50);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 120 }));
+      await flush();
+      expect(inst.value()).toBe(70);
+
+      inst.value.set(0);
+      await flush();
+
+      press(el, 'Enter');
+      await flush();
+      expect(inst.value()).toBe(70);
+    });
+
+    it('an Escape-reverted drag does not become the collapse restore target', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const inst = fixture.componentInstance;
+      inst.collapsible.set(true);
+      inst.value.set(0);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 130 }));
+      await flush();
+      expect(inst.value()).toBe(30);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await flush();
+      expect(inst.value()).toBe(0);
+
+      press(el, 'Enter');
+      await flush();
+      expect(inst.value()).toBe(100);
+    });
   });
 
   describe('disabled', () => {
@@ -365,18 +532,6 @@ describe('ForPaneResizer', () => {
   });
 
   describe('pointer drag', () => {
-    function pointerEvent(
-      type: string,
-      init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
-    ): PointerEvent {
-      const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-      Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
-      Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
-      Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
-      Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
-      return ev;
-    }
-
     it('does not start a drag when disabled', async () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       fixture.componentInstance.disabled.set(true);
@@ -399,6 +554,57 @@ describe('ForPaneResizer', () => {
       await flush();
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
+    });
+
+    it('focuses the separator on pointerdown so arrows fine-tune after a drag (#1392 item 3)', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      await flush();
+      expect(document.activeElement).toBe(el);
+
+      press(el, 'ArrowRight');
+      await flush();
+      expect(inst.value()).toBe(51);
+    });
+
+    it('does not focus the separator when disabled', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const before = document.activeElement;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      await flush();
+      expect(document.activeElement).toBe(before);
+    });
+
+    it('focuses the separator even on a press that never crosses the dead zone', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 102 }));
+      await flush();
+      expect(document.activeElement).toBe(el);
+      expect(inst.resizeEvents).toEqual([]);
+    });
+
+    it('does not commit a mid-drag pointer value on blur (#1392 item 10)', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+      const inst = fixture.componentInstance;
+
+      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100 }));
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      el.dispatchEvent(new FocusEvent('blur'));
+      await flush();
+      expect(inst.value()).toBe(70);
+      expect(inst.commitEvents).toEqual([]);
     });
 
     it('does not mutate the value on a stray sub-dead-zone pointermove (#590 F6)', async () => {

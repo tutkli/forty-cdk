@@ -4,6 +4,7 @@ import { type WritingDirection, injectTextDirection } from 'forty-cdk/core';
 import {
   FOR_SCROLL_AREA_CONTEXT,
   type ForScrollAreaContext,
+  type ForScrollAreaTrackPress,
   type ForScrollAreaType,
 } from './scroll-area-context';
 import { FOR_SCROLL_AREA_DEFAULTS } from './scroll-area-defaults';
@@ -70,6 +71,38 @@ export class ForScrollArea implements ForScrollAreaContext {
    * `provideForScrollAreaDefaults` for the surrounding scope.
    */
   readonly scrollHideDelay = input(this.#defaults.scrollHideDelay, {
+    transform: numberAttribute,
+  });
+
+  /**
+   * What a primary-button press on bare scrollbar track does:
+   * - `page`: step one page toward the press and auto-repeat while held,
+   *   stopping once the thumb reaches the pointer (platform behaviour).
+   * - `jump`: centre the thumb on the press point, then scrub while held.
+   * - `none`: the library ignores track presses, leaving the gesture to the
+   *   consumer (the scrollbar's `scrollToTrackPoint` / `pageBy` commands stay
+   *   available for a hand-rolled handler).
+   *
+   * A track press never moves focus. The default is read from
+   * `provideForScrollAreaDefaults` for the surrounding scope.
+   */
+  readonly trackPress = input<ForScrollAreaTrackPress>(this.#defaults.trackPress);
+
+  /**
+   * ms a held `trackPress="page"` gesture waits before the first auto-repeat
+   * page step. The default is read from `provideForScrollAreaDefaults` for the
+   * surrounding scope.
+   */
+  readonly trackPressRepeatDelay = input(this.#defaults.trackPressRepeatDelay, {
+    transform: numberAttribute,
+  });
+
+  /**
+   * ms between auto-repeat page steps of a held `trackPress="page"` gesture,
+   * once `trackPressRepeatDelay` has elapsed. The default is read from
+   * `provideForScrollAreaDefaults` for the surrounding scope.
+   */
+  readonly trackPressRepeatInterval = input(this.#defaults.trackPressRepeatInterval, {
     transform: numberAttribute,
   });
 

@@ -20,6 +20,12 @@ export interface ForCarouselIndicatorHandle {
   readonly disabled: Signal<boolean>;
 }
 
+/** Internal handle for the registered viewport. */
+export interface ForCarouselViewportHandle {
+  readonly host: HTMLElement;
+  readonly id: string;
+}
+
 /**
  * Coordination contract owned by `ForCarousel`. Slides and indicators
  * register with the root so index lookups, geometry computations, and
@@ -55,7 +61,8 @@ export interface ForCarouselContext {
   registerIndicator(handle: ForCarouselIndicatorHandle): void;
   unregisterIndicator(handle: ForCarouselIndicatorHandle): void;
 
-  setViewport(el: HTMLElement, id: string): void;
+  registerViewport(handle: ForCarouselViewportHandle): void;
+  unregisterViewport(handle: ForCarouselViewportHandle): void;
   viewportId(): string | null;
 
   indexOfSlide(host: HTMLElement): number;
