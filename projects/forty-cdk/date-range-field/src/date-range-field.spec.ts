@@ -199,7 +199,10 @@ describe('ForDateRangeField', () => {
       };
       return result;
     },
-    { flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'] },
+    {
+      flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'],
+      roleSupportsAriaReadonly: false,
+    },
   );
 
   describe('focus (focus-on-error)', () => {
@@ -598,12 +601,16 @@ describe('ForDateRangeField', () => {
       expect(seg(r, 'start', 'month').getAttribute('aria-valuenow')).toBeNull();
     });
 
-    it('read-only field reflects aria-readonly and blocks editing', async () => {
+    it('read-only field reflects data-readonly on the groups, aria-readonly on the segments', async () => {
       const r = renderHost(Host);
       r.instance.value.set({ start: new Date(2026, 5, 10), end: new Date(2026, 5, 20) });
       r.instance.readonly.set(true);
       await flush(r.fixture);
-      expect(root(r).getAttribute('aria-readonly')).toBe('true');
+      expect(root(r).hasAttribute('aria-readonly')).toBe(false);
+      expect(root(r).getAttribute('data-readonly')).toBe('');
+      expect(group(r, 'start').hasAttribute('aria-readonly')).toBe(false);
+      expect(group(r, 'start').getAttribute('data-readonly')).toBe('');
+      expect(seg(r, 'start', 'day').getAttribute('aria-readonly')).toBe('true');
       await key(r, 'start', 'day', 'ArrowUp');
       expect(r.instance.value()!.start.getTime()).toBe(new Date(2026, 5, 10).getTime());
     });

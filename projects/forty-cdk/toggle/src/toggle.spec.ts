@@ -117,7 +117,7 @@ describe('ForToggle', () => {
       };
       return result;
     },
-    { customRoleStaysFocusable: true },
+    { customRoleStaysFocusable: true, roleSupportsAriaReadonly: false },
   );
 
   describe('click', () => {
@@ -308,16 +308,18 @@ describe('ForToggle', () => {
       expect(toggleById(r.el, 'bold').getAttribute('aria-required')).toBe('true');
     });
 
-    it('flows schema-driven readonly into aria-readonly', async () => {
+    it('flows schema-driven readonly into data-readonly, never aria-readonly', async () => {
       const r = renderHost(SignalFormsHost);
       await r.flush();
       const italic = toggleById(r.el, 'italic');
 
-      expect(italic.getAttribute('aria-readonly')).toBe('true');
+      expect(italic.getAttribute('data-readonly')).toBe('');
+      expect(italic.hasAttribute('aria-readonly')).toBe(false);
 
       toggleById(r.el, 'bold').click();
       await r.flush();
-      expect(italic.getAttribute('aria-readonly')).toBe(null);
+      expect(italic.hasAttribute('data-readonly')).toBe(false);
+      expect(italic.hasAttribute('aria-readonly')).toBe(false);
     });
   });
 

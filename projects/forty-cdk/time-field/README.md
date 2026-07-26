@@ -190,6 +190,7 @@ Composes the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patte
 - **Roving tabindex**: exactly one segment is tabbable, so `Tab` enters and leaves the whole field in one stop; arrows move between segments.
 - **Literals are `aria-hidden`** and never focusable — assistive tech reads only the spinbutton segments.
 - **Boolean `data-*`** on each segment — `data-highlighted` (focused/roving), `data-placeholder` (empty), `data-disabled`, `data-readonly` — present when true, absent when false.
+- **`aria-readonly` belongs on the segments, not the group.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the group reflects the `data-readonly` styling hook only.
 
 ## Styling
 

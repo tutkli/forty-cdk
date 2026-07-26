@@ -51,6 +51,11 @@ import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
  * to the same instant; bind an existing date-time as `value` to edit its time in
  * place.
  *
+ * A read-only field is reflected on this `role="group"` root as the boolean
+ * `data-readonly` styling hook only. `aria-readonly` is not a supported
+ * property of `role="group"`, so the ARIA announcement lives on each
+ * `[forTimeFieldSegment]` — `role="spinbutton"` does support it.
+ *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
  * Note: the bounds are named `minTime` / `maxTime`, not `min` / `max` — the
@@ -81,7 +86,6 @@ import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',

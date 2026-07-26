@@ -175,7 +175,10 @@ describe('ForSlider', () => {
       };
       return result;
     },
-    { flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
+    {
+      flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
+      roleSupportsAriaReadonly: false,
+    },
   );
 
   describe('static accessibility', () => {
@@ -183,6 +186,16 @@ describe('ForSlider', () => {
       const { el } = renderHost(SliderHost);
       expect(root(el).getAttribute('role')).toBe('group');
       expect(thumb(el, 0).getAttribute('role')).toBe('slider');
+    });
+
+    it('keeps aria-readonly off the role=group root and on the role=slider thumb', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.readonly.set(true);
+      await flush();
+      expect(root(el).hasAttribute('aria-readonly')).toBe(false);
+      expect(root(el).getAttribute('data-readonly')).toBe('');
+      expect(thumb(el, 0).getAttribute('aria-readonly')).toBe('true');
+      expect(thumb(el, 0).getAttribute('data-readonly')).toBe('');
     });
 
     it('exposes aria-valuemin / aria-valuemax / aria-valuenow / aria-orientation on the thumb', () => {

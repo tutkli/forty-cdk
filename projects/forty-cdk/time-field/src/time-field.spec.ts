@@ -148,7 +148,10 @@ describe('ForTimeField', () => {
       };
       return result;
     },
-    { flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'] },
+    {
+      flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'],
+      roleSupportsAriaReadonly: false,
+    },
   );
 
   describe('focus (focus-on-error)', () => {
@@ -661,12 +664,14 @@ describe('ForTimeField', () => {
       expect(seg(r, 'hour').getAttribute('aria-valuenow')).toBeNull();
     });
 
-    it('read-only field reflects aria-readonly and blocks editing', async () => {
+    it('read-only field reflects data-readonly on the group, aria-readonly on the segments', async () => {
       const r = renderHost(Host);
       r.instance.value.set(new Date(2026, 5, 15, 13, 45));
       r.instance.readonly.set(true);
       await flush(r.fixture);
-      expect(root(r).getAttribute('aria-readonly')).toBe('true');
+      expect(root(r).hasAttribute('aria-readonly')).toBe(false);
+      expect(root(r).getAttribute('data-readonly')).toBe('');
+      expect(seg(r, 'hour').getAttribute('aria-readonly')).toBe('true');
       await key(r, 'hour', 'ArrowUp');
       expect(adapter.getHours(r.instance.value()!)).toBe(13);
     });

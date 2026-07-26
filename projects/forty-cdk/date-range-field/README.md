@@ -242,6 +242,7 @@ Each segment implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI
 - **Roving tabindex per endpoint**: exactly one segment per endpoint is tabbable, so `Tab` steps start group → end group; arrows move between segments within an endpoint.
 - **`aria-invalid="true"`** is reflected on the root when the form marks it invalid **or** when two complete endpoints are out of order.
 - **Literals are `aria-hidden`** and never focusable — assistive tech reads only the spinbutton segments.
+- **`aria-readonly` belongs on the segments, not the groups.** WAI-ARIA supports it on `role="spinbutton"` but not on `role="group"`, so each segment carries `aria-readonly="true"` while the root and both endpoint groups reflect the `data-readonly` styling hook only.
 
 ## Styling
 

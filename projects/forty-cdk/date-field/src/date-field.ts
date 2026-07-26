@@ -61,6 +61,11 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
  * it auto-wires with `[formField]` and auto-associates inside a `[forField]`.
  * The value stays `null` until every visible segment is filled.
  *
+ * A read-only field is reflected on this `role="group"` root as the boolean
+ * `data-readonly` styling hook only. `aria-readonly` is not a supported
+ * property of `role="group"`, so the ARIA announcement lives on each
+ * `[forDateFieldSegment]` — `role="spinbutton"` does support it.
+ *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
  *   date-time) type.
  *
@@ -91,7 +96,6 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'ariaLabel() || null',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',

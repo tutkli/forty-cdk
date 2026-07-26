@@ -144,7 +144,7 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | ---------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`; what `[formField]` binds. The host reflects it via `aria-pressed` and `data-state`.<br>**Default:** `false` |
 | `disabled` | `input<boolean>`                                          | When `true`, click is ignored; reflects `aria-disabled="true"` + `data-disabled`. Stays focusable (per APG) — no native `disabled`.<br>**Default:** `false`                   |
-| `readonly` | `input<boolean>`                                          | When `true`, click is ignored but the host stays focusable. Reflected as `aria-readonly`.<br>**Default:** `false`                                                             |
+| `readonly` | `input<boolean>`                                          | When `true`, click is ignored but the host stays focusable. Reflected as `data-readonly` only — `aria-readonly` is not supported on `role="button"`.<br>**Default:** `false`  |
 | `required` | `input<boolean>`                                          | Reflected as `aria-required`.<br>**Default:** `false`                                                                                                                         |
 | `invalid`  | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                                                                       |
 | `pending`  | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                                                                          |
@@ -161,27 +161,28 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 
 ### `ForToggleGroup`
 
-| Property      | Type                                                      | Description                                                                                                                    |
-| ------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<readonly string[]>`                                | Two-way bindable. Selected values, in arbitrary order. Required by `FormValueControl<readonly string[]>`.<br>**Default:** `[]` |
-| `multiple`    | `input<boolean>`                                          | When `true`, items toggle independently. When `false`, single mode (clicking the pressed item clears).<br>**Default:** `false` |
-| `disabled`    | `input<boolean>`                                          | Disables every item regardless of per-item state.<br>**Default:** `false`                                                      |
-| `readonly`    | `input<boolean>`                                          | Click is ignored, items remain focusable. Reflected as `aria-readonly`.<br>**Default:** `false`                                |
-| `required`    | `input<boolean>`                                          | Reflected as `aria-required`.<br>**Default:** `false`                                                                          |
-| `invalid`     | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                        |
-| `pending`     | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                           |
-| `dirty`       | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                             |
-| `name`        | `input<string>`                                           | When non-empty, hidden inputs are mounted for native form submission (one per selected value).<br>**Default:** `''`            |
-| `errors`      | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors surfaced by Signal Forms.<br>**Default:** `[]`                                                               |
-| `touched`     | `model<boolean>`                                          | Two-way bindable. Set on focusout outside the group.<br>**Default:** `false`                                                   |
-| `orientation` | `input<'horizontal' \| 'vertical'>`                       | Layout direction for keyboard navigation.<br>**Default:** `'horizontal'`                                                       |
-| `dir`         | `input<'ltr' \| 'rtl'>`                                   | Reading direction. RTL swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                   |
-| `loop`        | `input<boolean>`                                          | When `true`, arrow nav wraps at the ends. The default is read from `provideForToggleDefaults`.<br>**Default:** `true`          |
+| Property      | Type                                                      | Description                                                                                                                                                                                              |
+| ------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<readonly string[]>`                                | Two-way bindable. Selected values, in arbitrary order. Required by `FormValueControl<readonly string[]>`.<br>**Default:** `[]`                                                                           |
+| `multiple`    | `input<boolean>`                                          | When `true`, items toggle independently. When `false`, single mode (clicking the pressed item clears).<br>**Default:** `false`                                                                           |
+| `disabled`    | `input<boolean>`                                          | Disables every item regardless of per-item state.<br>**Default:** `false`                                                                                                                                |
+| `readonly`    | `input<boolean>`                                          | Click is ignored, items remain focusable. Reflected as `data-readonly` on the root only — `aria-readonly` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false` |
+| `required`    | `input<boolean>`                                          | Reflected as `aria-required`.<br>**Default:** `false`                                                                                                                                                    |
+| `invalid`     | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                                                                                                  |
+| `pending`     | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                                                                                                     |
+| `dirty`       | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                                                                                                       |
+| `name`        | `input<string>`                                           | When non-empty, hidden inputs are mounted for native form submission (one per selected value).<br>**Default:** `''`                                                                                      |
+| `errors`      | `input<readonly ValidationError.WithOptionalFieldTree[]>` | Validation errors surfaced by Signal Forms.<br>**Default:** `[]`                                                                                                                                         |
+| `touched`     | `model<boolean>`                                          | Two-way bindable. Set on focusout outside the group.<br>**Default:** `false`                                                                                                                             |
+| `orientation` | `input<'horizontal' \| 'vertical'>`                       | Layout direction for keyboard navigation.<br>**Default:** `'horizontal'`                                                                                                                                 |
+| `dir`         | `input<'ltr' \| 'rtl'>`                                   | Reading direction. RTL swaps ArrowLeft / ArrowRight.<br>**Default:** `'ltr'`                                                                                                                             |
+| `loop`        | `input<boolean>`                                          | When `true`, arrow nav wraps at the ends. The default is read from `provideForToggleDefaults`.<br>**Default:** `true`                                                                                    |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
 | `data-orientation` | `horizontal` \| `vertical` |
 | `data-disabled`    | present \| absent          |
+| `data-readonly`    | present \| absent          |
 
 ### `ForToggleGroupItem`
 
@@ -214,6 +215,7 @@ Implements the [WAI-ARIA Button pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 - **`[forToggleGroup]`** emits `role="group"` and reflects `data-orientation` for CSS (not `aria-orientation`). Provide a label via `aria-label` or `aria-labelledby`.
 - **Roving tabindex** manages focus within the group. The consumer never sets `tabindex` manually.
 - **A disabled item stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than native `disabled`, so assistive tech still announces it while interaction is a no-op.
+- **`readonly` has no ARIA channel here.** WAI-ARIA supports `aria-readonly` on neither `role="button"` nor `role="group"`, so a read-only toggle / group reflects the boolean `data-readonly` styling hook only and interaction is blocked in the handler.
 
 ## Behavior notes
 

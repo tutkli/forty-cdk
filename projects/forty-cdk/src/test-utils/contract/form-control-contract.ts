@@ -19,8 +19,14 @@
  *     roving child / segment), so they omit the `disabled` flag — its
  *     "stays focusable" assertion does not apply to a container.
  *   - Controls that reflect `aria-readonly` but not `data-readonly`
- *     (`ToggleGroup`, `Listbox`) omit `readonly`; controls with no
- *     `aria-busy` (the date/time fields) omit `pending`.
+ *     (`Listbox`) omit `readonly`; controls with no `aria-busy` (the date/time
+ *     fields) omit `pending`.
+ *   - Controls whose role does not support `aria-readonly` (`role="group"` on
+ *     `Slider` / `ToggleGroup` / the date/time fields, `role="button"` on
+ *     `Toggle`) pass `roleSupportsAriaReadonly: false`: they reflect
+ *     `data-readonly` only, and the ARIA announcement — where the state has a
+ *     supporting role at all — lives on a child (the slider thumb, each
+ *     spinbutton segment).
  *
  * The contract owns every assertion that is identical across the adopters:
  *
@@ -35,7 +41,9 @@
  *         `"switch"`, a toggle `<button>`, …) deliberately do NOT — they stay
  *         focusable so assistive tech can announce them, per the APG
  *         (`customRoleStaysFocusable`).
- *       - `readonly`  → `aria-readonly="true"` + `data-readonly=""` (no native disabled)
+ *       - `readonly`  → `aria-readonly="true"` + `data-readonly=""` (no native
+ *         disabled); `data-readonly=""` alone when the control's role does not
+ *         support `aria-readonly` (`roleSupportsAriaReadonly: false`)
  *       - `required`  → `aria-required="true"`
  *       - `invalid`   → `aria-invalid="true"` + `data-invalid=""`
  *       - `pending`   → `aria-busy="true"` + `data-pending=""`
@@ -90,6 +98,17 @@ export interface FormControlContractOptions {
    * `<textarea>`) instead keep the native `disabled`. Defaults to `false`.
    */
   customRoleStaysFocusable?: boolean;
+  /**
+   * Whether the control's role supports the `aria-readonly` property. WAI-ARIA
+   * gates it to `checkbox`, `combobox`, `grid`, `gridcell`, `listbox`,
+   * `radiogroup`, `slider`, `spinbutton`, `textbox` (inherited into
+   * `columnheader`, `rowheader`, `searchbox`, `switch`, `treegrid`); emitting
+   * it anywhere else is an `aria-allowed-attr` violation. Set to `false` for a
+   * control whose host carries an unsupporting role (`role="group"` container
+   * roots, a toggle `<button>`) — the `readonly` assertion then demands
+   * `data-readonly=""` and the *absence* of `aria-readonly`. Defaults to `true`.
+   */
+  roleSupportsAriaReadonly?: boolean;
 }
 
 const ALL_FLAGS: ReadonlyArray<FormControlFlag | 'name'> = [
@@ -120,6 +139,7 @@ export function assertFormControlContract(
   const flags = new Set(options.flags ?? ALL_FLAGS);
   const has = (f: FormControlFlag | 'name'): boolean => flags.has(f);
   const customRoleStaysFocusable = options.customRoleStaysFocusable ?? false;
+  const roleSupportsAriaReadonly = options.roleSupportsAriaReadonly ?? true;
 
   describe('form-control contract', () => {
     it('omits truthy-only ARIA flags when the underlying signal is false', async () => {
@@ -182,11 +202,18 @@ export function assertFormControlContract(
     }
 
     if (has('readonly')) {
-      it('reflects readonly → aria-readonly + data-readonly (and never native disabled)', async () => {
+      const readonlyTitle = roleSupportsAriaReadonly
+        ? 'reflects readonly → aria-readonly + data-readonly (and never native disabled)'
+        : 'reflects readonly → data-readonly only, never aria-readonly on an unsupporting role';
+      it(readonlyTitle, async () => {
         const ctx = await mount();
         ctx.setFlag('readonly', true);
         await ctx.flush();
-        expect(ctx.control.getAttribute('aria-readonly')).toBe('true');
+        if (roleSupportsAriaReadonly) {
+          expect(ctx.control.getAttribute('aria-readonly')).toBe('true');
+        } else {
+          expect(ctx.control.hasAttribute('aria-readonly')).toBe(false);
+        }
         expect(ctx.control.getAttribute('data-readonly')).toBe('');
         expect(ctx.control.hasAttribute('disabled')).toBe(false);
 
