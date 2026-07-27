@@ -12,11 +12,24 @@
  * never duplicated per primitive, which would split the DI singletons into
  * multiple instances and break cross-primitive coordination.
  *
- * Stability: the symbols re-exported here carry NO semver guarantees. They are
- * an internal composition surface shared between forty-cdk's own entry points,
- * not a supported public API. Consume primitives from their own
- * `forty-cdk/<primitive>` entry points, not from here (the main `forty-cdk`
- * barrel is intentionally empty — see the package README).
+ * Stability: this barrel is split into two tiers, and the boundary is
+ * mechanical rather than advisory. The BLESSED tier is the curated set listed
+ * in `scripts/lib/core-blessed-tier.mjs` — contract types and tokens the
+ * library commits to, reachable from the public entry points that surface them.
+ * Everything else is INTERNAL: an implementation surface shared between
+ * forty-cdk's own entry points, carrying NO semver guarantees and refactorable
+ * without notice. `scripts/check-entrypoint-public-types.mjs` (run in
+ * `postbuild`) fails the build when an internal-tier symbol reaches a public
+ * entry point's public signature, so the tier cannot erode by accident.
+ *
+ * Class bases that public directives merely `extends` (`FormUiControlBase`,
+ * `ModalSurfaceBase`, `MenuOverlayHost`, …) are deliberately internal —
+ * subclassing them is not a supported contract.
+ *
+ * Consume primitives from their own `forty-cdk/<primitive>` entry points, not
+ * from here (the main `forty-cdk` barrel is intentionally empty — see the
+ * package README). Growing the blessed tier is a deliberate, reviewed act
+ * documented in `.claude/rules/conventions.md`.
  */
 
 export { accessibleTextContent } from './accessible-text/accessible-text';

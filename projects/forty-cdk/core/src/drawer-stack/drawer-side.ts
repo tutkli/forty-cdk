@@ -3,12 +3,11 @@
  * dimension (height for top/bottom, width for left/right) is laid out
  * along the axis perpendicular to this edge.
  *
- * Lives in `_internal/` so the drawer-stack / drawer-scale coordinators can
- * type the side without importing up into `lib/drawer` — the dependency must
- * flow `lib → _internal`, never back. Re-exported from
- * `drawer/drawer-context.ts` as the public `ForDrawerSide` so consumers keep
- * their existing import path.
+ * Declared in the core so the drawer-stack / drawer-scale coordinators can type
+ * the side without importing up into a primitive entry point — the dependency
+ * must flow `<primitive> → core`, never back.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Part of the blessed core tier: consumers import it from `forty-cdk/drawer`,
+ * which re-exports it through `drawer/drawer-context.ts`.
  */
 export type ForDrawerSide = 'top' | 'right' | 'bottom' | 'left';

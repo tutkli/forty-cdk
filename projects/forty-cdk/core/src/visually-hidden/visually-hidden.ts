@@ -31,7 +31,9 @@ export const VISUALLY_HIDDEN_STYLE =
  * rule, because the clip is applied inline and an inline style cannot express a
  * pseudo-class.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Part of the blessed core tier: consumers import it from the
+ * `forty-cdk/visually-hidden` entry point, which carries the library's semver
+ * guarantee.
  */
 @Directive({
   selector: '[forVisuallyHidden]',

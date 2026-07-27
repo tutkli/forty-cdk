@@ -88,7 +88,8 @@
               "../button/src/**/*.spec.ts",
               "../dialog/src/**/*.spec.ts",
               "../internationalized-date/src/**/*.spec.ts",
-              "../virtualization/src/**/*.spec.ts"
+              "../virtualization/src/**/*.spec.ts",
+              "../visually-hidden/src/**/*.spec.ts"
             ]
           }
         }
