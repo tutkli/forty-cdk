@@ -1720,6 +1720,7 @@ describe('ForTable', () => {
       const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
       press(lastCell, 'Home', { ctrlKey: true });
       await flush();
+      expect(document.activeElement).toBe(headerA);
       expect(headerA.getAttribute('data-highlighted')).toBe('');
     });
 
@@ -4199,6 +4200,50 @@ describe('ForTable', () => {
         expect(document.activeElement).toBe(headerA);
         expect(headerA.getAttribute('data-highlighted')).toBe('');
         expect(cell(el, 'cell-0-a')).toBeNull();
+      });
+
+      it('Ctrl+Home also scrolls the virtual window back to row 0, so the header target never leaves the grid at the bottom (#1499)', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        const start = cell(el, 'cell-24-b')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'Home', { ctrlKey: true });
+        await flush();
+
+        expect(scrollToRow).toHaveBeenCalledWith(0);
+      });
+
+      it('Ctrl+Home from a header cell (no focused data row) still scrolls the virtual window to row 0 (#1499)', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        const headerB = cell(el, 'h-b')!;
+        headerB.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(headerB, 'Home', { ctrlKey: true });
+        await flush();
+
+        expect(scrollToRow).toHaveBeenCalledWith(0);
+        expect(document.activeElement).toBe(cell(el, 'h-a'));
+      });
+
+      it('Ctrl+End does not scroll to the top when the header participates', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        const start = cell(el, 'cell-20-a')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'End', { ctrlKey: true });
+        await flush();
+
+        expect(scrollToRow).not.toHaveBeenCalledWith(0);
+        expect(scrollToRow).toHaveBeenCalledWith(199);
       });
 
       it('Ctrl+End still reaches the last data cell of the dataset, even with a participating header', async () => {
