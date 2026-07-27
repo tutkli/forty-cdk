@@ -115,13 +115,6 @@ export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
 export { createPointerDragSession, type PointerDragSession } from './drag-session/pointer-session';
 export { PreviewController } from './drag-session/preview-controller';
-export {
-  gapFromPointerY,
-  levelFromPointerX,
-  resolveDropIndicator,
-  resolveTreeDrop,
-  type TreeDropRow,
-} from './drag-session/tree-drop-resolver';
 export { ForDrawerScaleCoordinator } from './drawer-scale/drawer-scale-coordinator';
 export { type ForDrawerSide } from './drawer-stack/drawer-side';
 export { type DrawerStackHandle, ForDrawerStack } from './drawer-stack/drawer-stack';
@@ -133,7 +126,6 @@ export {
   injectFieldWiring,
 } from './field/field-wiring';
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset/fieldset-context';
-export { computeFlatHierarchy } from './flat-hierarchy/flat-hierarchy';
 export {
   AnchoredOverlayPositioningBase,
   type AnchoredPositioningSeedDefaults,
@@ -184,7 +176,6 @@ export {
   ListboxOverlayController,
 } from './listbox-overlay/listbox-overlay-controller';
 export { LiveAnnouncer } from './live-announcer/live-announcer';
-export { localeSeparators, parseLocaleNumber } from './locale-number/locale-number';
 export { injectMediaQuery, injectPrefersReducedMotion } from './media-query/media-query';
 export {
   FOR_MENU_CONTEXT,
@@ -257,7 +248,6 @@ export {
 } from './selection/selection';
 export { isRequiredInputUnset, tryReadHandle } from './signal-graph/read-handle';
 export { createSingleSlot } from './single-slot/single-slot';
-export { resolveSnapTarget } from './snap-points/snap-points';
 export {
   attachSwipeDismiss,
   FLICK_STALE_VELOCITY_MS,

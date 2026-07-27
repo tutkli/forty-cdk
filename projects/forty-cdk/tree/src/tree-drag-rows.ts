@@ -1,5 +1,5 @@
-import { type TreeDropRow } from 'forty-cdk/core';
 import type { ForTreeVisibleNode } from './tree-context';
+import { type TreeDropRow } from './tree-drop-resolver';
 
 /**
  * Pure helpers that turn the tree's visible-node list into the flat row / label data the

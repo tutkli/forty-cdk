@@ -22,13 +22,15 @@ import {
   createKeyboardDragMediator,
   createPointerDragSession,
   type PointerDragSession,
+} from 'forty-cdk/core';
+import { resolveTreeDragLiftedAction } from './tree-drag-keys';
+import {
   gapFromPointerY,
   levelFromPointerX,
   resolveDropIndicator,
   resolveTreeDrop,
   type TreeDropRow,
-} from 'forty-cdk/core';
-import { resolveTreeDragLiftedAction } from './tree-drag-keys';
+} from './tree-drop-resolver';
 import {
   buildTreeDropRows,
   isInsideGrabArea,
