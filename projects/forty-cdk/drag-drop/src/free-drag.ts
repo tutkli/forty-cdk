@@ -18,11 +18,11 @@ import { isPlatformBrowser } from '@angular/common';
 import {
   clampPreviewPosition,
   createPointerDragSession,
-  createPointerHandleGuard,
   type PointerDragSession,
   resolveBoundaryElement,
 } from 'forty-cdk/core';
 import { FOR_DRAGGABLE_CONTEXT, type ForDraggableContext } from './drag-drop-context';
+import { createPointerHandleGuard } from './handle-guard';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 

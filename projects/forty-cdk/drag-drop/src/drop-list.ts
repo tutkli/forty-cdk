@@ -20,9 +20,6 @@ import {
   Collection,
   firstEnabledHost,
   registerHandle,
-  buildDragSlots,
-  indexOfSlot,
-  stepSlot,
   resolveDropTarget,
   type DropContainerGeometry,
   type DragRect,
@@ -34,11 +31,11 @@ import {
   LiveAnnouncer,
   RovingTabindex,
   injectTextDirection,
-  createAutoScroller,
-  type AutoScroller,
   PreviewController,
   resolveBoundaryElement,
 } from 'forty-cdk/core';
+import { createAutoScroller, type AutoScroller } from './auto-scroll';
+import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
 import {
   FOR_DRAG_DROP_CONTEXT,
   FOR_DROP_LIST_ROVING_DELEGATE,

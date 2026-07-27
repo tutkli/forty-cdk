@@ -100,7 +100,6 @@ export {
   DismissableLayerStack,
   injectDismissableLayer,
 } from './dismissable-layer/dismissable-layer';
-export { type AutoScroller, createAutoScroller } from './drag-session/auto-scroll';
 export {
   clampPreviewPosition,
   type PreviewPoint,
@@ -111,13 +110,9 @@ export {
   type DropContainerGeometry,
   resolveDropTarget,
 } from './drag-session/drag-geometry';
-export { buildDragSlots, indexOfSlot, stepSlot } from './drag-session/drag-positions';
 export { createTemplatePreview, type DragPreview } from './drag-session/drag-preview';
-export { type FlipRect, playFlip } from './drag-session/flip';
-export { createPointerHandleGuard } from './drag-session/handle-guard';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
-export { fencePlaceholderIndex, placeholderInsertion } from './drag-session/placeholder-position';
 export { createPointerDragSession, type PointerDragSession } from './drag-session/pointer-session';
 export { PreviewController } from './drag-session/preview-controller';
 export {
