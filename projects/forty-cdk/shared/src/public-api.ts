@@ -37,6 +37,8 @@ export {
   assertTimeCapable,
   FOR_DATE_ADAPTER,
   FOR_FIELDSET_CONTEXT,
+  FOR_ID_SALT,
   FOR_MENU_CONTEXT,
   injectDateAdapter,
+  provideForIdSalt,
 } from 'forty-cdk/core';
