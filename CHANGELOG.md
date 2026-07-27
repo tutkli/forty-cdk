@@ -7,8 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-07-27
+
+The fourth resolution wave for the July 18, 2026 deep audit, and the release where the `forty-cdk/core`
+stability boundary stops being prose. Core is explicitly **not** a public entry point any more: the 46
+cross-primitive contracts that carry the library's semver guarantee are published from the new
+`forty-cdk/shared` specifier, the barrel shrank from 353 to 210 exports, and a build gate holds the line
+per symbol. Also lands the 14-item drag-drop / pane-resizer / carousel / scroll-area sweep, moves the
+single-consumer engines out of core so a lazy-loaded route stops paying for them at startup, and takes the
+piece-registration protocols off the public contexts of Table, Select and Combobox.
+
 ### Added
 
+- **New `forty-cdk/shared` entry point** — one canonical specifier for the 40 cross-primitive contracts
+  that carry the library's semver guarantee: 33 types (`DateAdapter`, `DateRange`, `WritingDirection`,
+  `VetoableEvent`, `RovingTabindex`, `ListNavigationAction`, the segment / menu / swipe vocabularies, …)
+  plus the runtime values `assertTimeCapable`, `FOR_DATE_ADAPTER`, `FOR_FIELDSET_CONTEXT`,
+  `FOR_ID_SALT`, `FOR_MENU_CONTEXT`, `injectDateAdapter` and `provideForIdSalt`
+  ([#1486](https://github.com/tutkli/forty-cdk/issues/1486)). Its built FESM is a single re-export line, so
+  importing a type from it pulls no code and the DI singletons stay singly-compiled. The old → new import
+  table lives in the entry point's README.
+- **New `forty-cdk/visually-hidden` entry point** — `ForVisuallyHidden` gets a stable home outside core
+  ([#1398](https://github.com/tutkli/forty-cdk/issues/1398)). It compiles to a pure re-export, so there is
+  still exactly one class definition.
+- **Multi-app id salt is importable** — `FOR_ID_SALT` / `provideForIdSalt` are published from
+  `forty-cdk/shared` ([#1492](https://github.com/tutkli/forty-cdk/issues/1492)). Two Angular apps on one
+  page both default to `APP_ID` `'ng'`, emit identical id sequences and cross-resolve each other's
+  `aria-labelledby`; the salt was the documented remedy but had no supported import path. The new README's
+  multiple-apps section carries the `bootstrapApplication` setup — the salt must be stable rather than
+  random, or SSR hydration breaks. `IdGenerator` stays internal on purpose: a consumer configures the salt
+  but never mints ids.
+- **Scroll area** — pressing the scrollbar track scrolls the viewport, with a new `trackPress` input
+  (`"page"` by default, plus `"jump"` and `"none"`), a press-and-hold repeat that stops when the thumb
+  reaches the pointer, and `trackPressRepeatDelay` / `trackPressRepeatInterval` on
+  `provideForScrollAreaDefaults` ([#1392](https://github.com/tutkli/forty-cdk/issues/1392)). The primitive
+  hides the native scrollbar with a global stylesheet, so a synthetic track that ignored presses was
+  strictly less capable than the control it replaces. `scrollToTrackPoint` and the axis geometry are on the
+  context, so `trackPress="none"` is a complete escape hatch for exotic behaviour.
+- **Carousel** — the rotation control's `startLabel` / `stopLabel` route through
+  `provideForCarouselDefaults` (new `rotationStartLabel` / `rotationStopLabel` keys) instead of hardcoded
+  English fallbacks ([#1392](https://github.com/tutkli/forty-cdk/issues/1392)).
 - **Table / Select / Combobox** — `provideForTable`, `provideForSelect` and `provideForCombobox` return the
   full provider set a root installs, for wrappers that **subclass** it
   ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)). Angular does not inherit a directive's
@@ -24,6 +62,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`forty-cdk/core` is not a public entry point — BREAKING.** The core surface is now split per symbol
+  into a **blessed** tier (46 symbols carrying the library's semver guarantee, each published from exactly
+  one entry point) and an **internal** tier (everything else, refactorable without notice), enforced by a
+  `postbuild` gate instead of a prose disclaimer ([#1398](https://github.com/tutkli/forty-cdk/issues/1398),
+  [#1486](https://github.com/tutkli/forty-cdk/issues/1486),
+  [#1489](https://github.com/tutkli/forty-cdk/issues/1489)). Two consequences for consumers: the blessed
+  contracts are **no longer re-exported from the 37 primitive barrels** (`WritingDirection` alone left 29 of
+  them) — import them from `forty-cdk/shared`; and the core barrel dropped from 353 to 210 exports, so an
+  import of an internal-tier symbol from `forty-cdk/core` no longer resolves. Six blessed symbols keep a
+  primitive as their canonical publisher because it is their semantic home: `ForVisuallyHidden`
+  (`forty-cdk/visually-hidden`), `ForDrawerSide` (`forty-cdk/drawer`) and the field-wiring set
+  `FOR_FIELD_CONTEXT` / `ForFieldContext` / `FieldControlHandle` / `injectFieldWiring` (`forty-cdk/field`).
+- **Carousel — BREAKING.** `[forCarouselPrevious]` / `[forCarouselNext]` reflect `aria-disabled` +
+  `data-disabled` with an in-handler activation guard instead of the native `disabled` attribute
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 4), so reaching an edge in non-loop mode
+  while the button holds focus no longer ejects focus to `<body>`. Styling keyed off `:disabled` must move
+  to `[data-disabled]` / `[aria-disabled='true']`. This is the shape #1285 introduced for calendar
+  navigation, verbatim.
+- **Carousel — BREAKING.** `ForCarouselContext.setViewport(el, id)` is replaced by `registerViewport` /
+  `unregisterViewport` ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 12): the viewport now
+  clears its registration on destroy, and a duplicate viewport warns in dev mode.
+- **Drag & drop — BREAKING.** `DropContainerGeometry` carries per-container `orientation` / `dir` and
+  `resolveDropTarget` lost its two trailing parameters
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 1). Both are internal-tier core symbols as
+  of this release and are listed only because they were importable from `forty-cdk/core` in 0.14.0.
 - **Table / Select / Combobox (breaking)** — a primitive's public context interface no longer carries its
   piece-registration protocol ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)). `ForTableContext`
   drops every `register*` / `set*` member (and the `rows` / `virtualWindow` / `virtualRowNavigation` /
@@ -35,6 +98,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **Date field (breaking)** — the `DateTimeSegmentType` alias is gone from `forty-cdk/date-field` /
+  `forty-cdk/date-range-field`; `SegmentType` (from `forty-cdk/shared`) is the only public name
+  ([#1486](https://github.com/tutkli/forty-cdk/issues/1486)). A blessed symbol gets one public name and one
+  import path — a second name is the same duplicate-path problem as a second specifier.
 - **Table (breaking)** — the virtualization-seam and handle types (`TableVirtualWindow`, `TableVirtualRow`,
   `TableVirtualRowNavigation`, `ForTableRowHandle`, `ForTableCellHandle`) are no longer exported from the
   `forty-cdk/table` barrel; they moved to the internal tier with the members that needed them
@@ -42,6 +109,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Select (breaking)** — `ForSelectOverlayContext` and `ForSelectOptionHandle` are no longer exported from
   the `forty-cdk/select` barrel; `ForSelectOverlayFacade` replaces the former as the consumer-facing
   overlay type ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)).
+
+### Fixed
+
+- **Drag & drop** — a cross-container pointer drop resolves the insertion index on the **target's** axis
+  and writing direction ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 1). A
+  vertical→horizontal or ltr→rtl transfer computed it on the source list's axis and landed at the wrong
+  position; the keyboard path always resolved per target, which is what hid the asymmetry.
+- **Drag & drop** — cross-list announcements count valid insertion **positions** rather than items, so a
+  transfer no longer announces "moved to position 4 of 3" and an empty target announces "1 of 1" instead of
+  "1 of 0" ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 2). The `(label, index, total)`
+  contract is now pinned in the defaults JSDoc so a custom builder cannot inherit the ambiguity.
+- **Drag & drop** — an animated drop keeps a reference to the handed-off preview and destroys it on
+  teardown, so an injector destroyed before the deferred cleanup renders (navigation triggered by the drop)
+  no longer leaves the cloned, body-appended preview on screen forever
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 6).
+- **Drag & drop** — a keyboard cross-list drop moves focus to the dropped item in the target list instead
+  of letting it fall to `<body>`, with fallbacks for a consumer rendering fewer items or nothing focusable
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 7).
+- **Drag & drop** — `orientation="mixed"` no longer oscillates between two insertion indices under a
+  stationary pointer ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 8). The drop index is
+  resolved from the single placeholder-free snapshot taken at lift — what `[liveSort]`'s JSDoc already
+  promised — instead of from a re-measurement taken after the placeholder had displaced its siblings; the
+  consumer-driven mid-drag item-count escape hatch is preserved.
+- **Drag & drop** — FLIP first rects are captured before the placeholder teardown, so siblings no longer
+  jump back to their un-parted positions and re-slide on drop
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 9). The placeholder clear moved into a
+  `finally`, so a throwing consumer handler cannot leave the list parted.
+- **Pane resizer** — the separator focuses itself on drag start (mirroring `[forSliderThumb]`), so arrow
+  keys fine-tune immediately after release and assistive tech hears `aria-valuenow` during the drag
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 3).
+- **Pane resizer** — a pending keyboard commit flushes on blur, so Tabbing away between `keydown` and
+  `keyup` still fires `(resizeCommit)` ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 10).
+- **Pane resizer** — the last non-minimum value is recorded on drag and keyboard commits, so the
+  collapse toggle after a drag to the minimum restores the pre-drag size instead of the maximum
+  ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 11). An Escape-reverted drag deliberately
+  never becomes the restore target.
+- **Carousel** — swapping the viewport no longer leaves the indicators pointing `aria-controls` at a
+  detached element ([#1392](https://github.com/tutkli/forty-cdk/issues/1392) item 12).
+- **Table** — `Ctrl`+`Home` scrolls a virtualized `mode="grid"` back to the top
+  ([#1499](https://github.com/tutkli/forty-cdk/issues/1499)). Focus moved onto the first header cell but the
+  virtual window never scrolled, so a keyboard-only user at the bottom of a 10 000-row grid was left on the
+  header of a grid still showing row 9986 and the next `ArrowDown` landed back in the middle of the
+  dataset. Focus keeps landing on the first **header** cell whenever the header joins the roving grid — the
+  header row _is_ grid row 1 — so virtualized and non-virtualized no longer diverge.
+
+### Performance
+
+- **Lazy-loaded routes stop paying for engines they use** — the single-consumer modules that lived in
+  `forty-cdk/core` moved into the entry point that owns them
+  ([#1490](https://github.com/tutkli/forty-cdk/issues/1490),
+  [#1496](https://github.com/tutkli/forty-cdk/issues/1496)): the drag-session engines (auto-scroll, drag
+  slots, FLIP, handle guard, placeholder position) to `forty-cdk/drag-drop`, the tree drop resolver to
+  `forty-cdk/tree`, the flat-hierarchy walk to `forty-cdk/table`, locale number parsing to
+  `forty-cdk/number-input`, and snap-target resolution plus `ForDrawerScaleCoordinator` to
+  `forty-cdk/drawer`. Measured against the published package with an eager component and a lazy route,
+  `forty-cdk-core.mjs` inside the eager chunk shrank **20.4%** for an app lazy-loading drag & drop and
+  **11.9%** for one lazy-loading the drawer; the bytes moved to the lazy chunk rather than disappearing. No
+  public API or behaviour change.
 
 ## [0.14.0] - 2026-07-26
 
@@ -838,7 +963,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/tutkli/forty-cdk/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/tutkli/forty-cdk/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/tutkli/forty-cdk/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/tutkli/forty-cdk/compare/v0.11.1...v0.12.0
