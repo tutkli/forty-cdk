@@ -3,9 +3,11 @@ import { join } from 'node:path';
 
 import ts from 'typescript';
 
+import { BLESSED_CORE_SYMBOLS } from './lib/core-blessed-tier.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
+const CORE_BARREL = join(repoRoot, 'projects', 'forty-cdk', 'core', 'src', 'public-api.ts');
 const CORE_SPECIFIER = 'forty-cdk/core';
 const IGNORED_FILES = new Set(['forty-cdk.d.ts', 'forty-cdk-core.d.ts']);
 
@@ -32,6 +34,22 @@ function isNonPublicMember(node) {
   );
 }
 
+function coreBarrelExportNames() {
+  const sf = ts.createSourceFile(
+    CORE_BARREL,
+    readFileSync(CORE_BARREL, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const names = new Set();
+  for (const stmt of sf.statements) {
+    if (!ts.isExportDeclaration(stmt) || !stmt.exportClause) continue;
+    if (!ts.isNamedExports(stmt.exportClause)) continue;
+    for (const el of stmt.exportClause.elements) names.add(el.name.text);
+  }
+  return names;
+}
+
 function analyze(fileName, text) {
   const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
 
@@ -56,7 +74,13 @@ function analyze(fileName, text) {
     }
   }
 
-  if (reexportsAll || (namedLocalToSource.size === 0 && namespaceLocals.size === 0)) return [];
+  const unblessedReexport = [...reexported]
+    .filter((name) => !BLESSED_CORE_SYMBOLS.has(name))
+    .sort();
+
+  if (namedLocalToSource.size === 0 && namespaceLocals.size === 0) {
+    return { unblessed: unblessedReexport, missingReexport: [] };
+  }
 
   const used = new Set();
 
@@ -116,7 +140,26 @@ function analyze(fileName, text) {
 
   visit(sf);
 
-  return [...used].filter((name) => !reexported.has(name)).sort();
+  const names = [...used].sort();
+  const unblessedSignature = names.filter((name) => !BLESSED_CORE_SYMBOLS.has(name));
+  return {
+    unblessed: [...new Set([...unblessedSignature, ...unblessedReexport])].sort(),
+    missingReexport: reexportsAll ? [] : names.filter((name) => !reexported.has(name)),
+  };
+}
+
+const coreExports = coreBarrelExportNames();
+const staleBlessed = [...BLESSED_CORE_SYMBOLS].filter((name) => !coreExports.has(name)).sort();
+
+if (staleBlessed.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${staleBlessed.length} blessed symbol(s) in scripts/lib/core-blessed-tier.mjs are no longer exported from forty-cdk/core:`,
+  );
+  for (const name of staleBlessed) console.error(`  ${name}`);
+  console.error(
+    `\nA blessed symbol carries the library's semver guarantee. Restore the export, or remove it from the blessed tier deliberately (see the core tier section in .claude/rules/conventions.md).`,
+  );
+  process.exit(1);
 }
 
 const failures = [];
@@ -125,26 +168,46 @@ let checked = 0;
 for (const file of readdirSync(TYPES_DIR)) {
   if (!file.endsWith('.d.ts') || IGNORED_FILES.has(file)) continue;
   checked++;
-  const missing = analyze(file, readFileSync(join(TYPES_DIR, file), 'utf8'));
-  if (missing.length) {
+  const { unblessed, missingReexport } = analyze(file, readFileSync(join(TYPES_DIR, file), 'utf8'));
+  if (unblessed.length || missingReexport.length) {
     const entry = file.replace(/^forty-cdk-/, '').replace(/\.d\.ts$/, '');
-    failures.push({ entry, missing });
+    failures.push({ entry, unblessed, missingReexport });
   }
 }
 
-if (failures.length) {
+const unblessedFailures = failures.filter((f) => f.unblessed.length);
+const reexportFailures = failures.filter((f) => f.missingReexport.length);
+
+if (unblessedFailures.length) {
   console.error(
-    `[check-entrypoint-public-types] FAIL — ${failures.length} entry point(s) reference core-declared types in their public API without re-exporting them:`,
+    `[check-entrypoint-public-types] FAIL — ${unblessedFailures.length} entry point(s) publish an internal-tier core symbol (in a public signature, or as a barrel re-export):`,
   );
-  for (const { entry, missing } of failures.sort((a, b) => a.entry.localeCompare(b.entry))) {
-    console.error(`  forty-cdk/${entry}: ${missing.join(', ')}`);
+  for (const { entry, unblessed } of unblessedFailures.sort((a, b) =>
+    a.entry.localeCompare(b.entry),
+  )) {
+    console.error(`  forty-cdk/${entry}: ${unblessed.join(', ')}`);
+  }
+  console.error(
+    `\nEither narrow the leak (drop the re-export or the member, make it protected, or retype it to a local shape), or bless the symbol deliberately by adding it to scripts/lib/core-blessed-tier.mjs — which commits the library to its semver stability. See the core tier section in .claude/rules/conventions.md.`,
+  );
+}
+
+if (reexportFailures.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${reexportFailures.length} entry point(s) reference blessed core types in their public API without re-exporting them:`,
+  );
+  for (const { entry, missingReexport } of reexportFailures.sort((a, b) =>
+    a.entry.localeCompare(b.entry),
+  )) {
+    console.error(`  forty-cdk/${entry}: ${missingReexport.join(', ')}`);
   }
   console.error(
     `\nRe-export each from the entry's barrel, e.g. \`export type { VetoableEvent } from 'forty-cdk/core';\`.`,
   );
-  process.exit(1);
 }
 
+if (failures.length) process.exit(1);
+
 console.log(
-  `[check-entrypoint-public-types] OK — ${checked} entry points; every core-declared type in a public signature is re-exported from its own barrel.`,
+  `[check-entrypoint-public-types] OK — ${checked} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core; no internal-tier symbol in a public signature or barrel re-export; every blessed type in a public signature re-exported from its own barrel.`,
 );
