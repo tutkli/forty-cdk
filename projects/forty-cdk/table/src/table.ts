@@ -589,12 +589,16 @@ export class ForTable<T = unknown> implements ForTableContext {
     const navigation = this.#virtualNav();
     const fromRow = this.focusedRowIndex();
     const total = this.rowCount();
+    const headerIsGridStart = action === 'first' && this.#headerParticipates();
+    if (headerIsGridStart) {
+      navigation?.scrollToRow(0);
+    }
     if (
       navigation !== null &&
       total !== undefined &&
       fromRow !== null &&
       ROW_CROSSING_ACTIONS.has(action) &&
-      !(action === 'first' && this.#headerParticipates())
+      !headerIsGridStart
     ) {
       const col = currentIndex < 0 ? 0 : currentIndex % cols;
       const target = resolveCrossWindowRowTarget(
@@ -645,7 +649,10 @@ export class ForTable<T = unknown> implements ForTableContext {
  * `null` when the move would not change the focused row. `first` is routed
  * through the non-virtualized `moveGridIndex` path (to the first header cell)
  * when the header participates in roving, so this resolver's `first` case
- * applies only to a header-less grid.
+ * applies only to a header-less grid. That routing decides the focus *target*
+ * only: `Ctrl+Home` still scrolls a virtualized window back to row 0 through
+ * `scrollToRow(0)` before falling through, so the grid is never left focused on
+ * its header while the window sits at the bottom of the dataset.
  */
 function resolveCrossWindowRowTarget(
   action: GridNavigationAction,

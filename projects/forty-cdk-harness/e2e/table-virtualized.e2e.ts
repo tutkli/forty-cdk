@@ -176,7 +176,9 @@ test.describe('Table virtualized', () => {
       await expectFocused(target);
     });
 
-    test('Ctrl+End jumps to the last row and Ctrl+Home returns to the first', async ({ page }) => {
+    test('Ctrl+End jumps to the last row and Ctrl+Home returns to the start of the grid (header row 1, window scrolled to the top)', async ({
+      page,
+    }) => {
       await gotoFixture(page, 'table-virtualized');
 
       const start = el(page, 'cell-0-id');
@@ -189,6 +191,14 @@ test.describe('Table virtualized', () => {
       await expectFocused(last);
 
       await page.keyboard.press('Control+Home');
+      await expectFocused(el(page, 'header-id'));
+
+      await expect(el(page, 'cell-0-id')).toBeAttached();
+      await expect
+        .poll(() => page.locator('[forTableRow]').first().getAttribute('data-testid'))
+        .toBe('row-0');
+
+      await page.keyboard.press('ArrowDown');
       await expectFocused(el(page, 'cell-0-id'));
     });
 
@@ -255,6 +265,10 @@ test.describe('Table virtualized', () => {
       await expectFocused(el(page, 'cell-9999-id'));
 
       await page.keyboard.press('Control+Home');
+      await expectFocused(el(page, 'header-id'));
+      await expect(el(page, 'cell-0-id')).toBeAttached();
+
+      await page.keyboard.press('ArrowDown');
       await expectFocused(el(page, 'cell-0-id'));
 
       await page.keyboard.press('PageUp');
