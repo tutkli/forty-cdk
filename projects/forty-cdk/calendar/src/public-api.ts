@@ -33,13 +33,4 @@ export {
   provideForCalendarDefaults,
   type ForCalendarDefaults,
 } from './calendar-defaults';
-export {
-  assertTimeCapable,
-  type DateAdapter,
-  type DateRange,
-  FOR_DATE_ADAPTER,
-  injectDateAdapter,
-  type TimeCapableDateAdapter,
-  type WritingDirection,
-} from 'forty-cdk/core';
 export { NativeDateAdapter, provideNativeDateAdapter } from './native-date-adapter';

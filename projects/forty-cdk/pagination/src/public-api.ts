@@ -9,4 +9,3 @@ export {
   provideForPaginationDefaults,
   type ForPaginationDefaults,
 } from './pagination-defaults';
-export type { WritingDirection } from 'forty-cdk/core';

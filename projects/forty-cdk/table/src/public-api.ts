@@ -42,4 +42,3 @@ export {
   type TableVirtualWindow,
   type TableVirtualRowNavigation,
 } from './table-context';
-export type { WritingDirection } from 'forty-cdk/core';

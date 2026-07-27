@@ -71,7 +71,6 @@ import {
   ForToolbarSeparator,
 } from 'forty-cdk/toolbar';
 import {
-  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -85,6 +84,7 @@ import {
   ForCalendarYearSelect,
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
 import {
   ForDateRangeField,

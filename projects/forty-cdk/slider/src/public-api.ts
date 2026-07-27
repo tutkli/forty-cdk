@@ -18,4 +18,3 @@ export {
   FOR_SLIDER_HOST_DIRECTIVE_INPUTS,
   FOR_SLIDER_HOST_DIRECTIVE_OUTPUTS,
 } from './slider-host-directive';
-export type { WritingDirection } from 'forty-cdk/core';

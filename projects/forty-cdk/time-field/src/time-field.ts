@@ -14,10 +14,11 @@ import {
   serializeISOTime,
   type TimeCapableDateAdapter,
   TimeFieldEngine,
+  type TimeGranularity,
+  type TimeSegmentType,
   type WritingDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
-import { type TimeGranularity, type TimeSegmentType } from './build-time-segments';
 import { FOR_TIME_FIELD_CONTEXT, type ForTimeFieldContext } from './time-field-context';
 import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
 

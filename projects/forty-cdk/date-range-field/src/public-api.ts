@@ -19,16 +19,3 @@ export {
   FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
 } from './date-range-field-host-directive';
-export {
-  type DateSegmentType,
-  type FieldGranularity,
-  type SegmentType as DateTimeSegmentType,
-} from 'forty-cdk/core';
-export type {
-  DateAdapter,
-  DateRange,
-  FieldSegment,
-  SegmentEditorContext,
-  SegmentEditorDelegate,
-  WritingDirection,
-} from 'forty-cdk/core';

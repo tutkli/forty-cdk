@@ -25,7 +25,8 @@ import type { OverlayRef } from './overlay-ref';
  * base requires just those two members — both reason-agnostic, so the base
  * stays independent of each ref's close-reason union.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export interface OverlayManagerEntry {
   readonly id: string;
@@ -54,7 +55,8 @@ export interface OverlaySurface {
  * The reactive surface a manager's outlet component is wired with on first
  * `open()`. Mirrors `ForDialogOutletHost` / `ForDrawerOutletHost`.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export interface OverlayManagerOutletHost<TEntry extends OverlayManagerEntry> {
   readonly entries: Signal<readonly TEntry[]>;
@@ -73,7 +75,8 @@ export interface OverlayManagerOutletHost<TEntry extends OverlayManagerEntry> {
  * The minimal surface a manager's outlet component exposes so the core can
  * wire it on first `open()`. Mirrors `ForDialogOutlet` / `ForDrawerOutlet`.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export interface OverlayManagerOutlet<TEntry extends OverlayManagerEntry> {
   init(host: OverlayManagerOutletHost<TEntry>): void;
@@ -84,7 +87,8 @@ export interface OverlayManagerOutlet<TEntry extends OverlayManagerEntry> {
  * exit-animation host / backdrop attributes, and how to create the outlet
  * component that renders the entries.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export interface OverlayManagerConfig<TEntry extends OverlayManagerEntry> {
   /**
@@ -117,7 +121,7 @@ export interface OverlayManagerConfig<TEntry extends OverlayManagerEntry> {
  * The two managers differ only in their entry shape and directive-input
  * mapping; everything structural lives here once.
  *
- * Internal — not re-exported from `public-api.ts`; the public surface is
+ * Internal core tier — no semver guarantee; the public surface is
  * `ForDialogManager` / `ForDrawerManager`.
  */
 export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {

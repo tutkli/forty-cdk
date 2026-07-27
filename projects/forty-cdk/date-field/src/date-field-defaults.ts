@@ -1,7 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
-import type { DateTimeSegmentType } from './build-segments';
+import { createDefaults, type SegmentType } from 'forty-cdk/core';
 
 /**
  * Accessible name announced for each editable segment, keyed by its part type.
@@ -9,7 +8,7 @@ import type { DateTimeSegmentType } from './build-segments';
  * falls back to the library default for that part — so overriding just
  * `dayPeriod` keeps the English labels for the rest.
  */
-export type ForDateFieldSegmentLabels = Partial<Record<DateTimeSegmentType, string>>;
+export type ForDateFieldSegmentLabels = Partial<Record<SegmentType, string>>;
 
 /**
  * Defaults inherited by descendant `[forDateField]` controls in the
@@ -38,7 +37,7 @@ export interface ForDateFieldDefaults {
  * the segment's explicit `ariaLabel` nor a `provideForDateFieldDefaults`
  * override supplies one for that part.
  */
-export const DEFAULT_DATE_FIELD_SEGMENT_LABELS: Readonly<Record<DateTimeSegmentType, string>> = {
+export const DEFAULT_DATE_FIELD_SEGMENT_LABELS: Readonly<Record<SegmentType, string>> = {
   day: 'day',
   month: 'month',
   year: 'year',

@@ -29,8 +29,8 @@ export interface ForceCloseWhenDisabledOptions {
  * alone. It integrates the disabled gate with the public `model()` instead of
  * wrapping the model in a parallel signal.
  *
- * Must be called from an injection context (registers an `effect`). Internal —
- * not re-exported from `public-api.ts`.
+ * Must be called from an injection context (registers an `effect`). Internal
+ * core tier — no semver guarantee.
  */
 export function forceCloseWhenDisabled(options: ForceCloseWhenDisabledOptions): void {
   effect(() => {

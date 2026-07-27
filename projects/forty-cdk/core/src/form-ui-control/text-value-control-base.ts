@@ -20,7 +20,7 @@ import { mirrorUnfocusedValue } from './unfocused-value-mirror';
  *
  * Implemented as an `@Directive()`-decorated abstract class so Angular detects
  * the inherited `value` model — the same mechanism `FormUiControlBase` relies
- * on. Internal — not re-exported from `public-api.ts`.
+ * on. Internal core tier — no semver guarantee.
  */
 @Directive()
 export abstract class TextValueControlBase

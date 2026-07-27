@@ -5,12 +5,3 @@ export {
   provideForDropdownMenuDefaults,
   type ForDropdownMenuDefaults,
 } from './dropdown-menu-defaults';
-export type {
-  FloatingAlign,
-  FloatingFallbackAxisSideDirection,
-  FloatingSide,
-  ForMenuContext,
-  VetoableEvent,
-  VetoableNativeEvent,
-  WritingDirection,
-} from 'forty-cdk/core';

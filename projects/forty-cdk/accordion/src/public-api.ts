@@ -8,4 +8,3 @@ export {
   type ForAccordionContext,
   type ForAccordionItemContext,
 } from './accordion-context';
-export type { ListNavigationAction, WritingDirection } from 'forty-cdk/core';

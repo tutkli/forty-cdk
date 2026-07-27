@@ -12,4 +12,3 @@ export {
   type ForTooltipContext,
   type TooltipScheduleReason,
 } from './tooltip-context';
-export type { FloatingAlign, FloatingSide, Point, VetoableNativeEvent } from 'forty-cdk/core';

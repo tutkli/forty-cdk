@@ -195,6 +195,10 @@
         "./projects/forty-cdk/button/src/public-api.ts"
       ],
       "forty-cdk/core": ["./dist/forty-cdk/core", "./projects/forty-cdk/core/src/public-api.ts"],
+      "forty-cdk/shared": [
+        "./dist/forty-cdk/shared",
+        "./projects/forty-cdk/shared/src/public-api.ts"
+      ],
       "forty-cdk/dialog": [
         "./dist/forty-cdk/dialog",
         "./projects/forty-cdk/dialog/src/public-api.ts"

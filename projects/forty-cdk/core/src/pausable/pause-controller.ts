@@ -40,7 +40,7 @@ export interface PauseControllerOptions {
  * page-visibility source through it). Centralizing both restores parity.
  *
  * Must be called from an injection context (subscribes `visibility-pause` via
- * the injector-scoped source). Internal — not re-exported from `public-api.ts`.
+ * the injector-scoped source). Internal core tier — no semver guarantee.
  */
 export interface PauseController<R extends string> {
   /** `true` while at least one pause reason is held. */

@@ -22,4 +22,3 @@ export {
   type ForToastTemplateContext,
   type ForToastVariant,
 } from './toast-context';
-export type { SwipeDirection, SwipeEventDetail } from 'forty-cdk/core';

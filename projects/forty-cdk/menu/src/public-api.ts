@@ -10,24 +10,8 @@ export { ForMenuGroupLabel } from './menu-group-label';
 export { ForMenuSub } from './menu-sub';
 export { ForMenuSubTrigger } from './menu-sub-trigger';
 export {
-  FOR_MENU_CONTEXT,
-  type ForMenuCloseReason,
-  type ForMenuContext,
-  type ForMenuItemHandle,
-  type MenuActivationModality,
-} from 'forty-cdk/core';
-export {
   FOR_MENU_RADIO_GROUP_CONTEXT,
   type ForMenuRadioGroupContext,
 } from './menu-radio-group-context';
 export { FOR_MENU_GROUP_CONTEXT, type ForMenuGroupContext } from './menu-group-context';
 export { FOR_MENU_DEFAULTS, provideForMenuDefaults, type ForMenuDefaults } from './menu-defaults';
-export type {
-  FloatingAlign,
-  FloatingFallbackAxisSideDirection,
-  FloatingSide,
-  Point,
-  VetoableEvent,
-  VetoableNativeEvent,
-  WritingDirection,
-} from 'forty-cdk/core';

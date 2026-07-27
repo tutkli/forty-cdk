@@ -25,12 +25,3 @@ export {
   FOR_SELECT_HOST_DIRECTIVE_INPUTS,
   FOR_SELECT_HOST_DIRECTIVE_OUTPUTS,
 } from './select-host-directive';
-export type {
-  FloatingAlign,
-  FloatingSide,
-  ListboxOverlayContext,
-  ListNavigationAction,
-  VetoableEvent,
-  VetoableNativeEvent,
-  WritingDirection,
-} from 'forty-cdk/core';

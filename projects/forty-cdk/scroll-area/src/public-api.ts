@@ -16,4 +16,3 @@ export {
   provideForScrollAreaDefaults,
   type ForScrollAreaDefaults,
 } from './scroll-area-defaults';
-export type { ElementBox, WritingDirection } from 'forty-cdk/core';

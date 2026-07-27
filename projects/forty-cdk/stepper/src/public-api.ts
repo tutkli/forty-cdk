@@ -25,4 +25,3 @@ export {
   provideForStepperDefaults,
   type ForStepperDefaults,
 } from './stepper-defaults';
-export type { ListNavigationAction, RovingTabindex, WritingDirection } from 'forty-cdk/core';
