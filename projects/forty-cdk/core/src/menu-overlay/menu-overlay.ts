@@ -159,7 +159,7 @@ export interface MenuOverlayHooks {
  * Stays exported from `core/src/public-api.ts` — internal tier, not blessed —
  * because it is the inferred type of the `protected readonly _overlay` field
  * on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`, so the emitted
- * `.d.ts` has to name it ([#1489](https://github.com/tutkli/forty-cdk/issues/1489)).
+ * `.d.ts` has to name it (#1489).
  */
 export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle> {
   readonly #registry = inject(ElementRegistry);

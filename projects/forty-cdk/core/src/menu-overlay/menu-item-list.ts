@@ -14,7 +14,7 @@ import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
  * because it is the default type argument of `MenuOverlay`, which the emitted
  * `.d.ts` names as `MenuOverlay<MenuItemHandle>` for the `protected readonly
  * _overlay` field on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`
- * ([#1489](https://github.com/tutkli/forty-cdk/issues/1489)).
+ * (#1489).
  */
 export interface MenuItemHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;
