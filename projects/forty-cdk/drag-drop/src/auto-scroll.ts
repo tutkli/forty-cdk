@@ -1,4 +1,4 @@
-import { type DragRect } from './drag-geometry';
+import { type DragRect } from 'forty-cdk/core';
 
 /** A 2-D scroll velocity vector produced by `computeScrollVelocity`. */
 export interface AutoScrollVelocity {

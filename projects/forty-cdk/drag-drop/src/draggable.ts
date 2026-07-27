@@ -21,10 +21,10 @@ import {
   resolveListNavigation,
   createPointerDragSession,
   type PointerDragSession,
-  createPointerHandleGuard,
   createTemplatePreview,
   type DragPreview,
 } from 'forty-cdk/core';
+import { createPointerHandleGuard } from './handle-guard';
 import {
   FOR_DRAGGABLE_CONTEXT,
   FOR_DRAGGABLE_LIFT_GUARD,
