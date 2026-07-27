@@ -166,7 +166,7 @@ export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/hover-c
 export { createHoverIntent, type HoverIntentScheduler } from './hover-intent/hover-intent';
 export { SkipDelayCoordinator } from './hover-intent/skip-delay-coordinator';
 export { createSkipDelayWindow } from './hover-intent/skip-delay-window';
-export { IdGenerator } from './id-generator/id-generator';
+export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
 export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
   type GridNavigationAction,
