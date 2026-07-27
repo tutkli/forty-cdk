@@ -57,12 +57,53 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
 }
 
 /**
- * The shared overlay-listbox coordination surface a `[forSelect]` exposes on
- * its context (`ctx.overlay`): trigger / anchor / content registries + ids,
+ * The consumer-facing slice of the select's overlay surface, reached through
+ * {@link ForSelectContext.overlay}: the trigger / content ids the ARIA wiring
+ * points at, the reason of the last close, and the open / close commands that
+ * mutate `open()` through the root's guards.
+ *
+ * It is deliberately narrow. The full state machine behind it — the trigger /
+ * anchor / content / option registries, the DOM-focus navigation algorithm, the
+ * initial-focus state, and the dismiss / auto-focus emit forwarders — is the
+ * library's own wiring and is refactored without notice, so it stays on an
+ * unexported surface the pieces reach through their own token.
+ */
+export interface ForSelectOverlayFacade {
+  /** The trigger's stable id, adopted from a consumer-set static id when present. */
+  readonly triggerId: Signal<string>;
+  /** The content surface's stable id, adopted from a consumer-set static id when present. */
+  readonly contentId: Signal<string>;
+  /** Reason of the most recent close, or `null` while open (or before any close). */
+  readonly lastCloseReason: Signal<ForSelectCloseReason | null>;
+  /**
+   * Registers the element `[forSelectContent]` is positioned against, instead of
+   * the trigger. The declarative `[forSelectAnchor]` covers the common case; call
+   * this directly when the anchor element is only reachable imperatively — it
+   * lives in an ancestor component's template, so a directive placed on it would
+   * resolve DI outside this root. At most one anchor may be registered per
+   * `[forSelect]`; a second one throws.
+   */
+  registerAnchor(el: HTMLElement): void;
+  /** Unregisters the positioning anchor, falling back to the trigger. Reference-based. */
+  unregisterAnchor(el: HTMLElement): void;
+  /** Opens the listbox with the requested initial-focus target. */
+  openMenu(initialFocus: ForSelectInitialFocus): void;
+  /** Closes the listbox, recording `reason` as the last close reason. */
+  closeMenu(reason: ForSelectCloseReason): void;
+  /** Opens the listbox when closed (with `initialFocus`), closes it when open. */
+  toggle(initialFocus: ForSelectInitialFocus): void;
+}
+
+/**
+ * The shared overlay-listbox coordination surface backing
+ * {@link ForSelectOverlayFacade}: trigger / anchor / content registries + ids,
  * DOM-focus navigation, the open / close machine, the initial-focus /
  * close-reason state, and the dismiss / auto-focus emit forwarders. Backed by
  * the shared `ListboxOverlayController`, so child directives read it here
  * instead of the root re-forwarding each member.
+ *
+ * Internal — never re-exported from `public-api.ts`; pieces reach it through
+ * {@link SELECT_CONTEXT}.
  */
 export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
   ForSelectOptionHandle<T>,
@@ -147,13 +188,12 @@ export interface ForSelectContext<T = unknown> {
   readonly placeholder: Signal<string>;
 
   /**
-   * The shared overlay-listbox coordination surface (trigger / anchor / content
-   * registration + ids, navigation, open / close machine, initial-focus /
-   * close-reason state, dismiss + auto-focus emit forwarders). Child directives
-   * read the overlay machinery here instead of the root re-forwarding each
-   * member; the value-specific behavior below stays on the context directly.
+   * The consumer-facing slice of the overlay surface: the trigger / content ids,
+   * the last close reason, and the open / close commands. The registration and
+   * navigation machinery behind it is internal — see
+   * {@link ForSelectOverlayFacade}.
    */
-  readonly overlay: ForSelectOverlayContext<T>;
+  readonly overlay: ForSelectOverlayFacade;
 
   readonly ariaLabel: Signal<string | null>;
 
@@ -289,8 +329,23 @@ export interface ForSelectContext<T = unknown> {
 
 export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELECT_CONTEXT');
 
-export function injectSelectContext<T = unknown>(piece: string): ForSelectContext<T> {
-  const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
+/**
+ * The select's internal coordination surface: everything {@link ForSelectContext}
+ * publishes, plus the full overlay state machine instead of the consumer facade.
+ *
+ * Never exported from `public-api.ts`. `[forSelect]` provides it alongside
+ * {@link FOR_SELECT_CONTEXT} on the same object, so a consumer who injects the
+ * public token gets the read surface while the pieces get the wiring protocol.
+ */
+export interface SelectContext<T = unknown> extends ForSelectContext<T> {
+  readonly overlay: ForSelectOverlayContext<T>;
+}
+
+/** DI token carrying the internal {@link SelectContext}. Provided by `[forSelect]`. */
+export const SELECT_CONTEXT = new InjectionToken<SelectContext>('SELECT_CONTEXT');
+
+export function injectSelectContext<T = unknown>(piece: string): SelectContext<T> {
+  const ctx = inject(SELECT_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
       `[forty-cdk/select] ${piece} must be used inside a [forSelect] element. ` +
@@ -299,26 +354,31 @@ export function injectSelectContext<T = unknown>(piece: string): ForSelectContex
         '[forSelect] root.',
     );
   }
-  return ctx as unknown as ForSelectContext<T>;
+  return ctx as unknown as SelectContext<T>;
 }
 
 /**
  * Resolves the trigger's root context: the explicit reference when the
- * `[forSelectTrigger]` input carries one, the injected `FOR_SELECT_CONTEXT`
+ * `[forSelectTrigger]` input carries one, the injected `SELECT_CONTEXT`
  * otherwise. The orphan error only fires when neither resolves, on first read
  * of the returned signal. Must be called in an injection context.
+ *
+ * The explicit reference is a public `ForSelectContext`, so it is widened back
+ * to the internal surface: the runtime object is always the `[forSelect]` root,
+ * which owns the full overlay controller — the public interface only narrows
+ * `overlay` to the consumer facade.
  */
 export function injectSelectTriggerContext<T = unknown>(
   explicitRoot: Signal<ForSelectContext<T> | ''>,
-): Signal<ForSelectContext<T>> {
-  const injected = inject(FOR_SELECT_CONTEXT, { optional: true });
+): Signal<SelectContext<T>> {
+  const injected = inject(SELECT_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
     if (explicit !== '') {
-      return explicit;
+      return explicit as SelectContext<T>;
     }
     if (injected) {
-      return injected as unknown as ForSelectContext<T>;
+      return injected as unknown as SelectContext<T>;
     }
     throw new Error(
       '[forty-cdk/select] ForSelectTrigger could not resolve its [forSelect] root: ' +

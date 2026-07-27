@@ -7,9 +7,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { flush, installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
+import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { ForTable } from './table';
 import { ForTableCell } from './table-cell';
@@ -19,6 +21,7 @@ import { ForTableRow } from './table-row';
 import { ForTableRowSelector } from './table-row-selector';
 import { ForTableSelectAll } from './table-select-all';
 import {
+  FOR_TABLE_CONTEXT,
   type TableMode,
   type TableSelectionMode,
   type TableSelectionBehavior,
@@ -4312,6 +4315,87 @@ describe('ForTable', () => {
         expect(document.activeElement).toBe(cell(el, 'cell-24-b'));
       });
     });
+  });
+});
+
+describe('context / registration split (#1399)', () => {
+  let restoreObservers: () => void;
+  beforeAll(() => {
+    restoreObservers = installObserverPolyfills();
+  });
+  afterAll(() => restoreObservers());
+
+  @Component({
+    imports: [ForTable, ForTableHeaderRow, ForTableHeaderCell, ForTableRow, ForTableCell],
+    template: `
+      <div forTable mode="grid">
+        <div forTableHeaderRow><div forTableHeaderCell name="a">A</div></div>
+        <div forTableRow [value]="'r1'"><div forTableCell name="a">1</div></div>
+      </div>
+    `,
+  })
+  class SplitHost {}
+
+  const REGISTRATION_MEMBERS = [
+    'registerHeaderRow',
+    'unregisterHeaderRow',
+    'registerHeaderCell',
+    'unregisterHeaderCell',
+    'registerRow',
+    'unregisterRow',
+    'registerBodyRowCount',
+    'registerVirtualNavigation',
+    'registerVirtualWindow',
+    'setReorderingRow',
+    'setColumnWidth',
+    'removeColumnWidth',
+    'rows',
+    'virtualWindow',
+    'virtualRowNavigation',
+    'reorderingRowIndex',
+  ];
+
+  function mount(): {
+    root: HTMLElement;
+    ctx: Record<string, unknown>;
+    registration: TableRegistrationContext;
+  } {
+    const { el, fixture } = renderHost(SplitHost);
+    const node = fixture.debugElement.query(By.directive(ForTable));
+    return {
+      root: el.querySelector('[forTable]') as HTMLElement,
+      ctx: node.injector.get(FOR_TABLE_CONTEXT) as unknown as Record<string, unknown>,
+      registration: node.injector.get(TABLE_REGISTRATION_CONTEXT),
+    };
+  }
+
+  it('keeps every registration member off the object behind FOR_TABLE_CONTEXT', () => {
+    const { ctx } = mount();
+    for (const member of REGISTRATION_MEMBERS) {
+      expect(member in ctx).toBe(false);
+    }
+  });
+
+  it('routes the same members through TABLE_REGISTRATION_CONTEXT instead', () => {
+    const { registration } = mount();
+    const surface = registration as unknown as Record<string, unknown>;
+    for (const member of REGISTRATION_MEMBERS) {
+      expect(member in surface).toBe(true);
+    }
+  });
+
+  it('registers the rendered row and its cell through the registration surface', () => {
+    const { registration } = mount();
+    expect(registration.rows()).toHaveLength(1);
+    expect(registration.rows()[0]!.cells()).toHaveLength(1);
+  });
+
+  it('publishes and removes a column width through the registration surface', () => {
+    const { root, registration } = mount();
+    registration.setColumnWidth('a', 120);
+    expect(root.style.getPropertyValue('--for-table-col-a-width')).toBe('120px');
+    registration.removeColumnWidth('a');
+    expect(root.style.getPropertyValue('--for-table-col-a-width')).toBe('');
   });
 });
 

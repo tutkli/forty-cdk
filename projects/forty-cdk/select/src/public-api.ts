@@ -1,4 +1,4 @@
-export { ForSelect } from './select';
+export { ForSelect, provideForSelect } from './select';
 export { ForSelectAnchor } from './select-anchor';
 export { ForSelectTrigger } from './select-trigger';
 export { ForSelectValue } from './select-value';
@@ -13,8 +13,7 @@ export {
   type ForSelectCloseReason,
   type ForSelectContext,
   type ForSelectInitialFocus,
-  type ForSelectOptionHandle,
-  type ForSelectOverlayContext,
+  type ForSelectOverlayFacade,
 } from './select-context';
 export {
   FOR_SELECT_DEFAULTS,

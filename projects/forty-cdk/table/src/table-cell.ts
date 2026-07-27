@@ -8,11 +8,11 @@ import {
   input,
 } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { type ForTableCellHandle, registerHandle } from 'forty-cdk/core';
 import {
   coerceSticky,
-  type ForTableCellHandle,
   injectTableContext,
+  injectTableRowRegistration,
   injectTableRowContext,
   type TableStickyValue,
 } from './table-context';
@@ -46,6 +46,7 @@ import {
 export class ForTableCell {
   protected readonly ctx = injectTableContext('ForTableCell');
   protected readonly rowCtx = injectTableRowContext('ForTableCell');
+  readonly #rowRegistration = injectTableRowRegistration('ForTableCell');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /**
@@ -98,8 +99,8 @@ export class ForTableCell {
     const handle: ForTableCellHandle = { host: this.#host, disabled: this.disabled };
     registerHandle(
       handle,
-      (h) => this.rowCtx.registerCell(h),
-      (h) => this.rowCtx.unregisterCell(h),
+      (h) => this.#rowRegistration.registerCell(h),
+      (h) => this.#rowRegistration.unregisterCell(h),
     );
   }
 

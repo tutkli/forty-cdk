@@ -26,7 +26,7 @@ import {
   resolveScrubReorder,
   translateWindowReorder,
 } from 'forty-cdk/core';
-import { injectTableContext } from './table-context';
+import { injectTableContext, injectTableRegistration } from './table-context';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
@@ -140,6 +140,7 @@ export function translateRowReorderIndices(
 })
 export class ForTableRowReorder {
   protected readonly ctx = injectTableContext('ForTableRowReorder');
+  readonly #registration = injectTableRegistration('ForTableRowReorder');
   readonly #list = inject(ForDropList);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
@@ -173,8 +174,8 @@ export class ForTableRowReorder {
         canStart: (event) => this.#pinFromPointer(event),
         onLift: () => {},
         onMove: (event) => this.#trackScrub(event),
-        onCommit: () => this.ctx.setReorderingRow(null),
-        onCancel: () => this.ctx.setReorderingRow(null),
+        onCommit: () => this.#registration.setReorderingRow(null),
+        onCancel: () => this.#registration.setReorderingRow(null),
       });
 
       createKeyboardDragMediator({
@@ -201,7 +202,7 @@ export class ForTableRowReorder {
         if (this.#kbLiftedHost !== null) {
           this.#cancelActive();
         }
-        this.ctx.setReorderingRow(null);
+        this.#registration.setReorderingRow(null);
       });
     }
   }
@@ -211,7 +212,7 @@ export class ForTableRowReorder {
   }
 
   #virtualized(): boolean {
-    return this.ctx.virtualRowNavigation() !== null;
+    return this.#registration.virtualRowNavigation() !== null;
   }
 
   #onIdleKeydown(event: KeyboardEvent): void {
@@ -256,7 +257,7 @@ export class ForTableRowReorder {
     if (!(target instanceof Node)) {
       return null;
     }
-    const row = this.ctx.rows().find((r) => r.host === target || r.host.contains(target));
+    const row = this.#registration.rows().find((r) => r.host === target || r.host.contains(target));
     if (row === undefined) {
       return null;
     }
@@ -268,7 +269,7 @@ export class ForTableRowReorder {
   }
 
   #lift(rowHost: HTMLElement): void {
-    const handle = this.ctx.rows().find((r) => r.host === rowHost);
+    const handle = this.#registration.rows().find((r) => r.host === rowHost);
     if (handle === undefined) {
       return;
     }
@@ -360,7 +361,7 @@ export class ForTableRowReorder {
     this.#kbLiftedHost = host;
     this.#kbFrom = vi;
     this.#kbTarget = vi;
-    this.ctx.setReorderingRow(vi);
+    this.#registration.setReorderingRow(vi);
     const total = this.#count();
     this.#announcer.announce(
       this.#dragDefaults.announceLift(this.#label(), vi + 1, total),
@@ -369,7 +370,7 @@ export class ForTableRowReorder {
   }
 
   #kbApplyTarget(): void {
-    this.ctx.virtualRowNavigation()?.scrollToRow(this.#kbTarget);
+    this.#registration.virtualRowNavigation()?.scrollToRow(this.#kbTarget);
     this.#announcer.announce(
       this.#dragDefaults.announceMove(this.#label(), this.#kbTarget + 1, this.#count()),
       'polite',
@@ -395,7 +396,7 @@ export class ForTableRowReorder {
     this.#kbPath = null;
     this.#kbFrom = 0;
     this.#kbTarget = 0;
-    this.ctx.setReorderingRow(null);
+    this.#registration.setReorderingRow(null);
   }
 
   #count(): number {
@@ -425,8 +426,8 @@ export class ForTableRowReorder {
     }
     this.#pointerMain = event.clientY;
     this.#scrubEngaged = event.shiftKey;
-    const handle = this.ctx.rows().find((r) => r.host === rowHost);
-    this.ctx.setReorderingRow(handle?.virtualIndex() ?? null);
+    const handle = this.#registration.rows().find((r) => r.host === rowHost);
+    this.#registration.setReorderingRow(handle?.virtualIndex() ?? null);
     return true;
   }
 
@@ -446,7 +447,7 @@ export class ForTableRowReorder {
     if (event.container !== event.previousContainer) {
       return fallback;
     }
-    const rowByHost = new Map(this.ctx.rows().map((r) => [r.host, r] as const));
+    const rowByHost = new Map(this.#registration.rows().map((r) => [r.host, r] as const));
     const windowIndices: number[] = [];
     for (const item of this.#list.items()) {
       const index = rowByHost.get(item.host)?.virtualIndex() ?? null;
@@ -455,7 +456,7 @@ export class ForTableRowReorder {
       }
       windowIndices.push(index);
     }
-    const rect = this.ctx.virtualRowNavigation()?.scrollViewportRect() ?? null;
+    const rect = this.#registration.virtualRowNavigation()?.scrollViewportRect() ?? null;
     if (rect !== null) {
       const from = windowIndices[event.previousIndex] ?? event.previousIndex;
       const scrub = resolveScrubReorder({

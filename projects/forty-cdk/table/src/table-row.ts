@@ -10,14 +10,19 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { Collection, registerHandle } from 'forty-cdk/core';
+import {
+  Collection,
+  type ForTableCellHandle,
+  registerHandle,
+  TABLE_ROW_REGISTRATION_CONTEXT,
+} from 'forty-cdk/core';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
 import {
   FOR_TABLE_ROW_CONTEXT,
-  type ForTableCellHandle,
   type ForTableRowContext,
   type TableSelectionMode,
   injectTableContext,
+  injectTableRegistration,
 } from './table-context';
 
 /**
@@ -42,10 +47,14 @@ import {
     '[attr.data-state]': 'expandState()',
     '(click)': 'onClick($event)',
   },
-  providers: [{ provide: FOR_TABLE_ROW_CONTEXT, useExisting: ForTableRow }],
+  providers: [
+    { provide: FOR_TABLE_ROW_CONTEXT, useExisting: ForTableRow },
+    { provide: TABLE_ROW_REGISTRATION_CONTEXT, useExisting: ForTableRow },
+  ],
 })
 export class ForTableRow implements ForTableRowContext {
   protected readonly ctx = injectTableContext('ForTableRow');
+  readonly #registration = injectTableRegistration('ForTableRow');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #cells = new Collection<ForTableCellHandle>();
 
@@ -151,16 +160,16 @@ export class ForTableRow implements ForTableRowContext {
     };
     registerHandle(
       handle,
-      (h) => this.ctx.registerRow(h),
-      (h) => this.ctx.unregisterRow(h),
+      (h) => this.#registration.registerRow(h),
+      (h) => this.#registration.unregisterRow(h),
     );
   }
 
-  registerCell(handle: ForTableCellHandle): void {
+  private registerCell(handle: ForTableCellHandle): void {
     this.#cells.register(handle);
   }
 
-  unregisterCell(handle: ForTableCellHandle): void {
+  private unregisterCell(handle: ForTableCellHandle): void {
     this.#cells.unregister(handle);
   }
 

@@ -1,4 +1,4 @@
-export { ForCombobox } from './combobox';
+export { ForCombobox, provideForCombobox } from './combobox';
 export { ForComboboxAnchor } from './combobox-anchor';
 export { ForComboboxTrigger } from './combobox-trigger';
 export { ForComboboxInput } from './combobox-input';

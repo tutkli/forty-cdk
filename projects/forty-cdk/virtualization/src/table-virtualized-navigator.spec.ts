@@ -6,7 +6,7 @@ import {
   type TableVirtualRow,
   type TableVirtualRowNavigation,
   type TableVirtualWindow,
-} from 'forty-cdk/table';
+} from 'forty-cdk/core';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
 describe('TableVirtualizedNavigator', () => {

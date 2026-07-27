@@ -259,6 +259,17 @@ export {
   type SwipeDirection,
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';
+export {
+  TABLE_REGISTRATION_CONTEXT,
+  TABLE_ROW_REGISTRATION_CONTEXT,
+  type ForTableCellHandle,
+  type ForTableRowHandle,
+  type TableRegistrationContext,
+  type TableRowRegistrationContext,
+  type TableVirtualRow,
+  type TableVirtualRowNavigation,
+  type TableVirtualWindow,
+} from './table-registration/table-registration';
 export { injectTextDirection } from './text-direction/text-direction';
 export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
 export { injectTypeahead } from './typeahead/typeahead';

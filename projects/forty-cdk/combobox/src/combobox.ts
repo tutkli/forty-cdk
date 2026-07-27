@@ -8,6 +8,8 @@ import {
   model,
   numberAttribute,
   output,
+  type Provider,
+  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -36,6 +38,7 @@ import {
 } from 'forty-cdk/core';
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
+  COMBOBOX_CONTEXT,
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxActionHandle,
   type ForComboboxAutocomplete,
@@ -87,7 +90,7 @@ import { VirtualizedNavigator } from './combobox-virtualized-navigator';
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
-  providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
+  providers: provideForCombobox(ForCombobox),
 })
 export class ForCombobox<T = string>
   extends FormUiControlBase
@@ -549,59 +552,61 @@ export class ForCombobox<T = string>
     });
   }
 
-  registerInput(el: HTMLInputElement): void {
+  private registerInput(el: HTMLInputElement): void {
     this.#inputSlot.register(el);
   }
-  unregisterInput(el: HTMLInputElement): void {
+  private unregisterInput(el: HTMLInputElement): void {
     this.#inputSlot.unregister(el);
   }
 
+  /** See {@link ForComboboxContext.registerAnchor}. */
   registerAnchor(el: HTMLElement): void {
     this.#anchorSlot.register(el);
   }
+  /** See {@link ForComboboxContext.unregisterAnchor}. */
   unregisterAnchor(el: HTMLElement): void {
     this.#anchorSlot.unregister(el);
   }
 
-  registerTrigger(el: HTMLElement): void {
+  private registerTrigger(el: HTMLElement): void {
     this.#triggerSlot.register(el);
   }
-  unregisterTrigger(el: HTMLElement): void {
+  private unregisterTrigger(el: HTMLElement): void {
     this.#triggerSlot.unregister(el);
   }
 
-  registerContent(el: HTMLElement): void {
+  private registerContent(el: HTMLElement): void {
     this.#contentSlot.register(el);
   }
-  unregisterContent(el: HTMLElement): void {
+  private unregisterContent(el: HTMLElement): void {
     this.#contentSlot.unregister(el);
   }
 
-  registerList(el: HTMLElement): void {
+  private registerList(el: HTMLElement): void {
     this.#listSlot.register(el);
   }
-  unregisterList(el: HTMLElement): void {
+  private unregisterList(el: HTMLElement): void {
     this.#listSlot.unregister(el);
   }
 
-  registerOption(handle: ForComboboxOptionHandle<T>): void {
+  private registerOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.register(handle);
   }
-  unregisterOption(handle: ForComboboxOptionHandle<T>): void {
+  private unregisterOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.unregister(handle);
   }
 
-  registerChip(handle: ForComboboxChipHandle<T>): void {
+  private registerChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.register(handle);
   }
-  unregisterChip(handle: ForComboboxChipHandle<T>): void {
+  private unregisterChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.unregister(handle);
   }
 
-  registerAction(handle: ForComboboxActionHandle): void {
+  private registerAction(handle: ForComboboxActionHandle): void {
     this.#actions.register(handle);
   }
-  unregisterAction(handle: ForComboboxActionHandle): void {
+  private unregisterAction(handle: ForComboboxActionHandle): void {
     this.#actions.unregister(handle);
   }
 
@@ -766,7 +771,7 @@ export class ForCombobox<T = string>
     }
   }
 
-  setActiveId(id: string | null): void {
+  private setActiveId(id: string | null): void {
     this.#activeId.set(id);
     this.#lastPositionedId = id;
   }
@@ -845,7 +850,7 @@ export class ForCombobox<T = string>
     this.#activeId.set(null);
   }
 
-  setInitialFocus(target: ForComboboxInitialFocus): void {
+  private setInitialFocus(target: ForComboboxInitialFocus): void {
     this.#initialFocusState.setTarget(target);
   }
 
@@ -949,4 +954,33 @@ export class ForCombobox<T = string>
     }
     this.markTouched();
   }
+}
+
+/**
+ * The providers a `[forCombobox]` root installs: the public
+ * {@link FOR_COMBOBOX_CONTEXT}, aliased to `root`, plus the internal
+ * coordination token the combobox's pieces resolve.
+ *
+ * `ForCombobox` declares its own providers through this helper, so a wrapper
+ * that **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_COMBOBOX_CONTEXT` alone leaves the internal token absent and
+ * every piece orphans with the "must be used inside a [forCombobox] element"
+ * error. That token is deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForCombobox(MyCombobox),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForCombobox]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForCombobox<T = string>(root: Type<ForCombobox<T>>): Provider[] {
+  return [
+    { provide: FOR_COMBOBOX_CONTEXT, useExisting: root },
+    { provide: COMBOBOX_CONTEXT, useExisting: root },
+  ];
 }

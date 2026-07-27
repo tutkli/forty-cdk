@@ -1,4 +1,4 @@
-export { ForTable } from './table';
+export { ForTable, provideForTable } from './table';
 export {
   ForColumnDef,
   ForHeaderCell,
@@ -31,14 +31,9 @@ export { ForTableRowReorder, type TableRowReorderDescriptor } from './table-row-
 export {
   FOR_TABLE_CONTEXT,
   type ForTableContext,
-  type ForTableCellHandle,
-  type ForTableRowHandle,
   type TableMode,
   type TableStickyValue,
   type TableSelectionMode,
   type TableSelectionBehavior,
   type TableSelectAllState,
-  type TableVirtualRow,
-  type TableVirtualWindow,
-  type TableVirtualRowNavigation,
 } from './table-context';

@@ -7,7 +7,12 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { FOR_TABLE_CONTEXT, type ForTableContext, type ForTableRowHandle } from 'forty-cdk/table';
+import {
+  TABLE_REGISTRATION_CONTEXT,
+  type ForTableRowHandle,
+  type TableRegistrationContext,
+} from 'forty-cdk/core';
+import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk/table';
 
 import { flush } from '../../src/test-utils';
 import { ForTableVirtualized } from './table-virtualized';
@@ -65,6 +70,10 @@ describe('ForTableVirtualized — retained row offset under measureRows', () => 
       providers: [
         provideZonelessChangeDetection(),
         { provide: FOR_TABLE_CONTEXT, useValue: fakeCtx as unknown as ForTableContext },
+        {
+          provide: TABLE_REGISTRATION_CONTEXT,
+          useValue: fakeCtx as unknown as TableRegistrationContext,
+        },
       ],
     });
   });

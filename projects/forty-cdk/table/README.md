@@ -1527,6 +1527,29 @@ Consumers of the wrapper then bind `[scrollContainer]="shell"`.
 | `--for-table-col-<name>-width` | `[forTable]` (set by `[forTableColumnResizer]`) | Resolved column width in px; apply it to your layout.                                                                                               |
 | `data-resizing`                | `[forTableColumnResizer]`                       | Present (`""`) while a pointer drag is active.                                                                                                      |
 
+## Wrapping the root
+
+Composing with `hostDirectives: [ForTable]` needs nothing special — a host directive brings its own providers to the element.
+
+**Subclassing** the root does: Angular does not inherit a directive's `providers`, so a subclass carrying its own `@Directive` metadata replaces the array wholesale. `[forTable]` provides an internal registry that its own constructor injects and every piece resolves through, and that registry is deliberately not exported — so a subclass with a hand-written provider list fails to construct (`NG0201`). Spread `provideForTable` instead, which installs the whole set and keeps the wrapper in step when the library changes it:
+
+```ts
+import { Directive, input } from '@angular/core';
+import { ForTable, provideForTable } from 'forty-cdk/table';
+
+@Directive({
+  selector: '[myTable]',
+  exportAs: 'myTable',
+  providers: provideForTable(MyTable),
+  host: { '[style.--my-table-cols]': 'columns() || null' },
+})
+export class MyTable extends ForTable {
+  readonly columns = input<string>('');
+}
+```
+
+The argument is the subclass, so the public `FOR_TABLE_CONTEXT` aliases it and an advanced consumer injecting the context reaches your instance. Add `{ provide: ForTable, useExisting: MyTable }` alongside if you also want `inject(ForTable)` to resolve.
+
 ## Accessibility
 
 Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).

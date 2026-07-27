@@ -1,6 +1,6 @@
 import { Directive, ElementRef, inject, DestroyRef } from '@angular/core';
 
-import { injectTableContext } from './table-context';
+import { injectTableContext, injectTableRegistration } from './table-context';
 
 /**
  * Marks the header row of the table (`role="row"`). Registers its host
@@ -22,6 +22,7 @@ import { injectTableContext } from './table-context';
 })
 export class ForTableHeaderRow {
   protected readonly ctx = injectTableContext('ForTableHeaderRow');
+  readonly #registration = injectTableRegistration('ForTableHeaderRow');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** 1-based `aria-rowindex` for the header row (`1` in grid / treegrid mode, else absent). */
@@ -29,7 +30,7 @@ export class ForTableHeaderRow {
 
   constructor() {
     const el = this.#host.nativeElement;
-    this.ctx.registerHeaderRow(el);
-    inject(DestroyRef).onDestroy(() => this.ctx.unregisterHeaderRow(el));
+    this.#registration.registerHeaderRow(el);
+    inject(DestroyRef).onDestroy(() => this.#registration.unregisterHeaderRow(el));
   }
 }

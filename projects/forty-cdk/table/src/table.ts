@@ -1,23 +1,26 @@
 import {
   computed,
   Directive,
-  ElementRef,
   inject,
   input,
   model,
+  type Provider,
   type Signal,
   signal,
+  type Type,
 } from '@angular/core';
 
 import {
   injectElementSize,
-  Collection,
   findFirstFocusable,
   firstEnabledHost,
+  type ForTableCellHandle,
+  type ForTableRowHandle,
   type GridNavigationAction,
   moveGridIndex,
   resolveGridNavigation,
   resolveTreegridExpandCollapse,
+  TABLE_REGISTRATION_CONTEXT,
   type WritingDirection,
   injectTextDirection,
   RovingTabindex,
@@ -27,16 +30,13 @@ import { computeFlatHierarchy } from './flat-hierarchy';
 import {
   FOR_TABLE_CONTEXT,
   hostHasSortActivation,
-  type ForTableCellHandle,
   type ForTableContext,
-  type ForTableRowHandle,
   type TableMode,
   type TableSelectionMode,
   type TableSelectionBehavior,
   type TableSelectAllState,
-  type TableVirtualRowNavigation,
-  type TableVirtualWindow,
 } from './table-context';
+import { TableRegistry } from './table-registry';
 import { TableRowSelection } from './table-row-selection';
 import { TableExpansion } from './table-expansion';
 
@@ -77,7 +77,7 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
     '[attr.aria-multiselectable]':
       'mode() !== "table" && selectionMode() === "multiple" ? "true" : null',
   },
-  providers: [{ provide: FOR_TABLE_CONTEXT, useExisting: ForTable }],
+  providers: provideForTable(ForTable),
 })
 export class ForTable<T = unknown> implements ForTableContext {
   /**
@@ -116,8 +116,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly _rowCountInput = input<number | undefined>(undefined, { alias: 'rowCount' });
 
-  /** The declarative body's dataset length, registered by `<for-table-body>`; `null` when none. */
-  readonly #bodyRowCount = signal<Signal<number> | null>(null);
+  readonly #registry = inject(TableRegistry);
 
   /**
    * Resolved true total data-row count: the explicit `[rowCount]` input when set,
@@ -126,7 +125,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * cross-window navigation total, and the virtualizer's count.
    */
   readonly rowCount = computed<number | undefined>(
-    () => this._rowCountInput() ?? this.#bodyRowCount()?.(),
+    () => this._rowCountInput() ?? this.#registry.bodyRowCount()?.(),
   );
 
   /**
@@ -138,7 +137,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * pending focus move that resolves — and steals focus — only when a far page later
    * loads.
    */
-  readonly loadedRowCount = computed<number | undefined>(() => this.#bodyRowCount()?.());
+  readonly loadedRowCount = computed<number | undefined>(() => this.#registry.bodyRowCount()?.());
 
   /**
    * True total number of columns for `aria-colcount`. Defaults to the rendered
@@ -187,40 +186,17 @@ export class ForTable<T = unknown> implements ForTableContext {
    */
   readonly expanded = model<readonly T[]>([]);
 
-  readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  protected readonly headerSize = injectElementSize(this.#registry.headerRowEl);
 
-  readonly #headerRowEl = signal<HTMLElement | null>(null);
-
-  protected readonly headerSize = injectElementSize(this.#headerRowEl);
-
-  readonly #rows = new Collection<ForTableRowHandle>();
-  readonly #headerCells = new Collection<ForTableCellHandle>();
   readonly #roving = new RovingTabindex(() => this.#flatCells());
   readonly #enteredCell = signal<HTMLElement | null>(null);
 
-  /** Live registered data rows, exposed to `[forTableVirtualized]`'s cross-window navigation bridge. */
-  readonly rows = this.#rows.items;
-  readonly #virtualNav = signal<TableVirtualRowNavigation | null>(null);
-  readonly #reorderingRow = signal<number | null>(null);
-
-  /**
-   * Absolute index of the row currently being pointer-reordered, or `null`. Set by
-   * `[forTableRowReorder]` and read by `[forTableVirtualized]` to keep the lifted
-   * row mounted across recycling during a drag.
-   */
-  readonly reorderingRowIndex = this.#reorderingRow.asReadonly();
-  readonly virtualRowNavigation = this.#virtualNav.asReadonly();
-  readonly #virtualWindow = signal<TableVirtualWindow | null>(null);
-
-  /** The virtual window published by `[forTableVirtualized]`, read by `<for-table-body>`; `null` when not virtualized. */
-  readonly virtualWindow = this.#virtualWindow.asReadonly();
-
-  readonly #headerCellHosts = computed(() => this.#headerCells.items());
-  readonly #dataCells = computed(() => this.#rows.items().flatMap((row) => row.cells()));
+  readonly #headerCellHosts = this.#registry.headerCells;
+  readonly #dataCells = computed(() => this.#registry.rows().flatMap((row) => row.cells()));
   readonly #dataCols = computed(
     () =>
-      this.#rows
-        .items()
+      this.#registry
+        .rows()
         .find((row) => row.cells().length > 0)
         ?.cells().length ?? 0,
   );
@@ -267,7 +243,7 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   /** Whether the header row participates in the row-index space (a header row is registered, non-table mode). */
   readonly #hasHeaderRowIndex = computed(
-    () => this.mode() !== 'table' && this.#headerRowEl() !== null,
+    () => this.mode() !== 'table' && this.#registry.headerRowEl() !== null,
   );
 
   /** 1-based row offset ARIA applies to data rows because the header row occupies index 1. */
@@ -276,8 +252,8 @@ export class ForTable<T = unknown> implements ForTableContext {
   readonly headerRowIndex = computed<number | null>(() => (this.#hasHeaderRowIndex() ? 1 : null));
 
   readonly #registeredValues = computed<readonly T[]>(() =>
-    this.#rows
-      .items()
+    this.#registry
+      .rows()
       .map((row) => row.value() as T)
       .filter((v) => v !== undefined),
   );
@@ -301,11 +277,11 @@ export class ForTable<T = unknown> implements ForTableContext {
   });
 
   readonly #rowHierarchy = computed(() =>
-    computeFlatHierarchy(this.#rows.items().map((row) => row.level())),
+    computeFlatHierarchy(this.#registry.rows().map((row) => row.level())),
   );
 
   #rowOfCell(cellHost: HTMLElement): ForTableRowHandle | undefined {
-    return this.#rows.items().find((row) => row.cells().some((cell) => cell.host === cellHost));
+    return this.#registry.rows().find((row) => row.cells().some((cell) => cell.host === cellHost));
   }
 
   /**
@@ -324,23 +300,11 @@ export class ForTable<T = unknown> implements ForTableContext {
   protected readonly rowCountAttr = computed<number | null>(() =>
     this.mode() === 'table'
       ? null
-      : (this.rowCount() ?? this.#rows.items().length) + this.dataRowIndexOffset(),
+      : (this.rowCount() ?? this.#registry.rows().length) + this.dataRowIndexOffset(),
   );
   protected readonly colCountAttr = computed<number | null>(() =>
     this.mode() === 'table' ? null : (this.colCount() ?? this.#cols()),
   );
-
-  registerHeaderRow(el: HTMLElement): void {
-    this.#headerRowEl.set(el);
-  }
-
-  setColumnWidth(column: string, width: number): void {
-    this.#rootEl.style.setProperty(`--for-table-col-${column}-width`, `${width}px`);
-  }
-
-  removeColumnWidth(column: string): void {
-    this.#rootEl.style.removeProperty(`--for-table-col-${column}-width`);
-  }
 
   isRowExpanded(value: T): boolean {
     return this.#expansion.isExpanded(value);
@@ -351,47 +315,17 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   rowPosinset(host: HTMLElement): number {
-    const index = this.#rows.indexOfHost(host);
+    const index = this.#registry.rowIndexOf(host);
     return index < 0 ? 1 : (this.#rowHierarchy()[index]?.posinset ?? 1);
   }
 
   rowSetsize(host: HTMLElement): number {
-    const index = this.#rows.indexOfHost(host);
+    const index = this.#registry.rowIndexOf(host);
     return index < 0 ? 1 : (this.#rowHierarchy()[index]?.setsize ?? 1);
   }
 
-  unregisterHeaderRow(el: HTMLElement): void {
-    if (this.#headerRowEl() === el) {
-      this.#headerRowEl.set(null);
-    }
-  }
-
-  registerVirtualNavigation(navigation: TableVirtualRowNavigation | null): void {
-    this.#virtualNav.set(navigation);
-  }
-
-  registerVirtualWindow(window: TableVirtualWindow | null): void {
-    this.#virtualWindow.set(window);
-  }
-
-  registerBodyRowCount(count: Signal<number> | null): void {
-    this.#bodyRowCount.set(count);
-  }
-
-  setReorderingRow(index: number | null): void {
-    this.#reorderingRow.set(index);
-  }
-
-  registerRow(handle: ForTableRowHandle): void {
-    this.#rows.register(handle);
-  }
-
-  unregisterRow(handle: ForTableRowHandle): void {
-    this.#rows.unregister(handle);
-  }
-
   rowIndexOf(host: HTMLElement): number {
-    return this.#rows.indexOfHost(host);
+    return this.#registry.rowIndexOf(host);
   }
 
   cellTabIndex(host: HTMLElement): 0 | -1 {
@@ -399,14 +333,6 @@ export class ForTable<T = unknown> implements ForTableContext {
       return this.#roving.tabindexFor(host);
     }
     return this.#firstEnabledCell() === host ? 0 : -1;
-  }
-
-  registerHeaderCell(handle: ForTableCellHandle): void {
-    this.#headerCells.register(handle);
-  }
-
-  unregisterHeaderCell(handle: ForTableCellHandle): void {
-    this.#headerCells.unregister(handle);
   }
 
   headerCellTabIndex(host: HTMLElement): 0 | -1 {
@@ -417,7 +343,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   headerCellIndexOf(host: HTMLElement): number {
-    return this.#headerCells.indexOfHost(host);
+    return this.#registry.headerCellIndexOf(host);
   }
 
   isCellHighlighted(host: HTMLElement): boolean {
@@ -450,7 +376,7 @@ export class ForTable<T = unknown> implements ForTableContext {
   }
 
   #rowValueOfCell(cellHost: HTMLElement): T | undefined {
-    for (const row of this.#rows.items()) {
+    for (const row of this.#registry.rows()) {
       if (row.cells().some((cell) => cell.host === cellHost)) {
         return row.value() as T;
       }
@@ -462,7 +388,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table') {
       return;
     }
-    this.#virtualNav()?.clearPending();
+    this.#registry.virtualRowNavigation()?.clearPending();
     if (this.#handleCellEntryKeydown(event, host)) {
       return;
     }
@@ -491,7 +417,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     if (this.mode() === 'table' || !this.#headerParticipates()) {
       return false;
     }
-    this.#virtualNav()?.clearPending();
+    this.#registry.virtualRowNavigation()?.clearPending();
     return this.#handleGridNavigationKeydown(event, host);
   }
 
@@ -586,7 +512,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     event.preventDefault();
     const currentIndex = cells.findIndex((cell) => cell.host === host);
 
-    const navigation = this.#virtualNav();
+    const navigation = this.#registry.virtualRowNavigation();
     const fromRow = this.focusedRowIndex();
     const total = this.rowCount();
     const headerIsGridStart = action === 'first' && this.#headerParticipates();
@@ -634,7 +560,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * lone-row window still advances by at least one row.
    */
   #pageSize(): number {
-    return Math.max(1, this.#rows.items().length);
+    return Math.max(1, this.#registry.rows().length);
   }
 }
 
@@ -682,4 +608,34 @@ function resolveCrossWindowRowTarget(
     default:
       return null;
   }
+}
+
+/**
+ * The providers a `[forTable]` root installs: the public
+ * {@link FOR_TABLE_CONTEXT}, aliased to `root`, plus the internal
+ * piece-registration wiring the table's pieces resolve.
+ *
+ * `ForTable` declares its own providers through this helper, so a wrapper that
+ * **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_TABLE_CONTEXT` alone leaves the registration wiring absent
+ * and every piece — down to the root's own constructor — fails to resolve it.
+ * The internal providers are deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list them by hand.
+ *
+ * ```ts
+ * providers: provideForTable(MyTable),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForTable]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForTable<T = unknown>(root: Type<ForTable<T>>): Provider[] {
+  return [
+    TableRegistry,
+    { provide: FOR_TABLE_CONTEXT, useExisting: root },
+    { provide: TABLE_REGISTRATION_CONTEXT, useExisting: TableRegistry },
+  ];
 }

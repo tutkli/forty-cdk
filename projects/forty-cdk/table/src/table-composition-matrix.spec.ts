@@ -1,4 +1,8 @@
 import { Component, computed, signal, viewChild } from '@angular/core';
+import { type ComponentFixture } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+
+import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
@@ -131,19 +135,26 @@ class RealVirtualMatrixHost {
   readonly virtualized = viewChild.required(ForTableVirtualized);
 }
 
+/** Resolves the table's internal registration surface from the rendered fixture. */
+function registrationOf(fixture: ComponentFixture<unknown>): TableRegistrationContext {
+  return fixture.debugElement
+    .query(By.directive(ForTable))
+    .injector.get(TABLE_REGISTRATION_CONTEXT);
+}
+
 /**
  * Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a
  * deterministic jsdom test. Returns the window's `measureRow` spy so tests can assert the
  * body's measured-rows pass.
  */
 function publishWindow(
-  table: ForTable,
+  fixture: ComponentFixture<unknown>,
   indices: readonly number[],
   totalSize: number,
   rowSize = 44,
 ): ReturnType<typeof vi.fn> {
   const measureRow = vi.fn();
-  table.registerVirtualWindow({
+  registrationOf(fixture).registerVirtualWindow({
     rows: signal(indices.map((index) => ({ index, start: index * rowSize }))),
     totalSize: signal(totalSize),
     measureRow,
@@ -240,7 +251,7 @@ describe('composition matrix (#1387 item 18)', () => {
         it('+virtualized: windows the published slice, keeping the mode-correct roles', () => {
           const { instance, query, queryAll, fixture } = renderHost(MatrixHost);
           instance.mode.set(mode);
-          publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+          publishWindow(fixture, [1, 2, 3], 6 * 44);
           fixture.detectChanges();
 
           const rows = queryAll('[forTableRow]') as HTMLElement[];
@@ -265,7 +276,7 @@ describe('composition matrix (#1387 item 18)', () => {
       const { instance, queryAll, fixture } = renderHost(MatrixHost);
       instance.mode.set('grid');
       instance.showVariant.set(true);
-      publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+      publishWindow(fixture, [1, 2, 3], 6 * 44);
       fixture.detectChanges();
 
       const rows = queryAll('[forTableRow]');
@@ -277,11 +288,11 @@ describe('composition matrix (#1387 item 18)', () => {
     });
 
     it('virtualized + measureRows (grid): measures each rendered row once (data + variant)', async () => {
-      const { instance, queryAll, flush } = renderHost(MatrixHost);
+      const { instance, queryAll, flush, fixture } = renderHost(MatrixHost);
       instance.mode.set('grid');
       instance.measureRows.set(true);
       instance.showVariant.set(true);
-      const measureRow = publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+      const measureRow = publishWindow(fixture, [1, 2, 3], 6 * 44);
       await flush();
 
       const rows = queryAll('[forTableRow]') as HTMLElement[];
@@ -293,7 +304,7 @@ describe('composition matrix (#1387 item 18)', () => {
     it('virtualized + reorder: windowed body under a reorder header', () => {
       const { instance, query, queryAll, fixture } = renderHost(MatrixHost);
       instance.reorderable.set(true);
-      publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+      publishWindow(fixture, [1, 2, 3], 6 * 44);
       fixture.detectChanges();
 
       expect(query('[forTableColumnReorder]')).not.toBeNull();
@@ -307,7 +318,7 @@ describe('composition matrix (#1387 item 18)', () => {
     it('virtualized + resize: windowed body under a resizer header', () => {
       const { instance, query, queryAll, fixture } = renderHost(MatrixHost);
       instance.resizable.set(true);
-      publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+      publishWindow(fixture, [1, 2, 3], 6 * 44);
       fixture.detectChanges();
 
       expect(
@@ -369,7 +380,7 @@ describe('composition matrix (#1387 item 18)', () => {
     it('loading + virtualized: loading wins (rowgroup unsized, placeholder rows unpositioned)', () => {
       const { instance, query, queryAll, fixture } = renderHost(MatrixHost);
       instance.loading.set(true);
-      publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+      publishWindow(fixture, [1, 2, 3], 6 * 44);
       fixture.detectChanges();
 
       const rowgroup = query('[role="rowgroup"]') as HTMLElement;
@@ -395,10 +406,10 @@ describe('composition matrix (#1387 item 18)', () => {
     });
 
     it('loading + measureRows + virtualized: loading wins, no row element is measured', async () => {
-      const { instance, query, queryAll, flush } = renderHost(MatrixHost);
+      const { instance, query, queryAll, flush, fixture } = renderHost(MatrixHost);
       instance.loading.set(true);
       instance.measureRows.set(true);
-      const measureRow = publishWindow(instance.table(), [1, 2, 3], 6 * 44);
+      const measureRow = publishWindow(fixture, [1, 2, 3], 6 * 44);
       await flush();
 
       expect(query('[forTableRow] [data-column="name"] .skeleton')).not.toBeNull();

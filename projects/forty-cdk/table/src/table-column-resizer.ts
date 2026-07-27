@@ -22,7 +22,7 @@ import {
   type PointerDragSession,
   DRAG_DEAD_ZONE_PX,
 } from 'forty-cdk/core';
-import { assertColumnName, injectTableContext } from './table-context';
+import { assertColumnName, injectTableContext, injectTableRegistration } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 
 /** Payload of `resizeCommit`: which column was resized and its committed width (px). */
@@ -93,6 +93,7 @@ export interface TableResizeDescriptor {
 })
 export class ForTableColumnResizer {
   protected readonly ctx = injectTableContext('ForTableColumnResizer');
+  readonly #registration = injectTableRegistration('ForTableColumnResizer');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #headerCell = inject(ForTableHeaderCell, { optional: true });
@@ -197,17 +198,17 @@ export class ForTableColumnResizer {
       assertColumnName(column, 'ForTableColumnResizer');
       const w = this.width();
       if (this.#publishedColumn !== null && this.#publishedColumn !== column) {
-        this.ctx.removeColumnWidth(this.#publishedColumn);
+        this.#registration.removeColumnWidth(this.#publishedColumn);
       }
       if (w != null) {
-        this.ctx.setColumnWidth(column, w);
+        this.#registration.setColumnWidth(column, w);
         this.#publishedColumn = column;
       } else {
-        this.ctx.removeColumnWidth(column);
+        this.#registration.removeColumnWidth(column);
         this.#publishedColumn = null;
       }
     });
-    destroyRef.onDestroy(() => this.ctx.removeColumnWidth(this.column()));
+    destroyRef.onDestroy(() => this.#registration.removeColumnWidth(this.column()));
     if (this.#isBrowser) {
       afterNextRender(() => this.#measuredWidth.set(this.#measureBaseWidth()));
       this.#pointerSession = createPointerDragSession({
@@ -326,7 +327,7 @@ export class ForTableColumnResizer {
 
   #measureContentWidth(): number {
     const column = this.column();
-    const cells = this.ctx
+    const cells = this.#registration
       .rows()
       .flatMap((row) => row.cells())
       .map((cell) => cell.host)
