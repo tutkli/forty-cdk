@@ -155,6 +155,11 @@ export interface MenuOverlayHooks {
  * Construct via `createMenuOverlay` from a directive's field initializer so
  * the helper's `inject()` calls (id generator, typeahead destroyRef hookup)
  * resolve through the directive's injector.
+ *
+ * Stays exported from `core/src/public-api.ts` — internal tier, not blessed —
+ * because it is the inferred type of the `protected readonly _overlay` field
+ * on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`, so the emitted
+ * `.d.ts` has to name it (#1489).
  */
 export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle> {
   readonly #registry = inject(ElementRegistry);
