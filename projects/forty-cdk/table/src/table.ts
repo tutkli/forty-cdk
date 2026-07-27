@@ -19,11 +19,11 @@ import {
   resolveGridNavigation,
   resolveTreegridExpandCollapse,
   type WritingDirection,
-  computeFlatHierarchy,
   injectTextDirection,
   RovingTabindex,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import { computeFlatHierarchy } from './flat-hierarchy';
 import {
   FOR_TABLE_CONTEXT,
   hostHasSortActivation,

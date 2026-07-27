@@ -16,7 +16,6 @@ import {
   type SwipeDirection,
   type SwipeEventDetail,
   isScrollableAtEdge,
-  resolveSnapTarget,
   flickVelocity,
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
@@ -32,6 +31,7 @@ import {
   validateSnapPointsShape,
   validateSnapPositions,
 } from './snap-points';
+import { resolveSnapTarget } from './snap-target';
 
 function sideToDirections(side: ForDrawerSide): readonly SwipeDirection[] {
   switch (side) {

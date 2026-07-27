@@ -1,4 +1,4 @@
-import { FLICK_VELOCITY_PX_PER_MS } from '../swipe-dismiss/swipe-dismiss';
+import { FLICK_VELOCITY_PX_PER_MS } from 'forty-cdk/core';
 
 /**
  * Resolved snap target. The caller decides what to do with it: either close
@@ -52,8 +52,8 @@ export interface ResolveSnapTargetOptions<S> {
 
 /**
  * Pure function that picks the snap target for a release gesture, combining
- * the final pointer position with the gesture velocity. Pulled into
- * `_internal/` so the Drawer directive doesn't have to embed the algorithm
+ * the final pointer position with the gesture velocity. Kept in its own
+ * module so the Drawer directive doesn't have to embed the algorithm
  * (which is mildly involved and well-tested in isolation).
  *
  * Algorithm:
@@ -83,12 +83,12 @@ export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapRes
   const { snapPoints, snapPositions, activeSnapPoint, position, velocity } = opts;
   if (snapPositions.length !== snapPoints.length) {
     throw new Error(
-      '[forty-cdk/snap-points] resolveSnapTarget: snapPoints and snapPositions must have the same length.',
+      '[forty-cdk/drawer] resolveSnapTarget: snapPoints and snapPositions must have the same length.',
     );
   }
   if (snapPoints.length === 0) {
     throw new Error(
-      '[forty-cdk/snap-points] resolveSnapTarget: requires at least one snap point; callers must guard snapPoints.length > 0 (the no-snap-points dismissal is the caller’s responsibility).',
+      '[forty-cdk/drawer] resolveSnapTarget: requires at least one snap point; callers must guard snapPoints.length > 0 (the no-snap-points dismissal is the caller’s responsibility).',
     );
   }
 

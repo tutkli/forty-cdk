@@ -6,13 +6,12 @@ import {
   FormUiControlBase,
   mirrorUnfocusedValue,
   injectHiddenInput,
-  localeSeparators,
-  parseLocaleNumber,
   clamp,
   decimalPlaces,
   roundToDecimals,
   stepOnGrid,
 } from 'forty-cdk/core';
+import { localeSeparators, parseLocaleNumber } from './locale-number';
 import { FOR_NUMBER_INPUT_GROUP, type ForNumberInputContext } from './number-input-context';
 import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
 

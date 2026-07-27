@@ -1,4 +1,4 @@
-import { resolveSnapTarget } from './snap-points';
+import { resolveSnapTarget } from './snap-target';
 
 describe('resolveSnapTarget', () => {
   it('snaps to the closest snap point at low velocity', () => {
