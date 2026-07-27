@@ -34,6 +34,14 @@
  * `ModalSurfaceBase`, `MenuOverlayHost`, …) are deliberately internal —
  * subclassing them is not a supported contract.
  *
+ * Scope: this barrel lists only what actually crosses the entry point's
+ * boundary. Modules inside `core` import each other by relative path, so a
+ * symbol used only within `core` does not belong here — it would enlarge the
+ * internal tier every audit has to read without making anything reachable.
+ * A symbol that no entry point, spec or app imports stays exported only when
+ * the emitted `.d.ts` must name it (an inferred member type), and then its
+ * declaration's JSDoc says which signature forces it.
+ *
  * Consume primitives from their own `forty-cdk/<primitive>` entry points, not
  * from here (the main `forty-cdk` barrel is intentionally empty — see the
  * package README). Growing the blessed tier is a deliberate, reviewed act
@@ -45,20 +53,12 @@ export { afterNextRenderCancellable } from './after-next-render-cancellable/afte
 export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';
 export { resolveConfigClass } from './class-list/resolve-config-class';
 export { Collection, type CollectionHandle } from './collection/collection';
-export {
-  type DisableableHandle,
-  firstEnabledHost,
-  nextEnabledHandle,
-  type NextEnabledHandleOptions,
-} from './collection/enabled-handle-navigation';
+export { firstEnabledHost, nextEnabledHandle } from './collection/enabled-handle-navigation';
 export { foldSnapshotOnTotalCountTransition } from './collection/fold-snapshot';
 export {
-  type A11yDescriptionOwner,
-  type A11yLabelOwner,
   registerA11yDescription,
   registerA11yName,
   registerHandle,
-  type RegistrationScheduling,
 } from './collection/register-handle';
 export {
   assertTimeCapable,
@@ -70,151 +70,66 @@ export {
 } from './date-adapter/date-adapter';
 export { createFormatterCache } from './date-adapter/formatter-cache';
 export { type DateRange } from './date-range/date-range';
-export {
-  DateFieldEngine,
-  type DateFieldEngineConfig,
-  type DateTimeParts,
-} from './datetime/date-field-engine';
-export {
-  buildDateTimeSegments,
-  buildSegments,
-  type FieldGranularity,
-} from './datetime/date-segments';
-export {
-  dayPeriodNames,
-  from12,
-  matchDayPeriod,
-  resolveHourCycle,
-  to12,
-} from './datetime/hour-cycle';
+export { DateFieldEngine } from './datetime/date-field-engine';
+export { type FieldGranularity } from './datetime/date-segments';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
-export {
-  RangeFieldComposer,
-  type RangeFieldComposerConfig,
-  type RangeFieldEndpoint,
-  type RangeFieldEndpointEngine,
-} from './datetime/range-field-composer';
+export { RangeFieldComposer } from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';
 export {
   type DateSegmentType,
-  type EditableSpec,
   type FieldSegment,
-  type FieldSpec,
-  type LiteralSpec,
-  SegmentEditor,
   type SegmentEditorDelegate,
-  type SegmentEditorHost,
   type SegmentHandle,
-  type SegmentParts,
   type SegmentType,
 } from './datetime/segment-editor';
 export { type TimeSegmentType } from './datetime/segment-types';
 export {
   clampToBounds,
   composeWithTime,
-  type DateSerializeGranularity,
   secondsOfDay,
   serializeISODate,
   serializeISOTime,
   timeSentinel,
-  type TimeSerializeGranularity,
 } from './datetime/serialize';
-export {
-  TimeFieldEngine,
-  type TimeFieldEngineConfig,
-  type TimeParts,
-} from './datetime/time-field-engine';
-export { buildTimeSegments, type TimeGranularity } from './datetime/time-segments';
-export { FOR_TIME_VALUE_SOURCE, type TimeValueSource } from './datetime/time-value-source';
+export { TimeFieldEngine } from './datetime/time-field-engine';
+export { type TimeGranularity } from './datetime/time-segments';
+export { FOR_TIME_VALUE_SOURCE } from './datetime/time-value-source';
 export { createDefaults } from './defaults/defaults';
 export { reflectDisabled } from './disabled-reflection/disabled-reflection';
 export {
-  DismissableLayer,
-  type DismissableLayerActivateOptions,
-  type DismissableLayerChannel,
-  type DismissableLayerNesting,
   DismissableLayerStack,
   injectDismissableLayer,
 } from './dismissable-layer/dismissable-layer';
-export {
-  type AutoScroller,
-  type AutoScrollerConfig,
-  type AutoScrollVelocity,
-  computeScrollVelocity,
-  createAutoScroller,
-  findScrollContainer,
-} from './drag-session/auto-scroll';
+export { type AutoScroller, createAutoScroller } from './drag-session/auto-scroll';
 export {
   clampPreviewPosition,
   type PreviewPoint,
-  type PreviewSize,
   resolveBoundaryElement,
 } from './drag-session/clamp-preview';
 export {
   type DragRect,
   type DropContainerGeometry,
-  type DropTarget,
   resolveDropTarget,
 } from './drag-session/drag-geometry';
-export {
-  buildDragSlots,
-  type DragSlot,
-  indexOfSlot,
-  stepSlot,
-} from './drag-session/drag-positions';
-export {
-  createDragPreview,
-  createTemplatePreview,
-  type DragPreview,
-  wrapPreview,
-} from './drag-session/drag-preview';
-export {
-  FLIP_ANIMATING_ATTR,
-  flipDelta,
-  type FlipDelta,
-  type FlipRect,
-  playFlip,
-  type PlayFlipConfig,
-} from './drag-session/flip';
-export { createPointerHandleGuard, type PointerHandleGuard } from './drag-session/handle-guard';
+export { buildDragSlots, indexOfSlot, stepSlot } from './drag-session/drag-positions';
+export { createTemplatePreview, type DragPreview } from './drag-session/drag-preview';
+export { type FlipRect, playFlip } from './drag-session/flip';
+export { createPointerHandleGuard } from './drag-session/handle-guard';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
-export {
-  createKeyboardDragMediator,
-  type KeyboardDragMediatorConfig,
-} from './drag-session/keyboard-drag-mediator';
-export {
-  fencePlaceholderIndex,
-  placeholderInsertion,
-  type PlaceholderInsertion,
-} from './drag-session/placeholder-position';
-export {
-  createPointerDragSession,
-  type PointerDragSession,
-  type PointerDragSessionOptions,
-} from './drag-session/pointer-session';
-export {
-  PreviewController,
-  type PreviewControllerOptions,
-} from './drag-session/preview-controller';
+export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
+export { fencePlaceholderIndex, placeholderInsertion } from './drag-session/placeholder-position';
+export { createPointerDragSession, type PointerDragSession } from './drag-session/pointer-session';
+export { PreviewController } from './drag-session/preview-controller';
 export {
   gapFromPointerY,
   levelFromPointerX,
   resolveDropIndicator,
   resolveTreeDrop,
-  type TreeDropIndicator,
   type TreeDropRow,
-  type TreeDropTarget,
 } from './drag-session/tree-drop-resolver';
-export {
-  type ForDrawerScaleConfig,
-  ForDrawerScaleCoordinator,
-} from './drawer-scale/drawer-scale-coordinator';
+export { ForDrawerScaleCoordinator } from './drawer-scale/drawer-scale-coordinator';
 export { type ForDrawerSide } from './drawer-stack/drawer-side';
-export {
-  type DrawerStackHandle,
-  type DrawerStackNode,
-  ForDrawerStack,
-} from './drawer-stack/drawer-stack';
+export { type DrawerStackHandle, ForDrawerStack } from './drawer-stack/drawer-stack';
 export { type ElementBox, injectElementSize } from './element-size/element-size';
 export {
   type FieldControlHandle,
@@ -229,90 +144,52 @@ export {
   type AnchoredPositioningSeedDefaults,
 } from './floating/anchored-overlay-positioning-base';
 export {
-  ANCHORED_POSITIONING_DEFAULTS,
   type AnchoredPositioningContext,
   toFloatingPositioner,
 } from './floating/anchored-positioning-inputs';
 export {
   type FloatingAlign,
-  type FloatingConfig,
   type FloatingFallbackAxisSideDirection,
   type FloatingSide,
-  injectFloating,
 } from './floating/floating';
-export { FOCUSABLE_SELECTOR } from './focusable-candidate/focusable-candidate';
 export { findFirstFocusable } from './focus-trap/focus-trap';
 export { injectHasFocusableContent } from './focusable-content/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
-export { type HiddenInputConfig, injectHiddenInput } from './hidden-input/hidden-input';
-export { composeIds, hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria/host-aria';
+export { injectHiddenInput } from './hidden-input/hidden-input';
+export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria/host-aria';
 export { adoptHostId, hostId, resolveHostId } from './host-id/host-id';
 export { createDebouncedAction, type DebouncedAction } from './hover-intent/debounced-action';
-export {
-  forceCloseWhenDisabled,
-  type ForceCloseWhenDisabledOptions,
-} from './hover-intent/force-close-when-disabled';
+export { forceCloseWhenDisabled } from './hover-intent/force-close-when-disabled';
 export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/hover-capable-pointer';
+export { createHoverIntent, type HoverIntentScheduler } from './hover-intent/hover-intent';
+export { SkipDelayCoordinator } from './hover-intent/skip-delay-coordinator';
+export { createSkipDelayWindow } from './hover-intent/skip-delay-window';
+export { IdGenerator } from './id-generator/id-generator';
+export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
-  createHoverIntent,
-  type HoverIntentCoordinator,
-  type HoverIntentOptions,
-  type HoverIntentScheduler,
-} from './hover-intent/hover-intent';
-export {
-  SkipDelayCoordinator,
-  type SkipDelayCoordinatorDefaults,
-} from './hover-intent/skip-delay-coordinator';
-export { createSkipDelayWindow, type SkipDelayWindow } from './hover-intent/skip-delay-window';
-export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
-export {
-  type InertSiblingsHandle,
-  InertSiblingsStack,
-  MODAL_EXEMPT_ATTRIBUTE,
-  MODAL_PEER_ATTRIBUTE,
-} from './inert-siblings/inert-siblings';
-export {
-  type ExpandCollapseAction,
   type GridNavigationAction,
-  type GridNavigationOptions,
   type ListNavigationAction,
-  type ListNavigationOptions,
-  type ListOrientation,
   moveGridIndex,
-  type MoveGridIndexOptions,
   moveIndex,
-  type MoveIndexOptions,
   resolveGridNavigation,
   resolveListNavigation,
   resolveTreeExpandCollapse,
   resolveTreegridExpandCollapse,
-  type TreeExpandCollapseOptions,
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export {
   isRangeSelectShortcut,
-  type ListTypeaheadConfig,
-  type ListTypeaheadResult,
-  type RangeSelectShortcutContext,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
-  type UnsupportedVirtualizedRangeSelectContext,
 } from './list-typeahead/list-typeahead';
 export {
   type ListboxOverlayContext,
   ListboxOverlayController,
-  type ListboxOverlayControllerDeps,
-  type ListboxOverlayEmitTargets,
-  type ListboxOverlayOptionHandle,
 } from './listbox-overlay/listbox-overlay-controller';
 export { LiveAnnouncer } from './live-announcer/live-announcer';
-export {
-  localeSeparators,
-  type LocaleSeparators,
-  parseLocaleNumber,
-} from './locale-number/locale-number';
+export { localeSeparators, parseLocaleNumber } from './locale-number/locale-number';
 export { injectMediaQuery, injectPrefersReducedMotion } from './media-query/media-query';
 export {
   FOR_MENU_CONTEXT,
@@ -325,36 +202,13 @@ export {
   type MenuSiblingNavigator,
 } from './menu-overlay/menu-context';
 export { CloseReasonState } from './overlay-controller/close-reason-state';
-export {
-  AnchorSlot,
-  ElementRegistry,
-  ElementSlot,
-  IdentifiedElementSlot,
-} from './overlay-controller/element-registry';
+export { ElementRegistry } from './overlay-controller/element-registry';
 export { InitialFocusState } from './overlay-controller/initial-focus-state';
-export {
-  createMenuItemList,
-  type MenuItemHandle,
-  MenuItemList,
-} from './menu-overlay/menu-item-list';
-export {
-  createMenuOverlay,
-  MenuOverlay,
-  type MenuOverlayCloseReason,
-  type MenuOverlayHooks,
-  type MenuOverlayItemHandle,
-  type MenuOverlayTransitionOptions,
-} from './menu-overlay/menu-overlay';
+export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-item-list';
+export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
 export { MENU_POSITIONING_DEFAULTS } from './menu-overlay/menu-positioning-inputs';
-export {
-  injectModalShell,
-  type ModalShellConfig,
-  type ModalShellDismissConfig,
-  type ModalShellHandle,
-  type ModalShellInitialFocusConfig,
-  resolveModalExemptOverlays,
-} from './modal-shell/modal-shell';
+export { injectModalShell } from './modal-shell/modal-shell';
 export { ModalSurfaceBase } from './modal-surface-base/modal-surface-base';
 export {
   clamp,
@@ -363,71 +217,42 @@ export {
   roundToStepPrecision,
   snapToStep,
   stepOnGrid,
-  type StepOnGridOptions,
 } from './numeric-step/numeric-step';
 export {
-  type OverlayManagerConfig,
   OverlayManagerCore,
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
   type OverlaySurface,
 } from './overlay-manager/overlay-manager';
-export { type OverlayCloseEvent, OverlayRef } from './overlay-manager/overlay-ref';
+export { OverlayRef } from './overlay-manager/overlay-ref';
 export {
   injectOverlayShell,
   type OverlayShellConfig,
-  type OverlayShellDismissConfig,
-  type OverlayShellInitialFocusConfig,
-  type OverlayShellInitialFocusMove,
   type OverlayShellPositionerConfig,
-  type OverlayShellReturnFocusConfig,
 } from './overlay-shell/overlay-shell';
-export {
-  injectPauseController,
-  type PauseController,
-  type PauseControllerOptions,
-} from './pausable/pause-controller';
+export { injectPauseController, type PauseController } from './pausable/pause-controller';
 export {
   attachPointerGrace,
   buildSubmenuGracePolygon,
-  type GraceRect,
-  isPointInPolygon,
   type Point,
-  type Polygon,
   resolveGraceSide,
 } from './pointer-grace/pointer-grace';
 export {
   createPointerSuppression,
-  DEFAULT_POINTER_SUPPRESSION_MS,
   type PointerSuppression,
 } from './pointer-suppression/pointer-suppression';
-export { injectPortal, type PortalConfig } from './portal/portal';
-export {
-  RangeSelectionEngine,
-  type RangeSelectionEngineDeps,
-  type RangeSelectionOptionHandle,
-} from './range-selection/range-selection-engine';
+export { injectPortal } from './portal/portal';
+export { RangeSelectionEngine } from './range-selection/range-selection-engine';
 export { clampToRange, DRAG_DEAD_ZONE_PX } from './resize-geometry/resize-geometry';
 export {
   FOR_HOST_ROVING_CONTEXT,
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
-export {
-  rovingListTarget,
-  rovingTabStop,
-  type RovingListTargetOptions,
-  type RovingTabStopOptions,
-} from './roving-tabindex/roving-list-navigation';
+export { rovingListTarget, rovingTabStop } from './roving-tabindex/roving-list-navigation';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { isScrollableAtEdge } from './scroll-boundary/scroll-boundary';
-export {
-  attachScrollDismiss,
-  DEFAULT_SCROLL_DISMISS_SUPPRESSION_MS,
-  type ScrollDismiss,
-  type ScrollDismissOptions,
-} from './scroll-dismiss/scroll-dismiss';
 export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';
 export {
   defaultItemToFormValue,
@@ -436,32 +261,19 @@ export {
   toggleInArray,
 } from './selection/selection';
 export { isRequiredInputUnset, tryReadHandle } from './signal-graph/read-handle';
-export {
-  createSingleSlot,
-  type SingleSlot,
-  type SingleSlotConfig,
-} from './single-slot/single-slot';
-export {
-  resolveSnapTarget,
-  type ResolveSnapTargetOptions,
-  type SnapResolution,
-} from './snap-points/snap-points';
+export { createSingleSlot } from './single-slot/single-slot';
+export { resolveSnapTarget } from './snap-points/snap-points';
 export {
   attachSwipeDismiss,
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
   flickVelocity,
   type SwipeDirection,
-  type SwipeDismissOptions,
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';
 export { injectTextDirection } from './text-direction/text-direction';
-export {
-  findTypeaheadMatch,
-  foldTypeaheadText,
-  type TypeaheadMatchQuery,
-} from './typeahead/match-options';
-export { injectTypeahead, Typeahead, type TypeaheadOptions } from './typeahead/typeahead';
+export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
+export { injectTypeahead } from './typeahead/typeahead';
 export {
   createVetoableEvent,
   createVetoableNativeEvent,
@@ -470,17 +282,6 @@ export {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from './vetoable-event/vetoable-event';
-export {
-  VirtualizedNavigator,
-  type VirtualizedNavigatorAccessors,
-  type VirtualizedNavigatorDeps,
-  type VirtualizedNavigatorEntry,
-  type VirtualizedNavigatorOptions,
-} from './virtualized-navigator/virtualized-navigator';
-export { ForVisuallyHidden, VISUALLY_HIDDEN_STYLE } from './visually-hidden/visually-hidden';
-export {
-  resolveScrubReorder,
-  type ScrubReorderParams,
-  translateWindowReorder,
-  type WindowReorderResult,
-} from './window-index-map/window-index-map';
+export { VirtualizedNavigator } from './virtualized-navigator/virtualized-navigator';
+export { ForVisuallyHidden } from './visually-hidden/visually-hidden';
+export { resolveScrubReorder, translateWindowReorder } from './window-index-map/window-index-map';

@@ -9,6 +9,12 @@ import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
  * Item handle the list's `Collection` registers. Structurally compatible
  * with primitives' `ForMenuItemHandle` — typing is generic so the unit
  * stays orthogonal to `_internal/menu-overlay/menu-context.ts` (no cycle into a primitive).
+ *
+ * Stays exported from `core/src/public-api.ts` — internal tier, not blessed —
+ * because it is the default type argument of `MenuOverlay`, which the emitted
+ * `.d.ts` names as `MenuOverlay<MenuItemHandle>` for the `protected readonly
+ * _overlay` field on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`
+ * ([#1489](https://github.com/tutkli/forty-cdk/issues/1489)).
  */
 export interface MenuItemHandle extends CollectionHandle {
   readonly disabled: Signal<boolean>;
