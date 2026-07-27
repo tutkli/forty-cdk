@@ -13,8 +13,7 @@ export {
   type ForSelectCloseReason,
   type ForSelectContext,
   type ForSelectInitialFocus,
-  type ForSelectOptionHandle,
-  type ForSelectOverlayContext,
+  type ForSelectOverlayFacade,
 } from './select-context';
 export {
   FOR_SELECT_DEFAULTS,

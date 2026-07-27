@@ -178,17 +178,6 @@ export interface ForComboboxContext<T = unknown> {
    */
   readonly anchor: Signal<ReferenceElement | null>;
   readonly input: Signal<HTMLInputElement | null>;
-  registerInput(el: HTMLInputElement): void;
-  unregisterInput(el: HTMLInputElement): void;
-
-  /**
-   * Register / unregister an optional `[forComboboxAnchor]` positioning
-   * element. At most one anchor per root; a second registration throws.
-   * Reference-based unregister, so an anchor torn down inside `@if` restores
-   * the input fallback cleanly.
-   */
-  registerAnchor(el: HTMLElement): void;
-  unregisterAnchor(el: HTMLElement): void;
 
   /**
    * The optional `[forComboboxTrigger]` button (picker anatomy). When present
@@ -196,12 +185,8 @@ export interface ForComboboxContext<T = unknown> {
    * and the element focus returns to on close. `null` in the editable anatomy.
    */
   readonly trigger: Signal<HTMLElement | null>;
-  registerTrigger(el: HTMLElement): void;
-  unregisterTrigger(el: HTMLElement): void;
 
   readonly content: Signal<HTMLElement | null>;
-  registerContent(el: HTMLElement): void;
-  unregisterContent(el: HTMLElement): void;
 
   /**
    * The optional `[forComboboxList]` listbox surface (picker anatomy). When
@@ -212,16 +197,9 @@ export interface ForComboboxContext<T = unknown> {
   readonly list: Signal<HTMLElement | null>;
   /** True when a `[forComboboxList]` is registered (picker anatomy). */
   readonly hasList: Signal<boolean>;
-  registerList(el: HTMLElement): void;
-  unregisterList(el: HTMLElement): void;
-
-  registerOption(handle: ForComboboxOptionHandle<T>): void;
-  unregisterOption(handle: ForComboboxOptionHandle<T>): void;
   readonly options: Signal<readonly ForComboboxOptionHandle<T>[]>;
 
   /** Multi-mode chip collection. Order follows DOM (= `value()` order in practice). */
-  registerChip(handle: ForComboboxChipHandle<T>): void;
-  unregisterChip(handle: ForComboboxChipHandle<T>): void;
   readonly chips: Signal<readonly ForComboboxChipHandle<T>[]>;
 
   /**
@@ -229,8 +207,6 @@ export interface ForComboboxContext<T = unknown> {
    * {@link options} so an action never appears in `value()`, `aria-setsize`, or
    * `aria-posinset`. Order follows DOM.
    */
-  registerAction(handle: ForComboboxActionHandle): void;
-  unregisterAction(handle: ForComboboxActionHandle): void;
   readonly actions: Signal<readonly ForComboboxActionHandle[]>;
   /**
    * True when at least one registered action is enabled. Gates the input's
@@ -271,8 +247,6 @@ export interface ForComboboxContext<T = unknown> {
 
   /** Id of the currently active option (drives `aria-activedescendant` on the input). */
   readonly activeId: Signal<string | null>;
-  /** Set the activedescendant directly. Used by options on pointer-move and by the input on inline-completion seed. */
-  setActiveId(id: string | null): void;
   /**
    * Scroll the current activedescendant option into view. Called by
    * `[forComboboxContent]` from the positioner's first-resolved-position hook so
@@ -349,7 +323,6 @@ export interface ForComboboxContext<T = unknown> {
 
   /** Where focus should land after the listbox opens. The input directive sets this before flipping `open`. */
   readonly initialFocus: Signal<ForComboboxInitialFocus>;
-  setInitialFocus(target: ForComboboxInitialFocus): void;
 
   toggle(): void;
   openMenu(initialFocus?: ForComboboxInitialFocus): void;
@@ -409,13 +382,82 @@ export interface ForComboboxContext<T = unknown> {
 export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 
 /**
+ * The combobox's piece-registration protocol: how the input, the optional
+ * anchor / trigger / list, the options, the chips and the actions wire
+ * themselves into the `[forCombobox]` root, plus the two cursors the pieces set
+ * (the activedescendant and the next open's initial-focus target).
+ *
+ * Deliberately **not** part of {@link ForComboboxContext} and never exported
+ * from `public-api.ts`. It is the code most likely to be refactored, so a
+ * consumer must not be able to name — let alone call — it.
+ */
+export interface ComboboxRegistrationContext<T = unknown> {
+  /** Registers the `[forComboboxInput]` element. */
+  registerInput(el: HTMLInputElement): void;
+  /** Unregisters the input element. Reference-based. */
+  unregisterInput(el: HTMLInputElement): void;
+  /**
+   * Register / unregister an optional `[forComboboxAnchor]` positioning
+   * element. At most one anchor per root; a second registration throws.
+   * Reference-based unregister, so an anchor torn down inside `@if` restores
+   * the input fallback cleanly.
+   */
+  registerAnchor(el: HTMLElement): void;
+  /** Unregisters the anchor element. Reference-based. */
+  unregisterAnchor(el: HTMLElement): void;
+  /** Registers the optional `[forComboboxTrigger]` button (picker anatomy). */
+  registerTrigger(el: HTMLElement): void;
+  /** Unregisters the trigger button. Reference-based. */
+  unregisterTrigger(el: HTMLElement): void;
+  /** Registers the `[forComboboxContent]` popup surface. */
+  registerContent(el: HTMLElement): void;
+  /** Unregisters the popup surface. Reference-based. */
+  unregisterContent(el: HTMLElement): void;
+  /** Registers the optional `[forComboboxList]` listbox surface (picker anatomy). */
+  registerList(el: HTMLElement): void;
+  /** Unregisters the listbox surface. Reference-based. */
+  unregisterList(el: HTMLElement): void;
+  /** Registers an option so it joins the navigable collection in DOM order. */
+  registerOption(handle: ForComboboxOptionHandle<T>): void;
+  /** Unregisters an option. Reference-based. */
+  unregisterOption(handle: ForComboboxOptionHandle<T>): void;
+  /** Registers a multi-mode chip. Order follows DOM. */
+  registerChip(handle: ForComboboxChipHandle<T>): void;
+  /** Unregisters a chip. Reference-based. */
+  unregisterChip(handle: ForComboboxChipHandle<T>): void;
+  /** Registers a non-selecting `[forComboboxAction]`, kept out of the option collection. */
+  registerAction(handle: ForComboboxActionHandle): void;
+  /** Unregisters an action. Reference-based. */
+  unregisterAction(handle: ForComboboxActionHandle): void;
+  /** Set the activedescendant directly. Used by options on pointer-move and by the input on inline-completion seed. */
+  setActiveId(id: string | null): void;
+  /** Set where focus lands after the next open. The input directive calls it before flipping `open`. */
+  setInitialFocus(target: ForComboboxInitialFocus): void;
+}
+
+/**
+ * The combobox's internal coordination surface: everything
+ * {@link ForComboboxContext} publishes plus the
+ * {@link ComboboxRegistrationContext} protocol.
+ *
+ * Never exported from `public-api.ts`. `[forCombobox]` provides it alongside
+ * {@link FOR_COMBOBOX_CONTEXT} on the same object, so a consumer who injects the
+ * public token gets the read surface while the pieces get the wiring protocol.
+ */
+export interface ComboboxContext<T = unknown>
+  extends ForComboboxContext<T>, ComboboxRegistrationContext<T> {}
+
+/** DI token carrying the internal {@link ComboboxContext}. Provided by `[forCombobox]`. */
+export const COMBOBOX_CONTEXT = new InjectionToken<ComboboxContext>('COMBOBOX_CONTEXT');
+
+/**
  * Resolve the surrounding combobox context, re-applying the caller's `T`. The
  * cast through `unknown` is unavoidable (see {@link FOR_COMBOBOX_CONTEXT}): the
  * token can't carry the per-instance generic, so `T` correctness is a
  * consumer-honored contract, not a compiler-enforced one.
  */
-export function injectComboboxContext<T = unknown>(piece: string): ForComboboxContext<T> {
-  const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
+export function injectComboboxContext<T = unknown>(piece: string): ComboboxContext<T> {
+  const ctx = inject(COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
       `[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element. ` +
@@ -424,26 +466,30 @@ export function injectComboboxContext<T = unknown>(piece: string): ForComboboxCo
         '[forCombobox] root.',
     );
   }
-  return ctx as unknown as ForComboboxContext<T>;
+  return ctx as unknown as ComboboxContext<T>;
 }
 
 /**
  * Resolves the trigger's root context: the explicit reference when the
- * `[forComboboxTrigger]` input carries one, the injected `FOR_COMBOBOX_CONTEXT`
+ * `[forComboboxTrigger]` input carries one, the injected `COMBOBOX_CONTEXT`
  * otherwise. The orphan error only fires when neither resolves, on first read
  * of the returned signal. Must be called in an injection context.
+ *
+ * The explicit reference is a public `ForComboboxContext`, so it is widened back
+ * to the internal surface: the runtime object is always the `[forCombobox]`
+ * root, which owns the registration protocol the public interface omits.
  */
 export function injectComboboxTriggerContext<T = unknown>(
   explicitRoot: Signal<ForComboboxContext<T> | ''>,
-): Signal<ForComboboxContext<T>> {
-  const injected = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
+): Signal<ComboboxContext<T>> {
+  const injected = inject(COMBOBOX_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
     if (explicit !== '') {
-      return explicit;
+      return explicit as ComboboxContext<T>;
     }
     if (injected) {
-      return injected as unknown as ForComboboxContext<T>;
+      return injected as unknown as ComboboxContext<T>;
     }
     throw new Error(
       '[forty-cdk/combobox] ForComboboxTrigger could not resolve its [forCombobox] root: ' +

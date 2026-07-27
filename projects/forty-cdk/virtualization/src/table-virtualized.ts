@@ -9,19 +9,29 @@ import {
   numberAttribute,
 } from '@angular/core';
 
+import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk/table';
 
 import { injectVirtualizer, type VirtualItem } from './virtualizer';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
+const ORPHAN_ERROR =
+  '[forty-cdk/virtualization] ForTableVirtualized must be used inside a [forTable] element.';
+
 function injectTableContext(): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      '[forty-cdk/virtualization] ForTableVirtualized must be used inside a [forTable] element.',
-    );
+    throw new Error(ORPHAN_ERROR);
   }
   return ctx;
+}
+
+function injectTableRegistration(): TableRegistrationContext {
+  const registration = inject(TABLE_REGISTRATION_CONTEXT, { optional: true });
+  if (!registration) {
+    throw new Error(ORPHAN_ERROR);
+  }
+  return registration;
 }
 
 /**
@@ -47,6 +57,7 @@ function injectTableContext(): ForTableContext {
 })
 export class ForTableVirtualized {
   readonly #ctx = injectTableContext();
+  readonly #registration = injectTableRegistration();
   readonly #rootEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /** Estimated row size in px along the scroll axis (the fixed-size fast path). Read for the size estimate. */
@@ -71,7 +82,7 @@ export class ForTableVirtualized {
   });
 
   readonly #navigator = new TableVirtualizedNavigator({
-    rows: this.#ctx.rows,
+    rows: this.#registration.rows,
     scrollToRow: (index) => this.scrollToRow(index),
     scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
     rowCount: () => this.#ctx.rowCount() ?? 0,
@@ -79,18 +90,18 @@ export class ForTableVirtualized {
   });
 
   constructor() {
-    this.#ctx.registerVirtualNavigation(this.#navigator);
-    this.#ctx.registerVirtualWindow({
+    this.#registration.registerVirtualNavigation(this.#navigator);
+    this.#registration.registerVirtualWindow({
       rows: this.virtualRows,
       totalSize: this.totalSize,
       measureRow: (element) => this.measureRow(element),
     });
     inject(DestroyRef).onDestroy(() => {
-      this.#ctx.registerVirtualNavigation(null);
-      this.#ctx.registerVirtualWindow(null);
+      this.#registration.registerVirtualNavigation(null);
+      this.#registration.registerVirtualWindow(null);
     });
     effect(() => {
-      this.#ctx.rows();
+      this.#registration.rows();
       this.#navigator.tryResolvePending();
     });
   }
@@ -109,7 +120,7 @@ export class ForTableVirtualized {
     if (focused !== null) {
       retain.add(focused);
     }
-    const reordering = this.#ctx.reorderingRowIndex();
+    const reordering = this.#registration.reorderingRowIndex();
     if (reordering !== null) {
       retain.add(reordering);
     }

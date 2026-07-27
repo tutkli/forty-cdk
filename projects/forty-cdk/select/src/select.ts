@@ -46,7 +46,8 @@ import {
   type ForSelectContext,
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
-  type ForSelectOverlayContext,
+  type ForSelectOverlayFacade,
+  SELECT_CONTEXT,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
 import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
@@ -88,7 +89,10 @@ const NO_VALUE = Symbol('forty-cdk/select:no-value');
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
+  providers: [
+    { provide: FOR_SELECT_CONTEXT, useExisting: ForSelect },
+    { provide: SELECT_CONTEXT, useExisting: ForSelect },
+  ],
 })
 export class ForSelect<T = string>
   extends FormUiControlBase
@@ -439,7 +443,7 @@ export class ForSelect<T = string>
    * `[forSelectAnchor]` (reached via `overlay.anchor`) is preferred when
    * registered, otherwise floating-ui falls back to the trigger.
    */
-  readonly overlay: ForSelectOverlayContext<T> = this.#controller;
+  readonly overlay: ForSelectOverlayFacade = this.#controller;
 
   /**
    * Shared APG range-selection state machine: owns the range anchor and the

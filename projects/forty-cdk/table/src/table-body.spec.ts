@@ -1,5 +1,7 @@
 import { Component, signal, viewChild } from '@angular/core';
 import { By } from '@angular/platform-browser';
+import { type ComponentFixture } from '@angular/core/testing';
+import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
@@ -869,19 +871,26 @@ class MixedReorderApplyHost {
   }
 }
 
+/** Resolves the table's internal registration surface from the rendered fixture. */
+function registrationOf(fixture: ComponentFixture<unknown>): TableRegistrationContext {
+  return fixture.debugElement
+    .query(By.directive(ForTable))
+    .injector.get(TABLE_REGISTRATION_CONTEXT);
+}
+
 /**
  * Publishes a fixed-size window (44px rows) the way `[forTableVirtualized]` would, for a
  * deterministic jsdom test. Returns the window's `measureRow` spy so tests can assert the
  * body's measured-rows pass.
  */
 function publishWindow(
-  table: ForTable,
+  fixture: ComponentFixture<unknown>,
   indices: readonly number[],
   totalSize: number,
   rowSize = 44,
 ): ReturnType<typeof vi.fn> {
   const measureRow = vi.fn();
-  table.registerVirtualWindow({
+  registrationOf(fixture).registerVirtualWindow({
     rows: signal(indices.map((index) => ({ index, start: index * rowSize }))),
     totalSize: signal(totalSize),
     measureRow,
@@ -1091,7 +1100,7 @@ describe('ForTableBody', () => {
 
     it('windows under [forTableVirtualized] while keeping table-mode roles', () => {
       const { instance, query, queryAll, fixture } = renderHost(TableModeVirtualHost);
-      publishWindow(instance.table(), [5, 6, 7], 880);
+      publishWindow(fixture, [5, 6, 7], 880);
       fixture.detectChanges();
 
       expect(query('[forTable]')?.getAttribute('role')).toBe('table');
@@ -1109,7 +1118,7 @@ describe('ForTableBody', () => {
   describe('virtualized window seam', () => {
     it('renders only the published window slice, indexed into rows', () => {
       const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
-      publishWindow(instance.table(), [5, 6, 7], 880);
+      publishWindow(fixture, [5, 6, 7], 880);
       fixture.detectChanges();
 
       const rows = queryAll('[forTableRow]');
@@ -1122,7 +1131,7 @@ describe('ForTableBody', () => {
 
     it('absolutely positions each windowed row at its pixel offset and sizes the rowgroup', () => {
       const { instance, query, queryAll, fixture } = renderHost(VirtualBodyHost);
-      publishWindow(instance.table(), [5, 6], 880);
+      publishWindow(fixture, [5, 6], 880);
       fixture.detectChanges();
 
       const rowgroup = query('[role="rowgroup"]') as HTMLElement;
@@ -1137,7 +1146,7 @@ describe('ForTableBody', () => {
 
     it('drives absolute aria-rowindex from the window index (counting the header row)', () => {
       const { instance, query, fixture } = renderHost(VirtualBodyHost);
-      publishWindow(instance.table(), [5], 880);
+      publishWindow(fixture, [5], 880);
       fixture.detectChanges();
       expect(query('[forTableRow]')?.getAttribute('aria-rowindex')).toBe('7');
     });
@@ -1146,18 +1155,18 @@ describe('ForTableBody', () => {
       const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
       instance.rows.set(buildBigRows(10_000));
       const windowIndices = Array.from({ length: 12 }, (_, i) => 4000 + i);
-      publishWindow(instance.table(), windowIndices, 440_000);
+      publishWindow(fixture, windowIndices, 440_000);
       fixture.detectChanges();
       expect(queryAll('[forTableRow]')).toHaveLength(12);
     });
 
     it('falls back to full flow rendering when the window is cleared', () => {
       const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
-      publishWindow(instance.table(), [5, 6], 880);
+      publishWindow(fixture, [5, 6], 880);
       fixture.detectChanges();
       expect(queryAll('[forTableRow]')).toHaveLength(2);
 
-      instance.table().registerVirtualWindow(null);
+      registrationOf(fixture).registerVirtualWindow(null);
       fixture.detectChanges();
       const rows = queryAll('[forTableRow]') as HTMLElement[];
       expect(rows).toHaveLength(20);
@@ -1173,8 +1182,8 @@ describe('ForTableBody', () => {
       measureRow.mock.calls.filter((c) => c[0] === null).length;
 
     it('calls the window measureRow once per stamped row (data + variant) when measureRows is set', async () => {
-      const { instance, queryAll, flush } = renderHost(MeasureRowsHost);
-      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      const { instance, queryAll, flush, fixture } = renderHost(MeasureRowsHost);
+      const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
 
       const rows = queryAll('[forTableRow]') as HTMLElement[];
@@ -1184,16 +1193,16 @@ describe('ForTableBody', () => {
     });
 
     it('never calls measureRow when measureRows is unset', async () => {
-      const { instance, flush } = renderHost(MeasureRowsHost);
+      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
       instance.measure.set(false);
-      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
       expect(measureRow).not.toHaveBeenCalled();
     });
 
     it('does not re-measure rows whose window index is unchanged across renders (guard)', async () => {
-      const { instance, flush } = renderHost(MeasureRowsHost);
-      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
+      const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
       expect(elementCallsOf(measureRow)).toHaveLength(3);
 
@@ -1202,10 +1211,10 @@ describe('ForTableBody', () => {
     });
 
     it('re-measures a row host recycled to a new window index without Zone.js', async () => {
-      const { instance, flush } = renderHost(MeasureRowsHost);
+      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = vi.fn();
       const windowRows = signal([5, 6, 7].map((index) => ({ index, start: index * 44 })));
-      instance.table().registerVirtualWindow({
+      registrationOf(fixture).registerVirtualWindow({
         rows: windowRows,
         totalSize: signal(880),
         measureRow,
@@ -1220,8 +1229,8 @@ describe('ForTableBody', () => {
     });
 
     it('sweeps detached rows by calling measureRow(null) after the measure loop', async () => {
-      const { instance, flush } = renderHost(MeasureRowsHost);
-      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
+      const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
 
       expect(measureRow).toHaveBeenCalledWith(null);
@@ -1231,10 +1240,10 @@ describe('ForTableBody', () => {
     });
 
     it('sweeps on every measured render even when no row needs re-measuring (guard render)', async () => {
-      const { instance, flush } = renderHost(MeasureRowsHost);
+      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = vi.fn();
       const windowRows = signal([5, 6, 7].map((index) => ({ index, start: index * 44 })));
-      instance.table().registerVirtualWindow({
+      registrationOf(fixture).registerVirtualWindow({
         rows: windowRows,
         totalSize: signal(880),
         measureRow,
@@ -1251,9 +1260,9 @@ describe('ForTableBody', () => {
     });
 
     it('does not sweep when measureRows is unset', async () => {
-      const { instance, flush } = renderHost(MeasureRowsHost);
+      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
       instance.measure.set(false);
-      const measureRow = publishWindow(instance.table(), [5, 6, 7], 880);
+      const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
       expect(measureRow).not.toHaveBeenCalled();
     });
@@ -1336,7 +1345,7 @@ describe('ForTableBody', () => {
 
     it('renders windowed variant rows full-span under the virtualization seam', () => {
       const { instance, queryAll, fixture } = renderHost(VirtualVariantHost);
-      publishWindow(instance.table(), [4, 5, 6], 880);
+      publishWindow(fixture, [4, 5, 6], 880);
       fixture.detectChanges();
 
       const rows = queryAll('[forTableRow]');
@@ -1403,7 +1412,7 @@ describe('ForTableBody', () => {
 
     it('renders windowed placeholder rows as per-column disabled cells, positioned', () => {
       const { instance, queryAll, fixture } = renderHost(VirtualPlaceholderHost);
-      publishWindow(instance.table(), [4, 5, 6], 880);
+      publishWindow(fixture, [4, 5, 6], 880);
       fixture.detectChanges();
 
       const rows = queryAll('[forTableRow]');

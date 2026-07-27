@@ -36,6 +36,7 @@ import {
 } from 'forty-cdk/core';
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
+  COMBOBOX_CONTEXT,
   FOR_COMBOBOX_CONTEXT,
   type ForComboboxActionHandle,
   type ForComboboxAutocomplete,
@@ -87,7 +88,10 @@ import { VirtualizedNavigator } from './combobox-virtualized-navigator';
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
-  providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
+  providers: [
+    { provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox },
+    { provide: COMBOBOX_CONTEXT, useExisting: ForCombobox },
+  ],
 })
 export class ForCombobox<T = string>
   extends FormUiControlBase
@@ -549,59 +553,59 @@ export class ForCombobox<T = string>
     });
   }
 
-  registerInput(el: HTMLInputElement): void {
+  private registerInput(el: HTMLInputElement): void {
     this.#inputSlot.register(el);
   }
-  unregisterInput(el: HTMLInputElement): void {
+  private unregisterInput(el: HTMLInputElement): void {
     this.#inputSlot.unregister(el);
   }
 
-  registerAnchor(el: HTMLElement): void {
+  private registerAnchor(el: HTMLElement): void {
     this.#anchorSlot.register(el);
   }
-  unregisterAnchor(el: HTMLElement): void {
+  private unregisterAnchor(el: HTMLElement): void {
     this.#anchorSlot.unregister(el);
   }
 
-  registerTrigger(el: HTMLElement): void {
+  private registerTrigger(el: HTMLElement): void {
     this.#triggerSlot.register(el);
   }
-  unregisterTrigger(el: HTMLElement): void {
+  private unregisterTrigger(el: HTMLElement): void {
     this.#triggerSlot.unregister(el);
   }
 
-  registerContent(el: HTMLElement): void {
+  private registerContent(el: HTMLElement): void {
     this.#contentSlot.register(el);
   }
-  unregisterContent(el: HTMLElement): void {
+  private unregisterContent(el: HTMLElement): void {
     this.#contentSlot.unregister(el);
   }
 
-  registerList(el: HTMLElement): void {
+  private registerList(el: HTMLElement): void {
     this.#listSlot.register(el);
   }
-  unregisterList(el: HTMLElement): void {
+  private unregisterList(el: HTMLElement): void {
     this.#listSlot.unregister(el);
   }
 
-  registerOption(handle: ForComboboxOptionHandle<T>): void {
+  private registerOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.register(handle);
   }
-  unregisterOption(handle: ForComboboxOptionHandle<T>): void {
+  private unregisterOption(handle: ForComboboxOptionHandle<T>): void {
     this.#items.unregister(handle);
   }
 
-  registerChip(handle: ForComboboxChipHandle<T>): void {
+  private registerChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.register(handle);
   }
-  unregisterChip(handle: ForComboboxChipHandle<T>): void {
+  private unregisterChip(handle: ForComboboxChipHandle<T>): void {
     this.#chips.unregister(handle);
   }
 
-  registerAction(handle: ForComboboxActionHandle): void {
+  private registerAction(handle: ForComboboxActionHandle): void {
     this.#actions.register(handle);
   }
-  unregisterAction(handle: ForComboboxActionHandle): void {
+  private unregisterAction(handle: ForComboboxActionHandle): void {
     this.#actions.unregister(handle);
   }
 
@@ -766,7 +770,7 @@ export class ForCombobox<T = string>
     }
   }
 
-  setActiveId(id: string | null): void {
+  private setActiveId(id: string | null): void {
     this.#activeId.set(id);
     this.#lastPositionedId = id;
   }
@@ -845,7 +849,7 @@ export class ForCombobox<T = string>
     this.#activeId.set(null);
   }
 
-  setInitialFocus(target: ForComboboxInitialFocus): void {
+  private setInitialFocus(target: ForComboboxInitialFocus): void {
     this.#initialFocusState.setTarget(target);
   }
 

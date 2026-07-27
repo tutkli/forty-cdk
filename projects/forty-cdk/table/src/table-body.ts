@@ -25,7 +25,7 @@ import { ForRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
-import { injectTableContext } from './table-context';
+import { injectTableContext, injectTableRegistration } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 import { ForTableHeaderRow } from './table-header-row';
 import { ForTableRow } from './table-row';
@@ -381,6 +381,7 @@ interface RenderRow<T> {
 })
 export class ForTableBody<T = unknown> {
   readonly #ctx = injectTableContext('ForTableBody');
+  readonly #registration = injectTableRegistration('ForTableBody');
 
   private readonly rowEls = viewChildren<ElementRef<HTMLElement>>('rowEl');
   readonly #measuredAt = new WeakMap<HTMLElement, string>();
@@ -389,11 +390,11 @@ export class ForTableBody<T = unknown> {
     const bodyRowCount = computed(() =>
       this.loading() ? Math.max(0, this.placeholderRows()) : this.rows().length,
     );
-    this.#ctx.registerBodyRowCount(bodyRowCount);
-    inject(DestroyRef).onDestroy(() => this.#ctx.registerBodyRowCount(null));
+    this.#registration.registerBodyRowCount(bodyRowCount);
+    inject(DestroyRef).onDestroy(() => this.#registration.registerBodyRowCount(null));
 
     afterEveryRender(() => {
-      const window = this.#ctx.virtualWindow();
+      const window = this.#registration.virtualWindow();
       if (!window || !this.measureRows()) {
         return;
       }
@@ -603,7 +604,7 @@ export class ForTableBody<T = unknown> {
    * index + pixel offset per row); otherwise it maps every row in flow order.
    */
   protected readonly renderRows = computed<readonly RenderRow<T>[]>(() => {
-    const window = this.#ctx.virtualWindow();
+    const window = this.#registration.virtualWindow();
     const data = this.rows();
     const key = this.rowKey();
     const variants = this.rowDefs();
@@ -661,7 +662,7 @@ export class ForTableBody<T = unknown> {
 
   /** Full scroll height (px) applied to the rowgroup when virtualized, else `null` (natural height). */
   protected readonly sizerHeight = computed<number | null>(() => {
-    const window = this.#ctx.virtualWindow();
+    const window = this.#registration.virtualWindow();
     return window && !this.loading() ? window.totalSize() : null;
   });
 

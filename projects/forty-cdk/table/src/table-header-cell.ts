@@ -9,12 +9,12 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { type ForTableCellHandle, registerHandle } from 'forty-cdk/core';
 import {
   coerceSticky,
-  type ForTableCellHandle,
   hostHasDraggable,
   injectTableContext,
+  injectTableRegistration,
   type TableStickyValue,
 } from './table-context';
 
@@ -51,6 +51,7 @@ import {
 })
 export class ForTableHeaderCell {
   protected readonly ctx = injectTableContext('ForTableHeaderCell');
+  readonly #registration = injectTableRegistration('ForTableHeaderCell');
 
   /**
    * The header cell's host element (`role="columnheader"`). Exposed so a descendant
@@ -171,8 +172,8 @@ export class ForTableHeaderCell {
     const handle: ForTableCellHandle = { host: this.#host, disabled: this.#disabled };
     registerHandle(
       handle,
-      (h) => this.ctx.registerHeaderCell(h),
-      (h) => this.ctx.unregisterHeaderCell(h),
+      (h) => this.#registration.registerHeaderCell(h),
+      (h) => this.#registration.unregisterHeaderCell(h),
     );
   }
 

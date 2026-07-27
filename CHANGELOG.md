@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Table / Select / Combobox (breaking)** — a primitive's public context interface no longer carries its
+  piece-registration protocol ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)). `ForTableContext`
+  drops every `register*` / `set*` member (and the `rows` / `virtualWindow` / `virtualRowNavigation` /
+  `reorderingRowIndex` read-backs that only served them); `ForSelectContext.overlay` is narrowed from the
+  full `ListboxOverlayContext` to a documented read facade (`triggerId`, `contentId`, `lastCloseReason`,
+  `openMenu`, `closeMenu`, `toggle`); `ForComboboxContext` drops its 16 `register*` / `unregister*`
+  members plus `setActiveId` / `setInitialFocus`. Pieces coordinate through a second token no entry point
+  exports, so refactoring how they wire up is no longer a breaking change to a public interface.
+
+### Removed
+
+- **Table (breaking)** — the virtualization-seam and handle types (`TableVirtualWindow`, `TableVirtualRow`,
+  `TableVirtualRowNavigation`, `ForTableRowHandle`, `ForTableCellHandle`) are no longer exported from the
+  `forty-cdk/table` barrel; they moved to the internal tier with the members that needed them
+  ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)).
+- **Select (breaking)** — `ForSelectOverlayContext` and `ForSelectOptionHandle` are no longer exported from
+  the `forty-cdk/select` barrel; `ForSelectOverlayFacade` replaces the former as the consumer-facing
+  overlay type ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)).
+
 ## [0.14.0] - 2026-07-26
 
 The third resolution wave for the July 18, 2026 deep audit — the menu family + toolbar sweep (19 items),

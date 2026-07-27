@@ -8,7 +8,7 @@ import {
   injectOverlayShell,
   type OverlayShellPositionerConfig,
 } from 'forty-cdk/core';
-import { injectSelectContext } from './select-context';
+import { type ForSelectContext, injectSelectContext } from './select-context';
 
 /**
  * The listbox surface. Carries `role="listbox"`, is portaled to
@@ -71,7 +71,8 @@ import { injectSelectContext } from './select-context';
   },
 })
 export class ForSelectContent {
-  protected readonly ctx = injectSelectContext('ForSelectContent');
+  readonly #select = injectSelectContext('ForSelectContent');
+  protected readonly ctx: ForSelectContext = this.#select;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
@@ -81,7 +82,7 @@ export class ForSelectContent {
   );
 
   constructor() {
-    const ctx = this.ctx;
+    const ctx = this.#select;
     registerHandle(
       this.#host.nativeElement,
       (el) => ctx.overlay.registerContent(el),

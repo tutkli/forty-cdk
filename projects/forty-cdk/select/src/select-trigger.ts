@@ -1,4 +1,4 @@
-import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
+import { computed, Directive, effect, ElementRef, inject, input, type Signal } from '@angular/core';
 
 import { reflectDisabled } from 'forty-cdk/core';
 import { type ForSelectContext, injectSelectTriggerContext } from './select-context';
@@ -64,7 +64,8 @@ export class ForSelectTrigger<T = unknown> {
    */
   readonly forSelectTrigger = input<ForSelectContext<T> | ''>('');
 
-  protected readonly ctx = injectSelectTriggerContext<T>(this.forSelectTrigger);
+  readonly #root = injectSelectTriggerContext<T>(this.forSelectTrigger);
+  protected readonly ctx: Signal<ForSelectContext<T>> = this.#root;
 
   constructor() {
     const el = this.#host.nativeElement;
@@ -72,15 +73,15 @@ export class ForSelectTrigger<T = unknown> {
     // not state derivation — the effect only re-registers the element when the
     // resolved root changes (explicit reference swapped at runtime).
     effect((onCleanup) => {
-      const ctx = this.ctx();
-      ctx.overlay.registerTrigger(el);
-      onCleanup(() => ctx.overlay.unregisterTrigger(el));
+      const overlay = this.#root().overlay;
+      overlay.registerTrigger(el);
+      onCleanup(() => overlay.unregisterTrigger(el));
     });
     reflectDisabled(computed(() => this.ctx().effectiveDisabled()));
   }
 
   protected onClick(): void {
-    this.ctx().overlay.toggle('selected');
+    this.#root().overlay.toggle('selected');
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -89,13 +90,13 @@ export class ForSelectTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.ctx().overlay.openMenu('selected');
+      this.#root().overlay.openMenu('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       // ArrowUp lands on the selected option if any, else the last enabled.
-      this.ctx().overlay.openMenu(this.ctx().value().length > 0 ? 'selected' : 'last');
+      this.#root().overlay.openMenu(this.ctx().value().length > 0 ? 'selected' : 'last');
       return;
     }
     // Closed-state typeahead — single-mode shortcut to match native <select>.
@@ -108,7 +109,7 @@ export class ForSelectTrigger<T = unknown> {
     const next = event.relatedTarget as HTMLElement | null;
     if (next) {
       // Focus moving into the listbox content (we just opened it) — not a leave.
-      const content = this.ctx().overlay.content();
+      const content = this.#root().overlay.content();
       if (content && content.contains(next)) {
         return;
       }
