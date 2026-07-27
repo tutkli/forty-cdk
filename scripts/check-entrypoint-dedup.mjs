@@ -17,6 +17,8 @@ const CORE_SINGLETONS = [
   'FocusTrapStack',
   'BodyScrollLock',
   'InertSiblingsStack',
+  'ForDrawerStack',
+  'ForDrawerScaleCoordinator',
 ];
 
 const TOKEN_DEF =

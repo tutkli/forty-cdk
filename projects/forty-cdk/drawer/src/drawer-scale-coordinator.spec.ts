@@ -7,9 +7,8 @@ import {
 } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { type ForDrawerSide } from '../drawer-stack/drawer-side';
-import { type DrawerStackNode, ForDrawerStack } from '../drawer-stack/drawer-stack';
-import { flush, withReducedMotion } from '../../../src/test-utils';
+import { type DrawerStackNode, type ForDrawerSide, ForDrawerStack } from 'forty-cdk/core';
+import { flush, withReducedMotion } from '../../src/test-utils';
 import { ForDrawerScaleCoordinator, type ForDrawerScaleConfig } from './drawer-scale-coordinator';
 
 const DEFAULT_CONFIG: ForDrawerScaleConfig = {

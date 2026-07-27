@@ -115,9 +115,12 @@ export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
 export { createPointerDragSession, type PointerDragSession } from './drag-session/pointer-session';
 export { PreviewController } from './drag-session/preview-controller';
-export { ForDrawerScaleCoordinator } from './drawer-scale/drawer-scale-coordinator';
 export { type ForDrawerSide } from './drawer-stack/drawer-side';
-export { type DrawerStackHandle, ForDrawerStack } from './drawer-stack/drawer-stack';
+export {
+  type DrawerStackHandle,
+  type DrawerStackNode,
+  ForDrawerStack,
+} from './drawer-stack/drawer-stack';
 export { type ElementBox, injectElementSize } from './element-size/element-size';
 export {
   type FieldControlHandle,
