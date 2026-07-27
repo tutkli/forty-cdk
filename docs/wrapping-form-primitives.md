@@ -156,12 +156,45 @@ export class MtxListbox extends ForListbox {}
 ```
 
 Primitives whose **root** provides a context token (and therefore needs the re-provide):
-`ForCombobox`, `ForDateField`, `ForDatePicker`, `ForDateRangeField`, `ForDateRangePicker`,
-`ForListbox`, `ForOtpInput`, `ForRadioGroup`, `ForSelect`, `ForSlider`, `ForTimeField`,
+`ForDateField`, `ForDatePicker`, `ForDateRangeField`, `ForDateRangePicker`,
+`ForListbox`, `ForOtpInput`, `ForRadioGroup`, `ForSlider`, `ForTimeField`,
 `ForTimeRangeField`, `ForToggleGroup`.
 The pure leaf
 controls — `ForInput`, `ForTextarea`, `ForSwitch`, `ForToggle`, `ForNumberInput` — declare no
 providers, so a bare subclass is enough.
+
+### Roots with a split context use `provideFor<Primitive>()`
+
+`ForSelect` and `ForCombobox` provide **two** tokens: the public `FOR_<PRIMITIVE>_CONTEXT` an
+advanced consumer injects, and a second token carrying the piece-registration protocol, which
+is deliberately not exported ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)). A
+hand-written re-provide of the public token alone is therefore **not enough** — and the missing
+one cannot be written by name from outside the library. Spread the primitive's provider helper
+instead, which installs the whole set and keeps the wrapper in step when the library changes it:
+
+```ts
+import { Directive } from '@angular/core';
+import { ForSelect, provideForSelect } from 'forty-cdk/select';
+
+@Directive({
+  selector: '[mtxSelect]',
+  exportAs: 'mtxSelect',
+  providers: provideForSelect(MtxSelect),
+})
+export class MtxSelect<T> extends ForSelect<T> {}
+```
+
+| Subclassed root | Helper to spread into `providers` |
+| --------------- | --------------------------------- |
+| `ForSelect`     | `provideForSelect(MySelect)`      |
+| `ForCombobox`   | `provideForCombobox(MyCombobox)`  |
+| `ForTable`      | `provideForTable(MyTable)`        |
+
+`ForTable` is listed for completeness — it is not a form primitive, but it splits its context
+the same way and additionally provides an internal registry its own constructor injects, so a
+subclass without the helper fails to construct at all (`NG0201`). Each helper takes the
+subclass so the public token's `useExisting` points at it; a wrapper that also wants
+`inject(ForSelect)` to resolve adds `{ provide: ForSelect, useExisting: MtxSelect }` alongside.
 
 ### Indicator parent parts also self-provide a token
 

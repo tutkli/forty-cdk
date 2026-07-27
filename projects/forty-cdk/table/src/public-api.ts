@@ -1,4 +1,4 @@
-export { ForTable } from './table';
+export { ForTable, provideForTable } from './table';
 export {
   ForColumnDef,
   ForHeaderCell,

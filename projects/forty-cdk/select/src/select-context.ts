@@ -75,6 +75,17 @@ export interface ForSelectOverlayFacade {
   readonly contentId: Signal<string>;
   /** Reason of the most recent close, or `null` while open (or before any close). */
   readonly lastCloseReason: Signal<ForSelectCloseReason | null>;
+  /**
+   * Registers the element `[forSelectContent]` is positioned against, instead of
+   * the trigger. The declarative `[forSelectAnchor]` covers the common case; call
+   * this directly when the anchor element is only reachable imperatively — it
+   * lives in an ancestor component's template, so a directive placed on it would
+   * resolve DI outside this root. At most one anchor may be registered per
+   * `[forSelect]`; a second one throws.
+   */
+  registerAnchor(el: HTMLElement): void;
+  /** Unregisters the positioning anchor, falling back to the trigger. Reference-based. */
+  unregisterAnchor(el: HTMLElement): void;
   /** Opens the listbox with the requested initial-focus target. */
   openMenu(initialFocus: ForSelectInitialFocus): void;
   /** Closes the listbox, recording `reason` as the last close reason. */

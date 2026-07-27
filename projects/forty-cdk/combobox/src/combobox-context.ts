@@ -177,6 +177,20 @@ export interface ForComboboxContext<T = unknown> {
    * exemption regardless of where the listbox paints.
    */
   readonly anchor: Signal<ReferenceElement | null>;
+  /**
+   * Registers the element the listbox is positioned against, instead of the
+   * input. The declarative `[forComboboxAnchor]` covers the common case; call
+   * this directly when the anchor element is only reachable imperatively — it
+   * lives in an ancestor component's template, so a directive placed on it would
+   * resolve DI outside this root. At most one anchor may be registered per
+   * `[forCombobox]`; a second one throws.
+   */
+  registerAnchor(el: HTMLElement): void;
+  /**
+   * Unregisters the positioning anchor, restoring the input fallback.
+   * Reference-based, so an anchor torn down inside `@if` unwinds cleanly.
+   */
+  unregisterAnchor(el: HTMLElement): void;
   readonly input: Signal<HTMLInputElement | null>;
 
   /**
@@ -396,15 +410,6 @@ export interface ComboboxRegistrationContext<T = unknown> {
   registerInput(el: HTMLInputElement): void;
   /** Unregisters the input element. Reference-based. */
   unregisterInput(el: HTMLInputElement): void;
-  /**
-   * Register / unregister an optional `[forComboboxAnchor]` positioning
-   * element. At most one anchor per root; a second registration throws.
-   * Reference-based unregister, so an anchor torn down inside `@if` restores
-   * the input fallback cleanly.
-   */
-  registerAnchor(el: HTMLElement): void;
-  /** Unregisters the anchor element. Reference-based. */
-  unregisterAnchor(el: HTMLElement): void;
   /** Registers the optional `[forComboboxTrigger]` button (picker anatomy). */
   registerTrigger(el: HTMLElement): void;
   /** Unregisters the trigger button. Reference-based. */

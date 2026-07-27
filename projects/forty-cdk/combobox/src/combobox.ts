@@ -8,6 +8,8 @@ import {
   model,
   numberAttribute,
   output,
+  type Provider,
+  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -88,10 +90,7 @@ import { VirtualizedNavigator } from './combobox-virtualized-navigator';
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
-  providers: [
-    { provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox },
-    { provide: COMBOBOX_CONTEXT, useExisting: ForCombobox },
-  ],
+  providers: provideForCombobox(ForCombobox),
 })
 export class ForCombobox<T = string>
   extends FormUiControlBase
@@ -560,10 +559,12 @@ export class ForCombobox<T = string>
     this.#inputSlot.unregister(el);
   }
 
-  private registerAnchor(el: HTMLElement): void {
+  /** See {@link ForComboboxContext.registerAnchor}. */
+  registerAnchor(el: HTMLElement): void {
     this.#anchorSlot.register(el);
   }
-  private unregisterAnchor(el: HTMLElement): void {
+  /** See {@link ForComboboxContext.unregisterAnchor}. */
+  unregisterAnchor(el: HTMLElement): void {
     this.#anchorSlot.unregister(el);
   }
 
@@ -953,4 +954,33 @@ export class ForCombobox<T = string>
     }
     this.markTouched();
   }
+}
+
+/**
+ * The providers a `[forCombobox]` root installs: the public
+ * {@link FOR_COMBOBOX_CONTEXT}, aliased to `root`, plus the internal
+ * coordination token the combobox's pieces resolve.
+ *
+ * `ForCombobox` declares its own providers through this helper, so a wrapper
+ * that **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_COMBOBOX_CONTEXT` alone leaves the internal token absent and
+ * every piece orphans with the "must be used inside a [forCombobox] element"
+ * error. That token is deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForCombobox(MyCombobox),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForCombobox]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForCombobox<T = string>(root: Type<ForCombobox<T>>): Provider[] {
+  return [
+    { provide: FOR_COMBOBOX_CONTEXT, useExisting: root },
+    { provide: COMBOBOX_CONTEXT, useExisting: root },
+  ];
 }

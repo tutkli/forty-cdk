@@ -1,4 +1,14 @@
-import { computed, Directive, inject, input, model, type Signal, signal } from '@angular/core';
+import {
+  computed,
+  Directive,
+  inject,
+  input,
+  model,
+  type Provider,
+  type Signal,
+  signal,
+  type Type,
+} from '@angular/core';
 
 import {
   injectElementSize,
@@ -67,11 +77,7 @@ const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
     '[attr.aria-multiselectable]':
       'mode() !== "table" && selectionMode() === "multiple" ? "true" : null',
   },
-  providers: [
-    TableRegistry,
-    { provide: FOR_TABLE_CONTEXT, useExisting: ForTable },
-    { provide: TABLE_REGISTRATION_CONTEXT, useExisting: TableRegistry },
-  ],
+  providers: provideForTable(ForTable),
 })
 export class ForTable<T = unknown> implements ForTableContext {
   /**
@@ -602,4 +608,34 @@ function resolveCrossWindowRowTarget(
     default:
       return null;
   }
+}
+
+/**
+ * The providers a `[forTable]` root installs: the public
+ * {@link FOR_TABLE_CONTEXT}, aliased to `root`, plus the internal
+ * piece-registration wiring the table's pieces resolve.
+ *
+ * `ForTable` declares its own providers through this helper, so a wrapper that
+ * **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_TABLE_CONTEXT` alone leaves the registration wiring absent
+ * and every piece — down to the root's own constructor — fails to resolve it.
+ * The internal providers are deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list them by hand.
+ *
+ * ```ts
+ * providers: provideForTable(MyTable),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForTable]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForTable<T = unknown>(root: Type<ForTable<T>>): Provider[] {
+  return [
+    TableRegistry,
+    { provide: FOR_TABLE_CONTEXT, useExisting: root },
+    { provide: TABLE_REGISTRATION_CONTEXT, useExisting: TableRegistry },
+  ];
 }
