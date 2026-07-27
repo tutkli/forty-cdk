@@ -1,7 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
-import type { TimeSegmentType } from './build-time-segments';
+import { createDefaults, type TimeSegmentType } from 'forty-cdk/core';
 
 /**
  * Accessible name announced for each editable segment, keyed by its part type.

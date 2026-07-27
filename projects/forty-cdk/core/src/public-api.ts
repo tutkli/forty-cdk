@@ -12,15 +12,23 @@
  * never duplicated per primitive, which would split the DI singletons into
  * multiple instances and break cross-primitive coordination.
  *
+ * THIS ENTRY POINT IS NOT PUBLIC. It carries no semver guarantees and is
+ * exported only so forty-cdk's own entry points share one compiled module.
+ * Consumers never import from here: the contract types and tokens the library
+ * commits to are published by `forty-cdk/shared`, and everything else is an
+ * implementation surface refactorable without notice.
+ *
  * Stability: this barrel is split into two tiers, and the boundary is
  * mechanical rather than advisory. The BLESSED tier is the curated set listed
  * in `scripts/lib/core-blessed-tier.mjs` — contract types and tokens the
- * library commits to, reachable from the public entry points that surface them.
- * Everything else is INTERNAL: an implementation surface shared between
- * forty-cdk's own entry points, carrying NO semver guarantees and refactorable
- * without notice. `scripts/check-entrypoint-public-types.mjs` (run in
- * `postbuild`) fails the build when an internal-tier symbol reaches a public
- * entry point's public signature, so the tier cannot erode by accident.
+ * library commits to, each published by exactly one public entry point
+ * (`forty-cdk/shared` for the cross-primitive ones; `forty-cdk/visually-hidden`,
+ * `forty-cdk/drawer`, and `forty-cdk/field` for the few whose semantic home is a
+ * primitive). Everything else is INTERNAL. `scripts/check-entrypoint-public-types.mjs`
+ * (run in `postbuild`) fails the build when an internal-tier symbol reaches a
+ * public entry point's public signature, and when a blessed symbol is
+ * re-exported from an entry point other than the one that publishes it — so
+ * neither the tier nor the canonical import path can erode by accident.
  *
  * Class bases that public directives merely `extends` (`FormUiControlBase`,
  * `ModalSurfaceBase`, `MenuOverlayHost`, …) are deliberately internal —

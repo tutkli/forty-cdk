@@ -21,4 +21,3 @@ export {
   provideForDialogDefaults,
   type ForDialogDefaults,
 } from './dialog-defaults';
-export type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';

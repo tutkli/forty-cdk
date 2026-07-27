@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
-  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -10,6 +9,7 @@ import {
   ForCalendarPrevButton,
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 import { type VetoableEvent } from 'forty-cdk/core';
 import {
   ForDatePicker,

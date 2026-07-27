@@ -3,7 +3,12 @@ import { join } from 'node:path';
 
 import ts from 'typescript';
 
-import { BLESSED_CORE_SYMBOLS } from './lib/core-blessed-tier.mjs';
+import {
+  BLESSED_CORE_SYMBOLS,
+  CORE_PUBLISHERS,
+  CORE_SYMBOL_PUBLISHER,
+  SHARED_ENTRY_POINT,
+} from './lib/core-blessed-tier.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
@@ -79,7 +84,7 @@ function analyze(fileName, text) {
     .sort();
 
   if (namedLocalToSource.size === 0 && namespaceLocals.size === 0) {
-    return { unblessed: unblessedReexport, missingReexport: [] };
+    return { unblessed: unblessedReexport, reexported, reexportsAll };
   }
 
   const used = new Set();
@@ -144,8 +149,25 @@ function analyze(fileName, text) {
   const unblessedSignature = names.filter((name) => !BLESSED_CORE_SYMBOLS.has(name));
   return {
     unblessed: [...new Set([...unblessedSignature, ...unblessedReexport])].sort(),
-    missingReexport: reexportsAll ? [] : names.filter((name) => !reexported.has(name)),
+    reexported,
+    reexportsAll,
   };
+}
+
+const assigned = Object.values(CORE_PUBLISHERS).flat();
+const duplicatePublishers = [
+  ...new Set(assigned.filter((name, index) => assigned.indexOf(name) !== index)),
+].sort();
+
+if (duplicatePublishers.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${duplicatePublishers.length} blessed symbol(s) are assigned to more than one publisher in scripts/lib/core-blessed-tier.mjs:`,
+  );
+  for (const name of duplicatePublishers) console.error(`  ${name}`);
+  console.error(
+    `\nA blessed symbol has exactly one canonical import path. Keep it under a single entry point.`,
+  );
+  process.exit(1);
 }
 
 const coreExports = coreBarrelExportNames();
@@ -163,20 +185,36 @@ if (staleBlessed.length) {
 }
 
 const failures = [];
+const published = new Map();
+const starReexports = [];
 let checked = 0;
 
 for (const file of readdirSync(TYPES_DIR)) {
   if (!file.endsWith('.d.ts') || IGNORED_FILES.has(file)) continue;
   checked++;
-  const { unblessed, missingReexport } = analyze(file, readFileSync(join(TYPES_DIR, file), 'utf8'));
-  if (unblessed.length || missingReexport.length) {
-    const entry = file.replace(/^forty-cdk-/, '').replace(/\.d\.ts$/, '');
-    failures.push({ entry, unblessed, missingReexport });
-  }
+  const entry = file.replace(/^forty-cdk-/, '').replace(/\.d\.ts$/, '');
+  const { unblessed, reexported, reexportsAll } = analyze(
+    file,
+    readFileSync(join(TYPES_DIR, file), 'utf8'),
+  );
+  const owned = CORE_PUBLISHERS[entry] ?? [];
+  published.set(entry, reexportsAll ? new Set(owned) : reexported);
+  if (reexportsAll) starReexports.push(entry);
+  const foreign = [...reexported]
+    .filter((name) => BLESSED_CORE_SYMBOLS.has(name) && !owned.includes(name))
+    .sort();
+  if (unblessed.length || foreign.length) failures.push({ entry, unblessed, foreign });
 }
 
+const missingPublishers = Object.entries(CORE_PUBLISHERS)
+  .map(([entry, symbols]) => ({
+    entry,
+    missing: symbols.filter((name) => !published.get(entry)?.has(name)).sort(),
+  }))
+  .filter(({ missing }) => missing.length);
+
 const unblessedFailures = failures.filter((f) => f.unblessed.length);
-const reexportFailures = failures.filter((f) => f.missingReexport.length);
+const foreignFailures = failures.filter((f) => f.foreign.length);
 
 if (unblessedFailures.length) {
   console.error(
@@ -192,22 +230,50 @@ if (unblessedFailures.length) {
   );
 }
 
-if (reexportFailures.length) {
+if (foreignFailures.length) {
   console.error(
-    `[check-entrypoint-public-types] FAIL — ${reexportFailures.length} entry point(s) reference blessed core types in their public API without re-exporting them:`,
+    `[check-entrypoint-public-types] FAIL — ${foreignFailures.length} entry point(s) re-export a blessed core symbol they do not publish:`,
   );
-  for (const { entry, missingReexport } of reexportFailures.sort((a, b) =>
-    a.entry.localeCompare(b.entry),
-  )) {
-    console.error(`  forty-cdk/${entry}: ${missingReexport.join(', ')}`);
+  for (const { entry, foreign } of foreignFailures.sort((a, b) => a.entry.localeCompare(b.entry))) {
+    console.error(
+      `  forty-cdk/${entry}: ${foreign.map((name) => `${name} (published by forty-cdk/${CORE_SYMBOL_PUBLISHER.get(name)})`).join(', ')}`,
+    );
   }
   console.error(
-    `\nRe-export each from the entry's barrel, e.g. \`export type { VetoableEvent } from 'forty-cdk/core';\`.`,
+    `\nA blessed symbol has exactly one canonical import path. Drop the re-export — consumers import it from forty-cdk/${SHARED_ENTRY_POINT} (or the entry point that owns it). See the core tier section in .claude/rules/conventions.md.`,
   );
 }
 
-if (failures.length) process.exit(1);
+if (starReexports.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${starReexports.length} entry point(s) star-re-export forty-cdk/core:`,
+  );
+  for (const entry of starReexports.sort()) console.error(`  forty-cdk/${entry}`);
+  console.error(
+    `\n\`export * from 'forty-cdk/core'\` publishes the whole internal tier and cannot be audited per symbol. Re-export the blessed symbols this entry point publishes by name.`,
+  );
+}
+
+if (missingPublishers.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${missingPublishers.length} entry point(s) do not re-export every blessed core symbol they publish:`,
+  );
+  for (const { entry, missing } of missingPublishers) {
+    console.error(`  forty-cdk/${entry}: ${missing.join(', ')}`);
+  }
+  console.error(
+    `\nEach blessed symbol must stay reachable from its canonical entry point. Restore the re-export, or move the symbol to another publisher in scripts/lib/core-blessed-tier.mjs.`,
+  );
+}
+
+if (failures.length || missingPublishers.length || starReexports.length) process.exit(1);
 
 console.log(
-  `[check-entrypoint-public-types] OK — ${checked} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core; no internal-tier symbol in a public signature or barrel re-export; every blessed type in a public signature re-exported from its own barrel.`,
+  `[check-entrypoint-public-types] OK — ${checked} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core and published by exactly one entry point (${Object.entries(
+    CORE_PUBLISHERS,
+  )
+    .map(([entry, symbols]) => `${entry}: ${symbols.length}`)
+    .join(
+      ', ',
+    )}); no internal-tier symbol in a public signature or barrel re-export, and no duplicate re-export path.`,
 );

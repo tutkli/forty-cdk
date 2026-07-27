@@ -29,7 +29,8 @@ import { effect, ElementRef, inject, type Signal } from '@angular/core';
  * Must be called from an injection context (it injects `ElementRef` and creates
  * an `effect`), typically a directive constructor.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  *
  * @param disabled Signal whose truthiness drives the native `disabled`
  *   attribute on the host element.

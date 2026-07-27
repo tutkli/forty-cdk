@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
-  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -17,6 +16,7 @@ import {
   ForCalendarYearSelect,
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 
 import { queryFlag } from './_query-flag';
 

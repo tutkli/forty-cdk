@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDateTime } from '@internationalized/date';
-import { type DateRange } from 'forty-cdk/time-range-field';
+import { type DateRange } from 'forty-cdk/shared';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
 import {
   ForTimeRangeField,

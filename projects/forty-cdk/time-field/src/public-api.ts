@@ -14,18 +14,7 @@ export {
   type ForTimeFieldDefaults,
   type ForTimeFieldSegmentLabels,
 } from './time-field-defaults';
-export { type TimeGranularity, type TimeSegmentType } from './build-time-segments';
 export {
   FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
 } from './time-field-host-directive';
-export type {
-  FieldSegment,
-  RovingTabindex,
-  SegmentEditorContext,
-  SegmentEditorDelegate,
-  SegmentHandle,
-  SegmentType,
-  TimeCapableDateAdapter,
-  WritingDirection,
-} from 'forty-cdk/core';

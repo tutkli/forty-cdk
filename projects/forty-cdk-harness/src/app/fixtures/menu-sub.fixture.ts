@@ -2,13 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ActivatedRoute } from '@angular/router';
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import {
-  type FloatingFallbackAxisSideDirection,
-  ForMenuContent,
-  ForMenuItem,
-  ForMenuSub,
-  ForMenuSubTrigger,
-} from 'forty-cdk/menu';
+import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+import { type FloatingFallbackAxisSideDirection } from 'forty-cdk/shared';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 
 /**

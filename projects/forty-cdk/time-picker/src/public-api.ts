@@ -22,13 +22,3 @@ export {
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
 } from './time-picker-host-directive';
 export { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './build-time-slots';
-export type {
-  FloatingAlign,
-  FloatingSide,
-  ListboxOverlayContext,
-  ListNavigationAction,
-  TimeCapableDateAdapter,
-  VetoableEvent,
-  VetoableNativeEvent,
-  WritingDirection,
-} from 'forty-cdk/core';

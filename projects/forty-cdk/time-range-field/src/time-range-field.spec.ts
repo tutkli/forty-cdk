@@ -8,7 +8,8 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { type DateRange, NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { ForTimeRangeField } from './time-range-field';
 import { ForTimeRangeFieldEnd, ForTimeRangeFieldStart } from './time-range-field-endpoint';

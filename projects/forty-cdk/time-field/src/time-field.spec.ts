@@ -9,7 +9,7 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
-import type { TimeSegmentType } from './build-time-segments';
+import type { TimeSegmentType } from 'forty-cdk/core';
 import { ForTimeField } from './time-field';
 import { provideForTimeFieldDefaults } from './time-field-defaults';
 import { ForTimeFieldLiteral } from './time-field-literal';

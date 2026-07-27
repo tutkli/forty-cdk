@@ -11,7 +11,8 @@ import { DOCUMENT, DestroyRef, PLATFORM_ID, inject, signal, type Signal } from '
  * touches `matchMedia`. Browsers without `matchMedia` (extreme legacy) fall
  * into the same SSR path.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export function injectMediaQuery(query: string): Signal<boolean> {
   const isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -43,7 +44,8 @@ export function injectMediaQuery(query: string): Signal<boolean> {
  * parallax). Consumers should treat a `true` result as a hard signal to
  * skip the animated path entirely, not just to shorten the duration.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export function injectPrefersReducedMotion(): Signal<boolean> {
   return injectMediaQuery('(prefers-reduced-motion: reduce)');

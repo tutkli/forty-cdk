@@ -1,7 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { ForDateTimeSegmentBase } from 'forty-cdk/core';
-import type { DateTimeSegmentType } from './build-segments';
+import { ForDateTimeSegmentBase, type SegmentType } from 'forty-cdk/core';
 import { injectDateFieldContext } from './date-field-context';
 import { DEFAULT_DATE_FIELD_SEGMENT_LABELS, FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
 
@@ -35,7 +34,7 @@ export class ForDateFieldSegment extends ForDateTimeSegmentBase {
   readonly #defaults = inject(FOR_DATE_FIELD_DEFAULTS);
 
   /** Which date or time part this segment edits. */
-  readonly segment = input.required<DateTimeSegmentType>();
+  readonly segment = input.required<SegmentType>();
 
   /**
    * Accessible name for this segment. Falls back to the scope's localized

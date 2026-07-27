@@ -27,4 +27,3 @@ export {
   provideForDrawerDefaults,
   type ForDrawerDefaults,
 } from './drawer-defaults';
-export type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';

@@ -51,7 +51,8 @@ import {
  * Must be called from an injection context (it injects `ElementRef`,
  * `PLATFORM_ID`, and `DestroyRef`).
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export function injectHasFocusableContent(): Signal<boolean> {
   const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

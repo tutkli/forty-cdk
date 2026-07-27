@@ -59,6 +59,7 @@
       "forty-cdk": ["../forty-cdk/src/public-api.ts"],
       "forty-cdk/button": ["../forty-cdk/button/src/public-api.ts"],
       "forty-cdk/core": ["../forty-cdk/core/src/public-api.ts"],
+      "forty-cdk/shared": ["../forty-cdk/shared/src/public-api.ts"],
       "forty-cdk/dialog": ["../forty-cdk/dialog/src/public-api.ts"],
       "forty-cdk/internationalized-date": ["../forty-cdk/internationalized-date/src/public-api.ts"],
       "forty-cdk/virtualization": ["../forty-cdk/virtualization/src/public-api.ts"],

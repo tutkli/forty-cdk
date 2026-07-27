@@ -35,10 +35,3 @@ export {
   FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS,
   FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS,
 } from './combobox-host-directive';
-export type {
-  FloatingAlign,
-  FloatingSide,
-  VetoableEvent,
-  VetoableNativeEvent,
-  WritingDirection,
-} from 'forty-cdk/core';

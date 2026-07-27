@@ -15,20 +15,6 @@ export {
   type ForDateFieldSegmentLabels,
 } from './date-field-defaults';
 export {
-  type DateSegmentType,
-  type DateTimeSegmentType,
-  type FieldGranularity,
-} from './build-segments';
-export {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
 } from './date-field-host-directive';
-export type {
-  DateAdapter,
-  FieldSegment,
-  RovingTabindex,
-  SegmentEditorContext,
-  SegmentEditorDelegate,
-  SegmentHandle,
-  WritingDirection,
-} from 'forty-cdk/core';

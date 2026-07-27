@@ -8,13 +8,13 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import {
-  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
   NativeDateAdapter,
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';

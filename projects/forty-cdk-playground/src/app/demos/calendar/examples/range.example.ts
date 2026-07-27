@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { type CalendarDate, getLocalTimeZone, today } from '@internationalized/date';
 import {
-  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -10,6 +9,7 @@ import {
   ForCalendarNextButton,
   ForCalendarPrevButton,
 } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 @Component({

@@ -22,8 +22,8 @@ interface ScrollDismissRegistration {
  * listener. `providedIn: 'root'` so it is one instance per application injector
  * (garbage-collected with it, no listener leak between SSR requests); a
  * component-scoped `provideForTooltipDefaults` never re-provides it, so the
- * listener stays truly app-wide. Internal — not re-exported from
- * `public-api.ts` for consumers, only for the tooltip / hover-card entry points.
+ * listener stays truly app-wide. Internal core tier — exported for the tooltip /
+ * hover-card entry points, never for consumers.
  */
 @Injectable({ providedIn: 'root' })
 export class ScrollDismissDispatcher {

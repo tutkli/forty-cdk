@@ -118,17 +118,17 @@ export class DobFormField {
 
 ### `ForDateField`
 
-| Property      | Type                                                  | Description                                                                                                                                |
-| ------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `value`       | `model<D \| null>`                                    | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing.<br>**Default:** `null`                |
-| `minDate`     | `input<D \| null>`                                    | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null`                |
-| `maxDate`     | `input<D \| null>`                                    | Maximum date (inclusive). A composed value above it is clamped down.<br>**Default:** `null`                                                |
-| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>`      | Date-time precision. `'day'` is date-only; coarser-than-day appends time segments. See below.<br>**Default:** `'day'`                      |
-| `hourCycle`   | `input<12 \| 24 \| null>`                             | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                            |
-| `locale`      | `input<string \| null>`                               | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.<br>**Default:** `null`                           |
-| `placeholder` | `input<Partial<Record<DateTimeSegmentType, string>>>` | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`.<br>**Default:** `{}` |
-| `ariaLabel`   | `input<string \| null>`                               | Accessible name for the group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                  |
-| `dir`         | `input<'ltr' \| 'rtl' \| null>`                       | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`        |
+| Property      | Type                                             | Description                                                                                                                                |
+| ------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `value`       | `model<D \| null>`                               | Two-way bindable entered date, or `null` while any segment is empty. The `FormValueControl` backing.<br>**Default:** `null`                |
+| `minDate`     | `input<D \| null>`                               | Minimum date (inclusive). A composed value below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null`                |
+| `maxDate`     | `input<D \| null>`                               | Maximum date (inclusive). A composed value above it is clamped down.<br>**Default:** `null`                                                |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision. `'day'` is date-only; coarser-than-day appends time segments. See below.<br>**Default:** `'day'`                      |
+| `hourCycle`   | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                            |
+| `locale`      | `input<string \| null>`                          | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.<br>**Default:** `null`                           |
+| `placeholder` | `input<Partial<Record<SegmentType, string>>>`    | Per-segment placeholder while empty. Unspecified parts fall back to `dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`.<br>**Default:** `{}` |
+| `ariaLabel`   | `input<string \| null>`                          | Accessible name for the group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                  |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`        |
 
 Plus the shared `FormUiControl` members from `@angular/forms/signals`: `disabled`, `readonly`, `required`, `invalid`, `name`, `errors`, `touched` (bound automatically by `[formField]`).
 

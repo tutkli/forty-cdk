@@ -15,7 +15,9 @@ import {
   type DateAdapter,
   injectDateAdapter,
   DateFieldEngine,
+  type FieldGranularity,
   type FieldSegment,
+  type SegmentType,
   type SegmentEditorDelegate,
   serializeISODate,
   FormUiControlBase,
@@ -25,7 +27,6 @@ import {
   injectTextDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
-import { type DateTimeSegmentType, type FieldGranularity } from './build-segments';
 import { FOR_DATE_FIELD_CONTEXT, type ForDateFieldContext } from './date-field-context';
 import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
 
@@ -166,7 +167,7 @@ export class ForDateField<D>
    * Per-segment placeholder shown while empty. Unspecified parts fall back to a
    * letter-repeat default (`dd` / `mm` / `yyyy` / `hh` / `mm` / `ss` / `--`).
    */
-  readonly placeholder = input<Partial<Record<DateTimeSegmentType, string>>>({});
+  readonly placeholder = input<Partial<Record<SegmentType, string>>>({});
 
   /** Accessible name for the field group. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);

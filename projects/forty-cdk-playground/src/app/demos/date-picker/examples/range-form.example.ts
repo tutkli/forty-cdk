@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, ViewEncapsulation, signal } from '@
 import { form, FormField, required } from '@angular/forms/signals';
 import { type CalendarDate } from '@internationalized/date';
 import {
-  type DateRange,
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -11,6 +10,7 @@ import {
   ForCalendarNextButton,
   ForCalendarPrevButton,
 } from 'forty-cdk/calendar';
+import { type DateRange } from 'forty-cdk/shared';
 import {
   ForDatePickerContent,
   ForDatePickerTrigger,

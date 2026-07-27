@@ -21,7 +21,8 @@ type ValueElement = HTMLInputElement | HTMLTextAreaElement;
  * sanctioned `effect()` use. Must be called from an injection context (it injects
  * `DOCUMENT` and creates an `effect`), typically a directive constructor.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  *
  * @param el Accessor for the target element, or `null` until it exists.
  * @param value Accessor for the desired displayed text.

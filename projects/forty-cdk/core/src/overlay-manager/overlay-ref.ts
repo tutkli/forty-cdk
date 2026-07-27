@@ -6,7 +6,8 @@ import { signal } from '@angular/core';
  * `ForToastRef.closed` so all three programmatic overlay handles expose the
  * same `{ reason, result }` shape.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export interface OverlayCloseEvent<R, Reason> {
   /** Why the overlay closed (e.g. `'escape'`, `'closeButton'`, `'programmatic'`). */
@@ -25,7 +26,7 @@ export interface OverlayCloseEvent<R, Reason> {
  * `Reason` the close-reason union (`ForDialogCloseReason` /
  * `ForDrawerCloseReason`).
  *
- * Internal — not re-exported from `public-api.ts`; the public surface is
+ * Internal core tier — no semver guarantee; the public surface is
  * `ForDialogRef` / `ForDrawerRef`.
  */
 export class OverlayRef<R = unknown, Reason = string> {
