@@ -33,6 +33,17 @@ import { afterEach } from 'vitest';
  * forgets to register here. The body-style reset undoes any
  * scroll-lock residue (`overflow`, `paddingRight`) left by a
  * mid-flight throw before `BodyScrollLock` could restore it.
+ *
+ * Every selector is anchored with `:scope >`, so the scrub only ever
+ * reaches **direct children of `document.body`** — which is precisely
+ * where `injectPortal` lands a leaked overlay (`target.appendChild(el)`
+ * with `target` defaulting to `document.body`). A descendant-matching
+ * scrub was a landmine: `[data-state="open"]` also matches non-portaled
+ * elements living inside the live TestBed fixture host (an open
+ * accordion, disclosure, or tabs panel) and inside a *contained* overlay's
+ * consumer container, so the hook detached Angular-owned DOM out from
+ * under the component tree before teardown — and any destroy hook that
+ * walks its host DOM would then run against a detached subtree.
  */
 export function afterEachOverlayCleanup(): void {
   afterEach(() => {
@@ -40,7 +51,7 @@ export function afterEachOverlayCleanup(): void {
     document.body.style.paddingRight = '';
     document.body
       .querySelectorAll(
-        '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"], [role="tooltip"], [data-state="open"]',
+        ':scope > [role="dialog"], :scope > [role="alertdialog"], :scope > [role="menu"], :scope > [role="listbox"], :scope > [role="tooltip"], :scope > [data-state="open"]',
       )
       .forEach((n) => n.remove());
   });

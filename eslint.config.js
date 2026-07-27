@@ -716,6 +716,120 @@ const fortyCdkPlugin = {
       },
     },
 
+    // Rule 8 — `forty-cdk/no-redundant-not-tobenull`.
+    //
+    // Forbids `expect(x).not.toBeNull()` when the very next statements go on
+    // to write `x!` anyway. The non-null assertion already tells the reader
+    // (and the compiler) what the author knows, and the `!` fails the test
+    // just as loudly on a null — with a clearer stack. The extra `expect` is
+    // pure noise, and it accumulated to 45 sites across 12 specs before this
+    // rule existed, which is the point: a convention documented only in prose
+    // decays.
+    //
+    // Detection is deliberately narrow, so the rule never fires on a genuine
+    // null-check: only when the SAME identifier appears with a `!` inside the
+    // following few statements of the same block. An `expect(x).not.toBeNull()`
+    // that is the whole point of the test (no `!` follows) stays legal.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 10
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Refs: tutkli/forty-cdk#1397
+    'no-redundant-not-tobenull': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid `expect(x).not.toBeNull()` immediately followed by a non-null assertion on the same identifier — the `!` already carries the claim.',
+        },
+        schema: [],
+        messages: {
+          redundant:
+            '`expect({{ name }}).not.toBeNull()` is redundant: the following `{{ name }}!` already asserts non-nullness to both the reader and the compiler, and throws on a null just as loudly. Drop the assertion. (CLAUDE.md § "Test isolation — non-negotiables" rule 10.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        const isSpec = filename.endsWith('.spec.ts');
+        const isOwnFixture = filename.endsWith(
+          '/eslint-rules-fixtures/no-redundant-not-tobenull.fixture.ts',
+        );
+        if (!isSpec && !isOwnFixture) {
+          return {};
+        }
+        // How many following statements count as "immediately after". Wide
+        // enough for an arrange/act pair between the guard and its use,
+        // narrow enough that an unrelated later `x!` doesn't retro-flag a
+        // legitimate null-check.
+        const LOOKAHEAD = 6;
+        const sourceCode = context.sourceCode ?? context.getSourceCode();
+
+        // `expect(<Identifier>).not.toBeNull()` → the identifier's name.
+        function guardedIdentifier(node) {
+          const callee = node.callee;
+          if (
+            callee.type !== 'MemberExpression' ||
+            callee.computed ||
+            callee.property.type !== 'Identifier' ||
+            callee.property.name !== 'toBeNull'
+          ) {
+            return null;
+          }
+          const notMember = callee.object;
+          if (
+            notMember.type !== 'MemberExpression' ||
+            notMember.computed ||
+            notMember.property.type !== 'Identifier' ||
+            notMember.property.name !== 'not'
+          ) {
+            return null;
+          }
+          const expectCall = notMember.object;
+          if (
+            expectCall.type !== 'CallExpression' ||
+            expectCall.callee.type !== 'Identifier' ||
+            expectCall.callee.name !== 'expect' ||
+            expectCall.arguments.length !== 1 ||
+            expectCall.arguments[0].type !== 'Identifier'
+          ) {
+            return null;
+          }
+          return expectCall.arguments[0].name;
+        }
+
+        function followingStatements(node) {
+          let statement = node;
+          while (statement.parent && statement.parent.type !== 'BlockStatement') {
+            statement = statement.parent;
+          }
+          const block = statement.parent;
+          if (!block || !Array.isArray(block.body)) {
+            return [];
+          }
+          const index = block.body.indexOf(statement);
+          if (index < 0) {
+            return [];
+          }
+          return block.body.slice(index + 1, index + 1 + LOOKAHEAD);
+        }
+
+        return {
+          CallExpression(node) {
+            const name = guardedIdentifier(node);
+            if (name === null) {
+              return;
+            }
+            for (const statement of followingStatements(node)) {
+              const text = sourceCode.getText(statement);
+              if (new RegExp(`\\b${name}!`).test(text)) {
+                context.report({ node, messageId: 'redundant', data: { name } });
+                return;
+              }
+            }
+          },
+        };
+      },
+    },
+
     // Rule 7 — `forty-cdk/require-overlay-cleanup`.
     //
     // A spec that mounts a primitive which portals content to `document.body`
@@ -1733,6 +1847,7 @@ module.exports = tseslint.config(
       'forty-cdk/no-directive-internal-signal-read': 'error',
       'forty-cdk/no-floating-flush': 'error',
       'forty-cdk/require-overlay-cleanup': 'error',
+      'forty-cdk/no-redundant-not-tobenull': 'error',
 
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the

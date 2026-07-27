@@ -207,7 +207,6 @@ describe('ForFileUpload', () => {
       await f();
 
       const captured = instance.capturedFiles();
-      expect(captured).not.toBeNull();
       expect(captured!.length).toBe(1);
       expect(captured![0]!.name).toBe('a.txt');
     });
@@ -503,7 +502,6 @@ describe('ForFileUpload', () => {
       await f();
 
       const captured = instance.capturedFiles();
-      expect(captured).not.toBeNull();
       expect(captured![0]!.name).toBe('c.txt');
     });
 

@@ -113,7 +113,6 @@ describe('ForTreeNodeDrag — keyboard', () => {
     await f();
 
     const event = instance.dropped();
-    expect(event).not.toBeNull();
     expect(event!.node).toBe('docs');
     expect(event!.previousParent).toBeNull();
   });
@@ -136,7 +135,6 @@ describe('ForTreeNodeDrag — keyboard', () => {
     await f();
 
     const event = instance.dropped();
-    expect(event).not.toBeNull();
     expect(event!.node).toBe('music');
     expect(event!.newParent).toBe('docs');
   });
@@ -159,7 +157,6 @@ describe('ForTreeNodeDrag — keyboard', () => {
     await f();
 
     const event = instance.dropped();
-    expect(event).not.toBeNull();
     expect(event!.node).toBe('notes');
   });
 
@@ -699,7 +696,6 @@ describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
     await f();
 
     const event = instance.dropped();
-    expect(event).not.toBeNull();
     expect(event!.node).toBe('docs');
   });
 
@@ -719,7 +715,6 @@ describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
     await f();
 
     const event = instance.dropped();
-    expect(event).not.toBeNull();
     expect(event!.node).toBe('docs');
   });
 
@@ -753,7 +748,6 @@ describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
     await flush(fixture);
 
     const event = fixture.componentInstance.dropped();
-    expect(event).not.toBeNull();
     expect(event!.node).toBe('music');
   });
 });

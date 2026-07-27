@@ -6,6 +6,7 @@ import { By } from '@angular/platform-browser';
 import { pressKey, renderHost } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertRovingTabindexContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { provideForToggleDefaults } from './toggle-defaults';
@@ -83,7 +84,73 @@ class ToggleGroupFormControlHost {
   readonly isDirty = signal(false);
 }
 
+const toggleItems = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[forToggleGroupItem]'));
+
 describe('ForToggleGroup', () => {
+  assertRovingTabindexContract({
+    mount: async () => {
+      const r = renderHost(ToggleGroupHost);
+      await r.flush();
+      return { items: toggleItems(r.el), flush: r.flush };
+    },
+    mountWithDisabledFirst: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.items.set([
+        { value: 'left', label: 'Left', disabled: true },
+        { value: 'center', label: 'Center', disabled: false },
+        { value: 'right', label: 'Right', disabled: false },
+      ]);
+      await r.flush();
+      return { items: toggleItems(r.el), enabledIndices: [1, 2], flush: r.flush };
+    },
+    mountWithDisabledMiddle: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.items.set([
+        { value: 'left', label: 'Left', disabled: false },
+        { value: 'center', label: 'Center', disabled: true },
+        { value: 'right', label: 'Right', disabled: false },
+      ]);
+      await r.flush();
+      return { items: toggleItems(r.el), enabledIndices: [0, 2], flush: r.flush };
+    },
+    mountRtl: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.dir.set('rtl');
+      await r.flush();
+      return { items: toggleItems(r.el), flush: r.flush };
+    },
+    mountWithSelection: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.value.set(['center']);
+      await r.flush();
+      return { items: toggleItems(r.el), selectedIndices: [1], flush: r.flush };
+    },
+    mountWithMultiSelection: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.multiple.set(true);
+      r.instance.value.set(['center', 'right']);
+      await r.flush();
+      return { items: toggleItems(r.el), selectedIndices: [1, 2], flush: r.flush };
+    },
+    mountWithSelectedDisabled: async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.items.set([
+        { value: 'left', label: 'Left', disabled: false },
+        { value: 'center', label: 'Center', disabled: false },
+        { value: 'right', label: 'Right', disabled: true },
+      ]);
+      r.instance.value.set(['right']);
+      await r.flush();
+      return {
+        items: toggleItems(r.el),
+        enabledIndices: [0, 1],
+        selectedIndices: [2],
+        flush: r.flush,
+      };
+    },
+  });
+
   assertFormControlContract(
     () => {
       const r = renderHost(ToggleGroupFormControlHost);
@@ -208,38 +275,6 @@ describe('ForToggleGroup', () => {
       expect(item.hasAttribute('disabled')).toBe(false);
       item.focus();
       expect(document.activeElement).toBe(item);
-    });
-  });
-
-  describe('initial roving tabindex', () => {
-    it('puts tabindex=0 on the first enabled item when value is empty', () => {
-      const { el } = renderHost(ToggleGroupHost);
-      expect(itemOf(el, 'left').getAttribute('tabindex')).toBe('0');
-      expect(itemOf(el, 'center').getAttribute('tabindex')).toBe('-1');
-      expect(itemOf(el, 'right').getAttribute('tabindex')).toBe('-1');
-    });
-
-    it('skips a disabled first item when picking the entry point', async () => {
-      const r = renderHost(ToggleGroupHost);
-      r.instance.items.set([
-        { value: 'left', label: 'Left', disabled: true },
-        { value: 'center', label: 'Center', disabled: false },
-        { value: 'right', label: 'Right', disabled: false },
-      ]);
-      await r.flush();
-
-      expect(itemOf(r.el, 'left').getAttribute('tabindex')).toBe('-1');
-      expect(itemOf(r.el, 'center').getAttribute('tabindex')).toBe('0');
-    });
-
-    it('puts tabindex=0 on the first selected item when there is a selection', async () => {
-      const r = renderHost(ToggleGroupHost);
-      r.instance.value.set(['center']);
-      await r.flush();
-
-      expect(itemOf(r.el, 'left').getAttribute('tabindex')).toBe('-1');
-      expect(itemOf(r.el, 'center').getAttribute('tabindex')).toBe('0');
-      expect(itemOf(r.el, 'right').getAttribute('tabindex')).toBe('-1');
     });
   });
 

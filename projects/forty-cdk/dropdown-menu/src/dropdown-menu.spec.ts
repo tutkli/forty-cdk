@@ -2,7 +2,18 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  pointerDownOn,
+  pressKey,
+  renderHost,
+} from '../../src/test-utils';
+import {
+  assertDismissableLayerContract,
+  assertOverlayTriggerAriaContract,
+} from '../../src/test-utils/contract';
+import { type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
 
 import { ForDropdownMenu } from './dropdown-menu';
@@ -31,27 +42,98 @@ class DropdownHost {
   readonly dismissible = signal(true);
 }
 
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div
+      forDropdownMenu
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+    >
+      <button forDropdownMenuTrigger>Options</button>
+      @if (open()) {
+        <div forMenuContent>
+          <button id="a" forMenuItem>A</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class DismissableContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
+}
+
 describe('ForDropdownMenu', () => {
   afterEachOverlayCleanup();
 
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(DismissableContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
+
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(DropdownHost);
+        await flush(r.fixture);
+        return {
+          trigger: r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forMenuContent]')!,
+        };
+      },
+    },
+    { haspopup: 'menu' },
+  );
+
   describe('a11y baseline', () => {
-    it('wires aria-haspopup, aria-expanded, aria-controls on the trigger', async () => {
+    it('leaves an enabled trigger free of every disabled marker', () => {
       const r = renderHost(DropdownHost);
       const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
 
-      expect(trigger.getAttribute('aria-haspopup')).toBe('menu');
-      expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.hasAttribute('disabled')).toBe(false);
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 
     it('reflects data-state on root, trigger, and content', async () => {
@@ -565,74 +647,15 @@ describe('ForDropdownMenu', () => {
       expect(r.instance.open()).toBe(false);
       expect(document.activeElement).toBe(trigger);
     });
-
-    it('does not close when dismissible=false', async () => {
-      const r = renderHost(DropdownHost);
-      r.instance.dismissible.set(false);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-    });
-
-    it('keeps open when (escapeKeyDown) is preventDefault-ed', async () => {
-      @Component({
-        imports: IMPORTS,
-        template: `
-          <div forDropdownMenu [(open)]="open" (escapeKeyDown)="$event.preventDefault()">
-            <button forDropdownMenuTrigger>x</button>
-            @if (open()) {
-              <div forMenuContent>
-                <button id="a" forMenuItem>A</button>
-              </div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly open = signal(true);
-      }
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(true);
-    });
   });
 
   describe('outside dismissal', () => {
-    it('closes on pointer-down outside both content and trigger', async () => {
-      const r = renderHost(DropdownHost);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(false);
-      outside.remove();
-    });
-
     it('does NOT close when pointer-down lands on the trigger (exempt)', async () => {
       const r = renderHost(DropdownHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: trigger, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [trigger], configurable: true });
-      document.dispatchEvent(event);
+      pointerDownOn(r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!);
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -661,10 +684,7 @@ describe('ForDropdownMenu', () => {
 
       const outside = document.createElement('button');
       document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
-      document.dispatchEvent(event);
+      pointerDownOn(outside);
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(true);
@@ -698,10 +718,7 @@ describe('ForDropdownMenu', () => {
 
       const outside = document.createElement('div');
       document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
-      document.dispatchEvent(event);
+      pointerDownOn(outside);
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe(false);

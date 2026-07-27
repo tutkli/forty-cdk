@@ -9,7 +9,6 @@ describe('createTemplatePreview', () => {
     const nodes = [document.createElement('span')];
     createTemplatePreview(nodes, document, () => undefined);
     const wrapper = document.body.querySelector('[data-for-drag-preview]') as HTMLElement | null;
-    expect(wrapper).not.toBeNull();
     expect(wrapper!.getAttribute('aria-hidden')).toBe('true');
   });
 

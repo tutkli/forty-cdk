@@ -3,7 +3,12 @@ import { TestBed } from '@angular/core/testing';
 import { disabled, form, FormField, required } from '@angular/forms/signals';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDismissableLayerContract,
+  assertFormControlContract,
+  assertOverlayTriggerAriaContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'forty-cdk/core';
 import { provideNativeDateAdapter } from 'forty-cdk/calendar';
 import {
@@ -139,6 +144,21 @@ function getContent(): HTMLElement | null {
   return document.querySelector<HTMLElement>('[forTimePickerContent]');
 }
 
+@Component({
+  imports: [ForTimePicker, ForTimePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div forTimePicker [(value)]="value" [disabled]="isDisabled()" [required]="isRequired()">
+      <button forTimePickerTrigger>Open</button>
+    </div>
+  `,
+})
+class TimePickerFormControlHost {
+  readonly value = signal<Date | null>(null);
+  readonly isDisabled = signal(false);
+  readonly isRequired = signal(false);
+}
+
 function getSlot(slotId: string): HTMLElement | null {
   return document.querySelector<HTMLElement>(`[data-testid="slot-${slotId}"]`);
 }
@@ -169,27 +189,53 @@ describe('ForTimePicker', () => {
     },
   });
 
+  assertFormControlContract(
+    () => {
+      const r = renderHost(TimePickerFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLButtonElement>('[forTimePickerTrigger]')!,
+        flush: r.flush,
+        setFlag: (flag, flagValue) => {
+          switch (flag) {
+            case 'disabled':
+              r.instance.isDisabled.set(flagValue);
+              return;
+            case 'required':
+              r.instance.isRequired.set(flagValue);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['disabled', 'required'] },
+  );
+
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(TimePickerHost);
+        await flush(r.fixture);
+        return {
+          trigger: getTrigger(),
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => getContent()!,
+        };
+      },
+    },
+    { haspopup: 'listbox' },
+  );
+
   describe('a11y baseline', () => {
-    it('wires combobox role + aria-haspopup + aria-expanded on trigger', async () => {
+    it('gives the trigger the combobox role and the surface the listbox role', async () => {
       const r = renderHost(TimePickerHost);
-      const trigger = getTrigger();
+      expect(getTrigger().getAttribute('role')).toBe('combobox');
 
-      expect(trigger.getAttribute('role')).toBe('combobox');
-      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
-      expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
-    });
-
-    it('aria-expanded becomes true and aria-controls points to the listbox when open', async () => {
-      const r = renderHost(TimePickerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      const trigger = getTrigger();
-      const content = getContent()!;
-      expect(content.getAttribute('role')).toBe('listbox');
-      expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
+      expect(getContent()!.getAttribute('role')).toBe('listbox');
     });
 
     it('content is labelled by the trigger id via aria-labelledby', async () => {

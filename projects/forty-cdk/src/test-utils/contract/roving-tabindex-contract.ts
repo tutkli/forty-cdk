@@ -1,7 +1,7 @@
 /**
  * Shared contract suite for primitives that own a roving-tabindex
  * keyboard model. Adopted by: Tabs, Toolbar, Stepper, Listbox,
- * RadioGroup, Menubar.
+ * RadioGroup, Menubar, ToggleGroup.
  *
  * Menu (and submenus) is intentionally excluded: its items keep a static
  * `tabindex="-1"` and the shared menu overlay moves focus imperatively
@@ -22,6 +22,16 @@
  *   - The orientation-positive arrow (`ArrowRight` / `ArrowDown`)
  *     advances focus by one position; arrow-key navigation skips
  *     disabled items along the way.
+ *   - **Selection-aware entry point** — for primitives that also carry a
+ *     selection (Listbox, RadioGroup, ToggleGroup, Tabs, the grid table):
+ *     the tab stop moves to the selected item; with several selected it is
+ *     the first selected one; and a selected-but-disabled item never wins
+ *     the tab stop (the entry point falls back to the first enabled item).
+ *     That last rung is the [#1132](https://github.com/tutkli/forty-cdk/issues/1132)
+ *     / [#1170](https://github.com/tutkli/forty-cdk/issues/1170) bug family,
+ *     which regressed once per sibling while the ladder lived as
+ *     copy-pasted `describe('initial tabindex')` blocks; centralising it
+ *     here is what makes a fix propagate.
  *
  * The consumer provides `mount` factories per variant they want to
  * exercise. Only the `mount` factory is required; everything else is
@@ -46,8 +56,19 @@ export interface RovingTabindexMountResult {
    * enabled. Defaults to "all of them" when omitted.
    */
   enabledIndices?: readonly number[];
-  /** Drain Angular's render pipeline. */
-  flush: () => void | Promise<void>;
+  /**
+   * Indices into {@link items} that the primitive considers **selected**,
+   * in document order. Only read by the selection-aware scenarios; a mount
+   * factory that omits it declares "nothing is selected".
+   */
+  selectedIndices?: readonly number[];
+  /**
+   * Drain Angular's render pipeline. Must be the canonical async waiter
+   * (`flush` from `renderHost()` / `test-utils/flush.ts`) — a sync-only
+   * function would type-check behind the contract's `await` while
+   * under-waiting, letting an assertion run against stale DOM.
+   */
+  flush: () => Promise<void>;
 }
 
 export interface RovingTabindexContractSetup {
@@ -71,6 +92,26 @@ export interface RovingTabindexContractSetup {
    * advances focus (the "logical forward" direction in RTL).
    */
   mountRtl?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
+  /**
+   * Mount with exactly ONE item selected, and not the first enabled one —
+   * otherwise the assertion cannot distinguish "the tab stop followed the
+   * selection" from "the tab stop stayed at the default entry point". The
+   * result must report the selected item through `selectedIndices`.
+   */
+  mountWithSelection?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
+  /**
+   * Mount with TWO OR MORE items selected (a `multiple` collection). The
+   * contract verifies the group still exposes exactly one tab stop, on the
+   * first selected item.
+   */
+  mountWithMultiSelection?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
+  /**
+   * Mount with the selection sitting on a **disabled** item. The contract
+   * verifies the disabled item never wins the tab stop and the entry point
+   * falls back to the first enabled item. The result must report the
+   * disabled item in `selectedIndices` and exclude it from `enabledIndices`.
+   */
+  mountWithSelectedDisabled?: () => RovingTabindexMountResult | Promise<RovingTabindexMountResult>;
 }
 
 export interface RovingTabindexContractOptions {
@@ -90,6 +131,16 @@ const dispatchKey = (target: EventTarget, key: string): void => {
 
 const enabled = (r: RovingTabindexMountResult): readonly number[] =>
   r.enabledIndices ?? r.items.map((_, i) => i);
+
+const selected = (r: RovingTabindexMountResult): readonly number[] => r.selectedIndices ?? [];
+
+const tabStops = (r: RovingTabindexMountResult): number[] =>
+  r.items.reduce<number[]>((acc, item, i) => {
+    if (item.getAttribute('tabindex') === '0') {
+      acc.push(i);
+    }
+    return acc;
+  }, []);
 
 /**
  * Run the roving-tabindex contract assertions inside a
@@ -192,6 +243,45 @@ export function assertRovingTabindexContract(
         dispatchKey(r.items[a]!, 'ArrowLeft');
         await r.flush();
         expect(document.activeElement).toBe(r.items[b]);
+      });
+    }
+
+    if (setup.mountWithSelection) {
+      it('moves the tab stop to the selected item instead of the first enabled one', async () => {
+        const r = await setup.mountWithSelection!();
+        const selectedIdx = selected(r);
+        // A selection on the default entry point would make the assertion
+        // pass for the wrong reason — surface the misconfigured mount.
+        expect(selectedIdx).toHaveLength(1);
+        expect(selectedIdx[0]).not.toBe(enabled(r)[0]);
+        expect(tabStops(r)).toEqual([selectedIdx[0]]);
+      });
+    }
+
+    if (setup.mountWithMultiSelection) {
+      it('exposes exactly one tab stop, on the first selected item, with several selected', async () => {
+        const r = await setup.mountWithMultiSelection!();
+        const selectedIdx = selected(r);
+        // The consumer opted into this variant, so a sub-2-selection mount
+        // is a misconfiguration — fail rather than assert a single-selection
+        // ladder under a multi-selection name.
+        expect(selectedIdx.length).toBeGreaterThanOrEqual(2);
+        expect(tabStops(r)).toEqual([selectedIdx[0]]);
+      });
+    }
+
+    if (setup.mountWithSelectedDisabled) {
+      it('never parks the tab stop on a selected-but-disabled item (#1132 / #1170)', async () => {
+        const r = await setup.mountWithSelectedDisabled!();
+        const selectedIdx = selected(r);
+        const enabledIdx = enabled(r);
+        // Every selected item must be disabled for this variant to prove
+        // anything — otherwise the fallback below never has to happen.
+        expect(selectedIdx.length).toBeGreaterThanOrEqual(1);
+        for (const i of selectedIdx) {
+          expect(enabledIdx).not.toContain(i);
+        }
+        expect(tabStops(r)).toEqual([enabledIdx[0]]);
       });
     }
   });

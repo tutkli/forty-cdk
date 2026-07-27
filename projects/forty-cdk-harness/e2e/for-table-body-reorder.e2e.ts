@@ -1,15 +1,7 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { el, expectFocused, gotoFixture } from './_helpers';
-
-const headerCell = (page: Page, column: string) =>
-  page.locator(`[forTableHeaderCell][data-column="${column}"]`);
-
-async function headerOrder(page: Page): Promise<(string | null)[]> {
-  return page
-    .locator('[forTableHeaderCell]')
-    .evaluateAll((cells) => cells.map((c) => c.getAttribute('data-column')));
-}
+import { headerCell, headerOrder } from './_table-helpers';
 
 test.describe('ForTableBody — declarative column reorder (#1350)', () => {
   test.beforeEach(async ({ page }) => {

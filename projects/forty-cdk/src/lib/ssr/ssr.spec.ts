@@ -2096,6 +2096,37 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   FieldsetFixture,
 ];
 
+/**
+ * The subset of {@link FIXTURES} mounted in their open / active state — the
+ * ones whose browser-only side effects (portal, scroll lock, inert siblings,
+ * dismissable layer, focus trap, floating positioner, autoplay interval)
+ * would actually run if their `isPlatformBrowser` gate were missing. A closed
+ * overlay proves nothing here, which is why the listener / timer sweep below
+ * iterates this list rather than every fixture.
+ */
+const OPEN_STATE_FIXTURES: ReadonlyArray<Type<unknown>> = [
+  TooltipOpenFixture,
+  PopoverOpenFixture,
+  DialogOpenFixture,
+  DialogContainedFixture,
+  DialogContainedModalFixture,
+  DrawerOpenFixture,
+  DrawerContainedFixture,
+  DrawerContainedModalFixture,
+  SelectOpenFixture,
+  SelectVirtualizedOpenFixture,
+  ComboboxOpenFixture,
+  NavigationMenuOpenFixture,
+  MenubarOpenFixture,
+  DropdownMenuOpenFixture,
+  ContextMenuOpenFixture,
+  HoverCardOpenFixture,
+  DateRangePickerOpenFixture,
+  TimePickerOpenFixture,
+  ToastFixture,
+  CarouselAutoplayFixture,
+];
+
 function configureServer(): void {
   TestBed.configureTestingModule({
     providers: [
@@ -2229,6 +2260,50 @@ describe('SSR smoke tests', () => {
     f.detectChanges();
     const keydownCalls = addSpy.mock.calls.filter(([type]) => type === 'keydown');
     expect(keydownCalls).toEqual([]);
+  });
+
+  // The `<body>`-untouched assertions catch a side effect that appends a
+  // node; they say nothing about one that only *subscribes*. jsdom hands the
+  // server render a real `document` and `window`, so a primitive that forgot
+  // its `isPlatformBrowser` gate installs its global listener here and
+  // passes every other assertion in this file — then leaks that listener
+  // into every subsequent Universal request. Sweeping both targets across
+  // every open-state fixture is what closes that gap; the single Dialog
+  // keydown spy above covered one API on one fixture.
+  describe('server render installs no global listener', () => {
+    for (const fixture of OPEN_STATE_FIXTURES) {
+      it(`${fixture.name} adds no document or window listener`, () => {
+        const documentSpy = vi.spyOn(document, 'addEventListener');
+        const windowSpy = vi.spyOn(window, 'addEventListener');
+
+        const f = TestBed.createComponent(fixture);
+        f.detectChanges();
+
+        expect(documentSpy.mock.calls.map(([type]) => type)).toEqual([]);
+        expect(windowSpy.mock.calls.map(([type]) => type)).toEqual([]);
+      });
+    }
+  });
+
+  // Timers get a cadence-scoped assertion rather than a blanket
+  // "no timer was scheduled" sweep. This suite mocks only `PLATFORM_ID`, so
+  // Angular's own zoneless scheduler still runs a real `setTimeout` per
+  // render and jsdom's `requestAnimationFrame` shim still pumps a ~16.7ms
+  // `setInterval` — framework noise a blanket spy would report as a library
+  // bug on every fixture. Asserting the *primitive's* configured cadence
+  // never reaches the timer API keeps the signal and drops the noise.
+  it('an autoplaying Carousel starts no rotation interval server-side', () => {
+    const intervalSpy = vi.spyOn(globalThis, 'setInterval');
+    const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+
+    const f = TestBed.createComponent(CarouselAutoplayFixture);
+    f.detectChanges();
+
+    // The fixture binds [autoplayInterval]="1000".
+    const scheduledDelays = [...intervalSpy.mock.calls, ...timeoutSpy.mock.calls].map(
+      ([, delay]) => delay,
+    );
+    expect(scheduledDelays).not.toContain(1000);
   });
 
   it('opening a free-floating overlay (Drawer) does not portal or mutate <body> server-side', () => {

@@ -512,11 +512,14 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await page.mouse.move(at.x, at.y);
       await page.mouse.down();
 
-      await page.waitForTimeout(600);
+      // Settle-wait replaced by a poll: the repeat cadence stops once the
+      // thumb reaches the press point, and that arrival is observable.
+      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(400);
       const afterRepeat = await scrollTopOf(page);
-      expect(afterRepeat).toBeGreaterThan(400);
       expect(afterRepeat).toBeLessThan(580);
 
+      // Negative assertion: the repeat must STOP there rather than run on to
+      // the end of the track, which only elapsed time can show.
       await page.waitForTimeout(400);
       expect(await scrollTopOf(page)).toBe(afterRepeat);
 
@@ -532,6 +535,8 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await waitForOverflowMeasured(page);
 
       await pressAndRelease(page, await trackPoint(page, 'scrollbar-vertical', 150, 'y'));
+      // Negative assertion: trackPress="none" must leave the viewport where it
+      // was, so the test waits out the window a page-jump would have used.
       await page.waitForTimeout(200);
 
       expect(await scrollTopOf(page)).toBe(0);

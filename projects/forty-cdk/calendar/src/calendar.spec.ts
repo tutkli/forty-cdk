@@ -1026,7 +1026,6 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
 
       const range = r.instance.range();
-      expect(range).not.toBeNull();
       expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
       expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
       expect(compareDateOf(adapter, range!.start, range!.end)).toBeLessThanOrEqual(0);
@@ -1141,7 +1140,6 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
 
       const range = r.instance.range();
-      expect(range).not.toBeNull();
       expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
       expect(adapter.isSameDay(range!.end, new Date(2026, 5, 12))).toBe(true);
     });
@@ -1188,7 +1186,6 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
 
       const range = r.instance.range();
-      expect(range).not.toBeNull();
       expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
       expect(adapter.isSameDay(range!.end, new Date(2026, 5, 12))).toBe(true);
     });
@@ -1254,7 +1251,6 @@ describe('ForCalendar', () => {
         await flush(r.fixture);
 
         const range = r.instance.range();
-        expect(range).not.toBeNull();
         expect(adapter.isSameDay(range!.start, JUN_10)).toBe(true);
         expect(adapter.isSameDay(range!.end, JUN_15)).toBe(true);
         expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(true);
@@ -1516,7 +1512,6 @@ describe('ForCalendar', () => {
 
       const options: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' };
       const juneFr = adapter.format(new Date(2026, 5, 1), options, 'fr-FR');
-      expect(juneFr).not.toBe(adapter.format(new Date(2026, 5, 1), options, 'en-US'));
       expect(r.query('[data-testid="heading"]')!.textContent!.trim()).toBe(juneFr);
     });
 

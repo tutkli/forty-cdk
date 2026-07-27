@@ -30,7 +30,6 @@ describe('resolveDropTarget', () => {
 
     it('pointer above item 0 midpoint returns index 0', () => {
       const result = resolveDropTarget({ x: 100, y: 10 }, [c]);
-      expect(result).not.toBeNull();
       expect(result!.containerIndex).toBe(0);
       expect(result!.index).toBe(0);
     });

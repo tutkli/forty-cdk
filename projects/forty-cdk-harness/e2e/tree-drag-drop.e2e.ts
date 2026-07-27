@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { boxOf, el, gotoFixture } from './_helpers';
 
 test.describe('tree-drag-drop — keyboard reorder', () => {
   test('Ctrl+Space lifts a node, ArrowUp + Space drops it one position higher', async ({
@@ -102,13 +102,8 @@ test.describe('tree-drag-drop — pointer drag', () => {
     const notesHandle = el(page, 'handle-notes');
     const musicHandle = el(page, 'handle-music');
 
-    const notesBox = await notesHandle.boundingBox();
-    const musicBox = await musicHandle.boundingBox();
-
-    if (!notesBox || !musicBox) {
-      test.skip();
-      return;
-    }
+    const notesBox = await boxOf(notesHandle);
+    const musicBox = await boxOf(musicHandle);
 
     await page.mouse.move(notesBox.x + notesBox.width / 2, notesBox.y + notesBox.height / 2);
     await page.mouse.down();
@@ -128,13 +123,8 @@ test.describe('tree-drag-drop — pointer drag', () => {
     const notesHandle = el(page, 'handle-notes');
     const musicItem = el(page, 'item-music');
 
-    const notesBox = await notesHandle.boundingBox();
-    const musicBox = await musicItem.boundingBox();
-
-    if (!notesBox || !musicBox) {
-      test.skip();
-      return;
-    }
+    const notesBox = await boxOf(notesHandle);
+    const musicBox = await boxOf(musicItem);
 
     await page.mouse.move(notesBox.x + notesBox.width / 2, notesBox.y + notesBox.height / 2);
     await page.mouse.down();
@@ -157,11 +147,7 @@ test.describe('tree-drag-drop — pointer drag', () => {
     await el(page, 'toggle-documents').click();
     await expect(el(page, 'item-resume')).toBeVisible();
 
-    const docsBox = await el(page, 'handle-documents').boundingBox();
-    if (!docsBox) {
-      test.skip();
-      return;
-    }
+    const docsBox = await boxOf(el(page, 'handle-documents'));
 
     await page.mouse.move(docsBox.x + docsBox.width / 2, docsBox.y + docsBox.height / 2);
     await page.mouse.down();

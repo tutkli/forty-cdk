@@ -82,7 +82,6 @@ describe('overlays opened inside a modal ForDialog (#676)', () => {
     await flush(r.fixture);
 
     const content = document.querySelector<HTMLElement>('[forSelectContent]');
-    expect(content).not.toBeNull();
     // Portaled to body as a sibling of the dialog, so it would be swept by the
     // inert pass without the peer marker.
     expect(content!.parentElement).toBe(document.body);
@@ -104,7 +103,6 @@ describe('overlays opened inside a modal ForDialog (#676)', () => {
     await flush(r.fixture);
 
     const content = document.querySelector<HTMLElement>('[forMenuContent]');
-    expect(content).not.toBeNull();
     expect(content!.parentElement).toBe(document.body);
     expect(content!.hasAttribute('data-for-modal-peer')).toBe(true);
     expect(content!.hasAttribute('inert')).toBe(false);

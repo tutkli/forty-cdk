@@ -299,13 +299,24 @@ test.describe('Carousel (autoplay — pause on hover)', () => {
   test('hovering pauses rotation; moving away resumes', async ({ page }) => {
     await gotoFixture(page, 'carousel', { autoplay: '1', autoplayInterval: '400' });
     await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+
     await el(page, 'carousel-root').hover();
-    const activeBefore = await el(page, 'carousel-root').getAttribute('style');
+    await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+    const pausedOn = await activeSlideTestid(page);
+
+    // Negative assertion: the slide must NOT advance while paused, and only
+    // the passage of time can show that. Two full intervals is a comfortable
+    // margin over the 400ms cadence. This is the sanctioned one-shot wait —
+    // there is no state transition to poll for when the expectation is that
+    // nothing happens.
     await page.waitForTimeout(800);
-    const activeAfter = await el(page, 'carousel-root').getAttribute('style');
-    expect(activeBefore).toBe(activeAfter);
+    expect(await activeSlideTestid(page)).toBe(pausedOn);
+
     await page.mouse.move(0, 0);
-    await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'carousel-root')).toHaveAttribute('data-rotating', '');
+    // The resume half: the slide must move on from where the pause left it.
+    // Asserting slide-1 is active (the pre-hover state) passed either way.
+    await expect.poll(() => activeSlideTestid(page)).not.toBe(pausedOn);
   });
 });
 
@@ -353,6 +364,8 @@ test.describe('Carousel (autoplay — reduced motion no auto-start)', () => {
         'Start automatic slide show',
       );
       await expect(el(page, 'carousel-root')).not.toHaveAttribute('data-rotating');
+      // Negative assertion: under reduced motion autoplay must never start, so
+      // the test outwaits two full 400ms intervals and re-checks slide 0.
       await page.waitForTimeout(800);
       await expect(el(page, 'slide-0')).toHaveAttribute('data-state', 'active');
     } finally {

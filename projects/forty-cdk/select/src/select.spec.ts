@@ -3324,7 +3324,6 @@ describe('ForSelectIndicator', () => {
 
       await flush(r.fixture);
       const opt49 = document.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
-      expect(opt49).not.toBeNull();
       expect(content.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
     });
 

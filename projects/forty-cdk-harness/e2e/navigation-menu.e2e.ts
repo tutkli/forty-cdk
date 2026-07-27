@@ -308,13 +308,14 @@ test.describe('NavigationMenu keyboard / focus', () => {
 
       await el(page, 'trigger-products').tap();
       await expect(el(page, 'active')).toHaveText('products');
+      // Negative assertion: a tap-opened panel must stay open — no hover-leave
+      // close fires on touch. 400ms is past every close delay in the fixture.
       await page.waitForTimeout(400);
       await expect(el(page, 'active')).toHaveText('products');
 
       await el(page, 'trigger-products').tap();
       await expect(el(page, 'active')).toHaveText('none');
 
-      await page.waitForTimeout(50);
       await el(page, 'trigger-products').tap();
       await expect(el(page, 'active')).toHaveText('products');
     });

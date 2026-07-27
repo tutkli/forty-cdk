@@ -1,9 +1,16 @@
 /**
  * Shared contract suite for primitives that implement the
  * `FormValueControl` / `FormCheckboxControl` interface family. Adopted by:
- * Checkbox, Switch, Toggle, Input, NumberInput, OtpInput, Search, Select,
- * Combobox, Listbox, Slider, ToggleGroup, DateField, TimeField,
- * DateRangeField, TimeRangeField.
+ * Checkbox, Switch, Toggle, Input, Textarea, NumberInput, OtpInput, Search,
+ * Select, Combobox, Listbox, Slider, ToggleGroup, RadioGroup, DateField,
+ * TimeField, DateRangeField, TimeRangeField, DatePicker, DateRangePicker,
+ * TimePicker.
+ *
+ * The list is not maintained by hand: `form-control-adopters.spec.ts`
+ * enumerates the library's `FormValueControl` / `FormCheckboxControl`
+ * implementors from source and fails when one of them has no
+ * `assertFormControlContract` call in its entry point. Adding a form
+ * primitive without adopting the contract is a red build, not a silent gap.
  *
  * Each adopter passes only the `flags` it actually reflects on a single
  * element, so partial adoption is normal:

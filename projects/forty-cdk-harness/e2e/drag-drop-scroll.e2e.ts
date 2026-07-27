@@ -53,6 +53,8 @@ test.describe('drag-drop auto-scroll', () => {
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
     await page.mouse.move(startX, listBox.y + listBox.height - 10);
+    // Negative assertion: auto-scroll is OFF, so the list must NOT move. Only
+    // elapsed time can show that; 400ms is several auto-scroll frames.
     await page.waitForTimeout(400);
 
     const scrollTop = await list.evaluate((el) => el.scrollTop);

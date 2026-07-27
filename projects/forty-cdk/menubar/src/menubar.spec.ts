@@ -2,8 +2,18 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { assertRovingTabindexContract } from '../../src/test-utils/contract';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  focusInOn,
+  pointerDownOn,
+  pressKey,
+  renderHost,
+} from '../../src/test-utils';
+import {
+  assertDismissableLayerContract,
+  assertRovingTabindexContract,
+} from '../../src/test-utils/contract';
 import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
@@ -323,22 +333,29 @@ function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
   return event;
 }
 
-function outsidePointerDown(target: Node): PointerEvent {
-  const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-  Object.defineProperty(event, 'target', { value: target, configurable: true });
-  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
-  return event;
-}
-
-function outsideFocusIn(target: Node): FocusEvent {
-  const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
-  Object.defineProperty(event, 'target', { value: target, configurable: true });
-  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
-  return event;
-}
-
 describe('ForMenubar', () => {
   afterEachOverlayCleanup();
+
+  assertDismissableLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(MenubarOutputsHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      if (options.escapeVeto) r.instance.veto.set('escape');
+      if (options.pointerVeto) r.instance.veto.set('pointerDownOutside');
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        // The menubar's open state is the value of the open menu, not a
+        // boolean: an empty value is the closed menubar.
+        isOpen: () => r.instance.open() !== '',
+        escapeCount: () => r.instance.escapeCount,
+        pointerOutsideCount: () => r.instance.pointerDownOutsideCount,
+        focusOutsideCount: () => r.instance.focusOutsideCount,
+        interactOutsideCount: () => r.instance.interactOutsideCount,
+      };
+    },
+  });
 
   assertRovingTabindexContract(
     {
@@ -916,79 +933,15 @@ describe('ForMenubar', () => {
   });
 
   describe('outside dismissal', () => {
-    it('closes on pointer-down outside content + every trigger', async () => {
-      const r = renderHost(MenubarHost);
-      r.instance.open.set('file');
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe('');
-      outside.remove();
-    });
-
     it('does NOT close when pointer-down lands on a sibling trigger (exempt)', async () => {
       const r = renderHost(MenubarHost);
       r.instance.open.set('file');
       await flush(r.fixture);
 
-      const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: edit, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [edit], configurable: true });
-      document.dispatchEvent(event);
+      pointerDownOn(r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!);
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe('file');
-    });
-  });
-
-  describe('dismissible', () => {
-    it('[dismissible]="false" keeps the menu open on Escape', async () => {
-      const r = renderHost(MenubarHost);
-      r.instance.dismissible.set(false);
-      r.instance.open.set('file');
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe('file');
-    });
-
-    it('[dismissible]="false" keeps the menu open on outside pointer-down', async () => {
-      const r = renderHost(MenubarHost);
-      r.instance.dismissible.set(false);
-      r.instance.open.set('file');
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe('file');
-      outside.remove();
-    });
-
-    it('still closes on Escape / outside when dismissible (default) is true', async () => {
-      const r = renderHost(MenubarHost);
-      r.instance.open.set('file');
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe('');
     });
   });
 
@@ -1017,7 +970,7 @@ describe('ForMenubar', () => {
       const r = await openFile();
       const target = appendOutside();
 
-      document.dispatchEvent(outsidePointerDown(target));
+      pointerDownOn(target);
       await flush(r.fixture);
 
       expect(r.instance.pointerDownOutsideCount).toBe(1);
@@ -1032,7 +985,7 @@ describe('ForMenubar', () => {
       r.instance.veto.set('pointerDownOutside');
       const target = appendOutside();
 
-      document.dispatchEvent(outsidePointerDown(target));
+      pointerDownOn(target);
       await flush(r.fixture);
 
       expect(r.instance.pointerDownOutsideCount).toBe(1);
@@ -1044,7 +997,7 @@ describe('ForMenubar', () => {
       r.instance.veto.set('interactOutside');
       const target = appendOutside();
 
-      document.dispatchEvent(outsidePointerDown(target));
+      pointerDownOn(target);
       await flush(r.fixture);
 
       expect(r.instance.pointerDownOutsideCount).toBe(1);
@@ -1056,7 +1009,7 @@ describe('ForMenubar', () => {
       const r = await openFile();
       const target = appendOutside();
 
-      document.dispatchEvent(outsideFocusIn(target));
+      focusInOn(target);
       await flush(r.fixture);
 
       expect(r.instance.focusOutsideCount).toBe(1);
@@ -1070,7 +1023,7 @@ describe('ForMenubar', () => {
       r.instance.veto.set('focusOutside');
       const target = appendOutside();
 
-      document.dispatchEvent(outsideFocusIn(target));
+      focusInOn(target);
       await flush(r.fixture);
 
       expect(r.instance.focusOutsideCount).toBe(1);
@@ -1081,7 +1034,7 @@ describe('ForMenubar', () => {
       const r = await openFile();
       const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
 
-      document.dispatchEvent(outsidePointerDown(edit));
+      pointerDownOn(edit);
       await flush(r.fixture);
 
       expect(r.instance.pointerDownOutsideCount).toBe(0);

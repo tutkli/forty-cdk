@@ -1,4 +1,13 @@
-import { computed, DOCUMENT, inject, Injectable, type Signal, signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  computed,
+  DOCUMENT,
+  inject,
+  Injectable,
+  PLATFORM_ID,
+  type Signal,
+  signal,
+} from '@angular/core';
 
 import { IdGenerator } from 'forty-cdk/core';
 import {
@@ -46,6 +55,7 @@ export class ForToastManager {
   readonly #idGen = inject(IdGenerator);
   readonly #defaults = inject(FOR_TOAST_DEFAULTS);
   readonly #doc = inject(DOCUMENT);
+  readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   readonly #entries = signal<readonly ToastEntry[]>([]);
   // O(1) id → entry index kept in sync with `#entries`. Prevents same-tick
@@ -129,6 +139,12 @@ export class ForToastManager {
    * @internal Register a viewport for hotkey + region coordination. Returns a
    * teardown the viewport runs on destroy. Installs the single document-level
    * hotkey listener on the first registration and tears it down with the last.
+   *
+   * A viewport registers synchronously on construction, so this also runs
+   * during a server render — where the hotkey can never fire and the listener
+   * would outlive the render on the request's document. The listener is
+   * therefore gated on `isPlatformBrowser`, like every other global side
+   * effect in the library.
    */
   registerViewport(registration: ForToastViewportRegistration): () => void {
     this.#viewports.update((arr) => [...arr, registration]);
@@ -154,7 +170,7 @@ export class ForToastManager {
   }
 
   #ensureHotkeyListener(): void {
-    if (this.#hotkeyListener) {
+    if (!this.#isBrowser || this.#hotkeyListener) {
       return;
     }
     const listener = (event: KeyboardEvent): void => {

@@ -11,6 +11,7 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
+import { assertDismissableLayerContract } from '../../src/test-utils/contract';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';
@@ -40,6 +41,34 @@ class HoverCardHost {
   readonly isDisabled = signal(false);
   readonly openDelay = signal<number | undefined>(0);
   readonly closeDelay = signal<number | undefined>(0);
+}
+
+@Component({
+  imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+  template: `
+    <span
+      forHoverCard
+      #card="forHoverCard"
+      [(open)]="isOpen"
+      [openDelay]="0"
+      [closeDelay]="0"
+      (escapeKeyDown)="onEscape($event)"
+    >
+      <a forHoverCardTrigger href="/x">Trigger</a>
+      @if (card.open()) {
+        <div forHoverCardContent>Content</div>
+      }
+    </span>
+  `,
+})
+class DismissableContractHost {
+  readonly isOpen = signal(false);
+  escapeVeto = false;
+  eCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
 }
 
 @Component({
@@ -80,6 +109,28 @@ function pointerMoveAway(): void {
 
 describe('ForHoverCard', () => {
   afterEachOverlayCleanup();
+
+  // HoverCard adopts only the Escape half of the dismissable-layer contract:
+  // it exposes no `[dismissible]` input, and it has no outside-interaction
+  // channel at all (a pointer press outside closes it through the hover /
+  // pointer-leave grace bridge, not through the layer's
+  // `(pointerDownOutside)` / `(focusOutside)` / `(interactOutside)` trio).
+  assertDismissableLayerContract(
+    {
+      mount: async (options = {}) => {
+        const r = renderHost(DismissableContractHost);
+        r.instance.escapeVeto = options.escapeVeto ?? false;
+        r.instance.isOpen.set(true);
+        await r.flush();
+        return {
+          flush: r.flush,
+          isOpen: () => r.instance.isOpen(),
+          escapeCount: () => r.instance.eCount,
+        };
+      },
+    },
+    { dismissibleFlag: false, outsideInteraction: false },
+  );
 
   describe('open / close lifecycle', () => {
     // Scoped fake timers: only the delay-driven cases install them, so a
@@ -550,57 +601,26 @@ describe('ForHoverCard', () => {
       expect(transitions).toEqual([true, false]);
     });
 
-    it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', async () => {
-      const captured: VetoableNativeEvent<KeyboardEvent>[] = [];
-
-      @Component({
-        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
-        template: `
-          <span
-            forHoverCard
-            #card="forHoverCard"
-            [(open)]="isOpen"
-            [openDelay]="0"
-            [closeDelay]="0"
-            (escapeKeyDown)="onEscape($event)"
-          >
-            <a forHoverCardTrigger href="/x">Trigger</a>
-            @if (card.open()) {
-              <div forHoverCardContent>Content</div>
-            }
-          </span>
-        `,
-      })
-      class Host {
-        readonly isOpen = signal(false);
-        onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
-          captured.push(event);
-          event.preventDefault();
-        }
-      }
-
-      const { fixture, query, flush } = renderHost(Host);
-      await flush();
-      const trigger = query<HTMLAnchorElement>('a')!;
+    it('re-emits a vetoed (escapeKeyDown) from both the trigger and the portaled content', async () => {
+      const r = renderHost(DismissableContractHost);
+      r.instance.escapeVeto = true;
+      await r.flush();
+      const trigger = r.query<HTMLAnchorElement>('a')!;
 
       trigger.dispatchEvent(pointerEvent('pointerenter'));
-      await flush();
-      expect(fixture.componentInstance.isOpen()).toBe(true);
+      await r.flush();
+      expect(r.instance.isOpen()).toBe(true);
 
-      trigger.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      );
-      await flush();
-      expect(captured.length).toBe(1);
-      expect(fixture.componentInstance.isOpen()).toBe(true);
+      pressKey(trigger, 'Escape');
+      await r.flush();
+      expect(r.instance.eCount).toBe(1);
+      expect(r.instance.isOpen()).toBe(true);
 
       const content = document.body.querySelector<HTMLElement>('[forHoverCardContent]')!;
-      content.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
-      );
-      await flush();
-      expect(captured.length).toBe(2);
-      expect(fixture.componentInstance.isOpen()).toBe(true);
+      pressKey(content, 'Escape');
+      await r.flush();
+      expect(r.instance.eCount).toBe(2);
+      expect(r.instance.isOpen()).toBe(true);
     });
   });
 

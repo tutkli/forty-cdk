@@ -29,6 +29,8 @@ test.describe('Tooltip', () => {
     await el(page, 'trigger').click();
     await expect(el(page, 'tooltip')).toHaveCount(0);
 
+    // Negative assertion: the tooltip must STAY closed — a re-open would
+    // arrive after the open delay, so the test waits it out.
     await page.waitForTimeout(100);
     await expect(el(page, 'tooltip')).toHaveCount(0);
   });
@@ -68,6 +70,8 @@ test.describe('Tooltip', () => {
 
     // A trigger whose text fits is NOT truncated → hover must not open it.
     await el(page, 'fit-trigger').hover();
+    // Negative assertion: no open must happen, so the wait outlasts the open
+    // delay a truncated trigger would have used.
     await page.waitForTimeout(100);
     await expect(el(page, 'fit-tooltip')).toHaveCount(0);
 
@@ -92,6 +96,8 @@ test.describe('Tooltip', () => {
     await gotoFixture(page, 'tooltip');
 
     await el(page, 'show-fit').click();
+    // Negative assertion: show() must no-op on a fitting trigger, so the wait
+    // outlasts the open delay it would otherwise have used.
     await page.waitForTimeout(100);
     await expect(el(page, 'fit-tooltip')).toHaveCount(0);
 
@@ -110,6 +116,8 @@ test.describe('Tooltip', () => {
     // Move the pointer into the content — the grace bridge + content hover keep
     // it open well past the 200ms closeDelay.
     await el(page, 'hoverable-tooltip').hover();
+    // Negative assertion: the grace bridge must hold the tooltip open past the
+    // 200ms closeDelay, which only elapsed time can show.
     await page.waitForTimeout(400);
     await expect(el(page, 'hoverable-tooltip')).toBeVisible();
 
@@ -148,6 +156,8 @@ test.describe('Tooltip', () => {
       );
       await gotoFixture(page, 'tooltip');
       await el(page, 'trigger').tap();
+      // Negative assertion: a tap must not open a tooltip, so the wait
+      // outlasts the open delay before asserting nothing mounted.
       await page.waitForTimeout(100);
       await expect(el(page, 'tooltip')).toHaveCount(0);
     });
