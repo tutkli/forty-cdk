@@ -13,12 +13,8 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  ForDrawerScaleCoordinator,
-  ForDrawerStack,
-  injectModalShell,
-  ModalSurfaceBase,
-} from 'forty-cdk/core';
+import { ForDrawerStack, injectModalShell, ModalSurfaceBase } from 'forty-cdk/core';
+import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
 import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
