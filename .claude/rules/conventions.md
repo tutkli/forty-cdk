@@ -67,7 +67,7 @@ The **`FOR_<PRIMITIVE>_CONTEXT` token + its `For<Primitive>Context` interface st
 
 ### The core tier — blessed vs internal ([#1398](https://github.com/tutkli/forty-cdk/issues/1398))
 
-`forty-cdk/core` is a ~300-symbol barrel where consumer-grade contracts (`WritingDirection`, `VetoableEvent`, `DateAdapter`) sit next to the engines the library refactors freely (`MenuOverlay`, `OverlayManagerCore`, `DateFieldEngine`, `RangeFieldComposer`, the drag-session suite). A barrel can only promise semver all-or-nothing, so the promise is made **per symbol** instead, and the boundary is mechanical:
+`forty-cdk/core` is a ~220-symbol barrel where consumer-grade contracts (`WritingDirection`, `VetoableEvent`, `DateAdapter`) sit next to the engines the library refactors freely (`MenuOverlay`, `OverlayManagerCore`, `DateFieldEngine`, `RangeFieldComposer`, the drag-session suite). A barrel can only promise semver all-or-nothing, so the promise is made **per symbol** instead, and the boundary is mechanical:
 
 - **Blessed** — the curated set in [`scripts/lib/core-blessed-tier.mjs`](../../scripts/lib/core-blessed-tier.mjs), keyed by the entry point that **publishes** each symbol (`CORE_PUBLISHERS`; `BLESSED_CORE_SYMBOLS` is derived from it, so a symbol cannot be blessed without a canonical import path). These carry the library's semver guarantee and are the only core symbols allowed to appear in a public entry point's public signature.
 - **Internal** — everything else in the barrel, by omission. No semver guarantee; refactorable without notice. It stays exported because the primitive entry points import it by the `forty-cdk/core` specifier, which is what keeps the DI singletons single-instance (see the barrel header) — exported is not the same as public.

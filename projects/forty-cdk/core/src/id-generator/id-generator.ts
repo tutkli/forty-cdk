@@ -11,6 +11,11 @@ import { APP_ID, InjectionToken, Injectable, type Provider, inject } from '@angu
  * forty-cdk app on a single page, so each app's ids stay distinct without
  * having to change the global `APP_ID` (which also drives hydration store,
  * event replay, and other subsystems).
+ *
+ * Part of the blessed core tier: consumers import it from the
+ * `forty-cdk/shared` entry point, which carries the library's semver
+ * guarantee. Provide it directly only to read the resolved salt — to set one,
+ * prefer {@link provideForIdSalt}.
  */
 export const FOR_ID_SALT = new InjectionToken<string>('forty-cdk id salt', {
   providedIn: 'root',
@@ -23,13 +28,26 @@ export const FOR_ID_SALT = new InjectionToken<string>('forty-cdk id salt', {
  * on one page so their `aria-controls` / `aria-labelledby` ids don't collide:
  *
  * ```ts
+ * import { provideForIdSalt } from 'forty-cdk/shared';
+ *
  * bootstrapApplication(AppA, { providers: [provideForIdSalt('a')] });
  * bootstrapApplication(AppB, { providers: [provideForIdSalt('b')] });
  * ```
  *
+ * Without this, both apps default their salt to `APP_ID` — whose Angular
+ * default is the literal `'ng'` — so they start from the same salt and the
+ * same counter and emit identical id sequences. The duplicate ids then
+ * mis-resolve `aria-labelledby` / `aria-controls` to whichever element comes
+ * first in the document, which a screen reader announces across app
+ * boundaries.
+ *
  * The salt must stay deterministic per app instance — a runtime random value
  * would break SSR hydration because the server and client renders would no
  * longer agree.
+ *
+ * Part of the blessed core tier: consumers import it from the
+ * `forty-cdk/shared` entry point, which carries the library's semver
+ * guarantee.
  *
  * @param salt A stable, app-unique salt.
  */
@@ -63,6 +81,12 @@ export function provideForIdSalt(salt: string): Provider {
  * untouched). Overriding the global `APP_ID` works too, but it also drives
  * Angular's hydration store and event replay, so `provideForIdSalt` is the
  * narrower choice.
+ *
+ * The generator itself stays internal tier while {@link FOR_ID_SALT} and
+ * {@link provideForIdSalt} are blessed: a consumer configures the salt, but
+ * never mints ids — every id belongs to a primitive's aria wiring, so
+ * publishing `next()` would commit the library to an id format it wants to
+ * stay free to change (#1492).
  */
 @Injectable({ providedIn: 'root' })
 export class IdGenerator {
