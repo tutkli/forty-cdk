@@ -67,18 +67,30 @@ export function nextMacrotask(): Promise<void> {
 const MAX_POSITIONING_HOPS = 8;
 
 /**
- * Has any portaled overlay resolved its first position yet? Both floating
- * positioners (`_internal/floating/floating.ts` and `item-aligned.ts`) reveal
- * a resolved surface the same way: they write a non-empty inline `translate`
- * and drop the anti-flash `clip-path: inset(50%)` baseline. Polling for an
- * element carrying a non-empty inline `translate` is therefore a
- * dependency-agnostic "position settled" signal — it does not depend on the
+ * Have the portaled overlays in `scope` resolved their first position yet?
+ * Both floating positioners (`core/floating/floating.ts` and
+ * `item-aligned.ts`) reveal a resolved surface the same way: they write a
+ * non-empty inline `translate` and drop the anti-flash
+ * `clip-path: inset(50%)` baseline. Polling for those two marks is therefore
+ * a dependency-agnostic "position settled" signal — it does not depend on the
  * exact number of microtask / RAF hops `@floating-ui/dom` happens to take.
+ *
+ * Settled means **both** marks agree: at least one surface has a resolved
+ * `translate` AND no surface is still wearing the anti-flash baseline. The
+ * `translate` mark alone was an *any*-resolved signal, which under-waits the
+ * moment a fixture has two overlays (a nested popover-in-dialog, or residue
+ * from a previous file under the nightly `isolate: false` profile): the loop
+ * broke on overlay #1 while #2 was still clipped, producing shuffle-only
+ * flakes. The clip-path mark turns it into an *all*-resolved signal.
  */
-function hasResolvedPosition(): boolean {
-  return Array.from(document.querySelectorAll<HTMLElement>('[style*="translate"]')).some(
+function hasResolvedPosition(scope: ParentNode): boolean {
+  const resolved = Array.from(scope.querySelectorAll<HTMLElement>('[style*="translate"]')).some(
     (el) => el.style.translate !== '',
   );
+  const stillClipped = Array.from(scope.querySelectorAll<HTMLElement>('[style*="clip-path"]')).some(
+    (el) => el.style.clipPath !== '',
+  );
+  return resolved && !stillClipped;
 }
 
 /**
@@ -97,13 +109,21 @@ function hasResolvedPosition(): boolean {
  * Use this for any spec that asserts on inline `translate` / `--for-*` styles,
  * transforms, or `data-side` reflection on portaled overlays.
  *
+ * The settle signal is read from the whole `document` by default, because
+ * overlays portal out of the fixture host. Pass `scope` to narrow it to one
+ * subtree when a spec cares about a specific surface and unrelated positioned
+ * elements elsewhere in the document would answer the poll for it.
+ *
  * Like {@link flush}, this returns a `Promise<void>` you **must** `await`;
  * bare calls are rejected by the `forty-cdk/no-floating-flush` lint rule.
  */
-export async function flushPositioning<T>(fixture: ComponentFixture<T>): Promise<void> {
+export async function flushPositioning<T>(
+  fixture: ComponentFixture<T>,
+  scope: ParentNode = document,
+): Promise<void> {
   await flush(fixture);
   for (let i = 0; i < MAX_POSITIONING_HOPS; i++) {
-    if (hasResolvedPosition()) {
+    if (hasResolvedPosition(scope)) {
       break;
     }
     await macrotask();

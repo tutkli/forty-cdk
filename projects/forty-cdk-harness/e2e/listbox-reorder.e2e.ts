@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture } from './_helpers';
+import { boxOf, el, gotoFixture } from './_helpers';
 
 const INITIAL = 'alpha,bravo,charlie,delta,echo,foxtrot';
 
@@ -64,14 +64,8 @@ test.describe('listbox-reorder — pointer drag', () => {
   test('dragging an option past others reorders it', async ({ page }) => {
     await gotoFixture(page, 'listbox-reorder');
 
-    const alpha = el(page, 'opt-alpha');
-    const delta = el(page, 'opt-delta');
-    const alphaBox = await alpha.boundingBox();
-    const deltaBox = await delta.boundingBox();
-    if (!alphaBox || !deltaBox) {
-      test.skip();
-      return;
-    }
+    const alphaBox = await boxOf(el(page, 'opt-alpha'));
+    const deltaBox = await boxOf(el(page, 'opt-delta'));
 
     await page.mouse.move(alphaBox.x + alphaBox.width / 2, alphaBox.y + alphaBox.height / 2);
     await page.mouse.down();

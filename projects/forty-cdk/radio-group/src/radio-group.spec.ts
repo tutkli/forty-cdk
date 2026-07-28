@@ -3,7 +3,11 @@ import { form, FormField, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../src/test-utils';
-import { assertRovingTabindexContract } from '../../src/test-utils/contract';
+import {
+  assertFormControlContract,
+  assertRovingTabindexContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import { FOR_RADIO, ForRadio } from './radio';
 import { ForRadioGroup } from './radio-group';
 import { ForRadioIndicator } from './radio-indicator';
@@ -54,6 +58,33 @@ class RadioGroupHost {
   ]);
 }
 
+@Component({
+  imports: [...RADIO_IMPORTS],
+  template: `
+    <div
+      forRadioGroup
+      [(value)]="color"
+      [readonly]="isReadonly()"
+      [required]="isRequired()"
+      [invalid]="isInvalid()"
+      [pending]="isPending()"
+      [(touched)]="isTouched"
+      [dirty]="isDirty()"
+    >
+      <button type="button" forRadio value="red">Red</button>
+    </div>
+  `,
+})
+class RadioGroupFormControlHost {
+  readonly color = signal<string | null>(null);
+  readonly isReadonly = signal(false);
+  readonly isRequired = signal(false);
+  readonly isInvalid = signal(false);
+  readonly isPending = signal(false);
+  readonly isTouched = signal(false);
+  readonly isDirty = signal(false);
+}
+
 const radioOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
@@ -63,6 +94,44 @@ const radioItems = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forRadio]'));
 
 describe('ForRadioGroup', () => {
+  // The `role="radiogroup"` root is a non-focusable container — focus lives
+  // on the roving radios — so it omits the `disabled` flag, whose assertion
+  // is about the control itself staying focusable. `aria-readonly` IS
+  // supported on `radiogroup`, so the readonly rung keeps its ARIA half.
+  assertFormControlContract(
+    () => {
+      const r = renderHost(RadioGroupFormControlHost);
+      const result: FormControlMountResult = {
+        control: groupOf(r.el),
+        flush: r.flush,
+        setFlag: (flag, value) => {
+          switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
+            case 'required':
+              r.instance.isRequired.set(value);
+              return;
+            case 'invalid':
+              r.instance.isInvalid.set(value);
+              return;
+            case 'pending':
+              r.instance.isPending.set(value);
+              return;
+            case 'touched':
+              r.instance.isTouched.set(value);
+              return;
+            case 'dirty':
+              r.instance.isDirty.set(value);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
+  );
+
   assertRovingTabindexContract(
     {
       mount: async () => {
@@ -100,6 +169,28 @@ describe('ForRadioGroup', () => {
         r.instance.dir.set('rtl');
         await r.flush();
         return { items: radioItems(r.el), flush: r.flush };
+      },
+      mountWithSelection: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.color.set('green');
+        await r.flush();
+        return { items: radioItems(r.el), selectedIndices: [1], flush: r.flush };
+      },
+      mountWithSelectedDisabled: async () => {
+        const r = renderHost(RadioGroupHost);
+        r.instance.options.set([
+          { value: 'red', label: 'Red', disabled: false },
+          { value: 'green', label: 'Green', disabled: false },
+          { value: 'blue', label: 'Blue', disabled: true },
+        ]);
+        r.instance.color.set('blue');
+        await r.flush();
+        return {
+          items: radioItems(r.el),
+          enabledIndices: [0, 1],
+          selectedIndices: [2],
+          flush: r.flush,
+        };
       },
     },
     { forwardArrow: 'ArrowDown' },
@@ -153,22 +244,6 @@ describe('ForRadioGroup', () => {
   });
 
   describe('initial tabindex', () => {
-    it('puts tabindex=0 on the first enabled radio when nothing is selected', () => {
-      const { el } = renderHost(RadioGroupHost);
-      expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('0');
-      expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('-1');
-      expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
-    });
-
-    it('puts tabindex=0 on the selected radio when there is a selection', async () => {
-      const { el, fixture, flush } = renderHost(RadioGroupHost);
-      fixture.componentInstance.color.set('green');
-      await flush();
-      expect(radioOf(el, 'red').getAttribute('tabindex')).toBe('-1');
-      expect(radioOf(el, 'green').getAttribute('tabindex')).toBe('0');
-      expect(radioOf(el, 'blue').getAttribute('tabindex')).toBe('-1');
-    });
-
     it('falls back to the first enabled radio when value matches no registered radio', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('magenta');

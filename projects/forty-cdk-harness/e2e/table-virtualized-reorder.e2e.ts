@@ -146,6 +146,10 @@ test.describe('Table virtualized row reorder', () => {
     let maxRendered = from;
     for (let i = 0; i < 80 && maxRendered <= from + 30; i++) {
       await page.mouse.move(startX, i % 2 ? edgeY : edgeY - 1);
+      // Pacing wait inside a bounded poll loop, not a settle-wait: each
+      // iteration gives the auto-scroll rAF a frame to advance the window
+      // before re-reading it, and the loop exits as soon as the target row
+      // renders.
       await page.waitForTimeout(50);
       const idx = await renderedIndices(page);
       maxRendered = idx[idx.length - 1] ?? maxRendered;

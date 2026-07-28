@@ -426,7 +426,6 @@ describe('injectVirtualizer', () => {
       fixture.detectChanges();
       await flush(fixture);
       const m = fixture.componentInstance.v.measurementFor(10);
-      expect(m).not.toBeNull();
       expect(m!.start).toBe(10 * 40 + 100);
     });
 
@@ -457,7 +456,6 @@ describe('injectVirtualizer', () => {
       await flush(fixture);
 
       const item1 = fixture.componentInstance.v.measurementFor(1);
-      expect(item1).not.toBeNull();
       expect(item1!.start).toBe(100);
     });
 

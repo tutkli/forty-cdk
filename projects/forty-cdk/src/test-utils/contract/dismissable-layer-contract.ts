@@ -1,7 +1,9 @@
 /**
  * Shared contract suite for primitives that participate in the
  * dismissable-layer behaviour. Adopted by: Dialog, Drawer, Popover,
- * Select, ContextMenu, TimePicker, DatePicker, MenuSub.
+ * Select, ContextMenu, TimePicker, DatePicker, MenuSub, DropdownMenu,
+ * Menubar, and — through the Escape-only subset described by
+ * {@link DismissableLayerContractOptions} — HoverCard.
  *
  * Combobox is intentionally excluded: its Escape is handled by the
  * editable input's own `keydown` listener (focus stays in the input per
@@ -34,6 +36,8 @@
  *
  * Internal to the spec suite — never re-exported from `public-api.ts`.
  */
+import { focusInOn, pointerDownOn } from '../outside-events';
+
 export interface DismissableLayerMountOptions {
   /** Default `true`. When `false`, the layer should bind `[dismissible]="false"`. */
   dismissible?: boolean;
@@ -50,12 +54,21 @@ export interface DismissableLayerMountResult {
   isOpen: () => boolean;
   /** Number of `(escapeKeyDown)` emissions captured. */
   escapeCount: () => number;
-  /** Number of `(pointerDownOutside)` emissions captured. */
-  pointerOutsideCount: () => number;
-  /** Number of `(focusOutside)` emissions captured. */
-  focusOutsideCount: () => number;
-  /** Number of `(interactOutside)` emissions captured. */
-  interactOutsideCount: () => number;
+  /**
+   * Number of `(pointerDownOutside)` emissions captured. Required unless the
+   * adopter opts out of the outside-interaction scenarios.
+   */
+  pointerOutsideCount?: () => number;
+  /**
+   * Number of `(focusOutside)` emissions captured. Required unless the
+   * adopter opts out of the outside-interaction scenarios.
+   */
+  focusOutsideCount?: () => number;
+  /**
+   * Number of `(interactOutside)` emissions captured. Required unless the
+   * adopter opts out of the outside-interaction scenarios.
+   */
+  interactOutsideCount?: () => number;
 }
 
 export interface DismissableLayerContractSetup {
@@ -63,6 +76,24 @@ export interface DismissableLayerContractSetup {
   mount: (
     options?: DismissableLayerMountOptions,
   ) => DismissableLayerMountResult | Promise<DismissableLayerMountResult>;
+}
+
+export interface DismissableLayerContractOptions {
+  /**
+   * Does the layer expose a `[dismissible]` input? Default `true`. Set
+   * `false` for a layer whose dismissal is not consumer-suppressible
+   * (HoverCard), so the contract skips the `dismissible=false` rungs
+   * instead of asserting an input that does not exist.
+   */
+  dismissibleFlag?: boolean;
+  /**
+   * Does the layer close on an outside pointer-down / focus, emitting the
+   * `(pointerDownOutside)` / `(focusOutside)` / `(interactOutside)` trio?
+   * Default `true`. Set `false` for a layer whose only document-level
+   * channel is Escape (HoverCard, which closes on pointer-leave rather
+   * than on an outside press).
+   */
+  outsideInteraction?: boolean;
 }
 
 // Outside nodes the contract appends to `document.body` to drive
@@ -93,25 +124,40 @@ const dispatchEscape = (): void => {
 
 const dispatchPointerOnOutside = (): HTMLElement => {
   const outside = appendOutsideNode();
-  const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-  Object.defineProperty(event, 'target', { value: outside, configurable: true });
-  document.dispatchEvent(event);
+  pointerDownOn(outside);
   return outside;
 };
 
 const dispatchFocusOnOutside = (): HTMLElement => {
   const outside = appendOutsideNode();
-  const event = new FocusEvent('focusin', { bubbles: true, cancelable: true });
-  Object.defineProperty(event, 'target', { value: outside, configurable: true });
-  document.dispatchEvent(event);
+  focusInOn(outside);
   return outside;
+};
+
+// The outside-emission counters are optional on the mount result so a layer
+// that opts out of `outsideInteraction` need not fabricate them. Inside the
+// opted-in scenarios their absence is a misconfigured adopter, not a
+// tolerable gap: throw rather than silently assert `undefined`.
+const countOf = (counter: (() => number) | undefined): number => {
+  if (counter === undefined) {
+    throw new Error(
+      'dismissable-layer contract: the mount result must provide the outside-emission counters unless `outsideInteraction: false` is passed.',
+    );
+  }
+  return counter();
 };
 
 /**
  * Run the dismissable-layer contract assertions inside a
  * `describe('dismissable-layer contract', …)` block.
  */
-export function assertDismissableLayerContract(setup: DismissableLayerContractSetup): void {
+export function assertDismissableLayerContract(
+  setup: DismissableLayerContractSetup,
+  options: DismissableLayerContractOptions = {},
+): void {
+  const dismissibleFlag = options.dismissibleFlag ?? true;
+  const outsideInteraction = options.outsideInteraction ?? true;
+
   describe('dismissable-layer contract', () => {
     // The contract owns its own cleanup: any outside node a test appended to
     // `document.body` is scrubbed here, so a throwing assertion can never leave
@@ -128,19 +174,21 @@ export function assertDismissableLayerContract(setup: DismissableLayerContractSe
         expect(ctx.isOpen()).toBe(false);
       });
 
-      it('does not close the layer when dismissible=false', async () => {
-        const ctx = await setup.mount({ dismissible: false });
-        dispatchEscape();
-        await ctx.flush();
-        expect(ctx.isOpen()).toBe(true);
-      });
+      if (dismissibleFlag) {
+        it('does not close the layer when dismissible=false', async () => {
+          const ctx = await setup.mount({ dismissible: false });
+          dispatchEscape();
+          await ctx.flush();
+          expect(ctx.isOpen()).toBe(true);
+        });
 
-      it('still emits (escapeKeyDown) when dismissible=false', async () => {
-        const ctx = await setup.mount({ dismissible: false });
-        dispatchEscape();
-        await ctx.flush();
-        expect(ctx.escapeCount()).toBe(1);
-      });
+        it('still emits (escapeKeyDown) when dismissible=false', async () => {
+          const ctx = await setup.mount({ dismissible: false });
+          dispatchEscape();
+          await ctx.flush();
+          expect(ctx.escapeCount()).toBe(1);
+        });
+      }
 
       it('emits (escapeKeyDown), then closes, when not prevented', async () => {
         const ctx = await setup.mount();
@@ -159,40 +207,44 @@ export function assertDismissableLayerContract(setup: DismissableLayerContractSe
       });
     });
 
-    describe('outside pointerdown', () => {
-      it('emits (pointerDownOutside) and (interactOutside), then closes', async () => {
-        const ctx = await setup.mount();
-        dispatchPointerOnOutside();
-        await ctx.flush();
-        expect(ctx.pointerOutsideCount()).toBe(1);
-        expect(ctx.interactOutsideCount()).toBeGreaterThanOrEqual(1);
-        expect(ctx.isOpen()).toBe(false);
+    if (outsideInteraction) {
+      describe('outside pointerdown', () => {
+        it('emits (pointerDownOutside) and (interactOutside), then closes', async () => {
+          const ctx = await setup.mount();
+          dispatchPointerOnOutside();
+          await ctx.flush();
+          expect(countOf(ctx.pointerOutsideCount)).toBe(1);
+          expect(countOf(ctx.interactOutsideCount)).toBeGreaterThanOrEqual(1);
+          expect(ctx.isOpen()).toBe(false);
+        });
+
+        if (dismissibleFlag) {
+          it('does not close when dismissible=false', async () => {
+            const ctx = await setup.mount({ dismissible: false });
+            dispatchPointerOnOutside();
+            await ctx.flush();
+            expect(ctx.isOpen()).toBe(true);
+          });
+        }
+
+        it('keeps the layer open when (pointerDownOutside) calls preventDefault()', async () => {
+          const ctx = await setup.mount({ pointerVeto: true });
+          dispatchPointerOnOutside();
+          await ctx.flush();
+          expect(countOf(ctx.pointerOutsideCount)).toBe(1);
+          expect(ctx.isOpen()).toBe(true);
+        });
       });
 
-      it('does not close when dismissible=false', async () => {
-        const ctx = await setup.mount({ dismissible: false });
-        dispatchPointerOnOutside();
-        await ctx.flush();
-        expect(ctx.isOpen()).toBe(true);
+      describe('outside focus', () => {
+        it('emits (focusOutside) and (interactOutside) when focus moves outside', async () => {
+          const ctx = await setup.mount();
+          dispatchFocusOnOutside();
+          await ctx.flush();
+          expect(countOf(ctx.focusOutsideCount)).toBe(1);
+          expect(countOf(ctx.interactOutsideCount)).toBeGreaterThanOrEqual(1);
+        });
       });
-
-      it('keeps the layer open when (pointerDownOutside) calls preventDefault()', async () => {
-        const ctx = await setup.mount({ pointerVeto: true });
-        dispatchPointerOnOutside();
-        await ctx.flush();
-        expect(ctx.pointerOutsideCount()).toBe(1);
-        expect(ctx.isOpen()).toBe(true);
-      });
-    });
-
-    describe('outside focus', () => {
-      it('emits (focusOutside) and (interactOutside) when focus moves outside', async () => {
-        const ctx = await setup.mount();
-        dispatchFocusOnOutside();
-        await ctx.flush();
-        expect(ctx.focusOutsideCount()).toBe(1);
-        expect(ctx.interactOutsideCount()).toBeGreaterThanOrEqual(1);
-      });
-    });
+    }
   });
 }

@@ -6,15 +6,9 @@ import { ForDrawer, type ForDrawerCloseReason } from 'forty-cdk/drawer';
 import { ForToastManager, ForToastViewport, provideForToastDefaults } from 'forty-cdk/toast';
 
 import { flush } from '../test-utils/flush';
+import { pointerDownOn } from '../test-utils/outside-events';
 import { afterEachOverlayCleanup } from '../test-utils/overlay-cleanup';
 import { renderHost } from '../test-utils/render';
-
-function pointerDownOn(target: Element): void {
-  const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-  Object.defineProperty(event, 'target', { value: target, configurable: true });
-  Object.defineProperty(event, 'composedPath', { value: () => [target], configurable: true });
-  document.dispatchEvent(event);
-}
 
 @Component({
   imports: [ForDialog, ForToastViewport],

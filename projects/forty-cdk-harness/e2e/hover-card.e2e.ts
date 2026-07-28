@@ -54,6 +54,8 @@ test.describe('HoverCard', () => {
     await expect(el(page, 'card')).toBeVisible();
 
     await el(page, 'card').hover();
+    // Negative assertion: hovering the card itself must NOT start the close
+    // timer, so the card is still there after the close delay would have run.
     await page.waitForTimeout(200);
     await expect(el(page, 'card')).toBeVisible();
 

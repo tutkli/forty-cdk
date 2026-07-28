@@ -52,6 +52,10 @@ test.describe('Popover leave stays anchored (#772)', () => {
     });
 
     await page.keyboard.press('Escape');
+    // Sampling wait, not a settle-wait: the assertion is about what the
+    // surface looks like PART-WAY through the leave animation, so the test
+    // has to land inside that window rather than poll for its end. 60ms sits
+    // comfortably inside the fixture's leave duration.
     await page.waitForTimeout(60);
 
     const midLeave = await el(page, 'popover-anim').evaluate((node) => {
@@ -87,6 +91,8 @@ test.describe('Popover leave stays anchored (#772)', () => {
     });
 
     await page.keyboard.press('Escape');
+    // Sampling wait — see the sibling case above: the assertion targets the
+    // mid-leave frame, which cannot be polled for.
     await page.waitForTimeout(60);
 
     const midLeave = await el(page, 'popover-anim').evaluate((node) => {

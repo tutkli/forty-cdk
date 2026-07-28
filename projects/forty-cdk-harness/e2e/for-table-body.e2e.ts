@@ -1,11 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { el, expectFocused, gotoFixture } from './_helpers';
-
-const dataCell = (page: Page, row: number, column: string) =>
-  page.locator('[forTableRow]').nth(row).locator(`[data-column="${column}"]`);
-
-const headerCell = (page: Page, column: string) =>
-  page.locator(`[forTableHeaderCell][data-column="${column}"]`);
+import { dataCellAt as dataCell, headerCell } from './_table-helpers';
 
 const columnWidth = (page: Page, column: string): Promise<number | null> =>
   el(page, 'widths').evaluate((node, col) => {

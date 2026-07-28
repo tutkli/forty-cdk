@@ -148,6 +148,35 @@ describe('ForListbox', () => {
         await r.flush();
         return { items: listboxItems(r.el), flush: r.flush };
       },
+      mountWithSelection: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.picked.set(['banana']);
+        await r.flush();
+        return { items: listboxItems(r.el), selectedIndices: [2], flush: r.flush };
+      },
+      mountWithMultiSelection: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.isMulti.set(true);
+        r.instance.picked.set(['banana', 'cherry']);
+        await r.flush();
+        return { items: listboxItems(r.el), selectedIndices: [2, 4], flush: r.flush };
+      },
+      mountWithSelectedDisabled: async () => {
+        const r = renderHost(ListboxHost);
+        r.instance.options.set([
+          { value: 'apple', label: 'Apple', disabled: false },
+          { value: 'apricot', label: 'Apricot', disabled: false },
+          { value: 'banana', label: 'Banana', disabled: true },
+        ]);
+        r.instance.picked.set(['banana']);
+        await r.flush();
+        return {
+          items: listboxItems(r.el),
+          enabledIndices: [0, 1],
+          selectedIndices: [2],
+          flush: r.flush,
+        };
+      },
     },
     { forwardArrow: 'ArrowDown' },
   );
@@ -262,44 +291,6 @@ describe('ForListbox', () => {
   });
 
   describe('initial tabindex', () => {
-    it('first enabled option has tabindex=0 when nothing is selected', () => {
-      const { el } = renderHost(ListboxHost);
-      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('0');
-      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
-    });
-
-    it('selected option has tabindex=0 when there is a selection', async () => {
-      const { el, fixture, flush } = renderHost(ListboxHost);
-      fixture.componentInstance.picked.set(['banana']);
-      await flush();
-      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
-      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
-    });
-
-    it('skips disabled when picking the first-enabled tab entry', async () => {
-      const { el, fixture, flush } = renderHost(ListboxHost);
-      fixture.componentInstance.options.set([
-        { value: 'apple', label: 'Apple', disabled: true },
-        { value: 'banana', label: 'Banana', disabled: false },
-        { value: 'cherry', label: 'Cherry', disabled: false },
-      ]);
-      await flush();
-      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('-1');
-      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
-    });
-
-    it('multi-select with ≥2 preselected options exposes exactly one tabindex=0', async () => {
-      const { el, fixture, flush } = renderHost(ListboxHost);
-      fixture.componentInstance.isMulti.set(true);
-      fixture.componentInstance.picked.set(['banana', 'cherry']);
-      await flush();
-
-      const zeros = ['apple', 'apricot', 'banana', 'blueberry', 'cherry'].filter(
-        (v) => optOf(el, v).getAttribute('tabindex') === '0',
-      );
-      expect(zeros).toEqual(['banana']);
-    });
-
     it('multi-select tab entry is the first selected enabled option in DOM order', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.isMulti.set(true);
@@ -2150,7 +2141,6 @@ describe('ForListbox', () => {
 
       await flush(result.fixture);
       const opt49 = result.el.querySelector<HTMLButtonElement>('[data-test-id="opt-49"]');
-      expect(opt49).not.toBeNull();
       expect(lb.getAttribute('aria-activedescendant')).toBe(opt49!.getAttribute('id'));
     });
 

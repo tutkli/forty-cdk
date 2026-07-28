@@ -618,7 +618,7 @@ describe('injectFloating', () => {
 
       await flushPositioning(fixture);
       expect(bubbleEl.style.clipPath).toBe('');
-      expect(bubbleEl.dataset['placement']).toBeTruthy();
+      expect(bubbleEl.dataset['placement']).toBe('bottom');
     });
   });
 

@@ -15,6 +15,18 @@ import { dragFrom, el, expectFocused, gotoFixture } from './_helpers';
  */
 
 /**
+ * Gap held between two consecutive `page.mouse.move` calls in a drag.
+ *
+ * This is pointer-gesture *pacing*, not a settle-wait, so it is exempt from
+ * the one-shot-wait → `expect.poll` rule in `.claude/rules/testing.md`: there
+ * is no state transition to poll for between two moves of the same drag. It
+ * exists because WebKit coalesces pointermoves dispatched back-to-back, and a
+ * coalesced pair makes the slider read the intermediate position as the final
+ * value. Every `waitForTimeout` in this file is one of these.
+ */
+const POINTER_MOVE_SETTLE_MS = 20;
+
+/**
  * Convenience: pointerdown / move / up at given track-relative offsets. The
  * move is split into a few discrete `mouse.move` calls so WebKit (which can
  * batch a single `mouse.move(_, _, { steps: 1 })` past the listener) emits
@@ -48,9 +60,9 @@ async function dragOnTrack(
   // the intermediate position as the final value because the second move
   // hasn't dispatched by the time mouse.up runs.
   await page.mouse.move(mid.x, mid.y);
-  await page.waitForTimeout(20);
+  await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
   await page.mouse.move(end.x, end.y);
-  await page.waitForTimeout(20);
+  await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
   if (release) {
     await page.mouse.up();
   }
@@ -81,7 +93,7 @@ test.describe('Slider (pointer drag)', () => {
     await page.mouse.down();
     // Move well past the right edge — directive must clamp to max.
     await page.mouse.move(trackBox!.x + trackBox!.width + 500, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     await expect(el(page, 'last-value')).toHaveText('100');
@@ -95,7 +107,7 @@ test.describe('Slider (pointer drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x - 500, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     await expect(el(page, 'last-value')).toHaveText('0');
@@ -115,7 +127,7 @@ test.describe('Slider (pointer drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
     const countAfterRelease = Number(await el(page, 'value-change-count').textContent());
     expect(countAfterRelease).toBeGreaterThan(0);
@@ -125,7 +137,7 @@ test.describe('Slider (pointer drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.85, trackBox!.y + trackBox!.height / 2);
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.95, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(40);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS * 2);
     expect(Number(await el(page, 'value-change-count').textContent())).toBe(countAfterRelease);
   });
 
@@ -137,7 +149,7 @@ test.describe('Slider (pointer drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.75, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     await expect(el(page, 'last-value')).toHaveText('50');
@@ -157,7 +169,7 @@ test.describe('Slider (track click)', () => {
     // wait between move and up because WebKit otherwise reads the previous
     // (pointerdown) position as the final value.
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.4, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
@@ -249,9 +261,9 @@ test.describe('Slider (coincident thumbs)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.82, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.9, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.95, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
@@ -272,9 +284,9 @@ test.describe('Slider (coincident thumbs)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
@@ -297,7 +309,7 @@ test.describe('Slider (coincident thumbs)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.82, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x - 500, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
@@ -321,7 +333,7 @@ test.describe('Slider (RTL)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width + 500, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('0');
   });
@@ -335,7 +347,7 @@ test.describe('Slider (RTL)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width + 500, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('100');
   });
@@ -354,7 +366,7 @@ test.describe('Slider (vertical)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y - 500);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('100');
 
@@ -362,7 +374,7 @@ test.describe('Slider (vertical)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height + 500);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
     await expect(el(page, 'last-value')).toHaveText('0');
   });
@@ -379,9 +391,9 @@ test.describe('Slider (valueCommit on drag)', () => {
     await page.mouse.down();
     // Several intermediate moves — should NOT fire commit yet.
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.7, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await expect(el(page, 'value-commit-count')).toHaveText('0');
     // Release — single commit.
     await page.mouse.up();
@@ -415,7 +427,7 @@ test.describe('Slider (valueCommit on drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     await expect(el(page, 'touched')).toHaveText('true');
@@ -553,7 +565,7 @@ test.describe('Slider (step granularity)', () => {
       trackBox!.x + trackBox!.width / 2 + 5,
       trackBox!.y + trackBox!.height / 2,
     );
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     const v = Number(await el(page, 'last-value').textContent());
@@ -572,9 +584,9 @@ test.describe('Slider (step granularity)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width / 2, trackBox!.y + trackBox!.height / 2);
     await page.mouse.down();
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.75, trackBox!.y + trackBox!.height / 2);
-    await page.waitForTimeout(20);
+    await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
 
     const v = Number(await el(page, 'last-value').textContent());

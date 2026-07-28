@@ -666,6 +666,15 @@ describe('ForSlider', () => {
   // `projects/forty-cdk-harness/e2e/slider.e2e.ts`. The Vitest layer can't
   // assert it without stubbing `track.getBoundingClientRect()`, which would
   // tautologically check the math against the stub.
+  //
+  // The two describes below stub the track rect anyway, because what they
+  // assert is *wiring*, not geometry: how many times the rect is read, and
+  // which pointer ids are allowed to drive the session. They therefore
+  // assert call counts and relative value transitions (changed / unchanged)
+  // only — never a concrete value derived from the stubbed rect, which
+  // would just be checking the arithmetic against the numbers the stub was
+  // handed. Per testing.md rule 8, the concrete pointer-to-value mapping
+  // belongs to Playwright.
 
   describe('pointermove layout reads (#1153)', () => {
     const pointer = (type: string, init: PointerEventInit) =>
@@ -700,7 +709,6 @@ describe('ForSlider', () => {
       await flush();
 
       expect(rectSpy).toHaveBeenCalledTimes(1);
-      expect(fixture.componentInstance.picked()).toEqual([80]);
 
       document.dispatchEvent(pointer('pointerup', { clientX: 80, clientY: 0 }));
       rectSpy.mockRestore();
@@ -716,11 +724,14 @@ describe('ForSlider', () => {
       thumb(el, 0).dispatchEvent(pointer('pointerdown', { clientX: 20, clientY: 0 }));
       document.dispatchEvent(pointer('pointermove', { clientX: 20, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.picked()).toEqual([20]);
+      const afterFirstMove = fixture.componentInstance.picked();
 
       document.dispatchEvent(pointer('pointermove', { clientX: 90, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.picked()).toEqual([90]);
+      // A further move keeps driving the value even though the rect was
+      // read only once — the point of the cache. The concrete mapping from
+      // clientX to value is Playwright's.
+      expect(fixture.componentInstance.picked()).not.toEqual(afterFirstMove);
 
       document.dispatchEvent(pointer('pointerup', { clientX: 90, clientY: 0 }));
       expect(rectSpy).toHaveBeenCalledTimes(1);
@@ -755,24 +766,26 @@ describe('ForSlider', () => {
       thumb(el, 0).dispatchEvent(pointer('pointerdown', { pointerId: 1, clientX: 50, clientY: 0 }));
       document.dispatchEvent(pointer('pointermove', { pointerId: 1, clientX: 60, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.picked()).toEqual([60]);
+      const drivenByPrimary = fixture.componentInstance.picked();
 
       document.dispatchEvent(pointer('pointermove', { pointerId: 2, clientX: 90, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.picked()).toEqual([60]);
+      expect(fixture.componentInstance.picked()).toEqual(drivenByPrimary);
 
       fixture.componentInstance.valueCommits.length = 0;
       document.dispatchEvent(pointer('pointerup', { pointerId: 2, clientX: 90, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.picked()).toEqual([60]);
+      expect(fixture.componentInstance.picked()).toEqual(drivenByPrimary);
       expect(fixture.componentInstance.valueCommits).toEqual([]);
 
       document.dispatchEvent(pointer('pointermove', { pointerId: 1, clientX: 70, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.picked()).toEqual([70]);
+      const drivenAgain = fixture.componentInstance.picked();
+      expect(drivenAgain).not.toEqual(drivenByPrimary);
+
       document.dispatchEvent(pointer('pointerup', { pointerId: 1, clientX: 70, clientY: 0 }));
       await flush();
-      expect(fixture.componentInstance.valueCommits).toEqual([[70]]);
+      expect(fixture.componentInstance.valueCommits).toEqual([drivenAgain]);
 
       rectSpy.mockRestore();
     });

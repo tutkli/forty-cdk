@@ -4125,16 +4125,26 @@ describe('ForTable', () => {
       const cell = (el: HTMLElement, id: string) =>
         el.querySelector<HTMLElement>(`[data-testid="${id}"]`);
 
+      // Each cross-window case below asserts BOTH halves of the seam: that
+      // the table asked the virtualizer to scroll the off-window target in
+      // (`scrollToRow`), and that focus lands on it once the row mounts.
+      // Asserting only the landing was what let the #1334 self-loop through
+      // — the tests hand-mount the target window, so a table that never
+      // requested the scroll still looks correct at the unit layer.
+
       it('ArrowDown past the rendered window scrolls the target row in and lands focus on it, preserving the column', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
         const { el, instance, flush } = renderHost(CrossWindowTableHost);
         const start = cell(el, 'cell-24-b')!;
         start.focus();
         await flush();
+        scrollToRow.mockClear();
 
         press(start, 'ArrowDown');
         await flush();
         // Row 25 is outside the rendered window: nothing to land on yet.
         expect(cell(el, 'cell-25-b')).toBeNull();
+        expect(scrollToRow).toHaveBeenCalledWith(25);
 
         // Simulate the virtualizer mounting the freshly scrolled-to row.
         instance.windowIndices.set([23, 24, 25, 26]);
@@ -4144,13 +4154,16 @@ describe('ForTable', () => {
       });
 
       it('ArrowUp past the rendered window lands focus on the row above, preserving the column', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
         const { el, instance, flush } = renderHost(CrossWindowTableHost);
         const start = cell(el, 'cell-20-a')!;
         start.focus();
         await flush();
+        scrollToRow.mockClear();
 
         press(start, 'ArrowUp');
         await flush();
+        expect(scrollToRow).toHaveBeenCalledWith(19);
 
         instance.windowIndices.set([18, 19, 20, 21]);
         await flush();
@@ -4159,13 +4172,16 @@ describe('ForTable', () => {
       });
 
       it('Ctrl+End reaches the last row of the dataset, outside the window', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
         const { el, instance, flush } = renderHost(CrossWindowTableHost);
         const start = cell(el, 'cell-20-a')!;
         start.focus();
         await flush();
+        scrollToRow.mockClear();
 
         press(start, 'End', { ctrlKey: true });
         await flush();
+        expect(scrollToRow).toHaveBeenCalledWith(199);
 
         instance.windowIndices.set([197, 198, 199]);
         await flush();
@@ -4175,13 +4191,16 @@ describe('ForTable', () => {
       });
 
       it('Ctrl+Home reaches the first row of the dataset, outside the window', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
         const { el, instance, flush } = renderHost(CrossWindowTableHost);
         const start = cell(el, 'cell-24-b')!;
         start.focus();
         await flush();
+        scrollToRow.mockClear();
 
         press(start, 'Home', { ctrlKey: true });
         await flush();
+        expect(scrollToRow).toHaveBeenCalledWith(0);
 
         instance.windowIndices.set([0, 1, 2]);
         await flush();

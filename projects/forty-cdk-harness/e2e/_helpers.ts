@@ -1,3 +1,14 @@
+/**
+ * Shared E2E helpers.
+ *
+ * Every `page.waitForTimeout` in this module is pointer-gesture **pacing** —
+ * the `stepDelayMs` gap between two moves of one drag, or the hold duration
+ * of a long press — never a settle-wait on application state. Pacing is
+ * exempt from the one-shot-wait → `expect.poll` rule in
+ * `.claude/rules/testing.md`: the delay is the gesture's own timing, and the
+ * directive's velocity maths reads it. Each one's duration comes from a
+ * documented parameter, so callers control it explicitly.
+ */
 import { expect, type Locator, type Page, type TestInfo } from '@playwright/test';
 
 /**
@@ -26,6 +37,34 @@ export async function gotoFixture(
 ): Promise<void> {
   const qs = new URLSearchParams(query).toString();
   await page.goto(qs ? `/${path}?${qs}` : `/${path}`, { waitUntil: 'networkidle' });
+}
+
+/**
+ * The bounding box of a locator, asserting the element is actually there.
+ *
+ * `locator.boundingBox()` resolves to `null` for a detached or non-rendered
+ * element, and the natural-looking reaction — `if (!box) { test.skip(); }` —
+ * turns exactly the regression a pointer spec exists to catch into a green
+ * skip. A drag spec is the only pointer coverage its primitive has, so a
+ * silent skip there reads as "reorder still works" when the handle has
+ * vanished. Assert instead: `toBeVisible()` gives the readable failure and
+ * carries Playwright's auto-retry, and the non-null return keeps call sites
+ * free of `!`.
+ *
+ * Genuine environment differences (a gesture that does not fit the mobile
+ * viewport, a touch-only path) belong behind
+ * `test.skip(isMobileProject(testInfo), '…')`, never behind a null box.
+ */
+export async function boxOf(locator: Locator): Promise<{
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}> {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  expect(box, 'element is visible but has no bounding box').not.toBeNull();
+  return box!;
 }
 
 /** Press Tab `n` times. Pass `'Shift+Tab'` for backwards navigation. */

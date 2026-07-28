@@ -147,6 +147,9 @@ test.describe('Toast', () => {
     await el(page, 'toast-0').hover();
     await expect(el(page, 'toast-0')).toHaveAttribute('data-paused', '');
 
+    // Negative assertion: a hovered toast must NOT auto-dismiss. Outwaiting
+    // the fixture's dismiss duration is the only way to prove the timer is
+    // really paused rather than merely flagged.
     await page.waitForTimeout(2500);
     await expect(el(page, 'toast-0')).toBeVisible();
     await expect(el(page, 'toast-0')).toHaveAttribute('data-paused', '');

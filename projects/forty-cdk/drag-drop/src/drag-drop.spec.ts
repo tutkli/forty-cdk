@@ -560,7 +560,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, 'ArrowDown');
       pressKey(first, ' ');
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousContainer).toBe(drop!.container);
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
@@ -650,7 +649,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(firstA, 'ArrowDown');
       pressKey(firstA, ' ');
       const drop = comp.lastDropA();
-      expect(drop).not.toBeNull();
       const listAEl = listEl(el, 0);
       const listBEl = listEl(el, 1);
       expect(drop!.previousContainer.host).toBe(listAEl);
@@ -698,7 +696,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(firstA, 'ArrowDown');
       pressKey(firstA, ' ');
       const drop = comp.lastDropA();
-      expect(drop).not.toBeNull();
       const listBEl = listEl(el, 1);
       expect(drop!.container.host).toBe(listBEl);
     });
@@ -826,7 +823,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(firstA, 'ArrowDown');
       pressKey(firstA, ' ');
       const drop = comp.lastDropA();
-      expect(drop).not.toBeNull();
       expect(drop!.container.host).toBe(listEl(el, 0));
       expect(drop!.previousContainer.host).toBe(listEl(el, 0));
     });
@@ -876,7 +872,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, 'ArrowRight');
       pressKey(first, ' ');
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -898,7 +893,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, ' ');
       fixture.detectChanges();
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -1072,7 +1066,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, ' ');
       fixture.detectChanges();
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
       expect(drop!.item).toEqual({ id: 1, label: 'Alpha' });
@@ -1119,7 +1112,6 @@ describe('ForDropList + ForDraggable', () => {
       list.drop();
       fixture.detectChanges();
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
     });
   });
@@ -1178,7 +1170,6 @@ describe('ForDropList + ForDraggable', () => {
 
       expect(cancelledDuringDrop).toContain(coalescedFrame);
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(listEl(el).hasAttribute('data-dragging')).toBe(false);
     });
@@ -1214,7 +1205,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, 'ArrowDown');
       pressKey(first, ' ');
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -1235,7 +1225,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, ' ');
       fixture.detectChanges();
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -1344,7 +1333,6 @@ describe('ForDropList + ForDraggable', () => {
       fixture.detectChanges();
       expect(first.style.display).not.toBe('none');
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -1366,7 +1354,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, ' ');
       fixture.detectChanges();
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -1406,7 +1393,6 @@ describe('ForDropList + ForDraggable', () => {
       fixture.detectChanges();
       await flush(fixture);
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -1530,7 +1516,6 @@ describe('ForDropList + ForDraggable', () => {
       pressKey(first, ' ');
       fixture.detectChanges();
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(1);
     });
@@ -2191,7 +2176,6 @@ describe('ForDropList + ForDraggable', () => {
       fixture.detectChanges();
 
       const drop = comp.lastDrop();
-      expect(drop).not.toBeNull();
       expect(drop!.previousIndex).toBe(0);
       expect(drop!.currentIndex).toBe(4);
     });
@@ -2221,7 +2205,6 @@ describe('ForDropList + ForDraggable', () => {
       fixture.detectChanges();
 
       const drop = comp.lastDropA();
-      expect(drop).not.toBeNull();
       expect(drop!.previousContainer.host).toBe(listEl(el, 0));
       expect(drop!.container.host).toBe(listEl(el, 1));
       expect(drop!.currentIndex).toBe(1);

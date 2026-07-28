@@ -10,7 +10,12 @@ import {
   renderHost,
   type RenderResult,
 } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDismissableLayerContract,
+  assertFormControlContract,
+  assertOverlayTriggerAriaContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
 import {
   assertTimeCapable,
   type DateAdapter,
@@ -131,6 +136,27 @@ class Host {
 }
 
 @Component({
+  imports: [ForDatePicker, ForDatePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forDatePicker
+      [(value)]="value"
+      [disabled]="isDisabled()"
+      [required]="isRequired()"
+      ariaLabel="Choose date"
+    >
+      <button forDatePickerTrigger>Open</button>
+    </div>
+  `,
+})
+class DatePickerFormControlHost {
+  readonly value = signal<Date | null>(null);
+  readonly isDisabled = signal(false);
+  readonly isRequired = signal(false);
+}
+
+@Component({
   imports: [ForDatePicker, ForDatePickerTrigger, ForDatePickerContent, ...CALENDAR_PIECES],
   providers: [...provideNativeDateAdapter()],
   template: `
@@ -239,23 +265,55 @@ describe('ForDatePicker', () => {
     },
   });
 
+  assertFormControlContract(
+    () => {
+      const r = renderHost(DatePickerFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLButtonElement>('[forDatePickerTrigger]')!,
+        flush: r.flush,
+        setFlag: (flag, flagValue) => {
+          switch (flag) {
+            case 'disabled':
+              r.instance.isDisabled.set(flagValue);
+              return;
+            case 'required':
+              r.instance.isRequired.set(flagValue);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['disabled', 'required'] },
+  );
+
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(Host);
+        await flush(r.fixture);
+        return {
+          trigger: trigger(r),
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => content()!,
+        };
+      },
+    },
+    { haspopup: 'dialog' },
+  );
+
   describe('structure & ARIA', () => {
-    it('wires the trigger as a dialog disclosure button', () => {
+    it('wires the trigger as a native button', () => {
       const r = renderHost(Host);
-      const t = trigger(r);
-      expect(t.getAttribute('type')).toBe('button');
-      expect(t.getAttribute('aria-haspopup')).toBe('dialog');
-      expect(t.getAttribute('aria-expanded')).toBe('false');
-      expect(t.hasAttribute('aria-controls')).toBe(false);
+      expect(trigger(r).getAttribute('type')).toBe('button');
     });
 
-    it('reflects aria-expanded / aria-controls and role=dialog when open', async () => {
+    it('gives the open surface role=dialog and the configured accessible name', async () => {
       const r = renderHost(Host);
       await openPicker(r);
 
       const surface = content()!;
-      expect(trigger(r).getAttribute('aria-expanded')).toBe('true');
-      expect(trigger(r).getAttribute('aria-controls')).toBe(surface.id);
       expect(surface.getAttribute('role')).toBe('dialog');
       expect(surface.getAttribute('aria-label')).toBe('Choose date');
     });
@@ -978,7 +1036,6 @@ describe('ForDatePicker', () => {
       await flush(r.fixture);
 
       const afterClear = r.instance.value();
-      expect(afterClear).not.toBeNull();
       expect(adapter.getDate(afterClear!)).toBe(15);
 
       pressKey(timeSeg('minute'), 'ArrowUp');
@@ -1002,7 +1059,6 @@ describe('ForDatePicker', () => {
       await flush(r.fixture);
 
       const value = r.instance.value();
-      expect(value).not.toBeNull();
       expect(adapter.getYear(value!)).toBe(2026);
       expect(adapter.getMonth(value!)).toBe(6);
       expect(adapter.getDate(value!)).toBe(15);
@@ -1138,7 +1194,6 @@ describe('ForDatePicker', () => {
       await flush(r.fixture);
 
       const value = r.instance.value();
-      expect(value).not.toBeNull();
       expect(adapter.getHours(value!)).toBe(9);
       expect(adapter.getDate(value!)).toBe(15);
     });

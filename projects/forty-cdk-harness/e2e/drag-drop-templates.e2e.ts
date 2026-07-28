@@ -136,6 +136,9 @@ test.describe('drag-drop live-sort placeholder', () => {
       await page.mouse.move(startX, y);
       for (let attempt = 0; attempt < 4 && !crossed; attempt++) {
         crossed = await placeholderPastItem1();
+        // Pacing wait inside a bounded retry loop, not a settle-wait: it gives
+        // the placeholder swap a frame before re-reading, and the loop exits
+        // the moment the swap lands.
         if (!crossed) await page.waitForTimeout(25);
       }
     }
@@ -182,6 +185,8 @@ test.describe('drag-drop live-sort placeholder', () => {
       await page.mouse.move(startX, y);
       for (let attempt = 0; attempt < 4 && !crossed; attempt++) {
         crossed = await placeholderPastItem1();
+        // Pacing wait inside a bounded retry loop — see the sibling case
+        // above.
         if (!crossed) await page.waitForTimeout(25);
       }
     }
@@ -204,7 +209,14 @@ test.describe('drag-drop live-sort placeholder', () => {
     });
 
     await page.mouse.up();
-    await page.waitForTimeout(250);
+    // Settle-wait replaced by a poll: the FLIP pass finishes when the
+    // MutationObserver has recorded its stamps, which arrives as soon as the
+    // animation ends rather than at a fixed 250ms.
+    await expect
+      .poll(() =>
+        page.evaluate(() => (window as unknown as { __flipStamps?: number }).__flipStamps ?? -1),
+      )
+      .toBeGreaterThanOrEqual(0);
 
     const stamps = await page.evaluate(
       () => (window as unknown as { __flipStamps?: number }).__flipStamps ?? -1,

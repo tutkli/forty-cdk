@@ -1,11 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { el, expectFocused, gotoFixture } from './_helpers';
-
-const rows = (page: Page) => page.locator('[forTableRow]');
-const rowByIndex = (page: Page, index: number) =>
-  page.locator(`[forTableRow][data-index="${index}"]`);
-const cell = (page: Page, index: number, column: string) =>
-  rowByIndex(page, index).locator(`[data-column="${column}"]`);
+import { dataCell as cell, rowByIndex, rows } from './_table-helpers';
 
 test.describe('ForTableBody — virtualized (window seam)', () => {
   test('mounts only a bounded window and sizes the rowgroup to the full dataset', async ({

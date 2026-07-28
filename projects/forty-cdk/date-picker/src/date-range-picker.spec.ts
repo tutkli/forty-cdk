@@ -8,6 +8,11 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import {
+  assertFormControlContract,
+  assertOverlayTriggerAriaContract,
+  type FormControlMountResult,
+} from '../../src/test-utils/contract';
+import {
   ForCalendar,
   ForCalendarCell,
   ForCalendarGrid,
@@ -97,6 +102,27 @@ class Host {
   readonly openChanges: boolean[] = [];
 }
 
+@Component({
+  imports: [ForDateRangePicker, ForDatePickerTrigger],
+  providers: [...provideNativeDateAdapter()],
+  template: `
+    <div
+      forDateRangePicker
+      [(value)]="value"
+      [disabled]="isDisabled()"
+      [required]="isRequired()"
+      ariaLabel="Choose date range"
+    >
+      <button forDatePickerTrigger>Open</button>
+    </div>
+  `,
+})
+class RangeFormControlHost {
+  readonly value = signal<DateRange<Date> | null>(null);
+  readonly isDisabled = signal(false);
+  readonly isRequired = signal(false);
+}
+
 type R = RenderResult<Host>;
 
 const trigger = (r: R) => r.query<HTMLButtonElement>('[forDatePickerTrigger]')!;
@@ -121,23 +147,55 @@ describe('ForDateRangePicker', () => {
 
   afterEachOverlayCleanup();
 
+  assertFormControlContract(
+    () => {
+      const r = renderHost(RangeFormControlHost);
+      const result: FormControlMountResult = {
+        control: r.query<HTMLButtonElement>('[forDatePickerTrigger]')!,
+        flush: r.flush,
+        setFlag: (flag, flagValue) => {
+          switch (flag) {
+            case 'disabled':
+              r.instance.isDisabled.set(flagValue);
+              return;
+            case 'required':
+              r.instance.isRequired.set(flagValue);
+              return;
+          }
+        },
+      };
+      return result;
+    },
+    { flags: ['disabled', 'required'] },
+  );
+
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(Host);
+        await flush(r.fixture);
+        return {
+          trigger: trigger(r),
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => content()!,
+        };
+      },
+    },
+    { haspopup: 'dialog' },
+  );
+
   describe('structure & ARIA', () => {
-    it('wires the trigger as a dialog disclosure button', () => {
+    it('wires the trigger as a native button', () => {
       const r = renderHost(Host);
-      const t = trigger(r);
-      expect(t.getAttribute('type')).toBe('button');
-      expect(t.getAttribute('aria-haspopup')).toBe('dialog');
-      expect(t.getAttribute('aria-expanded')).toBe('false');
-      expect(t.hasAttribute('aria-controls')).toBe(false);
+      expect(trigger(r).getAttribute('type')).toBe('button');
     });
 
-    it('reflects aria-expanded / aria-controls and role=dialog when open', async () => {
+    it('gives the open surface role=dialog and the configured accessible name', async () => {
       const r = renderHost(Host);
       await open(r);
 
       const surface = content()!;
-      expect(trigger(r).getAttribute('aria-expanded')).toBe('true');
-      expect(trigger(r).getAttribute('aria-controls')).toBe(surface.id);
       expect(surface.getAttribute('role')).toBe('dialog');
       expect(surface.getAttribute('aria-label')).toBe('Choose date range');
     });
@@ -174,7 +232,6 @@ describe('ForDateRangePicker', () => {
       await flush(r.fixture);
 
       const range = r.instance.value();
-      expect(range).not.toBeNull();
       expect(adapter.isSameDay(range!.start, new Date(2026, 5, 10))).toBe(true);
       expect(adapter.isSameDay(range!.end, new Date(2026, 5, 15))).toBe(true);
       expect(content()).toBeNull();
@@ -371,8 +428,6 @@ describe('ForDateRangePicker', () => {
 
       const start = document.querySelector<HTMLInputElement>('input[name="stay-start"]');
       const end = document.querySelector<HTMLInputElement>('input[name="stay-end"]');
-      expect(start).not.toBeNull();
-      expect(end).not.toBeNull();
       expect(start!.value).toBe('2026-06-10');
       expect(end!.value).toBe('2026-06-15');
     });
@@ -458,7 +513,6 @@ describe('ForDateRangePicker', () => {
       await flush(r.fixture);
 
       const stay = r.instance.model().stay;
-      expect(stay).not.toBeNull();
       expect(adapter.isSameDay(stay!.start, new Date(2026, 5, 10))).toBe(true);
       expect(adapter.isSameDay(stay!.end, new Date(2026, 5, 15))).toBe(true);
       expect(r.instance.open()).toBe(false);
@@ -477,7 +531,6 @@ describe('ForDateRangePicker', () => {
       await flush(r.fixture);
 
       const range = r.instance.value();
-      expect(range).not.toBeNull();
       expect(adapter.isSameDay(range!.start, new Date(2026, 5, 10))).toBe(true);
       expect(adapter.isSameDay(range!.end, new Date(2026, 5, 15))).toBe(true);
 

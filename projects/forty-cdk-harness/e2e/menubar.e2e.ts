@@ -175,6 +175,8 @@ test.describe('Menubar', () => {
     // a real hover state), then off to empty space far below the bar / menu.
     await el(page, 'trigger-file').hover();
     await page.mouse.move(5, 600);
+    // Negative assertion — nothing should happen, so only elapsed time proves
+    // it. 300ms is well past any hover-leave close delay.
     await page.waitForTimeout(300);
 
     // Per the APG Menubar pattern there is no hover-leave dismissal: the menu
@@ -191,6 +193,8 @@ test.describe('Menubar', () => {
     await expect(el(page, 'menu-file')).toBeVisible();
 
     await page.mouse.move(5, 600);
+    // Negative assertion: a pointer-leave must not dismiss a click-opened
+    // menu either. Only elapsed time can show the absence of a close.
     await page.waitForTimeout(300);
 
     await expect(el(page, 'menu-file')).toBeVisible();
@@ -209,6 +213,8 @@ test.describe('Menubar', () => {
     // Travelling from the trigger down into the portaled menu keeps it open;
     // hovering an item focuses it (the shared menu-item hover contract).
     await el(page, 'item-file-3').hover();
+    // Negative assertion: travelling off the trigger into the portaled menu
+    // must not trip a close. Elapsed time is the only way to see that.
     await page.waitForTimeout(300);
     await expect(el(page, 'menu-file')).toBeVisible();
     await expectFocused(el(page, 'item-file-3'));
