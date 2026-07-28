@@ -1,5 +1,6 @@
 export const CORE_PUBLISHERS = {
   shared: [
+    'accessibleTextContent',
     'assertTimeCapable',
     'DateAdapter',
     'DateRange',

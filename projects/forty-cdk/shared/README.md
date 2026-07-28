@@ -13,7 +13,7 @@ import { ForTabs, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
 import type { WritingDirection } from 'forty-cdk/shared';
 ```
 
-There is nothing to install and — unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)) — nothing to provide: 33 of the 40 exports are structural types erased at compile time, and the seven runtime values resolve to the same singly-compiled module every primitive already loads.
+There is nothing to install and — unless you mount more than one forty-cdk app on a page (see [Multiple apps on one page](#multiple-apps-on-one-page)) — nothing to provide: 33 of the 41 exports are structural types erased at compile time, and the eight runtime values resolve to the same singly-compiled module every primitive already loads.
 
 ## What it exports
 
@@ -25,10 +25,25 @@ There is nothing to install and — unless you mount more than one forty-cdk app
 | **Date / time**            | `DateAdapter`, `TimeCapableDateAdapter`, `assertTimeCapable`, `FOR_DATE_ADAPTER`, `injectDateAdapter`, `DateRange`, `FieldSegment`, `SegmentEditorContext`, `SegmentEditorDelegate`, `SegmentHandle`, `SegmentType`, `DateSegmentType`, `TimeSegmentType`, `FieldGranularity`, `TimeGranularity` |
 | **Menu family**            | `FOR_MENU_CONTEXT`, `ForMenuContext`, `ForMenuCloseReason`, `ForMenuItemHandle`, `MenuActivationModality`, `MenuSiblingNavigator`                                                                                                                                                                |
 | **Fieldset**               | `FOR_FIELDSET_CONTEXT`, `ForFieldsetContext`                                                                                                                                                                                                                                                     |
+| **Accessible text**        | `accessibleTextContent`                                                                                                                                                                                                                                                                          |
 | **Id generation**          | `FOR_ID_SALT`, `provideForIdSalt`                                                                                                                                                                                                                                                                |
 | **Other**                  | `ListboxOverlayContext`, `DragPreview`, `SwipeDirection`, `SwipeEventDetail`                                                                                                                                                                                                                     |
 
 Three blessed contracts are **not** here, because a primitive is their semantic home rather than a second path to the same symbol: `ForVisuallyHidden` ships from [`forty-cdk/visually-hidden`](../visually-hidden), `ForDrawerSide` from [`forty-cdk/drawer`](../drawer), and the field-wiring set `FOR_FIELD_CONTEXT` / `ForFieldContext` / `FieldControlHandle` / `injectFieldWiring` from [`forty-cdk/field`](../field).
+
+## Reading a control's accessible text
+
+`accessibleTextContent(node)` concatenates a node's text content while skipping any subtree marked `aria-hidden="true"`, so a decorative indicator glyph, badge or icon contributes nothing while visually-hidden but announced content is kept. It is what the library itself calls to decide what a `[forSelectOption]` / `[forComboboxOption]` is named, what its typeahead matches on, and how a reorder announcement labels the moved option.
+
+Reach for it whenever your own code has to reason about that same text — a truncation tooltip that shows a cell's full label, a filter that matches what the user actually perceives:
+
+```ts
+import { accessibleTextContent } from 'forty-cdk/shared';
+
+const label = accessibleTextContent(host).trim();
+```
+
+The result is untrimmed, so apply your own `.trim()` when comparing. Deriving the text yourself with `textContent` works until an `aria-hidden` glyph appears inside the host, at which point your definition and the library's silently disagree.
 
 ## Multiple apps on one page
 
@@ -81,4 +96,4 @@ One rename comes with the move: `SegmentType` was also published as `DateTimeSeg
 
 - **Not a primitive.** There are no directives here and nothing to add to `imports`.
 - **Not `forty-cdk/core`.** `core` stays resolvable — the primitives import it by specifier, which is what keeps `LiveAnnouncer`, the focus-trap and dismissible-layer stacks, and the id-generator salt single-instance — but it carries no semver guarantee. If a symbol you need is not exported here, it is internal by design; open an issue rather than importing from `core`.
-- **Tree-shakes to nothing.** The types vanish at compile time and the five values sit in the core module your primitives already pull, so importing from here adds no code to your bundle.
+- **Tree-shakes to nothing.** The types vanish at compile time and the eight values sit in the core module your primitives already pull, so importing from here adds no code to your bundle.
