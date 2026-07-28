@@ -337,5 +337,5 @@ field-state member delegates to the original field, so `[formField]` pushes the 
 into the control it would for any other field. The value is `computed`, never copied — there
 is no second source of truth. Multi-select fields are already `readonly T[]`; bind those (and
 any field you model as `readonly T[]` yourself) with `[formField]` directly. See
-[the helper's README](../projects/forty-cdk/src/lib/signal-forms/README.md) for the full
+[the helper's README](../projects/forty-cdk/signal-forms/README.md) for the full
 behaviour table.

@@ -262,14 +262,14 @@ Dialog is structurally different: the trigger and the dialog surface can live an
 }
 ```
 
-The flat shape is what enables Dialog to be used both declaratively and programmatically (`ForDialogManager.open()`). See the [Dialog README](../projects/forty-cdk/src/lib/dialog/README.md) for both patterns.
+The flat shape is what enables Dialog to be used both declaratively and programmatically (`ForDialogManager.open()`). See the [Dialog README](../projects/forty-cdk/dialog/README.md) for both patterns.
 
 ---
 
 ## Where to go next
 
-- **Popover full reference** — [projects/forty-cdk/src/lib/popover/README.md](../projects/forty-cdk/src/lib/popover/README.md): all inputs, outputs, the `[forPopoverAnchor]` anchor-override, and the arrow recipe.
-- **Dialog full reference** — [projects/forty-cdk/src/lib/dialog/README.md](../projects/forty-cdk/src/lib/dialog/README.md): the flat shape in detail, the programmatic API, and focus-callback shapes.
+- **Popover full reference** — [projects/forty-cdk/src/lib/popover/README.md](../projects/forty-cdk/popover/README.md): all inputs, outputs, the `[forPopoverAnchor]` anchor-override, and the arrow recipe.
+- **Dialog full reference** — [projects/forty-cdk/src/lib/dialog/README.md](../projects/forty-cdk/dialog/README.md): the flat shape in detail, the programmatic API, and focus-callback shapes.
 - **Styling floating content** — [docs/styling-floating-content.md](./styling-floating-content.md): the three animation rules, all CSS custom properties, the full arrow recipe, and copy-paste snippets for Tooltip, HoverCard, and Menu as well as Popover.
 - **Selected-indicator alignment** — [docs/selected-indicator-pattern.md](./selected-indicator-pattern.md): the `[forceMount]` + `opacity` pattern for keeping checkmarks visually aligned in Menu items.
 - **Other overlay primitives** — DropdownMenu, ContextMenu, Tooltip, HoverCard, Select, Combobox all follow the wrapper-based shape and share the same portal → global CSS rule. Their READMEs are in `projects/forty-cdk/src/lib/<primitive>/README.md`.

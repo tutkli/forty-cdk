@@ -177,7 +177,7 @@ answer.
   consumers to `[forTableRowReorder]` as the supported reference integration, and
   lists the three mechanisms any custom integration must supply (with
   `translateWindowReorder` called out as the reusable core helper).
-- **README — `table/README.md`:** the "Reordering under virtualization" section
+- **Guide — `docs/table-reordering.md`:** the "Reordering under virtualization" section
   already documents the supported usage and the one deferred gap; it gains a
   cross-link to this note for the rationale.
 - **Example + E2E:** the supported path already ships

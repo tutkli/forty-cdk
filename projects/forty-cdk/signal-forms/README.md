@@ -4,7 +4,7 @@ Small, framework-supported bridges between `@angular/forms/signals` and forty-cd
 
 ## `forSingleValueField` — single-value selection bridge
 
-The selection primitives (`ForSelect`, `ForListbox`, `ForCombobox`) model their value as `readonly T[]` — single mode keeps the array at length ≤ 1 (see the [selection value-type contract](../../../../../docs/selection-value-type-contract.md)). That uniform array shape is what makes one control cover both single and multi selection, and it is the `FormValueControl<readonly T[]>` backing the `[formField]` directive auto-wires to.
+The selection primitives (`ForSelect`, `ForListbox`, `ForCombobox`) model their value as `readonly T[]` — single mode keeps the array at length ≤ 1 (see the [selection value-type contract](../../../docs/selection-value-type-contract.md)). That uniform array shape is what makes one control cover both single and multi selection, and it is the `FormValueControl<readonly T[]>` backing the `[formField]` directive auto-wires to.
 
 But a single-select consumer models their domain field as `T | null`, so a `FieldTree<T | null>` cannot bind to the control directly — the value types don't match. `forSingleValueField` adapts the field to the array view the control expects, so the standard `[formField]` wiring works unchanged:
 
@@ -69,4 +69,4 @@ The value view is **derived** (`computed`) from the original field — there is 
 - **Multi-select** fields are already `readonly T[]` — bind `[formField]` directly, no bridge.
 - **A single field you model as `readonly T[]`** (length ≤ 1) — bind directly. The bridge exists specifically for the `T | null` domain shape.
 
-See the [wrapping form primitives guide](../../../../../docs/wrapping-form-primitives.md) for the full picture, including how design-system wrappers re-expose the primitives.
+See the [wrapping form primitives guide](../../../docs/wrapping-form-primitives.md) for the full picture, including how design-system wrappers re-expose the primitives.

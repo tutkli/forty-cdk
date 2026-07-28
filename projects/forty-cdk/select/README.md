@@ -6,7 +6,7 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 
 `[forSelect]` is generic over the option value type `T` (default `string`). Bind primitive ids for the simple case or full objects for richer models — the directive infers `T` from `[(value)]` and `[forSelectOption][value]`. See [Object values](#object-values) for the object-mode contract.
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+> New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## Anatomy
 
@@ -118,7 +118,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forSelectIndicator]` | `data-state`       | `checked` \| `unchecked`   |
 | `[forSelectSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
 
-`data-highlighted` marks the keyboard-focused option (shared vocabulary with the listbox / menu / combobox primitives). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../../../docs/styling-floating-content.md).
+`data-highlighted` marks the keyboard-focused option (shared vocabulary with the listbox / menu / combobox primitives). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../docs/styling-floating-content.md).
 
 ## Mount/visibility convention
 
@@ -275,7 +275,7 @@ Each dismiss reason emits a vetoable event from `[forSelect]` — call `preventD
 
 ## Auto-focus events
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the listbox sends focus to the selected option (open) or returns it to the trigger (close). Both deliver a `VetoableEvent` — call `preventDefault()` on the veto to skip the imperative focus move. The listbox stays mounted; only the focus move is vetoed. These are output-shape because Select always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` fire just before the listbox sends focus to the selected option (open) or returns it to the trigger (close). Both deliver a `VetoableEvent` — call `preventDefault()` on the veto to skip the imperative focus move. The listbox stays mounted; only the focus move is vetoed. These are output-shape because Select always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [Conventions › Auto-focus hook shape](../../../.claude/rules/conventions.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
 
 ## Object values
 
@@ -482,7 +482,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
 ### CSS custom properties
 
@@ -496,7 +496,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 | `--for-available-height`         | px                  | both       | Maximum block-size before collision — clamp with `max-height: var(--for-available-height)`. In `popper` the anchor-relative space from floating-ui's `size` middleware; in `item-aligned` the viewport height minus `collisionPadding` on both edges. |
 | `--for-content-transform-origin` | `<origin>` keywords | `popper`   | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.                                                                                                                                          |
 
-> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) live on the portaled host too — `--for-available-height` is published in both modes; see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list.
+> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) live on the portaled host too — `--for-available-height` is published in both modes; see [Styling floating content](../../../docs/styling-floating-content.md) for the full list.
 
 ```css
 .select-trigger svg {
@@ -516,4 +516,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_SELECT_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).

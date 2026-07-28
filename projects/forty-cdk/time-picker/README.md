@@ -5,7 +5,7 @@ A trigger that opens a floating listbox of generated time slots over a pluggable
 Headless and styleless: a combobox trigger opens a floating listbox of generated time slots. Value is typed as your adapter's date-time type `D`.
 
 Requires a time-capable adapter:
-[`provideNativeDateAdapter()`](../calendar/native-date-adapter.ts) or the
+[`provideNativeDateAdapter()`](../calendar/src/native-date-adapter.ts) or the
 `@internationalized/date` adapter from `forty-cdk/internationalized-date`.
 
 ## Anatomy
@@ -172,7 +172,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ```typescript
 import {

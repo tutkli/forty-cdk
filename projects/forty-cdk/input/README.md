@@ -171,7 +171,7 @@ export class DemoSignup {
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 `[forInput]` and `[forTextarea]` reflect the identical set of attributes on their native host element.
 
@@ -187,4 +187,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_INPUT_HOST_DIRECTIVE_OUTPUTS` and `FOR_TEXTAREA_HOST_DIRECTIVE_INPUTS` / `FOR_TEXTAREA_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_INPUT_HOST_DIRECTIVE_INPUTS` / `FOR_INPUT_HOST_DIRECTIVE_OUTPUTS` and `FOR_TEXTAREA_HOST_DIRECTIVE_INPUTS` / `FOR_TEXTAREA_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).

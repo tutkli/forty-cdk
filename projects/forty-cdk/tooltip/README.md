@@ -4,7 +4,7 @@ A small floating label that describes its trigger on hover or focus, without eve
 
 Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom`-driven positioning are built in.
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+> New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 > APG: tooltips are for **non-interactive** descriptive text. If you need a click-to-open menu / popup with focusable contents, use a Popover primitive.
 
@@ -225,11 +225,11 @@ Implements the [WAI-ARIA Tooltip pattern](https://www.w3.org/WAI/ARIA/apg/patter
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+See also: [Styling floating content](../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
 
 `[forTooltipContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forTooltipArrow]` reads the consumer-settable `--for-arrow-offset`:
 
@@ -242,7 +242,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 | `[forTooltipContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
 | `[forTooltipArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the bubble edge — typically a negative `px` (e.g. `-4px`).    |
 
-> `[forTooltipContent]` is portaled to `document.body`, so styles scoped to the `[forTooltip]` wrapper won't reach it. Style the bubble with a global stylesheet or a class on the content directive itself. See [Styling floating content](../../../../../docs/styling-floating-content.md) for the full positioner custom-property list (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) and the animation / arrow recipes.
+> `[forTooltipContent]` is portaled to `document.body`, so styles scoped to the `[forTooltip]` wrapper won't reach it. Style the bubble with a global stylesheet or a class on the content directive itself. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner custom-property list (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) and the animation / arrow recipes.
 
 ```css
 .my-tooltip {
@@ -293,3 +293,7 @@ export class MyTooltipButton {
 ```
 
 While `disabled` is `true`, hover and focus are ignored and an already-open tooltip force-closes — no empty bubble, no stale `aria-describedby`.
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_TOOLTIP_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
