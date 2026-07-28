@@ -123,6 +123,7 @@ describe('menubar menu context positioning fallback drift guard', () => {
       loop: signal(true),
       activeTrigger: signal(null),
       triggers: signal([]),
+      lastTrigger: signal(null),
       lastTriggerHost: signal(null),
       closeOpen: () => {},
       switchToSibling: () => {},

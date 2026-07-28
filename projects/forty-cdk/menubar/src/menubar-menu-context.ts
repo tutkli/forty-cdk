@@ -57,6 +57,12 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
   /** All registered triggers in DOM order; their hosts are the dismissible exemptions. */
   readonly triggers: Signal<readonly ForMenubarTriggerHandle[]>;
   /**
+   * The most-recently-active trigger handle — survives past close so the
+   * still-mounted surface keeps its ids and accessible name for the whole close
+   * transition.
+   */
+  readonly lastTrigger: Signal<ForMenubarTriggerHandle | null>;
+  /**
    * The most-recently-active trigger host — survives past close so the
    * content's destroy hook can still return focus to the trigger.
    */
@@ -69,7 +75,7 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * Single concrete `ForMenuContext` the `[forMenubar]` root provides to its
  * descendant `[forMenuContent]` and items. It is the one place the bar's
  * "which trigger's menu is open" multiplexing lives: open / anchor / side /
- * ids / placement are all derived from the host's `activeTrigger`, so the same
+ * placement are all derived from the host's `activeTrigger`, so the same
  * context shape transparently covers whichever trigger's menu is mounted.
  *
  * Item navigation reuses the shared `MenuItemList` (the same item-collection /
@@ -78,6 +84,16 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * the shared `InitialFocusState` / `CloseReasonState` micro-helpers (also
  * composed by `MenuOverlay`), so this only has to cover the parts the
  * single-owner overlay can't — the `activeTrigger`-derived multiplexing.
+ *
+ * Ids and the accessible name are the exception: they are derived from the
+ * host's `lastTrigger` rather than from `activeTrigger`, because the surface
+ * outlives the trigger's active window. `activeTrigger()` is already `null`
+ * while the content is still in the DOM for its exit frame (and for as long as
+ * an exit animation defers teardown), so an `activeTrigger`-derived id would
+ * render `id=""` and drop the `aria-labelledby` wiring mid-close. With no
+ * trigger association at all — a surface mounted unconditionally, before any
+ * menu was ever opened — they resolve to `''` / `null`, which
+ * `[forMenuContent]` emits as no attribute rather than as an empty one.
  *
  * The dismiss / auto-focus channels forward to the bar-level outputs declared
  * on `[forMenubar]` — `(escapeKeyDown)`, `(pointerDownOutside)`,
@@ -138,9 +154,9 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly loop: Signal<boolean>;
   readonly initialFocus = this.#initialFocusState.target;
   readonly lastCloseReason = this.#closeReasonState.reason;
-  readonly triggerId = computed(() => this.#host.activeTrigger()?.triggerId() ?? '');
-  readonly contentId = computed(() => this.#host.activeTrigger()?.contentId() ?? '');
-  readonly ariaLabel = computed(() => this.#host.activeTrigger()?.ariaLabel() ?? null);
+  readonly triggerId = computed(() => this.#host.lastTrigger()?.triggerId() ?? '');
+  readonly contentId = computed(() => this.#host.lastTrigger()?.contentId() ?? '');
+  readonly ariaLabel = computed(() => this.#host.lastTrigger()?.ariaLabel() ?? null);
   readonly anchor = computed<ReferenceElement | null>(
     () => this.#host.activeTrigger()?.host ?? null,
   );

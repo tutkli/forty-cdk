@@ -237,6 +237,23 @@ class MenubarAlwaysMountedContentHost {
   readonly open = signal<string | null>(null);
 }
 
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file" id="file-trigger" ariaLabel="File actions">
+        File
+      </button>
+      <div forMenuContent>
+        <button forMenuItem>New</button>
+      </div>
+    </div>
+  `,
+})
+class MenubarAlwaysMountedNamedContentHost {
+  readonly open = signal<string | null>(null);
+}
+
 type MenubarVetoChannel =
   | 'none'
   | 'escape'
@@ -489,7 +506,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(content.id).toBe('');
+      expect(content.hasAttribute('id')).toBe(false);
 
       r.instance.open.set('file');
       await flush(r.fixture);
@@ -498,6 +515,67 @@ describe('ForMenubar', () => {
       expect(content.id).toMatch(/^for-menubar-content-/);
       expect(fileTrigger.getAttribute('aria-controls')).toBe(content.id);
       expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+    });
+  });
+
+  describe('surface naming across the close (#1452)', () => {
+    it('keeps the closing trigger id and aria-labelledby while the surface is still mounted', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const openId = content.id;
+      expect(openId).toMatch(/^for-menubar-content-/);
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+      expect(content.id).toBe(openId);
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+    });
+
+    it('keeps the closing trigger aria-label instead of flipping to aria-labelledby', async () => {
+      const r = renderHost(MenubarAlwaysMountedNamedContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-label')).toBe('File actions');
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(content.getAttribute('aria-label')).toBe('File actions');
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('emits no id and no aria-labelledby while no trigger has ever been active', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.hasAttribute('id')).toBe(false);
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('the trigger keeps pointing aria-controls at the surface it named while open', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      expect(fileTrigger.getAttribute('aria-controls')).toBe(content.id);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(fileTrigger.hasAttribute('aria-controls')).toBe(false);
+      expect(document.getElementById(content.id)).toBe(content);
     });
   });
 

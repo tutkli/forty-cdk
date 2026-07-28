@@ -124,7 +124,18 @@ export interface ForMenuContext {
   readonly initialFocus: Signal<'first' | 'last'>;
   setInitialFocus(target: 'first' | 'last'): void;
 
+  /**
+   * Id of the trigger, used as the surface's `aria-labelledby` fallback. An
+   * empty string means the context has no trigger to name the surface with, and
+   * `[forMenuContent]` emits no attribute at all — never `aria-labelledby=""`.
+   */
   readonly triggerId: Signal<string>;
+  /**
+   * Id the surface exposes, and the trigger's `aria-controls` target. An empty
+   * string means the context has not associated a trigger with the surface yet
+   * (only reachable under `[forMenubar]`, whose single context multiplexes over
+   * the triggers), and `[forMenuContent]` emits no `id` at all — never `id=""`.
+   */
   readonly contentId: Signal<string>;
   readonly ariaLabel: Signal<string | null>;
 

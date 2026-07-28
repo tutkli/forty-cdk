@@ -195,18 +195,28 @@ export class ForMenubar implements ForMenubarContext {
   readonly #lastValue = signal<string | null>(null);
 
   /**
+   * The most-recently-active trigger handle. Identical to `activeTrigger` while
+   * a menu is open, and persists past close (falling back to `#lastValue`) so
+   * the still-mounted surface keeps the ids and accessible name it was rendered
+   * with for the whole close transition. Consumed by {@link MenubarMenuContext}
+   * for `contentId` / `triggerId` / `ariaLabel`; `null` only while no trigger
+   * has ever been active.
+   */
+  readonly lastTrigger = computed<ForMenubarTriggerHandle | null>(() => {
+    const v = this.value() ?? this.#lastValue();
+    if (v === null) {
+      return null;
+    }
+    return this.#triggerCollection.items().find((t) => t.value() === v) ?? null;
+  });
+
+  /**
    * The most-recently-active trigger host. Persists past close so the
    * multiplexed `[forMenuContent]` destroy hook can still target the trigger
    * (by then `value()` is already `null`). Consumed by {@link MenubarMenuContext}
    * as its return-focus `trigger`.
    */
-  readonly lastTriggerHost = computed<HTMLElement | null>(() => {
-    const v = this.value() ?? this.#lastValue();
-    if (v === null) {
-      return null;
-    }
-    return this.#triggerCollection.items().find((t) => t.value() === v)?.host ?? null;
-  });
+  readonly lastTriggerHost = computed<HTMLElement | null>(() => this.lastTrigger()?.host ?? null);
 
   readonly #firstEnabledTriggerHost = computed(() =>
     firstEnabledHost(this.#triggerCollection.items()),
