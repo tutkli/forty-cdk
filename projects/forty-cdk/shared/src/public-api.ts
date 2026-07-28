@@ -34,6 +34,7 @@ export type {
   WritingDirection,
 } from 'forty-cdk/core';
 export {
+  accessibleTextContent,
   assertTimeCapable,
   FOR_DATE_ADAPTER,
   FOR_FIELDSET_CONTEXT,
