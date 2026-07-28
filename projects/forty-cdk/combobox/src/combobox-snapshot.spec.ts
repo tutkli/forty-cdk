@@ -1,9 +1,10 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { LabelSnapshot, type LabelSnapshotEntry } from 'forty-cdk/core';
+
 import { afterEachOverlayCleanup } from '../../src/test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
-import { OptionLabelCache, type SnapshotEntry } from './combobox-label-cache';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 interface FakeOption {
@@ -49,14 +50,14 @@ function makeHandle(opts: {
  * position, live entries winning by id).
  */
 function mergedCachedOptions(
-  live: readonly SnapshotEntry<string>[],
-  indexed: ReadonlyMap<number, SnapshotEntry<string>>,
-): readonly SnapshotEntry<string>[] {
+  live: readonly LabelSnapshotEntry<string>[],
+  indexed: ReadonlyMap<number, LabelSnapshotEntry<string>>,
+): readonly LabelSnapshotEntry<string>[] {
   if (indexed.size === 0) {
     return live;
   }
   const seen = new Set(live.map((o) => o.id));
-  const merged: SnapshotEntry<string>[] = [...live];
+  const merged: LabelSnapshotEntry<string>[] = [...live];
   for (const pos of [...indexed.keys()].sort((a, b) => a - b)) {
     const entry = indexed.get(pos)!;
     if (seen.has(entry.id)) continue;
@@ -66,16 +67,16 @@ function mergedCachedOptions(
 }
 
 interface LabelCacheHarness {
-  readonly cache: OptionLabelCache<string>;
+  readonly cache: LabelSnapshot<string>;
   readonly setItems: (items: readonly ForComboboxOptionHandle<string>[]) => void;
   readonly setTotal: (n: number | undefined) => void;
-  readonly entries: () => readonly SnapshotEntry<string>[];
+  readonly entries: () => readonly LabelSnapshotEntry<string>[];
 }
 
 function createLabelCache(initialTotal?: number): LabelCacheHarness {
   const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
   const total = signal<number | undefined>(initialTotal);
-  const cache = new OptionLabelCache<string>({
+  const cache = new LabelSnapshot<string>({
     items,
     totalCount: total,
     itemToFormValue: signal((value: string) => value),
@@ -140,7 +141,7 @@ function createNavigator(
   };
 }
 
-describe('OptionLabelCache', () => {
+describe('LabelSnapshot', () => {
   afterEachOverlayCleanup();
 
   it('starts empty', () => {
@@ -190,7 +191,7 @@ describe('OptionLabelCache', () => {
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     h.setItems([a.handle]);
     h.cache.prime();
-    const offWindow = new Map<number, SnapshotEntry<string>>([
+    const offWindow = new Map<number, LabelSnapshotEntry<string>>([
       [50, { id: 'a-remount', value: 'apple', label: 'Apple', disabled: false }],
     ]);
     expect(h.cache.mergedEntries(offWindow).map((e) => e.value)).toEqual(['apple']);
@@ -203,7 +204,7 @@ describe('OptionLabelCache', () => {
     h.cache.prime();
     expect(h.entries().find((e) => e.value === 'apple')?.disabled).toBe(true);
 
-    const offWindow = new Map<number, SnapshotEntry<string>>([
+    const offWindow = new Map<number, LabelSnapshotEntry<string>>([
       [50, { id: 'b', value: 'banana', label: 'Banana', disabled: true }],
     ]);
     const merged = h.cache.mergedEntries(offWindow);
@@ -485,7 +486,7 @@ describe('combobox-snapshot zoneless reactivity', () => {
 
     const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
     const total = signal<number | undefined>(undefined);
-    const cache = new OptionLabelCache<string>({
+    const cache = new LabelSnapshot<string>({
       items,
       totalCount: total,
       itemToFormValue: signal((value: string) => value),

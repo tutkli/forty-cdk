@@ -33,6 +33,7 @@ import {
   InitialFocusState,
   emitVetoableEvent,
   emitVetoableNativeEvent,
+  LabelSnapshot,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -49,7 +50,6 @@ import {
   type ForComboboxOptionHandle,
 } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
-import { OptionLabelCache } from './combobox-label-cache';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
@@ -420,11 +420,12 @@ export class ForCombobox<T = string>
   readonly #pointerSuppression: PointerSuppression = createPointerSuppression();
 
   /**
-   * Always-on label cache — keeps `{ id, value, label }` tuples across
+   * Always-on label snapshot — keeps `{ id, value, label }` tuples across
    * close/open and scroll-out-of-view to drive inline autocomplete matching
-   * and the `selected` label fallback. See `combobox-label-cache.ts`.
+   * and the `selected` label fallback. The value-keyed fold itself lives in
+   * `forty-cdk/core`, shared with `[forSelect]`.
    */
-  readonly #labelCache = new OptionLabelCache<T>({
+  readonly #labelCache = new LabelSnapshot<T>({
     items: this.#items.items,
     totalCount: this.totalCount,
     itemToFormValue: this.itemToFormValue,

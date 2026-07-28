@@ -1,8 +1,11 @@
 import { type Signal } from '@angular/core';
 
-import { tryReadHandle, VirtualizedNavigator as VirtualizedNavigatorCore } from 'forty-cdk/core';
+import {
+  type LabelSnapshotEntry,
+  tryReadHandle,
+  VirtualizedNavigator as VirtualizedNavigatorCore,
+} from 'forty-cdk/core';
 import type { ForComboboxOptionHandle } from './combobox-context';
-import type { SnapshotEntry } from './combobox-label-cache';
 
 /**
  * Dependencies for `VirtualizedNavigator`. Wires the helper to the host
@@ -53,7 +56,7 @@ export interface VirtualizedNavigatorDeps<T> {
 export class VirtualizedNavigator<T> {
   readonly #deps: VirtualizedNavigatorDeps<T>;
 
-  readonly #core: VirtualizedNavigatorCore<ForComboboxOptionHandle<T>, SnapshotEntry<T>>;
+  readonly #core: VirtualizedNavigatorCore<ForComboboxOptionHandle<T>, LabelSnapshotEntry<T>>;
 
   constructor(deps: VirtualizedNavigatorDeps<T>) {
     this.#deps = deps;
@@ -85,7 +88,7 @@ export class VirtualizedNavigator<T> {
    * Position-keyed snapshot for `ForCombobox.selected`'s scrolled-out-of-view
    * fallback and for the merged-label lookup. Read-only for callers.
    */
-  snapshotByPos(): ReadonlyMap<number, SnapshotEntry<T>> {
+  snapshotByPos(): ReadonlyMap<number, LabelSnapshotEntry<T>> {
     return this.#core.snapshotByPos();
   }
 
