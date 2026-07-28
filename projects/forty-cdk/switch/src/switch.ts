@@ -1,7 +1,12 @@
 import { computed, Directive, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { FormUiControlBase, injectHiddenInput, injectSyntheticActivation } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  FormUiControlBase,
+  injectHiddenInput,
+  injectSyntheticActivation,
+} from 'forty-cdk/core';
 
 /**
  * Headless on/off switch implementing the
@@ -12,8 +17,10 @@ import { FormUiControlBase, injectHiddenInput, injectSyntheticActivation } from 
  * Works on a native `<button>` host and on any arbitrary host element (e.g.
  * `<div>`, `<span>`). On a `<button>` Enter / Space activation comes from native
  * button behavior and the directive forces `type="button"` to prevent
- * accidental form submission when nested inside a `<form>`. On a non-button
- * host `tabindex="0"` is applied and the same Enter / Space activation is
+ * accidental form submission when nested inside a `<form>` — through a host
+ * binding, so a consumer `type="submit"` is overridden rather than honoured. On
+ * a non-button host no `type` attribute is emitted at all (`type` is not valid
+ * there), `tabindex="0"` is applied and the same Enter / Space activation is
  * synthesized, so the announced `role="switch"` is never left
  * keyboard-inoperable — including when the host is composed through
  * `hostDirectives`, which ignores a directive's selector.
@@ -36,7 +43,7 @@ import { FormUiControlBase, injectHiddenInput, injectSyntheticActivation } from 
   exportAs: 'forSwitch',
   host: {
     role: 'switch',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -55,6 +62,8 @@ import { FormUiControlBase, injectHiddenInput, injectSyntheticActivation } from 
   },
 })
 export class ForSwitch extends FormUiControlBase implements FormCheckboxControl {
+  protected readonly buttonType = hostButtonType();
+
   /** Two-way bindable on/off state. Required by `FormCheckboxControl`. */
   readonly checked = model<boolean>(false);
 

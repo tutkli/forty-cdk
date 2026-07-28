@@ -150,7 +150,7 @@ Both keys work on any host element. On a `<button>` they come from native button
 Implements the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/).
 
 - **Provide an accessible name.** Wrap the button in a `<label>`, or set `aria-labelledby` / `aria-label`. Without one, the control is announced as just "checkbox" with no purpose.
-- **Any host element works.** A `<button>` is the recommended host (the directive forces `type="button"` so it never submits a surrounding form), but a non-button host gets `tabindex="0"` and synthesized `Space` / `Enter` activation, so it is keyboard-operable too.
+- **Any host element works.** A `<button>` is the recommended host (the directive forces `type="button"` through a host binding, so it never submits a surrounding form even if you write `type="submit"` yourself), but a non-button host gets `tabindex="0"` and synthesized `Space` / `Enter` activation, so it is keyboard-operable too. A non-button host gets no `type` attribute at all — `type` is not valid on a `<div>` / `<span>`, and there is no form submission to protect against.
 - **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently — test with your target SRs.
 
 ## Styling

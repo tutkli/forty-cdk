@@ -1,7 +1,12 @@
 import { computed, Directive, InjectionToken, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { FormUiControlBase, injectHiddenInput, injectSyntheticActivation } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  FormUiControlBase,
+  injectHiddenInput,
+  injectSyntheticActivation,
+} from 'forty-cdk/core';
 
 /**
  * Injection key the `[forCheckboxIndicator]` uses to resolve its parent
@@ -22,10 +27,12 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
  *
  * Works on a native `<button>` host and on any arbitrary host element (e.g.
  * `<div>`, `<span>`). On a `<button>` the directive forces `type="button"` to
- * avoid accidental form submission and Enter / Space activation comes from
- * native button behavior (APG only mandates Space, and Enter is harmless on a
- * non-submit button). On a non-button host `tabindex="0"` is applied and the
- * same Enter / Space activation is synthesized, so the announced
+ * avoid accidental form submission — through a host binding, so a consumer
+ * `type="submit"` is overridden rather than honoured — and Enter / Space
+ * activation comes from native button behavior (APG only mandates Space, and
+ * Enter is harmless on a non-submit button). On a non-button host no `type`
+ * attribute is emitted at all (`type` is not valid there), `tabindex="0"` is
+ * applied and the same Enter / Space activation is synthesized, so the announced
  * `role="checkbox"` is never left keyboard-inoperable — including when the
  * host is composed through `hostDirectives`, which ignores a directive's
  * selector.
@@ -58,7 +65,7 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
   providers: [{ provide: FOR_CHECKBOX, useExisting: ForCheckbox }],
   host: {
     role: 'checkbox',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-checked]': 'ariaChecked()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -77,6 +84,8 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
   },
 })
 export class ForCheckbox extends FormUiControlBase implements FormCheckboxControl {
+  protected readonly buttonType = hostButtonType();
+
   /** Two-way bindable on/off state. Required by `FormCheckboxControl`. */
   readonly checked = model<boolean>(false);
 

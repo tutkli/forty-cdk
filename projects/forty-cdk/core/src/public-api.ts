@@ -150,6 +150,7 @@ export { TextValueControlBase } from './form-ui-control/text-value-control-base'
 export { injectHiddenInput } from './hidden-input/hidden-input';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria/host-aria';
 export { adoptHostId, hostId, resolveHostId } from './host-id/host-id';
+export { hostButtonType } from './host-type/host-type';
 export { createDebouncedAction, type DebouncedAction } from './hover-intent/debounced-action';
 export { forceCloseWhenDisabled } from './hover-intent/force-close-when-disabled';
 export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/hover-capable-pointer';

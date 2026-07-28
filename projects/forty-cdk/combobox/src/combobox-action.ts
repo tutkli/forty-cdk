@@ -9,15 +9,18 @@ import {
   signal,
 } from '@angular/core';
 
-import { hostId, registerHandle } from 'forty-cdk/core';
+import { hostButtonType, hostId, registerHandle } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
  * A non-selecting **action** affordance pinned inside a `[forComboboxContent]`
  * (or beside `[forComboboxList]` in the picker anatomy) — "Create new…",
  * "Manage tags…", "Clear all", etc. Apply on a `<button>` (or any element);
- * the directive carries `role="button"` / `type="button"` so it reads and
- * behaves as an action, never as one of the listbox's options.
+ * the directive carries `role="button"` so it reads and behaves as an action,
+ * never as one of the listbox's options. On a native `<button>` host it also
+ * forces `type="button"` — through a host binding, so a consumer `type="submit"`
+ * is overridden and activating the action never submits a surrounding `<form>`;
+ * any other host element gets no `type` attribute, which is not valid there.
  *
  * Unlike `[forComboboxOption]`, an action:
  *
@@ -65,7 +68,7 @@ import { injectComboboxContext } from './combobox-context';
   exportAs: 'forComboboxAction',
   host: {
     role: 'button',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'id()',
     '[attr.tabindex]': 'disabled() ? null : "-1"',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
@@ -78,6 +81,8 @@ import { injectComboboxContext } from './combobox-context';
   },
 })
 export class ForComboboxAction {
+  protected readonly buttonType = hostButtonType();
+
   readonly #ctx = injectComboboxContext('ForComboboxAction');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 

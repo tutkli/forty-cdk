@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectStepperContext } from './stepper-context';
 
 /**
@@ -7,8 +8,9 @@ import { injectStepperContext } from './stepper-context';
  * `aria-disabled="true"` when `canAdvance()` is false (last step reached, root
  * disabled, or in linear mode the current step is not completed / optional).
  *
- * The button retains its native `type="button"` attribute via the `type` host
- * binding to prevent accidental form submission.
+ * The directive forces `type="button"` through a host binding, so a consumer
+ * `type="submit"` on the host cannot make advancing a step submit a surrounding
+ * `<form>`.
  *
  * Clicking while `aria-disabled` is a no-op because `next()` guards internally.
  */
@@ -16,12 +18,14 @@ import { injectStepperContext } from './stepper-context';
   selector: 'button[forStepperNext]',
   exportAs: 'forStepperNext',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-disabled]': '!ctx.canAdvance() ? "true" : null',
     '(click)': 'onClick()',
   },
 })
 export class ForStepperNext {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectStepperContext('ForStepperNext');
 
   protected onClick(): void {

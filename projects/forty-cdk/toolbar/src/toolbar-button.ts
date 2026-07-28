@@ -1,18 +1,20 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, resolveListNavigation } from 'forty-cdk/core';
+import { hostButtonType, registerHandle, resolveListNavigation } from 'forty-cdk/core';
 import { injectToolbarContext } from './toolbar-context';
 
 /**
  * Plain push button inside `[forToolbar]`. Apply on `<button>` so Enter /
- * Space activate via native semantics. The directive forces `type="button"`
- * to avoid accidental form submission inside a `<form>`.
+ * Space activate via native semantics. On a native `<button>` host the directive
+ * forces `type="button"` — through a host binding, so a consumer `type="submit"`
+ * is overridden — to avoid accidental form submission inside a `<form>`; any
+ * other host element gets no `type` attribute, which is not valid there.
  */
 @Directive({
   selector: '[forToolbarButton]',
   exportAs: 'forToolbarButton',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -23,6 +25,8 @@ import { injectToolbarContext } from './toolbar-context';
   },
 })
 export class ForToolbarButton {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly toolbar = injectToolbarContext('ForToolbarButton');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 

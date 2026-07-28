@@ -8,7 +8,7 @@ import {
   input,
 } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-context';
 
 /**
@@ -35,7 +35,7 @@ import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-c
   selector: '[forPopoverTrigger]',
   exportAs: 'forPopoverTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'ctx().triggerId()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
@@ -47,6 +47,8 @@ import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-c
   },
 })
 export class ForPopoverTrigger {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**

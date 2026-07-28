@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, resolveListNavigation } from 'forty-cdk/core';
+import { hostButtonType, registerHandle, resolveListNavigation } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 /**
@@ -18,7 +18,7 @@ import { injectCarouselContext } from './carousel-context';
   selector: '[forCarouselIndicator]',
   exportAs: 'forCarouselIndicator',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'ariaLabel() || positionLabel()',
     '[attr.aria-current]': 'current() ? "true" : null',
     '[attr.data-state]': 'current() ? "active" : "inactive"',
@@ -31,6 +31,8 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselIndicator {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectCarouselContext('ForCarouselIndicator');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 

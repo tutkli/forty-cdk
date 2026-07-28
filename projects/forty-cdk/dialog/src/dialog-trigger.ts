@@ -9,7 +9,7 @@ import {
   model,
 } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —
@@ -33,7 +33,7 @@ import { reflectDisabled } from 'forty-cdk/core';
   selector: '[forDialogTrigger]',
   exportAs: 'forDialogTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'open() ? "true" : "false"',
     '[attr.aria-controls]': 'open() ? controls() : null',
@@ -44,6 +44,8 @@ import { reflectDisabled } from 'forty-cdk/core';
   },
 })
 export class ForDialogTrigger {
+  protected readonly buttonType = hostButtonType();
+
   /**
    * Two-way bindable. Bind to the same signal that gates the surrounding
    * `@if` around `[forDialog]`. The `model()` change emitter (`(openChange)`)

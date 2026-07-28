@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import {
+  hostButtonType,
   adoptHostId,
   registerHandle,
   type FloatingAlign,
@@ -64,7 +65,7 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
   exportAs: 'forMenubarTrigger',
   host: {
     role: 'menuitem',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'triggerId()',
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-haspopup]': '"menu"',
@@ -82,6 +83,8 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
   },
 })
 export class ForMenubarTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly menubar = injectMenubarContext('ForMenubarTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #idGen = inject(IdGenerator);

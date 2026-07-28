@@ -1,6 +1,6 @@
 import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { type ForComboboxContext, injectComboboxTriggerContext } from './combobox-context';
 
 /**
@@ -38,7 +38,7 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
   selector: '[forComboboxTrigger]',
   exportAs: 'forComboboxTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
@@ -49,6 +49,8 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
   },
 })
 export class ForComboboxTrigger<T = unknown> {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**

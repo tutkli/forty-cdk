@@ -1,5 +1,6 @@
 import { Directive, input } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectDrawerContext } from './drawer-context';
 
 /**
@@ -12,12 +13,14 @@ import { injectDrawerContext } from './drawer-context';
   selector: '[forDrawerClose]',
   exportAs: 'forDrawerClose',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     'data-state': 'open',
     '(click)': 'onClick()',
   },
 })
 export class ForDrawerClose {
+  protected readonly buttonType = hostButtonType();
+
   readonly #ctx = injectDrawerContext('ForDrawerClose');
 
   /** Optional value passed to `ForDrawerRef.close()` (programmatic mode). */

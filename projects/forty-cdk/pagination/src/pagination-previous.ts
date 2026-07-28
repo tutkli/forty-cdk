@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
 import { injectPaginationContext } from './pagination-context';
 
 /**
@@ -12,13 +12,15 @@ import { injectPaginationContext } from './pagination-context';
   selector: '[forPaginationPrevious]',
   exportAs: 'forPaginationPrevious',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'ctx.previous()',
   },
 })
 export class ForPaginationPrevious {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectPaginationContext('ForPaginationPrevious');
 
   /**

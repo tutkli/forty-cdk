@@ -1,6 +1,6 @@
 import { computed, Directive, effect, ElementRef, inject, input, type Signal } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { type ForSelectContext, injectSelectTriggerContext } from './select-context';
 
 /**
@@ -32,7 +32,7 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
   selector: '[forSelectTrigger]',
   exportAs: 'forSelectTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     role: 'combobox',
     '[id]': 'ctx().overlay.triggerId()',
     '[attr.aria-haspopup]': '"listbox"',
@@ -51,6 +51,8 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
   },
 })
 export class ForSelectTrigger<T = unknown> {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**

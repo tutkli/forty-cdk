@@ -1,6 +1,11 @@
 import { booleanAttribute, computed, Directive, input, output } from '@angular/core';
 
-import { emitVetoableEvent, type VetoableEvent, injectMenuContext } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  emitVetoableEvent,
+  type VetoableEvent,
+  injectMenuContext,
+} from 'forty-cdk/core';
 import { createMenuItemInteraction } from './menu-item-interaction';
 
 /**
@@ -21,7 +26,7 @@ import { createMenuItemInteraction } from './menu-item-interaction';
   exportAs: 'forMenuItem',
   host: {
     role: 'menuitem',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
@@ -34,6 +39,8 @@ import { createMenuItemInteraction } from './menu-item-interaction';
   },
 })
 export class ForMenuItem {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectMenuContext('ForMenuItem');
 
   /** Per-item disabled, in addition to the menu's `disabled`. */

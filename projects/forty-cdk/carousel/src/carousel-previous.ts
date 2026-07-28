@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { hostAriaLabel } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 /**
@@ -20,7 +20,7 @@ import { injectCarouselContext } from './carousel-context';
   selector: '[forCarouselPrevious]',
   exportAs: 'forCarouselPrevious',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-controls]': 'ctx.viewportId()',
     '[attr.aria-disabled]': 'isDisabled() ? "true" : null',
@@ -29,6 +29,8 @@ import { injectCarouselContext } from './carousel-context';
   },
 })
 export class ForCarouselPrevious {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectCarouselContext('ForCarouselPrevious');
 
   /**

@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { injectDisclosureContext } from './disclosure-context';
 
 /**
@@ -20,7 +20,7 @@ import { injectDisclosureContext } from './disclosure-context';
   selector: '[forDisclosureTrigger]',
   exportAs: 'forDisclosureTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'ctx.triggerId()',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
@@ -31,6 +31,8 @@ import { injectDisclosureContext } from './disclosure-context';
   },
 })
 export class ForDisclosureTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectDisclosureContext('ForDisclosureTrigger');
 
   /** Disables this trigger only, in addition to the root's `disabled`. */

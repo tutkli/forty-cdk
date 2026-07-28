@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { injectFileUploadContext } from './file-upload-context';
 
 /**
@@ -15,11 +15,13 @@ import { injectFileUploadContext } from './file-upload-context';
   selector: '[forFileUploadTrigger]',
   exportAs: 'forFileUploadTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '(click)': 'onClick()',
   },
 })
 export class ForFileUploadTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectFileUploadContext('[forFileUploadTrigger]');
 
   constructor() {

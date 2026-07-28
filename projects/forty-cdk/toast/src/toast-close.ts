@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectToastContext } from './toast-context';
 
 /**
@@ -14,12 +15,14 @@ import { injectToastContext } from './toast-context';
   selector: '[forToastClose]',
   exportAs: 'forToastClose',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     'aria-label': 'Close',
     '(click)': 'onClick()',
   },
 })
 export class ForToastClose {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectToastContext('ForToastClose');
 
   protected onClick(): void {

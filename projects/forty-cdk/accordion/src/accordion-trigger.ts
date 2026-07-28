@@ -1,6 +1,11 @@
 import { computed, Directive, ElementRef, inject } from '@angular/core';
 
-import { registerHandle, reflectDisabled, resolveListNavigation } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  registerHandle,
+  reflectDisabled,
+  resolveListNavigation,
+} from 'forty-cdk/core';
 import { injectAccordionContext, injectAccordionItemContext } from './accordion-context';
 
 /**
@@ -20,7 +25,7 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   selector: '[forAccordionTrigger]',
   exportAs: 'forAccordionTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'item.triggerId()',
     '[attr.aria-expanded]': 'item.expanded() ? "true" : "false"',
     '[attr.aria-controls]': 'item.expanded() ? item.contentId() : null',
@@ -33,6 +38,8 @@ import { injectAccordionContext, injectAccordionItemContext } from './accordion-
   },
 })
 export class ForAccordionTrigger {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly parent = injectAccordionContext('ForAccordionTrigger');
   protected readonly item = injectAccordionItemContext('ForAccordionTrigger');

@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import {
+  hostButtonType,
   reflectDisabled,
   type MenuActivationModality,
   FOR_MENU_CONTEXT,
@@ -83,7 +84,7 @@ function injectDropdownMenuTriggerContext(
   selector: '[forDropdownMenuTrigger]',
   exportAs: 'forDropdownMenuTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'ctx().triggerId()',
     '[attr.aria-haspopup]': '"menu"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
@@ -96,6 +97,8 @@ function injectDropdownMenuTriggerContext(
   },
 })
 export class ForDropdownMenuTrigger {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   #pointerActivation = false;
 

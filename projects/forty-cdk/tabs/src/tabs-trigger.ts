@@ -1,6 +1,12 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation, rovingTabStop } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  registerHandle,
+  hostId,
+  resolveListNavigation,
+  rovingTabStop,
+} from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
 /**
@@ -22,7 +28,7 @@ import { injectTabsContext } from './tabs-context';
   exportAs: 'forTabsTrigger',
   host: {
     role: 'tab',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-controls]': 'controlsId()',
@@ -37,6 +43,8 @@ import { injectTabsContext } from './tabs-context';
   },
 })
 export class ForTabsTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly group = injectTabsContext('ForTabsTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 

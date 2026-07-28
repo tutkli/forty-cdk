@@ -8,7 +8,7 @@ import {
   input,
 } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import { hostButtonType, registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
 import { injectListboxContext } from './listbox-context';
 
 /**
@@ -39,7 +39,7 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
   providers: [{ provide: FOR_LISTBOX_OPTION, useExisting: ForListboxOption }],
   host: {
     role: 'option',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -56,6 +56,8 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
   },
 })
 export class ForListboxOption<T = string> {
+  protected readonly buttonType = hostButtonType();
+
   readonly #group = injectListboxContext<T>('ForListboxOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
