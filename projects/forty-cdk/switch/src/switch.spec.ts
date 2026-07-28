@@ -8,12 +8,17 @@ import {
 } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
+import { pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { ForSwitch } from './switch';
+import {
+  FOR_SWITCH_HOST_DIRECTIVE_INPUTS,
+  FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS,
+} from './switch-host-directive';
 
 @Component({
   imports: [ForSwitch],
@@ -44,7 +49,21 @@ class SwitchHost {
   readonly fieldName = signal<string>('');
 }
 
+@Component({
+  imports: [ForSwitch],
+  template: `
+    <div forSwitch [(checked)]="enabled" [disabled]="isDisabled()" [readonly]="isReadonly()"></div>
+  `,
+})
+class DivSwitchHost {
+  readonly enabled = signal(false);
+  readonly isDisabled = signal(false);
+  readonly isReadonly = signal(false);
+}
+
 const switchOf = (host: HTMLElement) => host.querySelector<HTMLButtonElement>('button')!;
+
+const divSwitchOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forSwitch]')!;
 
 describe('ForSwitch', () => {
   describe('static accessibility', () => {
@@ -167,6 +186,140 @@ describe('ForSwitch', () => {
 
       sw.click();
       await flush();
+      expect(sw.getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('non-button host keyboard activation', () => {
+    it('adds tabindex="0" so the announced role="switch" is focusable', () => {
+      const { el } = renderHost(DivSwitchHost);
+      const sw = divSwitchOf(el);
+      expect(sw.getAttribute('role')).toBe('switch');
+      expect(sw.getAttribute('tabindex')).toBe('0');
+      sw.focus();
+      expect(document.activeElement).toBe(sw);
+    });
+
+    it('emits no tabindex on a native <button> host, whose tab stop the platform owns', () => {
+      const { el } = renderHost(SwitchHost);
+      expect(switchOf(el).hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('toggles on Space keyup and blocks page scroll on the keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivSwitchHost);
+      const sw = divSwitchOf(el);
+
+      const down = pressKey(sw, ' ');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.enabled()).toBe(false);
+
+      pressKey(sw, ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.enabled()).toBe(true);
+      expect(sw.getAttribute('aria-checked')).toBe('true');
+      expect(sw.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('toggles on Enter keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivSwitchHost);
+      const down = pressKey(divSwitchOf(el), 'Enter');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.enabled()).toBe(true);
+    });
+
+    it('ignores a Space keyup with no preceding keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivSwitchHost);
+      pressKey(divSwitchOf(el), ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.enabled()).toBe(false);
+    });
+
+    it('drops a half-finished Space press when focus leaves the host', async () => {
+      const { el, fixture, flush } = renderHost(DivSwitchHost);
+      const sw = divSwitchOf(el);
+
+      pressKey(sw, ' ');
+      sw.dispatchEvent(new FocusEvent('blur'));
+      pressKey(sw, ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.enabled()).toBe(false);
+      expect(sw.getAttribute('data-touched')).toBe('');
+    });
+
+    it('does not activate while disabled, but still blocks page scroll on Space', async () => {
+      const { el, fixture, flush } = renderHost(DivSwitchHost);
+      fixture.componentInstance.isDisabled.set(true);
+      await flush();
+      const sw = divSwitchOf(el);
+
+      const down = pressKey(sw, ' ');
+      pressKey(sw, ' ', { type: 'keyup' });
+      pressKey(sw, 'Enter');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.enabled()).toBe(false);
+    });
+
+    it('does not activate while readonly', async () => {
+      const { el, fixture, flush } = renderHost(DivSwitchHost);
+      fixture.componentInstance.isReadonly.set(true);
+      await flush();
+      const sw = divSwitchOf(el);
+
+      pressKey(sw, ' ');
+      pressKey(sw, ' ', { type: 'keyup' });
+      pressKey(sw, 'Enter');
+      await flush();
+      expect(fixture.componentInstance.enabled()).toBe(false);
+    });
+
+    it('synthesizes nothing on a native <button> host, so activation never doubles', async () => {
+      const { el, fixture, flush } = renderHost(SwitchHost);
+      const sw = switchOf(el);
+
+      const down = pressKey(sw, ' ');
+      pressKey(sw, ' ', { type: 'keyup' });
+      pressKey(sw, 'Enter');
+      await flush();
+      expect(down.defaultPrevented).toBe(false);
+      expect(fixture.componentInstance.enabled()).toBe(false);
+    });
+  });
+
+  describe('hostDirectives composition on a non-button host', () => {
+    @Component({
+      selector: 'div[wrapped-switch]',
+      template: '',
+      hostDirectives: [
+        {
+          directive: ForSwitch,
+          inputs: [...FOR_SWITCH_HOST_DIRECTIVE_INPUTS],
+          outputs: [...FOR_SWITCH_HOST_DIRECTIVE_OUTPUTS],
+        },
+      ],
+    })
+    class WrappedSwitch {}
+
+    @Component({
+      imports: [WrappedSwitch],
+      template: `<div wrapped-switch [(checked)]="enabled"></div>`,
+    })
+    class WrapperHost {
+      readonly enabled = signal(false);
+    }
+
+    it('gets the same tab stop and Space activation as a direct selector match', async () => {
+      const { el, fixture, flush } = renderHost(WrapperHost);
+      const sw = el.querySelector<HTMLElement>('[wrapped-switch]')!;
+      expect(sw.getAttribute('role')).toBe('switch');
+      expect(sw.getAttribute('tabindex')).toBe('0');
+
+      pressKey(sw, ' ');
+      pressKey(sw, ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.enabled()).toBe(true);
       expect(sw.getAttribute('aria-checked')).toBe('true');
     });
   });

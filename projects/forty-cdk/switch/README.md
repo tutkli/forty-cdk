@@ -104,16 +104,18 @@ export class DemoSettings {
 
 ## Keyboard
 
-| Key     | Action                                                                               |
-| ------- | ------------------------------------------------------------------------------------ |
-| `Space` | Toggle the switch.                                                                   |
-| `Enter` | Also toggles — the directive sits on a `<button>`, a documented superset of the APG. |
+| Key     | Action                                           |
+| ------- | ------------------------------------------------ |
+| `Space` | Toggle the switch.                               |
+| `Enter` | Also toggles — a documented superset of the APG. |
+
+Both keys work on any host element. On a `<button>` they come from native button behavior; on any other host (`<div>`, `<span>`, or a `hostDirectives` wrapper's own host) the directive adds `tabindex="0"` and synthesizes the same activation. `Space` keydown always blocks page scrolling; the toggle fires on its keyup.
 
 ## Accessibility
 
 Implements the [WAI-ARIA Switch pattern](https://www.w3.org/WAI/ARIA/apg/patterns/switch/).
 
-- **Use a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`. Enter and Space toggle the switch via native button behavior. On other elements (e.g. `<div>`), keyboard activation is on you.
+- **Prefer a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`, and Enter / Space toggle the switch via native button behavior. Any other host element (e.g. `<div>`) works too: it gets `tabindex="0"` and the same Enter / Space activation synthesized, so `role="switch"` is never announced on an element a keyboard user cannot reach.
 - **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
 - **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine without it (only the type import from `@angular/forms/signals` is type-only and erased at build).

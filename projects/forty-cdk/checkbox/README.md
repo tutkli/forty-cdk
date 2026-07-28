@@ -136,18 +136,21 @@ Optional styling slot inside a `[forCheckbox]`. Mirrors the parent's `data-state
 
 ## Keyboard
 
-| Key     | Action                                                                                          |
-| ------- | ----------------------------------------------------------------------------------------------- |
-| `Space` | Toggle the checkbox. The only key APG mandates.                                                 |
-| `Enter` | Also toggles — the directive sits on a `<button>`, a documented superset, not an APG violation. |
+| Key     | Action                                                      |
+| ------- | ----------------------------------------------------------- |
+| `Space` | Toggle the checkbox. The only key APG mandates.             |
+| `Enter` | Also toggles — a documented superset, not an APG violation. |
 
 Activating an indeterminate checkbox clears `indeterminate` and toggles `checked` (matches native `<input type="checkbox">`).
+
+Both keys work on any host element. On a `<button>` they come from native button behavior; on any other host (`<div>`, `<span>`, or a `hostDirectives` wrapper's own host) the directive adds `tabindex="0"` and synthesizes the same activation, so a styled-from-scratch checkbox is never announced as a checkbox it is impossible to operate. `Space` keydown always blocks page scrolling; the toggle fires on its keyup.
 
 ## Accessibility
 
 Implements the [WAI-ARIA Checkbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/checkbox/).
 
 - **Provide an accessible name.** Wrap the button in a `<label>`, or set `aria-labelledby` / `aria-label`. Without one, the control is announced as just "checkbox" with no purpose.
+- **Any host element works.** A `<button>` is the recommended host (the directive forces `type="button"` so it never submits a surrounding form), but a non-button host gets `tabindex="0"` and synthesized `Space` / `Enter` activation, so it is keyboard-operable too.
 - **`role="checkbox"`** with `aria-checked="mixed"` is the canonical tri-state contract. Some legacy screen readers handle "mixed" differently — test with your target SRs.
 
 ## Styling

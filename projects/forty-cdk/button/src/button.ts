@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
+import { FOR_FIELDSET_CONTEXT, injectSyntheticActivation } from 'forty-cdk/core';
 
 import { injectFocusVisible } from './focus-visible';
 import { injectHovered } from './hovered';
@@ -68,9 +68,8 @@ import { injectPressed } from './pressed';
   },
 })
 export class ForButton {
-  readonly #host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
-  readonly #isNativeButton = this.#host.tagName === 'BUTTON';
-  readonly #initialType = this.#host.getAttribute('type');
+  readonly #initialType =
+    inject<ElementRef<HTMLElement>>(ElementRef).nativeElement.getAttribute('type');
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
@@ -103,17 +102,19 @@ export class ForButton {
   readonly activate = output<void>();
 
   readonly #focused = signal(false);
-  #spaceHeld = false;
+  readonly #activation = injectSyntheticActivation({ disabled: this.effectiveDisabled });
   readonly #keyboardModality = injectFocusVisible();
   protected readonly hovered = injectHovered({ disabled: this.effectiveDisabled });
   protected readonly pressed = injectPressed({ disabled: this.effectiveDisabled });
   protected readonly focusVisible = computed(() => this.#focused() && this.#keyboardModality());
 
   protected readonly resolvedType = computed(
-    () => this.#initialType ?? (this.#isNativeButton ? 'button' : null),
+    () => this.#initialType ?? (this.#activation.nativeButton ? 'button' : null),
   );
-  protected readonly resolvedRole = computed(() => (this.#isNativeButton ? null : 'button'));
-  protected readonly resolvedTabindex = computed(() => (this.#isNativeButton ? null : '0'));
+  protected readonly resolvedRole = computed(() =>
+    this.#activation.nativeButton ? null : 'button',
+  );
+  protected readonly resolvedTabindex = this.#activation.tabindex;
 
   protected onClick(event: MouseEvent): void {
     if (this.effectiveDisabled()) {
@@ -125,42 +126,11 @@ export class ForButton {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (this.#isNativeButton) {
-      return;
-    }
-    if (event.key === 'Enter') {
-      if (this.effectiveDisabled()) {
-        return;
-      }
-      event.preventDefault();
-      this.#host.click();
-      return;
-    }
-    if (event.key === ' ') {
-      event.preventDefault();
-      if (this.effectiveDisabled()) {
-        return;
-      }
-      this.#spaceHeld = true;
-    }
+    this.#activation.keydown(event);
   }
 
   protected onKeyup(event: KeyboardEvent): void {
-    if (this.#isNativeButton) {
-      return;
-    }
-    if (event.key !== ' ') {
-      return;
-    }
-    if (!this.#spaceHeld) {
-      return;
-    }
-    this.#spaceHeld = false;
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    event.preventDefault();
-    this.#host.click();
+    this.#activation.keyup(event);
   }
 
   protected onFocusIn(): void {
@@ -169,6 +139,6 @@ export class ForButton {
 
   protected onFocusOut(): void {
     this.#focused.set(false);
-    this.#spaceHeld = false;
+    this.#activation.reset();
   }
 }
