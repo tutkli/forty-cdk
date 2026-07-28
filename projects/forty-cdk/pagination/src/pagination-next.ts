@@ -1,6 +1,6 @@
 import { computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled, hostAriaLabel } from 'forty-cdk/core';
 import { injectPaginationContext } from './pagination-context';
 
 /**
@@ -12,13 +12,15 @@ import { injectPaginationContext } from './pagination-context';
   selector: '[forPaginationNext]',
   exportAs: 'forPaginationNext',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-disabled]': 'isDisabled() ? "" : null',
     '(click)': 'ctx.next()',
   },
 })
 export class ForPaginationNext {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectPaginationContext('ForPaginationNext');
 
   /**

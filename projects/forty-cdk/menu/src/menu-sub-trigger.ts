@@ -1,6 +1,7 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import {
+  hostButtonType,
   registerHandle,
   resolveListNavigation,
   type MenuActivationModality,
@@ -51,7 +52,7 @@ import { handleMenuTabOut } from './menu-tab-out';
   exportAs: 'forMenuSubTrigger',
   host: {
     role: 'menuitem',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[id]': 'submenu.triggerId()',
     '[attr.aria-haspopup]': '"menu"',
@@ -69,6 +70,8 @@ import { handleMenuTabOut } from './menu-tab-out';
   },
 })
 export class ForMenuSubTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly submenu = injectMenuContext('ForMenuSubTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   #pointerActivation = false;

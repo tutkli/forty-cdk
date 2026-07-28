@@ -1,6 +1,6 @@
 import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { type ForDatePickerContext, injectDatePickerTriggerContext } from './date-picker-context';
 
 /**
@@ -28,7 +28,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
   selector: '[forDatePickerTrigger]',
   exportAs: 'forDatePickerTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'ctx().triggerId()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
@@ -45,6 +45,8 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
   },
 })
 export class ForDatePickerTrigger {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**

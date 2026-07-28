@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
@@ -23,7 +23,7 @@ import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
   selector: '[forComboboxClear]',
   exportAs: 'forComboboxClear',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
@@ -32,6 +32,8 @@ import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
   },
 })
 export class ForComboboxClear {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectComboboxContext('ForComboboxClear');
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 

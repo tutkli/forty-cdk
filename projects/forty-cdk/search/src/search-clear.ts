@@ -1,6 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
-import { hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, hostAriaLabel, reflectDisabled } from 'forty-cdk/core';
 import { injectSearchGroup } from './search-context';
 import { FOR_SEARCH_DEFAULTS } from './search-defaults';
 
@@ -38,7 +38,7 @@ import { FOR_SEARCH_DEFAULTS } from './search-defaults';
   selector: '[forSearchClear]',
   exportAs: 'forSearchClear',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[hidden]': '!hasContent()',
     '[style.display]': 'hasContent() ? null : "none"',
@@ -46,6 +46,8 @@ import { FOR_SEARCH_DEFAULTS } from './search-defaults';
   },
 })
 export class ForSearchClear {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly group = injectSearchGroup('ForSearchClear');
   readonly #defaults = inject(FOR_SEARCH_DEFAULTS);
 

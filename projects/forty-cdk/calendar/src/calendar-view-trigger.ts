@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectCalendarContext } from './calendar-context';
 
 /**
@@ -21,7 +22,7 @@ import { injectCalendarContext } from './calendar-context';
   selector: '[forCalendarViewTrigger]',
   exportAs: 'forCalendarViewTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.data-view]': 'ctx.view()',
     '[attr.aria-disabled]': 'ctx.disabled() ? "true" : null',
     '[attr.data-disabled]': 'ctx.disabled() ? "" : null',
@@ -29,6 +30,8 @@ import { injectCalendarContext } from './calendar-context';
   },
 })
 export class ForCalendarViewTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectCalendarContext('ForCalendarViewTrigger');
 
   /** Label for the active view, e.g. `"June 2026"` / `"2026"` / `"2016 – 2027"`. */

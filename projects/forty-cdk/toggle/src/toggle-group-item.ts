@@ -1,6 +1,11 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, resolveListNavigation, FOR_HOST_ROVING_CONTEXT } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  registerHandle,
+  resolveListNavigation,
+  FOR_HOST_ROVING_CONTEXT,
+} from 'forty-cdk/core';
 import { injectToggleGroupContext } from './toggle-group-context';
 
 /**
@@ -25,7 +30,7 @@ import { injectToggleGroupContext } from './toggle-group-context';
   selector: 'button[forToggleGroupItem]',
   exportAs: 'forToggleGroupItem',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-pressed]': 'pressed() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.tabindex]': 'tabindex()',
@@ -38,6 +43,8 @@ import { injectToggleGroupContext } from './toggle-group-context';
   },
 })
 export class ForToggleGroupItem {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly group = injectToggleGroupContext('ForToggleGroupItem');
   readonly #rovingHost = inject(FOR_HOST_ROVING_CONTEXT, { optional: true, skipSelf: true });
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);

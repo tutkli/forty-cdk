@@ -285,9 +285,10 @@ outside-focus dismissal checks, exactly like the input.
 | `[disabled]` | `boolean`      | Drops the action out of the focus ring (`tabindex` removed), reflects `aria-disabled`, ignores activation. |
 | `(activate)` | `output<void>` | Fired on click / Enter / Space. Never mutates `[(value)]`.                                                 |
 
-`[forComboboxAction]` host-binds `role="button"`, `type="button"`, a
-primitive-managed `tabindex`, `aria-disabled` (when disabled), and reflects
-`data-highlighted` while it holds DOM focus + `data-disabled` when disabled.
+`[forComboboxAction]` host-binds `role="button"`, `type="button"` (on a native
+`<button>` host only — any other element gets no `type`), a primitive-managed
+`tabindex`, `aria-disabled` (when disabled), and reflects `data-highlighted`
+while it holds DOM focus + `data-disabled` when disabled.
 
 > **Out of scope (v1):** grouped action clusters / multiple action zones,
 > submenu-style nested actions, and actions that mutate `value` (use a plain

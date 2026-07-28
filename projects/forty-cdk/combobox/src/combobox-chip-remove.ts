@@ -1,6 +1,6 @@
 import { computed, Directive, inject } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { ForComboboxChip } from './combobox-chip';
 
@@ -19,13 +19,15 @@ import { ForComboboxChip } from './combobox-chip';
   selector: '[forComboboxChipRemove]',
   exportAs: 'forComboboxChipRemove',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[attr.aria-label]': 'ariaLabel()',
     '(click)': 'onClick($event)',
   },
 })
 export class ForComboboxChipRemove {
+  protected readonly buttonType = hostButtonType();
+
   // The value type is opaque to chip-remove: it just forwards whatever the
   // parent chip exposes back into `removeValue`. At runtime the chip and
   // the parent `[forCombobox]` share the same `T` because the consumer

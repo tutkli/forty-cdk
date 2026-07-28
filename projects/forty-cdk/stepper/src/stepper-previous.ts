@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectStepperContext } from './stepper-context';
 
 /**
@@ -7,8 +8,9 @@ import { injectStepperContext } from './stepper-context';
  * `aria-disabled="true"` when `canRetreat()` is false (first step reached or
  * root disabled).
  *
- * The button retains its native `type="button"` attribute via the `type` host
- * binding to prevent accidental form submission.
+ * The directive forces `type="button"` through a host binding, so a consumer
+ * `type="submit"` on the host cannot make going back a step submit a
+ * surrounding `<form>`.
  *
  * Clicking while `aria-disabled` is a no-op because `previous()` guards
  * internally.
@@ -17,12 +19,14 @@ import { injectStepperContext } from './stepper-context';
   selector: 'button[forStepperPrevious]',
   exportAs: 'forStepperPrevious',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-disabled]': '!ctx.canRetreat() ? "true" : null',
     '(click)': 'onClick()',
   },
 })
 export class ForStepperPrevious {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectStepperContext('ForStepperPrevious');
 
   protected onClick(): void {

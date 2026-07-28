@@ -1,6 +1,7 @@
 import { computed, Directive, ElementRef, inject, type Signal } from '@angular/core';
 
 import {
+  hostButtonType,
   registerHandle,
   hostId,
   isHoverCapablePointer,
@@ -40,7 +41,7 @@ import {
   selector: '[forNavigationMenuTrigger]',
   exportAs: 'forNavigationMenuTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'id()',
     '[attr.aria-expanded]': 'isOpen() ? "true" : "false"',
     '[attr.aria-controls]': 'isOpen() ? contentId() : null',
@@ -54,6 +55,8 @@ import {
   },
 })
 export class ForNavigationMenuTrigger {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly menu = injectNavigationMenuContext('ForNavigationMenuTrigger');
   readonly #item = injectNavigationMenuItemContext('ForNavigationMenuTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);

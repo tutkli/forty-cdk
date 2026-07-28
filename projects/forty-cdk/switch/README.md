@@ -115,7 +115,7 @@ Both keys work on any host element. On a `<button>` they come from native button
 
 Implements the [WAI-ARIA Switch pattern](https://www.w3.org/WAI/ARIA/apg/patterns/switch/).
 
-- **Prefer a `<button>`.** The directive forces `type="button"` to prevent submit-by-Enter inside a `<form>`, and Enter / Space toggle the switch via native button behavior. Any other host element (e.g. `<div>`) works too: it gets `tabindex="0"` and the same Enter / Space activation synthesized, so `role="switch"` is never announced on an element a keyboard user cannot reach.
+- **Prefer a `<button>`.** The directive forces `type="button"` through a host binding to prevent submit-by-Enter inside a `<form>` — a consumer `type="submit"` on the host is overridden, not honoured — and Enter / Space toggle the switch via native button behavior. Any other host element (e.g. `<div>`) works too: it gets `tabindex="0"` and the same Enter / Space activation synthesized, so `role="switch"` is never announced on an element a keyboard user cannot reach; it gets no `type` attribute at all, since `type` is not valid there.
 - **A disabled switch stays focusable** (per APG): it reflects `aria-disabled="true"` + `data-disabled=""` rather than the native `disabled` attribute, so assistive tech still announces it while click / keyboard activation is a no-op. Form-submit exclusion is handled by the hidden `<input>`, not the visible button.
 - **`role="switch"`** is announced as "switch, on/off" by screen readers, distinct from "checkbox, checked/not checked".
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine without it (only the type import from `@angular/forms/signals` is type-only and erased at build).

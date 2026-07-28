@@ -1,6 +1,6 @@
 import { computed, Directive, effect, ElementRef, inject, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { type ForTimePickerContext, injectTimePickerTriggerContext } from './time-picker-context';
 
 /**
@@ -21,7 +21,7 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
   selector: '[forTimePickerTrigger]',
   exportAs: 'forTimePickerTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     role: 'combobox',
     '[id]': 'ctx().overlay.triggerId()',
     '[attr.aria-haspopup]': '"listbox"',
@@ -40,6 +40,8 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
   },
 })
 export class ForTimePickerTrigger<D = unknown> {
+  protected readonly buttonType = hostButtonType();
+
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**

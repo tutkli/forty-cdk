@@ -1,7 +1,7 @@
 import { computed, Directive, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
+import { hostButtonType, FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
 
 /**
  * Headless implementation of the [WAI-ARIA Toggle Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/) —
@@ -34,7 +34,7 @@ import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
   selector: 'button[forToggle]',
   exportAs: 'forToggle',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-pressed]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
@@ -49,6 +49,8 @@ import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
   },
 })
 export class ForToggle extends FormUiControlBase implements FormCheckboxControl {
+  protected readonly buttonType = hostButtonType();
+
   /**
    * Two-way bindable on/off state. Required by `FormCheckboxControl`, so the
    * toggle auto-wires with `[formField]`; the host reflects it through

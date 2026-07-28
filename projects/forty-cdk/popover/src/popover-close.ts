@@ -1,5 +1,6 @@
 import { Directive } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectPopoverContext } from './popover-context';
 
 /**
@@ -11,11 +12,13 @@ import { injectPopoverContext } from './popover-context';
   selector: '[forPopoverClose]',
   exportAs: 'forPopoverClose',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '(click)': 'onClick()',
   },
 })
 export class ForPopoverClose {
+  protected readonly buttonType = hostButtonType();
+
   readonly #ctx = injectPopoverContext('ForPopoverClose');
 
   protected onClick(): void {

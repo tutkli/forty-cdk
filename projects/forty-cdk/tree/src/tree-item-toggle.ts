@@ -1,5 +1,6 @@
 import { DestroyRef, Directive, inject } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectTreeItemContext } from './tree-context';
 
 /**
@@ -16,7 +17,7 @@ import { injectTreeItemContext } from './tree-context';
   selector: '[forTreeItemToggle]',
   exportAs: 'forTreeItemToggle',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     'aria-hidden': 'true',
     '[attr.data-state]': 'item.expanded() ? "open" : "closed"',
@@ -24,6 +25,8 @@ import { injectTreeItemContext } from './tree-context';
   },
 })
 export class ForTreeItemToggle {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly item = injectTreeItemContext('ForTreeItemToggle');
 
   constructor() {

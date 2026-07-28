@@ -1,5 +1,6 @@
 import { computed, Directive, inject, input } from '@angular/core';
 
+import { hostButtonType } from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
 
@@ -21,13 +22,15 @@ import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
   selector: '[forCarouselRotationControl]',
   exportAs: 'forCarouselRotationControl',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-label]': 'label()',
     '[attr.data-playing]': 'ctx.playing() ? "" : null',
     '(click)': 'ctx.toggleAutoplay()',
   },
 })
 export class ForCarouselRotationControl {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectCarouselContext('ForCarouselRotationControl');
   readonly #defaults = inject(FOR_CAROUSEL_DEFAULTS);
 

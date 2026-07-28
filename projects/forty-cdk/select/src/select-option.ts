@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 
 import {
+  hostButtonType,
   accessibleTextContent,
   registerHandle,
   hostId,
@@ -61,7 +62,7 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
   providers: [{ provide: FOR_SELECT_OPTION, useExisting: ForSelectOption }],
   host: {
     role: 'option',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[id]': 'id()',
     '[attr.aria-selected]': 'selected() ? "true" : "false"',
@@ -79,6 +80,8 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
   },
 })
 export class ForSelectOption<T = string> {
+  protected readonly buttonType = hostButtonType();
+
   readonly #ctx = injectSelectContext<T>('ForSelectOption');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 

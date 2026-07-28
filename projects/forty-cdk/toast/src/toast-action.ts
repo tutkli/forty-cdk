@@ -1,6 +1,6 @@
 import { Directive, input } from '@angular/core';
 
-import { registerHandle } from 'forty-cdk/core';
+import { hostButtonType, registerHandle } from 'forty-cdk/core';
 import { injectToastContext } from './toast-context';
 
 /**
@@ -28,11 +28,13 @@ import { injectToastContext } from './toast-context';
   selector: '[forToastAction]',
   exportAs: 'forToastAction',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '(click)': 'onClick()',
   },
 })
 export class ForToastAction {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectToastContext('ForToastAction');
 
   /**

@@ -1,6 +1,6 @@
 import { booleanAttribute, computed, Directive, input } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { injectPaginationContext } from './pagination-context';
 
 /**
@@ -12,13 +12,15 @@ import { injectPaginationContext } from './pagination-context';
   selector: '[forPaginationItem]',
   exportAs: 'forPaginationItem',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-current]': 'isCurrent() ? "page" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'activate()',
   },
 })
 export class ForPaginationItem {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectPaginationContext('ForPaginationItem');
 
   /** The 1-based page number this button navigates to. */

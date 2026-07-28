@@ -8,7 +8,7 @@ import {
   input,
 } from '@angular/core';
 
-import { registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import { hostButtonType, registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
 import { injectRadioGroupContext } from './radio-group-context';
 
 /**
@@ -40,7 +40,7 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
   providers: [{ provide: FOR_RADIO, useExisting: ForRadio }],
   host: {
     role: 'radio',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[id]': 'id()',
     '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -54,6 +54,8 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
   },
 })
 export class ForRadio {
+  protected readonly buttonType = hostButtonType();
+
   /** Parent group's context — public so siblings like `ForRadioIndicator` can read it. */
   readonly group = injectRadioGroupContext('ForRadio');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);

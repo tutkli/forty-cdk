@@ -1,6 +1,6 @@
 import { booleanAttribute, Directive, ElementRef, inject, input, model } from '@angular/core';
 
-import { reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 
 /**
  * Button that toggles the drawer when clicked. Apply on a focusable element —
@@ -23,7 +23,7 @@ import { reflectDisabled } from 'forty-cdk/core';
   selector: '[forDrawerTrigger]',
   exportAs: 'forDrawerTrigger',
   host: {
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'open() ? "true" : "false"',
     '[attr.aria-controls]': 'open() ? controls() : null',
@@ -34,6 +34,8 @@ import { reflectDisabled } from 'forty-cdk/core';
   },
 })
 export class ForDrawerTrigger {
+  protected readonly buttonType = hostButtonType();
+
   /**
    * Two-way bindable. Bind to the same signal that gates the surrounding
    * `@if` around `[forDrawer]`. The `model()` change emitter

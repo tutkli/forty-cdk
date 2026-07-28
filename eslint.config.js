@@ -1968,6 +1968,20 @@ module.exports = tseslint.config(
           message:
             'ARIA truthy-only attributes must be `null` when false, not `"false"`. Use `cond() ? "true" : null` (CLAUDE.md § "ARIA state attribute emission").',
         },
+        // ---- `type="button"` is a host *binding*, never a static host attribute ----
+        // A static host attribute is stamped onto whatever element the consumer
+        // picked (`type` is invalid on `<div>` / `<span>`) *and* loses to a
+        // consumer's own static `type="submit"`, which is how 46 pieces came to
+        // document submit protection they did not have (tutkli/forty-cdk#1512).
+        // The seam is `hostButtonType()` from `forty-cdk/core`, host-bound as
+        // `'[attr.type]': 'buttonType()'`: `'button'` on a native `<button>`
+        // host, `null` on anything else, and it wins over the consumer's value.
+        {
+          selector:
+            'Property:matches([key.name="host"], [key.value="host"]) > ObjectExpression > Property:matches([key.name="type"], [key.value="type"])[value.value="button"]',
+          message:
+            'A static `type: "button"` host attribute is banned: it is invalid on a non-button host and a consumer `type="submit"` beats it. Use the `hostButtonType()` core seam host-bound as `\'[attr.type]\': \'buttonType()\'` (CLAUDE.md § "Forcing `type=\\"button\\"`").',
+        },
       ],
 
       // ---- Filename convention ----

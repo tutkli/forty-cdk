@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 
 import {
+  hostButtonType,
   createVetoableEvent,
   emitVetoableEvent,
   type VetoableEvent,
@@ -44,7 +45,7 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
   providers: [{ provide: FOR_MENU_RADIO_ITEM, useExisting: ForMenuRadioItem }],
   host: {
     role: 'menuitemradio',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -59,6 +60,8 @@ export const FOR_MENU_RADIO_ITEM = new InjectionToken<ForMenuRadioItem>('FOR_MEN
   },
 })
 export class ForMenuRadioItem {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly menu = injectMenuContext('ForMenuRadioItem');
   protected readonly group = injectMenuRadioGroupContext('ForMenuRadioItem');
 

@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 
 import {
+  hostButtonType,
   createVetoableEvent,
   emitVetoableEvent,
   type VetoableEvent,
@@ -46,7 +47,7 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
   providers: [{ provide: FOR_MENU_CHECKBOX_ITEM, useExisting: ForMenuCheckboxItem }],
   host: {
     role: 'menuitemcheckbox',
-    type: 'button',
+    '[attr.type]': 'buttonType()',
     tabindex: '-1',
     '[attr.aria-checked]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
@@ -61,6 +62,8 @@ export const FOR_MENU_CHECKBOX_ITEM = new InjectionToken<ForMenuCheckboxItem>(
   },
 })
 export class ForMenuCheckboxItem {
+  protected readonly buttonType = hostButtonType();
+
   protected readonly ctx = injectMenuContext('ForMenuCheckboxItem');
 
   /** Two-way bindable. */
