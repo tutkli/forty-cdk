@@ -61,8 +61,14 @@ export class ReorderAnimator {
   /**
    * Schedule the FLIP play (and preview settle, when a preview was kept) after the next render —
    * once the consumer's data change has reflowed the displaced siblings into their new positions.
+   *
+   * `onSettled` runs at the end of that render, once the animator has released the preview it was
+   * handed: by then the preview is either already destroyed or settling under its own
+   * `transitionend` / timeout disposal, which is independent of this injector. The caller can drop
+   * its own reference to the preview at that point. It does **not** run when there is nothing
+   * scheduled (no First rects captured) — the caller still owns the preview in that case.
    */
-  schedule(liftedHost: HTMLElement, preview: DragPreview | null): void {
+  schedule(liftedHost: HTMLElement, preview: DragPreview | null, onSettled?: () => void): void {
     const first = this.#first;
     if (first === null) {
       return;
@@ -79,6 +85,7 @@ export class ReorderAnimator {
             preview.destroy();
           }
         }
+        onSettled?.();
       },
       { injector: this.#injector },
     );

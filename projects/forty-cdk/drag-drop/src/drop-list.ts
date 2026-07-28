@@ -647,7 +647,9 @@ export class ForDropList implements ForDropListContext {
 
     if (animator) {
       this.#handedOffPreview = preview;
-      animator.schedule(liftedHost, preview);
+      animator.schedule(liftedHost, preview, () => {
+        this.#handedOffPreview = null;
+      });
       this.#teardown(connected, true);
     } else {
       this.#teardown(connected);
