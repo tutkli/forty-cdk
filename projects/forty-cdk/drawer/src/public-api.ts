@@ -10,10 +10,10 @@ export {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
   type ForDrawerContext,
-  type ForDrawerDragEvent,
-  type ForDrawerReleaseEvent,
   type ForDrawerSide,
   type ForDrawerSnapPoint,
+  type ForDrawerSwipeEndEvent,
+  type ForDrawerSwipeEvent,
 } from './drawer-context';
 export { ForDrawerRef } from './drawer-ref';
 export {

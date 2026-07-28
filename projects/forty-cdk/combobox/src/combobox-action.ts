@@ -23,7 +23,7 @@ import { injectComboboxContext } from './combobox-context';
  *
  * - does **not** register with the option / value collection, so it never
  *   appears in `value()`, `aria-setsize`, or `aria-posinset`;
- * - emits an `(action)` output on activation (click / Enter / Space) and
+ * - emits an `(activate)` output on activation (click / Enter / Space) and
  *   **never** mutates `[(value)]`;
  * - is reached by keyboard through Tab, not the option arrow navigation — see
  *   the focus model below.
@@ -49,7 +49,7 @@ import { injectComboboxContext } from './combobox-context';
  *
  * ```html
  * <div forComboboxContent>
- *   <button forComboboxAction (action)="createNew(query())">
+ *   <button forComboboxAction (activate)="createNew(query())">
  *     Create "{{ query() }}"
  *   </button>
  *   <div forComboboxList>
@@ -94,7 +94,7 @@ export class ForComboboxAction {
    * consumer decides what happens (create an item, open a dialog, …) and whether
    * to close the popup afterwards.
    */
-  readonly action = output<void>();
+  readonly activate = output<void>();
 
   /** Stable id for the host, used as the ring key. Adopts a consumer-set static `id`. */
   readonly id = hostId('for-combobox-action');
@@ -128,7 +128,7 @@ export class ForComboboxAction {
     if (this.#isInert()) {
       return;
     }
-    this.action.emit();
+    this.activate.emit();
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
@@ -140,7 +140,7 @@ export class ForComboboxAction {
         }
         event.preventDefault();
         if (!this.#isInert()) {
-          this.action.emit();
+          this.activate.emit();
         }
         break;
 

@@ -16,7 +16,7 @@ import { injectTimePickerContext } from './time-picker-context';
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
- * natural mount cycle. While mounted, a `DismissableLayer` activates (Escape,
+ * natural mount cycle. While mounted, a `DismissibleLayer` activates (Escape,
  * pointer-down outside, focus outside); the trigger element is exempt from
  * outside-pointer checks so trigger clicks toggle without dismissal racing.
  *

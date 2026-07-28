@@ -9,8 +9,11 @@ import { createDefaults } from 'forty-cdk/core';
  * overrides merge with the parent scope.
  */
 export interface ForSliderDefaults {
-  /** Step used for `PageUp` / `PageDown`. Defaults to 10× `step`. */
-  largeStep: number;
+  /**
+   * Multiplier applied to `step` for `PageUp` / `PageDown`. Defaults to `10`,
+   * so a step of `1` pages by `10`.
+   */
+  stepMultiplier: number;
 }
 
 /**
@@ -19,7 +22,7 @@ export interface ForSliderDefaults {
  * contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_SLIDER_FALLBACK_DEFAULTS: ForSliderDefaults = {
-  largeStep: 10,
+  stepMultiplier: 10,
 };
 
 const { token, provideDefaults } = createDefaults<ForSliderDefaults>(

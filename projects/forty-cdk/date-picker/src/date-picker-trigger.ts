@@ -14,7 +14,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
  * (`aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` /
  * `aria-busy`) so the focusable element advertises validity to assistive tech.
  *
- * The trigger is exempt from the surface's dismissable layer — its own click
+ * The trigger is exempt from the surface's dismissible layer — its own click
  * toggles open/close, so an outside-pointer dismissal never races with it.
  *
  * The root is normally resolved via DI from the enclosing `[forDatePicker]`.

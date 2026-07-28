@@ -145,7 +145,18 @@ describe('injectItemAlignedPositioner', () => {
     expect(lbEl.style.translate).not.toBe('');
     expect(lbEl.style.getPropertyValue('--for-anchor-width')).not.toBe('');
     expect(lbEl.style.getPropertyValue('--for-anchor-height')).not.toBe('');
-    expect(lbEl.style.getPropertyValue('--for-select-content-available-height')).not.toBe('');
+    // The available-height band is viewport arithmetic, not a layout read —
+    // jsdom models `window.innerHeight` honestly, so asserting the value is not
+    // the stubbed-rect tautology the geometry rule bans. It pins the arithmetic
+    // (`innerHeight - 2 * collisionPadding`) to the shared property name the
+    // anchored positioner also writes.
+    const padding = lb.collisionPadding();
+    expect(lbEl.style.getPropertyValue('--for-available-height')).toBe(
+      `${Math.round(Math.max(0, window.innerHeight - 2 * padding))}px`,
+    );
+    // Item-aligned computes no width budget — only the anchored positioner
+    // publishes --for-available-width. Guards against symmetry creep.
+    expect(lbEl.style.getPropertyValue('--for-available-width')).toBe('');
 
     lb.open.set(false);
     await flushPositioning(fixture);
@@ -163,7 +174,7 @@ describe('injectItemAlignedPositioner', () => {
     expect(lbEl.style.getPropertyValue('clip-path')).toBe('');
     expect(lbEl.style.getPropertyValue('--for-anchor-width')).toBe('');
     expect(lbEl.style.getPropertyValue('--for-anchor-height')).toBe('');
-    expect(lbEl.style.getPropertyValue('--for-select-content-available-height')).toBe('');
+    expect(lbEl.style.getPropertyValue('--for-available-height')).toBe('');
 
     // Reopen: the positioner runs clean and re-writes the position.
     lb.open.set(true);

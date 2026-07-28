@@ -176,7 +176,7 @@ export interface ForDialogOpenConfig<D = unknown> {
   /**
    * Per-channel dismiss hook mirroring the declarative `(escapeKeyDown)`
    * output. Fires when Escape is pressed while this dialog is the topmost
-   * dismissable layer. Call `event.preventDefault()` on the veto to suppress
+   * dismissible layer. Call `event.preventDefault()` on the veto to suppress
    * the implicit close while keeping the other dismiss channels live — the
    * programmatic equivalent of `(escapeKeyDown)="$event.preventDefault()"`.
    * The original `KeyboardEvent` is on `.event`.

@@ -9,7 +9,7 @@ import { injectOverlayShell, type OverlayShellConfig } from './overlay-shell';
 /**
  * Tracks the most recently rendered fixture so `afterEach` can `destroy()` it
  * before wiping `document.body.innerHTML`. Without this, the shell's
- * `DestroyRef` hooks (dismissable layer / focus trap / scroll lock / inert
+ * `DestroyRef` hooks (dismissible layer / focus trap / scroll lock / inert
  * siblings) don't fire until the next test's `resetTestingModule`, leaving
  * body-style residue and global document listeners across the test boundary.
  * `ComponentFixture#destroy` is idempotent, so tests that call `ctx.destroy()`
@@ -79,7 +79,7 @@ describe('injectOverlayShell', () => {
 
   afterEach(() => {
     // Destroy the fixture FIRST so the shell's DestroyRef hooks
-    // (DismissableLayerStack.unregister, InertSiblingsStack.deactivate,
+    // (DismissibleLayerStack.unregister, InertSiblingsStack.deactivate,
     // BodyScrollLock.unlock, FocusTrap.deactivate) fire inside this test's
     // boundary rather than at the next test's setup. Then clear the body
     // styles + DOM the trap / scroll lock may have touched.
@@ -534,7 +534,7 @@ describe('injectOverlayShell', () => {
   });
 
   describe('destroy ordering', () => {
-    it('deactivates the dismissable layer before the surface unmounts', async () => {
+    it('deactivates the dismissible layer before the surface unmounts', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
       const calls: string[] = [];
@@ -546,7 +546,7 @@ describe('injectOverlayShell', () => {
           requestClose: () => {},
           // If the layer was still active during teardown, removing the
           // surface from the DOM could route a focusin to handleFocusIn and
-          // call this. The shell's order (dismissable.deactivate registers
+          // call this. The shell's order (dismissible.deactivate registers
           // before the positioner's portal) guarantees that doesn't happen.
           emitFocusOutside: () => calls.push('focus-outside'),
           emitInteractOutside: () => {},
@@ -563,12 +563,12 @@ describe('injectOverlayShell', () => {
 
   describe('destroy before first render', () => {
     // Mirrors portal.spec.ts' destroy-before-render test. The shell activates
-    // the dismissable layer inside `afterNextRenderCancellable`. A destroy
+    // the dismissible layer inside `afterNextRenderCancellable`. A destroy
     // between construction and the first render must cancel that callback —
     // otherwise the layer is pushed onto the stack with no teardown hook left
     // to pop it, leaving a dead topmost entry that swallows every later
     // Escape / pointer-down-outside.
-    it('does not leak a dead topmost dismissable-layer entry', async () => {
+    it('does not leak a dead topmost dismissible-layer entry', async () => {
       const ref = signal<HTMLElement | null>(makeReference());
       const open = signal(true);
       const calls: string[] = [];

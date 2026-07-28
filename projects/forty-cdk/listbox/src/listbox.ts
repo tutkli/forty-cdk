@@ -54,7 +54,7 @@ import { ListboxVirtualizedNavigator } from './listbox-virtualized-navigator';
  * Generic over the option value type `T` (default `string`). When the
  * consumer binds object items the directive infers `T` from `[(value)]` and
  * `[forListboxOption][value]`; object identity is resolved by the
- * consumer-supplied `[isItemEqualToValue]` and the hidden inputs serialize
+ * consumer-supplied `[compareWith]` and the hidden inputs serialize
  * via `[itemToFormValue]`. Option display text is read from the rendered
  * `textContent`, so no separate label function is needed.
  *
@@ -116,9 +116,9 @@ export class ForListbox<T = string>
    * correct identity for primitive `T` (e.g. strings, numbers). Override
    * when binding object items so the directive can locate selected entries
    * by id (or any other stable key) instead of by reference:
-   * `[isItemEqualToValue]="(a, b) => a.id === b.id"`.
+   * `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly isItemEqualToValue = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
 
   /**
    * Serialize an item for the hidden input that participates in native
@@ -258,7 +258,7 @@ export class ForListbox<T = string>
     if (selected.length === 0) {
       return null;
     }
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     for (const option of this.#options.items()) {
       if (option.disabled()) {
         continue;
@@ -313,7 +313,7 @@ export class ForListbox<T = string>
     options: this.#options.items,
     value: this.value,
     setValue: (v) => this.value.set(v),
-    isItemEqualToValue: this.isItemEqualToValue,
+    compareWith: this.compareWith,
     multiple: this.multiple,
     effectiveDisabled: this.effectiveDisabled,
     readonly: this.readonly,
@@ -402,7 +402,7 @@ export class ForListbox<T = string>
   }
 
   isSelected(v: T): boolean {
-    return isInArray(this.value(), v, this.isItemEqualToValue());
+    return isInArray(this.value(), v, this.compareWith());
   }
 
   activate(v: T): void {
@@ -410,7 +410,7 @@ export class ForListbox<T = string>
       return;
     }
     if (this.multiple()) {
-      this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
+      this.value.set(toggleInArray(this.value(), v, this.compareWith()));
     } else {
       this.#rangeEngine.selectSingle(v);
     }
@@ -580,7 +580,7 @@ export class ForListbox<T = string>
       return;
     }
     const ordered = [...items].sort((a, b) => (a.posInSet() ?? 0) - (b.posInSet() ?? 0));
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     const value = this.value();
     const selectedFirst = ordered.find(
       (o) => !o.disabled() && value.some((v) => equals(v, o.value())),

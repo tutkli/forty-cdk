@@ -232,7 +232,7 @@ runtime. This is the "editable + list" shape (no `[forComboboxTrigger]` needed).
   <input forComboboxInput placeholder="Search…" />
   @if (combobox.open()) {
   <div forComboboxContent>
-    <button forComboboxAction (action)="createNew(query())">Create "{{ query() }}"</button>
+    <button forComboboxAction (activate)="createNew(query())">Create "{{ query() }}"</button>
     <div forComboboxList>
       @for (it of filtered; track it.id) {
       <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
@@ -247,7 +247,7 @@ An action:
 
 - **never touches `value` / `options()`.** It registers in a collection separate
   from options, so `options()`, `aria-setsize`, and `aria-posinset` are
-  unaffected and activation emits `(action)` instead of mutating `[(value)]`. The
+  unaffected and activation emits `(activate)` instead of mutating `[(value)]`. The
   consumer decides what happens and whether to close the popup afterwards.
 - **is `role="button"`, not `role="option"`.** Assistive tech announces it as an
   action, not as one of N choices.
@@ -270,7 +270,7 @@ a bottom-pinned option cannot guarantee under infinite scroll.
 Because focus is trapped in the input↔actions ring while open, **Escape** (or an
 outside pointer) is how you leave: Escape from an action closes the popup and
 returns focus to the input (editable anatomy) or the `[forComboboxTrigger]`
-(picker anatomy). Activation is **click / Enter / Space** and routes to `(action)`
+(picker anatomy). Activation is **click / Enter / Space** and routes to `(activate)`
 only. With no action registered, Tab keeps its default "close and let Tab flow on"
 behaviour, so existing comboboxes are unchanged.
 
@@ -283,7 +283,7 @@ outside-focus dismissal checks, exactly like the input.
 | Member       | Type           | Notes                                                                                                      |
 | ------------ | -------------- | ---------------------------------------------------------------------------------------------------------- |
 | `[disabled]` | `boolean`      | Drops the action out of the focus ring (`tabindex` removed), reflects `aria-disabled`, ignores activation. |
-| `(action)`   | `output<void>` | Fired on click / Enter / Space. Never mutates `[(value)]`.                                                 |
+| `(activate)` | `output<void>` | Fired on click / Enter / Space. Never mutates `[(value)]`.                                                 |
 
 `[forComboboxAction]` host-binds `role="button"`, `type="button"`, a
 primitive-managed `tabindex`, `aria-disabled` (when disabled), and reflects
@@ -440,11 +440,11 @@ Real apps usually have richer option models — `{ id, label, ... }` — where t
 
 Three inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input                  | Default                                                            | Purpose                                                                                                         |
-| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / removal locate by id (or any stable key).      |
-| `[itemToStringLabel]`  | `(item) => String(item)`                                           | Render an item as a string. Drives `commitOnSelect` writes into the input and the chip-label fallback.          |
-| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants). |
+| Input                 | Default                                                            | Purpose                                                                                                         |
+| --------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `[compareWith]`       | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / removal locate by id (or any stable key).      |
+| `[itemToStringLabel]` | `(item) => String(item)`                                           | Render an item as a string. Drives `commitOnSelect` writes into the input and the chip-label fallback.          |
+| `[itemToFormValue]`   | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants). |
 
 ```html
 @let q = query().toLowerCase(); @let filtered = cities().filter((c) =>
@@ -455,7 +455,7 @@ c.name.toLowerCase().includes(q));
   [(query)]="query"
   [(value)]="value"
   [(open)]="open"
-  [isItemEqualToValue]="byId"
+  [compareWith]="byId"
   [itemToStringLabel]="toName"
   name="city"
   [itemToFormValue]="toId"

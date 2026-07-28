@@ -69,9 +69,10 @@ describe('ForCarouselDrag', () => {
       expect(viewportEl(el).hasAttribute('data-dragging')).toBe(false);
     });
 
-    it('viewport has no --for-carousel-drag var at rest', () => {
+    it('viewport has no --for-carousel-swipe-movement-* vars at rest', () => {
       const { el } = renderHost(DragHost);
-      expect(viewportEl(el).style.getPropertyValue('--for-carousel-drag')).toBe('');
+      expect(viewportEl(el).style.getPropertyValue('--for-carousel-swipe-movement-x')).toBe('');
+      expect(viewportEl(el).style.getPropertyValue('--for-carousel-swipe-movement-y')).toBe('');
     });
   });
 

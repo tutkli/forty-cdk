@@ -7,6 +7,137 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The pre-1.0 naming and API-alignment sweep ([#1400](https://github.com/tutkli/forty-cdk/issues/1400)):
+fifteen inconsistencies where the same concept was spelled two ways across the library, resolved onto one
+name each. Nothing here changes behaviour except where noted — it is a rename pass, deliberately taken
+before 1.0 freezes the surface, with **no deprecated aliases anywhere**. Two renames are silent at compile
+time and need a template grep: `(action)` on `[forComboboxAction]` and `(valueComplete)` / `(valueInvalid)`
+on `[forOtpInput]` both sit on native elements, so a stale binding registers a DOM listener for an event
+that never fires instead of failing the build.
+
+### Changed
+
+- **Listbox / Select / Combobox — BREAKING.** The equality comparator input `[isItemEqualToValue]` is
+  renamed `[compareWith]`, so all four selection-capable primitives (`ForListbox`, `ForSelect`,
+  `ForCombobox`, `ForTable`) spell it the same way and match the name Angular uses on its own
+  `@angular/forms` select controls. The member is renamed on the public `ForListboxContext` /
+  `ForSelectContext` / `ForComboboxContext` interfaces and inside the exported
+  `FOR_LISTBOX_HOST_DIRECTIVE_INPUTS` / `FOR_SELECT_HOST_DIRECTIVE_INPUTS` /
+  `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS` tuples. Migration is a find-and-replace; the call signature and the
+  `(a, b) => a === b` default are unchanged.
+- **Core (dismissible layer) — BREAKING.** The misspelled `Dismissable*` family is renamed to
+  `Dismissible*`. From `forty-cdk/core`: `DismissableLayerStack` → `DismissibleLayerStack` and
+  `injectDismissableLayer` → `injectDismissibleLayer`. The core-internal `DismissableLayer`,
+  `DismissableLayerChannel`, `DismissableLayerNesting` and `DismissableLayerActivateOptions` are renamed to
+  match, and the module moved from `core/dismissable-layer/` to `core/dismissible-layer/`.
+- **Menu family — BREAKING.** `ForMenuContext.dismissableExemptions` is renamed `dismissibleExemptions`.
+  The member is published from `forty-cdk/shared` and is also a public `readonly` signal on
+  `ForContextMenu`, `ForDropdownMenu`, `ForMenuSub` and the menubar per-menu context, so a consumer
+  injecting `FOR_MENU_CONTEXT` or holding one of those directive instances must rename the property.
+- **Toast — BREAKING.** `[forToast]`'s `[closable]` input is now `[dismissible]`, matching Dialog's and
+  Drawer's input of the same name. `ForToastConfig.closable` (the `ForToastManager.show()` /
+  `ForToastRef.update()` config field) and `ForToastContext.closable` are renamed too. A stale `[closable]`
+  binding fails Angular's strict-template typecheck and a stale `show({ closable })` fails at compile time.
+- **Menubar / NavigationMenu — BREAKING.** `[forMenubar]` and `[forNavigationMenu]` `value` are now
+  `model<string | null>` defaulting to `null`; `null` (not `''`) is the "nothing open" sentinel, aligning
+  them with `[forTabs]` / `[forRadioGroup]`. `ForMenubarContext.value`, `ForNavigationMenuContext.value`
+  and `ForNavigationMenuContext.previousValue` widen to `Signal<string | null>`, and both roots' implicit
+  `(valueChange)` now emits `string | null`. Consumers seeding the model with `''` must switch to `null` —
+  an empty string now reads as an open value with no matching trigger/item, reflecting
+  `data-state="open"` on the root (and, on Menubar, removing its roving tab stop). Truthiness checks
+  (`open() ? … : …`) are unaffected; explicit `=== ''` comparisons invert and must become `=== null`.
+- **Slider — BREAKING.** `[forSliderThumb]`'s `[label]` input is renamed `[ariaLabel]` and retyped from
+  `input<string>('')` to `input<string | null>(null)`, matching the library-wide uniform accessible-name
+  input. A wrapper reading it back now sees `null` rather than `''` when unset.
+- **Slider — BREAKING.** `[forSlider]`'s `[largeStep]` input is renamed `[stepMultiplier]` and its meaning
+  changes from an absolute increment to a multiplier over `step`, matching `[forNumberInput]`.
+  `[step]="5" [largeStep]="25"` becomes `[step]="5" [stepMultiplier]="5"`. `ForSliderDefaults.largeStep` →
+  `ForSliderDefaults.stepMultiplier` (same `number` type, same `10` fallback), `ForSliderContext.largeStep`
+  → `ForSliderContext.stepMultiplier`, and `FOR_SLIDER_HOST_DIRECTIVE_INPUTS` swaps `'largeStep'` for
+  `'stepMultiplier'`. `[forPaneResizer]` deliberately keeps its absolute `largeStep` — its value is
+  unit-agnostic, so there is no `step` grid to multiply against.
+- **Drag & drop — BREAKING.** The drop-list coordination token is renamed `FOR_DRAG_DROP_CONTEXT` →
+  `FOR_DROP_LIST_CONTEXT`, so it pairs with the `ForDropListContext` interface it already carried (and with
+  the sibling `FOR_DROP_LIST_ROVING_DELEGATE` / `FOR_DROP_LIST_GROUP`). The interface name is unchanged, as
+  are `FOR_DRAG_DROP_DEFAULTS` / `provideForDragDropDefaults` / `ForDragDropDefaults`,
+  `FOR_DRAGGABLE_CONTEXT` and `ForDragDropEvent`.
+- **Drag & drop — BREAKING.** `[forFreeDrag]`'s outputs are renamed `(dragStart)` / `(dragMove)` /
+  `(dragEnd)` → `(moveStart)` / `(moveMove)` / `(moveEnd)`, keeping their `{ x, y }` payloads. They
+  previously collided with `[forDraggable]`'s same-named reorder outputs, which carry entirely different
+  payloads (`{ source, index }` / `{ dropped }`) and are **not** renamed.
+- **Drawer — BREAKING.** The `(dragMove)` and `(release)` outputs are replaced by the toast-aligned
+  `swipe*` family — `(swipeStart)`, `(swipeMove)`, `(swipeEnd)`, `(swipeCancel)`. This is a channel split,
+  not just a rename: a `pointercancel` or a mid-gesture direction abort used to fire `release` with
+  `willClose: false` and now fires `(swipeCancel)` and never `(swipeEnd)`. The arming pointer move used to
+  emit `dragMove` twice; it now emits `(swipeStart)` once and `(swipeMove)` once. `ForDrawerOpenConfig`'s
+  `dragMove` / `release` callbacks are replaced by `swipeStart` / `swipeMove` / `swipeEnd` / `swipeCancel`.
+- **Drawer — BREAKING.** Payload types renamed: `ForDrawerDragEvent` → `ForDrawerSwipeEvent` with
+  `percentageDragged: number` → `progress: number` (same `[0, 1]` value, correcting a fraction named
+  "percentage"), and `ForDrawerReleaseEvent` → `ForDrawerSwipeEndEvent` (fields unchanged).
+  `ForDrawerSwipeEvent` — the `swipeCancel` payload — drops `willClose` / `nextSnapPoint`, which were
+  constants on that path; read the snap through `[(activeSnapPoint)]`.
+- **Drawer — BREAKING.** The public `dragProgress` member on `ForDrawer` / `ForDrawerContext` is renamed
+  `swipeProgress`, and `ForDrawer.dragTranslate: Signal<string>` is replaced by
+  `swipeMovementX: Signal<number>` / `swipeMovementY: Signal<number>` (CSS px). `dragging` and the
+  `data-dragging` attribute are unchanged.
+- **Drawer — BREAKING (CSS).** `--for-drawer-translate` (a `"<x> <y>"` shorthand string) is replaced by
+  `--for-drawer-swipe-movement-x` and `--for-drawer-swipe-movement-y`, each a px length (`0px` at rest).
+  Compose the shorthand yourself: `translate: var(--for-drawer-translate, 0px 0px)` becomes
+  `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`.
+  `--for-drawer-drag-progress` is renamed `--for-drawer-swipe-progress` (same unitless `[0, 1]` value, same
+  `[forDrawerBackdrop]` host).
+- **Drawer — BREAKING.** `[forDrawer]` now reflects `data-state-nested` as a presence-only boolean (empty
+  value) instead of `data-state-nested="true"`, following the library's boolean `data-*` rule. Consumer CSS
+  keyed on `[data-state-nested="true"]` must switch to `[data-state-nested]`, and JS reading
+  `getAttribute('data-state-nested') === 'true'` must switch to `hasAttribute('data-state-nested')`.
+- **Carousel — BREAKING (CSS).** `--for-carousel-drag` is replaced by the orientation-gated pair
+  `--for-carousel-swipe-movement-x` (horizontal) / `--for-carousel-swipe-movement-y` (vertical). Only the
+  primary-axis property is written; consumers already branch their track transform on
+  `[data-orientation='vertical']`, so the fix is one token per existing rule. `ForCarouselDrag.dragVar` is
+  replaced by the `swipeMovementX` / `swipeMovementY` computeds — the CSS property was always the supported
+  contract. `[forToast]` is unchanged: it already owned the canonical `swipe*` output and
+  `--for-toast-swipe-movement-x` / `-y` vocabulary that Drawer and Carousel now match.
+- **Combobox — BREAKING.** `[forComboboxAction]`'s `(action)` output is renamed `(activate)`, aligning it
+  with `[forButton]` and the menu-item family (`activate` is the library-wide verb for click / Enter /
+  Space activation). The payload is unchanged (`output<void>`). **Grep, don't trust your build:** the
+  directive is applied to a `<button>`, so a leftover `(action)="…"` binding compiles fine and your handler
+  silently never fires.
+- **OTP input — BREAKING.** The `(valueComplete)` output is renamed `(complete)` and `(valueInvalid)` to
+  `(reject)`, and `FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS` now lists `'complete'` / `'reject'` instead.
+  Wrappers spreading the tuple pick this up automatically; wrappers that hand-listed the outputs must be
+  updated. As with Combobox, a leftover binding does **not** fail the build — `[forOtpInput]` sits on a
+  plain element, so Angular registers the old name as a DOM listener that never fires.
+- **OTP input — BREAKING.** As a consequence of the output rename, the public `ForOtpInput.complete()`
+  state signal is renamed `filled()`. The reflected host attribute is **unchanged** — still
+  `data-complete` — so CSS hooks keep working. A template calling `otp.complete()` still compiles but now
+  resolves to the `OutputEmitterRef`, not the boolean signal; switch to `otp.filled()`.
+- **Select / core positioner — BREAKING (CSS).** The item-aligned positioner now publishes the shared
+  `--for-available-height` instead of `--for-select-content-available-height`. It was generic core code
+  naming a property after its only consumer, for a quantity the anchored positioner already publishes under
+  the shared name. Both are the maximum block-size the surface may occupy before colliding; the value is
+  still computed per positioner (anchor-relative from floating-ui's `size` in `popper`, viewport height
+  minus `collisionPadding` on both edges in `item-aligned`), so `max-height: var(--for-available-height)`
+  now works unchanged across both modes. `--for-available-width` stays `popper`-only — item-aligned
+  computes no width budget.
+
+### Removed
+
+- **Slider (breaking)** — `[forSliderThumb]`'s `[labelledby]` input is gone. Write the native
+  `aria-labelledby` attribute on the thumb instead: the directive no longer host-binds it, so a static
+  value is preserved verbatim and a `[attr.aria-labelledby]="expr"` binding now works too (it previously
+  fought the directive's own binding).
+- **Core** — the `MenuOverlayCloseReason` and `MenuOverlayItemHandle` type twins are gone.
+  `MenuOverlayCloseReason` was a byte-identical copy of the blessed `ForMenuCloseReason` (published by
+  `forty-cdk/shared`) and `MenuOverlayItemHandle` was a bare alias of `MenuItemHandle`. Neither was
+  exported from any barrel, so no consumer import path changes.
+
+### Fixed
+
+- **Slider** — a slider with a fractional `step` now pages proportionally on `PageUp` / `PageDown`.
+  `[step]="0.1"` previously jumped by an absolute `10` (100 grid steps); it now jumps by
+  `step × stepMultiplier` = `1` (10 grid steps), as the JSDoc had always promised. Behaviour is unchanged
+  at the default `step` of `1`.
+
 ## [0.15.0] - 2026-07-27
 
 The fourth resolution wave for the July 18, 2026 deep audit, and the release where the `forty-cdk/core`

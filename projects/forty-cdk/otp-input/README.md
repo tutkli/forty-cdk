@@ -156,8 +156,8 @@ export class DemoOtpField {
 | `disabled` / `readonly` / `required` / `invalid` / `pending` / `dirty` | `input<boolean>`                                     | Shared form-control flags (see [Field](../field/README.md)).<br>**Default:** —                                                                        |
 | `name`                                                                 | `input<string>`                                      | Reflected as the real input's `name` for native form submission.<br>**Default:** —                                                                    |
 | `touched`                                                              | `model<boolean>`                                     | Set to `true` on blur.<br>**Default:** —                                                                                                              |
-| `valueComplete`                                                        | `output<string>`                                     | Output. Fires when every slot is filled, by typing or paste.<br>**Default:** —                                                                        |
-| `valueInvalid`                                                         | `output<{ value: string }>`                          | Output. Fires when an entered / pasted character is rejected by `type` / `allowedPattern`.<br>**Default:** —                                          |
+| `complete`                                                             | `output<string>`                                     | Output. Fires when every slot is filled, by typing or paste.<br>**Default:** —                                                                        |
+| `reject`                                                               | `output<{ value: string }>`                          | Output. Fires when an entered / pasted character is rejected by `type` / `allowedPattern`.<br>**Default:** —                                          |
 
 | Data attribute  | Values           |
 | --------------- | ---------------- |
@@ -166,7 +166,7 @@ export class DemoOtpField {
 
 The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.
 
-`ForOtpInput` also exposes a `slots()` signal (`readonly number[]`) for the `@for`, a `complete()` signal, and a `focus()` method.
+`ForOtpInput` also exposes a `slots()` signal (`readonly number[]`) for the `@for`, a `filled()` signal (reflected as `data-complete`), and a `focus()` method.
 
 > **Why `allowedPattern`, not `pattern`?** `FormUiControl.pattern` is reserved by Signal Forms for an array of validation patterns the `[formField]` directive binds in. Reusing the name would break the `FormValueControl` contract and let the field overwrite your character filter, so the custom char-class RegExp is `allowedPattern`.
 
@@ -188,7 +188,7 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 
 - **One real text field, not N boxes.** The `role="group"` wrapper carries the `ariaLabel`; the single `<input>` inside it is the focusable control, and it reflects the same `ariaLabel` as its own `aria-label` whenever no field-provided `aria-labelledby` applies (a `[forField]` label always wins). Screen readers announce the group name on entry and treat the code as one ordinary, named text field.
 - **Mobile autofill & keypad.** `autocomplete="one-time-code"` (toggle with `oneTimeCode`) drives SMS autofill; `inputmode` is `numeric` for `type="numeric"` (plus a legacy `pattern="[0-9]*"` for older iOS), `text` otherwise.
-- **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `valueInvalid`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
+- **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `(reject)`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
 - **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** The directive runs fine on a plain `[(value)]` binding; the only `@angular/forms/signals` reference is a type import, erased at build.

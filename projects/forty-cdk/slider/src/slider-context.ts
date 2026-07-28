@@ -35,7 +35,7 @@ export interface ForSliderContext {
   readonly minValue: Signal<number>;
   readonly maxValue: Signal<number>;
   readonly step: Signal<number>;
-  readonly largeStep: Signal<number>;
+  readonly stepMultiplier: Signal<number>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   /**
@@ -72,8 +72,9 @@ export interface ForSliderContext {
    */
   setValueAt(index: number, raw: number): void;
   /**
-   * Bump a thumb by `step` (or `largeStep`) in the requested direction,
-   * resolved against `orientation`, `dir`, and `inverted`.
+   * Bump a thumb by `step` (or by `step × stepMultiplier` when `large` is
+   * true) in the requested direction, resolved against `orientation`, `dir`,
+   * and `inverted`.
    */
   bumpAt(index: number, key: SliderArrowKey, large: boolean): void;
   /** Set thumb to absolute `min` or `max` extreme (Home / End). */

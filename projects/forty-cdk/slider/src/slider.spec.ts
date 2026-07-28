@@ -24,7 +24,7 @@ const SLIDER_IMPORTS = [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThum
       [min]="min()"
       [max]="max()"
       [step]="step()"
-      [largeStep]="largeStep()"
+      [stepMultiplier]="stepMultiplier()"
       [orientation]="orientation()"
       [dir]="dir()"
       [disabled]="disabled()"
@@ -44,7 +44,7 @@ const SLIDER_IMPORTS = [ForSlider, ForSliderTrack, ForSliderRange, ForSliderThum
           <span
             forSliderThumb
             [index]="i"
-            [label]="thumbLabel(i)"
+            [ariaLabel]="thumbLabel(i)"
             [valueText]="valueText()"
             [attr.data-test-id]="'thumb-' + i"
           ></span>
@@ -58,7 +58,7 @@ class SliderHost {
   readonly min = signal(0);
   readonly max = signal(100);
   readonly step = signal(1);
-  readonly largeStep = signal(10);
+  readonly stepMultiplier = signal(10);
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly disabled = signal(false);
@@ -68,12 +68,13 @@ class SliderHost {
   readonly name = signal('');
   readonly touched = signal(false);
   readonly valueText = signal('');
+  readonly labelText = signal('Volume');
   readonly valueChanges: (readonly number[])[] = [];
   readonly valueCommits: (readonly number[])[] = [];
   readonly touchedChanges: boolean[] = [];
 
   thumbLabel(i: number): string {
-    return this.picked().length > 1 ? (i === 0 ? 'Min' : 'Max') : 'Volume';
+    return this.picked().length > 1 ? (i === 0 ? 'Min' : 'Max') : this.labelText();
   }
 
   onValueChange(v: readonly number[]): void {
@@ -104,7 +105,7 @@ class SliderHost {
       <span forSliderTrack>
         <span forSliderRange></span>
         @for (v of picked(); let i = $index; track i) {
-          <span forSliderThumb [index]="i" label="Volume"></span>
+          <span forSliderThumb [index]="i" ariaLabel="Volume"></span>
         }
       </span>
     </div>
@@ -118,6 +119,20 @@ class SliderFormControlHost {
   readonly isPending = signal(false);
   readonly isTouched = signal(false);
   readonly isDirty = signal(false);
+}
+
+@Component({
+  imports: [ForSlider, ForSliderTrack, ForSliderThumb],
+  template: `
+    <div forSlider [(value)]="picked">
+      <span forSliderTrack>
+        <span forSliderThumb [index]="0" data-test-id="thumb-0"></span>
+      </span>
+    </div>
+  `,
+})
+class UnlabelledSliderHost {
+  readonly picked = signal<readonly number[]>([50]);
 }
 
 const root = (host: HTMLElement) => host.querySelector<HTMLElement>('[data-test-id="root"]')!;
@@ -219,9 +234,21 @@ describe('ForSlider', () => {
       expect(thumb(el, 0).getAttribute('aria-valuetext')).toBe('$50');
     });
 
-    it('reflects [label] as aria-label', () => {
+    it('reflects [ariaLabel] as aria-label', () => {
       const { el } = renderHost(SliderHost);
       expect(thumb(el, 0).getAttribute('aria-label')).toBe('Volume');
+    });
+
+    it('emits no aria-label when [ariaLabel] is unset', () => {
+      const { el } = renderHost(UnlabelledSliderHost);
+      expect(thumb(el, 0).hasAttribute('aria-label')).toBe(false);
+    });
+
+    it('drops aria-label when [ariaLabel] is set to the empty string', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.labelText.set('');
+      await flush();
+      expect(thumb(el, 0).hasAttribute('aria-label')).toBe(false);
     });
 
     it('mirrors data-orientation on every piece', async () => {
@@ -311,7 +338,7 @@ describe('ForSlider', () => {
       expect(fixture.componentInstance.picked()).toEqual([49]);
     });
 
-    it('PageUp / PageDown use largeStep', async () => {
+    it('PageUp / PageDown step by step × stepMultiplier', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       keyDown(thumb(el, 0), 'PageUp');
       await flush();
@@ -320,6 +347,41 @@ describe('ForSlider', () => {
       keyDown(thumb(el, 0), 'PageDown');
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([40]);
+    });
+
+    it('PageUp scales with a fractional step instead of jumping an absolute 10 (#1400)', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.picked.set([0.5]);
+      await flush();
+      keyDown(thumb(el, 0), 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([1.5]);
+    });
+
+    it('honours an explicit [stepMultiplier]', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.stepMultiplier.set(3);
+      await flush();
+      keyDown(thumb(el, 0), 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([53]);
+      keyDown(thumb(el, 0), 'PageDown');
+      keyDown(thumb(el, 0), 'PageDown');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([47]);
+    });
+
+    it('a fractional step × multiplier pages without float noise', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.step.set(0.1);
+      fixture.componentInstance.stepMultiplier.set(3);
+      fixture.componentInstance.picked.set([0.1]);
+      await flush();
+      keyDown(thumb(el, 0), 'PageUp');
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([0.4]);
+      expect(thumb(el, 0).getAttribute('aria-valuenow')).toBe('0.4');
     });
 
     it('Home / End jump to min / max', async () => {

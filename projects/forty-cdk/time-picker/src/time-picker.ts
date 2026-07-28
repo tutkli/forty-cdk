@@ -230,7 +230,7 @@ export class ForTimePicker<D>
 
   /**
    * Fires when the user presses Escape while this listbox is the topmost
-   * dismissable layer. Call `preventDefault()` on the veto to suppress the
+   * dismissible layer. Call `preventDefault()` on the veto to suppress the
    * automatic close.
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();

@@ -66,7 +66,7 @@ export interface ResolveSnapTargetOptions<S> {
  *      ended *past* (closer to the edge than) that snap by more than
  *      `closeThreshold` of the lowest snap's own extent, return
  *      `willClose: true`. Scaling by the lowest snap rather than the full
- *      drawer dimension keeps a small "peek" snap dismissable without having
+ *      drawer dimension keeps a small "peek" snap dismissible without having
  *      to drag it entirely off-screen.
  *
  * Snap points are passed by the caller already converted to pixel positions

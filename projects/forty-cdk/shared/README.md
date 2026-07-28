@@ -80,5 +80,5 @@ One rename comes with the move: `SegmentType` was also published as `DateTimeSeg
 ## Notes
 
 - **Not a primitive.** There are no directives here and nothing to add to `imports`.
-- **Not `forty-cdk/core`.** `core` stays resolvable — the primitives import it by specifier, which is what keeps `LiveAnnouncer`, the focus-trap and dismissable-layer stacks, and the id-generator salt single-instance — but it carries no semver guarantee. If a symbol you need is not exported here, it is internal by design; open an issue rather than importing from `core`.
+- **Not `forty-cdk/core`.** `core` stays resolvable — the primitives import it by specifier, which is what keeps `LiveAnnouncer`, the focus-trap and dismissible-layer stacks, and the id-generator salt single-instance — but it carries no semver guarantee. If a symbol you need is not exported here, it is internal by design; open an issue rather than importing from `core`.
 - **Tree-shakes to nothing.** The types vanish at compile time and the five values sit in the core module your primitives already pull, so importing from here adds no code to your bundle.

@@ -77,7 +77,7 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
   protected readonly errorPrefix = '[forty-cdk/dialog]';
 
   constructor() {
-    // The shared modal-shell handles portal + dismissable layer (with the
+    // The shared modal-shell handles portal + dismissible layer (with the
     // triple-veto pattern this directive used to implement inline) + modal
     // vs non-modal branching (focus trap + scroll lock + inert siblings) +
     // return-focus on destroy + the WebKit-#136 sync return-target capture.

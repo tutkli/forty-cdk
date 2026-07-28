@@ -77,7 +77,7 @@ describe('ForDrawer nested', () => {
 
       const child = document.querySelector<HTMLElement>('#child-drawer')!;
       expect(child.getAttribute('data-depth')).toBe('1');
-      expect(parent.getAttribute('data-state-nested')).toBe('true');
+      expect(parent.getAttribute('data-state-nested')).toBe('');
     });
 
     it('parent reverts data-state-nested when the child closes', async () => {
@@ -87,7 +87,7 @@ describe('ForDrawer nested', () => {
       await flush(r.fixture);
 
       const parent = document.querySelector<HTMLElement>('#parent-drawer')!;
-      expect(parent.getAttribute('data-state-nested')).toBe('true');
+      expect(parent.getAttribute('data-state-nested')).toBe('');
 
       r.instance.childOpen.set(false);
       await flush(r.fixture);
@@ -230,7 +230,7 @@ describe('ForDrawer nested', () => {
       await flush(r.fixture);
 
       const parent = document.querySelector<HTMLElement>('#parent-drawer')!;
-      expect(parent.getAttribute('data-state-nested')).toBe('true');
+      expect(parent.getAttribute('data-state-nested')).toBe('');
       expect(parent.style.transform).toBe('');
     });
   });

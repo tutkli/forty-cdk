@@ -65,7 +65,7 @@ const NO_VALUE = Symbol('forty-cdk/select:no-value');
  * Generic over the option value type `T` (default `string`). When the
  * consumer binds object items the directive infers `T` from `[(value)]` and
  * `[forSelectOption][value]`; object identity is resolved by the
- * consumer-supplied `[isItemEqualToValue]` and the hidden inputs serialize
+ * consumer-supplied `[compareWith]` and the hidden inputs serialize
  * via `[itemToFormValue]`. Option display text is read from the rendered
  * `textContent`, so no separate label function is needed — supply the
  * optional `[itemToLabel]` only when a pre-set object value must render its
@@ -117,9 +117,9 @@ export class ForSelect<T = string>
    * correct identity for primitive `T` (e.g. strings, numbers). Override
    * when binding object items so the directive can locate selected entries
    * by id (or any other stable key) instead of by reference:
-   * `[isItemEqualToValue]="(a, b) => a.id === b.id"`.
+   * `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly isItemEqualToValue = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
 
   /**
    * Serialize an item for the hidden input that participates in native
@@ -455,7 +455,7 @@ export class ForSelect<T = string>
     options: this.#controller.options,
     value: this.value,
     setValue: (v) => this.value.set(v),
-    isItemEqualToValue: this.isItemEqualToValue,
+    compareWith: this.compareWith,
     multiple: this.multiple,
     effectiveDisabled: this.effectiveDisabled,
     readonly: this.readonly,
@@ -694,7 +694,7 @@ export class ForSelect<T = string>
   }
 
   isSelected(v: T): boolean {
-    return isInArray(this.value(), v, this.isItemEqualToValue());
+    return isInArray(this.value(), v, this.compareWith());
   }
 
   activate(v: T): void {
@@ -702,7 +702,7 @@ export class ForSelect<T = string>
       return;
     }
     if (this.multiple()) {
-      this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
+      this.value.set(toggleInArray(this.value(), v, this.compareWith()));
       this.#rangeEngine.setAnchor(v);
       return;
     }
@@ -749,7 +749,7 @@ export class ForSelect<T = string>
     }
     const cached = this.#cachedOptions();
     const selected = this.selected();
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     const anchorIndex = selected === null ? -1 : cached.findIndex((o) => equals(o.value, selected));
     const match = findTypeaheadMatch(
       cached,
@@ -772,7 +772,7 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return false;
     }
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     const items = this.#controller.options();
     for (const v of values) {
       const opt = items.find((o) => equals(o.value(), v) && !o.disabled());
@@ -879,7 +879,7 @@ export class ForSelect<T = string>
     if (values.length === 0) {
       return null;
     }
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     const snapshot = navigator.snapshotByPos();
     for (const v of values) {
       for (const [pos, entry] of snapshot) {

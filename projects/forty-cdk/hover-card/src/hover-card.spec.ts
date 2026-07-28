@@ -11,7 +11,7 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';
@@ -61,7 +61,7 @@ class HoverCardHost {
     </span>
   `,
 })
-class DismissableContractHost {
+class DismissibleContractHost {
   readonly isOpen = signal(false);
   escapeVeto = false;
   eCount = 0;
@@ -110,15 +110,15 @@ function pointerMoveAway(): void {
 describe('ForHoverCard', () => {
   afterEachOverlayCleanup();
 
-  // HoverCard adopts only the Escape half of the dismissable-layer contract:
+  // HoverCard adopts only the Escape half of the dismissible-layer contract:
   // it exposes no `[dismissible]` input, and it has no outside-interaction
   // channel at all (a pointer press outside closes it through the hover /
   // pointer-leave grace bridge, not through the layer's
   // `(pointerDownOutside)` / `(focusOutside)` / `(interactOutside)` trio).
-  assertDismissableLayerContract(
+  assertDismissibleLayerContract(
     {
       mount: async (options = {}) => {
-        const r = renderHost(DismissableContractHost);
+        const r = renderHost(DismissibleContractHost);
         r.instance.escapeVeto = options.escapeVeto ?? false;
         r.instance.isOpen.set(true);
         await r.flush();
@@ -548,7 +548,7 @@ describe('ForHoverCard', () => {
 
       // The card was hover-opened; focus never entered the trigger or the
       // content. Escape dispatched on an unrelated element still routes
-      // through the document-level dismissable layer and closes the card.
+      // through the document-level dismissible layer and closes the card.
       pressKey(document, 'Escape');
       await flush();
       expect(fixture.componentInstance.isOpen()).toBe(false);
@@ -602,7 +602,7 @@ describe('ForHoverCard', () => {
     });
 
     it('re-emits a vetoed (escapeKeyDown) from both the trigger and the portaled content', async () => {
-      const r = renderHost(DismissableContractHost);
+      const r = renderHost(DismissibleContractHost);
       r.instance.escapeVeto = true;
       await r.flush();
       const trigger = r.query<HTMLAnchorElement>('a')!;

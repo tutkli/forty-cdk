@@ -17,7 +17,7 @@ import { type ForPopoverContext, injectPopoverTriggerContext } from './popover-c
  *
  * Wires `aria-expanded`, `aria-controls`, and `aria-haspopup="dialog"`,
  * registers the host as the floating-ui anchor, and toggles the open
- * state on click. The trigger is exempt from the dismissable layer's
+ * state on click. The trigger is exempt from the dismissible layer's
  * outside-pointer / outside-focus checks so its own click never
  * spuriously closes the popover.
  *

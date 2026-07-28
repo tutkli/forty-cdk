@@ -63,8 +63,12 @@ export interface ForToastConfig<D = unknown> {
   duration?: number;
   /** Action button. The button auto-closes the toast after invoking `activate`. */
   action?: { label: string; activate: () => void };
-  /** Render an explicit close button. Default `true`. */
-  closable?: boolean;
+  /**
+   * Whether the user can dismiss the toast (Escape, close button,
+   * auto-dismiss timer, swipe). Also gates the default close button rendered
+   * by `ForToastViewport`. Default `true`.
+   */
+  dismissible?: boolean;
   /**
    * Direction(s) the user can swipe to dismiss the toast. Pass a single
    * direction (`'right'`) or an array (`['right', 'down']`). When unset,
@@ -181,7 +185,7 @@ export interface ForToastTextHandle {
  */
 export interface ForToastContext {
   readonly variant: Signal<ForToastVariant>;
-  readonly closable: Signal<boolean>;
+  readonly dismissible: Signal<boolean>;
   readonly paused: Signal<boolean>;
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;

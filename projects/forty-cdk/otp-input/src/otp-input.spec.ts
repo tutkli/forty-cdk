@@ -34,8 +34,8 @@ import { OTP_REGEXP_ONLY_DIGITS } from './otp-patterns';
       [(touched)]="isTouched"
       [dirty]="isDirty()"
       [name]="fieldName()"
-      (valueComplete)="completed.set($event)"
-      (valueInvalid)="invalidEvents.update((e) => [...e, $event])"
+      (complete)="completed.set($event)"
+      (reject)="invalidEvents.update((e) => [...e, $event])"
       #otp="forOtpInput"
     >
       @for (i of otp.slots(); track i) {
@@ -240,7 +240,7 @@ describe('ForOtpInput', () => {
       expect(slotChar(group, 3)).toBe('');
     });
 
-    it('rejects non-digits for type="numeric" and fires valueInvalid', async () => {
+    it('rejects non-digits for type="numeric" and fires (reject)', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '12a3');
       await flush();
@@ -381,7 +381,7 @@ describe('ForOtpInput', () => {
       expect(instance.code()).toBe('123456');
     });
 
-    it('drops rejected pasted characters and fires valueInvalid', async () => {
+    it('drops rejected pasted characters and fires (reject)', async () => {
       const { input, instance, flush } = await mountOtp();
       pasteInto(input, '12ab34');
       await flush();
@@ -400,7 +400,7 @@ describe('ForOtpInput', () => {
   });
 
   describe('completion', () => {
-    it('fires valueComplete on the completing keystroke', async () => {
+    it('fires (complete) on the completing keystroke', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '12345');
       await flush();
@@ -410,14 +410,14 @@ describe('ForOtpInput', () => {
       expect(instance.completed()).toBe('123456');
     });
 
-    it('fires valueComplete on a completing paste', async () => {
+    it('fires (complete) on a completing paste', async () => {
       const { input, instance, flush } = await mountOtp();
       pasteInto(input, '654321');
       await flush();
       expect(instance.completed()).toBe('654321');
     });
 
-    it('does not re-fire valueComplete on a further keystroke while already full', async () => {
+    it('does not re-fire (complete) on a further keystroke while already full', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '123456');
       await flush();
@@ -430,7 +430,7 @@ describe('ForOtpInput', () => {
       expect(instance.completed()).toBeNull();
     });
 
-    it('does not fire valueComplete on an external write that keeps the value full', async () => {
+    it('does not fire (complete) on an external write that keeps the value full', async () => {
       const { instance, flush } = await mountOtp();
       instance.code.set('123456');
       await flush();
@@ -441,7 +441,7 @@ describe('ForOtpInput', () => {
       expect(instance.completed()).toBeNull();
     });
 
-    it('fires valueComplete when a full value is replaced by a different full value via paste', async () => {
+    it('fires (complete) when a full value is replaced by a different full value via paste', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '123456');
       await flush();
@@ -454,7 +454,7 @@ describe('ForOtpInput', () => {
       expect(instance.completed()).toBe('654321');
     });
 
-    it('does not re-fire valueComplete when a full value is replaced by the same full value via paste', async () => {
+    it('does not re-fire (complete) when a full value is replaced by the same full value via paste', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '123456');
       await flush();
@@ -466,7 +466,7 @@ describe('ForOtpInput', () => {
       expect(instance.completed()).toBeNull();
     });
 
-    it('re-fires valueComplete after dropping below full and completing again', async () => {
+    it('re-fires (complete) after dropping below full and completing again', async () => {
       const { input, instance, flush } = await mountOtp();
       typeInto(input, '123456');
       await flush();

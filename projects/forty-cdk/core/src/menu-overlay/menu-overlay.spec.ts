@@ -7,16 +7,16 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../vetoable-event/vetoable-event';
+import type { ForMenuCloseReason } from './menu-context';
+import type { MenuItemHandle } from './menu-item-list';
 import {
   createMenuOverlay,
   type MenuOverlay,
-  type MenuOverlayCloseReason,
   type MenuOverlayHooks,
-  type MenuOverlayItemHandle,
   type MenuOverlayTransitionOptions,
 } from './menu-overlay';
 
-interface TestItem extends MenuOverlayItemHandle {
+interface TestItem extends MenuItemHandle {
   readonly id: string;
 }
 
@@ -65,7 +65,7 @@ interface BuiltOverlay {
   };
   lifecycle: {
     opens: { initialFocus: 'first' | 'last'; options: MenuOverlayTransitionOptions }[];
-    closes: { reason: MenuOverlayCloseReason; options: MenuOverlayTransitionOptions }[];
+    closes: { reason: ForMenuCloseReason; options: MenuOverlayTransitionOptions }[];
   };
 }
 
@@ -116,7 +116,7 @@ function build(idPrefix = 'test'): BuiltOverlay {
       onOpen: (initialFocus: 'first' | 'last', options: MenuOverlayTransitionOptions) => {
         lifecycle.opens.push({ initialFocus, options });
       },
-      onClose: (reason: MenuOverlayCloseReason, options: MenuOverlayTransitionOptions) => {
+      onClose: (reason: ForMenuCloseReason, options: MenuOverlayTransitionOptions) => {
         lifecycle.closes.push({ reason, options });
       },
     };

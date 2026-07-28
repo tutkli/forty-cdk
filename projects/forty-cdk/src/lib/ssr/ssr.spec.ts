@@ -236,7 +236,7 @@ import {
 } from 'forty-cdk/virtualization';
 
 import { BodyScrollLock } from 'forty-cdk/core';
-import { DismissableLayerStack } from 'forty-cdk/core';
+import { DismissibleLayerStack } from 'forty-cdk/core';
 import { IdGenerator } from 'forty-cdk/core';
 import { InertSiblingsStack } from 'forty-cdk/core';
 import { ForVisuallyHidden } from 'forty-cdk/core';
@@ -248,13 +248,13 @@ import { ForVisuallyHidden } from 'forty-cdk/core';
  * - Static markup (role, aria-*, ids, data-state) is present after
  *   change detection — these are the bits that need to match between
  *   server and client for hydration.
- * - The `providedIn: 'root'` singletons (`DismissableLayerStack`,
+ * - The `providedIn: 'root'` singletons (`DismissibleLayerStack`,
  *   `BodyScrollLock`, `InertSiblingsStack`, `IdGenerator`) are scoped per
  *   bootstrap, so two simulated SSR requests get isolated state.
  *
  * jsdom is still the underlying DOM, so `document` exists; what we
  * exercise is the gating: every overlay-side-effect path
- * (`injectPortal`, `DismissableLayerStack` constructor, `BodyScrollLock`,
+ * (`injectPortal`, `DismissibleLayerStack` constructor, `BodyScrollLock`,
  * `InertSiblingsStack`) is supposed to no-op when `isPlatformServer`
  * resolves true. Regressions that touch the DOM eagerly or share
  * module-level state between requests get caught here.
@@ -276,7 +276,7 @@ import { ForVisuallyHidden } from 'forty-cdk/core';
  * `afterNextRender` DOES fire and `effect()` DOES run during change
  * detection, so the guards have to live inside the side effects themselves:
  * `injectPortal`, `BodyScrollLock`, `InertSiblingsStack`,
- * `DismissableLayerStack`, `FocusTrap.activate`, `injectFloating` /
+ * `DismissibleLayerStack`, `FocusTrap.activate`, `injectFloating` /
  * `injectItemAlignedPositioner`, and the NavigationMenu viewport
  * re-parenting each no-op off-browser. A body-only assertion is therefore
  * not sufficient on its own — a side effect can escape onto `document`
@@ -1746,7 +1746,7 @@ class ListboxReorderFixture {}
     <div forSlider [(value)]="value">
       <span forSliderTrack>
         <span forSliderRange></span>
-        <span forSliderThumb [index]="0" label="Volume"></span>
+        <span forSliderThumb [index]="0" ariaLabel="Volume"></span>
       </span>
     </div>
   `,
@@ -2099,7 +2099,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
 /**
  * The subset of {@link FIXTURES} mounted in their open / active state — the
  * ones whose browser-only side effects (portal, scroll lock, inert siblings,
- * dismissable layer, focus trap, floating positioner, autoplay interval)
+ * dismissible layer, focus trap, floating positioner, autoplay interval)
  * would actually run if their `isPlatformBrowser` gate were missing. A closed
  * overlay proves nothing here, which is why the listener / timer sweep below
  * iterates this list rather than every fixture.
@@ -2216,14 +2216,14 @@ describe('SSR smoke tests', () => {
   });
 
   it('overlay singletons are isolated across simulated SSR requests', () => {
-    const stack1 = TestBed.inject(DismissableLayerStack);
+    const stack1 = TestBed.inject(DismissibleLayerStack);
     const lock1 = TestBed.inject(BodyScrollLock);
     const inert1 = TestBed.inject(InertSiblingsStack);
 
     TestBed.resetTestingModule();
     configureServer();
 
-    const stack2 = TestBed.inject(DismissableLayerStack);
+    const stack2 = TestBed.inject(DismissibleLayerStack);
     const lock2 = TestBed.inject(BodyScrollLock);
     const inert2 = TestBed.inject(InertSiblingsStack);
 

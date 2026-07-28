@@ -104,7 +104,7 @@ import {
       background: var(--pg-surface);
       color: var(--pg-text);
       box-shadow: var(--pg-shadow);
-      translate: var(--for-drawer-translate, 0px 0px);
+      translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
       transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
       user-select: none;
       -webkit-user-select: none;

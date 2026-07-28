@@ -17,7 +17,7 @@ import { injectPopoverContext } from './popover-context';
  * The directive does not manage DOM presence — wrap with
  * `@if (popoverOpen())` so `animate.enter` / `animate.leave` fire on
  * the natural mount / unmount cycle. While mounted the directive
- * activates a `DismissableLayer` (Escape, pointer-down outside, focus
+ * activates a `DismissibleLayer` (Escape, pointer-down outside, focus
  * outside) and sends focus to the configured `initialFocus` target;
  * on unmount it returns focus to the trigger if `returnFocus` is on.
  *
@@ -25,7 +25,7 @@ import { injectPopoverContext } from './popover-context';
  * it again just toggles via the trigger directive — no double-close
  * race.
  *
- * The lifecycle (positioner + dismissable layer + initial focus + return
+ * The lifecycle (positioner + dismissible layer + initial focus + return
  * focus) is owned by the shared `injectOverlayShell` helper. The shell's
  * `'first'` mode routes through the same `findFirstFocusable` helper used
  * by `FocusTrap`, dropping the local focusable-selector copy that this

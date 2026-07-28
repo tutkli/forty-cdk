@@ -34,7 +34,7 @@ export type ForSelectInitialFocus = 'first' | 'last' | 'selected';
  *
  * Generic over the option value type `T` (default `unknown` at the contract
  * level; `string` at the public root). The handle carries the raw value so
- * the root can match it against `value()` via `isItemEqualToValue`.
+ * the root can match it against `value()` via `compareWith`.
  */
 export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
   readonly value: Signal<T>;
@@ -122,7 +122,7 @@ export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
  * Generic over the option value type `T` (default `string` at the public
  * root). When a consumer binds object items the directive infers `T` from
  * `[(value)]` and the per-piece signatures specialize accordingly. Items are
- * compared via the consumer-provided `isItemEqualToValue` and serialized for
+ * compared via the consumer-provided `compareWith` and serialized for
  * the form's hidden inputs via `itemToFormValue`; option text labels are
  * still read from the rendered `textContent`.
  */
@@ -206,7 +206,7 @@ export interface ForSelectContext<T = unknown> {
   readonly host: HTMLElement;
 
   /** Compare two items for equality. Defaults to `===`; overridden for object values. */
-  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
   readonly itemToFormValue: Signal<(item: T) => string>;
 

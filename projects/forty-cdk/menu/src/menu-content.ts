@@ -18,7 +18,7 @@ import {
  *
  * The directive does not manage DOM presence — wrap with
  * `@if (open())` so `animate.enter` / `animate.leave` fire on the natural
- * mount cycle. While mounted, a `DismissableLayer` activates (Escape,
+ * mount cycle. While mounted, a `DismissibleLayer` activates (Escape,
  * pointer-down outside, focus outside) and initial focus is sent to the
  * first or last menu item per the trigger's hint.
  *
@@ -26,7 +26,7 @@ import {
  * so clicking the trigger again routes through its own toggle handler
  * without spuriously closing.
  *
- * The lifecycle (positioner + dismissable layer + initial focus + return
+ * The lifecycle (positioner + dismissible layer + initial focus + return
  * focus) is owned by the shared `injectOverlayShell` helper.
  *
  * Accessible name: a consumer-set **static** `aria-labelledby` on the surface
@@ -107,7 +107,7 @@ export class ForMenuContent {
         // without exemption pointer-down-outside would race and double-close).
         // ContextMenu exempts nothing so left-clicks on the region close the
         // menu like any other outside click.
-        exemptElements: () => this.ctx.dismissableExemptions(),
+        exemptElements: () => this.ctx.dismissibleExemptions(),
         nesting: menuLayerNesting(this.ctx),
       },
       // Primitive-owned move: focusInitialEnabledItem resolves the ctx's

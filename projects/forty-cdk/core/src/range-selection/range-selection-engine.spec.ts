@@ -35,7 +35,7 @@ function createHarness(): Harness {
     options,
     value,
     setValue,
-    isItemEqualToValue: signal((a: string, b: string) => a === b),
+    compareWith: signal((a: string, b: string) => a === b),
     multiple,
     effectiveDisabled: disabled,
     readonly,

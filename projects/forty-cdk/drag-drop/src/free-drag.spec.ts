@@ -19,9 +19,9 @@ interface Pos {
       [(position)]="pos"
       [disabled]="disabled()"
       [lockAxis]="lockAxis()"
-      (dragStart)="starts.set([...starts(), $event])"
-      (dragMove)="moves.set([...moves(), $event])"
-      (dragEnd)="ends.set([...ends(), $event])"
+      (moveStart)="starts.set([...starts(), $event])"
+      (moveMove)="moves.set([...moves(), $event])"
+      (moveEnd)="ends.set([...ends(), $event])"
     >
       Drag me
     </div>
@@ -98,7 +98,7 @@ function fire(
 }
 
 describe('ForFreeDrag', () => {
-  it('lift → move → commit updates position and emits dragStart / dragMove / dragEnd', () => {
+  it('lift → move → commit updates position and emits moveStart / moveMove / moveEnd', () => {
     const { instance, query } = renderHost(BoxHost);
     const box = query('[data-testid="box"]')!;
 
@@ -143,7 +143,7 @@ describe('ForFreeDrag', () => {
     expect(instance.pos()).toEqual({ x: 5, y: 37 });
   });
 
-  it('pointercancel restores the lift-time snapshot and emits dragEnd with it', () => {
+  it('pointercancel restores the lift-time snapshot and emits moveEnd with it', () => {
     const { fixture, instance, query } = renderHost(BoxHost);
     instance.pos.set({ x: 12, y: 8 });
     fixture.detectChanges();
@@ -160,7 +160,7 @@ describe('ForFreeDrag', () => {
     expect(instance.ends()).toEqual([{ x: 12, y: 8 }]);
   });
 
-  it('pointercancel before arming fires neither dragStart nor dragEnd', () => {
+  it('pointercancel before arming fires neither moveStart nor moveEnd', () => {
     const { instance, query } = renderHost(BoxHost);
     const box = query('[data-testid="box"]')!;
 

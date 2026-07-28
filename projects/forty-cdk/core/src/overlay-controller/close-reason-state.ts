@@ -7,10 +7,10 @@ import { type Signal, signal } from '@angular/core';
  * back to the trigger).
  *
  * Generic over the reason union so every overlay controller shares one
- * implementation — `MenuOverlay` (`MenuOverlayCloseReason`), `[forMenubar]`'s
- * menu context (`ForMenuCloseReason`), the listbox overlays, and combobox all
- * compose it. Plain class (no `inject()`) so each composes it instead of
- * hand-copying the signal.
+ * implementation — `MenuOverlay` and `[forMenubar]`'s multiplexed menu context
+ * (both `ForMenuCloseReason`), the listbox overlays, and combobox all compose
+ * it. Plain class (no `inject()`) so each composes it instead of hand-copying
+ * the signal.
  *
  * @typeParam Reason Close-reason union owned by the controller.
  */

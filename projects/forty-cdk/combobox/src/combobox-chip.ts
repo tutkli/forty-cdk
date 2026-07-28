@@ -42,7 +42,7 @@ export class ForComboboxChip<T = string> {
 
   /**
    * The value this chip represents — must match an entry in
-   * `[forCombobox][(value)]` per the parent's `[isItemEqualToValue]`.
+   * `[forCombobox][(value)]` per the parent's `[compareWith]`.
    * Generic over `T` (default `string`); inferred from the binding
    * (`[value]="someObject"` specializes `T`).
    */
@@ -62,7 +62,7 @@ export class ForComboboxChip<T = string> {
   /** Resolved label of the underlying option, used by `[forComboboxChipRemove]` for its `aria-label`. */
   readonly label = computed(() => {
     const v = this.value();
-    const equals = this.ctx.isItemEqualToValue();
+    const equals = this.ctx.compareWith();
     const cached = this.ctx.cachedOptions().find((o) => equals(o.value, v));
     if (cached) {
       return cached.label;

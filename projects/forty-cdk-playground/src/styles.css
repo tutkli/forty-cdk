@@ -346,14 +346,14 @@ a.pg-nav-link.active {
 }
 
 /*
- * Backdrop drag-fade: the directive publishes the live drag progress
- * toward the edge as --for-drawer-drag-progress (0 at rest → 1 dragged
+ * Backdrop swipe-fade: the directive publishes the live swipe progress
+ * toward the edge as --for-drawer-swipe-progress (0 at rest → 1 swiped
  * off-screen) and mirrors data-dragging. Fade the backdrop out as the sheet
  * is swiped away; kill the transition mid-gesture so it tracks the pointer.
  * The snap --fade variant is excluded — it owns opacity via data-fade-from-active.
  */
 .pg-drawer-backdrop:not(.pg-drawer-backdrop--fade) {
-  opacity: calc(1 - var(--for-drawer-drag-progress, 0));
+  opacity: calc(1 - var(--for-drawer-swipe-progress, 0));
   transition: opacity 0.3s ease;
 }
 
@@ -468,7 +468,7 @@ a.pg-nav-link.active {
 }
 
 .pg-select-content[data-position='item-aligned'] {
-  max-height: var(--for-select-content-available-height);
+  max-height: var(--for-available-height);
 }
 
 .pg-toast-viewport {

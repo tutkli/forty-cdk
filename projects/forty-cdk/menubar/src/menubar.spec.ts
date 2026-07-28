@@ -11,7 +11,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
-  assertDismissableLayerContract,
+  assertDismissibleLayerContract,
   assertRovingTabindexContract,
 } from '../../src/test-utils/contract';
 import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
@@ -62,7 +62,7 @@ const IMPORTS = [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem];
   `,
 })
 class MenubarHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly loop = signal(true);
@@ -111,7 +111,7 @@ class MenubarHost {
   `,
 })
 class MenubarWithSubmenuHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
   readonly recent = signal(false);
 }
 
@@ -157,7 +157,7 @@ class MenubarWithSubmenuHost {
   `,
 })
 class MenubarNestedSubmenuHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly recent = signal(false);
   readonly deep = signal(false);
@@ -174,7 +174,7 @@ class MenubarNestedSubmenuHost {
   `,
 })
 class MenubarTypeaheadHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
 }
 
 @Component({
@@ -188,7 +188,7 @@ class MenubarTypeaheadHost {
   `,
 })
 class MenubarRovingHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
   readonly triggers = signal([
@@ -219,7 +219,7 @@ class MenubarRovingHost {
   `,
 })
 class MenubarStaticIdHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
 }
 
 @Component({
@@ -234,7 +234,7 @@ class MenubarStaticIdHost {
   `,
 })
 class MenubarAlwaysMountedContentHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
 }
 
 type MenubarVetoChannel =
@@ -277,7 +277,7 @@ type MenubarVetoChannel =
   `,
 })
 class MenubarOutputsHost {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
   readonly dismissible = signal(true);
   readonly veto = signal<MenubarVetoChannel>('none');
 
@@ -336,7 +336,7 @@ function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
 describe('ForMenubar', () => {
   afterEachOverlayCleanup();
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(MenubarOutputsHost);
       r.instance.dismissible.set(options.dismissible ?? true);
@@ -348,7 +348,7 @@ describe('ForMenubar', () => {
         flush: () => flush(r.fixture),
         // The menubar's open state is the value of the open menu, not a
         // boolean: an empty value is the closed menubar.
-        isOpen: () => r.instance.open() !== '',
+        isOpen: () => r.instance.open() !== null,
         escapeCount: () => r.instance.escapeCount,
         pointerOutsideCount: () => r.instance.pointerDownOutsideCount,
         focusOutsideCount: () => r.instance.focusOutsideCount,
@@ -522,7 +522,7 @@ describe('ForMenubar', () => {
         `,
       })
       class Host {
-        readonly open = signal<string>('');
+        readonly open = signal<string | null>(null);
       }
       const r = renderHost(Host);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
@@ -583,7 +583,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       file.click();
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('opens with the last item highlighted on ArrowUp', async () => {
@@ -643,7 +643,32 @@ describe('ForMenubar', () => {
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       file.click();
       await flush(r.fixture);
+      expect(r.instance.open()).toBeNull();
+    });
+
+    it('opens a trigger whose value is the empty string', async () => {
+      // `null` is the closed sentinel, so `''` is an ordinary trigger value
+      // and must open like any other (#1400 item 3).
+      @Component({
+        imports: [ForMenubar, ForMenubarTrigger],
+        template: `
+          <div forMenubar [(value)]="open">
+            <button forMenubarTrigger value="">Empty</button>
+            <button forMenubarTrigger value="edit">Edit</button>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal<string | null>(null);
+      }
+      const r = renderHost(Host);
+      const empty = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      empty.click();
+      await flush(r.fixture);
       expect(r.instance.open()).toBe('');
+      expect(empty.getAttribute('aria-expanded')).toBe('true');
+      expect(empty.getAttribute('data-state')).toBe('open');
+      expect(r.query('[forMenubar]')!.getAttribute('data-state')).toBe('open');
     });
 
     it('does nothing when the trigger itself is disabled', async () => {
@@ -653,7 +678,7 @@ describe('ForMenubar', () => {
       const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
       edit.click();
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
       expect(edit.getAttribute('data-disabled')).toBe('');
     });
   });
@@ -705,7 +730,7 @@ describe('ForMenubar', () => {
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowRight');
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
   });
 
@@ -801,7 +826,7 @@ describe('ForMenubar', () => {
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       file.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('does NOT open a sibling on focus alone while a menu is open (focus is not hover)', async () => {
@@ -857,7 +882,7 @@ describe('ForMenubar', () => {
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowDown');
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
       expect(triggers[1]!.getAttribute('tabindex')).toBe('0');
     });
 
@@ -867,7 +892,7 @@ describe('ForMenubar', () => {
       triggers[0]!.focus();
       pressKey(triggers[0]!, 'ArrowUp');
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
       expect(triggers[2]!.getAttribute('tabindex')).toBe('0');
     });
 
@@ -886,7 +911,7 @@ describe('ForMenubar', () => {
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
       pressKey(file, 'ArrowLeft');
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('ArrowLeft opens the focused trigger on the first item (RTL)', async () => {
@@ -923,7 +948,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       pressKey(document, 'Escape');
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
       // Return-focus to the trigger is asserted in a real browser
       // (menubar.e2e.ts); here we assert the roving wiring reaction — the
       // closing trigger regains the single tab stop.
@@ -977,7 +1002,7 @@ describe('ForMenubar', () => {
       expect(r.instance.interactOutsideCount).toBe(1);
       expect(r.instance.focusOutsideCount).toBe(0);
       expect(r.instance.lastOutsideEvents[0]).toBe(r.instance.lastOutsideEvents[1]);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('preventDefault() on (pointerDownOutside) keeps the menu open', async () => {
@@ -1015,7 +1040,7 @@ describe('ForMenubar', () => {
       expect(r.instance.focusOutsideCount).toBe(1);
       expect(r.instance.interactOutsideCount).toBe(1);
       expect(r.instance.pointerDownOutsideCount).toBe(0);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('preventDefault() on (focusOutside) keeps the menu open', async () => {
@@ -1050,7 +1075,7 @@ describe('ForMenubar', () => {
 
       expect(r.instance.escapeCount).toBe(1);
       expect(r.instance.lastEscapeEvent?.key).toBe('Escape');
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('preventDefault() on (escapeKeyDown) keeps the menu open', async () => {
@@ -1093,7 +1118,7 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       expect(r.instance.autoFocusOnCloseCount).toBe(1);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
     });
 
     it('a hover-switch to a sibling trigger re-fires (autoFocusOnOpen) for the remounted content', async () => {
@@ -1200,7 +1225,7 @@ describe('ForMenubar', () => {
       const item = document.getElementById('file-new')!;
       item.click();
       await flush(r.fixture);
-      expect(r.instance.open()).toBe('');
+      expect(r.instance.open()).toBeNull();
       expect(r.instance.selects).toEqual(['file-new']);
       // Return-focus to the trigger is asserted in a real browser
       // (menubar.e2e.ts); the roving wiring reaction is observable here.
@@ -1356,8 +1381,8 @@ describe('ForMenubar', () => {
         `,
       })
       class Host {
-        readonly open = signal<string>('');
-        onChange(_: string): void {
+        readonly open = signal<string | null>(null);
+        onChange(_: string | null): void {
           internalEmits++;
         }
       }
@@ -1390,8 +1415,8 @@ describe('ForMenubar', () => {
         `,
       })
       class Host {
-        readonly open = signal<string>('');
-        onChange(_: string): void {
+        readonly open = signal<string | null>(null);
+        onChange(_: string | null): void {
           internalEmits++;
         }
       }
@@ -1408,6 +1433,60 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       expect(internalEmits).toBe(1);
       expect(document.activeElement?.id).toBe('a1');
+    });
+
+    it('emits null (not an empty string) when an internal close clears the value', async () => {
+      const seen: (string | null)[] = [];
+
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forMenubar [(value)]="open" (valueChange)="onChange($event)">
+            <button forMenubarTrigger value="a">A</button>
+            @if (open() === 'a') {
+              <div forMenuContent>
+                <button id="a1" forMenuItem>1</button>
+              </div>
+            }
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal<string | null>(null);
+        onChange(value: string | null): void {
+          seen.push(value);
+        }
+      }
+
+      const r = renderHost(Host);
+      const trigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(trigger, 'Enter');
+      await flush(r.fixture);
+      expect(seen).toEqual(['a']);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(seen).toEqual(['a', null]);
+      expect(r.instance.open()).toBeNull();
+    });
+
+    it('restores the roving tab stop and data-state="closed" after an internal close', async () => {
+      const r = renderHost(MenubarHost);
+      const root = r.query<HTMLElement>('[forMenubar]')!;
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+
+      pressKey(triggers[0]!, 'Enter');
+      await flush(r.fixture);
+      expect(root.getAttribute('data-state')).toBe('open');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+      expect(root.getAttribute('data-state')).toBe('closed');
+      expect(triggers[0]!.getAttribute('tabindex')).toBe('0');
+      expect(triggers[1]!.getAttribute('tabindex')).toBe('-1');
+      expect(triggers[2]!.getAttribute('tabindex')).toBe('-1');
     });
   });
 
@@ -1426,7 +1505,7 @@ describe('ForMenubar', () => {
       expect(file.getAttribute('aria-expanded')).toBe('true');
       expect(root.getAttribute('data-state')).toBe('open');
 
-      fixture.componentInstance.open.set('');
+      fixture.componentInstance.open.set(null);
       await flush(fixture);
       expect(file.getAttribute('aria-expanded')).toBe('false');
       expect(root.getAttribute('data-state')).toBe('closed');

@@ -90,7 +90,7 @@ export interface ForComboboxActionHandle extends CollectionHandle {
  * Generic over the option value type `T` (default `string`). When a
  * consumer binds object items the directive infers `T` from `[(value)]` and
  * the per-piece signatures specialize accordingly. Items are compared via
- * the consumer-provided `isItemEqualToValue` and rendered as labels via
+ * the consumer-provided `compareWith` and rendered as labels via
  * `itemToStringLabel`; the form's hidden inputs serialize via
  * `itemToFormValue`.
  */
@@ -253,7 +253,7 @@ export interface ForComboboxContext<T = unknown> {
   readonly selected: Signal<readonly { value: T; label: string }[]>;
 
   /** Compare two items for equality. Defaults to `===`; overridden for object values. */
-  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** Render an item as a string label. Drives chip labels and `commitOnSelect` writes into the input. */
   readonly itemToStringLabel: Signal<(item: T) => string>;
   /** Serialize an item for the hidden input's `value` attribute. */
@@ -367,7 +367,7 @@ export interface ForComboboxContext<T = unknown> {
   /**
    * Escape is consumer-owned and routed through the input directive (focus
    * stays in the input), so it is invoked directly with the raw
-   * `KeyboardEvent` rather than through the dismissable layer.
+   * `KeyboardEvent` rather than through the dismissible layer.
    */
   emitEscapeKeyDown(event: KeyboardEvent): void;
   /**
@@ -391,7 +391,7 @@ export interface ForComboboxContext<T = unknown> {
  * `[forComboboxOption][value]` and the root `[(value)]` must be the same `T`.
  * There is no clean fix without abandoning the token pattern; the contract is
  * the consumer's to honor. Object identity is reconciled at runtime via
- * `isItemEqualToValue`, which bounds the practical blast radius of a mismatch.
+ * `compareWith`, which bounds the practical blast radius of a mismatch.
  */
 export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_COMBOBOX_CONTEXT');
 

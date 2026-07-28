@@ -2,12 +2,9 @@ import { type Signal } from '@angular/core';
 
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
-import type {
-  MenuActivationModality,
-  MenuOverlay,
-  MenuOverlayCloseReason,
-  MenuOverlayItemHandle,
-} from './menu-overlay';
+import type { ForMenuCloseReason } from './menu-context';
+import type { MenuItemHandle } from './menu-item-list';
+import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
 
 /**
  * Abstract base that forwards the `MenuOverlay` coordination slice every menu
@@ -27,7 +24,7 @@ import type {
  * Kept generic over the item handle so the subclass's `MenuOverlay<H>` flows
  * through `registerItem` / `unregisterItem` without a cast.
  */
-export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOverlayItemHandle> {
+export abstract class MenuOverlayHost<H extends MenuItemHandle = MenuItemHandle> {
   /** The subclass's `MenuOverlay` instance the base forwards to. */
   protected abstract readonly _overlay: MenuOverlay<H>;
 
@@ -43,7 +40,7 @@ export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOver
     return this._overlay.initialFocus;
   }
 
-  get lastCloseReason(): Signal<MenuOverlayCloseReason | null> {
+  get lastCloseReason(): Signal<ForMenuCloseReason | null> {
     return this._overlay.lastCloseReason;
   }
 
@@ -121,7 +118,7 @@ export abstract class MenuOverlayHost<H extends MenuOverlayItemHandle = MenuOver
     this._overlay.openMenu(initialFocus, modality);
   }
 
-  closeMenu(reason: MenuOverlayCloseReason): void {
+  closeMenu(reason: ForMenuCloseReason): void {
     this._overlay.closeMenu(reason);
   }
 

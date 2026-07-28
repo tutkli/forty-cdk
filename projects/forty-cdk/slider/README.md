@@ -10,7 +10,7 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 <div forSlider [(value)]="value" [min]="0" [max]="100" [step]="1">
   <span forSliderTrack>
     <span forSliderRange></span>
-    <span forSliderThumb [index]="0" label="Volume"></span>
+    <span forSliderThumb [index]="0" ariaLabel="Volume"></span>
   </span>
 </div>
 ```
@@ -23,7 +23,7 @@ A single primitive supports single, range, and multi-thumb sliders — the shape
 <div forSlider [(value)]="volume">
   <span forSliderTrack>
     <span forSliderRange></span>
-    <span forSliderThumb [index]="0" [label]="'Volume'"></span>
+    <span forSliderThumb [index]="0" [ariaLabel]="'Volume'"></span>
   </span>
 </div>
 ```
@@ -36,8 +36,8 @@ Where `volume = signal<readonly number[]>([50])`.
 <div forSlider [(value)]="priceRange" [min]="0" [max]="1000" [step]="10">
   <span forSliderTrack>
     <span forSliderRange></span>
-    <span forSliderThumb [index]="0" [label]="'Minimum price'"></span>
-    <span forSliderThumb [index]="1" [label]="'Maximum price'"></span>
+    <span forSliderThumb [index]="0" [ariaLabel]="'Minimum price'"></span>
+    <span forSliderThumb [index]="1" [ariaLabel]="'Maximum price'"></span>
   </span>
 </div>
 ```
@@ -64,7 +64,7 @@ For native `<form>` submit, set `[name]` and the directive mirrors `value()` int
 | `min`                   | `input<number>`                     | Numeric minimum.<br>**Default:** `0`                                                                                                                                                                                        |
 | `max`                   | `input<number>`                     | Numeric maximum.<br>**Default:** `100`                                                                                                                                                                                      |
 | `step`                  | `input<number>`                     | Discrete value increment for arrows + drag.<br>**Default:** `1`                                                                                                                                                             |
-| `largeStep`             | `input<number>`                     | Increment for `PageUp` / `PageDown`.<br>**Default:** `10`                                                                                                                                                                   |
+| `stepMultiplier`        | `input<number>`                     | Multiplier over `step` for `PageUp` / `PageDown` (configurable via `provideForSliderDefaults`).<br>**Default:** `10`                                                                                                        |
 | `orientation`           | `input<'horizontal' \| 'vertical'>` | `'horizontal'` or `'vertical'`.<br>**Default:** `'horizontal'`                                                                                                                                                              |
 | `dir`                   | `input<'ltr' \| 'rtl'>`             | `'ltr'` or `'rtl'`. RTL flips horizontal pointer mapping and `ArrowLeft`/`ArrowRight` semantics.<br>**Default:** `'ltr'`                                                                                                    |
 | `inverted`              | `input<boolean>`                    | Visually flips the value-to-position mapping (e.g. max on the left in horizontal LTR). Keyboard `Up`/`Right` (LTR) still moves toward `max` regardless.<br>**Default:** `false`                                             |
@@ -110,12 +110,11 @@ Optional decorative band between the lowest and highest thumb (single-thumb: `0 
 
 ### `ForSliderThumb`
 
-| Property     | Type                     | Description                                                                                                                                                         |
-| ------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index`      | `input.required<number>` | 0-based position in the parent slider's `value()` array. Pass the loop index when rendering N thumbs.<br>**Default:** —                                             |
-| `label`      | `input<string>`          | Fixed accessible label, mirrored as `aria-label`.<br>**Default:** `''`                                                                                              |
-| `labelledby` | `input<string>`          | Id of an existing element to label the thumb, mirrored as `aria-labelledby`. Use instead of `label` when the label lives elsewhere in the DOM.<br>**Default:** `''` |
-| `valueText`  | `input<string>`          | Human-readable value override (e.g. `$1,200` instead of `1200`), mirrored as `aria-valuetext` only when non-empty.<br>**Default:** `''`                             |
+| Property    | Type                     | Description                                                                                                                                 |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index`     | `input.required<number>` | 0-based position in the parent slider's `value()` array. Pass the loop index when rendering N thumbs.<br>**Default:** —                     |
+| `ariaLabel` | `input<string \| null>`  | Accessible name for the thumb, emitted as `aria-label` only when non-empty. A consumer-set static `aria-label` wins.<br>**Default:** `null` |
+| `valueText` | `input<string>`          | Human-readable value override (e.g. `$1,200` instead of `1200`), mirrored as `aria-valuetext` only when non-empty.<br>**Default:** `''`     |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -128,18 +127,18 @@ Optional decorative band between the lowest and highest thumb (single-thumb: `0 
 
 Focus a thumb, then:
 
-| Key                                                            | Action                   |
-| -------------------------------------------------------------- | ------------------------ |
-| **ArrowRight** _(LTR)_ / **ArrowLeft** _(RTL)_ / **ArrowUp**   | Increase by `step`.      |
-| **ArrowLeft** _(LTR)_ / **ArrowRight** _(RTL)_ / **ArrowDown** | Decrease by `step`.      |
-| **PageUp**                                                     | Increase by `largeStep`. |
-| **PageDown**                                                   | Decrease by `largeStep`. |
-| **Home**                                                       | Set to `min`.            |
-| **End**                                                        | Set to `max`.            |
+| Key                                                            | Action                               |
+| -------------------------------------------------------------- | ------------------------------------ |
+| **ArrowRight** _(LTR)_ / **ArrowLeft** _(RTL)_ / **ArrowUp**   | Increase by `step`.                  |
+| **ArrowLeft** _(LTR)_ / **ArrowRight** _(RTL)_ / **ArrowDown** | Decrease by `step`.                  |
+| **PageUp**                                                     | Increase by `step × stepMultiplier`. |
+| **PageDown**                                                   | Decrease by `step × stepMultiplier`. |
+| **Home**                                                       | Set to `min`.                        |
+| **End**                                                        | Set to `max`.                        |
 
 `inverted` swaps "increase" / "decrease" on every key. Disabled and readonly thumbs are no-ops.
 
-Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `largeStep` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and `largeStep` is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20` — never an oversized first jump. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
+Values live on the `min` ± k·`step` grid. A thumb already on the grid travels the full amount (`step`, or `step × stepMultiplier` for the page keys); a thumb **off** the grid lands on the adjacent grid point in the direction of travel and the page multiplier is discarded, matching the platform's `HTMLInputElement.stepUp()` / `stepDown()`. So ArrowRight from `23` with `[step]="10"` gives `30` and ArrowLeft gives `20` — never an oversized first jump. Pointer drags are unaffected: they snap to the _nearest_ grid point, since a drag has no direction of travel.
 
 ## Accessibility
 
@@ -150,7 +149,7 @@ Implements the [WAI-ARIA Slider pattern](https://www.w3.org/WAI/ARIA/apg/pattern
 - The root has `role="group"` and `dir="rtl"` mirrored when `dir()==='rtl'`, so screen readers and CSS layout agree.
 - `disabled` thumbs receive `tabindex="-1"` and `aria-disabled="true"`.
 - **`aria-readonly` belongs on the thumb, not the root.** WAI-ARIA supports it on `role="slider"` but not on `role="group"`, so each thumb carries `aria-readonly="true"` while the root reflects the `data-readonly` styling hook only.
-- Provide `[label]` (or `[labelledby]`) on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label.
+- Provide `[ariaLabel]` on every thumb — even single-thumb sliders benefit from explicit naming. The directive does not synthesize a label. When the name is already visible in the DOM, write a native `aria-labelledby` on the thumb instead; the directive leaves that attribute alone.
 - A degenerate configuration (`min` greater than `max`, or a non-positive `step`) leaves the slider inoperable and is dev-guarded by a `console.warn` in development builds.
 
 ## Styling

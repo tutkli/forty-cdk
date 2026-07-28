@@ -25,7 +25,7 @@ import { type ForTooltipContext, injectTooltipTriggerContext } from './tooltip-c
  * dismiss). Keyboard focus stays the touch-accessible fallback for descriptive
  * content.
  *
- * Escape dismissal is owned by the content's document-level dismissable layer
+ * Escape dismissal is owned by the content's document-level dismissible layer
  * (see `ForTooltipContent`), so it works from the trigger and from unrelated
  * focus alike (WCAG 2.1 SC 1.4.13) — the trigger carries no Escape listener of
  * its own.

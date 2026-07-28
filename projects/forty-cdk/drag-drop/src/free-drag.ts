@@ -46,6 +46,10 @@ interface LiftSnapshot {
  * optionally confined to a `boundary` and locked to one axis. Composes the shared
  * `createPointerDragSession` transport and accepts `[forDragHandle]` children.
  *
+ * Its outputs are the `moveStart` / `moveMove` / `moveEnd` trio carrying `{ x, y }` positions —
+ * deliberately a different vocabulary from `[forDraggable]`'s `dragStart` / `dragEnd`, which carry
+ * reorder payloads (`{ source, index }` / `{ dropped }`). Free drag repositions; it never reorders.
+ *
  * Pointer-only: there is no WAI-ARIA APG pattern for "freely reposition an element", so this is
  * a documented headless exception. It owns no role or ARIA
  * state and must not destroy the moved element's semantics — the consumer keeps the moved
@@ -100,16 +104,13 @@ export class ForFreeDrag implements ForDraggableContext {
   readonly position = model<{ x: number; y: number }>({ x: 0, y: 0 });
 
   /** Emitted when a pointer drag starts, with the lift-time position. */
-  readonly dragStart = output<{ x: number; y: number }>();
+  readonly moveStart = output<{ x: number; y: number }>();
 
-  /**
-   * Emitted on every armed move with the live position. (Non-native verb — `dragMove`, not
-   * `drag` / `dragMoved` — so `@angular-eslint/no-output-native` stays clear.)
-   */
-  readonly dragMove = output<{ x: number; y: number }>();
+  /** Emitted on every armed move with the live position. */
+  readonly moveMove = output<{ x: number; y: number }>();
 
   /** Emitted when the drag ends, with the final position. */
-  readonly dragEnd = output<{ x: number; y: number }>();
+  readonly moveEnd = output<{ x: number; y: number }>();
 
   /** True while a pointer drag is armed. Reflected as `data-dragging`. */
   readonly dragging = computed(() => this.#lift() !== null);
@@ -169,7 +170,7 @@ export class ForFreeDrag implements ForDraggableContext {
       natural: { x: rect.left - position.x, y: rect.top - position.y },
       size: { width: rect.width, height: rect.height },
     });
-    this.dragStart.emit(position);
+    this.moveStart.emit(position);
     return true;
   }
 
@@ -193,12 +194,12 @@ export class ForFreeDrag implements ForDraggableContext {
     );
     const next = { x: clamped.x - lift.natural.x, y: clamped.y - lift.natural.y };
     this.position.set(next);
-    this.dragMove.emit(next);
+    this.moveMove.emit(next);
   }
 
   #onCommit(): void {
     this.#lift.set(null);
-    this.dragEnd.emit(this.position());
+    this.moveEnd.emit(this.position());
   }
 
   #onCancel(): void {
@@ -208,6 +209,6 @@ export class ForFreeDrag implements ForDraggableContext {
     }
     this.position.set(lift.position);
     this.#lift.set(null);
-    this.dragEnd.emit(this.position());
+    this.moveEnd.emit(this.position());
   }
 }

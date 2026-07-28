@@ -12,7 +12,7 @@ import { injectToastContext } from './toast-context';
  * itself — the close fires after your handler runs (via event order).
  *
  * The action is the **sanctioned dismissal path even when the toast is
- * `closable=false`**: a forced-action toast suppresses Escape / swipe / the
+ * `dismissible=false`**: a forced-action toast suppresses Escape / swipe / the
  * close button but keeps the action button live so the user always has a way
  * out through the control they are meant to use.
  *

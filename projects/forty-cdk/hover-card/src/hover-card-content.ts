@@ -13,7 +13,7 @@ import { injectHoverCardContext } from './hover-card-context';
  * Mount / unmount via `@if (card.open())` on the consumer side so
  * `animate.enter` / `animate.leave` work natively.
  *
- * Escape is routed through the shared document-level `DismissableLayer`
+ * Escape is routed through the shared document-level `DismissibleLayer`
  * (Escape-only — outside dismissal stays implicit via pointer-leave
  * timing), so it dismisses the card no matter where focus lives when the
  * card was hover-opened. Initial-focus and return-focus bundles are

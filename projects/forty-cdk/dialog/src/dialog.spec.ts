@@ -9,7 +9,7 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
@@ -111,7 +111,7 @@ class StackedDialogsHost {
     }
   `,
 })
-class DismissableContractHost {
+class DismissibleContractHost {
   readonly open = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
@@ -326,9 +326,9 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
-      const r = renderHost(DismissableContractHost);
+      const r = renderHost(DismissibleContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;
@@ -457,7 +457,7 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  describe('backdrop exemption from the dismissable layer (issue #1133)', () => {
+  describe('backdrop exemption from the dismissible layer (issue #1133)', () => {
     it('emits exactly one (dismiss) with reason "backdrop" on a real pointerdown+click', async () => {
       const r = renderHost(BackdropExemptionHost);
       r.instance.open.set(true);
@@ -1007,7 +1007,7 @@ describe('ForDialog (declarative)', () => {
       // Close via the close button — goes through `(dismiss)` output →
       // consumer flips signal → `@if` unmounts → destroy hook fires the
       // callback. Cancel is INSIDE the dialog, so focusing it does not
-      // trip the dismissable layer's outside-focus path.
+      // trip the dismissible layer's outside-focus path.
       const cancel = document.querySelector<HTMLButtonElement>('#cancel')!;
       cancel.click();
       await flush(r.fixture);

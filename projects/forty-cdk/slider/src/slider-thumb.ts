@@ -1,6 +1,6 @@
 import { computed, Directive, ElementRef, inject, input, numberAttribute } from '@angular/core';
 
-import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
+import { registerHandle, hostAriaLabel } from 'forty-cdk/core';
 import {
   injectSliderContext,
   type ForSliderThumbBounds,
@@ -19,7 +19,7 @@ import {
  *
  * ```html
  * @for (v of value(); let i = $index; track i) {
- *   <span forSliderThumb [index]="i" [label]="i === 0 ? 'Min' : 'Max'"></span>
+ *   <span forSliderThumb [index]="i" [ariaLabel]="i === 0 ? 'Min' : 'Max'"></span>
  * }
  * ```
  *
@@ -40,7 +40,6 @@ import {
     '[attr.aria-valuetext]': 'ariaValueText()',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-labelledby]': 'ariaLabelledBy()',
     '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
@@ -61,22 +60,16 @@ export class ForSliderThumb {
   readonly index = input.required({ transform: numberAttribute });
 
   /**
-   * Optional fixed label for assistive tech (e.g. "Minimum price",
-   * "Maximum price"). Mirrored as `aria-label`. Use `[labelledby]`
-   * instead if the label lives elsewhere in the DOM.
+   * Optional accessible name for this thumb (e.g. "Minimum price",
+   * "Maximum price"), emitted as `aria-label`. Defaults to `null`, so no
+   * attribute is emitted when unset. A consumer-set **static** `aria-label`
+   * on the host wins over this input. When the name already exists as a
+   * visible element in the DOM, write a native `aria-labelledby` on the host
+   * instead — the directive never touches that attribute.
    */
-  readonly label = input<string>('');
+  readonly ariaLabel = input<string | null>(null);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
-
-  /**
-   * Id of an element that labels this thumb, mirrored as `aria-labelledby`.
-   * A consumer-set **static** `aria-labelledby` on the host wins over this
-   * input — write one or the other, never both.
-   */
-  readonly labelledby = input<string>('');
-
-  protected readonly ariaLabelledBy = hostLabelledBy(() => this.labelledby() || null);
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * Optional human-readable value override (e.g. "$1,200" instead of "1200").

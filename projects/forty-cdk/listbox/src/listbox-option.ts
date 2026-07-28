@@ -30,7 +30,7 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
  * the `[value]` binding so consumers can pass either primitive ids or full
  * objects (`[value]="lang"` infers `T = Language`); the parent `[forListbox]`
  * must be parameterized over the same `T`. The parent's
- * `[isItemEqualToValue]` decides how options are matched against the
+ * `[compareWith]` decides how options are matched against the
  * committed selection.
  */
 @Directive({
@@ -63,7 +63,7 @@ export class ForListboxOption<T = string> {
    * Stable identifier serialized into `[(value)]` and the hidden input.
    * Defaults to `string` for back-compat; bind an object to specialize the
    * parent `[forListbox]` over a richer `T`. The parent's
-   * `[isItemEqualToValue]` decides how options are matched against the
+   * `[compareWith]` decides how options are matched against the
    * committed selection.
    */
   readonly value = input.required<T>();

@@ -1729,7 +1729,7 @@ describe('ForListbox', () => {
           #lb="forListbox"
           [(value)]="picked"
           [multiple]="isMulti()"
-          [isItemEqualToValue]="byId"
+          [compareWith]="byId"
           [itemToFormValue]="toId"
         >
           @for (city of cities; track city.id) {
@@ -1767,7 +1767,7 @@ describe('ForListbox', () => {
     it('matches selection by custom equality even when the bound value is a different reference', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
       // A distinct object equal-by-id to BERLIN — `aria-selected` must resolve
-      // through `isItemEqualToValue`, not reference identity.
+      // through `compareWith`, not reference identity.
       fixture.componentInstance.picked.set([{ id: 2, name: 'Berlin' }]);
       await flush();
 

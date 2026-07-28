@@ -15,11 +15,17 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
 import { ForDrawer } from './drawer';
 import { ForDrawerBackdrop } from './drawer-backdrop';
 import { ForDrawerClose } from './drawer-close';
-import type { ForDrawerCloseReason, ForDrawerSide, ForDrawerSnapPoint } from './drawer-context';
+import type {
+  ForDrawerCloseReason,
+  ForDrawerSide,
+  ForDrawerSnapPoint,
+  ForDrawerSwipeEndEvent,
+  ForDrawerSwipeEvent,
+} from './drawer-context';
 import { ForDrawerDescription } from './drawer-description';
 import { provideForDrawerDefaults } from './drawer-defaults';
 import { ForDrawerHandle } from './drawer-handle';
@@ -85,7 +91,7 @@ class DrawerHost {
     }
   `,
 })
-class DismissableContractHost {
+class DismissibleContractHost {
   readonly open = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
@@ -311,7 +317,7 @@ describe('ForDrawer (declarative)', () => {
       expect(drawer.hasAttribute('data-dragging')).toBe(false);
     });
 
-    it('mirrors data-dragging onto the backdrop and publishes --for-drawer-drag-progress', async () => {
+    it('mirrors data-dragging onto the backdrop and publishes --for-drawer-swipe-progress', async () => {
       // Wiring only — the exact fade fraction is geometry (jsdom returns a
       // zero rect), so its numeric value during the gesture is asserted in
       // drawer.e2e.ts. Here we check the rest value and that the backdrop,
@@ -323,7 +329,7 @@ describe('ForDrawer (declarative)', () => {
       const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
       const backdrop = document.querySelector<HTMLElement>('[forDrawerBackdrop]')!;
       expect(backdrop.hasAttribute('data-dragging')).toBe(false);
-      expect(backdrop.style.getPropertyValue('--for-drawer-drag-progress')).toBe('0');
+      expect(backdrop.style.getPropertyValue('--for-drawer-swipe-progress')).toBe('0');
 
       dispatchPointer(drawer, 'pointerdown', 0, 0);
       dispatchPointer(drawer, 'pointermove', 0, 20);
@@ -333,13 +339,13 @@ describe('ForDrawer (declarative)', () => {
       dispatchPointer(drawer, 'pointerup', 0, 20);
       await flush(r.fixture);
       expect(backdrop.hasAttribute('data-dragging')).toBe(false);
-      expect(backdrop.style.getPropertyValue('--for-drawer-drag-progress')).toBe('0');
+      expect(backdrop.style.getPropertyValue('--for-drawer-swipe-progress')).toBe('0');
     });
 
     it('does not arm the swipe when [handleOnly]="true" and pointerdown lands off the handle', async () => {
       // With `handleOnly` on, a pointerdown that does not originate on the
       // registered `[forDrawerHandle]` element must NOT flip `#dragging`,
-      // emit `(dragMove)`, or surface `data-dragging`. The drawer host fields
+      // emit `(swipeMove)`, or surface `data-dragging`. The drawer host fields
       // pointer events the same as in the positive case — the gating lives
       // entirely in `#onSwipeStart`.
       @Component({
@@ -349,7 +355,7 @@ describe('ForDrawer (declarative)', () => {
             <div
               forDrawer
               [handleOnly]="true"
-              (dragMove)="onDrag()"
+              (swipeMove)="onDrag()"
               (dismiss)="open.set(false)"
               ariaLabel="t"
             >
@@ -524,6 +530,108 @@ describe('ForDrawer (declarative)', () => {
       expect(document.querySelector('[forDrawer]')).not.toBeNull();
       expect(r.instance.open()).toBe(true);
     });
+
+    describe('swipe outputs', () => {
+      // Wiring only — which channel fires and how often. The `progress`
+      // magnitudes are geometry (jsdom returns a zero rect) and stay in
+      // drawer.e2e.ts.
+      @Component({
+        imports: [ForDrawer],
+        template: `
+          @if (open()) {
+            <div
+              forDrawer
+              (swipeStart)="starts.push($event)"
+              (swipeMove)="moves.push($event)"
+              (swipeEnd)="ends.push($event)"
+              (swipeCancel)="cancels.push($event)"
+              (dismiss)="open.set(false)"
+              ariaLabel="t"
+            ></div>
+          }
+        `,
+      })
+      class SwipeOutputsHost {
+        readonly open = signal(false);
+        readonly starts: ForDrawerSwipeEvent[] = [];
+        readonly moves: ForDrawerSwipeEvent[] = [];
+        readonly ends: ForDrawerSwipeEndEvent[] = [];
+        readonly cancels: ForDrawerSwipeEvent[] = [];
+      }
+
+      async function armed() {
+        const r = renderHost(SwipeOutputsHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        const drawer = document.querySelector<HTMLElement>('[forDrawer]')!;
+        return { instance: r.instance, fixture: r.fixture, drawer };
+      }
+
+      it('the arming move emits swipeStart once and swipeMove once', async () => {
+        // Regression guard for the `onLift` + `onMove` same-event double-fire:
+        // the arming pointermove used to produce two identical drag emissions
+        // on a single channel; it now splits into one start and one move.
+        const { instance, fixture, drawer } = await armed();
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        await flush(fixture);
+
+        expect(instance.starts.length).toBe(1);
+        expect(instance.starts[0]!.progress).toBe(0);
+        expect(instance.moves.length).toBe(1);
+        expect(instance.ends.length).toBe(0);
+        expect(instance.cancels.length).toBe(0);
+      });
+
+      it('pointerup emits swipeEnd and not swipeCancel', async () => {
+        const { instance, fixture, drawer } = await armed();
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        dispatchPointer(drawer, 'pointerup', 0, 20);
+        await flush(fixture);
+
+        expect(instance.ends.length).toBe(1);
+        expect(typeof instance.ends[0]!.willClose).toBe('boolean');
+        expect(instance.cancels.length).toBe(0);
+      });
+
+      it('pointercancel emits swipeCancel and not swipeEnd', async () => {
+        const { instance, fixture, drawer } = await armed();
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointermove', 0, 20);
+        await flush(fixture);
+        dispatchPointer(drawer, 'pointercancel', 0, 20);
+        await flush(fixture);
+
+        expect(instance.cancels.length).toBe(1);
+        expect(instance.ends.length).toBe(0);
+      });
+
+      it('a tap emits nothing on any of the four channels', async () => {
+        const { instance, fixture, drawer } = await armed();
+
+        dispatchPointer(drawer, 'pointerdown', 0, 0);
+        dispatchPointer(drawer, 'pointerup', 0, 0);
+        await flush(fixture);
+
+        expect(instance.starts.length).toBe(0);
+        expect(instance.moves.length).toBe(0);
+        expect(instance.ends.length).toBe(0);
+        expect(instance.cancels.length).toBe(0);
+      });
+
+      it('the host seeds --for-drawer-swipe-movement-x / -y at their 0px rest identity on mount', async () => {
+        // Wiring only; the non-zero magnitudes are geometry and live in
+        // drawer.e2e.ts.
+        const { drawer } = await armed();
+
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-x')).toBe('0px');
+        expect(drawer.style.getPropertyValue('--for-drawer-swipe-movement-y')).toBe('0px');
+      });
+    });
   });
 
   describe('mount/unmount', () => {
@@ -571,9 +679,9 @@ describe('ForDrawer (declarative)', () => {
     });
   });
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
-      const r = renderHost(DismissableContractHost);
+      const r = renderHost(DismissibleContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;

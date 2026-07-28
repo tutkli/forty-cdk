@@ -19,10 +19,10 @@ import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
   type ForDrawerContext,
-  type ForDrawerDragEvent,
-  type ForDrawerReleaseEvent,
   type ForDrawerSide,
   type ForDrawerSnapPoint,
+  type ForDrawerSwipeEndEvent,
+  type ForDrawerSwipeEvent,
 } from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
 import { injectDrawerDrag } from './drawer-drag';
@@ -57,7 +57,7 @@ import { injectDrawerDrag } from './drawer-drag';
     '[attr.data-dragging]': 'dragging() ? "" : null',
     '[attr.data-scale-background]': 'scaleBackgroundActive() ? "" : null',
     '[attr.data-depth]': 'depthAttr()',
-    '[attr.data-state-nested]': 'hasChild() ? "true" : null',
+    '[attr.data-state-nested]': 'hasChild() ? "" : null',
   },
   providers: [{ provide: FOR_DRAWER_CONTEXT, useExisting: ForDrawer }],
 })
@@ -112,7 +112,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    * full drawer dimension along the dismissal axis (dragged > 25% of the
    * surface size toward the edge dismisses); with `snapPoints` it is a
    * fraction of the **lowest snap's** extent, so a small "peek" snap stays
-   * dismissable without dragging it entirely off-screen.
+   * dismissible without dragging it entirely off-screen.
    */
   readonly closeThreshold = input(this.#defaults.closeThreshold ?? 0.25);
 
@@ -170,11 +170,20 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
    */
   readonly fadeFromIndex = input<number | undefined>(undefined);
 
-  /** Drag stream. `percentageDragged` ∈ `[0, 1]`. */
-  readonly dragMove = output<ForDrawerDragEvent>();
+  /** Fired once on the pointer move that arms the swipe gesture. `progress` is `0`. */
+  readonly swipeStart = output<ForDrawerSwipeEvent>();
 
-  /** Release event. The directive has already updated `activeSnapPoint` / requested close. */
-  readonly release = output<ForDrawerReleaseEvent>();
+  /** Fired on every pointer move while the swipe is active. `progress` ∈ `[0, 1]` toward the anchored edge. */
+  readonly swipeMove = output<ForDrawerSwipeEvent>();
+
+  /** Fired on pointer-up. The directive has already applied `activeSnapPoint` / requested close. */
+  readonly swipeEnd = output<ForDrawerSwipeEndEvent>();
+
+  /**
+   * Fired on `pointercancel` or a mid-gesture direction abort; the surface
+   * springs back to `activeSnapPoint` and no close is requested.
+   */
+  readonly swipeCancel = output<ForDrawerSwipeEvent>();
 
   // ---- Internal reactive state ----
   readonly #handleEl = signal<HTMLElement | null>(null);
@@ -201,8 +210,9 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
 
   // Pointer / swipe / snap gesture engine. Owns the velocity tracking,
   // per-gesture offset bounds, the dimension-keyed snap-position cache, and
-  // the runtime snap re-validation; the directive host-binds the three signals
-  // it returns (`dragging`, `dragProgress`, `dragTranslate`) and drives its
+  // the runtime snap re-validation; the directive host-binds the signals
+  // it returns (`dragging`, `swipeProgress`, `swipeMovementX` /
+  // `swipeMovementY`) and drives its
   // `validateOnMount()` / `arm()` hooks from its own `afterNextRender`s so the
   // engine's side effects keep `[forDrawer]`'s original ordering relative to
   // the modal shell.
@@ -215,8 +225,10 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     fadeFromIndex: this.fadeFromIndex,
     activeSnapPoint: this.activeSnapPoint,
     handleEl: this.#handleEl.asReadonly(),
-    emitDrag: (event) => this.dragMove.emit(event),
-    emitRelease: (event) => this.release.emit(event),
+    emitSwipeStart: (event) => this.swipeStart.emit(event),
+    emitSwipeMove: (event) => this.swipeMove.emit(event),
+    emitSwipeEnd: (event) => this.swipeEnd.emit(event),
+    emitSwipeCancel: (event) => this.swipeCancel.emit(event),
     requestClose: (reason) => this.requestClose(reason),
   });
 
@@ -229,29 +241,35 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   readonly dragging = this.#drag.dragging;
 
   /**
-   * Progress of the current drag toward the anchored edge, `∈ [0, 1]`.
+   * Progress of the current swipe toward the anchored edge, `∈ [0, 1]`.
    * Surfaced through `ForDrawerContext` so the backdrop can publish it as the
-   * `--for-drawer-drag-progress` custom property.
+   * `--for-drawer-swipe-progress` custom property.
    */
-  readonly dragProgress = this.#drag.dragProgress;
+  readonly swipeProgress = this.#drag.swipeProgress;
 
   /**
-   * Live drag displacement as a CSS `translate` value (`"<x> <y>"`),
-   * published on the host as the `--for-drawer-translate` custom property by
-   * the gesture engine. The consumer composes it on the surface with
-   * `translate: var(--for-drawer-translate, 0px 0px)`.
+   * Live swipe displacement along the x axis in CSS px, published on the host
+   * as the `--for-drawer-swipe-movement-x` custom property by the gesture
+   * engine. `0` at rest, and always `0` when the drawer is anchored to a
+   * horizontal edge (`side` `'top'` / `'bottom'`).
    *
-   * A **custom property** is used (rather than writing `translate` /
-   * `transform` directly) because `transform` is reserved for
+   * Custom properties are used — rather than the directive writing `translate`
+   * / `transform` directly — because `transform` is reserved for
    * `ForDrawerScaleCoordinator` and a directly-written inline `translate` is
    * dropped by Angular when the consumer also binds a template `[style.*]` on
-   * the same host. `"0px 0px"` at rest; the write rides the same change-
-   * detection pass as the `data-dragging` / `data-active-snap-point` changes
-   * on release so the consumer's `transition: translate` animates back in
-   * lockstep with the snap transition rather than jumping to the old rest
-   * position first.
+   * the same host. Compose them on the surface with
+   * `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`.
+   * The write rides the same change-detection pass as the `data-dragging` /
+   * `data-active-snap-point` changes on release, so the consumer's
+   * `transition: translate` animates back in lockstep with the snap transition.
    */
-  readonly dragTranslate = this.#drag.dragTranslate;
+  readonly swipeMovementX = this.#drag.swipeMovementX;
+
+  /**
+   * Live swipe displacement along the y axis in CSS px — twin of
+   * {@link swipeMovementX}, non-zero only for `side` `'top'` / `'bottom'`.
+   */
+  readonly swipeMovementY = this.#drag.swipeMovementY;
 
   /** Host element of this drawer surface — exposed via `ForDrawerContext`. */
   get hostElement(): HTMLElement {
@@ -264,8 +282,8 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
 
   /**
    * `true` while at least one descendant `[forDrawer]` is registered with
-   * `ForDrawerStack` underneath this one — reflected as
-   * `data-state-nested="true"`. The actual nested-visual transform
+   * `ForDrawerStack` underneath this one — reflected as the presence-only
+   * `data-state-nested` attribute. The actual nested-visual transform
    * (`scale + translate3d`) on the parent surface is owned by
    * `ForDrawerScaleCoordinator`, which subscribes to the same stack
    * signal and applies the inline `style.transform` once per affected
@@ -292,7 +310,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   );
 
   // Cleanup refs for drawer-specific side effects (the modal-shell owns its
-  // portal / dismissable / focus-trap / scroll-lock / inert-siblings teardown;
+  // portal / dismissible / focus-trap / scroll-lock / inert-siblings teardown;
   // the gesture engine owns its own swipe-listener teardown). They are layered
   // around the shell on SETUP — the drawer-stack push runs BEFORE the shell's
   // afterNextRender so descendants see consistent topology, scale runs AFTER so
@@ -307,7 +325,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
 
     // ---- Pre-shell setup. Runs in its own afterNextRender registered BEFORE
     // injectModalShell so the drawer-stack push, closeThreshold validation, and
-    // snap-point validation precede the shell's dismissable / focus /
+    // snap-point validation precede the shell's dismissible / focus /
     // scroll-lock wiring. Descendants observing `hasChild` / depth see
     // consistent topology throughout their mount sequence; consumers passing bad
     // closeThreshold / snapPoints get a clear error before the shell focuses.
@@ -344,7 +362,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     });
 
     // ---- The shared modal-shell. Owns: synchronous return-focus capture
-    // (WebKit #136), portal, dismissable layer (triple-veto + composite
+    // (WebKit #136), portal, dismissible layer (triple-veto + composite
     // `interactOutside`), modal vs non-modal branching (focus trap + scroll
     // lock + inert siblings), and the `autoFocusOnOpen` / `autoFocusOnClose`
     // veto hooks. Anything drawer-specific (drag gesture, snap points, scale
@@ -387,7 +405,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
     });
 
     // ---- Drawer-owned teardown, in one hook. Neither step depends on
-    // running before or after the shell's dismissable / focus-trap /
+    // running before or after the shell's dismissible / focus-trap /
     // scroll-lock teardown: the scale handle is self-contained (pops the scale
     // stack), the swipe listeners are detached by the gesture engine's own
     // destroy hook, and the drawer-stack pop only requires that descendant

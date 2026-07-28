@@ -68,7 +68,7 @@ export interface DrawerStackHandle {
  *    multiple levels of nesting and the visual effect must compose along
  *    the LIFO topmost.
  *
- * The companion to {@link DismissableLayerStack} and `InertSiblingsStack`:
+ * The companion to {@link DismissibleLayerStack} and `InertSiblingsStack`:
  * those keep the focus / dismiss / inert behaviour LIFO-correct, this one
  * keeps the *visual* / *topology* layer LIFO-correct. Both are read-only
  * to consumers — there is no public API for explicit ordering, the LIFO

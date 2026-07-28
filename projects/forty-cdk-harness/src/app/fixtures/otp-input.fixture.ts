@@ -11,7 +11,7 @@ import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-i
  * composition events, so the `compositionstart → insertCompositionText →
  * compositionend` guard — a composed character is not dropped and the caret is
  * not corrupted across the cycle — can only be exercised against a real
- * browser. `value` and the `valueComplete` count are surfaced as `<output>`s
+ * browser. `value` and the `(complete)` count are surfaced as `<output>`s
  * so a spec can read the committed code (and that it commits exactly once)
  * without reaching into directive internals.
  *
@@ -72,7 +72,7 @@ import { ForOtpInput, ForOtpInputSlot, type OtpInputType } from 'forty-cdk/otp-i
       [length]="6"
       [type]="type"
       ariaLabel="Verification code"
-      (valueComplete)="completeCount.set(completeCount() + 1)"
+      (complete)="completeCount.set(completeCount() + 1)"
       #otp="forOtpInput"
     >
       @for (i of otp.slots(); track i) {

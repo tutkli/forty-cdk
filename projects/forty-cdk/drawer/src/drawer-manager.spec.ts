@@ -576,7 +576,7 @@ describe('ForDrawerManager (programmatic)', () => {
     });
   });
 
-  describe('drag / release / active-snap observability', () => {
+  describe('swipe / active-snap observability', () => {
     it('activeSnapPointChange fires with the landed default snap on mount', () => {
       const { drawers } = setup();
       const landed: (string | number | null)[] = [];
@@ -600,13 +600,15 @@ describe('ForDrawerManager (programmatic)', () => {
       expect(landed).toEqual([]);
     });
 
-    it('accepts dragMove / release callbacks without throwing', async () => {
+    it('accepts swipeStart / swipeMove / swipeEnd / swipeCancel callbacks without throwing', async () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, {
         data: { message: 'x' },
         snapPoints: ['148px', 1],
-        dragMove: () => {},
-        release: () => {},
+        swipeStart: () => {},
+        swipeMove: () => {},
+        swipeEnd: () => {},
+        swipeCancel: () => {},
       });
       expect(document.querySelector('[role="dialog"]')).toBeTruthy();
       ref.close();

@@ -4,7 +4,7 @@ import { disabled, form, FormField, required } from '@angular/forms/signals';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import {
-  assertDismissableLayerContract,
+  assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
   type FormControlMountResult,
@@ -170,7 +170,7 @@ function getSlots(): NodeListOf<HTMLElement> {
 describe('ForTimePicker', () => {
   afterEachOverlayCleanup();
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(TimePickerDismissContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);

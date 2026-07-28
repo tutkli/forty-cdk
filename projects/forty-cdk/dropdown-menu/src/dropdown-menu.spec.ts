@@ -10,7 +10,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
-  assertDismissableLayerContract,
+  assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
 import { type VetoableNativeEvent } from 'forty-cdk/core';
@@ -63,7 +63,7 @@ class DropdownHost {
     </div>
   `,
 })
-class DismissableContractHost {
+class DismissibleContractHost {
   readonly open = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
@@ -91,9 +91,9 @@ class DismissableContractHost {
 describe('ForDropdownMenu', () => {
   afterEachOverlayCleanup();
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
-      const r = renderHost(DismissableContractHost);
+      const r = renderHost(DismissibleContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;

@@ -277,9 +277,9 @@ boundary, axis locking, and a controllable position (see the inputs below).
 
 | Output      | Payload    | Fires                                                                                          |
 | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| `dragStart` | `{ x; y }` | When a pointer drag starts (the lift-time position).                                           |
-| `dragMove`  | `{ x; y }` | On every armed move, with the live position.                                                   |
-| `dragEnd`   | `{ x; y }` | When the drag ends (commit keeps the position; cancel/Escape restores the lift-time snapshot). |
+| `moveStart` | `{ x; y }` | When a pointer drag starts (the lift-time position).                                           |
+| `moveMove`  | `{ x; y }` | On every armed move, with the live position.                                                   |
+| `moveEnd`   | `{ x; y }` | When the drag ends (commit keeps the position; cancel/Escape restores the lift-time snapshot). |
 
 `[forDragHandle]` works inside `[forFreeDrag]` exactly as it does inside `[forDraggable]`: once any
 handle is present, a pointer drag may only start from within a handle.

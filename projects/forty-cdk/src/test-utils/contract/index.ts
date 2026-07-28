@@ -1,6 +1,6 @@
 /**
  * Shared contract suites for behavioural surfaces that recur across
- * 5+ primitives — form-control flags, roving tabindex, dismissable
+ * 5+ primitives — form-control flags, roving tabindex, dismissible
  * layer, the anchored-overlay trigger ARIA trio.
  *
  * Each contract owns the assertions that are identical across every
@@ -31,9 +31,9 @@ export {
 } from './overlay-trigger-aria-contract';
 
 export {
-  assertDismissableLayerContract,
-  type DismissableLayerMountOptions,
-  type DismissableLayerMountResult,
-  type DismissableLayerContractSetup,
-  type DismissableLayerContractOptions,
-} from './dismissable-layer-contract';
+  assertDismissibleLayerContract,
+  type DismissibleLayerMountOptions,
+  type DismissibleLayerMountResult,
+  type DismissibleLayerContractSetup,
+  type DismissibleLayerContractOptions,
+} from './dismissible-layer-contract';

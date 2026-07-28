@@ -241,7 +241,7 @@ const PRIMITIVES: readonly PlaygroundPrimitive[] = [
     slug: 'date-picker',
     title: 'Date Picker',
     description:
-      'A trigger that opens a floating calendar to pick a date, composing ForCalendar inside a dismissable popover with min / max bounds and per-date availability.',
+      'A trigger that opens a floating calendar to pick a date, composing ForCalendar inside a dismissible popover with min / max bounds and per-date availability.',
     apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/',
   },
   {

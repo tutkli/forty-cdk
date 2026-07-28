@@ -9,7 +9,7 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
  *
  * Wires APG select-only combobox attributes: `role="combobox"`,
  * `aria-haspopup="listbox"`, `aria-expanded`, and `aria-controls` pointing
- * to the listbox. The button is exempt from the listbox's dismissable
+ * to the listbox. The button is exempt from the listbox's dismissible
  * layer — clicks on it route through `(click)` instead of triggering an
  * outside-pointer dismissal race.
  *

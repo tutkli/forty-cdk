@@ -147,7 +147,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
 
   /**
    * Fires when the user presses Escape while this surface is the topmost
-   * dismissable layer. Call `preventDefault()` on the emitted veto to suppress
+   * dismissible layer. Call `preventDefault()` on the emitted veto to suppress
    * the subsequent `(dismiss)` emission. The original `KeyboardEvent` is on
    * `.event`.
    */
@@ -218,7 +218,7 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   }
 
   /**
-   * Register the backdrop element so the dismissable layer treats it as part
+   * Register the backdrop element so the dismissible layer treats it as part
    * of the surface (`exemptElements`). Throws when a second backdrop is
    * registered on the same surface. Pass `null` to unregister.
    */

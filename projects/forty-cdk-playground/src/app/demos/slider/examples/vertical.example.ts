@@ -10,7 +10,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       <div forSlider class="sl" orientation="vertical" [(value)]="value" [min]="0" [max]="100">
         <span forSliderTrack class="sl-track">
           <span forSliderRange class="sl-range"></span>
-          <span forSliderThumb class="sl-thumb" [index]="0" label="Volume"></span>
+          <span forSliderThumb class="sl-thumb" [index]="0" ariaLabel="Volume"></span>
         </span>
       </div>
       <span class="sl-value">{{ value()[0] }}</span>

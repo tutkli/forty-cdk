@@ -193,7 +193,7 @@ test.describe('Select', () => {
       expect(Math.abs(anchorHeight - triggerBox!.height)).toBeLessThanOrEqual(1);
     });
 
-    test('writes a positive --for-select-content-available-height', async ({ page }) => {
+    test('writes a positive --for-available-height', async ({ page }) => {
       await gotoFixture(page, 'select', { position: 'item-aligned' });
       await el(page, 'trigger').click();
       const content = el(page, 'content');
@@ -203,8 +203,7 @@ test.describe('Select', () => {
         .poll(async () =>
           content.evaluate((c) =>
             Number.parseFloat(
-              (c as HTMLElement).style.getPropertyValue('--for-select-content-available-height') ||
-                '0',
+              (c as HTMLElement).style.getPropertyValue('--for-available-height') || '0',
             ),
           ),
         )
@@ -213,7 +212,7 @@ test.describe('Select', () => {
       const viewport = await page.evaluate(() => window.innerHeight);
       const available = await content.evaluate((c) =>
         Number.parseFloat(
-          (c as HTMLElement).style.getPropertyValue('--for-select-content-available-height') || '0',
+          (c as HTMLElement).style.getPropertyValue('--for-available-height') || '0',
         ),
       );
       // Default collisionPadding is 8 → available height should be

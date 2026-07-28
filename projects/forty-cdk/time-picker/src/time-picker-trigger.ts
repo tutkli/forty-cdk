@@ -9,7 +9,7 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
  *
  * Wires APG select-only combobox attributes: `role="combobox"`,
  * `aria-haspopup="listbox"`, `aria-expanded`, and `aria-controls` pointing to
- * the listbox. The button is exempt from the listbox's dismissable layer so
+ * the listbox. The button is exempt from the listbox's dismissible layer so
  * clicks on it toggle without dismissal racing.
  *
  * Keyboard:

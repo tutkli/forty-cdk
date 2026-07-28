@@ -37,7 +37,7 @@ import {
 import { createAutoScroller, type AutoScroller } from './auto-scroll';
 import { buildDragSlots, indexOfSlot, stepSlot } from './drag-positions';
 import {
-  FOR_DRAG_DROP_CONTEXT,
+  FOR_DROP_LIST_CONTEXT,
   FOR_DROP_LIST_ROVING_DELEGATE,
   type ForDragDropEvent,
   type ForDraggableHandle,
@@ -96,7 +96,7 @@ function shiftRect(rect: DragRect, dx: number, dy: number): DragRect {
     '[attr.data-dragging]': "isDragging() ? '' : null",
     '[attr.data-drag-over]': "dragOverIndex() !== null ? '' : null",
   },
-  providers: [{ provide: FOR_DRAG_DROP_CONTEXT, useExisting: ForDropList }],
+  providers: [{ provide: FOR_DROP_LIST_CONTEXT, useExisting: ForDropList }],
 })
 export class ForDropList implements ForDropListContext {
   readonly #hostRef = inject<ElementRef<HTMLElement>>(ElementRef);

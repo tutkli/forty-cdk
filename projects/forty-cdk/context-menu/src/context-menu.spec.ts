@@ -3,7 +3,7 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
 import { FOR_MENU_CONTEXT, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
@@ -862,7 +862,7 @@ describe('ForContextMenu', () => {
     });
   });
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(ContextMenuDismissContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);

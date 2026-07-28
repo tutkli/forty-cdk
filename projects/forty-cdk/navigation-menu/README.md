@@ -83,7 +83,7 @@ import {
   `,
 })
 export class DemoNav {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
 }
 ```
 
@@ -178,7 +178,7 @@ Note the remaining boundary: with an external Viewport, a `focusout` fired _insi
 
 | Property            | Type                                | Description                                                                                                                                                      |
 | ------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`             | `model<string>`                     | Two-way bindable. Open item id, or `''`.<br>**Default:** —                                                                                                       |
+| `value`             | `model<string \| null>`             | Two-way bindable. Open item id, or `null` when nothing is open.<br>**Default:** `null`                                                                           |
 | `orientation`       | `input<'horizontal' \| 'vertical'>` | **Default:** `'horizontal'`                                                                                                                                      |
 | `dir`               | `input<WritingDirection>`           | RTL inverts ArrowLeft / ArrowRight.<br>**Default:** —                                                                                                            |
 | `loop`              | `input<boolean>`                    | Whether arrow nav wraps.<br>**Default:** `true`                                                                                                                  |
@@ -234,7 +234,7 @@ Implements the [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/
 - **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
 - **Indicator follows the active trigger.** A `ResizeObserver` (browser-only) watches the active trigger and the surrounding list and re-measures only when the active trigger switches or one of those boxes resizes — reactive, not per-render polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.
 - **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).
-- **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissable layer; this covers the keyboard-Tab case it can't see.
+- **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissible layer; this covers the keyboard-Tab case it can't see.
 
 ## Styling
 

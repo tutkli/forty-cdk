@@ -9,7 +9,7 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
 import { type VetoableNativeEvent, type WritingDirection } from 'forty-cdk/core';
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
@@ -497,7 +497,7 @@ describe('ForMenuSub', () => {
     });
   });
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(SubMenuDismissContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);

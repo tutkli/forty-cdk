@@ -53,7 +53,7 @@ import { FOR_DROPDOWN_MENU_DEFAULTS } from './dropdown-menu-defaults';
  * navigate / focus helpers, escape / outside-click veto plumbing) is owned
  * by the shared `_internal/menu-overlay` helper. The directive contributes
  * the inputs / outputs / model that make up the public surface, the
- * trigger-anchored `anchor` and `dismissableExemptions`, and the
+ * trigger-anchored `anchor` and `dismissibleExemptions`, and the
  * `aria-haspopup="menu"` / return-focus semantics specific to the
  * Menu Button pattern.
  */
@@ -242,7 +242,7 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
   });
 
   readonly anchor = computed<ReferenceElement | null>(() => this._overlay.trigger());
-  readonly dismissableExemptions = computed<readonly HTMLElement[]>(() => {
+  readonly dismissibleExemptions = computed<readonly HTMLElement[]>(() => {
     const t = this._overlay.trigger();
     return t ? [t] : [];
   });

@@ -36,7 +36,7 @@ import type { ForDatePickerContext } from './date-picker-context';
  * Shared overlay / trigger / anchor / content / dismiss / focus machinery for
  * the date-picker roots. Both the single-date `ForDatePicker` and the
  * range-form `ForDateRangePicker` extend it, so the floating surface, the
- * dismissable-layer wiring, the optional positioning anchor, the trigger /
+ * dismissible-layer wiring, the optional positioning anchor, the trigger /
  * content registration, return-focus, and the vetoable dismiss / auto-focus
  * outputs live in one place instead of being duplicated per root.
  *
@@ -174,7 +174,7 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
 
   /**
    * Fires when the user presses Escape while this surface is the topmost
-   * dismissable layer. Call `preventDefault()` on the veto to suppress the
+   * dismissible layer. Call `preventDefault()` on the veto to suppress the
    * automatic close.
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();

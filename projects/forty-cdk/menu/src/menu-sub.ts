@@ -53,7 +53,7 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  * three concerns are wired through the `onOpen` / `onClose` lifecycle hooks and
  * `lastCloseReason` / the initial-focus state stay correct on every transition.
  *
- * The parent menu's content is added to this submenu's dismissable
+ * The parent menu's content is added to this submenu's dismissible
  * exemptions so a click on a parent menu item doesn't fire the
  * submenu's outside-handler (the parent item's own click flow closes
  * everything via propagated `closeMenu`).
@@ -305,7 +305,7 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
    * upward through the whole chain) instead of firing the submenu's
    * outside-close.
    */
-  readonly dismissableExemptions = computed<readonly HTMLElement[]>(() => {
+  readonly dismissibleExemptions = computed<readonly HTMLElement[]>(() => {
     const parentContent = this.parentMenu.content();
     return parentContent ? [parentContent] : [];
   });

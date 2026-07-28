@@ -312,5 +312,5 @@ import {
   `,
 })
 export class NavigationMenuVerticalExample {
-  protected readonly open = signal('');
+  protected readonly open = signal<string | null>(null);
 }

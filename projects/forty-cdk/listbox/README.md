@@ -120,12 +120,12 @@ Real apps usually have richer option models — `{ id, name, ... }` — where th
 
 Two inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input                  | Default                                                            | Purpose                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / range actions locate by id (or any stable key).     |
-| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden form input. Override to emit a per-item id (or any wire format your backend wants). |
+| Input               | Default                                                            | Purpose                                                                                                              |
+| ------------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `[compareWith]`     | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection / range actions locate by id (or any stable key).     |
+| `[itemToFormValue]` | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden form input. Override to emit a per-item id (or any wire format your backend wants). |
 
-The visible option label is just the rendered `textContent`, so there's no separate label function. All of the multi-select range actions (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End) dedupe by `isItemEqualToValue`, so object values never accumulate duplicates.
+The visible option label is just the rendered `textContent`, so there's no separate label function. All of the multi-select range actions (Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End) dedupe by `compareWith`, so object values never accumulate duplicates.
 
 ```ts
 import { Component, signal } from '@angular/core';
@@ -140,7 +140,7 @@ interface City {
   selector: 'demo-cities',
   imports: [ForListbox, ForListboxOption],
   template: `
-    <ul forListbox multiple [(value)]="picked" [isItemEqualToValue]="byId" aria-label="Cities">
+    <ul forListbox multiple [(value)]="picked" [compareWith]="byId" aria-label="Cities">
       @for (c of cities; track c.id) {
         <li>
           <button type="button" forListboxOption class="listbox-option" [value]="c">
@@ -370,7 +370,7 @@ export class DemoVirtualizedListbox {
 | ------------------------------------------------------------ | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `value`                                                      | `model<readonly T[]>`                            | Two-way bindable. Selected values. Single mode keeps 0 or 1; multi any number. Required by `FormValueControl<readonly T[]>`.<br>**Default:** —                                                            |
 | `selected`                                                   | `Signal<T \| null>`                              | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected. Lets single-select consumers skip `value()[0]`.<br>**Default:** —                  |
-| `isItemEqualToValue`                                         | `input<(a: T, b: T) => boolean>`                 | How two items compare. Defaults to `===`. Override for object values so selection / range actions locate entries by id (or any stable key).<br>**Default:** —                                             |
+| `compareWith`                                                | `input<(a: T, b: T) => boolean>`                 | How two items compare. Defaults to `===`. Override for object values so selection / range actions locate entries by id (or any stable key).<br>**Default:** —                                             |
 | `itemToFormValue`                                            | `input<(item: T) => string>`                     | Serialize an item for the hidden form input. Defaults to `String` for strings and `JSON.stringify` for objects. Override to emit a per-item id.<br>**Default:** —                                         |
 | `multiple`                                                   | `input<boolean>`                                 | When true, multiple options can be selected.<br>**Default:** `false`                                                                                                                                      |
 | `ariaLabel`                                                  | `input<string \| null>`                          | Reactive accessible name for the listbox, reflected as `aria-label`. Prefer native `aria-labelledby` when a visible label element exists.<br>**Default:** `null` (and an empty string) emits no attribute |
@@ -390,10 +390,10 @@ export class DemoVirtualizedListbox {
 
 ### `ForListboxOption`
 
-| Property   | Type                | Description                                                                                                              |
-| ---------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `isItemEqualToValue`.<br>**Default:** — |
-| `disabled` | `input<boolean>`    | Disables this option independently of the group.<br>**Default:** —                                                       |
+| Property   | Type                | Description                                                                                                       |
+| ---------- | ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `compareWith`.<br>**Default:** — |
+| `disabled` | `input<boolean>`    | Disables this option independently of the group.<br>**Default:** —                                                |
 
 | Data attribute     | Values                   | Notes                                                     |
 | ------------------ | ------------------------ | --------------------------------------------------------- |

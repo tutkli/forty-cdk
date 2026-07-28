@@ -583,7 +583,7 @@ describe('ForTooltip', () => {
 
       // Hover-opened: focus never entered the trigger or the content. Escape
       // dispatched on an unrelated element still routes through the
-      // document-level dismissable layer and dismisses the tooltip.
+      // document-level dismissible layer and dismisses the tooltip.
       pressKey(document, 'Escape');
       r.fixture.detectChanges();
 
@@ -685,7 +685,7 @@ describe('ForTooltip', () => {
       expect(r.instance.tooltipOpen()).toBe(true);
       expect(r.instance.dialogOpen()).toBe(true);
 
-      // First Escape: the tooltip's dismissable layer is topmost, so only the
+      // First Escape: the tooltip's dismissible layer is topmost, so only the
       // tooltip closes; the dialog stays open.
       pressKey(document, 'Escape');
       await flush(r.fixture);

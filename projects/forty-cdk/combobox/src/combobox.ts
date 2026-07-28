@@ -61,7 +61,7 @@ import { VirtualizedNavigator } from './combobox-virtualized-navigator';
  * consumer binds object items the directive infers `T` from `[(value)]`
  * and per-piece signatures (`[forComboboxOption][value]`,
  * `[forComboboxChip][value]`) specialize accordingly. Object identity is
- * resolved by the consumer-supplied `[isItemEqualToValue]` and labels by
+ * resolved by the consumer-supplied `[compareWith]` and labels by
  * `[itemToStringLabel]`; the hidden inputs serialize via
  * `[itemToFormValue]` (defaults to `JSON.stringify` for non-strings).
  *
@@ -123,9 +123,9 @@ export class ForCombobox<T = string>
    * correct identity for primitive `T` (e.g. strings, numbers). Override
    * when binding object items so the directive can locate selected /
    * removed entries by id (or any other stable key) instead of by
-   * reference: `[isItemEqualToValue]="(a, b) => a.id === b.id"`.
+   * reference: `[compareWith]="(a, b) => a.id === b.id"`.
    */
-  readonly isItemEqualToValue = input<(a: T, b: T) => boolean>((a, b) => a === b);
+  readonly compareWith = input<(a: T, b: T) => boolean>((a, b) => a === b);
 
   /**
    * Render an item as a string label. Defaults to `String(item)`, which is
@@ -411,7 +411,7 @@ export class ForCombobox<T = string>
     initialFocus: this.#initialFocusState.target,
     items: this.#items.items,
     value: this.value,
-    equals: this.isItemEqualToValue,
+    equals: this.compareWith,
   });
   readonly activeId = this.#activeId.asReadonly();
 
@@ -475,7 +475,7 @@ export class ForCombobox<T = string>
     // snapshot when virtualizing, so a selected option scrolled out of view
     // still resolves here without a separate position-map lookup.
     const cached = this.cachedOptions();
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     const toLabel = this.itemToStringLabel();
     return values.map((v) => {
       const opt = cached.find((o) => equals(o.value, v));
@@ -641,7 +641,7 @@ export class ForCombobox<T = string>
   }
 
   isSelected(v: T): boolean {
-    return isInArray(this.value(), v, this.isItemEqualToValue());
+    return isInArray(this.value(), v, this.compareWith());
   }
 
   #setSingle(v: T): void {
@@ -666,7 +666,7 @@ export class ForCombobox<T = string>
     const v = handle.value();
     if (this.multiple()) {
       // Toggle in/out of the array. Stay open so the user can keep picking.
-      this.value.set(toggleInArray(this.value(), v, this.isItemEqualToValue()));
+      this.value.set(toggleInArray(this.value(), v, this.compareWith()));
       if (this.commitOnSelect()) {
         // Reset query so the next typed prefix searches afresh.
         this.query.set('');
@@ -702,7 +702,7 @@ export class ForCombobox<T = string>
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
-    const equals = this.isItemEqualToValue();
+    const equals = this.compareWith();
     const current = this.value();
     if (!current.some((x) => equals(x, v))) {
       return;

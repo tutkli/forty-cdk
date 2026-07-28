@@ -52,7 +52,7 @@ import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
  * by the shared `_internal/menu-overlay` helper. The directive contributes
  * the inputs / outputs / model that make up the public surface, the
  * pointer-driven `VirtualElement` anchor (`setVirtualAnchor` /
- * `setVirtualAnchorFromRect`), and the contextmenu-specific dismissable
+ * `setVirtualAnchorFromRect`), and the contextmenu-specific dismissible
  * semantics (no exemption — a left-click on the right-click region while
  * the menu is open should close it).
  */
@@ -250,7 +250,7 @@ export class ForContextMenu
    * ContextMenu exempts nothing — a left-click on the right-click region
    * while the menu is open should close it like any other outside click.
    */
-  readonly dismissableExemptions = signal<readonly HTMLElement[]>([]).asReadonly();
+  readonly dismissibleExemptions = signal<readonly HTMLElement[]>([]).asReadonly();
 
   /**
    * The right-click region is not a labelling element, so `[forMenuContent]`

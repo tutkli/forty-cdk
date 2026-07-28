@@ -2,19 +2,19 @@ import { DOCUMENT, DestroyRef, ElementRef, Injectable, PLATFORM_ID, inject } fro
 import { isPlatformBrowser } from '@angular/common';
 
 /**
- * The outside-interaction channels a {@link DismissableLayer} can own. A layer
- * declares the channels it wants routed to it at {@link DismissableLayer.activate};
- * {@link DismissableLayerStack} dispatches an outside `pointerdown` / `focusin`
+ * The outside-interaction channels a {@link DismissibleLayer} can own. A layer
+ * declares the channels it wants routed to it at {@link DismissibleLayer.activate};
+ * {@link DismissibleLayerStack} dispatches an outside `pointerdown` / `focusin`
  * to the topmost layer that declared the matching channel. Escape is not a
  * channel — it is always dispatched to the literal topmost active layer (see
- * {@link DismissableLayerStack}).
+ * {@link DismissibleLayerStack}).
  */
-export type DismissableLayerChannel = 'pointer' | 'focus';
+export type DismissibleLayerChannel = 'pointer' | 'focus';
 
 /**
  * Declared nesting position of a layer inside a chain of layers that are
  * structurally nested (a menubar menu and its submenus, a submenu and its own
- * submenu). {@link DismissableLayerStack} orders such a chain by `depth` rather
+ * submenu). {@link DismissibleLayerStack} orders such a chain by `depth` rather
  * than by activation order, so a deeper level is always dispatched to before
  * its ancestors even when both levels mount in the same render pass and the
  * `afterNextRender` callbacks fire child-before-parent (#1450).
@@ -23,7 +23,7 @@ export type DismissableLayerChannel = 'pointer' | 'focus';
  * on top of everything, and never reorders relative to a chain it does not
  * belong to (a Dialog opened from inside a submenu still lands topmost).
  */
-export interface DismissableLayerNesting {
+export interface DismissibleLayerNesting {
   /**
    * Identity of the chain this layer belongs to — typically the coordination
    * context of the outermost level. Only layers sharing a chain are ordered
@@ -35,29 +35,29 @@ export interface DismissableLayerNesting {
 }
 
 /**
- * Options passed to `DismissableLayer.activate`. Each handler receives the
+ * Options passed to `DismissibleLayer.activate`. Each handler receives the
  * native event; the consumer owns the close decision inside its own handler
  * (there is no separate default-dismiss callback).
  */
-export interface DismissableLayerActivateOptions {
+export interface DismissibleLayerActivateOptions {
   /**
    * The outside-interaction channels this layer owns. The stack routes an
    * outside `pointerdown` to the topmost layer declaring `'pointer'` and an
    * outside `focusin` to the topmost layer declaring `'focus'`, so an
    * Escape-only surface (Tooltip, HoverCard) declares `[]` and stays
-   * transparent to the real dismissable layers beneath it. Escape is dispatched
+   * transparent to the real dismissible layers beneath it. Escape is dispatched
    * to the literal topmost layer regardless of this declaration.
    */
-  channels: readonly DismissableLayerChannel[];
+  channels: readonly DismissibleLayerChannel[];
 
   /**
    * Declared position of this layer inside a chain of structurally nested
-   * layers. When present, {@link DismissableLayerStack} inserts the layer by
+   * layers. When present, {@link DismissibleLayerStack} inserts the layer by
    * depth within its chain instead of pushing it on top, so the stack order
    * reflects the nesting rather than the order the levels happened to activate
    * in. Omit for a standalone overlay.
    */
-  nesting?: DismissableLayerNesting;
+  nesting?: DismissibleLayerNesting;
 
   /** Fired when the user presses `Escape` while this is the topmost layer. */
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
@@ -82,11 +82,11 @@ export interface DismissableLayerActivateOptions {
   exemptElements?: () => readonly Element[];
 }
 
-const EMPTY_ACTIVATE_OPTIONS: DismissableLayerActivateOptions = { channels: [] };
+const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] };
 
 /**
  * Application-scoped registry that owns the document listeners used by
- * dismissable layers. Created once per Angular bootstrap (one per SSR
+ * dismissible layers. Created once per Angular bootstrap (one per SSR
  * request), tied to the root injector lifetime.
  *
  * Why a service rather than module-level state:
@@ -107,7 +107,7 @@ const EMPTY_ACTIVATE_OPTIONS: DismissableLayerActivateOptions = { channels: [] }
  *   from `afterNextRender`.
  *
  * Stack order is activation order (LIFO) for standalone layers, but a layer
- * that declares a {@link DismissableLayerNesting} is inserted by nesting depth
+ * that declares a {@link DismissibleLayerNesting} is inserted by nesting depth
  * within its chain. Activation order is a render-timing artifact — a menubar
  * menu and its submenu mounted in the same render pass run their
  * `afterNextRender` callbacks child-before-parent — and ordering the chain by
@@ -131,11 +131,11 @@ const EMPTY_ACTIVATE_OPTIONS: DismissableLayerActivateOptions = { channels: [] }
  * documented limitation rather than an accidental one.
  */
 @Injectable({ providedIn: 'root' })
-export class DismissableLayerStack {
+export class DismissibleLayerStack {
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
-  readonly #stack: DismissableLayer[] = [];
+  readonly #stack: DismissibleLayer[] = [];
   #suppressDepth = 0;
   #listening = false;
 
@@ -173,7 +173,7 @@ export class DismissableLayerStack {
   }
 
   /** @internal */
-  push(layer: DismissableLayer): void {
+  push(layer: DismissibleLayer): void {
     this.#stack.splice(this.#insertionIndex(layer), 0, layer);
     if (this.#stack.length === 1) {
       this.#installListeners();
@@ -181,7 +181,7 @@ export class DismissableLayerStack {
   }
 
   /** @internal */
-  remove(layer: DismissableLayer): void {
+  remove(layer: DismissibleLayer): void {
     const idx = this.#stack.indexOf(layer);
     if (idx >= 0) {
       this.#stack.splice(idx, 1);
@@ -197,7 +197,7 @@ export class DismissableLayerStack {
    * interactive Escape-only HoverCard over a Popover) counts as "inside", so an
    * interaction within it never leaks an "outside" dismissal to the layer below.
    */
-  containsFromLayer(layer: DismissableLayer, target: Node): boolean {
+  containsFromLayer(layer: DismissibleLayer, target: Node): boolean {
     const idx = this.#stack.indexOf(layer);
     if (idx < 0) {
       return layer.contains(target);
@@ -247,14 +247,14 @@ export class DismissableLayerStack {
 
   /**
    * Where a newly activated layer belongs. Plain LIFO (the top of the stack)
-   * unless the layer declared a {@link DismissableLayerNesting}: then it slides
+   * unless the layer declared a {@link DismissibleLayerNesting}: then it slides
    * down past the trailing run of layers from the same chain that sit deeper
    * than it, so an ancestor activating after its own descendant still lands
    * below it (#1450). The scan stops at the first layer that is not a deeper
    * level of the same chain, so an unrelated overlay (a Dialog opened from
    * inside a submenu) is never jumped over.
    */
-  #insertionIndex(layer: DismissableLayer): number {
+  #insertionIndex(layer: DismissibleLayer): number {
     const nesting = layer.nesting;
     let idx = this.#stack.length;
     if (!nesting) {
@@ -270,11 +270,11 @@ export class DismissableLayerStack {
     return idx;
   }
 
-  #topmost(): DismissableLayer | undefined {
+  #topmost(): DismissibleLayer | undefined {
     return this.#stack[this.#stack.length - 1];
   }
 
-  #topmostForChannel(channel: DismissableLayerChannel): DismissableLayer | undefined {
+  #topmostForChannel(channel: DismissibleLayerChannel): DismissibleLayer | undefined {
     for (let i = this.#stack.length - 1; i >= 0; i--) {
       const layer = this.#stack[i];
       if (layer && layer.ownsChannel(channel)) {
@@ -299,7 +299,7 @@ function resolveEventTarget(event: Event): Node | null {
 }
 
 /**
- * Coordinates the standard "dismissable surface" interactions used by modal
+ * Coordinates the standard "dismissible surface" interactions used by modal
  * dialogs, popovers, dropdown menus, drawers, and any other transient
  * overlay: Escape, pointer-down outside, focus-outside.
  *
@@ -308,7 +308,7 @@ function resolveEventTarget(event: Event): Node | null {
  * contract. Pointer-down-outside and focus-outside instead go to the topmost
  * layer that declared the matching channel: a layer that owns only Escape (e.g.
  * a Tooltip, declaring `channels: []`) is transparent to outside-pointer /
- * focus for the real dismissable layers beneath it, so a tooltip visible over
+ * focus for the real dismissible layers beneath it, so a tooltip visible over
  * an open menu never shadows the menu's outside-click dismissal (#1309). Nested
  * real layers (a popover inside a dialog) still resolve to a single topmost
  * handler per channel, so single-dismiss semantics hold.
@@ -321,14 +321,14 @@ function resolveEventTarget(event: Event): Node | null {
  * Dispatch goes through a single shared document listener, so synchronous
  * changes to the stack from a handler don't leak into sibling listeners.
  */
-export class DismissableLayer {
+export class DismissibleLayer {
   readonly #host: HTMLElement;
-  readonly #stack: DismissableLayerStack;
-  #options: DismissableLayerActivateOptions = EMPTY_ACTIVATE_OPTIONS;
-  #channels: ReadonlySet<DismissableLayerChannel> = new Set();
+  readonly #stack: DismissibleLayerStack;
+  #options: DismissibleLayerActivateOptions = EMPTY_ACTIVATE_OPTIONS;
+  #channels: ReadonlySet<DismissibleLayerChannel> = new Set();
   #active = false;
 
-  constructor(host: HTMLElement, stack: DismissableLayerStack) {
+  constructor(host: HTMLElement, stack: DismissibleLayerStack) {
     this.#host = host;
     this.#stack = stack;
   }
@@ -343,11 +343,11 @@ export class DismissableLayer {
 
   /**
    * @internal The nesting position declared at `activate`, or `undefined` for a
-   * standalone layer. Read by {@link DismissableLayerStack} to place the layer
+   * standalone layer. Read by {@link DismissibleLayerStack} to place the layer
    * by nesting depth instead of activation order. Public only so the stack can
    * read it, not part of the supported API.
    */
-  get nesting(): DismissableLayerNesting | undefined {
+  get nesting(): DismissibleLayerNesting | undefined {
     return this.#options.nesting;
   }
 
@@ -355,7 +355,7 @@ export class DismissableLayer {
    * Pushes this layer onto the dispatch stack. Calling `activate` twice
    * without an intervening `deactivate` is a no-op.
    */
-  activate(options: DismissableLayerActivateOptions): void {
+  activate(options: DismissibleLayerActivateOptions): void {
     if (this.#active) {
       return;
     }
@@ -387,17 +387,17 @@ export class DismissableLayer {
 
   /**
    * @internal Whether this layer declared ownership of `channel`. Read by
-   * {@link DismissableLayerStack} to route an outside pointer-down / focus to
+   * {@link DismissibleLayerStack} to route an outside pointer-down / focus to
    * the topmost owning layer. Public only so the stack can read it, not part of
    * the supported API.
    */
-  ownsChannel(channel: DismissableLayerChannel): boolean {
+  ownsChannel(channel: DismissibleLayerChannel): boolean {
     return this.#channels.has(channel);
   }
 
   /**
    * @internal Whether `target` is inside this layer's host or its exempt
-   * elements. Read by {@link DismissableLayerStack} when walking the stack for
+   * elements. Read by {@link DismissibleLayerStack} when walking the stack for
    * stack-aware containment. Public only so the stack can read it.
    */
   contains(target: Node): boolean {
@@ -417,7 +417,7 @@ export class DismissableLayer {
   }
 
   /**
-   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * @internal Dispatched by {@link DismissibleLayerStack} to the topmost layer
    * on `Escape`. Public only so the stack can call it without exploiting a TS
    * visibility loophole; not part of the supported API (stripped from `.d.ts`).
    */
@@ -426,7 +426,7 @@ export class DismissableLayer {
   }
 
   /**
-   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * @internal Dispatched by {@link DismissibleLayerStack} to the topmost layer
    * declaring the `'pointer'` channel on an outside `pointerdown`. See
    * {@link handleEscape}.
    */
@@ -440,7 +440,7 @@ export class DismissableLayer {
   }
 
   /**
-   * @internal Dispatched by {@link DismissableLayerStack} to the topmost layer
+   * @internal Dispatched by {@link DismissibleLayerStack} to the topmost layer
    * declaring the `'focus'` channel on an outside `focusin`. See
    * {@link handleEscape}.
    */
@@ -455,7 +455,7 @@ export class DismissableLayer {
 }
 
 /**
- * Creates a `DismissableLayer` for the directive's host element and wires
+ * Creates a `DismissibleLayer` for the directive's host element and wires
  * deactivation into `DestroyRef`. The host primitive owns activation
  * (typically via an `effect()` watching the open state).
  *
@@ -463,10 +463,10 @@ export class DismissableLayer {
  * suppressed (e.g. across a focus-return that would otherwise
  * cascade-dismiss the next topmost layer).
  */
-export function injectDismissableLayer(): DismissableLayer {
+export function injectDismissibleLayer(): DismissibleLayer {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  const stack = inject(DismissableLayerStack);
-  const layer = new DismissableLayer(host.nativeElement, stack);
+  const stack = inject(DismissibleLayerStack);
+  const layer = new DismissibleLayer(host.nativeElement, stack);
   inject(DestroyRef).onDestroy(() => layer.deactivate());
   return layer;
 }

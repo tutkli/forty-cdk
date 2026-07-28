@@ -21,7 +21,7 @@ export class ForDrawerRef<R = unknown> extends OverlayRef<R, ForDrawerCloseReaso
    * Reactive read of the drawer's current active snap point — the programmatic
    * mirror of reading `[(activeSnapPoint)]`. Reflects both `setActiveSnapPoint()`
    * writes and the drawer's own internal transitions (the mount-time default
-   * and every drag release). `null` when no snap points are configured.
+   * and every swipe release). `null` when no snap points are configured.
    */
   readonly activeSnapPoint: Signal<ForDrawerSnapPoint | null>;
 

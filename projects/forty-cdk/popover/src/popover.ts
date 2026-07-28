@@ -77,7 +77,7 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   /**
    * When true, trigger interaction is ignored and any open popover stays
    * open until the consumer flips `open` themselves. Disable on the trigger
-   * side; the content side keeps its dismissable behavior unaffected.
+   * side; the content side keeps its dismissible behavior unaffected.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
@@ -113,7 +113,7 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
 
   /**
    * Fires when the user presses Escape while this popover is the topmost
-   * dismissable layer. Call `preventDefault()` on the emitted veto to
+   * dismissible layer. Call `preventDefault()` on the emitted veto to
    * suppress the automatic close. The native `KeyboardEvent` is
    * available on `.event`.
    */

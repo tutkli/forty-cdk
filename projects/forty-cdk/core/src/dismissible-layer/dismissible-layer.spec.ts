@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 
 import { pressKey } from '../../../src/test-utils';
-import { DismissableLayer, DismissableLayerStack } from './dismissable-layer';
+import { DismissibleLayer, DismissibleLayerStack } from './dismissible-layer';
 
 function pointerDown(target: Node): PointerEvent {
   const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
@@ -28,14 +28,14 @@ function focusIn(target: Node): FocusEvent {
   return event;
 }
 
-function makeLayer(host: HTMLElement): DismissableLayer {
-  return new DismissableLayer(host, TestBed.inject(DismissableLayerStack));
+function makeLayer(host: HTMLElement): DismissibleLayer {
+  return new DismissibleLayer(host, TestBed.inject(DismissibleLayerStack));
 }
 
-describe('DismissableLayer', () => {
+describe('DismissibleLayer', () => {
   let host: HTMLElement;
   let outside: HTMLElement;
-  let layer: DismissableLayer | null = null;
+  let layer: DismissibleLayer | null = null;
 
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -598,7 +598,7 @@ describe('DismissableLayer', () => {
 
     beforeEach(() => {
       // A separately-portaled, interactive Escape-only surface (a HoverCard),
-      // stacked above a real dismissable layer (a Popover / Menu). Its host is
+      // stacked above a real dismissible layer (a Popover / Menu). Its host is
       // NOT a DOM descendant of the layer below, so DOM containment alone would
       // treat an interaction inside it as "outside".
       aboveHost = document.createElement('div');

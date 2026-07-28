@@ -5,7 +5,7 @@ import { el, gotoFixture } from './_helpers';
  * #676 — an anchored overlay (Select / DropdownMenu) opened from inside a modal
  * `ForDialog` portals its content to `document.body`. Before the fix the modal
  * inert pass swallowed it: the surface ended up `inert` + `aria-hidden`, so
- * clicks fell through to the dialog control behind it and the dismissable layer
+ * clicks fell through to the dialog control behind it and the dismissible layer
  * treated in-panel clicks as outside (closing the panel without selecting).
  */
 test.describe('Overlay opened inside a modal dialog (#676)', () => {

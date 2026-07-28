@@ -58,14 +58,14 @@ export interface ForDrawerContext {
    */
   readonly dragging: Signal<boolean>;
   /**
-   * Progress of the current drag *toward the anchored edge* (dismiss
+   * Progress of the current swipe *toward the anchored edge* (dismiss
    * direction), as a fraction `∈ [0, 1]` of the drawer's dimension along
    * the dismissal axis. `0` at rest and while growing away from the edge
    * (with snap points). The backdrop publishes this as the
-   * `--for-drawer-drag-progress` custom property so consumers can fade it
-   * out as the surface is dragged off-screen — `opacity: calc(1 - var(--for-drawer-drag-progress))`.
+   * `--for-drawer-swipe-progress` custom property so consumers can fade it
+   * out as the surface is swiped off-screen — `opacity: calc(1 - var(--for-drawer-swipe-progress))`.
    */
-  readonly dragProgress: Signal<number>;
+  readonly swipeProgress: Signal<number>;
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
   /**
@@ -96,7 +96,7 @@ export interface ForDrawerContext {
   registerHandle(el: HTMLElement | null): void;
 
   /**
-   * Register the backdrop element so the dismissable layer treats it as
+   * Register the backdrop element so the dismissible layer treats it as
    * part of the drawer surface (`exemptElements`) — without this, a
    * `pointerdown` on the portaled backdrop would fire `pointerDownOutside`
    * before the backdrop's `click` handler runs, so the consumer would see
@@ -140,17 +140,24 @@ export function injectDrawerContext(piece: string): ForDrawerContext {
 }
 
 /**
- * Drag/release event payloads. Surfaced through `(dragMove)` / `(release)`
- * so consumers can drive bespoke visualizations (e.g. a separate "scaled
- * background" effect, a debug HUD); the directive itself owns transform
- * application and snap resolution.
+ * Swipe gesture payloads. `ForDrawerSwipeEvent` is surfaced through
+ * `(swipeStart)` / `(swipeMove)` / `(swipeCancel)`; `ForDrawerSwipeEndEvent`
+ * through `(swipeEnd)`. They let consumers drive bespoke visualizations
+ * (e.g. a separate "scaled background" effect, a debug HUD); the directive
+ * itself owns transform application and snap resolution.
  */
-export interface ForDrawerDragEvent {
-  readonly percentageDragged: number;
+export interface ForDrawerSwipeEvent {
+  /**
+   * Progress of the gesture toward the anchored edge (dismiss direction), a
+   * unitless fraction `∈ [0, 1]` of the drawer's dimension along the
+   * dismissal axis. `0` on arm and while growing away from the edge (with
+   * snap points).
+   */
+  readonly progress: number;
   readonly originalEvent: PointerEvent;
 }
 
-export interface ForDrawerReleaseEvent {
+export interface ForDrawerSwipeEndEvent {
   readonly willClose: boolean;
   readonly nextSnapPoint: ForDrawerSnapPoint | null;
   readonly originalEvent: PointerEvent;

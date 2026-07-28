@@ -203,11 +203,11 @@ When nothing is selected, the algorithm falls back to the first enabled option. 
 </div>
 ```
 
-The directive sets `--for-select-content-available-height` on the content host so consumers can clamp the visible height in CSS:
+The directive sets the shared `--for-available-height` on the content host so consumers can clamp the visible height in CSS (the same property and the same `max-height` recipe as `position="popper"`; in item-aligned mode the value is the viewport height minus `collisionPadding` on both edges rather than the anchor-relative space):
 
 ```css
 .select-content {
-  max-height: var(--for-select-content-available-height);
+  max-height: var(--for-available-height);
   overflow-y: auto;
 }
 ```
@@ -283,11 +283,11 @@ Real apps usually have richer option models — `{ id, name, ... }` — where th
 
 Three inputs configure the object behaviour. Defaults make string mode work unchanged:
 
-| Input                  | Default                                                            | Purpose                                                                                                                                                               |
-| ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `[isItemEqualToValue]` | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).                                                                     |
-| `[itemToFormValue]`    | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                       |
-| `[itemToLabel]`        | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). |
+| Input               | Default                                                            | Purpose                                                                                                                                                               |
+| ------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[compareWith]`     | `(a, b) => a === b`                                                | How two items compare. Override for object values so selection locates by id (or any stable key).                                                                     |
+| `[itemToFormValue]` | `(item) => typeof item === 'string' ? item : JSON.stringify(item)` | Serialize an item for the hidden input. Override to emit a per-item id (or any wire format your backend wants).                                                       |
+| `[itemToLabel]`     | `undefined`                                                        | Resolve a selected item's display label without the listbox mounted. Supply it when a pre-set object value must render before the listbox is ever opened (see below). |
 
 The visible option label normally comes from the rendered `textContent`, so there's no separate label function — `[forSelectValue]` renders the matching option's text.
 
@@ -302,7 +302,7 @@ Supply `[itemToLabel]` to resolve the label directly from the value, independent
   forSelect
   #select="forSelect"
   [(value)]="city"
-  [isItemEqualToValue]="byId"
+  [compareWith]="byId"
   [itemToFormValue]="toId"
   [itemToLabel]="toName"
   placeholder="Pick a city"
@@ -331,7 +331,7 @@ When `[itemToLabel]` is set it is authoritative for every selected value (single
   forSelect
   #select="forSelect"
   [(value)]="city"
-  [isItemEqualToValue]="byId"
+  [compareWith]="byId"
   name="city"
   [itemToFormValue]="toId"
   placeholder="Pick a city"
@@ -365,7 +365,7 @@ readonly byId = (a: City, b: City) => a.id === b.id;
 readonly toId = (c: City) => c.id;
 ```
 
-Multi mode uses the same two inputs — `[(value)]` is a `readonly City[]` and option clicks toggle entries in/out by `isItemEqualToValue`.
+Multi mode uses the same two inputs — `[(value)]` is a `readonly City[]` and option clicks toggle entries in/out by `compareWith`.
 
 ## Virtualization
 
@@ -476,7 +476,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 - Disabled options keep `tabindex="-1"` and `aria-disabled="true"` (per APG): focusable for screen-reader announcement, but click and keyboard activation are no-ops.
 - `[forSelectSeparator]` never registers with the listbox's option collection — it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
 - `[forSelectGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
-- The trigger is exempt from the dismissable layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.
+- The trigger is exempt from the dismissible layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.
 - **`data-highlighted=""`** is reflected on the focused `[forSelectOption]` so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives.
 - **Open highlights the selected option, regardless of how the listbox was opened — an intentional divergence from the menu family.** Initial focus on open lands on the currently-selected option (see [Initial focus on open](#initial-focus-on-open)), and `data-highlighted` follows that focus, so a mouse-opened Select renders the selected option highlighted. This is deliberate: the highlight **marks the current value**, it does not fake a "preselection" that isn't there. It contrasts with the `[forMenu*]` items, whose `data-highlighted` is intent-driven — a pointer open focuses the first item **without** highlighting it ([#644](https://github.com/tutkli/forty-cdk/issues/644) / [#662](https://github.com/tutkli/forty-cdk/issues/662)) — because a menu has no "current value" to mark. `[forListbox]` shows neither effect: it's an embedded roving surface with no open-driven programmatic focus, so its highlight only ever derives from the roving active option. Decided in [#661](https://github.com/tutkli/forty-cdk/issues/661).
 
@@ -488,16 +488,15 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 `[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
 
-| Custom property                         | Type / range        | `position`     | Meaning                                                                                                         |
-| --------------------------------------- | ------------------- | -------------- | --------------------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`                    | px                  | both           | Trigger width — size the content to match with `width: var(--for-anchor-width)`.                                |
-| `--for-anchor-height`                   | px                  | both           | Trigger height.                                                                                                 |
-| `--for-select-content-available-height` | px                  | `item-aligned` | Viewport height minus `collisionPadding` — clamp with `max-height: var(--for-select-content-available-height)`. |
-| `--for-available-width`                 | px                  | `popper`       | Space available to the content along the inline axis (from floating-ui's `size` middleware).                    |
-| `--for-available-height`                | px                  | `popper`       | Space available to the content along the block axis.                                                            |
-| `--for-content-transform-origin`        | `<origin>` keywords | `popper`       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.    |
+| Custom property                  | Type / range        | `position` | Meaning                                                                                                                                                                                                                                               |
+| -------------------------------- | ------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-anchor-width`             | px                  | both       | Trigger width — size the content to match with `width: var(--for-anchor-width)`.                                                                                                                                                                      |
+| `--for-anchor-height`            | px                  | both       | Trigger height.                                                                                                                                                                                                                                       |
+| `--for-available-width`          | px                  | `popper`   | Space available to the content along the inline axis (from floating-ui's `size` middleware).                                                                                                                                                          |
+| `--for-available-height`         | px                  | both       | Maximum block-size before collision — clamp with `max-height: var(--for-available-height)`. In `popper` the anchor-relative space from floating-ui's `size` middleware; in `item-aligned` the viewport height minus `collisionPadding` on both edges. |
+| `--for-content-transform-origin` | `<origin>` keywords | `popper`   | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.                                                                                                                                          |
 
-> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) live on the portaled host too; see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list.
+> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) live on the portaled host too — `--for-available-height` is published in both modes; see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list.
 
 ```css
 .select-trigger svg {

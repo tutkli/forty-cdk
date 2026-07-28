@@ -18,7 +18,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
-  assertDismissableLayerContract,
+  assertDismissibleLayerContract,
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
@@ -1431,7 +1431,7 @@ describe('ForSelect', () => {
     });
   });
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(SelectDismissContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);
@@ -2017,7 +2017,7 @@ describe('ForSelect', () => {
             [(open)]="open"
             [(value)]="value"
             [multiple]="multiple()"
-            [isItemEqualToValue]="byId"
+            [compareWith]="byId"
             [itemToFormValue]="toId"
           >
             <button forSelectTrigger>
@@ -2059,7 +2059,7 @@ describe('ForSelect', () => {
     it('matches selection by custom equality even when the bound value is a different reference', async () => {
       const r = renderHost(ObjectHost);
       // A distinct object that is equal-by-id to BERLIN — the directive must
-      // resolve `aria-selected` / `data-state` through `isItemEqualToValue`,
+      // resolve `aria-selected` / `data-state` through `compareWith`,
       // not reference identity.
       r.instance.value.set([{ id: 2, name: 'Berlin' }]);
       r.instance.open.set(true);
@@ -2093,7 +2093,7 @@ describe('ForSelect', () => {
       @Component({
         imports: [...BASE_IMPORTS, ForSelectValue],
         template: `
-          <div forSelect [(value)]="value" [isItemEqualToValue]="byId" [itemToFormValue]="toId">
+          <div forSelect [(value)]="value" [compareWith]="byId" [itemToFormValue]="toId">
             <button forSelectTrigger>
               <span forSelectValue placeholder="Pick a city"></span>
             </button>
@@ -2130,7 +2130,7 @@ describe('ForSelect', () => {
           forSelect
           [(open)]="open"
           [(value)]="value"
-          [isItemEqualToValue]="byId"
+          [compareWith]="byId"
           [itemToFormValue]="toId"
           [itemToLabel]="itemToLabel()"
           [multiple]="multiple()"
@@ -2272,7 +2272,7 @@ describe('ForSelect', () => {
           multiple
           [(open)]="open"
           [(value)]="value"
-          [isItemEqualToValue]="byId"
+          [compareWith]="byId"
           [itemToFormValue]="toId"
         >
           <button forSelectTrigger>
@@ -2528,9 +2528,10 @@ describe('ForSelect', () => {
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.dataset['position']).toBe('item-aligned');
-      // Item-aligned exposes `--for-select-content-available-height` for the
-      // consumer's `max-height: var(...)` recipe.
-      expect(content.style.getPropertyValue('--for-select-content-available-height')).not.toBe('');
+      // Item-aligned exposes the shared `--for-available-height` for the
+      // consumer's `max-height: var(...)` recipe — same concept as popper,
+      // computed viewport-wide instead of anchor-relative.
+      expect(content.style.getPropertyValue('--for-available-height')).not.toBe('');
       // Item-aligned does NOT emit popper's data-side / data-align — those
       // are only produced by `injectFloating`.
       expect(content.dataset['side']).toBeUndefined();

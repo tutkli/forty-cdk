@@ -78,10 +78,10 @@ export interface FocusTrapDeactivateOptions {
  * - SSR isolation: module-level globals leak between simultaneous server
  *   requests in the same Node process; a root-scoped service is per-request.
  *
- * This mirrors the storage strategy of `DismissableLayerStack`: all
+ * This mirrors the storage strategy of `DismissibleLayerStack`: all
  * overlay-nesting LIFO stacks are root-scoped DI services, never
  * module-level. The two remain separate services on purpose because they
- * own different responsibilities — `DismissableLayerStack` centrally owns
+ * own different responsibilities — `DismissibleLayerStack` centrally owns
  * the shared `document` listeners for Escape / outside-interaction, whereas
  * each `FocusTrap` owns its own keydown listener and only consults this
  * registry to decide whether it is topmost. This holder therefore needs no

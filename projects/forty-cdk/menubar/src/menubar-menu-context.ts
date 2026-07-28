@@ -35,7 +35,7 @@ export interface MenubarPositioningSeeds {
  * (testable, no `inject()`) while still reading the bar's reactive state.
  */
 export interface MenubarMenuHost extends MenuSiblingNavigator {
-  readonly value: Signal<string>;
+  readonly value: Signal<string | null>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly dir: ForMenuContext['dir'];
@@ -54,7 +54,7 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
   readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
   /** Currently-open trigger handle, or `null` when no menu is open. */
   readonly activeTrigger: Signal<ForMenubarTriggerHandle | null>;
-  /** All registered triggers in DOM order; their hosts are the dismissable exemptions. */
+  /** All registered triggers in DOM order; their hosts are the dismissible exemptions. */
   readonly triggers: Signal<readonly ForMenubarTriggerHandle[]>;
   /**
    * The most-recently-active trigger host — survives past close so the
@@ -95,7 +95,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #initialFocusState = new InitialFocusState();
   readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
 
-  readonly open = computed(() => this.#host.value() !== '');
+  readonly open = computed(() => this.#host.value() !== null);
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus = signal(true).asReadonly();
@@ -154,7 +154,7 @@ export class MenubarMenuContext implements ForMenuContext {
    * fire `pointerDownOutside` (the trigger's own click handler routes the
    * close + open).
    */
-  readonly dismissableExemptions = computed<readonly HTMLElement[]>(() =>
+  readonly dismissibleExemptions = computed<readonly HTMLElement[]>(() =>
     this.#host.triggers().map((t) => t.host),
   );
 
@@ -231,7 +231,7 @@ export class MenubarMenuContext implements ForMenuContext {
   toggle(): void {
     // Without a specific trigger value, toggle from the bar context can only
     // close. Triggers themselves drive the open path via the bar's openTrigger.
-    if (this.#host.value() !== '') {
+    if (this.#host.value() !== null) {
       this.#host.closeOpen();
     }
   }
@@ -265,7 +265,7 @@ export class MenubarMenuContext implements ForMenuContext {
   }
 
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    if (this.#host.value() === '') {
+    if (this.#host.value() === null) {
       return;
     }
     this.#closeReasonState.set(reason);

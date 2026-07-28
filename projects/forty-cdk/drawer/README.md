@@ -2,7 +2,7 @@
 
 A side or bottom sheet built on the modal dialog pattern, adding pointer-driven swipe-to-dismiss and snap points.
 
-It shares the same focus trap, scroll lock, Escape-to-close, dismissable-layer, and portal behaviors as `ForDialog`, plus a pointer-driven drag engine.
+It shares the same focus trap, scroll lock, Escape-to-close, dismissible-layer, and portal behaviors as `ForDialog`, plus a pointer-driven drag engine.
 
 ## Anatomy
 
@@ -26,7 +26,7 @@ It shares the same focus trap, scroll lock, Escape-to-close, dismissable-layer, 
 
 ## Two flows, one engine
 
-Same engine as Dialog: the directive composes focus trap + scroll lock + dismissable layer + portal + (additionally) swipe-dismiss. Pick declarative or programmatic.
+Same engine as Dialog: the directive composes focus trap + scroll lock + dismissible layer + portal + (additionally) swipe-dismiss. Pick declarative or programmatic.
 
 ### Declarative — `[forDrawer]`
 
@@ -160,9 +160,9 @@ class DemoHost {
 
 `injectDrawerData<T>()` is typed `T | null`: the manager provides `null` when `open()` is called without `data`, so guard (`data?.message`) before dereferencing the payload. `await ref.closed` resolves `{ reason, result }` — the `reason` (a `ForDrawerCloseReason`) tells apart an imperative `close()` (`'programmatic'`) from Escape / backdrop / outside / swipe / close-button dismissals.
 
-Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissable layer.
+Drawers opened by the manager join the same `ForDrawerStack` as declarative ones, so mixed stacking (a programmatic drawer over a declarative parent, or vice versa) reflects correct `data-depth` / `data-state-nested` and routes Escape through the LIFO dismissible layer.
 
-**Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it — the tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-translate` custom property, so positioning CSS keyed on `data-side` works:
+**Styling the programmatic overlay root.** The manager creates the `[forDrawer]` host for you and it is class-less. Pass `class` / `classList` to style it — the tokens land on the real host alongside `data-side` / `data-state` / the `--for-drawer-swipe-movement-x` / `-y` custom properties, so positioning CSS keyed on `data-side` works:
 
 ```ts
 this.#drawers.open(ConfirmDrawer, { data, side: 'bottom', class: 'my-drawer' });
@@ -188,24 +188,24 @@ this.#drawers.open(ConfirmDrawer, {
 
 `class` is a single or space-separated string; `classList` is an array or space-separated string; both merge and de-dup and never clobber the host attributes. This replaces the old `inject(FOR_DRAWER_CONTEXT).hostElement.classList.add('my-drawer')` workaround.
 
-**Observing drag / release / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(dragMove)` / `(release)` / `(activeSnapPointChange)` outputs, via config callbacks of the same name:
+**Observing the swipe gesture / active snap point.** A snap-point drawer opened imperatively has the same observability as the declarative `(swipeStart)` / `(swipeMove)` / `(swipeEnd)` / `(swipeCancel)` / `(activeSnapPointChange)` outputs, via config callbacks of the same name:
 
 ```ts
 this.#drawers.open(ConfirmDrawer, {
   data,
   snapPoints: ['148px', '50%', 1],
   defaultSnapPoint: '148px',
-  dragMove: ({ percentageDragged }) => this.dragProgress.set(percentageDragged),
-  release: ({ willClose, nextSnapPoint }) => {
+  swipeMove: ({ progress }) => this.swipeProgress.set(progress),
+  swipeEnd: ({ willClose, nextSnapPoint }) => {
     /* … */
   },
   activeSnapPointChange: (snap) => this.activeSnap.set(snap),
 });
 ```
 
-`activeSnapPointChange` fires with the landed snap on the mount-time default and every drag release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All three subscriptions are released automatically when the drawer closes.
+`activeSnapPointChange` fires with the landed snap on the mount-time default and every swipe release — the read-back the declarative API exposes through `[(activeSnapPoint)]`. All subscriptions are released automatically when the drawer closes.
 
-**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open — the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions — the mount-time default and every drag release):
+**Driving the active snap point.** `ForDrawerRef.setActiveSnapPoint(snap)` moves a snap-point drawer to a new snap after open — the programmatic equivalent of _writing_ `[(activeSnapPoint)]` on the declarative `[forDrawer]`. `ref.activeSnapPoint()` is the matching reactive read (it also reflects the drawer's own internal transitions — the mount-time default and every swipe release):
 
 ```ts
 const ref = this.#drawers.open(ConfirmDrawer, {
@@ -265,8 +265,10 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 | `pointerDownOutside`        | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. `preventDefault()` suppresses auto-close.<br>**Default:** —                                                                                                                                          |
 | `focusOutside`              | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. `preventDefault()` suppresses auto-close.<br>**Default:** —                                                                                                                                          |
 | `interactOutside`           | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite — vetoed by either specific event.<br>**Default:** —                                                                                                                                       |
-| `dragMove`                  | `OutputEmitterRef<ForDrawerDragEvent>`                              | Output. Streams `percentageDragged` and the originating `PointerEvent`.<br>**Default:** —                                                                                                                    |
-| `release`                   | `OutputEmitterRef<ForDrawerReleaseEvent>`                           | Output. `willClose`, `nextSnapPoint`. Directive already updated state.<br>**Default:** —                                                                                                                     |
+| `swipeStart`                | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. Fires once on the arming pointer move; `progress` is `0`.<br>**Default:** —                                                                                                                          |
+| `swipeMove`                 | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. Streams `progress` ∈ [0,1] and the originating `PointerEvent`.<br>**Default:** —                                                                                                                     |
+| `swipeEnd`                  | `OutputEmitterRef<ForDrawerSwipeEndEvent>`                          | Output. `willClose`, `nextSnapPoint`. Directive already updated state.<br>**Default:** —                                                                                                                     |
+| `swipeCancel`               | `OutputEmitterRef<ForDrawerSwipeEvent>`                             | Output. `pointercancel` or mid-gesture direction abort; the surface springs back.<br>**Default:** —                                                                                                          |
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
 
@@ -280,7 +282,7 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 | `data-dragging`          | present / absent                             |
 | `data-scale-background`  | present / absent                             |
 | `data-depth`             | `0` (root) \| `1` (first child) \| …         |
-| `data-state-nested`      | `true` / absent                              |
+| `data-state-nested`      | present / absent                             |
 
 ### `ForDrawerBackdrop`
 
@@ -322,24 +324,24 @@ Pass them in **strictly increasing** order (closest-to-edge first). The directiv
 ```ts
 [snapPoints] =
   "['148px', '50%', 1]"[activeSnapPoint] = // peek → mid → full
-  'snap'[fadeFromIndex] = // current snap; written on drag release
+  'snap'[fadeFromIndex] = // current snap; written on swipe release
     '1'; // backdrop fades once we cross the second snap
 ```
 
-The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every drag release), and stays silent on consumer writes through `[(activeSnapPoint)]`.
+The `model<>()` change emitter (`(activeSnapPointChange)`) fires on internal transitions (the mount-time default and every swipe release), and stays silent on consumer writes through `[(activeSnapPoint)]`.
 
 ### Positioning the snaps (CSS contract)
 
 The directive does **not** position the surface at each snap — that is the consumer's job, keyed off `data-active-snap-point`. Position the rest state with a layout property such as `bottom` / `top` (or `left` / `right`), and transition it for the snap-to-snap animation.
 
-The live drag delta is published on the host as the **`--for-drawer-translate`** custom property (a `"<x> <y>"` value, `"0px 0px"` at rest); apply it on the surface with `translate: var(--for-drawer-translate, 0px 0px)`. A custom property is used — rather than the directive writing `translate` / `transform` directly — for two reasons: `transform` is reserved for the scale-background / nested effect, and a directly-written inline `translate` is silently dropped by Angular when you also bind a template `[style.*]` on the same host. Reading it through the var keeps the drag working regardless of any inline style bindings you put on the surface, and composes with `transform` without clobbering it.
+The live swipe delta is published on the host as **two px custom properties**, `--for-drawer-swipe-movement-x` and `--for-drawer-swipe-movement-y` (`0px` at rest; only the drawer's dismissal axis is ever non-zero). Compose the shorthand yourself on the surface with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. Custom properties are used — rather than the directive writing `translate` / `transform` directly — for two reasons: `transform` is reserved for the scale-background / nested effect, and a directly-written inline `translate` is silently dropped by Angular when you also bind a template `[style.*]` on the same host. Reading them through the vars keeps the gesture working regardless of any inline style bindings you put on the surface, and composes with `transform` without clobbering it.
 
-For a seamless release, transition **both** `translate` and your snap-position property with the same timing, and suppress that transition while `data-dragging` is present. The directive resets `--for-drawer-translate` to `"0px 0px"`, removes `data-dragging`, and updates `data-active-snap-point` in a single change-detection pass on release, so the drag delta animates back to zero in lockstep with the snap-position change — the surface never jumps to the previous rest position before sliding to the new snap.
+For a seamless release, transition **both** `translate` and your snap-position property with the same timing, and suppress that transition while `data-dragging` is present. The directive resets both movement properties to `0px`, removes `data-dragging`, and updates `data-active-snap-point` in a single change-detection pass on release, so the swipe delta animates back to zero in lockstep with the snap-position change — the surface never jumps to the previous rest position before sliding to the new snap.
 
 ```css
 .sheet {
-  /* The directive publishes the live drag delta here; compose it on the surface. */
-  translate: var(--for-drawer-translate, 0px 0px);
+  /* The directive publishes the live swipe delta here; compose it on the surface. */
+  translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
 }
 .sheet[data-active-snap-point] {
   height: 80vh;
@@ -361,14 +363,14 @@ For a seamless release, transition **both** `translate` and your snap-position p
 }
 ```
 
-### Backdrop drag-fade (CSS contract)
+### Backdrop swipe-fade (CSS contract)
 
-`[forDrawerBackdrop]` publishes the live drag progress _toward the anchored edge_ as the **`--for-drawer-drag-progress`** custom property (`0` at rest → `1` fully dragged off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(dragMove)` listener required:
+`[forDrawerBackdrop]` publishes the live swipe progress _toward the anchored edge_ as the **`--for-drawer-swipe-progress`** custom property (`0` at rest → `1` fully swiped off-screen) and mirrors the surface's **`data-dragging`** attribute. This drives the "backdrop fades out as you swipe to dismiss" cue with pure CSS — no `(swipeMove)` listener required:
 
 ```css
 .drawer-backdrop {
-  /* Fades the backdrop as the surface is dragged off-screen. */
-  opacity: calc(1 - var(--for-drawer-drag-progress, 0));
+  /* Fades the backdrop as the surface is swiped off-screen. */
+  opacity: calc(1 - var(--for-drawer-swipe-progress, 0));
   transition: opacity 0.3s ease;
 }
 .drawer-backdrop[data-dragging] {
@@ -376,13 +378,13 @@ For a seamless release, transition **both** `translate` and your snap-position p
 }
 ```
 
-`--for-drawer-drag-progress` only reflects the _dismiss_ direction: with snap points, a drag **away** from the edge (growing the surface) keeps it at `0`. On release it resets to `0` in the same change-detection pass that flips `data-dragging` off, so the backdrop animates back to full opacity in lockstep with the surface settling. The snap-driven `data-fade-from-active` cue (see above) is independent and can be combined or used on its own.
+`--for-drawer-swipe-progress` only reflects the _dismiss_ direction: with snap points, a drag **away** from the edge (growing the surface) keeps it at `0`. On release it resets to `0` in the same change-detection pass that flips `data-dragging` off, so the backdrop animates back to full opacity in lockstep with the surface settling. The snap-driven `data-fade-from-active` cue (see above) is independent and can be combined or used on its own.
 
 ## Swipe-to-dismiss
 
 - Pointer drag toward the anchored edge translates the surface and resolves to the nearest snap (or a dismiss) on release.
 - With `snapPoints`, the drag is bidirectional: a drag **away** from the anchored edge grows the surface toward a larger snap (bounded by the largest snap), and a drag toward the edge shrinks it / dismisses past the lowest one. Without `snapPoints` the gesture is one-way (toward the edge to dismiss).
-- `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses — measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissable without dragging it off-screen.
+- `closeThreshold` (default `0.25`) is the fraction past which a release from the lowest snap dismisses — measured against that snap's own extent (not the full dimension), so a small "peek" snap stays dismissible without dragging it off-screen.
 - `handleOnly: true` confines the gesture to a registered `[forDrawerHandle]`, leaving the rest of the surface free for content scroll.
 - Gestures starting inside a scrollable element that hasn't reached its edge are NOT treated as swipes (the helper defers to inner scroll).
 - **`prefers-reduced-motion: reduce`** disables the swipe listener entirely. Escape, backdrop, outside-pointer, and close button continue to work.
@@ -426,9 +428,9 @@ Tune the magic numbers via `provideForDrawerDefaults` (`scaleAmount`, `scaleTran
 
 ## Nested drawers
 
-A drawer mounted inside another drawer's `@if` is automatically detected as a child and joins a LIFO stack — no `nested` flag required. The directive composes the existing dismissable-layer / focus / scroll-lock stacks (Escape closes the topmost first; focus stays trapped in the topmost; body scroll lock is refcounted so closing the child does not unlock the parent), and adds two visual hooks on the parent surface:
+A drawer mounted inside another drawer's `@if` is automatically detected as a child and joins a LIFO stack — no `nested` flag required. The directive composes the existing dismissible-layer / focus / scroll-lock stacks (Escape closes the topmost first; focus stays trapped in the topmost; body scroll lock is refcounted so closing the child does not unlock the parent), and adds two visual hooks on the parent surface:
 
-- **`data-state-nested="true"`** while at least one descendant is registered — useful for styling the parent differently when it is "covered" by a child.
+- **`data-state-nested`** (present / absent) while at least one descendant is registered — useful for styling the parent differently when it is "covered" by a child. Style it with `[data-state-nested]`, never `[data-state-nested="true"]`.
 - An inline `transform: scale(N) translate3d(...)` that scales the parent surface and translates it slightly away from its anchored edge, so the child reads as a layer in front. Suppressed under `prefers-reduced-motion: reduce`. Tune via `nestedScaleAmount` (default `0.93`) and `nestedTranslateYpx` (default `8`).
 
 Each drawer also reflects its position in the stack as `data-depth` (`"0"` for the root, `"1"` for the first child, …).
@@ -587,10 +589,11 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ### CSS custom properties
 
-| Property                     | Meaning                                                                                                                                                                                                                                                                                    |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--for-drawer-translate`     | Written on `[forDrawer]` (the surface). Live drag delta as a `"<x> <y>"` length pair (`"0px 0px"` at rest). Apply with `translate: var(--for-drawer-translate, 0px 0px)` so it composes with the consumer's `transform`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
-| `--for-drawer-drag-progress` | Written on `[forDrawerBackdrop]`. Drag progress toward the anchored edge, `0` (at rest) → `1` (fully dragged off-screen). Fade with `opacity: calc(1 - var(--for-drawer-drag-progress, 0))`. See [Backdrop drag-fade](#backdrop-drag-fade-css-contract).                                   |
+| Property                        | Meaning                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-drawer-swipe-movement-x` | Written on `[forDrawer]` (the surface). Live swipe displacement in CSS px along the x axis (`0px` at rest; only the dismissal axis is ever non-zero). Compose with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
+| `--for-drawer-swipe-movement-y` | Written on `[forDrawer]` (the surface). Live swipe displacement in CSS px along the y axis (`0px` at rest; only the dismissal axis is ever non-zero). Compose with `translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px)`. See [Positioning the snaps](#positioning-the-snaps-css-contract). |
+| `--for-drawer-swipe-progress`   | Written on `[forDrawerBackdrop]`. Swipe progress toward the anchored edge, a unitless fraction `0` (at rest) → `1` (fully swiped off-screen). Fade with `opacity: calc(1 - var(--for-drawer-swipe-progress, 0))`. See [Backdrop swipe-fade](#backdrop-swipe-fade-css-contract).                                                    |
 
 ```css
 .sheet[data-active-snap-point] {

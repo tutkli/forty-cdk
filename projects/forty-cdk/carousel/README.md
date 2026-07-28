@@ -146,17 +146,22 @@ don't use it.
 
 ### CSS contract
 
-The directive publishes `--for-carousel-drag` (a raw px value) on the viewport
-host during the gesture. Compose it with `--for-carousel-offset` on the track
-transform:
+The directive publishes the live displacement as `--for-carousel-swipe-movement-x`
+(horizontal carousels) or `--for-carousel-swipe-movement-y` (vertical), a raw px
+value on the viewport host; only the primary-axis property is written. Compose it
+with `--for-carousel-offset` on the track transform:
 
 ```css
 [forCarouselTrack] {
-  transform: translateX(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+  transform: translateX(
+    calc(var(--for-carousel-offset) + var(--for-carousel-swipe-movement-x, 0px))
+  );
   transition: transform 300ms ease;
 }
 [forCarousel][data-orientation='vertical'] [forCarouselTrack] {
-  transform: translateY(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+  transform: translateY(
+    calc(var(--for-carousel-offset) + var(--for-carousel-swipe-movement-y, 0px))
+  );
 }
 /* Kill the settle transition while the finger is down so the track follows 1:1 */
 [forCarouselViewport][data-dragging] [forCarouselTrack] {
@@ -169,20 +174,22 @@ transform:
 
 ### RTL
 
-`--for-carousel-drag` is always the **physical** finger displacement, so compose
-it **without** the `-1` factor the consumer may apply to `--for-carousel-offset`
-in RTL:
+`--for-carousel-swipe-movement-x` is always the **physical** finger displacement,
+so compose it **without** the `-1` factor the consumer may apply to
+`--for-carousel-offset` in RTL:
 
 ```css
 [dir='rtl'] [forCarouselTrack] {
-  transform: translateX(calc(-1 * var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+  transform: translateX(
+    calc(-1 * var(--for-carousel-offset) + var(--for-carousel-swipe-movement-x, 0px))
+  );
 }
 ```
 
 ### Reduced motion
 
 Under `prefers-reduced-motion: reduce` the directive does **not** publish
-`--for-carousel-drag` (no live track motion). The gesture still snaps
+`--for-carousel-swipe-movement-x` / `-y` (no live track motion). The gesture still snaps
 `activeIndex` on release — only the continuous live offset is suppressed.
 
 ### Cross-axis / touch
@@ -349,15 +356,16 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 The following properties are set on the `[forCarousel]` host and cascade to
 children, unless noted otherwise:
 
-| Property                         | Host                    | Value         | Notes                                                                                                           |
-| -------------------------------- | ----------------------- | ------------- | --------------------------------------------------------------------------------------------------------------- |
-| `--for-carousel-offset`          | `[forCarousel]`         | e.g. `-100%`  | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                                                   |
-| `--for-carousel-active-index`    | `[forCarousel]`         | integer       | Current `activeIndex`.                                                                                          |
-| `--for-carousel-slide-count`     | `[forCarousel]`         | integer       | Total registered slides.                                                                                        |
-| `--for-carousel-slides-per-view` | `[forCarousel]`         | integer       | From the `slidesPerView` input.                                                                                 |
-| `--for-carousel-viewport-width`  | `[forCarousel]`         | e.g. `640px`  | Measured via `ResizeObserver`. Absent on the server and before first measurement.                               |
-| `--for-carousel-viewport-height` | `[forCarousel]`         | e.g. `400px`  | Same as above, for the block axis.                                                                              |
-| `--for-carousel-drag`            | `[forCarouselViewport]` | e.g. `-128px` | Live px offset along the primary axis during a drag; absent at rest and under `prefers-reduced-motion: reduce`. |
+| Property                          | Host                    | Value         | Notes                                                                                                                                                                                            |
+| --------------------------------- | ----------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--for-carousel-offset`           | `[forCarousel]`         | e.g. `-100%`  | Pure arithmetic from `activeIndex`, `slidesPerView`, `align`.                                                                                                                                    |
+| `--for-carousel-active-index`     | `[forCarousel]`         | integer       | Current `activeIndex`.                                                                                                                                                                           |
+| `--for-carousel-slide-count`      | `[forCarousel]`         | integer       | Total registered slides.                                                                                                                                                                         |
+| `--for-carousel-slides-per-view`  | `[forCarousel]`         | integer       | From the `slidesPerView` input.                                                                                                                                                                  |
+| `--for-carousel-viewport-width`   | `[forCarousel]`         | e.g. `640px`  | Measured via `ResizeObserver`. Absent on the server and before first measurement.                                                                                                                |
+| `--for-carousel-viewport-height`  | `[forCarousel]`         | e.g. `400px`  | Same as above, for the block axis.                                                                                                                                                               |
+| `--for-carousel-swipe-movement-x` | `[forCarouselViewport]` | e.g. `-128px` | Live px displacement along the primary axis during a swipe. Only the axis matching `orientation` is written; the other is absent, as is both at rest and under `prefers-reduced-motion: reduce`. |
+| `--for-carousel-swipe-movement-y` | `[forCarouselViewport]` | e.g. `-128px` | Live px displacement along the primary axis during a swipe. Only the axis matching `orientation` is written; the other is absent, as is both at rest and under `prefers-reduced-motion: reduce`. |
 
 ### Autoplay styling hooks
 

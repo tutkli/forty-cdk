@@ -20,7 +20,7 @@ import { type ForComboboxContext, injectComboboxTriggerContext } from './combobo
  * Wires `aria-haspopup="listbox"`, `aria-expanded`, and `aria-controls`
  * (pointing to the popup surface while open). Native `disabled` reflects
  * `effectiveDisabled` (single-purpose trigger). The trigger is exempt from the
- * popup's dismissable layer — clicks on it route through `(click)` instead of
+ * popup's dismissible layer — clicks on it route through `(click)` instead of
  * racing an outside-pointer dismissal.
  *
  * The root is normally resolved via DI from the enclosing `[forCombobox]`.

@@ -53,11 +53,11 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
  */
 export interface ForMenubarContext extends MenuSiblingNavigator {
   /**
-   * The value of the open trigger, or `''` for none, as a read-only signal.
+   * The value of the open trigger, or `null` for none, as a read-only signal.
    * Mutate it through `openTrigger` / `closeOpen` or the root's `[(value)]`
    * binding — a direct write would bypass the bar's open / close coordination.
    */
-  readonly value: Signal<string>;
+  readonly value: Signal<string | null>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;

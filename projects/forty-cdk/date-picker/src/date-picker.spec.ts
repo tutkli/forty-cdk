@@ -11,7 +11,7 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import {
-  assertDismissableLayerContract,
+  assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
   type FormControlMountResult,
@@ -246,7 +246,7 @@ describe('ForDatePicker', () => {
 
   afterEachOverlayCleanup();
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(DatePickerDismissContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);
@@ -592,7 +592,7 @@ describe('ForDatePicker', () => {
       await openPicker(r);
       expect(r.instance.openChanges).toEqual([true]);
 
-      // A real outside pointer-down routes through the dismissable layer's
+      // A real outside pointer-down routes through the dismissible layer's
       // `onPointerDownOutside` AND the composite `onInteractOutside` for the
       // same physical event; the shared veto must collapse them into a single
       // close.

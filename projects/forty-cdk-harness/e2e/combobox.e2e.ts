@@ -287,7 +287,7 @@ test.describe('Combobox', () => {
       await expectFocused(el(page, 'action'));
     });
 
-    test('Enter on the action fires (action) and never mutates value', async ({ page }) => {
+    test('Enter on the action fires (activate) and never mutates value', async ({ page }) => {
       await gotoFixture(page, 'combobox', { action: '1', open: '1' });
       await el(page, 'combo-input').click();
       await el(page, 'combo-input').press('Tab');
@@ -300,7 +300,7 @@ test.describe('Combobox', () => {
       await expect(el(page, 'content')).toBeVisible();
     });
 
-    test('clicking the action fires (action) and keeps value empty', async ({ page }) => {
+    test('clicking the action fires (activate) and keeps value empty', async ({ page }) => {
       await gotoFixture(page, 'combobox', { action: '1', open: '1' });
 
       await el(page, 'action').click();

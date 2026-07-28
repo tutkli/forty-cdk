@@ -18,7 +18,7 @@ export interface ForListboxOptionHandle<T = unknown> {
  * Generic over the option value type `T` (default `string` at the public
  * root). When a consumer binds object items the directive infers `T` from
  * `[(value)]` and `[forListboxOption][value]`; object identity is resolved
- * by the consumer-supplied `isItemEqualToValue` and the form's hidden inputs
+ * by the consumer-supplied `compareWith` and the form's hidden inputs
  * serialize via `itemToFormValue`. Option text labels are still read from the
  * rendered `textContent`.
  */
@@ -38,7 +38,7 @@ export interface ForListboxContext<T = unknown> {
   readonly selectionFollowsFocus: Signal<boolean>;
 
   /** Compare two items for equality. Defaults to `===`; overridden for object values. */
-  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
   readonly itemToFormValue: Signal<(item: T) => string>;
 

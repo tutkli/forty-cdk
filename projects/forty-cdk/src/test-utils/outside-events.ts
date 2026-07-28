@@ -2,7 +2,7 @@
  * Canonical way for a spec to drive the dismissal plumbing's
  * "something happened outside the layer" paths.
  *
- * The dismissable stack decides what is inside and what is outside by
+ * The dismissible stack decides what is inside and what is outside by
  * reading the event's `composedPath()` (falling back to `target`) from a
  * listener installed on `document`. Two fabrication shapes used to exist in
  * the suite — one that redefined only `target`, one that also forged a

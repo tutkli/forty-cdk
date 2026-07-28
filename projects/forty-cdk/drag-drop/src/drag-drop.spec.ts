@@ -718,7 +718,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(listEl(el).hasAttribute('data-drag-over')).toBe(false);
     });
 
-    it('Escape while keyboard-lifted does not propagate to an enclosing dismissable layer', () => {
+    it('Escape while keyboard-lifted does not propagate to an enclosing dismissible layer', () => {
       const { el, fixture } = renderHost(SingleListHost);
       const comp = fixture.componentInstance;
       const item1 = itemEl(el, 1);
