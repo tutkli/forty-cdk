@@ -29,7 +29,7 @@ const FRUITS = ['apple', 'banana', 'cherry'] as const;
             forComboboxAction
             data-testid="action"
             [disabled]="actionDisabled()"
-            (action)="onAction()"
+            (activate)="onAction()"
           >
             Create "{{ query() }}"
           </button>
@@ -184,7 +184,7 @@ describe('ForComboboxAction', () => {
     );
   });
 
-  it('emits (action) on click and never mutates value', async () => {
+  it('emits (activate) on click and never mutates value', async () => {
     const r = renderHost(ActionHost);
     await flush(r.fixture);
 
@@ -195,7 +195,7 @@ describe('ForComboboxAction', () => {
     expect(r.instance.value()).toEqual([]);
   });
 
-  it('emits (action) on Enter and Space', async () => {
+  it('emits (activate) on Enter and Space', async () => {
     const r = renderHost(ActionHost);
     await flush(r.fixture);
     const action = getAction();

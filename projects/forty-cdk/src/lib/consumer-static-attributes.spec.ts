@@ -1007,7 +1007,7 @@ describe('consumer-set static aria-labelledby / aria-describedby preservation (#
       readonly value = signal<readonly number[]>([50]);
     }
 
-    it('thumb preserves a consumer-set static aria-labelledby', async () => {
+    it('thumb leaves a consumer-set static aria-labelledby untouched (no host binding)', async () => {
       const fixture = mount(Host);
       await flush(fixture);
       expect(attrOf(fixture, '[forSliderThumb]', 'aria-labelledby')).toBe('my-heading');
@@ -1446,14 +1446,14 @@ describe('consumer-set static aria-label preservation (#1479)', () => {
       imports: [ForSlider, ForSliderThumb],
       changeDetection: ChangeDetectionStrategy.OnPush,
       template: `<div forSlider [(value)]="value">
-        <span forSliderThumb [index]="0" label="Minimum" aria-label="Lowest price"></span>
+        <span forSliderThumb [index]="0" ariaLabel="Minimum" aria-label="Lowest price"></span>
       </div>`,
     })
     class Host {
       readonly value = signal<readonly number[]>([50]);
     }
 
-    it('thumb preserves a consumer-set static aria-label over the [label] input', async () => {
+    it('thumb preserves a consumer-set static aria-label over the [ariaLabel] input', async () => {
       const fixture = mount(Host);
       await flush(fixture);
       expect(attrOf(fixture, '[forSliderThumb]', 'aria-label')).toBe('Lowest price');

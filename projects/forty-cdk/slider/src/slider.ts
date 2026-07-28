@@ -28,6 +28,8 @@ import {
   stepOnGrid,
   roundToStepPrecision,
   injectTextDirection,
+  decimalPlaces,
+  roundToDecimals,
 } from 'forty-cdk/core';
 import {
   FOR_SLIDER_CONTEXT,
@@ -135,13 +137,14 @@ export class ForSlider
    */
   readonly step = input<number>(1);
   /**
-   * Step used for PageUp / PageDown. Defaults to 10× `step`. The default is
-   * read from `provideForSliderDefaults` for the surrounding scope. It applies
+   * Multiplier applied to `step` for `PageUp` / `PageDown`. Defaults to the
+   * value from `provideForSliderDefaults` for the surrounding scope (10), so a
+   * `step` of `1` pages by `10` and a `step` of `0.1` pages by `1`. It applies
    * only from a value already on the `min` ± k·`step` grid — from an off-grid
    * value the key lands on the adjacent grid point instead, matching the
    * platform `stepUp()` / `stepDown()` rule.
    */
-  readonly largeStep = input<number>(this.#defaults.largeStep);
+  readonly stepMultiplier = input(this.#defaults.stepMultiplier);
 
   /** Effective minimum (defaults `0` when input is unset). Exposed to children via context. */
   readonly minValue = computed(() => this.min() ?? 0);
@@ -353,7 +356,7 @@ export class ForSlider
       step: this.step(),
       direction,
       origin: this.minValue(),
-      by: large ? this.largeStep() : this.step(),
+      by: large ? this.#pageStep() : this.step(),
     });
     this.setValueAt(index, target);
   }
@@ -559,6 +562,10 @@ export class ForSlider
       return snapped;
     }
     return snapped < bounds.min ? bounds.min : snapped > bounds.max ? bounds.max : snapped;
+  }
+
+  #pageStep(): number {
+    return roundToDecimals(this.step() * this.stepMultiplier(), decimalPlaces(this.step()));
   }
 
   /**

@@ -18,8 +18,8 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
       >
         <span forSliderTrack class="sl-track">
           <span forSliderRange class="sl-range"></span>
-          <span forSliderThumb class="sl-thumb" [index]="0" label="Minimum price"></span>
-          <span forSliderThumb class="sl-thumb" [index]="1" label="Maximum price"></span>
+          <span forSliderThumb class="sl-thumb" [index]="0" ariaLabel="Minimum price"></span>
+          <span forSliderThumb class="sl-thumb" [index]="1" ariaLabel="Maximum price"></span>
         </span>
       </div>
       <span class="sl-value">{{ value()[0] }}–{{ value()[1] }}</span>

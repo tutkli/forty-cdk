@@ -14,15 +14,15 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
  * tie this to a CSS opacity transition for the "backdrop fades
  * in once you snap up past N" effect.
  *
- * Publishes the live drag progress toward the anchored edge as the
- * `--for-drawer-drag-progress` custom property (`0` at rest → `1` fully
- * dragged off-screen) and mirrors the surface's `data-dragging` attribute.
+ * Publishes the live swipe progress toward the anchored edge as the
+ * `--for-drawer-swipe-progress` custom property (`0` at rest → `1` fully
+ * swiped off-screen) and mirrors the surface's `data-dragging` attribute.
  * Together these drive the "backdrop fades out as you swipe to
  * dismiss" effect with pure CSS:
  *
  * ```css
  * [forDrawerBackdrop] {
- *   opacity: calc(1 - var(--for-drawer-drag-progress, 0));
+ *   opacity: calc(1 - var(--for-drawer-swipe-progress, 0));
  *   transition: opacity 0.3s ease;
  * }
  * [forDrawerBackdrop][data-dragging] {
@@ -45,7 +45,7 @@ import { FOR_DRAWER_INSTANCE_ID, injectDrawerContext } from './drawer-context';
     '[attr.data-for-drawer-id]': 'instanceId',
     '[attr.data-fade-from-active]': 'ctx.fadeFromActive() ? "" : null',
     '[attr.data-dragging]': 'ctx.dragging() ? "" : null',
-    '[style.--for-drawer-drag-progress]': 'ctx.dragProgress()',
+    '[style.--for-drawer-swipe-progress]': 'ctx.swipeProgress()',
     '(click)': 'onClick($event)',
   },
 })
@@ -63,7 +63,7 @@ export class ForDrawerBackdrop {
 
   constructor() {
     injectPortal({ target: this.ctx.container });
-    // Register so the drawer's dismissable layer treats pointer-down on the
+    // Register so the drawer's dismissible layer treats pointer-down on the
     // backdrop as "inside" — see ForDrawerContext#registerBackdrop.
     this.ctx.registerBackdrop(this.#host.nativeElement);
     inject(DestroyRef).onDestroy(() => this.ctx.registerBackdrop(null));

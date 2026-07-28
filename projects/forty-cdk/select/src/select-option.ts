@@ -36,7 +36,7 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
  * the `[value]` binding so consumers can pass either primitive ids or full
  * objects (`[value]="city"` infers `T = City`); the parent `[forSelect]`
  * must be parameterized over the same `T`. The parent's
- * `[isItemEqualToValue]` decides how options are matched against the
+ * `[compareWith]` decides how options are matched against the
  * committed selection.
  *
  * Click activates: in single mode the value replaces `[(value)]` and the
@@ -86,7 +86,7 @@ export class ForSelectOption<T = string> {
    * Stable identifier serialized into `[(value)]` and the hidden input.
    * Defaults to `string` for back-compat; bind an object to specialize the
    * parent `[forSelect]` over a richer `T`. The parent's
-   * `[isItemEqualToValue]` decides how options are matched against the
+   * `[compareWith]` decides how options are matched against the
    * committed selection.
    */
   readonly value = input.required<T>();

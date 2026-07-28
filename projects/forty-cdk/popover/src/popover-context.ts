@@ -16,7 +16,7 @@ export type ForPopoverCloseReason =
 
 /**
  * Coordination contract owned by `ForPopover`. Trigger / Content register
- * their elements (for floating-ui positioning, dismissable-layer exemptions,
+ * their elements (for floating-ui positioning, dismissible-layer exemptions,
  * and focus return). Title / Description register their generated ids so
  * the content wires `aria-labelledby` / `aria-describedby` reactively.
  *

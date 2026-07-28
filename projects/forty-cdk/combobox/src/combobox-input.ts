@@ -304,7 +304,7 @@ export class ForComboboxInput {
       case 'Escape':
         // Routed through emitEscapeKeyDown so the consumer's
         // (escapeKeyDown) output fires and can veto the close. We still
-        // handle Escape inline (not via the dismissable layer) because
+        // handle Escape inline (not via the dismissible layer) because
         // focus stays in the input — the Escape belongs to this input
         // and shouldn't bubble through nested layers before it sees it.
         if (this.ctx.open()) {

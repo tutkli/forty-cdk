@@ -19,7 +19,7 @@ import { injectTooltipContext } from './tooltip-context';
  * bubble mounts and unmounts with the open state and `animate.enter` /
  * `animate.leave` work natively.
  *
- * Escape is routed through the shared document-level `DismissableLayer`
+ * Escape is routed through the shared document-level `DismissibleLayer`
  * (Escape-only — outside dismissal stays implicit via hover / focus / scroll
  * timing), so it dismisses the tooltip no matter where focus lives when the
  * tooltip was hover-opened (WCAG 2.1 SC 1.4.13), and a tooltip layered over a

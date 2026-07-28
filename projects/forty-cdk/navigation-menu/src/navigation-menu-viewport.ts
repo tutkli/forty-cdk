@@ -94,7 +94,7 @@ export class ForNavigationMenuViewport {
   protected readonly width = computed(() => this.#measureSize().width);
   protected readonly height = computed(() => this.#measureSize().height);
 
-  protected readonly state = computed(() => (this.menu.value() ? 'open' : 'closed'));
+  protected readonly state = computed(() => (this.menu.value() !== null ? 'open' : 'closed'));
 
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 

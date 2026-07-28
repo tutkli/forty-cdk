@@ -327,7 +327,7 @@ Outputs:
 - `(swipeEnd)` — released past threshold (immediately followed by `(dismiss)` with reason `'swipe'`).
 - `(swipeCancel)` — released before threshold, or `pointercancel`.
 
-`closable=false` disables swipe entirely — a sticky / forced-action toast cannot be user-dismissed.
+`dismissible=false` disables swipe entirely — a sticky / forced-action toast cannot be user-dismissed.
 
 ## Auto-dismiss + pause-on-hover
 
@@ -368,7 +368,7 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
 
 - Toast announcements never steal focus. The user keeps typing.
 - The configured **hotkey** (default `F6`) anywhere in the document focuses the first visible toast.
-- Inside a toast: **Tab** cycles between action / close buttons; **Escape** dismisses (when `closable`); **Shift+Tab** returns out.
+- Inside a toast: **Tab** cycles between action / close buttons; **Escape** dismisses (when `dismissible`); **Shift+Tab** returns out.
 
 ## Accessibility
 

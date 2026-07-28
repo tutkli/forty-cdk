@@ -76,7 +76,7 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
     '[attr.aria-orientation]': 'orientation()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'disabled() ? "true" : null',
-    '[attr.data-state]': 'value() === "" ? "closed" : "open"',
+    '[attr.data-state]': 'value() === null ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
@@ -94,12 +94,12 @@ export class ForMenubar implements ForMenubarContext {
   readonly #defaults = inject(FOR_MENUBAR_DEFAULTS);
 
   /**
-   * Two-way bindable. The value of the open trigger, or `''` when none.
+   * Two-way bindable. The value of the open trigger, or `null` when none.
    * The `model()` change emitter (`(valueChange)`) fires only on internal
    * transitions (trigger interaction, item activation, Escape, outside
    * dismissal, cross-menu nav), never on consumer writes via `[(value)]`.
    */
-  readonly value = model<string>('');
+  readonly value = model<string | null>(null);
 
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
@@ -130,7 +130,7 @@ export class ForMenubar implements ForMenubarContext {
 
   /**
    * Fires when Escape is pressed while one of the bar's menus is the topmost
-   * dismissable layer, just before it closes. Call `preventDefault()` on the
+   * dismissible layer, just before it closes. Call `preventDefault()` on the
    * emitted veto to keep the menu open and suppress the Escape-driven close.
    * Bar-level: the same output covers whichever trigger's menu is open.
    */
@@ -179,7 +179,7 @@ export class ForMenubar implements ForMenubarContext {
 
   readonly activeTrigger = computed<ForMenubarTriggerHandle | null>(() => {
     const v = this.value();
-    if (v === '') {
+    if (v === null) {
       return null;
     }
     return this.#triggerCollection.items().find((t) => t.value() === v) ?? null;
@@ -188,21 +188,21 @@ export class ForMenubar implements ForMenubarContext {
   /**
    * The most-recently-active trigger value. Persists past close so the
    * `[forMenuContent]` destroy hook can still target the trigger (by then
-   * `value()` is already `''`). Updated synchronously by `openTrigger`
+   * `value()` is already `null`). Updated synchronously by `openTrigger`
    * and snapshotted in `closeOpen` before clearing `value` — that covers
    * every internal close path (Escape, item activation, outside dismiss).
    */
-  readonly #lastValue = signal<string>('');
+  readonly #lastValue = signal<string | null>(null);
 
   /**
    * The most-recently-active trigger host. Persists past close so the
    * multiplexed `[forMenuContent]` destroy hook can still target the trigger
-   * (by then `value()` is already `''`). Consumed by {@link MenubarMenuContext}
+   * (by then `value()` is already `null`). Consumed by {@link MenubarMenuContext}
    * as its return-focus `trigger`.
    */
   readonly lastTriggerHost = computed<HTMLElement | null>(() => {
-    const v = this.value() || this.#lastValue();
-    if (v === '') {
+    const v = this.value() ?? this.#lastValue();
+    if (v === null) {
       return null;
     }
     return this.#triggerCollection.items().find((t) => t.value() === v)?.host ?? null;
@@ -249,15 +249,12 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   triggerFor(value: string): ForMenubarTriggerHandle | null {
-    if (value === '') {
-      return null;
-    }
     return this.#triggerCollection.items().find((t) => t.value() === value) ?? null;
   }
 
   tabindexFor(el: HTMLElement): 0 | -1 {
     const v = this.value();
-    if (v !== '') {
+    if (v !== null) {
       // While a menu is open, only its trigger is tabbable.
       return this.activeTrigger()?.host === el ? 0 : -1;
     }
@@ -307,14 +304,14 @@ export class ForMenubar implements ForMenubarContext {
 
   closeOpen(): void {
     const current = this.value();
-    if (current === '') {
+    if (current === null) {
       return;
     }
     // Snapshot so [forMenuContent]'s destroy hook can return focus to the
     // just-closed trigger via menuCtx.trigger (which falls back to #lastValue
-    // once value() is '').
+    // once value() is null).
     this.#lastValue.set(current);
-    this.value.set('');
+    this.value.set(null);
   }
 
   switchToSibling(direction: 'next' | 'prev'): void {
@@ -342,7 +339,7 @@ export class ForMenubar implements ForMenubarContext {
     }
     // Hover-after-open opens siblings instantly; while no menu is
     // open, hover does nothing (first open requires keyboard / click).
-    if (this.value() === '' || this.value() === value) {
+    if (this.value() === null || this.value() === value) {
       return;
     }
     this.openTrigger(value, 'first', 'pointer');

@@ -1,19 +1,19 @@
 /**
  * Shared contract suite for primitives that participate in the
- * dismissable-layer behaviour. Adopted by: Dialog, Drawer, Popover,
+ * dismissible-layer behaviour. Adopted by: Dialog, Drawer, Popover,
  * Select, ContextMenu, TimePicker, DatePicker, MenuSub, DropdownMenu,
  * Menubar, and — through the Escape-only subset described by
- * {@link DismissableLayerContractOptions} — HoverCard.
+ * {@link DismissibleLayerContractOptions} — HoverCard.
  *
  * Combobox is intentionally excluded: its Escape is handled by the
  * editable input's own `keydown` listener (focus stays in the input per
- * the ARIA combobox pattern), not the shared document-level dismissable
+ * the ARIA combobox pattern), not the shared document-level dismissible
  * layer, so the contract's `document`-dispatched Escape never reaches it.
  * Its pointer-down-outside / focus-outside paths do route through the
  * layer and are covered by combobox's own spec.
  *
  * The contract owns the assertions that are identical across every
- * dismissable layer:
+ * dismissible layer:
  *
  *   - Escape closes the layer when `dismissible` is true.
  *   - Escape does NOT close the layer when `dismissible` is false.
@@ -30,7 +30,7 @@
  *     `(interactOutside)`.
  *
  * The consumer provides a single `mount` function that accepts a
- * {@link DismissableLayerMountOptions} bag describing which veto / flag
+ * {@link DismissibleLayerMountOptions} bag describing which veto / flag
  * variant to render. The contract calls `mount(...)` once per `it()`
  * with the relevant options.
  *
@@ -38,7 +38,7 @@
  */
 import { focusInOn, pointerDownOn } from '../outside-events';
 
-export interface DismissableLayerMountOptions {
+export interface DismissibleLayerMountOptions {
   /** Default `true`. When `false`, the layer should bind `[dismissible]="false"`. */
   dismissible?: boolean;
   /** When `true`, the host's `(escapeKeyDown)` listener calls `preventDefault()`. */
@@ -47,7 +47,7 @@ export interface DismissableLayerMountOptions {
   pointerVeto?: boolean;
 }
 
-export interface DismissableLayerMountResult {
+export interface DismissibleLayerMountResult {
   /** Drain Angular's render pipeline. */
   flush: () => Promise<void>;
   /** Reads the consumer-owned `open` signal. */
@@ -71,14 +71,14 @@ export interface DismissableLayerMountResult {
   interactOutsideCount?: () => number;
 }
 
-export interface DismissableLayerContractSetup {
+export interface DismissibleLayerContractSetup {
   /** Mount and open the layer. The contract calls this once per test. */
   mount: (
-    options?: DismissableLayerMountOptions,
-  ) => DismissableLayerMountResult | Promise<DismissableLayerMountResult>;
+    options?: DismissibleLayerMountOptions,
+  ) => DismissibleLayerMountResult | Promise<DismissibleLayerMountResult>;
 }
 
-export interface DismissableLayerContractOptions {
+export interface DismissibleLayerContractOptions {
   /**
    * Does the layer expose a `[dismissible]` input? Default `true`. Set
    * `false` for a layer whose dismissal is not consumer-suppressible
@@ -141,24 +141,24 @@ const dispatchFocusOnOutside = (): HTMLElement => {
 const countOf = (counter: (() => number) | undefined): number => {
   if (counter === undefined) {
     throw new Error(
-      'dismissable-layer contract: the mount result must provide the outside-emission counters unless `outsideInteraction: false` is passed.',
+      'dismissible-layer contract: the mount result must provide the outside-emission counters unless `outsideInteraction: false` is passed.',
     );
   }
   return counter();
 };
 
 /**
- * Run the dismissable-layer contract assertions inside a
- * `describe('dismissable-layer contract', …)` block.
+ * Run the dismissible-layer contract assertions inside a
+ * `describe('dismissible-layer contract', …)` block.
  */
-export function assertDismissableLayerContract(
-  setup: DismissableLayerContractSetup,
-  options: DismissableLayerContractOptions = {},
+export function assertDismissibleLayerContract(
+  setup: DismissibleLayerContractSetup,
+  options: DismissibleLayerContractOptions = {},
 ): void {
   const dismissibleFlag = options.dismissibleFlag ?? true;
   const outsideInteraction = options.outsideInteraction ?? true;
 
-  describe('dismissable-layer contract', () => {
+  describe('dismissible-layer contract', () => {
     // The contract owns its own cleanup: any outside node a test appended to
     // `document.body` is scrubbed here, so a throwing assertion can never leave
     // a stray <button> attached for the next spec.

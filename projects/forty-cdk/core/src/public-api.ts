@@ -2,7 +2,7 @@
  * Internal shared surface of forty-cdk — the `forty-cdk/core` entry point.
  *
  * This entry point holds everything formerly under `src/lib/_internal/`: the
- * cross-primitive DI singletons (`LiveAnnouncer`, focus-trap / dismissable-layer
+ * cross-primitive DI singletons (`LiveAnnouncer`, focus-trap / dismissible-layer
  * / inert-siblings / drawer stacks, the id-generator salt, the defaults
  * registry), the framework-free geometry / interaction / overlay helpers, and
  * the cross-cutting public tokens.
@@ -97,9 +97,9 @@ export { FOR_TIME_VALUE_SOURCE } from './datetime/time-value-source';
 export { createDefaults } from './defaults/defaults';
 export { reflectDisabled } from './disabled-reflection/disabled-reflection';
 export {
-  DismissableLayerStack,
-  injectDismissableLayer,
-} from './dismissable-layer/dismissable-layer';
+  DismissibleLayerStack,
+  injectDismissibleLayer,
+} from './dismissible-layer/dismissible-layer';
 export {
   clampPreviewPosition,
   type PreviewPoint,

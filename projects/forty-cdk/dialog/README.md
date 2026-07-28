@@ -6,7 +6,7 @@ A modal window overlaid on the page, with a focus trap, scroll lock and Escape /
 
 ## Two flows, one engine
 
-The same focus trap, scroll lock, portal, and dismissable-layer behaviors run under both APIs. Pick the one that fits the call site.
+The same focus trap, scroll lock, portal, and dismissible-layer behaviors run under both APIs. Pick the one that fits the call site.
 
 ### Declarative — `[forDialog]`
 
@@ -204,7 +204,7 @@ Set them once for a scope with `provideForDialogDefaults({ animateEnter, animate
 | `initialFocus`       | —                                                                   | `'first'` (first focusable inside) or `'container'` (the dialog host).<br>**Default:** `'first'`                                                                        |
 | `ariaLabel`          | —                                                                   | Manual `aria-label` if no `[forDialogTitle]` is rendered.<br>**Default:** `null`                                                                                        |
 | `dismiss`            | `OutputEmitterRef<ForDialogCloseReason>`                            | Output. Dialog wants to be unmounted. Reasons: `'escape'`, `'backdrop'`, `'pointerDownOutside'`, `'focusOutside'`, `'closeButton'`, `'programmatic'`.<br>**Default:** — |
-| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape while this dialog is the topmost dismissable layer.<br>**Default:** —                                                                                    |
+| `escapeKeyDown`      | `OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape while this dialog is the topmost dismissible layer.<br>**Default:** —                                                                                    |
 | `pointerDownOutside` | `OutputEmitterRef<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down outside the dialog.<br>**Default:** —                                                                                                              |
 | `focusOutside`       | `OutputEmitterRef<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the dialog.<br>**Default:** —                                                                                                               |
 | `interactOutside`    | `OutputEmitterRef<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite: fires alongside both of the above (and shares their veto state).<br>**Default:** —                                                                   |
@@ -401,4 +401,4 @@ Pass `[container]` to portal the dialog surface into a specific element instead 
 - **Inert siblings**. When `modal`, every direct child of `document.body` other than the dialog box (and its backdrop) gets `inert` and `aria-hidden="true"` while open, and is restored on close. This is what `aria-modal="true"` alone is missing — Safari + VoiceOver and several other AT pairings still announce siblings of an aria-modal node otherwise. Stacking is order-safe: when a second modal opens on top, the first becomes inert; closing the top dialog re-activates the underlying one.
 - **Vetoable dismissals**. Each of `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)` fires before the corresponding `(dismiss)`. Call `preventDefault()` on the event to keep the dialog open (e.g. to ask "are you sure?" first).
 - **The close button** (`[forDialogClose]`) always requests close, regardless of `dismissible`. Reason emitted is `'closeButton'`.
-- **Both flows share the same engine** — the focus trap, scroll lock, dismissable layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.
+- **Both flows share the same engine** — the focus trap, scroll lock, dismissible layer, and portal in `ForDialogManager.open()` use the same `_internal/` utilities as the directive. Behavior is identical.

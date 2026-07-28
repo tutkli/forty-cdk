@@ -74,7 +74,7 @@ export class ForComboboxOption<T = string> {
    * Stable identifier serialized into `[(value)]` and the hidden input.
    * Defaults to `string` for back-compat; bind an object to specialize
    * the parent `[forCombobox]` over a richer `T`. The parent's
-   * `[isItemEqualToValue]` decides how options are matched against the
+   * `[compareWith]` decides how options are matched against the
    * committed selection.
    */
   readonly value = input.required<T>();

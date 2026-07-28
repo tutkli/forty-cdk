@@ -13,7 +13,7 @@ if (!existsSync(FESM)) {
 const CORE_SINGLETONS = [
   'LiveAnnouncer',
   'IdGenerator',
-  'DismissableLayerStack',
+  'DismissibleLayerStack',
   'FocusTrapStack',
   'BodyScrollLock',
   'InertSiblingsStack',

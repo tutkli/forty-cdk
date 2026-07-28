@@ -27,7 +27,9 @@ import { injectCarouselContext } from './carousel-context';
  * Opt-in pointer drag / swipe directive for the Carousel viewport. Apply on the
  * `[forCarouselViewport]` element to enable horizontal or vertical drag-to-navigate.
  *
- * Publishes `--for-carousel-drag` (px) during the gesture so the consumer can
+ * Publishes `--for-carousel-swipe-movement-x` (horizontal) or
+ * `--for-carousel-swipe-movement-y` (vertical) in px during the gesture — only
+ * the property matching `orientation` is written — so the consumer can
  * compose it with `--for-carousel-offset` for live track motion. Reflects
  * `data-dragging` while the gesture is armed. Sets `touch-action` automatically
  * to free the cross axis for page scrolling.
@@ -39,7 +41,8 @@ import { injectCarouselContext } from './carousel-context';
   selector: '[forCarouselDrag]',
   exportAs: 'forCarouselDrag',
   host: {
-    '[style.--for-carousel-drag]': 'dragVar()',
+    '[style.--for-carousel-swipe-movement-x]': 'swipeMovementX()',
+    '[style.--for-carousel-swipe-movement-y]': 'swipeMovementY()',
     '[attr.data-dragging]': "dragging() ? '' : null",
     '[style.touch-action]': 'touchAction()',
     '(dragstart)': 'onDragStart($event)',
@@ -68,12 +71,22 @@ export class ForCarouselDrag {
     return this.ctx.orientation() === 'vertical' ? 'pan-x' : 'pan-y';
   });
 
-  /** Live offset CSS var; suppressed at rest and under reduced motion (D3). */
-  readonly dragVar = computed<string | null>(() => {
+  /** Live px displacement along the primary axis; `null` at rest and under reduced motion (D3). */
+  readonly #swipeMovement = computed<string | null>(() => {
     if (this.#prefersReducedMotion()) return null;
     const px = this.#dragPx();
     return this.#dragging() && px !== 0 ? `${px}px` : null;
   });
+
+  /** Live px displacement published as `--for-carousel-swipe-movement-x`; `null` on a vertical carousel. */
+  readonly swipeMovementX = computed<string | null>(() =>
+    this.ctx.orientation() === 'vertical' ? null : this.#swipeMovement(),
+  );
+
+  /** Live px displacement published as `--for-carousel-swipe-movement-y`; `null` on a horizontal carousel. */
+  readonly swipeMovementY = computed<string | null>(() =>
+    this.ctx.orientation() === 'vertical' ? this.#swipeMovement() : null,
+  );
 
   #startPrimary = 0;
   #lastPrimary = 0;

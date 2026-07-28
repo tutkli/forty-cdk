@@ -55,12 +55,16 @@ import {
       }
       [forCarouselTrack] {
         display: flex;
-        transform: translateX(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+        transform: translateX(
+          calc(var(--for-carousel-offset) + var(--for-carousel-swipe-movement-x, 0px))
+        );
         transition: none;
       }
       [forCarousel][data-orientation='vertical'] [forCarouselTrack] {
         flex-direction: column;
-        transform: translateY(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+        transform: translateY(
+          calc(var(--for-carousel-offset) + var(--for-carousel-swipe-movement-y, 0px))
+        );
       }
       [forCarouselSlide] {
         flex: 0 0 calc(100% / var(--for-carousel-slides-per-view));

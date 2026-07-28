@@ -486,8 +486,8 @@ test.describe('Slider (keyboard)', () => {
     await expect(el(page, 'last-value')).toHaveText('100');
   });
 
-  test('PageUp / PageDown move by largeStep (default 10× step)', async ({ page }) => {
-    // Default step=1, default largeStep=10 (from slider-defaults.ts).
+  test('PageUp / PageDown move by step × stepMultiplier (default 10)', async ({ page }) => {
+    // Default step=1, default stepMultiplier=10 (from slider-defaults.ts).
     await gotoFixture(page, 'slider');
     await el(page, 'thumb-0').focus();
 

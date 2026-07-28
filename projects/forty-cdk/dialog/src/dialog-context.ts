@@ -39,7 +39,7 @@ export interface ForDialogContext {
   unregisterDescription(id: string): void;
 
   /**
-   * Register the backdrop element so the dismissable layer treats it as
+   * Register the backdrop element so the dismissible layer treats it as
    * part of the dialog surface (`exemptElements`) — without this, a
    * `pointerdown` on the portaled backdrop (a body sibling of the dialog
    * host, outside `host.contains()`) fires `pointerDownOutside` and closes

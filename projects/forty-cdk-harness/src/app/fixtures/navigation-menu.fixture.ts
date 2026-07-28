@@ -99,7 +99,7 @@ import { queryFlag } from './_query-flag';
   `,
 })
 export class NavigationMenuFixture {
-  protected readonly open = signal('');
+  protected readonly open = signal<string | null>(null);
   protected readonly noViewport = queryFlag('noViewport');
   protected readonly externalViewport = queryFlag('externalViewport');
   protected readonly disabledSolutions = queryFlag('disabledSolutions');

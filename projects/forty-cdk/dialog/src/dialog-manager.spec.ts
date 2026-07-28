@@ -459,7 +459,7 @@ describe('ForDialogManager (programmatic)', () => {
     });
   });
 
-  describe('dismissable-layer parity with [forDialog]', () => {
+  describe('dismissible-layer parity with [forDialog]', () => {
     it('dismisses on outside pointer-down when dismissible (default)', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });

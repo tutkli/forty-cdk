@@ -81,8 +81,8 @@ export interface ForDropListContext {
   setLivePlaceholder(nodes: readonly Node[] | null): void;
 }
 
-export const FOR_DRAG_DROP_CONTEXT = new InjectionToken<ForDropListContext>(
-  'FOR_DRAG_DROP_CONTEXT',
+export const FOR_DROP_LIST_CONTEXT = new InjectionToken<ForDropListContext>(
+  'FOR_DROP_LIST_CONTEXT',
 );
 
 /**
@@ -142,7 +142,7 @@ export const FOR_DRAGGABLE_LIFT_GUARD = new InjectionToken<ForDraggableLiftGuard
 );
 
 export function injectDropListContext(piece: string): ForDropListContext {
-  const ctx = inject(FOR_DRAG_DROP_CONTEXT, { optional: true });
+  const ctx = inject(FOR_DROP_LIST_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/drag-drop] ${piece} must be used inside a [forDropList] element.`);
   }

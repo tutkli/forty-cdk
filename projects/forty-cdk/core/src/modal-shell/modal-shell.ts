@@ -2,7 +2,7 @@ import { DestroyRef, DOCUMENT, ElementRef, inject, type Signal } from '@angular/
 
 import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
-import { injectDismissableLayer } from '../dismissable-layer/dismissable-layer';
+import { injectDismissibleLayer } from '../dismissible-layer/dismissible-layer';
 import { findFirstFocusable, injectFocusTrap } from '../focus-trap/focus-trap';
 import {
   type InertSiblingsHandle,
@@ -165,7 +165,7 @@ export interface ModalShellHandle {
 
 /**
  * Resolves the live set of independent overlay surfaces that opt out of every
- * modal's dismissable layer via {@link MODAL_EXEMPT_ATTRIBUTE} — today
+ * modal's dismissible layer via {@link MODAL_EXEMPT_ATTRIBUTE} — today
  * `ForToastViewport`. Queried fresh on each interaction (no snapshot) so a
  * surface mounted *after* the modal opened still counts as "inside", which is
  * exactly the toast-over-open-dialog case. An interaction inside any returned
@@ -195,7 +195,7 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
  * 2. Portal. `injectPortal()` moves the host to `document.body` after the
  *    first render and removes it on destroy.
  *
- * 3. Dismissable layer. Activates inside `afterNextRender` with the
+ * 3. Dismissible layer. Activates inside `afterNextRender` with the
  *    triple-veto + composite `interactOutside` pattern that Dialog and
  *    Drawer duplicated verbatim. The pattern: a single
  *    `VetoableNativeEvent` is built per physical interaction and reused
@@ -227,13 +227,13 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
  *    statements — the sequence is fixed by the code, not by Angular's
  *    (FIFO) hook-registration order. Within the hook the side-effects are
  *    torn down in the inverse order they were activated:
- *    - `dismissable.deactivate()` first (it was activated first in the setup
+ *    - `dismissible.deactivate()` first (it was activated first in the setup
  *      `afterNextRender`).
  *    - `(autoFocusOnClose)` veto fires BEFORE either modal/non-modal
  *      teardown so it runs on every close path regardless of mode.
  *    - Modal only: `inertHandle.deactivate()` (so the return-focus target
  *      is not blocked by an inert ancestor) →
- *      `dismissable.suppress(focusTrap.deactivate)` (so the synthetic
+ *      `dismissible.suppress(focusTrap.deactivate)` (so the synthetic
  *      `focusin` from `.focus()`-ing the previous element doesn't
  *      cascade-dismiss whatever layer is now topmost). Focus returns to a
  *      connected `returnFocusTarget()` override when supplied, else to the
@@ -241,7 +241,7 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
  *      `bodyScrollLock.unlock()`.
  *
  * Must be called from an injection context (typically the directive
- * constructor). Forwards the host's `ElementRef` to the portal, dismissable
+ * constructor). Forwards the host's `ElementRef` to the portal, dismissible
  * layer, focus trap, and inert-siblings stack — the consumer never has to
  * touch them directly.
  *
@@ -267,7 +267,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
   const document = inject(DOCUMENT);
   const focusTrap = injectFocusTrap();
-  const dismissable = injectDismissableLayer();
+  const dismissible = injectDismissibleLayer();
   const inertStack = inject(InertSiblingsStack);
   const scrollLock = inject(BodyScrollLock);
 
@@ -302,7 +302,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    default value because the input writes haven't flowed through yet.
   //    `afterNextRenderCancellable` makes the destroy-before-render path safe.
   //    On the true-async path (queued render after destroy) the callback is
-  //    cancelled, so inert siblings / focus trap / scroll lock / dismissable
+  //    cancelled, so inert siblings / focus trap / scroll lock / dismissible
   //    layer are never activated (`activatedAsModal` stays false). On the
   //    synchronous-teardown path the callback flushes just before the destroy
   //    hook, so it sets `activatedAsModal = true` and the destroy hook below
@@ -311,7 +311,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     const isModal = config.modal();
     activatedAsModal = isModal;
 
-    // 3a. Dismissable layer. Pushed onto the stack BEFORE moving focus so
+    // 3a. Dismissible layer. Pushed onto the stack BEFORE moving focus so
     //     focusin events triggered by our own focus management land on this
     //     layer, not on whatever lower layer was previously topmost.
     //
@@ -322,7 +322,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
     //     vetoes the close.
     const dismissCfg = config.dismiss;
     if (dismissCfg !== undefined) {
-      dismissable.activate({
+      dismissible.activate({
         channels: outsideVetoChannels(dismissCfg),
         exemptElements: () => [
           ...(dismissCfg.exemptElements?.() ?? []),
@@ -414,7 +414,7 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    ours, removing the element from the DOM first. We tear down the
   //    side-effect stack here in the inverse order it was activated.
   inject(DestroyRef).onDestroy(() => {
-    dismissable.deactivate();
+    dismissible.deactivate();
     // Invoke `(autoFocusOnClose)` synchronously, BEFORE either the modal or
     // non-modal teardown runs. Fires on every close path regardless of mode
     // (the consumer's `(dismiss)` flow AND a direct `open.set(false)` that
@@ -435,11 +435,11 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
       inertHandle = null;
       const shouldReturnFocus = config.returnFocus() && !skipReturnFocus;
       const overrideTarget = config.returnFocusTarget?.() ?? null;
-      // Suppress the dismissable-layer dispatcher across focus-return so the
+      // Suppress the dismissible-layer dispatcher across focus-return so the
       // synthetic `focusin` triggered by `.focus()`-ing the previous element
       // does not cascade-dismiss whatever modal is now topmost (a stacked
       // dialog opened above this one).
-      dismissable.suppress(() => {
+      dismissible.suppress(() => {
         if (shouldReturnFocus && overrideTarget?.isConnected) {
           focusTrap.deactivate({ returnFocus: false });
           overrideTarget.focus();

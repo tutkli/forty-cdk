@@ -2,7 +2,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { CollectionHandle } from '../collection/collection';
-import type { DismissableLayerNesting } from '../dismissable-layer/dismissable-layer';
+import type { DismissibleLayerNesting } from '../dismissible-layer/dismissible-layer';
 import type {
   FloatingAlign,
   FloatingFallbackAxisSideDirection,
@@ -173,13 +173,13 @@ export interface ForMenuContext {
   readonly menubar?: MenuSiblingNavigator | null;
 
   /**
-   * Elements treated as "inside" by the dismissable layer. DropdownMenu
+   * Elements treated as "inside" by the dismissible layer. DropdownMenu
    * exempts the trigger button (clicks on it toggle via the trigger
    * directive — without exemption they'd also fire pointer-down-outside
    * and double-close). ContextMenu exempts nothing — a left-click on the
    * region while the menu is open should close it.
    */
-  readonly dismissableExemptions: Signal<readonly HTMLElement[]>;
+  readonly dismissibleExemptions: Signal<readonly HTMLElement[]>;
 
   registerItem(handle: ForMenuItemHandle): void;
   unregisterItem(handle: ForMenuItemHandle): void;
@@ -288,7 +288,7 @@ export interface ForMenuContext {
 export type { MenuActivationModality };
 
 /**
- * Nesting descriptor for a menu level's dismissable layer, derived from the
+ * Nesting descriptor for a menu level's dismissible layer, derived from the
  * `parentMenu` chain: the chain identity is the outermost menu context and the
  * depth is the number of hops needed to reach it (`0` for a top-level
  * `[forDropdownMenu]` / `[forContextMenu]` / `[forMenubar]` menu, `1` for its
@@ -300,7 +300,7 @@ export type { MenuActivationModality };
  * put the parent above its own submenu and make the submenu's first focus close
  * the whole chain with reason `'focusOutside'` (#1450).
  */
-export function menuLayerNesting(ctx: ForMenuContext): DismissableLayerNesting {
+export function menuLayerNesting(ctx: ForMenuContext): DismissibleLayerNesting {
   let chain: ForMenuContext = ctx;
   let depth = 0;
   while (chain.parentMenu) {

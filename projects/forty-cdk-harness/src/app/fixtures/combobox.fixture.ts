@@ -66,7 +66,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
       <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open" ariaLabel="Fruit search">
         <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
         <div forComboboxContent data-testid="content">
-          <button data-testid="action" forComboboxAction (action)="onAction()">
+          <button data-testid="action" forComboboxAction (activate)="onAction()">
             Create "{{ query() }}"
           </button>
           <div data-testid="list" forComboboxList>
@@ -92,8 +92,8 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
                 </div>
               }
             </div>
-            <button data-testid="action" forComboboxAction (action)="onAction()">Create</button>
-            <button data-testid="action2" forComboboxAction (action)="onAction()">
+            <button data-testid="action" forComboboxAction (activate)="onAction()">Create</button>
+            <button data-testid="action2" forComboboxAction (activate)="onAction()">
               More options
             </button>
           </div>
@@ -158,7 +158,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
         @if (open()) {
           <div forComboboxContent data-testid="content">
             @if (showAction) {
-              <button data-testid="action" forComboboxAction (action)="onAction()">
+              <button data-testid="action" forComboboxAction (activate)="onAction()">
                 Create "{{ query() }}"
               </button>
             }
@@ -167,7 +167,7 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
                 data-testid="action2"
                 forComboboxAction
                 [disabled]="action2Disabled()"
-                (action)="onAction()"
+                (activate)="onAction()"
               >
                 More options
               </button>
@@ -259,7 +259,7 @@ export class ComboboxFixture {
   // `?long=1` renders a 60-item list that scrolls past the viewport, so the
   // action's keyboard reachability can be asserted from a deep scroll position.
   protected readonly source: readonly string[] = queryFlag('long') ? LONG_FRUITS : [...ALL_FRUITS];
-  // Counts `(action)` emissions so a spec can assert activation fired without
+  // Counts `(activate)` emissions so a spec can assert activation fired without
   // touching `value`.
   protected readonly actionCount = signal(0);
 

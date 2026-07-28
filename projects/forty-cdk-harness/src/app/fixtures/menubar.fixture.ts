@@ -52,7 +52,7 @@ import { queryFlag } from './_query-flag';
 export class MenubarFixture {
   readonly #route = inject(ActivatedRoute);
 
-  protected readonly open = signal('');
+  protected readonly open = signal<string | null>(null);
 
   readonly #vetoOpen = queryFlag('vetoOpen');
   readonly #vetoClose = queryFlag('vetoClose');

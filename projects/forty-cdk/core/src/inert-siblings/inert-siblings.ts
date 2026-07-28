@@ -39,7 +39,7 @@ import { isPlatformBrowser } from '@angular/common';
  * Peers: any element carrying the `data-for-modal-peer` attribute is
  * excluded from the snapshot (e.g. a dialog backdrop portaled to body
  * alongside the dialog). The `data-for-modal-exempt` attribute is excluded
- * the same way — it additionally opts the element out of the dismissable
+ * the same way — it additionally opts the element out of the dismissible
  * layer (e.g. a toast viewport), see {@link MODAL_EXEMPT_ATTRIBUTE}.
  *
  * Late siblings: an element portaled to the root *after* the topmost owner
@@ -72,7 +72,7 @@ export const MODAL_PEER_ATTRIBUTE = 'data-for-modal-peer';
  * which must stay fully usable while a modal is open. Stronger than
  * {@link MODAL_PEER_ATTRIBUTE}: like a peer it is skipped by the inert pass
  * (left interactive instead of inerted), and in addition every active modal's
- * dismissable layer treats interactions inside it as "inside", so a pointer-down
+ * dismissible layer treats interactions inside it as "inside", so a pointer-down
  * or focus within it never dismisses the modal (see
  * `resolveModalExemptOverlays` in the modal shell). A peer (dialog / drawer
  * backdrop) deliberately stays part of the dismiss-outside surface; an exempt

@@ -470,19 +470,43 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
     await gotoFixture(page, 'carousel');
     await dragFrom(page, el(page, 'viewport'), { dx: -120, dy: 0 }, { release: false });
     await expect(el(page, 'viewport')).toHaveAttribute('data-dragging', '');
-    const dragVar = await page.evaluate(() => {
+    const during = await page.evaluate(() => {
       const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
-      return getComputedStyle(vp).getPropertyValue('--for-carousel-drag').trim();
+      const style = getComputedStyle(vp);
+      return {
+        x: style.getPropertyValue('--for-carousel-swipe-movement-x').trim(),
+        y: style.getPropertyValue('--for-carousel-swipe-movement-y').trim(),
+      };
     });
-    expect(dragVar).not.toBe('');
-    expect(dragVar).toMatch(/-\d/);
+    expect(during.x).not.toBe('');
+    expect(during.x).toMatch(/-\d/);
+    // Axis gating: a horizontal carousel never writes the cross-axis property.
+    expect(during.y).toBe('');
     await page.mouse.up();
     await expect(el(page, 'viewport')).not.toHaveAttribute('data-dragging');
-    const dragVarAfter = await page.evaluate(() => {
+    const after = await page.evaluate(() => {
       const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
-      return getComputedStyle(vp).getPropertyValue('--for-carousel-drag').trim();
+      return getComputedStyle(vp).getPropertyValue('--for-carousel-swipe-movement-x').trim();
     });
-    expect(dragVarAfter).toBe('');
+    expect(after).toBe('');
+  });
+
+  test('vertical orientation publishes the y axis only', async ({ page }) => {
+    await gotoFixture(page, 'carousel', { orientation: 'vertical' });
+    await dragFrom(page, el(page, 'viewport'), { dx: 0, dy: -60 }, { release: false });
+    await expect(el(page, 'viewport')).toHaveAttribute('data-dragging', '');
+    const during = await page.evaluate(() => {
+      const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
+      const style = getComputedStyle(vp);
+      return {
+        x: style.getPropertyValue('--for-carousel-swipe-movement-x').trim(),
+        y: style.getPropertyValue('--for-carousel-swipe-movement-y').trim(),
+      };
+    });
+    expect(during.y).not.toBe('');
+    expect(during.y).toMatch(/-\d/);
+    expect(during.x).toBe('');
+    await page.mouse.up();
   });
 
   test('reduced motion suppresses live offset but still snaps index (D3)', async ({ browser }) => {
@@ -495,11 +519,11 @@ test.describe('Carousel (drag / swipe) @mobile', () => {
         release: false,
         flickRelease: true,
       });
-      const dragVar = await page.evaluate(() => {
+      const movementX = await page.evaluate(() => {
         const vp = document.querySelector('[data-testid="viewport"]') as HTMLElement;
-        return getComputedStyle(vp).getPropertyValue('--for-carousel-drag').trim();
+        return getComputedStyle(vp).getPropertyValue('--for-carousel-swipe-movement-x').trim();
       });
-      expect(dragVar).toBe('');
+      expect(movementX).toBe('');
       await page.mouse.up();
       await expect(el(page, 'slide-1')).toHaveAttribute('data-state', 'active');
     } finally {

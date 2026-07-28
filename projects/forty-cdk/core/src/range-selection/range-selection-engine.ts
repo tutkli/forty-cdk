@@ -34,7 +34,7 @@ export interface RangeSelectionEngineDeps<T, H extends RangeSelectionOptionHandl
   /** Commit a new selection array. */
   readonly setValue: (value: readonly T[]) => void;
   /** Compare two items for equality (`===` for primitives, custom for objects). */
-  readonly isItemEqualToValue: Signal<(a: T, b: T) => boolean>;
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** Whether multiple options can be selected. Range actions are no-ops in single mode. */
   readonly multiple: Signal<boolean>;
   /** The control's effective disabled — gates every action. */
@@ -63,7 +63,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
   /**
    * Anchor value for APG range-selection actions (Shift+Space). Stored as the
    * option's *value* (resolved to its current index at range time via
-   * `isItemEqualToValue`) rather than a DOM index, so reordering or removing
+   * `compareWith`) rather than a DOM index, so reordering or removing
    * options before the anchor can't silently shift the range to the wrong span.
    */
   readonly #anchorValue = signal<T | null>(null);
@@ -89,7 +89,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
    */
   selectSingle(value: T): void {
     const current = this.#deps.value();
-    if (current.length === 1 && isInArray(current, value, this.#deps.isItemEqualToValue())) {
+    if (current.length === 1 && isInArray(current, value, this.#deps.compareWith())) {
       return;
     }
     this.#deps.setValue([value]);
@@ -115,7 +115,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
       return;
     }
     this.#deps.setValue(
-      toggleInArray(this.#deps.value(), target.value(), this.#deps.isItemEqualToValue()),
+      toggleInArray(this.#deps.value(), target.value(), this.#deps.compareWith()),
     );
   }
 
@@ -136,7 +136,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
       return;
     }
     const anchorValue = this.#anchorValue();
-    const equals = this.#deps.isItemEqualToValue();
+    const equals = this.#deps.compareWith();
     const anchorIndex =
       anchorValue === null ? -1 : options.findIndex((o) => equals(o.value(), anchorValue));
     const start = anchorIndex < 0 ? currentIndex : anchorIndex;
@@ -175,7 +175,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     if (enabled.length === 0) {
       return;
     }
-    const equals = this.#deps.isItemEqualToValue();
+    const equals = this.#deps.compareWith();
     const current = this.#deps.value();
     const allSelected = enabled.every((v) => current.some((x) => equals(x, v)));
     this.#deps.setValue(allSelected ? [] : enabled);
@@ -199,7 +199,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     }
     const [lo, hi] = edge === 'first' ? [0, currentIndex] : [currentIndex, options.length - 1];
 
-    const equals = this.#deps.isItemEqualToValue();
+    const equals = this.#deps.compareWith();
     const next = [...this.#deps.value()];
     let firstEnabled: HTMLElement | null = null;
     let lastEnabled: HTMLElement | null = null;

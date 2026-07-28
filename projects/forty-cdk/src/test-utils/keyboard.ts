@@ -4,7 +4,7 @@
  *
  * Defaults: `type: 'keydown'`, `bubbles: true`, `cancelable: true`. These
  * defaults match how DOM events propagate in real browsers and are what
- * every dismissable-layer / roving-tabindex / typeahead handler expects.
+ * every dismissible-layer / roving-tabindex / typeahead handler expects.
  */
 export interface PressKeyOptions extends Omit<KeyboardEventInit, 'key'> {
   type?: 'keydown' | 'keyup';

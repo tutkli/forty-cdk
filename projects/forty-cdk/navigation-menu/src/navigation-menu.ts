@@ -15,7 +15,7 @@ import {
 
 import {
   Collection,
-  injectDismissableLayer,
+  injectDismissibleLayer,
   createDebouncedAction,
   createSkipDelayWindow,
   type ListNavigationAction,
@@ -45,7 +45,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
  * and returns focus to its trigger.
  *
  * One item is open at a time. Selection is exposed as `value` (the open
- * item's id, or `''` when nothing is open). The `model()` change emitter
+ * item's id, or `null` when nothing is open). The `model()` change emitter
  * fires only on internal transitions, never on consumer writes.
  *
  * Nested submenus are out of scope for v1.
@@ -69,7 +69,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
   exportAs: 'forNavigationMenu',
   host: {
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.data-state]': 'value() === "" ? "closed" : "open"',
+    '[attr.data-state]': 'value() === null ? "closed" : "open"',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
@@ -82,12 +82,12 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #document = inject(DOCUMENT);
   readonly #defaults = inject(FOR_NAVIGATION_MENU_DEFAULTS);
   /**
-   * Two-way bindable. The id of the open item, or `''` for none. The
+   * Two-way bindable. The id of the open item, or `null` for none. The
    * `model()` change emitter (`(valueChange)`) fires only on internal
    * transitions (trigger click, hover delay, Escape, outside click), never
    * on consumer writes via `[(value)]`.
    */
-  readonly value = model<string>('');
+  readonly value = model<string | null>(null);
 
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
@@ -151,9 +151,9 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * tracked in `#motion` instead, so several panels can leave at once during
    * overlapping `animate.leave` transitions without losing their direction.
    */
-  readonly previousValue = linkedSignal<string, string>({
+  readonly previousValue = linkedSignal<string | null, string | null>({
     source: () => this.value(),
-    computation: (_current, prev) => prev?.source ?? '',
+    computation: (_current, prev) => prev?.source ?? null,
   });
 
   /**
@@ -181,7 +181,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #closeAction = createDebouncedAction(() => this.close());
   readonly #skipDelayWindow = createSkipDelayWindow(this.skipDelayDuration);
 
-  readonly #dismiss = injectDismissableLayer();
+  readonly #dismiss = injectDismissibleLayer();
 
   constructor() {
     inject(DestroyRef).onDestroy(() => {
@@ -192,7 +192,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   isOpen(value: string): boolean {
-    return value !== '' && this.value() === value;
+    return this.value() === value;
   }
 
   toggle(value: string): void {
@@ -205,7 +205,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   open(value: string): void {
-    if (this.disabled() || value === '') return;
+    if (this.disabled()) return;
     this.#cancelPending();
     if (this.value() === value) return;
     this.#recordMotion(this.value(), value);
@@ -219,7 +219,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
         }
         const current = this.value();
         this.close();
-        const trigger = current ? this.triggerHostFor(current) : null;
+        const trigger = current !== null ? this.triggerHostFor(current) : null;
         trigger?.focus();
       },
       onPointerDownOutside: () => this.close(),
@@ -228,15 +228,15 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   close(): void {
     this.#cancelPending();
-    if (this.value() === '') return;
-    this.#recordMotion(this.value(), '');
-    this.value.set('');
+    if (this.value() === null) return;
+    this.#recordMotion(this.value(), null);
+    this.value.set(null);
     this.#dismiss.deactivate();
     this.#skipDelayWindow.start();
   }
 
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void {
-    if (this.disabled() || value === '') return;
+    if (this.disabled()) return;
     this.#closeAction.cancel();
     this.#clearOpenTimer();
     if (this.value() === value) return;
@@ -266,7 +266,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       return;
     }
     this.#closeAction.cancel();
-    if (this.value() === '') return;
+    if (this.value() === null) return;
     this.#closeAction.schedule(this.closeDelay());
   }
 
@@ -277,7 +277,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   /**
    * APG: moving focus out of the navigation closes any open dropdown. Fires
    * when Tab/Shift+Tab walks past the last/first focusable inside the nav,
-   * or when something else steals focus. The dismissable layer already
+   * or when something else steals focus. The dismissible layer already
    * handles Escape and outside pointerdown; this covers the keyboard-tab
    * case the layer can't see.
    *
@@ -289,7 +289,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * both qualify as "outside".
    */
   protected onFocusOut(event: FocusEvent): void {
-    if (this.value() === '') {
+    if (this.value() === null) {
       return;
     }
     if (this.#containsFocusTarget(event.relatedTarget as Node | null)) {
@@ -386,7 +386,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   /** Layout-oriented selectors for indicator positioning. */
   readonly activeTriggerHost = computed<HTMLElement | null>(() => {
     const v = this.value();
-    if (v === '') return null;
+    if (v === null) return null;
     for (const t of this.#triggers.items()) {
       if (t.value() === v) return t.host;
     }
@@ -396,7 +396,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   /** Currently-active content's host element, if mounted. */
   readonly activeContentHost = computed<HTMLElement | null>(() => {
     const v = this.value();
-    if (v === '') return null;
+    if (v === null) return null;
     for (const c of this.#contents.items()) {
       if (c.value() === v) return c.host;
     }
@@ -435,7 +435,6 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * of dropping to `null` once `previousValue` advances past it.
    */
   motionFor(value: string): ForNavigationMenuMotion | null {
-    if (value === '') return null;
     if (value === this.value()) {
       return this.#enterMotion(this.previousValue(), value);
     }
@@ -448,14 +447,14 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * still-leaving panels are preserved so overlapping exits keep their
    * direction. `to`'s own stale leaving entry is dropped (it is re-entering).
    */
-  #recordMotion(from: string, to: string): void {
+  #recordMotion(from: string | null, to: string | null): void {
     const next = new Map(this.#motion());
-    if (to !== '') {
+    if (to !== null) {
       const enter = this.#enterMotion(from, to);
       if (enter === null) next.delete(to);
       else next.set(to, enter);
     }
-    if (from !== '') {
+    if (from !== null) {
       const leave = this.#leaveMotion(from, to);
       if (leave === null) next.delete(from);
       else next.set(from, leave);
@@ -471,8 +470,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   /** Entering direction for `to` given the panel `from` it replaced. */
-  #enterMotion(from: string, to: string): ForNavigationMenuMotion | null {
-    if (from === '' || from === to) return null;
+  #enterMotion(from: string | null, to: string): ForNavigationMenuMotion | null {
+    if (from === null || from === to) return null;
     const fromIndex = this.#triggerIndexFor(from);
     const toIndex = this.#triggerIndexFor(to);
     if (fromIndex < 0 || toIndex < 0) return null;
@@ -482,8 +481,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   /** Leaving direction for `from` given the panel `to` that replaced it. */
-  #leaveMotion(from: string, to: string): ForNavigationMenuMotion | null {
-    if (to === '' || to === from) return null;
+  #leaveMotion(from: string, to: string | null): ForNavigationMenuMotion | null {
+    if (to === null || to === from) return null;
     const fromIndex = this.#triggerIndexFor(from);
     const toIndex = this.#triggerIndexFor(to);
     if (fromIndex < 0 || toIndex < 0) return null;

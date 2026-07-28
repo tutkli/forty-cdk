@@ -29,7 +29,7 @@ import { type ForHoverCardContext, injectHoverCardTriggerContext } from './hover
  * discovered via the trigger, do wire trigger ARIA — HoverCard intentionally
  * does not.
  *
- * Escape dismissal is owned by the content's document-level dismissable
+ * Escape dismissal is owned by the content's document-level dismissible
  * layer (see `ForHoverCardContent`), so it works from the trigger and from
  * unrelated focus alike — the trigger carries no Escape listener of its own.
  *

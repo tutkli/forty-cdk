@@ -50,7 +50,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
 
       <playground-demo
         title="Object values & typeahead"
-        subtitle="<code>forSelect</code> is generic over <code>T</code>: bind whole objects to <code>[forSelectOption][value]</code>, match them by a stable key with <code>[isItemEqualToValue]</code>, and serialize what a native form submits with <code>[itemToFormValue]</code>. Typeahead mirrors native <code>&lt;select&gt;</code> — with the listbox open, printable keys jump to the first match."
+        subtitle="<code>forSelect</code> is generic over <code>T</code>: bind whole objects to <code>[forSelectOption][value]</code>, match them by a stable key with <code>[compareWith]</code>, and serialize what a native form submits with <code>[itemToFormValue]</code>. Typeahead mirrors native <code>&lt;select&gt;</code> — with the listbox open, printable keys jump to the first match."
         sourcePath="select/examples/object-values.example.ts"
       >
         <app-select-object-values-example />

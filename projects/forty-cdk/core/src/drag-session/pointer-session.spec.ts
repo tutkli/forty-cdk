@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 
 import { createPointerDragSession, type PointerDragSession } from './pointer-session';
-import { DismissableLayer, DismissableLayerStack } from '../dismissable-layer/dismissable-layer';
+import { DismissibleLayer, DismissibleLayerStack } from '../dismissible-layer/dismissible-layer';
 
 function pointer(type: string, x: number, y: number, button = 0, pointerId = 1): PointerEvent {
   return new PointerEvent(type, {
@@ -665,11 +665,11 @@ describe('createPointerDragSession', () => {
     expect(ancestorSaw).toBe(true);
   });
 
-  it('an armed-drag Escape cancels the drag without dismissing an enclosing dismissable layer', () => {
-    const stack = TestBed.inject(DismissableLayerStack);
+  it('an armed-drag Escape cancels the drag without dismissing an enclosing dismissible layer', () => {
+    const stack = TestBed.inject(DismissibleLayerStack);
     const overlayHost = document.createElement('div');
     document.body.appendChild(overlayHost);
-    const layer = new DismissableLayer(overlayHost, stack);
+    const layer = new DismissibleLayer(overlayHost, stack);
     let dismissed = 0;
     layer.activate({ channels: [], onEscapeKeyDown: () => dismissed++ });
 

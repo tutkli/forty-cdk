@@ -1,6 +1,6 @@
 /**
  * Allowed-character class for an OTP / PIN input. Drives both the per-character
- * filter (rejected characters are dropped and fire `valueInvalid`) and the
+ * filter (rejected characters are dropped and fire `(reject)`) and the
  * derived `inputmode`. Override entirely with a custom `allowedPattern` RegExp.
  */
 export type OtpInputType = 'numeric' | 'alphanumeric' | 'alphabetic';

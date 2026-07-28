@@ -119,7 +119,9 @@ interface Slide {
 
     .dcar-track {
       display: flex;
-      transform: translateX(calc(var(--for-carousel-offset) + var(--for-carousel-drag, 0px)));
+      transform: translateX(
+        calc(var(--for-carousel-offset) + var(--for-carousel-swipe-movement-x, 0px))
+      );
       transition: transform 300ms ease;
     }
 

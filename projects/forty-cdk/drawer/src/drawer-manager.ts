@@ -19,10 +19,10 @@ import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
   FOR_DRAWER_INSTANCE_ID,
-  type ForDrawerDragEvent,
-  type ForDrawerReleaseEvent,
   type ForDrawerSide,
   type ForDrawerSnapPoint,
+  type ForDrawerSwipeEndEvent,
+  type ForDrawerSwipeEvent,
 } from './drawer-context';
 import { FOR_DRAWER_DEFAULTS } from './drawer-defaults';
 import type { ForDrawerEntry } from './drawer-outlet';
@@ -167,7 +167,8 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * Consumer CSS class(es) applied to the overlay root (the `[forDrawer]`
    * host). Pass a single class (`'my-drawer'`) or a space-separated string.
    * Merged with the directive's own host attributes — it never clobbers
-   * `data-side` / `data-state` / the `--for-drawer-translate` custom property.
+   * `data-side` / `data-state` / the `--for-drawer-swipe-movement-x` / `-y`
+   * custom properties.
    *
    * Use this to carry design-system classes onto a programmatic drawer,
    * including positioning CSS keyed on `data-side` (e.g.
@@ -214,7 +215,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
   /**
    * Per-channel dismiss hook mirroring the declarative `(escapeKeyDown)`
    * output. Fires when Escape is pressed while this drawer is the topmost
-   * dismissable layer. Call `event.preventDefault()` on the veto to suppress
+   * dismissible layer. Call `event.preventDefault()` on the veto to suppress
    * the implicit close while keeping the other dismiss channels live. The
    * original `KeyboardEvent` is on `.event`.
    */
@@ -247,19 +248,30 @@ export interface ForDrawerOpenConfig<D = unknown> {
   interactOutside?: (event: VetoableNativeEvent<PointerEvent | FocusEvent>) => void;
 
   /**
-   * Mirrors the declarative `(dragMove)` output: invoked on every pointer-move
-   * frame of a swipe gesture with `percentageDragged` ∈ `[0, 1]`. Lets a
-   * programmatic consumer drive bespoke drag visualizations the way the
-   * directive consumer can.
+   * Mirrors the declarative `(swipeStart)` output: invoked once when the
+   * gesture arms, with `progress` `0`.
    */
-  dragMove?: (event: ForDrawerDragEvent) => void;
+  swipeStart?: (event: ForDrawerSwipeEvent) => void;
 
   /**
-   * Mirrors the declarative `(release)` output: invoked once the pointer is
-   * released, after the directive has resolved the next snap point / close
-   * decision. Read `willClose` and `nextSnapPoint` from the payload.
+   * Mirrors the declarative `(swipeMove)` output: invoked on every pointer-move
+   * frame with `progress` ∈ `[0, 1]`. Lets a programmatic consumer drive
+   * bespoke swipe visualizations the way the directive consumer can.
    */
-  release?: (event: ForDrawerReleaseEvent) => void;
+  swipeMove?: (event: ForDrawerSwipeEvent) => void;
+
+  /**
+   * Mirrors the declarative `(swipeEnd)` output: invoked on pointer-up, after
+   * the directive has resolved the next snap point / close decision. Read
+   * `willClose` and `nextSnapPoint` from the payload.
+   */
+  swipeEnd?: (event: ForDrawerSwipeEndEvent) => void;
+
+  /**
+   * Mirrors the declarative `(swipeCancel)` output: invoked on `pointercancel`
+   * or a mid-gesture direction abort.
+   */
+  swipeCancel?: (event: ForDrawerSwipeEvent) => void;
 
   /**
    * Mirrors the declarative `(activeSnapPointChange)` output: invoked with
@@ -378,8 +390,10 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
       pointerDownOutside: config.pointerDownOutside,
       focusOutside: config.focusOutside,
       interactOutside: config.interactOutside,
-      dragMove: config.dragMove,
-      release: config.release,
+      swipeStart: config.swipeStart,
+      swipeMove: config.swipeMove,
+      swipeEnd: config.swipeEnd,
+      swipeCancel: config.swipeCancel,
       ref: ref as ForDrawerRef<unknown>,
       handleClose(reason: ForDrawerCloseReason, value: unknown): void {
         ref.close(value as R, reason);

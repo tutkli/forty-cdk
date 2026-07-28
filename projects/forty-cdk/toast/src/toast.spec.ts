@@ -90,7 +90,7 @@ class ProgrammaticHost {
         forToast
         [variant]="variant()"
         [duration]="duration()"
-        [closable]="closable()"
+        [dismissible]="dismissible()"
         [swipeDirection]="swipeDirection()"
         [swipeThreshold]="swipeThreshold()"
         (dismiss)="onClose($event)"
@@ -107,7 +107,7 @@ class ProgrammaticHost {
         @if (showAction()) {
           <button forToastAction (click)="onAction()" data-test-id="action">Action</button>
         }
-        @if (closable()) {
+        @if (dismissible()) {
           <button forToastClose data-test-id="close">×</button>
         }
       </div>
@@ -118,7 +118,7 @@ class DeclarativeHost {
   readonly open = signal(true);
   readonly variant = signal<'info' | 'success' | 'warning' | 'error'>('info');
   readonly duration = signal(5000);
-  readonly closable = signal(true);
+  readonly dismissible = signal(true);
   readonly title = signal('Saved');
   readonly description = signal('Your changes are live.');
   readonly showAction = signal(false);
@@ -571,23 +571,23 @@ describe('ForToast (declarative)', () => {
     });
   });
 
-  describe('non-closable does not schedule an auto-dismiss timer', () => {
+  describe('non-dismissible does not schedule an auto-dismiss timer', () => {
     afterEach(() => {
       vi.useRealTimers();
       vi.restoreAllMocks();
     });
 
-    it('closable=false never wires a timer for the duration', () => {
+    it('dismissible=false never wires a timer for the duration', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(DeclarativeHost);
-      fixture.componentInstance.closable.set(false);
+      fixture.componentInstance.dismissible.set(false);
       const spy = vi.spyOn(globalThis, 'setTimeout');
       fixture.detectChanges();
       expect(spy).not.toHaveBeenCalledWith(expect.any(Function), 5000);
     });
 
-    it('closable=true with the same duration DOES schedule a timer', () => {
+    it('dismissible=true with the same duration DOES schedule a timer', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(DeclarativeHost);
@@ -596,10 +596,10 @@ describe('ForToast (declarative)', () => {
       expect(spy).toHaveBeenCalledWith(expect.any(Function), 5000);
     });
 
-    it('closable=false does not emit (dismiss) after the duration elapses', async () => {
+    it('dismissible=false does not emit (dismiss) after the duration elapses', async () => {
       vi.useFakeTimers();
       const r = renderHost(DeclarativeHost);
-      r.instance.closable.set(false);
+      r.instance.dismissible.set(false);
       await r.flush();
       vi.advanceTimersByTime(60_000);
       await r.flush();
@@ -608,7 +608,7 @@ describe('ForToast (declarative)', () => {
   });
 
   describe('manual close paths', () => {
-    it('Escape closes when closable', async () => {
+    it('Escape closes when dismissible', async () => {
       const r = renderHost(DeclarativeHost);
       const t = $(r.el, 'declarative')!;
       t.dispatchEvent(
@@ -618,9 +618,9 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual(['escape']);
     });
 
-    it('Escape is a no-op when closable=false', async () => {
+    it('Escape is a no-op when dismissible=false', async () => {
       const r = renderHost(DeclarativeHost);
-      r.instance.closable.set(false);
+      r.instance.dismissible.set(false);
       await r.flush();
       const t = $(r.el, 'declarative')!;
       t.dispatchEvent(
@@ -649,9 +649,9 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual(['action']);
     });
 
-    it('action close fires even when closable=false', async () => {
+    it('action close fires even when dismissible=false', async () => {
       const r = renderHost(DeclarativeHost);
-      r.instance.closable.set(false);
+      r.instance.dismissible.set(false);
       r.instance.showAction.set(true);
       await r.flush();
       $(r.el, 'action')!.click();
@@ -773,10 +773,10 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('closable=false disables swipe entirely (no events, no close)', async () => {
+    it('dismissible=false disables swipe entirely (no events, no close)', async () => {
       const r = renderHost(DeclarativeHost);
       r.instance.swipeDirection.set('right');
-      r.instance.closable.set(false);
+      r.instance.dismissible.set(false);
       await r.flush();
       const t = $(r.el, 'declarative')!;
       pointer(t, 'pointerdown', { clientX: 0, clientY: 0 });
@@ -1031,7 +1031,7 @@ describe('ForToastManager (programmatic)', () => {
     expect(ref.config().id).toBe('job');
     expect(ref.config().region).toBe('default');
     expect(ref.config().title).toBe('Saved');
-    // Still dismissable by its original id (the map never drifted).
+    // Still dismissible by its original id (the map never drifted).
     r.instance.toasts.dismiss('job');
     await r.flush();
     expect(r.instance.toasts.count()).toBe(0);

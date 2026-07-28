@@ -137,7 +137,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    * Fires when the user presses Escape while the tooltip is open, regardless of
    * where focus currently lives — on the trigger or on an unrelated element (the
    * common case for a hover-opened tooltip). Routed through the content's
-   * document-level dismissable layer. Call `preventDefault()` on the emitted
+   * document-level dismissible layer. Call `preventDefault()` on the emitted
    * veto to keep the tooltip open. The native `KeyboardEvent` is on `.event`.
    */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
@@ -322,7 +322,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
   /**
    * Emit the public `(escapeKeyDown)` output and, unless the consumer calls
    * `preventDefault()` on the veto, close the tooltip immediately. Driven by the
-   * content's document-level dismissable layer so Escape dismisses the tooltip
+   * content's document-level dismissible layer so Escape dismisses the tooltip
    * regardless of where focus currently lives — including a hover-opened tooltip
    * with focus on an unrelated element (WCAG 2.1 SC 1.4.13) — and so a tooltip
    * layered over a dialog is dismissed by the first Escape while the dialog

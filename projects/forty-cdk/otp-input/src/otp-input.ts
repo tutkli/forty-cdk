@@ -88,7 +88,7 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
   host: {
     role: 'group',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.data-complete]': 'complete() ? "" : null',
+    '[attr.data-complete]': 'filled() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
   },
   providers: [{ provide: FOR_OTP_INPUT_CONTEXT, useExisting: ForOtpInput }],
@@ -150,16 +150,16 @@ export class ForOtpInput
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /** Fires when every slot is filled (by typing or paste). */
-  readonly valueComplete = output<string>();
+  readonly complete = output<string>();
 
   /** Fires when an entered / pasted character is rejected by `type` / `allowedPattern`. */
-  readonly valueInvalid = output<{ value: string }>();
+  readonly reject = output<{ value: string }>();
 
   /** The value clamped to `length()` — the source of truth for the slots. */
   readonly #clampedValue = computed(() => this.value().slice(0, this.length()));
 
-  /** `true` when every slot is filled. */
-  readonly complete = computed(() => this.#clampedValue().length === this.length());
+  /** `true` when every slot is filled — reflected as `data-complete` on the host. */
+  readonly filled = computed(() => this.#clampedValue().length === this.length());
 
   /** The slot indices, for the consumer's `@for`. */
   readonly slots = computed<readonly number[]>(() =>
@@ -352,7 +352,7 @@ export class ForOtpInput
     this.#commit(clamped);
     this.#syncSelection();
     if (rejected) {
-      this.valueInvalid.emit({ value: raw });
+      this.reject.emit({ value: raw });
     }
   }
 
@@ -372,16 +372,16 @@ export class ForOtpInput
     this.#commit(clamped);
     this.#syncSelection();
     if (rejected) {
-      this.valueInvalid.emit({ value: text });
+      this.reject.emit({ value: text });
     }
   }
 
   #commit(next: string): void {
-    const wasComplete = this.complete();
+    const wasComplete = this.filled();
     const prev = this.value();
     this.value.set(next);
     if (next.length === this.length() && (!wasComplete || next !== prev)) {
-      this.valueComplete.emit(next);
+      this.complete.emit(next);
     }
   }
 

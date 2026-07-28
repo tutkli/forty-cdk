@@ -6,10 +6,10 @@ import {
   ForDrawerBackdrop,
   ForDrawerClose,
   type ForDrawerCloseReason,
-  type ForDrawerDragEvent,
   ForDrawerHandle,
-  type ForDrawerReleaseEvent,
   type ForDrawerSnapPoint,
+  type ForDrawerSwipeEndEvent,
+  type ForDrawerSwipeEvent,
   ForDrawerTrigger,
   ForDrawerWrapper,
 } from 'forty-cdk/drawer';
@@ -106,8 +106,10 @@ import { queryFlag } from './_query-flag';
         [style.height.px]="drawerHeightPx()"
         [closeThreshold]="closeThresholdValue()"
         (dismiss)="onClose($event)"
-        (dragMove)="onDrag($event)"
-        (release)="onRelease($event)"
+        (swipeStart)="onSwipeStart($event)"
+        (swipeMove)="onSwipeMove($event)"
+        (swipeEnd)="onSwipeEnd($event)"
+        (swipeCancel)="onSwipeCancel($event)"
       >
         @if (backdrop) {
           <div data-testid="backdrop" forDrawerBackdrop></div>
@@ -149,11 +151,13 @@ import { queryFlag } from './_query-flag';
     <output data-testid="last-close-reason">{{ lastCloseReason() ?? 'none' }}</output>
     <output data-testid="last-child-close-reason">{{ lastChildCloseReason() ?? 'none' }}</output>
     <output data-testid="active-snap">{{ activeSnapDisplay() }}</output>
-    <output data-testid="drag-count">{{ dragCount() }}</output>
-    <output data-testid="last-drag-percent">{{ lastDragPercent() }}</output>
-    <output data-testid="release-count">{{ releaseCount() }}</output>
-    <output data-testid="last-release-will-close">{{ lastReleaseWillClose() }}</output>
-    <output data-testid="last-release-next-snap">{{ lastReleaseNextSnap() }}</output>
+    <output data-testid="swipe-start-count">{{ swipeStartCount() }}</output>
+    <output data-testid="swipe-move-count">{{ swipeMoveCount() }}</output>
+    <output data-testid="last-swipe-progress">{{ lastSwipeProgress() }}</output>
+    <output data-testid="swipe-end-count">{{ swipeEndCount() }}</output>
+    <output data-testid="swipe-cancel-count">{{ swipeCancelCount() }}</output>
+    <output data-testid="last-swipe-will-close">{{ lastSwipeWillClose() }}</output>
+    <output data-testid="last-swipe-next-snap">{{ lastSwipeNextSnap() }}</output>
     <output data-testid="surface-click-count">{{ clickCount() }}</output>
   `,
 })
@@ -163,15 +167,17 @@ export class DrawerFixture {
   protected readonly lastCloseReason = signal<ForDrawerCloseReason | null>(null);
   protected readonly lastChildCloseReason = signal<ForDrawerCloseReason | null>(null);
 
-  // Drag / release telemetry. Updated from the (dragMove) / (release) outputs and
-  // mirrored into <output> elements so Playwright specs can poll them as text.
-  // Keep numbers + booleans only — anything richer (e.g. PointerEvent shape)
-  // would have to be serialised by hand on every emit.
-  protected readonly dragCount = signal(0);
-  protected readonly lastDragPercent = signal('none');
-  protected readonly releaseCount = signal(0);
-  protected readonly lastReleaseWillClose = signal('none');
-  protected readonly lastReleaseNextSnap = signal('none');
+  // Swipe telemetry. Updated from the (swipeStart) / (swipeMove) / (swipeEnd) /
+  // (swipeCancel) outputs and mirrored into <output> elements so Playwright
+  // specs can poll them as text. Keep numbers + booleans only — anything richer
+  // (e.g. PointerEvent shape) would have to be serialised by hand on every emit.
+  protected readonly swipeStartCount = signal(0);
+  protected readonly swipeMoveCount = signal(0);
+  protected readonly lastSwipeProgress = signal('none');
+  protected readonly swipeEndCount = signal(0);
+  protected readonly swipeCancelCount = signal(0);
+  protected readonly lastSwipeWillClose = signal('none');
+  protected readonly lastSwipeNextSnap = signal('none');
 
   protected readonly clickCount = signal(0);
 
@@ -243,17 +249,25 @@ export class DrawerFixture {
     this.clickCount.update((n) => n + 1);
   }
 
-  protected onDrag(event: ForDrawerDragEvent): void {
-    this.dragCount.update((n) => n + 1);
-    this.lastDragPercent.set(event.percentageDragged.toFixed(4));
+  protected onSwipeStart(event: ForDrawerSwipeEvent): void {
+    this.swipeStartCount.update((n) => n + 1);
+    this.lastSwipeProgress.set(event.progress.toFixed(4));
   }
 
-  protected onRelease(event: ForDrawerReleaseEvent): void {
-    this.releaseCount.update((n) => n + 1);
-    this.lastReleaseWillClose.set(String(event.willClose));
-    this.lastReleaseNextSnap.set(
-      event.nextSnapPoint == null ? 'null' : String(event.nextSnapPoint),
-    );
+  protected onSwipeMove(event: ForDrawerSwipeEvent): void {
+    this.swipeMoveCount.update((n) => n + 1);
+    this.lastSwipeProgress.set(event.progress.toFixed(4));
+  }
+
+  protected onSwipeEnd(event: ForDrawerSwipeEndEvent): void {
+    this.swipeEndCount.update((n) => n + 1);
+    this.lastSwipeWillClose.set(String(event.willClose));
+    this.lastSwipeNextSnap.set(event.nextSnapPoint == null ? 'null' : String(event.nextSnapPoint));
+  }
+
+  protected onSwipeCancel(event: ForDrawerSwipeEvent): void {
+    this.swipeCancelCount.update((n) => n + 1);
+    this.lastSwipeProgress.set(event.progress.toFixed(4));
   }
 }
 

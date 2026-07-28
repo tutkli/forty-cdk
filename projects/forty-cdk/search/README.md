@@ -74,7 +74,7 @@ That is the right default for a searchbox alongside other content, and the wrong
 one for a **command palette**, where the search box is the dialog's only content
 and one `Escape` should close it. Opt out with `[clearOnEscape]="false"`: the
 directive then neither acts on nor consumes `Escape`, so the enclosing
-dismissable layer sees it on the first press even with a non-empty query.
+dismissible layer sees it on the first press even with a non-empty query.
 
 ```html
 <input forSearch [(value)]="query" [clearOnEscape]="false" />

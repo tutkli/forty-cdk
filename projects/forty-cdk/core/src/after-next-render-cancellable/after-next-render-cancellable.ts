@@ -8,7 +8,7 @@ import { afterNextRender, DestroyRef, inject } from '@angular/core';
  * flushing the render queue inside teardown), where the queued render callback
  * would otherwise still activate a global side effect with no hook left to
  * undo it (body inert + scroll lock + a document keydown listener for the
- * modal shell, a permanent topmost dismissable-layer entry for the overlay
+ * modal shell, a permanent topmost dismissible-layer entry for the overlay
  * shell).
  *
  * The helper:
@@ -26,7 +26,7 @@ import { afterNextRender, DestroyRef, inject } from '@angular/core';
  * `destroyed` flag is set afterwards. The adopters defend that path by tearing
  * the side effect down in their own `DestroyRef.onDestroy` (portal removes the
  * element, the modal shell deactivates inert / scroll lock / focus trap, the
- * overlay shell deactivates its dismissable layer), which runs right after the
+ * overlay shell deactivates its dismissible layer), which runs right after the
  * callback. Either way no global side effect survives teardown.
  *
  * Must be called from an injection context (typically a directive constructor

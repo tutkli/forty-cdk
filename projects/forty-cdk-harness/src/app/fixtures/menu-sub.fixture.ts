@@ -224,7 +224,7 @@ export class MenuSubFixture {
   protected readonly ctxOpen = signal(false);
   protected readonly ctxSubOpen = signal(false);
 
-  protected readonly mbValue = signal('');
+  protected readonly mbValue = signal<string | null>(null);
   protected readonly mbSubOpen = signal(false);
 
   protected readonly edgeOpen = signal(false);

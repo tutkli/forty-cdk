@@ -24,10 +24,10 @@ import {
 import { ForDrawer } from './drawer';
 import type {
   ForDrawerCloseReason,
-  ForDrawerDragEvent,
-  ForDrawerReleaseEvent,
   ForDrawerSide,
   ForDrawerSnapPoint,
+  ForDrawerSwipeEndEvent,
+  ForDrawerSwipeEvent,
 } from './drawer-context';
 
 /**
@@ -70,8 +70,10 @@ export interface ForDrawerEntry extends OverlayManagerEntry {
   readonly interactOutside:
     | ((e: VetoableNativeEvent<PointerEvent | FocusEvent>) => void)
     | undefined;
-  readonly dragMove: ((e: ForDrawerDragEvent) => void) | undefined;
-  readonly release: ((e: ForDrawerReleaseEvent) => void) | undefined;
+  readonly swipeStart: ((e: ForDrawerSwipeEvent) => void) | undefined;
+  readonly swipeMove: ((e: ForDrawerSwipeEvent) => void) | undefined;
+  readonly swipeEnd: ((e: ForDrawerSwipeEndEvent) => void) | undefined;
+  readonly swipeCancel: ((e: ForDrawerSwipeEvent) => void) | undefined;
   handleClose(reason: ForDrawerCloseReason, value: unknown): void;
   onActiveSnapPointChange(snap: ForDrawerSnapPoint | null): void;
   injectorFor(parent: Injector): Injector;
@@ -174,8 +176,10 @@ export class ForDrawerSurface {
         (pointerDownOutside)="entry.pointerDownOutside?.($event)"
         (focusOutside)="entry.focusOutside?.($event)"
         (interactOutside)="entry.interactOutside?.($event)"
-        (dragMove)="entry.dragMove?.($event)"
-        (release)="entry.release?.($event)"
+        (swipeStart)="entry.swipeStart?.($event)"
+        (swipeMove)="entry.swipeMove?.($event)"
+        (swipeEnd)="entry.swipeEnd?.($event)"
+        (swipeCancel)="entry.swipeCancel?.($event)"
         (activeSnapPointChange)="entry.onActiveSnapPointChange($event)"
         #fd="forDrawer"
       >

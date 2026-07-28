@@ -51,7 +51,7 @@ import { ForNavigationMenuTrigger } from './navigation-menu-trigger';
   `,
 })
 class NavMenuHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
 }
 
@@ -97,7 +97,7 @@ class NavMenuHost {
   `,
 })
 class OverlappingNavMenuHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
   readonly mountProducts = signal(false);
   readonly mountSolutions = signal(false);
   readonly mountAbout = signal(false);
@@ -179,6 +179,55 @@ describe('ForNavigationMenu', () => {
 
       triggers[0]!.click();
       await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+    });
+
+    it('opens an item whose value is the empty string', async () => {
+      // `null` is the closed sentinel, so `''` is an ordinary item value and
+      // must open like any other (#1400 item 3).
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+          ForNavigationMenuContent,
+        ],
+        template: `
+          <nav forNavigationMenu [(value)]="open">
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem value="">
+                <button forNavigationMenuTrigger>Empty</button>
+                @if (open() === '') {
+                  <div forNavigationMenuContent>content</div>
+                }
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class Host {
+        readonly open = signal<string | null>(null);
+      }
+      const { fixture, query, queryAll, flush } = renderHost(Host);
+      await flush();
+
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('');
+      expect(trigger.getAttribute('aria-expanded')).toBe('true');
+      expect(query<HTMLElement>('[forNavigationMenu]')!.getAttribute('data-state')).toBe('open');
+      expect(query<HTMLElement>('[forNavigationMenuContent]')).not.toBeNull();
+
+      // Close, then reopen through the keyboard path (scheduleOpen) — it
+      // carries its own sentinel guard.
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      pressKey(trigger, 'ArrowDown');
+      await flush();
       expect(fixture.componentInstance.open()).toBe('');
     });
 
@@ -214,7 +263,7 @@ describe('ForNavigationMenu', () => {
       await flush();
       vi.advanceTimersByTime(199);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
       vi.advanceTimersByTime(1);
       await flush();
       expect(fixture.componentInstance.open()).toBe('products');
@@ -236,7 +285,7 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBe('products');
       vi.advanceTimersByTime(1);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
 
     it('keeps the menu open when the pointer moves from trigger into content', async () => {
@@ -266,7 +315,7 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBe('products');
       vi.advanceTimersByTime(1);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
   });
 
@@ -343,7 +392,7 @@ describe('ForNavigationMenu', () => {
       await flush();
       vi.advanceTimersByTime(150);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
 
     it('cancels a pending hover-open when the pointer leaves the same closed trigger (#590 F5)', async () => {
@@ -363,7 +412,7 @@ describe('ForNavigationMenu', () => {
       // The pending open is cancelled — the menu must not open after the pointer left.
       vi.advanceTimersByTime(1000);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
   });
 
@@ -386,7 +435,7 @@ describe('ForNavigationMenu', () => {
 
       triggers[0]!.click();
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
 
       triggers[1]!.dispatchEvent(pointer('pointerenter'));
       await flush();
@@ -402,18 +451,52 @@ describe('ForNavigationMenu', () => {
       await flush();
       triggers[0]!.click();
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
 
       vi.advanceTimersByTime(300);
       await flush();
 
       triggers[1]!.dispatchEvent(pointer('pointerenter'));
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
 
       vi.advanceTimersByTime(199);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      vi.advanceTimersByTime(1);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+    });
+
+    it('a debounced close that lands on an already-closed menu does not start the window', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      // Queue a hover close, then let the consumer clear the value through
+      // [(value)] before the debounce fires. The queued close now lands with
+      // nothing open and must short-circuit instead of arming the skip window.
+      triggers[0]!.dispatchEvent(pointer('pointerleave'));
+      await flush();
+      fixture.componentInstance.open.set(null);
+      await flush();
+
+      vi.advanceTimersByTime(150);
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      vi.advanceTimersByTime(199);
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
 
       vi.advanceTimersByTime(1);
       await flush();
@@ -438,7 +521,7 @@ describe('ForNavigationMenu', () => {
       await flush();
       vi.advanceTimersByTime(1000);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
 
     it('a touch press-and-hold then release opens the item exactly once', async () => {
@@ -450,7 +533,7 @@ describe('ForNavigationMenu', () => {
       await flush();
       vi.advanceTimersByTime(400);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
 
       trigger.dispatchEvent(pointer('pointerleave', 'touch'));
       trigger.click();
@@ -478,7 +561,7 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBe('products');
 
       await tap();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
 
       vi.advanceTimersByTime(50);
       await tap();
@@ -518,7 +601,7 @@ describe('ForNavigationMenu', () => {
 
       vi.advanceTimersByTime(150);
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
   });
 
@@ -537,7 +620,7 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBe('products');
       pressKey(trigger, ' ');
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
 
     it('ArrowDown opens the disclosure (horizontal orientation)', async () => {
@@ -579,7 +662,7 @@ describe('ForNavigationMenu', () => {
       pressKey(trigger, 'Escape');
       await flush();
 
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
       expect(document.activeElement).toBe(trigger);
     });
 
@@ -684,7 +767,7 @@ describe('ForNavigationMenu', () => {
       try {
         stranger.dispatchEvent(pointer('pointerdown'));
         await flush();
-        expect(fixture.componentInstance.open()).toBe('');
+        expect(fixture.componentInstance.open()).toBeNull();
       } finally {
         stranger.remove();
       }
@@ -703,7 +786,7 @@ describe('ForNavigationMenu', () => {
       await flush();
       expect(root.getAttribute('data-state')).toBe('open');
 
-      fixture.componentInstance.open.set('');
+      fixture.componentInstance.open.set(null);
       await flush();
       expect(root.getAttribute('data-state')).toBe('closed');
     });
@@ -727,7 +810,7 @@ describe('ForNavigationMenu', () => {
         const link = root.querySelector<HTMLElement>('a[forNavigationMenuLink]')!;
         link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
         await flush();
-        expect(fixture.componentInstance.open()).toBe('');
+        expect(fixture.componentInstance.open()).toBeNull();
         expect(root.getAttribute('data-state')).toBe('closed');
       } finally {
         outside.remove();
@@ -771,7 +854,7 @@ describe('ForNavigationMenu', () => {
 
       trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
 
     it('is a no-op when nothing is open (avoids extra work for every Tab)', async () => {
@@ -787,8 +870,8 @@ describe('ForNavigationMenu', () => {
           new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
         );
         await flush();
-        // Open stays at '' (nothing was open) and data-state stays "closed".
-        expect(fixture.componentInstance.open()).toBe('');
+        // Open stays null (nothing was open) and data-state stays "closed".
+        expect(fixture.componentInstance.open()).toBeNull();
         expect(root.getAttribute('data-state')).toBe('closed');
       } finally {
         outside.remove();
@@ -929,7 +1012,7 @@ describe('ForNavigationMenu', () => {
       `,
     })
     class DisabledNavMenuHost {
-      readonly open = signal('');
+      readonly open = signal<string | null>(null);
       readonly menuDisabled = signal(false);
       readonly itemDisabled = signal(false);
     }
@@ -1010,11 +1093,11 @@ describe('ForNavigationMenu', () => {
 
       triggers[0]!.click();
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
 
       pressKey(triggers[0]!, 'Enter');
       await flush();
-      expect(fixture.componentInstance.open()).toBe('');
+      expect(fixture.componentInstance.open()).toBeNull();
     });
 
     it('preserves a consumer-set static disabled attribute on the trigger', async () => {

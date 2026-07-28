@@ -66,7 +66,7 @@ class FakeResizeObserver {
   `,
 })
 class MegaMenuHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
 }
 
 @Component({
@@ -91,7 +91,7 @@ class MegaMenuHost {
   `,
 })
 class NoViewportHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
 }
 
 /**
@@ -139,7 +139,7 @@ class NoViewportHost {
   `,
 })
 class OverlappingMegaMenuHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
   readonly mountProducts = signal(false);
   readonly mountSolutions = signal(false);
   readonly mountCompany = signal(false);
@@ -196,7 +196,7 @@ class OverlappingMegaMenuHost {
   `,
 })
 class LateTriggerMegaMenuHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
   readonly mountProducts = signal(false);
   readonly mountSolutions = signal(false);
   readonly mountCompany = signal(false);
@@ -251,7 +251,7 @@ class LateTriggerMegaMenuHost {
   `,
 })
 class ExternalViewportMegaMenuHost {
-  readonly open = signal('');
+  readonly open = signal<string | null>(null);
 }
 
 describe('ForNavigationMenuViewport', () => {
@@ -292,7 +292,7 @@ describe('ForNavigationMenuViewport', () => {
       const viewport = query<HTMLElement>('[data-id="viewport"]')!;
       expect(viewport.children.length).toBe(1);
 
-      fixture.componentInstance.open.set('');
+      fixture.componentInstance.open.set(null);
       await flush();
 
       // @if unmount destroys the embedded view; viewport ends up empty.
@@ -352,7 +352,7 @@ describe('ForNavigationMenuViewport', () => {
         );
         await flush();
 
-        expect(fixture.componentInstance.open()).toBe('');
+        expect(fixture.componentInstance.open()).toBeNull();
         expect(root.getAttribute('data-state')).toBe('closed');
         expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
       } finally {
@@ -389,7 +389,7 @@ describe('ForNavigationMenuViewport', () => {
       try {
         stranger.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
         await flush();
-        expect(fixture.componentInstance.open()).toBe('');
+        expect(fixture.componentInstance.open()).toBeNull();
       } finally {
         stranger.remove();
       }
@@ -554,7 +554,7 @@ describe('ForNavigationMenuViewport', () => {
       await flush();
       expect(viewport.getAttribute('data-state')).toBe('open');
 
-      fixture.componentInstance.open.set('');
+      fixture.componentInstance.open.set(null);
       await flush();
       expect(viewport.getAttribute('data-state')).toBe('closed');
     });
@@ -615,15 +615,15 @@ describe('ForNavigationMenuViewport', () => {
       const solutions = query<HTMLElement>('[data-id="solutions"]')!;
       expect(solutions.getAttribute('data-motion')).toBe('from-end');
 
-      fixture.componentInstance.open.set('');
+      fixture.componentInstance.open.set(null);
       await flush();
       // Solutions has been destroyed; nothing to assert on the leaving side
-      // because @if removes it. The currently-open value is '', so any
+      // because @if removes it. The currently-open value is null, so any
       // remounted content would have no motion.
       fixture.componentInstance.open.set('solutions');
       await flush();
       const reopened = query<HTMLElement>('[data-id="solutions"]')!;
-      // Previous active was '', so no comparison applies.
+      // Previous active was null, so no comparison applies.
       expect(reopened.hasAttribute('data-motion')).toBe(false);
     });
   });

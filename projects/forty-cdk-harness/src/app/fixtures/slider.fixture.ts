@@ -106,7 +106,7 @@ import { ForSlider, ForSliderRange, ForSliderThumb, ForSliderTrack } from 'forty
           <span
             forSliderThumb
             [index]="i"
-            [label]="value().length > 1 ? (i === 0 ? 'Min' : 'Max') : 'Value'"
+            [ariaLabel]="value().length > 1 ? (i === 0 ? 'Min' : 'Max') : 'Value'"
             [attr.data-testid]="'thumb-' + i"
           ></span>
         }

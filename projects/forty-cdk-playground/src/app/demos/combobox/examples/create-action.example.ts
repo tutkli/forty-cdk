@@ -44,7 +44,7 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
       @if (open()) {
         <div forComboboxContent class="ca-combobox-content" animate.enter="ca-combobox-pop-in">
           @if (canCreate()) {
-            <button forComboboxAction class="ca-combobox-action" (action)="createTag()">
+            <button forComboboxAction class="ca-combobox-action" (activate)="createTag()">
               <span aria-hidden="true">＋</span> Create "{{ query().trim() }}"
             </button>
           }

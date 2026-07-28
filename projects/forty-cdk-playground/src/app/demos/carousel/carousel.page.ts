@@ -46,7 +46,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
 
       <playground-demo
         title="Drag / swipe"
-        subtitle="Add the opt-in <code>[forCarouselDrag]</code> directive to the viewport for pointer drag and touch swipe. The track follows the finger 1:1 via <code>--for-carousel-drag</code>, then snaps to the nearest slide on release."
+        subtitle="Add the opt-in <code>[forCarouselDrag]</code> directive to the viewport for pointer drag and touch swipe. The track follows the finger 1:1 via <code>--for-carousel-swipe-movement-x/y</code>, then snaps to the nearest slide on release."
         sourcePath="carousel/examples/drag.example.ts"
       >
         <app-carousel-drag-example />

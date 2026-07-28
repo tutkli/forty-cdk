@@ -2,10 +2,10 @@ import { DestroyRef, ElementRef, inject, type Signal } from '@angular/core';
 
 import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import {
-  injectDismissableLayer,
-  type DismissableLayerActivateOptions,
-  type DismissableLayerNesting,
-} from '../dismissable-layer/dismissable-layer';
+  injectDismissibleLayer,
+  type DismissibleLayerActivateOptions,
+  type DismissibleLayerNesting,
+} from '../dismissible-layer/dismissible-layer';
 import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
 import { InertSiblingsStack, MODAL_PEER_ATTRIBUTE } from '../inert-siblings/inert-siblings';
@@ -26,7 +26,7 @@ export type OverlayShellPositionerConfig =
   | ({ readonly kind: 'item-aligned' } & ItemAlignedConfig);
 
 /**
- * Dismissable-layer wiring. The shell owns the pointer/focus outside-interaction
+ * Dismissible-layer wiring. The shell owns the pointer/focus outside-interaction
  * wiring that every trigger-anchored overlay (Popover, Menu / MenuSub /
  * ContextMenu / DropdownMenu, Combobox, Select, date-picker) used to
  * duplicate verbatim:
@@ -90,10 +90,10 @@ export interface OverlayShellDismissConfig {
   /**
    * Declared nesting position of this surface inside a chain of structurally
    * nested overlays (a menu and its submenus). Forwarded verbatim to the
-   * dismissable layer so the stack orders the chain by depth instead of by the
+   * dismissible layer so the stack orders the chain by depth instead of by the
    * order the levels happened to render in. Omit for a standalone overlay.
    */
-  readonly nesting?: DismissableLayerNesting;
+  readonly nesting?: DismissibleLayerNesting;
 }
 
 /**
@@ -174,7 +174,7 @@ export interface OverlayShellConfig {
  *    Both positioners portal by default, so the shell never calls
  *    `injectPortal` itself — the consumer must NOT either, on pain of
  *    double-portaling (see #106).
- * 2. Dismissable layer. When `dismiss` is configured, creates a layer for
+ * 2. Dismissible layer. When `dismiss` is configured, creates a layer for
  *    the host element and activates it inside `afterNextRender`. Each wired
  *    outside channel is self-closing: it builds one `VetoableNativeEvent` per
  *    physical interaction, hands it to the specific (`pointerDownOutside` /
@@ -197,14 +197,14 @@ export interface OverlayShellConfig {
  *    and, if neither vetoes, calls `target()?.focus()`.
  *
  * Destroy ordering matches the per-primitive code that this helper replaced.
- * Hooks fire in registration order: `injectDismissableLayer` runs first
+ * Hooks fire in registration order: `injectDismissibleLayer` runs first
  * (deactivate + remove from stack), then the positioner's portal helper
  * (`el.remove()`), and the return-focus hook is registered last so it runs
  * after the portaled DOM node is detached — the trigger receives the focus
  * event in a stable layout.
  *
  * Must be called from an injection context (typically the directive
- * constructor). Forwards the host's `ElementRef` to the dismissable layer
+ * constructor). Forwards the host's `ElementRef` to the dismissible layer
  * and the positioner; the consumer never has to touch them.
  *
  * @example
@@ -236,15 +236,15 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   const el = host.nativeElement;
   const inertStack = inject(InertSiblingsStack);
 
-  // 1. Dismissable layer. Created BEFORE the positioner so its
-  //    `DestroyRef.onDestroy` (dismissable.deactivate) registers first and
+  // 1. Dismissible layer. Created BEFORE the positioner so its
+  //    `DestroyRef.onDestroy` (dismissible.deactivate) registers first and
   //    therefore runs first on teardown — i.e. the layer is removed from
   //    the stack before the positioner's portal removes the node from the
   //    DOM. That ordering matches every pre-shell *-content directive and
   //    avoids a window where a focusin fired during DOM removal could
   //    route through `handleFocusIn` and trigger a spurious onFocusOutside.
   const dismissCfg = config.dismiss;
-  const layer = dismissCfg !== undefined ? injectDismissableLayer() : null;
+  const layer = dismissCfg !== undefined ? injectDismissibleLayer() : null;
 
   // 2. Positioner. The kind is read once at construction; switching modes
   //    at runtime would require unmounting + remounting the directive,
@@ -263,10 +263,10 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
   //    fully-rendered host element (exempt-element queries, focus targets).
   //    `afterNextRenderCancellable` makes the destroy-before-render path safe.
   //    On the true-async path (queued render after destroy) the callback is
-  //    cancelled, so the dismissable layer is never pushed onto the stack. On
+  //    cancelled, so the dismissible layer is never pushed onto the stack. On
   //    the synchronous-teardown path the callback flushes just before the
   //    layer's own `DestroyRef.onDestroy` (registered above via
-  //    `injectDismissableLayer`, so it runs first among the destroy hooks),
+  //    `injectDismissibleLayer`, so it runs first among the destroy hooks),
   //    which pops the just-pushed layer. Either way the stack is left without
   //    a dead topmost entry that would swallow every later Escape /
   //    pointer-down-outside.
@@ -292,7 +292,7 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
     }
 
     if (layer && dismissCfg) {
-      const options: DismissableLayerActivateOptions = {
+      const options: DismissibleLayerActivateOptions = {
         channels: outsideVetoChannels(dismissCfg),
         ...buildOutsideVetoOptions(dismissCfg),
       };

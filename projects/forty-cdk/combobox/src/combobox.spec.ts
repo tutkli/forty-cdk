@@ -3422,7 +3422,7 @@ describe('ForCombobox object values', () => {
         [(query)]="query"
         [(value)]="value"
         [(open)]="open"
-        [isItemEqualToValue]="equals"
+        [compareWith]="equals"
         [itemToStringLabel]="toLabel"
       >
         <input forComboboxInput />
@@ -3471,7 +3471,7 @@ describe('ForCombobox object values', () => {
           #cb="forCombobox"
           [(value)]="value"
           [(open)]="open"
-          [isItemEqualToValue]="equals"
+          [compareWith]="equals"
           [itemToStringLabel]="toLabel"
         >
           <input forComboboxInput />
@@ -3507,10 +3507,10 @@ describe('ForCombobox object values', () => {
     expect(selectedText()).toBe('Rome');
   });
 
-  it('isItemEqualToValue drives selection lookup (different reference, same id)', async () => {
+  it('compareWith drives selection lookup (different reference, same id)', async () => {
     const r = renderHost(ObjectHost);
     // Pre-seed value with a NEW reference that has the same id as one of
-    // the registered options. Without isItemEqualToValue the option would
+    // the registered options. Without compareWith the option would
     // not be recognised as selected (=== fails on distinct refs).
     r.instance.value.set([{ id: 'paris', name: 'Paris' }]);
     r.instance.open.set(true);
@@ -3527,7 +3527,7 @@ describe('ForCombobox object values', () => {
     @Component({
       imports: [ForCombobox, ForComboboxInput],
       template: `
-        <div forCombobox name="city" [(value)]="value" [isItemEqualToValue]="equals">
+        <div forCombobox name="city" [(value)]="value" [compareWith]="equals">
           <input forComboboxInput />
         </div>
       `,
@@ -3555,7 +3555,7 @@ describe('ForCombobox object values', () => {
           multiple
           name="cities"
           [(value)]="value"
-          [isItemEqualToValue]="equals"
+          [compareWith]="equals"
           [itemToFormValue]="toForm"
         >
           <input forComboboxInput />
@@ -3594,7 +3594,7 @@ describe('ForCombobox object values', () => {
           [(query)]="query"
           [(value)]="value"
           [(open)]="open"
-          [isItemEqualToValue]="equals"
+          [compareWith]="equals"
           [itemToStringLabel]="toLabel"
         >
           <div forComboboxChips>
@@ -3630,7 +3630,7 @@ describe('ForCombobox object values', () => {
       );
     }
 
-    it('toggles object values in/out of [(value)] using isItemEqualToValue', async () => {
+    it('toggles object values in/out of [(value)] using compareWith', async () => {
       const r = renderHost(MultiObjectHost);
       r.instance.open.set(true);
       await flush(r.fixture);

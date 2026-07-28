@@ -120,7 +120,7 @@ export class ForToast implements ForToastContext {
    * Reload") can be dismissed by the only control the user is meant to use.
    * Programmatic close via `ForToastRef.dismiss()` is also always honored.
    */
-  readonly closable = input(true, { transform: booleanAttribute });
+  readonly dismissible = input(true, { transform: booleanAttribute });
 
   /**
    * Direction(s) the user can swipe to dismiss the toast. Pass a
@@ -168,9 +168,9 @@ export class ForToast implements ForToastContext {
   protected readonly swipeMovementY = this.#swipeMovementY.asReadonly();
 
   readonly #normalizedSwipeDirections = computed<readonly SwipeDirection[]>(() => {
-    // A non-closable toast forbids user-initiated dismissal of any kind —
+    // A non-dismissible toast forbids user-initiated dismissal of any kind —
     // swipe is exactly that, so disable it regardless of the input.
-    if (!this.closable()) {
+    if (!this.dismissible()) {
       return [];
     }
     const raw = this.swipeDirection();
@@ -256,18 +256,18 @@ export class ForToast implements ForToastContext {
     this.paused = this.#pause.paused;
 
     // Start (or reset) the auto-dismiss timer whenever `duration` /
-    // `closable` / `restartToken` changes. Pause / resume are handled
+    // `dismissible` / `restartToken` changes. Pause / resume are handled
     // imperatively in `#onPausedChange`, so we read `paused()` via
     // `untracked()` here — otherwise the effect would re-run on hover and
     // clobber the in-flight remaining-ms capture.
     effect(() => {
       const ms = this.duration();
-      const closable = this.closable();
+      const dismissible = this.dismissible();
       this.restartToken();
       const paused = untracked(this.paused);
       this.#cancelTimer();
       this.#remainingMs = ms;
-      const started = ms > 0 && closable;
+      const started = ms > 0 && dismissible;
       if (started && !paused) {
         this.#scheduleTimer();
       }
@@ -359,7 +359,7 @@ export class ForToast implements ForToastContext {
   }
 
   requestClose(reason: ForToastCloseReason): void {
-    if (!this.closable() && reason !== 'action' && reason !== 'programmatic') {
+    if (!this.dismissible() && reason !== 'action' && reason !== 'programmatic') {
       return;
     }
     this.#cancelTimer();
@@ -405,7 +405,7 @@ export class ForToast implements ForToastContext {
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape' || !this.closable()) {
+    if (event.key !== 'Escape' || !this.dismissible()) {
       return;
     }
     event.preventDefault();
@@ -420,7 +420,7 @@ export class ForToast implements ForToastContext {
         this.#remainingMs = Math.max(1, this.#timerEndsAt - Date.now());
         this.#cancelTimer();
       }
-    } else if (this.duration() > 0 && this.closable() && this.#remainingMs > 0) {
+    } else if (this.duration() > 0 && this.dismissible() && this.#remainingMs > 0) {
       this.#scheduleTimer();
     }
   }

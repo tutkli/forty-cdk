@@ -112,7 +112,7 @@ import { ForToastTitle } from './toast-title';
         [variant]="toast.config.variant ?? 'info'"
         [duration]="toast.config.duration ?? defaultDuration()"
         [restartToken]="toast.generation"
-        [closable]="toast.config.closable !== false"
+        [dismissible]="toast.config.dismissible !== false"
         [swipeDirection]="toast.config.swipeDirection ?? swipeDirection()"
         [swipeThreshold]="toast.config.swipeThreshold ?? swipeThreshold()"
         [attr.data-front-stack-index]="i"
@@ -138,7 +138,7 @@ import { ForToastTitle } from './toast-title';
               {{ action.label }}
             </button>
           }
-          @if (toast.config.closable !== false) {
+          @if (toast.config.dismissible !== false) {
             <button forToastClose>×</button>
           }
         }

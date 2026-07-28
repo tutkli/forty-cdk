@@ -52,7 +52,7 @@ test.describe('Tooltip', () => {
     // Hover-open the tooltip, then move focus to an unrelated element so the
     // Escape keydown dispatches there rather than on the trigger. WCAG 2.1 SC
     // 1.4.13 requires hover content to dismiss on Escape regardless of focus
-    // position; it routes through the content's document-level dismissable
+    // position; it routes through the content's document-level dismissible
     // layer.
     await el(page, 'trigger').hover();
     await expect(el(page, 'tooltip')).toBeVisible();

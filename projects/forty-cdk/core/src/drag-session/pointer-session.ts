@@ -43,7 +43,7 @@
  * own the `Escape` handling themselves (e.g. `ForTreeNodeDrag`) stay unaffected. The listener is
  * registered in the **capture** phase and, while armed, consumes the event (`preventDefault` +
  * `stopPropagation`) so the `Escape` that cancels a drag inside an overlay never reaches the
- * enclosing dismissable layer's bubble-phase `keydown` handler — cancelling the drag no longer
+ * enclosing dismissible layer's bubble-phase `keydown` handler — cancelling the drag no longer
  * also dismisses the surrounding dialog / popover / drawer. A non-armed press stays transparent:
  * the event is left untouched so a plain `Escape` still dismisses the overlay as usual.
  *

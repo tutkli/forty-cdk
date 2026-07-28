@@ -12,7 +12,7 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissableLayerContract } from '../../src/test-utils/contract';
+import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
@@ -106,7 +106,7 @@ class AriaLabelHost {
     </div>
   `,
 })
-class DismissableContractHost {
+class DismissibleContractHost {
   readonly open = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
@@ -385,9 +385,9 @@ describe('ForPopover', () => {
   // mount / unmount wiring (content portalled in, removed on close) and the
   // autoFocus veto-object shape below. See testing.md §E2E.
 
-  assertDismissableLayerContract({
+  assertDismissibleLayerContract({
     mount: async (options = {}) => {
-      const r = renderHost(DismissableContractHost);
+      const r = renderHost(DismissibleContractHost);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;
@@ -766,7 +766,7 @@ describe('ForPopover', () => {
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
 
-      // The trigger stays exempt from the dismissable layer (no double-close
+      // The trigger stays exempt from the dismissible layer (no double-close
       // race when the consumer clicks it to toggle).
       const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
       Object.defineProperty(event, 'target', { value: trigger, configurable: true });

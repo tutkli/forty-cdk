@@ -91,7 +91,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    * Fires when the user presses Escape while the card is open, regardless of
    * where focus currently lives — on the trigger, inside the portaled
    * content, or on an unrelated element (the common case for a card opened by
-   * hover). Routed through the content's document-level dismissable layer.
+   * hover). Routed through the content's document-level dismissible layer.
    * Call `preventDefault()` on the emitted veto to suppress the automatic
    * close. The native `KeyboardEvent` is on `.event`.
    */
@@ -261,7 +261,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
   /**
    * Emit `(escapeKeyDown)` and, unless the consumer calls `preventDefault()`
    * on the veto, close immediately. Driven by the content's document-level
-   * dismissable layer so Escape works no matter where focus currently lives
+   * dismissible layer so Escape works no matter where focus currently lives
    * — including a hover-opened card with focus on an unrelated element.
    */
   emitEscapeKeyDown(event: KeyboardEvent): void {

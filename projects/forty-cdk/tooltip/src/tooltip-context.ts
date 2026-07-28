@@ -65,7 +65,7 @@ export interface ForTooltipContext extends AnchoredPositioningContext {
   cancelPending(): void;
   /**
    * Emit the public `(escapeKeyDown)` output and, unless prevented, close.
-   * Driven by the content's document-level dismissable layer, so the tooltip
+   * Driven by the content's document-level dismissible layer, so the tooltip
    * responds to Escape regardless of where focus lives — including a
    * hover-opened tooltip while focus sits on an unrelated element (WCAG 2.1 SC
    * 1.4.13) — and dismisses topmost-first when layered over a dialog.

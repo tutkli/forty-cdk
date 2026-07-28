@@ -120,7 +120,7 @@ interface Option {
       flex-direction: column;
       gap: 2px;
       width: var(--for-anchor-width);
-      max-height: var(--for-select-content-available-height);
+      max-height: var(--for-available-height);
       overflow-y: auto;
       padding: 4px;
       background: var(--pg-surface);

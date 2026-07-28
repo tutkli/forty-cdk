@@ -173,5 +173,5 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
   `,
 })
 export class MenubarVerticalRtlExample {
-  protected readonly openMenu = signal('');
+  protected readonly openMenu = signal<string | null>(null);
 }

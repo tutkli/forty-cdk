@@ -32,7 +32,6 @@ export const FOR_SLIDER_HOST_DIRECTIVE_INPUTS = [
   'errors',
   'invalid',
   'inverted',
-  'largeStep',
   'max',
   'min',
   'minStepsBetweenThumbs',
@@ -42,6 +41,7 @@ export const FOR_SLIDER_HOST_DIRECTIVE_INPUTS = [
   'readonly',
   'required',
   'step',
+  'stepMultiplier',
   'touched',
 ] as const;
 

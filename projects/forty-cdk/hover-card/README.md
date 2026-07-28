@@ -181,7 +181,7 @@ For an **instant, unconditional** open or close that ignores the delays and ever
 
 - **Tab** to the trigger → opens the card after `openDelay`.
 - **Blur** (Tab away) → closes the card after `closeDelay`.
-- **Escape** while open → closes immediately, regardless of where focus currently lives (trigger, portaled content, or an unrelated element). Routed through a document-level dismissable layer that is active only while the card is open. Call `preventDefault()` on the `(escapeKeyDown)` output to keep it open.
+- **Escape** while open → closes immediately, regardless of where focus currently lives (trigger, portaled content, or an unrelated element). Routed through a document-level dismissible layer that is active only while the card is open. Call `preventDefault()` on the `(escapeKeyDown)` output to keep it open.
 
 ## Behavior notes
 
@@ -192,7 +192,7 @@ For an **instant, unconditional** open or close that ignores the delays and ever
 
 - **Not for tooltips.** If your overlay is a non-interactive label / hint, use `[forTooltip]`. HoverCard does not set `aria-describedby`; the trigger keeps its own label.
 - **Trigger must stand alone.** Keyboard users don't see hover-only previews. Make sure the trigger's text / `aria-label` already describes its destination or action.
-- **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, no matter where focus currently lives — on the trigger, on a link inside the content, or on an unrelated element (the common case for a card opened by hover). Escape is routed through a document-level dismissable layer that is active only while the card is open.
+- **Focus opens the card** so keyboard users get the preview when tabbing through a list. Blur closes it; Escape closes immediately, no matter where focus currently lives — on the trigger, on a link inside the content, or on an unrelated element (the common case for a card opened by hover). Escape is routed through a document-level dismissible layer that is active only while the card is open.
 - **Pointer interaction inside the card.** Moving the cursor from the trigger to the content cancels the close timer, so users can copy text or follow nested links. A pointer-grace "safe triangle" bridges the gap between the trigger and the content: while the pointer travels across the default `sideOffset` gap toward the card it is assumed to be heading there, so the card stays open even when `closeDelay` is `0`. This also holds when the content overlaps its trigger (a negative `sideOffset`). The card closes once the pointer leaves the safe triangle without reaching the card, or on blur / Escape / scroll.
 - **Use `provideForHoverCardDefaults` per scope** when you need a different cadence for, e.g., a list of profile cards (faster) vs. a sidebar of glossary entries (slower).
 

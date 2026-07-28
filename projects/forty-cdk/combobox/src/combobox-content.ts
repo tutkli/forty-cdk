@@ -24,11 +24,11 @@ import { injectComboboxContext } from './combobox-context';
  *   a neutral popup surface; `[forComboboxList]` takes over the listbox role and
  *   owns the options, the input lives inside the panel, and the input's
  *   `aria-controls` points to the list. Keeps `data-state` and the positioner +
- *   dismissable layer unchanged.
+ *   dismissible layer unchanged.
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
- * natural mount cycle. While mounted, a `DismissableLayer` activates for
+ * natural mount cycle. While mounted, a `DismissibleLayer` activates for
  * pointer-down outside / focus outside; the input and (picker anatomy) the
  * trigger are exempt from outside checks.
  *
@@ -47,7 +47,7 @@ import { injectComboboxContext } from './combobox-context';
  *   the input directive; the shell's fallback channel covers presses that land on
  *   the surface or list instead.
  *
- * The lifecycle (positioner + dismissable layer, plus the picker anatomy's
+ * The lifecycle (positioner + dismissible layer, plus the picker anatomy's
  * focus bundles) is owned by the shared `injectOverlayShell` helper.
  */
 @Directive({

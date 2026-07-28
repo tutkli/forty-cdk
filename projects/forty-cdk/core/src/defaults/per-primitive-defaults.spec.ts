@@ -192,7 +192,7 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_SLIDER_DEFAULTS,
     fallback: FOR_SLIDER_FALLBACK_DEFAULTS,
     provide: provideForSliderDefaults,
-    override: { largeStep: 25 },
+    override: { stepMultiplier: 25 },
   }),
   defaultsCase({
     name: 'provideForAvatarDefaults',

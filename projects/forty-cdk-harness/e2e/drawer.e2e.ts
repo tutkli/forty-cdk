@@ -161,7 +161,7 @@ test.describe('Drawer', () => {
     await el(page, 'open-child').click();
     await expect(el(page, 'child-drawer')).toBeVisible();
     await expect(el(page, 'child-drawer')).toHaveAttribute('data-depth', '1');
-    await expect(el(page, 'drawer')).toHaveAttribute('data-state-nested', 'true');
+    await expect(el(page, 'drawer')).toHaveAttribute('data-state-nested', '');
   });
 
   test('nested: focus moves into child on open', async ({ page }) => {
@@ -215,11 +215,11 @@ test.describe('Drawer', () => {
     await gotoFixture(page, 'drawer', { nested: '1' });
     await el(page, 'trigger').click();
     await el(page, 'open-child').click();
-    await expect(el(page, 'drawer')).toHaveAttribute('data-state-nested', 'true');
+    await expect(el(page, 'drawer')).toHaveAttribute('data-state-nested', '');
 
     await el(page, 'child-close').click();
     await expect(el(page, 'child-drawer')).toHaveCount(0);
-    await expect(el(page, 'drawer')).not.toHaveAttribute('data-state-nested', 'true');
+    await expect(el(page, 'drawer')).not.toHaveAttribute('data-state-nested');
   });
 
   test('nested + scaleBackground: parent receives an inline transform while child is open', async ({
@@ -303,30 +303,33 @@ test.describe('Drawer', () => {
   // issue #178 / #195: the math (`closeThreshold * dimension`,
   // `'NNpx'` conversion, snap-target picking) all reads
   // `getBoundingClientRect()` and only makes sense against a real laid-out
-  // surface. The fixture exposes the (drag) / (release) payloads as
+  // surface. The fixture exposes the four swipe* payloads as
   // `<output>` text so each assertion is just an `expect.poll` on plain
   // strings.
   test.describe('swipe to dismiss', () => {
     test('drag past closeThreshold * dim dismisses with reason "swipe"', async ({ page }) => {
       // 200px-tall drawer × default closeThreshold 0.25 ⇒ 50px is the
       // dismissal threshold. Drag 120px down on the handle to clear it
-      // comfortably; (drag) emits along the way, (release) emits with
+      // comfortably; (swipeMove) emits along the way, (swipeEnd) emits with
       // willClose=true, and (close) follows with reason 'swipe'.
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
 
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
-      await expect(el(page, 'last-release-will-close')).toHaveText('true');
-      // (drag) emits on the arming pointermove and again on every move
-      // after that. A successful dismiss saw at least the start emission
-      // plus the big move ⇒ count >= 2.
-      const dragCount = Number(await el(page, 'drag-count').textContent());
-      expect(dragCount).toBeGreaterThan(1);
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
+      // (swipeStart) fires exactly once per gesture on the arming pointermove;
+      // (swipeMove) fires on that same move and on every move after it.
+      await expect(el(page, 'swipe-start-count')).toHaveText('1');
+      const swipeMoveCount = Number(await el(page, 'swipe-move-count').textContent());
+      expect(swipeMoveCount).toBeGreaterThanOrEqual(1);
+      // A pointer-up release is (swipeEnd) only — the cancel channel stays silent.
+      await expect(el(page, 'swipe-end-count')).toHaveText('1');
+      await expect(el(page, 'swipe-cancel-count')).toHaveText('0');
     });
 
     test('swipeToDismiss=false: a drag past closeThreshold does not arm or dismiss', async ({
@@ -334,22 +337,25 @@ test.describe('Drawer', () => {
     }) => {
       // Same 200px drawer and 120px drag that dismisses with the default
       // swipeToDismiss=true (first test in this block). With the input
-      // disabled the pointerdown listener never arms the gesture: no `(dragMove)`
-      // fires and the drawer stays mounted with no close reason.
+      // disabled the pointerdown listener never arms the gesture: no
+      // `(swipeStart)` / `(swipeMove)` fires and the drawer stays mounted with
+      // no close reason.
       await gotoFixture(page, 'drawer', { drawerHeight: '200', noSwipeToDismiss: '1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-start-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
 
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 120 });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-start-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'last-close-reason')).toHaveText('none');
     });
 
     test('drag short of closeThreshold returns to rest without closing', async ({ page }) => {
-      // 200px × 0.25 = 50px threshold; 30px does not cross it. (release)
+      // 200px × 0.25 = 50px threshold; 30px does not cross it. (swipeEnd)
       // emits with willClose=false and the drawer stays mounted at offset 0.
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
       await el(page, 'trigger').click();
@@ -359,18 +365,20 @@ test.describe('Drawer', () => {
 
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-close-reason')).toHaveText('none');
-      await expect(el(page, 'last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
       // No-snap-points branch on a no-close release: nextSnapPoint is null.
-      await expect(el(page, 'last-release-next-snap')).toHaveText('null');
-      // The drag delta is published on the --for-drawer-translate custom
-      // property; on a no-close release the offset returns to zero, so the
-      // property settles back to its "0px 0px" identity. `transform` is never
-      // touched by the drag (it is reserved for the scale / nested effect).
+      await expect(el(page, 'last-swipe-next-snap')).toHaveText('null');
+      // The swipe delta is published on the --for-drawer-swipe-movement-x / -y
+      // custom properties; on a no-close release the offset returns to zero, so
+      // both settle back to their "0px" identity. `transform` is never touched
+      // by the gesture (it is reserved for the scale / nested effect).
       const styles = await el(page, 'drawer').evaluate((node) => ({
-        dragVar: (node as HTMLElement).style.getPropertyValue('--for-drawer-translate'),
+        movementX: (node as HTMLElement).style.getPropertyValue('--for-drawer-swipe-movement-x'),
+        movementY: (node as HTMLElement).style.getPropertyValue('--for-drawer-swipe-movement-y'),
         transform: (node as HTMLElement).style.transform,
       }));
-      expect(styles.dragVar).toBe('0px 0px');
+      expect(styles.movementX).toBe('0px');
+      expect(styles.movementY).toBe('0px');
       expect(styles.transform).toBe('');
     });
 
@@ -387,12 +395,12 @@ test.describe('Drawer', () => {
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
     });
 
-    test('(drag) emits a non-zero percentage during the gesture', async ({ page }) => {
-      // The fixture mirrors the most recent `percentageDragged` into
-      // `last-drag-percent` (4-decimal string). On a 200px drawer with
+    test('(swipeMove) emits a non-zero progress during the gesture', async ({ page }) => {
+      // The fixture mirrors the most recent `progress` into
+      // `last-swipe-progress` (4-decimal string). On a 200px drawer with
       // closeThreshold lifted to 1.0 (no dismiss), drag 40px down so the
       // gesture stays well below close territory and the percentage lands
       // strictly between 0 and 1. We exercise the geometry, not the
@@ -403,17 +411,17 @@ test.describe('Drawer', () => {
 
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 40, release: false });
 
-      const percentText = await el(page, 'last-drag-percent').textContent();
-      const percent = Number(percentText);
-      expect(percent).toBeGreaterThan(0);
-      expect(percent).toBeLessThanOrEqual(1);
+      const progressText = await el(page, 'last-swipe-progress').textContent();
+      const progress = Number(progressText);
+      expect(progress).toBeGreaterThan(0);
+      expect(progress).toBeLessThanOrEqual(1);
 
       await page.mouse.up();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'last-release-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
     });
 
-    test('backdrop publishes --for-drawer-drag-progress and data-dragging during the gesture', async ({
+    test('backdrop publishes --for-drawer-swipe-progress and data-dragging during the gesture', async ({
       page,
     }) => {
       // The backdrop is portaled to <body> away from the surface, yet must
@@ -432,7 +440,7 @@ test.describe('Drawer', () => {
       const backdrop = el(page, 'backdrop');
       expect(
         await backdrop.evaluate((node) =>
-          node.style.getPropertyValue('--for-drawer-drag-progress'),
+          node.style.getPropertyValue('--for-drawer-swipe-progress'),
         ),
       ).toBe('0');
 
@@ -440,7 +448,7 @@ test.describe('Drawer', () => {
 
       await expect(backdrop).toHaveAttribute('data-dragging', '');
       const progress = await backdrop.evaluate((node) =>
-        Number(node.style.getPropertyValue('--for-drawer-drag-progress')),
+        Number(node.style.getPropertyValue('--for-drawer-swipe-progress')),
       );
       expect(progress).toBeGreaterThan(0);
       expect(progress).toBeLessThanOrEqual(1);
@@ -449,7 +457,7 @@ test.describe('Drawer', () => {
       await expect(backdrop).not.toHaveAttribute('data-dragging', '');
       expect(
         await backdrop.evaluate((node) =>
-          node.style.getPropertyValue('--for-drawer-drag-progress'),
+          node.style.getPropertyValue('--for-drawer-swipe-progress'),
         ),
       ).toBe('0');
     });
@@ -458,16 +466,16 @@ test.describe('Drawer', () => {
       page,
     }) => {
       // Two-phase: start a drag on the `first` button (on the drawer surface
-      // outside the handle) — no `(dragMove)` ever fires. Then start one on the
-      // handle and confirm the gesture arms (drag-count climbs).
+      // outside the handle) — no `(swipeMove)` ever fires. Then start one on the
+      // handle and confirm the gesture arms (swipe-move-count climbs).
       await gotoFixture(page, 'drawer', { drawerHeight: '200', handleOnly: '1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'surface-click-count')).toHaveText('0');
 
       await dragFrom(page, el(page, 'first'), { dx: 0, dy: 80 });
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-close-reason')).toHaveText('none');
 
@@ -490,7 +498,7 @@ test.describe('Drawer', () => {
       // (arm step is absorbed by the arming pointermove which fires
       // onSwipeStart and onSwipeMove with the same event, producing a
       // moveTowardEdge of 0). Position = 200 − 55 = 145 — closest to 148
-      // by 3 px, vs 55 px from 200 — and (release) snaps to '148px'.
+      // by 3 px, vs 55 px from 200 — and (swipeEnd) snaps to '148px'.
       await gotoFixture(page, 'drawer', {
         drawerHeight: '400',
         snap: '148px,0.5,1',
@@ -504,8 +512,8 @@ test.describe('Drawer', () => {
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 60 });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'last-release-will-close')).toHaveText('false');
-      await expect(el(page, 'last-release-next-snap')).toHaveText('148px');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-next-snap')).toHaveText('148px');
       await expect(el(page, 'active-snap')).toHaveText('148px');
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
@@ -527,7 +535,7 @@ test.describe('Drawer', () => {
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
-      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
     });
 
     test('snap point: a small peek on a tall sheet dismisses on a modest drag (threshold scales to the peek, not the full dim)', async ({
@@ -549,7 +557,7 @@ test.describe('Drawer', () => {
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
-      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
     });
 
     test('"NNpx" snap entry resolves against a known live dimension', async ({ page }) => {
@@ -567,7 +575,7 @@ test.describe('Drawer', () => {
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 200 });
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
-      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
     });
 
     // Multi-step coverage (#205): the directive must integrate pointer
@@ -575,14 +583,14 @@ test.describe('Drawer', () => {
     // shape of `dragFrom` masks any per-event-vs-cumulative regression
     // because there is only one delta to read; these specs drive many
     // pointermoves so a "latest delta" implementation would emit a
-    // near-zero `percentageDragged` and fail at the threshold maths.
-    test('multi-step drag: percentageDragged rises monotonically toward (steps × stepPx) / dim', async ({
+    // near-zero `progress` and fail at the threshold maths.
+    test('multi-step drag: swipe progress rises monotonically toward (steps × stepPx) / dim', async ({
       page,
     }) => {
       // 10 × 30 px = 300 px cumulative travel on a 400 px drawer; with
       // closeThreshold raised to 1 the gesture cannot dismiss, so the
       // release path just snaps back and we can read the final
-      // `(dragMove)` percent off the fixture. Final offset is 10 * 30 = 300,
+      // `(swipeMove)` progress off the fixture. Final offset is 10 * 30 = 300,
       // percent = 300 / 400 = 0.75. Polled per-step so a "latest delta"
       // regression (offset stuck at 30) would surface as a non-monotonic
       // sequence, not just a wrong terminal value.
@@ -602,27 +610,29 @@ test.describe('Drawer', () => {
 
       await page.mouse.move(startX, startY);
       await page.mouse.down();
-      // Arm: the swipe-dismiss helper fires onSwipeStart AND onSwipeMove
-      // with the same event, so the drawer emits (drag) twice (once with
-      // percentageDragged: 0 from #onSwipeStart, once from #onSwipeMove
-      // with moveTowardEdge = 0 ⇒ still 0). drag-count therefore lands
-      // on 2, not 1, after the arming pointermove.
+      // Arm: the swipe-dismiss helper fires onSwipeStart AND onSwipeMove with
+      // the same event, so the arming pointermove lands on two DIFFERENT
+      // channels — (swipeStart) once with progress 0, then (swipeMove) once
+      // (moveTowardEdge = 0 ⇒ still 0). Both counts are therefore 1 here, and
+      // only swipe-move-count climbs with the steps below.
       await page.mouse.move(startX, startY + armPx);
-      await expect(el(page, 'drag-count')).toHaveText('2');
-      await expect(el(page, 'last-drag-percent')).toHaveText('0.0000');
+      await expect(el(page, 'swipe-start-count')).toHaveText('1');
+      await expect(el(page, 'swipe-move-count')).toHaveText('1');
+      await expect(el(page, 'last-swipe-progress')).toHaveText('0.0000');
 
-      let lastPercent = 0;
+      let lastProgress = 0;
       for (let i = 1; i <= steps; i++) {
         await page.mouse.move(startX, startY + armPx + stepPx * i);
-        await expect(el(page, 'drag-count')).toHaveText(String(2 + i));
-        const percent = Number(await el(page, 'last-drag-percent').textContent());
-        expect(percent).toBeGreaterThan(lastPercent);
-        lastPercent = percent;
+        await expect(el(page, 'swipe-move-count')).toHaveText(String(1 + i));
+        const progress = Number(await el(page, 'last-swipe-progress').textContent());
+        expect(progress).toBeGreaterThan(lastProgress);
+        lastProgress = progress;
       }
-      // Final cumulative offset = 10 * 30 = 300; percent = 300 / 400 = 0.75.
+      // Final cumulative offset = 10 * 30 = 300; progress = 300 / 400 = 0.75.
       // Allow 1% tolerance for floating-point / sub-pixel rounding.
-      expect(lastPercent).toBeGreaterThan(0.74);
-      expect(lastPercent).toBeLessThan(0.76);
+      expect(lastProgress).toBeGreaterThan(0.74);
+      expect(lastProgress).toBeLessThan(0.76);
+      await expect(el(page, 'swipe-start-count')).toHaveText('1');
 
       await page.mouse.up();
     });
@@ -644,7 +654,7 @@ test.describe('Drawer', () => {
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
-      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
     });
 
     test('multi-step drag: snap-point selection lands at the snap closest to the cumulative end position', async ({
@@ -676,8 +686,8 @@ test.describe('Drawer', () => {
       });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'last-release-will-close')).toHaveText('false');
-      await expect(el(page, 'last-release-next-snap')).toHaveText('148px');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-next-snap')).toHaveText('148px');
       await expect(el(page, 'active-snap')).toHaveText('148px');
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '148px');
     });
@@ -702,48 +712,51 @@ test.describe('Drawer', () => {
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: -120 });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'last-release-will-close')).toHaveText('false');
-      await expect(el(page, 'last-release-next-snap')).toHaveText('1');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
+      await expect(el(page, 'last-swipe-next-snap')).toHaveText('1');
       await expect(el(page, 'active-snap')).toHaveText('1');
       await expect(el(page, 'drawer')).toHaveAttribute('data-active-snap-point', '1');
     });
 
     test('without snapPoints, an upward drag does not arm or dismiss', async ({ page }) => {
       // A plain (no-snap) drawer dismisses only toward its anchored edge. An
-      // upward drag is dropped by the swipe helper: no (drag) fires, no
+      // upward drag is dropped by the swipe helper: no (swipeMove) fires, no
       // (close), and the drawer stays put.
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
 
       await dragFrom(page, el(page, 'handle'), { dx: 0, dy: -80 });
 
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-close-reason')).toHaveText('none');
     });
 
-    test('publishes --for-drawer-translate on the host, surviving a [style.*] host binding', async ({
+    test('publishes --for-drawer-swipe-movement-x / -y on the host, surviving a [style.*] host binding', async ({
       page,
     }) => {
-      // Hardening: the drag delta is published as the --for-drawer-translate
-      // custom property rather than a directly-written translate/transform,
-      // precisely so it is NOT dropped when the consumer binds a template
-      // [style.*] on the same host. The fixture binds [style.height.px], which
-      // would silently drop a directly-written inline `translate`; the custom
-      // property survives it. The directive seeds the property to its "0px 0px"
-      // identity on mount, so a clobber would surface as an empty read here —
-      // no gesture or layout needed (the delta-reflection and seamless release
-      // are covered by the snap-resolution and drag-direction specs above).
+      // Hardening: the swipe delta is published as the
+      // --for-drawer-swipe-movement-x / -y custom properties rather than a
+      // directly-written translate/transform, precisely so it is NOT dropped
+      // when the consumer binds a template [style.*] on the same host. The
+      // fixture binds [style.height.px], which would silently drop a
+      // directly-written inline `translate`; the custom properties survive it.
+      // The directive seeds both to their "0px" identity on mount, so a clobber
+      // would surface as an empty read here — no gesture or layout needed (the
+      // delta-reflection and seamless release are covered by the
+      // snap-resolution and drag-direction specs above).
       await gotoFixture(page, 'drawer', { drawerHeight: '200' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      const dragVar = await el(page, 'drawer').evaluate((node) =>
-        (node as HTMLElement).style.getPropertyValue('--for-drawer-translate'),
-      );
-      expect(dragVar).toBe('0px 0px');
+      const movement = await el(page, 'drawer').evaluate((node) => ({
+        x: (node as HTMLElement).style.getPropertyValue('--for-drawer-swipe-movement-x'),
+        y: (node as HTMLElement).style.getPropertyValue('--for-drawer-swipe-movement-y'),
+      }));
+      expect(movement.x).toBe('0px');
+      expect(movement.y).toBe('0px');
     });
   });
 
@@ -770,7 +783,7 @@ test.describe('Drawer', () => {
 
       await expect(el(page, 'drawer')).toHaveCount(0);
       await expect(el(page, 'last-close-reason')).toHaveText('swipe');
-      await expect(el(page, 'last-release-will-close')).toHaveText('true');
+      await expect(el(page, 'last-swipe-will-close')).toHaveText('true');
     });
 
     test('@mobile flick velocity dismisses below the position threshold', async ({ page }) => {
@@ -864,7 +877,7 @@ test.describe('Drawer', () => {
       await gotoFixture(page, 'drawer', { drawerHeight: '300', scrollable: '1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
 
       // Scroll the inner content away from the top so the 'down' gesture has
       // room to scroll up (scrollTop > 0).
@@ -874,11 +887,11 @@ test.describe('Drawer', () => {
 
       // A downward drag starting inside the scroller. With scrollTop > 0 the
       // helper leaves the gesture to the inner scroller: the drawer never arms
-      // (no (drag) emission) and stays mounted with no close reason.
+      // (no (swipeMove) emission) and stays mounted with no close reason.
       await dragFrom(page, el(page, 'scroll-content'), { dx: 0, dy: 120 });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'last-close-reason')).toHaveText('none');
     });
 
@@ -888,7 +901,7 @@ test.describe('Drawer', () => {
       await gotoFixture(page, 'drawer', { drawerHeight: '300', scrollable: '1' });
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'surface-click-count')).toHaveText('0');
 
       await el(page, 'scroll-content').evaluate((node) => {
@@ -898,7 +911,7 @@ test.describe('Drawer', () => {
       await dragFrom(page, el(page, 'scroll-content'), { dx: 0, dy: 120 });
 
       await expect(el(page, 'drawer')).toBeVisible();
-      await expect(el(page, 'drag-count')).toHaveText('0');
+      await expect(el(page, 'swipe-move-count')).toHaveText('0');
       await expect(el(page, 'last-close-reason')).toHaveText('none');
 
       await el(page, 'scroll-click').click();

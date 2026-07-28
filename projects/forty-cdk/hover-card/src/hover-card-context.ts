@@ -47,7 +47,7 @@ export interface ForHoverCardContext extends AnchoredPositioningContext {
   cancelPending(): void;
   /**
    * Emit the public `(escapeKeyDown)` output and, unless prevented, close.
-   * Driven by the content's document-level dismissable layer, so the card
+   * Driven by the content's document-level dismissible layer, so the card
    * responds to Escape regardless of where focus lives — including a card
    * opened by hover while focus sits on an unrelated element.
    */

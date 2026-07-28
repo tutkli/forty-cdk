@@ -7,7 +7,7 @@ import { injectModalShell, type ModalShellConfig, type ModalShellHandle } from '
 /**
  * Tracks the most recently rendered fixture so `afterEach` can `destroy()` it
  * before wiping `document.body.innerHTML`. Without this, the shell's
- * `DestroyRef` hooks (dismissable layer / focus trap / scroll lock / inert
+ * `DestroyRef` hooks (dismissible layer / focus trap / scroll lock / inert
  * siblings) don't fire until the next test's `resetTestingModule`, leaving
  * body-style residue and global document listeners across the test boundary.
  * `ComponentFixture#destroy` is idempotent, so tests that call `ctx.destroy()`
@@ -100,7 +100,7 @@ describe('injectModalShell', () => {
 
   afterEach(() => {
     // Destroy the fixture FIRST so the shell's DestroyRef hooks
-    // (DismissableLayerStack.unregister, InertSiblingsStack.deactivate,
+    // (DismissibleLayerStack.unregister, InertSiblingsStack.deactivate,
     // BodyScrollLock.unlock, FocusTrap.deactivate) fire inside this test's
     // boundary rather than at the next test's setup. Then clear the body
     // styles + DOM the trap / scroll lock may have touched.
@@ -160,7 +160,7 @@ describe('injectModalShell', () => {
   });
 
   describe('dismiss bundle', () => {
-    it('does not register dismissable handlers when dismiss is omitted', async () => {
+    it('does not register dismissible handlers when dismiss is omitted', async () => {
       const calls: string[] = [];
       const ctx = mountShell(() => ({
         modal: signal(false),
@@ -335,7 +335,7 @@ describe('injectModalShell', () => {
       ctx.destroy();
     });
 
-    it('forwards exemptElements live to the dismissable layer', async () => {
+    it('forwards exemptElements live to the dismissible layer', async () => {
       // Mimics Drawer's backdrop exemption. The exempt element's pointer-down
       // must NOT fire onPointerDownOutside.
       const exemptEl = document.createElement('div');
@@ -634,7 +634,7 @@ describe('injectModalShell', () => {
   });
 
   describe('destroy ordering', () => {
-    it('deactivates the dismissable layer before the surface unmounts', async () => {
+    it('deactivates the dismissible layer before the surface unmounts', async () => {
       // Same invariant as overlay-shell.spec.ts: the layer's deactivate hook
       // is registered first, so nothing routes a synthetic focusin during
       // teardown back through the (now-doomed) listener.
@@ -683,10 +683,10 @@ describe('injectModalShell', () => {
   describe('destroy before first render', () => {
     // Mirrors portal.spec.ts' destroy-before-render test. The shell activates
     // inert siblings + focus trap (a document keydown listener via the
-    // dismissable layer) + scroll lock inside `afterNextRenderCancellable`. A
+    // dismissible layer) + scroll lock inside `afterNextRenderCancellable`. A
     // destroy between construction and the first render must cancel that
     // callback — otherwise the page is left permanently with `<body>` children
-    // inert + aria-hidden, scroll locked, and a dead topmost dismissable layer
+    // inert + aria-hidden, scroll locked, and a dead topmost dismissible layer
     // swallowing every later Escape.
     it('does not leak body inert, scroll lock, or a document keydown listener', async () => {
       const sibling = document.createElement('div');
@@ -714,7 +714,7 @@ describe('injectModalShell', () => {
       expect(sibling.hasAttribute('aria-hidden')).toBe(false);
       expect(document.body.style.overflow).toBe('');
 
-      // No orphaned document keydown listener / dead dismissable layer: an
+      // No orphaned document keydown listener / dead dismissible layer: an
       // Escape after teardown reaches no handler.
       pressKey(document, 'Escape');
       expect(escapeCalls).toEqual([]);

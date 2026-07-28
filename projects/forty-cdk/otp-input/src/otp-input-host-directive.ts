@@ -53,6 +53,6 @@ export const FOR_OTP_INPUT_HOST_DIRECTIVE_OUTPUTS = [
   'valueChange',
   'touchedChange',
   'touch',
-  'valueComplete',
-  'valueInvalid',
+  'complete',
+  'reject',
 ] as const;

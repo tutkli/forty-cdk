@@ -52,7 +52,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
 
       <playground-demo
         title="Action item (create on the fly)"
-        subtitle="A pinned <code>[forComboboxAction]</code> is a <code>role=button</code> affordance — not an option — so it never lands in <code>value()</code>, <code>aria-setsize</code> or <code>aria-posinset</code>. It emits <code>(action)</code> on click / <kbd>Enter</kbd> / <kbd>Space</kbd>, and <kbd>Tab</kbd> reaches it in one keypress regardless of list length; <kbd>Escape</kbd> or an outside click still dismiss."
+        subtitle="A pinned <code>[forComboboxAction]</code> is a <code>role=button</code> affordance — not an option — so it never lands in <code>value()</code>, <code>aria-setsize</code> or <code>aria-posinset</code>. It emits <code>(activate)</code> on click / <kbd>Enter</kbd> / <kbd>Space</kbd>, and <kbd>Tab</kbd> reaches it in one keypress regardless of list length; <kbd>Escape</kbd> or an outside click still dismiss."
         sourcePath="combobox/examples/create-action.example.ts"
       >
         <app-combobox-create-action-example />
@@ -68,7 +68,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
 
       <playground-demo
         title="Object values"
-        subtitle="<code>forCombobox</code> is generic over <code>T</code>: bind the whole object to <code>[forComboboxOption][value]</code> and configure three hooks — <code>[isItemEqualToValue]</code> to match by a stable key, <code>[itemToStringLabel]</code> for the visible label, and <code>[itemToFormValue]</code> to serialize what a native form submits. <code>value()</code> holds the full object."
+        subtitle="<code>forCombobox</code> is generic over <code>T</code>: bind the whole object to <code>[forComboboxOption][value]</code> and configure three hooks — <code>[compareWith]</code> to match by a stable key, <code>[itemToStringLabel]</code> for the visible label, and <code>[itemToFormValue]</code> to serialize what a native form submits. <code>value()</code> holds the full object."
         sourcePath="combobox/examples/object-values.example.ts"
       >
         <app-combobox-object-values-example />

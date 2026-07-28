@@ -33,7 +33,7 @@ test.describe('HoverCard', () => {
     // Escape keydown dispatches there rather than on the trigger / content.
     // This is the case #381 regressed on: a card opened by mouse hover while
     // focus sits elsewhere must still dismiss on Escape via the
-    // document-level dismissable layer.
+    // document-level dismissible layer.
     await el(page, 'trigger').hover();
     await expect(el(page, 'card')).toBeVisible();
 

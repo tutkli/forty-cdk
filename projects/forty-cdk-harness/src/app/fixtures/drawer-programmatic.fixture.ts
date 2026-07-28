@@ -100,7 +100,7 @@ class ProgrammaticSnapDrawerContent {
         padding: 16px;
         background: white;
         z-index: 1;
-        translate: var(--for-drawer-translate, 0px 0px);
+        translate: var(--for-drawer-swipe-movement-x, 0px) var(--for-drawer-swipe-movement-y, 0px);
       }
       .prog-snap-drawer-host[data-active-snap-point] {
         transition:

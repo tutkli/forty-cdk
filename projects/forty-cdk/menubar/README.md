@@ -64,7 +64,7 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
   `,
 })
 export class DemoMenubar {
-  readonly open = signal<string>('');
+  readonly open = signal<string | null>(null);
   newDoc() {}
   openDoc() {}
   quit() {}
@@ -81,14 +81,14 @@ export class DemoMenubar {
 
 | Property             | Type                                                      | Description                                                                                                                                                                                                |
 | -------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`              | `model<string>`                                           | Two-way bindable. The open trigger's `value`, or `''` when none.<br>**Default:** `''`                                                                                                                      |
+| `value`              | `model<string \| null>`                                   | Two-way bindable. The open trigger's `value`, or `null` when none.<br>**Default:** `null`                                                                                                                  |
 | `orientation`        | `input<string>`                                           | `'horizontal' \| 'vertical'`. Drives the trigger-row arrow keys (Left/Right horizontal, Up/Down vertical).<br>**Default:** `'horizontal'`                                                                  |
 | `dir`                | `input<string>`                                           | Writing direction. RTL inverts ArrowLeft / ArrowRight on the trigger row and inside the open menu.<br>**Default:** `'ltr'`                                                                                 |
 | `loop`               | `input<boolean>`                                          | When `true`, trigger-row navigation and cross-menu nav wrap at the ends.<br>**Default:** `true`                                                                                                            |
 | `disabled`           | `input<boolean>`                                          | When `true`, every trigger interaction is a no-op.<br>**Default:** `false`                                                                                                                                 |
 | `dismissible`        | `input<boolean>`                                          | When `false`, the open menu ignores Escape and outside interaction — it stays pinned open until `value` is flipped (consumer write, trigger / item interaction, or cross-menu nav).<br>**Default:** `true` |
 | `ariaLabel`          | `input<string \| null>`                                   | Accessible name for the menubar (`<div forMenubar aria-label="Main">` works too).<br>**Default:** `null`                                                                                                   |
-| `escapeKeyDown`      | `output<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape pressed while the open menu is the topmost dismissable layer.<br>**Default:** —                                                                                                             |
+| `escapeKeyDown`      | `output<VetoableNativeEvent<KeyboardEvent>>`              | Output. Escape pressed while the open menu is the topmost dismissible layer.<br>**Default:** —                                                                                                             |
 | `pointerDownOutside` | `output<VetoableNativeEvent<PointerEvent>>`               | Output. Pointer-down on a target outside the open menu and every trigger.<br>**Default:** —                                                                                                                |
 | `focusOutside`       | `output<VetoableNativeEvent<FocusEvent>>`                 | Output. Focus moves outside the open menu and every trigger.<br>**Default:** —                                                                                                                             |
 | `interactOutside`    | `output<VetoableNativeEvent<PointerEvent \| FocusEvent>>` | Output. Composite — fires alongside the two above and shares their veto state.<br>**Default:** —                                                                                                           |

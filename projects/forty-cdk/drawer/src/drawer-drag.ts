@@ -21,10 +21,10 @@ import {
   FLICK_VELOCITY_PX_PER_MS,
 } from 'forty-cdk/core';
 import {
-  type ForDrawerDragEvent,
-  type ForDrawerReleaseEvent,
   type ForDrawerSide,
   type ForDrawerSnapPoint,
+  type ForDrawerSwipeEndEvent,
+  type ForDrawerSwipeEvent,
 } from './drawer-context';
 import {
   computeSnapPositions,
@@ -93,16 +93,20 @@ export interface DrawerDragConfig {
   readonly activeSnapPoint: ModelSignal<ForDrawerSnapPoint | null>;
   /** Registered `[forDrawerHandle]` element, or `null` when none is mounted. */
   readonly handleEl: Signal<HTMLElement | null>;
-  /** Emits the live drag stream so consumers can drive bespoke visualisations. */
-  readonly emitDrag: (event: ForDrawerDragEvent) => void;
-  /** Emits the release decision (already applied to `activeSnapPoint` / close). */
-  readonly emitRelease: (event: ForDrawerReleaseEvent) => void;
+  /** Emits the arming event once per gesture (`progress` is `0`). */
+  readonly emitSwipeStart: (event: ForDrawerSwipeEvent) => void;
+  /** Emits the live swipe stream so consumers can drive bespoke visualisations. */
+  readonly emitSwipeMove: (event: ForDrawerSwipeEvent) => void;
+  /** Emits the pointer-up decision (already applied to `activeSnapPoint` / close). */
+  readonly emitSwipeEnd: (event: ForDrawerSwipeEndEvent) => void;
+  /** Emits a `pointercancel` / direction-abort with the progress reached before the reset. */
+  readonly emitSwipeCancel: (event: ForDrawerSwipeEvent) => void;
   /** Requests a `'swipe'` close when the release crosses the dismiss threshold. */
   readonly requestClose: (reason: 'swipe') => void;
 }
 
 /**
- * Imperative handle returned by {@link injectDrawerDrag}. Exposes the three
+ * Imperative handle returned by {@link injectDrawerDrag}. Exposes the four
  * reactive signals the directive host-binds plus two lifecycle hooks the
  * directive calls from its own `afterNextRender`s so the gesture engine's
  * side effects keep `[forDrawer]`'s historical ordering relative to the
@@ -111,10 +115,12 @@ export interface DrawerDragConfig {
 export interface DrawerDragHandle {
   /** `true` while a pointer drag gesture is in flight. Host-bound as `data-dragging`. */
   readonly dragging: Signal<boolean>;
-  /** Progress of the current drag toward the anchored edge, `∈ [0, 1]`. */
-  readonly dragProgress: Signal<number>;
-  /** Live drag displacement as a CSS `translate` value (`"<x> <y>"`). */
-  readonly dragTranslate: Signal<string>;
+  /** Progress of the current swipe toward the anchored edge, `∈ [0, 1]`. */
+  readonly swipeProgress: Signal<number>;
+  /** Live swipe displacement in CSS px along the x axis; published as `--for-drawer-swipe-movement-x`. */
+  readonly swipeMovementX: Signal<number>;
+  /** Live swipe displacement in CSS px along the y axis; published as `--for-drawer-swipe-movement-y`. */
+  readonly swipeMovementY: Signal<number>;
   /**
    * Run the mount-time snap-point validation + first live-dimension
    * measurement and seed the `activeSnapPoint` default. Throws (with a
@@ -142,7 +148,7 @@ export interface DrawerDragHandle {
  * registration, and `injectModalShell`.
  *
  * Must be called from an injection context (the directive constructor). It
- * registers the drag-translate publisher, the runtime snap-rebind validator,
+ * registers the swipe-displacement publisher, the runtime snap-rebind validator,
  * and the swipe-gate effect immediately, but defers the two ordering-sensitive
  * steps to handle methods the directive drives from its own `afterNextRender`s:
  * {@link DrawerDragHandle.validateOnMount} (mount-time snap validation, called
@@ -167,16 +173,14 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   const dragOffset = signal(0); // px translated along the dismissal axis (positive = away from edge)
   const dragging = signal(false);
-  const dragProgress = signal(0); // [0, 1] progress toward the anchored edge (dismiss direction)
+  const swipeProgress = signal(0); // [0, 1] progress toward the anchored edge (dismiss direction)
 
-  const dragTranslate = computed<string>(() => {
-    const offset = dragOffset();
-    if (offset === 0) {
-      return '0px 0px';
-    }
-    const px = sideSign(side()) * offset;
-    return sideAxis(side()) === 'y' ? `0px ${px}px` : `${px}px 0px`;
-  });
+  const swipeMovementX = computed<number>(() =>
+    sideAxis(side()) === 'x' ? sideSign(side()) * dragOffset() : 0,
+  );
+  const swipeMovementY = computed<number>(() =>
+    sideAxis(side()) === 'y' ? sideSign(side()) * dragOffset() : 0,
+  );
 
   // Pointer state for velocity tracking.
   let pointerStartTime = 0;
@@ -305,7 +309,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   function onSwipeStart(detail: SwipeEventDetail): void {
     dragging.set(true);
-    dragProgress.set(0);
+    swipeProgress.set(0);
     pointerStartTime = detail.originalEvent.timeStamp || performance.now();
     pointerLastTime = pointerStartTime;
     pointerLastX = detail.originalEvent.clientX;
@@ -333,7 +337,7 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       dragMinOffset = 0;
     }
 
-    config.emitDrag({ percentageDragged: 0, originalEvent: detail.originalEvent });
+    config.emitSwipeStart({ progress: 0, originalEvent: detail.originalEvent });
   }
 
   function onSwipeMove(detail: SwipeEventDetail): void {
@@ -368,22 +372,22 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     // clamped to this gesture's bounds. Without snap points the lower bound
     // is 0 (the surface only moves toward the edge to dismiss); with snap
     // points it goes negative so a drag away from the edge grows the surface
-    // toward a larger snap. The host's `[style.translate]` binding reflects
+    // toward a larger snap. The swipe-displacement publisher below reflects
     // the offset reactively — no imperative DOM write here.
     const nextOffset = Math.max(dragMinOffset, dragOffset() + moveTowardEdge);
     dragOffset.set(nextOffset);
 
     const dim = dimensionAtStart || 1;
-    // `percentageDragged` tracks progress toward dismiss, so growth (a
-    // negative offset) reads as 0 rather than a negative number.
-    const percentageDragged = Math.min(1, Math.max(0, nextOffset / dim));
-    dragProgress.set(percentageDragged);
-    config.emitDrag({ percentageDragged, originalEvent: event });
+    // `progress` tracks progress toward dismiss, so growth (a negative
+    // offset) reads as 0 rather than a negative number.
+    const progress = Math.min(1, Math.max(0, nextOffset / dim));
+    swipeProgress.set(progress);
+    config.emitSwipeMove({ progress, originalEvent: event });
   }
 
   function resetDragState(): void {
     dragOffset.set(0);
-    dragProgress.set(0);
+    swipeProgress.set(0);
     dragging.set(false);
   }
 
@@ -436,15 +440,15 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
       willClose = offset >= dim * threshold || effectiveVelocity >= FLICK_VELOCITY_PX_PER_MS;
     }
 
-    config.emitRelease({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
+    config.emitSwipeEnd({ willClose, nextSnapPoint: nextSnap, originalEvent: event });
 
     // Zero the offset and flip `dragging` off together. Both writes (plus the
     // `activeSnapPoint` change below) flush in one change-detection pass, so
     // the host applies the `data-dragging` removal, the new
-    // `data-active-snap-point`, and the `translate` reset to zero in a single
-    // style recalc — the consumer's `transition: translate` then animates the
-    // drag delta away in lockstep with the snap-position transition, with no
-    // intermediate jump to the previous rest position.
+    // `data-active-snap-point`, and the swipe-movement reset to `0px` in a
+    // single style recalc — the consumer's `transition: translate` then
+    // animates the swipe delta away in lockstep with the snap-position
+    // transition, with no intermediate jump to the previous rest position.
     resetDragState();
 
     if (willClose) {
@@ -461,11 +465,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     if (!dragging()) {
       return;
     }
-    config.emitRelease({
-      willClose: false,
-      nextSnapPoint: activeSnapPoint(),
-      originalEvent: detail.originalEvent,
-    });
+    // Read the progress reached by the aborted gesture before `resetDragState`
+    // zeroes it, so a consumer animating the spring-back knows where it starts.
+    config.emitSwipeCancel({ progress: swipeProgress(), originalEvent: detail.originalEvent });
     resetDragState();
   }
 
@@ -485,22 +487,24 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     });
   }
 
-  // ---- Drag-translate side effect. Publishes the drag delta as the
-  // `--for-drawer-translate` custom property (see `dragTranslate` for why a
-  // custom property rather than a directly-written `translate`/`transform`).
-  // Runs in the same change-detection flush as the host's attribute
-  // bindings, so the release path's `data-dragging` removal,
-  // `data-active-snap-point` change, and translate reset to "0px 0px" all
-  // land in one style recalc and transition together.
+  // ---- Swipe-displacement side effect. Publishes the live delta as the
+  // `--for-drawer-swipe-movement-x` / `-y` custom properties (see
+  // `swipeMovementX` for why custom properties rather than a directly-written
+  // `translate`/`transform`). Runs in the same change-detection flush as the
+  // host's attribute bindings, so the release path's `data-dragging` removal,
+  // `data-active-snap-point` change, and the reset to `0px` all land in one
+  // style recalc and transition together.
   effect(() => {
-    host.nativeElement.style.setProperty('--for-drawer-translate', dragTranslate());
+    const style = host.nativeElement.style;
+    style.setProperty('--for-drawer-swipe-movement-x', `${swipeMovementX()}px`);
+    style.setProperty('--for-drawer-swipe-movement-y', `${swipeMovementY()}px`);
   });
 
   // ---- Mount-time snap validation. Invoked by the directive's pre-shell
   // `afterNextRender` (via the returned `validateOnMount`), after the
   // drawer-stack push and the `closeThreshold` check, so it lands at the same
   // point in the mount sequence it always has — before the shell's
-  // dismissable / focus / scroll-lock wiring. A consumer passing a bad
+  // dismissible / focus / scroll-lock wiring. A consumer passing a bad
   // snapPoints array gets a clear error before the shell tries to focus an
   // element that may not exist. The mount-time `activeSnapPoint` default is
   // seeded here too. Subsequent runtime `[snapPoints]` rebinds are handled by
@@ -589,8 +593,9 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
 
   return {
     dragging: dragging.asReadonly(),
-    dragProgress: dragProgress.asReadonly(),
-    dragTranslate,
+    swipeProgress: swipeProgress.asReadonly(),
+    swipeMovementX,
+    swipeMovementY,
     validateOnMount,
     arm: () => swipeReady.set(true),
   };

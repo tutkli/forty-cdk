@@ -13,33 +13,8 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from '../vetoable-event/vetoable-event';
+import type { ForMenuCloseReason } from './menu-context';
 import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './menu-item-list';
-
-/**
- * Reason a menu requested close. Mirrors `ForMenuCloseReason` from
- * `_internal/menu-overlay/menu-context.ts` structurally so primitives can pass either type
- * across the helper boundary without re-declaration.
- *
- * `'hover'` is a pointer-driven (hover-leave) close: like `'escape'` and
- * `'programmatic'` it affects only the level that scheduled it and never
- * propagates up the menu chain.
- */
-export type MenuOverlayCloseReason =
-  | 'escape'
-  | 'pointerDownOutside'
-  | 'focusOutside'
-  | 'select'
-  | 'tab'
-  | 'hover'
-  | 'programmatic';
-
-/**
- * Item handle the helper's item list registers. Re-exported alias of the
- * shared `MenuItemHandle` — structurally compatible with primitives'
- * `ForMenuItemHandle` and kept under this name for backward compatibility
- * with the helper's existing consumers / specs.
- */
-export type MenuOverlayItemHandle = MenuItemHandle;
 
 /**
  * How a menu open was activated. `'keyboard'` (the default) highlights the
@@ -106,16 +81,13 @@ export interface MenuOverlayHooks {
    * the menu chain for every reason except `'escape'` / `'hover'` /
    * `'programmatic'`. Top-level roots pass neither hook.
    */
-  readonly onClose?: (
-    reason: MenuOverlayCloseReason,
-    options: MenuOverlayTransitionOptions,
-  ) => void;
+  readonly onClose?: (reason: ForMenuCloseReason, options: MenuOverlayTransitionOptions) => void;
 }
 
 /**
  * Shared coordination behaviour between `ForDropdownMenu` and `ForContextMenu`
  * (and any future menu overlay root with the same item-collection / typeahead /
- * navigate / dismissable shape — Menubar's per-bar menu, a future free-floating
+ * navigate / dismissible shape — Menubar's per-bar menu, a future free-floating
  * SubMenu).
  *
  * The helper owns:
@@ -137,7 +109,7 @@ export interface MenuOverlayHooks {
  *
  * - the `anchor` signal — DropdownMenu derives it from the trigger element,
  *   ContextMenu drives it via a `VirtualElement`,
- * - `dismissableExemptions` — DropdownMenu exempts the trigger button so the
+ * - `dismissibleExemptions` — DropdownMenu exempts the trigger button so the
  *   trigger's click toggle doesn't double-fire as a pointer-down-outside;
  *   ContextMenu exempts nothing,
  * - the `input()` / `output()` / `model()` declarations — they remain on the
@@ -161,7 +133,7 @@ export interface MenuOverlayHooks {
  * on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`, so the emitted
  * `.d.ts` has to name it (#1489).
  */
-export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle> {
+export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   readonly #registry = inject(ElementRegistry);
   readonly #itemList: MenuItemList<H>;
   readonly #hooks: MenuOverlayHooks;
@@ -180,7 +152,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
   /** Where focus should land when the menu mounts. Set by triggers before flipping `open`. */
   readonly initialFocus = this.#initialFocusState.target;
 
-  readonly #closeReasonState = new CloseReasonState<MenuOverlayCloseReason>();
+  readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
 
   /**
    * Reason of the most recent close, or `null` while the menu is open / has
@@ -356,7 +328,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
    * `[forMenuSub]`'s hover-close passes `{ suppressFocusMoves: true }` so the
    * unmount does not yank focus back to the sub-trigger.
    */
-  closeMenu(reason: MenuOverlayCloseReason, options: MenuOverlayTransitionOptions = {}): void {
+  closeMenu(reason: ForMenuCloseReason, options: MenuOverlayTransitionOptions = {}): void {
     this.#closeReasonState.set(reason);
     this.#hooks.open.set(false);
     this.#hooks.onClose?.(reason, options);
@@ -368,7 +340,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
       // Load-bearing, not redundant: the bubble-phase Escape handler stops the
       // same keydown from reaching an *ancestor* overlay's keydown listener,
       // which is how nested overlays close one layer per Escape (see the
-      // listener-phase note in `_internal/dismissable-layer/dismissable-layer.ts`).
+      // listener-phase note in `core/dismissible-layer/dismissible-layer.ts`).
       event.stopPropagation();
       this.closeMenu('escape');
     }
@@ -421,7 +393,7 @@ export class MenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle
  * `'for-dropdown-menu'`, `'for-context-menu'`); the helper generates
  * `<idPrefix>-trigger` and `<idPrefix>-content` ids off it.
  */
-export function createMenuOverlay<H extends MenuOverlayItemHandle = MenuOverlayItemHandle>(
+export function createMenuOverlay<H extends MenuItemHandle = MenuItemHandle>(
   idPrefix: string,
   hooks: MenuOverlayHooks,
 ): MenuOverlay<H> {

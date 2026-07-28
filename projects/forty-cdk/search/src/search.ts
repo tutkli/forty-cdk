@@ -79,7 +79,7 @@ export class ForSearch
    * for a command palette, where the search box is the enclosing overlay's only
    * content and one `Escape` should dismiss it rather than clear the query
    * first: the directive then neither acts on nor consumes the key, so the
-   * enclosing dismissable layer sees it on the first press.
+   * enclosing dismissible layer sees it on the first press.
    */
   readonly clearOnEscape = input(true, { transform: booleanAttribute });
 

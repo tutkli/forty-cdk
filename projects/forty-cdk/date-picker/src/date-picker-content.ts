@@ -16,7 +16,7 @@ import { injectDatePickerContext } from './date-picker-context';
  * `[forDatePicker].modal`:
  *
  * - **non-modal (default)** — `injectOverlayShell` anchors the surface to the
- *   trigger via `@floating-ui/dom`, activates a `DismissableLayer` (Escape,
+ *   trigger via `@floating-ui/dom`, activates a `DismissibleLayer` (Escape,
  *   pointer-down outside, focus outside), moves focus to the calendar's roving
  *   cell on open, and returns focus to the trigger on close.
  * - **modal** — `injectModalShell` traps focus, inerts the background, and

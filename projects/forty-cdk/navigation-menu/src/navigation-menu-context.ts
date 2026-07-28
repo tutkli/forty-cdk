@@ -54,11 +54,11 @@ export type ForNavigationMenuMotion = 'from-start' | 'from-end' | 'to-start' | '
 
 export interface ForNavigationMenuContext {
   /**
-   * The open item's value, or `''` for none, as a read-only signal. Mutate it
+   * The open item's value, or `null` for none, as a read-only signal. Mutate it
    * through `open` / `close` / `toggle` or the root's `[(value)]` binding — a
    * direct write would skip the scheduled open / close delays.
    */
-  readonly value: Signal<string>;
+  readonly value: Signal<string | null>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
   readonly dir: Signal<WritingDirection>;
   readonly loop: Signal<boolean>;
@@ -105,8 +105,8 @@ export interface ForNavigationMenuContext {
   readonly activeContentHost: Signal<HTMLElement | null>;
   /** Currently-registered viewport (at most one), or `null`. */
   readonly viewport: Signal<ForNavigationMenuViewportHandle | null>;
-  /** Most recent open value before the current one. `''` if none. */
-  readonly previousValue: Signal<string>;
+  /** Most recent open value before the current one. `null` if none. */
+  readonly previousValue: Signal<string | null>;
   /**
    * Motion direction for `[forNavigationMenuContent]` whose item carries
    * `value`. Returns `null` when no transition applies (first open, value
