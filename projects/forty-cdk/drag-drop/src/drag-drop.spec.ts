@@ -1741,6 +1741,29 @@ describe('ForDropList + ForDraggable', () => {
       expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(0);
     });
 
+    it('an animated drop releases the preview on the settle path: a later destroy does not dispose it twice', async () => {
+      const { el, fixture } = renderHost(SingleListHost);
+      fixture.componentInstance.animate.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      const first = itemEl(el, 1);
+
+      firePointer(first, 'pointerdown', 0, 0);
+      firePointer(first, 'pointermove', 20, 0);
+      fixture.detectChanges();
+      const clone = document.querySelector('[data-for-drag-preview]') as HTMLElement;
+      const remove = vi.spyOn(clone, 'remove');
+
+      firePointer(first, 'pointerup', 20, 0);
+      await flush(fixture);
+      expect(remove).toHaveBeenCalledTimes(1);
+      expect(document.querySelectorAll('[data-for-drag-preview]')).toHaveLength(0);
+
+      fixture.destroy();
+
+      expect(remove).toHaveBeenCalledTimes(1);
+    });
+
     it('zoneless: removing the lifted item mid-pointer-drag resets the list and drops the preview', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SingleListHost);
