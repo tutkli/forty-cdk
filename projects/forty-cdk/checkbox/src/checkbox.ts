@@ -1,7 +1,7 @@
 import { computed, Directive, InjectionToken, model } from '@angular/core';
 import type { FormCheckboxControl } from '@angular/forms/signals';
 
-import { FormUiControlBase, injectHiddenInput } from 'forty-cdk/core';
+import { FormUiControlBase, injectHiddenInput, injectSyntheticActivation } from 'forty-cdk/core';
 
 /**
  * Injection key the `[forCheckboxIndicator]` uses to resolve its parent
@@ -20,10 +20,15 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
  * `FormCheckboxControl` from `@angular/forms/signals` for `[formField]`
  * auto-wiring.
  *
- * Apply on a `<button type="button">`. The directive forces `type="button"`
- * to avoid accidental form submission; Enter and Space activation come from
- * native button behavior (APG only mandates Space, and Enter is harmless on
- * a non-submit button).
+ * Works on a native `<button>` host and on any arbitrary host element (e.g.
+ * `<div>`, `<span>`). On a `<button>` the directive forces `type="button"` to
+ * avoid accidental form submission and Enter / Space activation comes from
+ * native button behavior (APG only mandates Space, and Enter is harmless on a
+ * non-submit button). On a non-button host `tabindex="0"` is applied and the
+ * same Enter / Space activation is synthesized, so the announced
+ * `role="checkbox"` is never left keyboard-inoperable — including when the
+ * host is composed through `hostDirectives`, which ignores a directive's
+ * selector.
  *
  * Tri-state: when `indeterminate` is `true`, `aria-checked="mixed"` is
  * announced regardless of `checked`. Activating an indeterminate checkbox
@@ -40,6 +45,9 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
  * </button>
  * I agree to the terms.
  *
+ * <!-- Non-button host — tabindex and keyboard handling added automatically -->
+ * <div forCheckbox [(checked)]="agreed"></div>
+ *
  * <!-- With Signal Forms: -->
  * <button forCheckbox [formField]="form.acceptTerms"></button>
  * ```
@@ -51,6 +59,7 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
   host: {
     role: 'checkbox',
     type: 'button',
+    '[attr.tabindex]': 'tabindex()',
     '[attr.aria-checked]': 'ariaChecked()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
@@ -62,7 +71,9 @@ export const FOR_CHECKBOX = new InjectionToken<ForCheckbox>('FOR_CHECKBOX');
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(click)': 'onClick()',
-    '(blur)': 'markTouched()',
+    '(keydown)': 'onKeydown($event)',
+    '(keyup)': 'onKeyup($event)',
+    '(blur)': 'onBlur()',
   },
 })
 export class ForCheckbox extends FormUiControlBase implements FormCheckboxControl {
@@ -94,6 +105,10 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
     return this.checked() ? 'checked' : 'unchecked';
   });
 
+  readonly #activation = injectSyntheticActivation({ disabled: this.effectiveDisabled });
+
+  protected readonly tabindex = this.#activation.tabindex;
+
   constructor() {
     super();
     injectHiddenInput({
@@ -113,5 +128,18 @@ export class ForCheckbox extends FormUiControlBase implements FormCheckboxContro
       this.indeterminate.set(false);
     }
     this.checked.update((v) => !v);
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    this.#activation.keydown(event);
+  }
+
+  protected onKeyup(event: KeyboardEvent): void {
+    this.#activation.keyup(event);
+  }
+
+  protected onBlur(): void {
+    this.#activation.reset();
+    this.markTouched();
   }
 }

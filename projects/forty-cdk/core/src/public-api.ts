@@ -260,6 +260,11 @@ export {
   type SwipeEventDetail,
 } from './swipe-dismiss/swipe-dismiss';
 export {
+  injectSyntheticActivation,
+  type SyntheticActivation,
+  type SyntheticActivationConfig,
+} from './synthetic-activation/synthetic-activation';
+export {
   TABLE_REGISTRATION_CONTEXT,
   TABLE_ROW_REGISTRATION_CONTEXT,
   type ForTableCellHandle,

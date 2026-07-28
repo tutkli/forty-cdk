@@ -2,13 +2,17 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 import { form, FormField, required } from '@angular/forms/signals';
 
-import { flush } from '../../src/test-utils';
+import { flush, pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { FOR_CHECKBOX, ForCheckbox } from './checkbox';
+import {
+  FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS,
+  FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS,
+} from './checkbox-host-directive';
 import { ForCheckboxIndicator } from './checkbox-indicator';
 
 @Component({
@@ -42,7 +46,21 @@ class CheckboxHost {
   readonly fieldName = signal<string>('');
 }
 
+@Component({
+  imports: [ForCheckbox],
+  template: `
+    <div forCheckbox [(checked)]="agreed" [disabled]="isDisabled()" [readonly]="isReadonly()"></div>
+  `,
+})
+class DivCheckboxHost {
+  readonly agreed = signal(false);
+  readonly isDisabled = signal(false);
+  readonly isReadonly = signal(false);
+}
+
 const checkboxOf = (host: HTMLElement) => host.querySelector<HTMLButtonElement>('button')!;
+
+const divCheckboxOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forCheckbox]')!;
 
 describe('ForCheckbox', () => {
   describe('static accessibility', () => {
@@ -189,6 +207,141 @@ describe('ForCheckbox', () => {
       cb.click();
       await flush();
       expect(fixture.componentInstance.agreed()).toBe(false);
+    });
+  });
+
+  describe('non-button host keyboard activation', () => {
+    it('adds tabindex="0" so the announced role="checkbox" is focusable', () => {
+      const { el } = renderHost(DivCheckboxHost);
+      const cb = divCheckboxOf(el);
+      expect(cb.getAttribute('role')).toBe('checkbox');
+      expect(cb.getAttribute('tabindex')).toBe('0');
+      cb.focus();
+      expect(document.activeElement).toBe(cb);
+    });
+
+    it('emits no tabindex on a native <button> host, whose tab stop the platform owns', () => {
+      const { el } = renderHost(CheckboxHost);
+      expect(checkboxOf(el).hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('toggles on Space keyup and blocks page scroll on the keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivCheckboxHost);
+      const cb = divCheckboxOf(el);
+
+      const down = pressKey(cb, ' ');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.agreed()).toBe(false);
+
+      pressKey(cb, ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.agreed()).toBe(true);
+      expect(cb.getAttribute('aria-checked')).toBe('true');
+      expect(cb.getAttribute('data-state')).toBe('checked');
+    });
+
+    it('toggles on Enter keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivCheckboxHost);
+      const cb = divCheckboxOf(el);
+
+      const down = pressKey(cb, 'Enter');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.agreed()).toBe(true);
+    });
+
+    it('ignores a Space keyup with no preceding keydown', async () => {
+      const { el, fixture, flush } = renderHost(DivCheckboxHost);
+      pressKey(divCheckboxOf(el), ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.agreed()).toBe(false);
+    });
+
+    it('drops a half-finished Space press when focus leaves the host', async () => {
+      const { el, fixture, flush } = renderHost(DivCheckboxHost);
+      const cb = divCheckboxOf(el);
+
+      pressKey(cb, ' ');
+      cb.dispatchEvent(new FocusEvent('blur'));
+      pressKey(cb, ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.agreed()).toBe(false);
+    });
+
+    it('does not activate while disabled, but still blocks page scroll on Space', async () => {
+      const { el, fixture, flush } = renderHost(DivCheckboxHost);
+      fixture.componentInstance.isDisabled.set(true);
+      await flush();
+      const cb = divCheckboxOf(el);
+
+      const down = pressKey(cb, ' ');
+      pressKey(cb, ' ', { type: 'keyup' });
+      pressKey(cb, 'Enter');
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.agreed()).toBe(false);
+    });
+
+    it('does not activate while readonly', async () => {
+      const { el, fixture, flush } = renderHost(DivCheckboxHost);
+      fixture.componentInstance.isReadonly.set(true);
+      await flush();
+      const cb = divCheckboxOf(el);
+
+      pressKey(cb, ' ');
+      pressKey(cb, ' ', { type: 'keyup' });
+      pressKey(cb, 'Enter');
+      await flush();
+      expect(fixture.componentInstance.agreed()).toBe(false);
+    });
+
+    it('synthesizes nothing on a native <button> host, so activation never doubles', async () => {
+      const { el, fixture, flush } = renderHost(CheckboxHost);
+      const cb = checkboxOf(el);
+
+      const down = pressKey(cb, ' ');
+      pressKey(cb, ' ', { type: 'keyup' });
+      pressKey(cb, 'Enter');
+      await flush();
+      expect(down.defaultPrevented).toBe(false);
+      expect(fixture.componentInstance.agreed()).toBe(false);
+    });
+  });
+
+  describe('hostDirectives composition on a non-button host', () => {
+    @Component({
+      selector: 'div[wrapped-checkbox]',
+      template: '',
+      hostDirectives: [
+        {
+          directive: ForCheckbox,
+          inputs: [...FOR_CHECKBOX_HOST_DIRECTIVE_INPUTS],
+          outputs: [...FOR_CHECKBOX_HOST_DIRECTIVE_OUTPUTS],
+        },
+      ],
+    })
+    class WrappedCheckbox {}
+
+    @Component({
+      imports: [WrappedCheckbox],
+      template: `<div wrapped-checkbox [(checked)]="agreed"></div>`,
+    })
+    class WrapperHost {
+      readonly agreed = signal(false);
+    }
+
+    it('gets the same tab stop and Space activation as a direct selector match', async () => {
+      const { el, fixture, flush } = renderHost(WrapperHost);
+      const cb = el.querySelector<HTMLElement>('[wrapped-checkbox]')!;
+      expect(cb.getAttribute('role')).toBe('checkbox');
+      expect(cb.getAttribute('tabindex')).toBe('0');
+
+      pressKey(cb, ' ');
+      pressKey(cb, ' ', { type: 'keyup' });
+      await flush();
+      expect(fixture.componentInstance.agreed()).toBe(true);
+      expect(cb.getAttribute('aria-checked')).toBe('true');
     });
   });
 
