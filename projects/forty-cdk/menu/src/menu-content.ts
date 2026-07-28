@@ -37,6 +37,12 @@ import {
  * `[forContextMenu]` opts out of that fallback (its trigger is the whole
  * right-click region), so name a context menu with `[ariaLabel]`.
  *
+ * Both `id` and `aria-labelledby` are emitted truthy-only: a surface the
+ * context has not associated with a trigger yet — only reachable under
+ * `[forMenubar]`, where one surface may be mounted unconditionally while no
+ * menu is open — carries neither attribute rather than an invalid `id=""` and
+ * an `aria-labelledby` pointing at nothing.
+ *
  * Navigation is vertical-only (Up / Down between items, per the APG Menu
  * pattern), so the surface reflects `aria-orientation="vertical"` explicitly.
  * Horizontal menus are out of scope; a horizontal *bar* of menus is modelled
@@ -50,7 +56,7 @@ import {
   exportAs: 'forMenuContent',
   host: {
     role: 'menu',
-    '[id]': 'ctx.contentId()',
+    '[attr.id]': 'ctx.contentId() || null',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-orientation]': '"vertical"',
@@ -69,7 +75,7 @@ export class ForMenuContent {
     if (this.resolvedAriaLabel() || this.ctx.triggerLabelsMenu === false) {
       return null;
     }
-    return this.ctx.triggerId();
+    return this.ctx.triggerId() || null;
   });
 
   constructor() {
