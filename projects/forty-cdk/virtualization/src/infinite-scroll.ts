@@ -67,6 +67,10 @@ export function injectInfiniteScroll(options: InfiniteScrollOptions): ForInfinit
     computation: () => true,
   });
 
+  // @sanctioned-effect(untracked-read): both `armed` and `pending` are read
+  // through `untracked`, so the effect tracks only `count` / `nearEnd` and never
+  // cycles on the latches it writes; the `pending` writes bridge a caller-owned
+  // promise, which is outside the reactive graph entirely.
   effect(() => {
     options.count();
     if (!nearEnd() || !untracked(armed)) return;

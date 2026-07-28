@@ -583,7 +583,7 @@ Keyboard: **Escape** closes the topmost drawer when `dismissible`; **Tab / Shift
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 > This is a modal overlay: the surface and backdrop portal to `document.body`. Style them with global CSS or classes — declaratively, add your class to the surface element (`<div forDrawer class="my-drawer">`); for drawers opened with `ForDrawerManager.open()`, pass `class` / `classList` on the open config so the tokens land on the real `[forDrawer]` host.
 
@@ -603,3 +603,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   transition: none;
 }
 ```
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_DRAWER_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

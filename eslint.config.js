@@ -1570,6 +1570,163 @@ const fortyCdkPlugin = {
       },
     },
 
+    // `forty-cdk/require-sanctioned-effect-marker`.
+    //
+    // The companion to `no-effect-state-propagation` above, and the mechanical
+    // half of CLAUDE.md's "never propagate state inside `effect()`" rule. That
+    // rule only catches the *same* signal being read and written; a write to a
+    // *different* signal — the shape `element-size` and
+    // `force-close-when-disabled` both need — passes it silently, which is how
+    // the carve-outs accumulated with nothing but prose to justify them.
+    //
+    // Every `.set(…)` / `.update(…)` inside an `effect()` callback in library
+    // source must therefore be licensed by the canonical marker comment placed
+    // immediately above the `effect(` call:
+    //
+    //   // @sanctioned-effect(external-source): mirrors a ResizeObserver, so no
+    //   // read in this effect can depend on the written signal.
+    //   effect(() => { out.set(measure(el)); });
+    //
+    // The invariant name in parentheses is what a reviewer verifies and what a
+    // future refactor must preserve; the sentence after the colon names the
+    // mechanism. `grep @sanctioned-effect` is then the library's complete
+    // carve-out ledger (two sites today).
+    //
+    // Deliberate design notes:
+    //   - Keyed on the method *name* (`set` / `update`), so a `Map.set` inside
+    //     an effect trips it too. That false positive is loud and cheap to
+    //     resolve; a rule that tried to prove signal-ness would miss the real
+    //     thing. DOM writes (`setAttribute`, `toggleAttribute`,
+    //     `style.setProperty`, `el.value = …`) are what `effect()` is for and
+    //     never match.
+    //   - Does not descend into nested function scopes, matching
+    //     `no-effect-state-propagation`: a write inside an observer callback
+    //     runs outside the effect's reactive run. The consequence is that a
+    //     write one hoisted-helper call away (as in `element-size`) is invisible
+    //     to the lint — the marker is still required there by convention so the
+    //     grep ledger stays complete.
+    //   - A marker licenses only the effect it sits on. A bare
+    //     `@sanctioned-effect` with no invariant / no rationale is reported as
+    //     malformed rather than accepted.
+    //
+    // See: CLAUDE.md > conventions > "The sanctioned-effect marker".
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-effect-marker.fixture.ts`.
+    'require-sanctioned-effect-marker': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Every signal write inside an `effect()` must carry the canonical `@sanctioned-effect(<invariant>): <why>` marker comment (CLAUDE.md § "The sanctioned-effect marker").',
+        },
+        schema: [],
+        messages: {
+          missingMarker:
+            'Unmarked signal write inside `effect()`: `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (CLAUDE.md § "The sanctioned-effect marker".)',
+          malformedMarker:
+            'Malformed `@sanctioned-effect` marker. The shape is `// @sanctioned-effect(<invariant>): <why the write cannot cycle>` — a kebab-case invariant name in parentheses (e.g. `external-source`, `untracked-read`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (CLAUDE.md § "The sanctioned-effect marker".)',
+        },
+      },
+      create(context) {
+        const sourceCode = context.sourceCode || context.getSourceCode();
+        const MARKER = /@sanctioned-effect/;
+        const WELL_FORMED = /@sanctioned-effect\([a-z][a-z0-9-]*\)\s*:\s*\S/;
+        // How many lines above the `effect(` call the marker may sit. A
+        // multi-line rationale is normal, so this is a small window rather
+        // than "the previous line" exactly.
+        const MARKER_WINDOW = 6;
+
+        /** Collects `.set(…)` / `.update(…)` calls in the callback's own scope. */
+        function writesIn(fnNode) {
+          const writes = [];
+          const stack = [fnNode.body];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (Array.isArray(node)) {
+              for (const item of node) stack.push(item);
+              continue;
+            }
+            if (!node.type) continue;
+            if (
+              node !== fnNode &&
+              (node.type === 'FunctionExpression' ||
+                node.type === 'ArrowFunctionExpression' ||
+                node.type === 'FunctionDeclaration')
+            ) {
+              continue;
+            }
+            if (
+              node.type === 'CallExpression' &&
+              node.callee.type === 'MemberExpression' &&
+              !node.callee.computed &&
+              node.callee.property.type === 'Identifier' &&
+              (node.callee.property.name === 'set' || node.callee.property.name === 'update')
+            ) {
+              writes.push({
+                node,
+                signal: sourceCode.getText(node.callee.object),
+                method: node.callee.property.name,
+              });
+            }
+            for (const key in node) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(node[key]);
+            }
+          }
+          return writes;
+        }
+
+        /**
+         * The `@sanctioned-effect` comment covering `node`, or `null`. Matched
+         * by proximity (any comment ending within `MARKER_WINDOW` lines above
+         * the call) rather than by AST attachment, so it works whether the
+         * `effect(` call is a bare statement, an assignment, or nested in a
+         * constructor body.
+         */
+        function markerFor(node) {
+          const line = node.loc.start.line;
+          for (const comment of sourceCode.getAllComments()) {
+            if (!MARKER.test(comment.value)) continue;
+            const end = comment.loc.end.line;
+            if (end <= line && line - end <= MARKER_WINDOW) {
+              return comment;
+            }
+          }
+          return null;
+        }
+
+        return {
+          CallExpression(node) {
+            if (node.callee.type !== 'Identifier' || node.callee.name !== 'effect') return;
+            const callback = node.arguments[0];
+            if (
+              !callback ||
+              (callback.type !== 'ArrowFunctionExpression' &&
+                callback.type !== 'FunctionExpression')
+            ) {
+              return;
+            }
+            const writes = writesIn(callback);
+            if (writes.length === 0) return;
+
+            const marker = markerFor(node);
+            if (marker && WELL_FORMED.test(marker.value)) return;
+            if (marker) {
+              context.report({ node: marker, messageId: 'malformedMarker' });
+              return;
+            }
+            for (const write of writes) {
+              context.report({
+                node: write.node,
+                messageId: 'missingMarker',
+                data: { signal: write.signal, method: write.method },
+              });
+            }
+          },
+        };
+      },
+    },
+
     // Mechanizes the #695 footgun: any control wiring `injectHiddenInput` is a
     // form-value control that can sit inside a disabled `[forFieldset]`, so the
     // hidden `<input>` it spawns must reflect `effectiveDisabled` — the signal
@@ -1832,6 +1989,10 @@ module.exports = tseslint.config(
       // ---- No state propagation inside effect() (CLAUDE.md § "Never
       // propagate state inside `effect()`"). ----
       'forty-cdk/no-effect-state-propagation': 'error',
+      // ---- …and every signal write that *is* sanctioned carries the canonical
+      // marker naming the invariant that makes it safe (tutkli/forty-cdk#1401
+      // item 3; CLAUDE.md § "The sanctioned-effect marker"). ----
+      'forty-cdk/require-sanctioned-effect-marker': 'error',
 
       // ---- injectHiddenInput must pass `effectiveDisabled`, not raw
       // `disabled`, when the control folds in fieldset-disabled
@@ -1917,6 +2078,10 @@ module.exports = tseslint.config(
       // helper directly with a bare `disabled` — it is not a shipped form-value
       // control, so the `effectiveDisabled` fieldset contract does not apply.
       'forty-cdk/hidden-input-effective-disabled': 'off',
+      // The sanctioned-effect ledger governs shipped library source. A spec or
+      // test utility that drives an `effect()` writing a signal is exercising
+      // the reactive graph, not shipping a carve-out consumers inherit.
+      'forty-cdk/require-sanctioned-effect-marker': 'off',
     },
   },
 
@@ -1934,6 +2099,8 @@ module.exports = tseslint.config(
       // Harness fixtures often render bare buttons whose "content" is the
       // directive being exercised, not user-visible copy.
       '@angular-eslint/template/elements-content': 'off',
+      // Dev/CI-only app: nothing here ships, so it owes no carve-out ledger.
+      'forty-cdk/require-sanctioned-effect-marker': 'off',
     },
   },
 
@@ -1943,6 +2110,7 @@ module.exports = tseslint.config(
       '@angular-eslint/component-selector': 'off',
       '@angular-eslint/directive-selector': 'off',
       '@angular-eslint/template/elements-content': 'off',
+      'forty-cdk/require-sanctioned-effect-marker': 'off',
     },
   },
 
@@ -1999,6 +2167,18 @@ module.exports = tseslint.config(
       'no-restricted-globals': 'off',
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+      // Off by default here: the `no-effect-state-propagation` fixture writes
+      // signals inside `effect()` on purpose, and the "exactly one rule per
+      // fixture" invariant this directory documents would break if a second
+      // rule fired on it. Re-enabled below for this rule's own fixture.
+      'forty-cdk/require-sanctioned-effect-marker': 'off',
+    },
+  },
+
+  {
+    files: ['projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-effect-marker.fixture.ts'],
+    rules: {
+      'forty-cdk/require-sanctioned-effect-marker': 'error',
     },
   },
 

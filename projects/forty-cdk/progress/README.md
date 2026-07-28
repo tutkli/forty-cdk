@@ -110,7 +110,7 @@ Implements the [WAI-ARIA Meter pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
@@ -123,3 +123,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
   transform: scaleX(calc(var(--for-progress-percentage) / 100));
 }
 ```
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_PROGRESS_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

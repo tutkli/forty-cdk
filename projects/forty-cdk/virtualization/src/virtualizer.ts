@@ -198,12 +198,12 @@ export function injectVirtualizer(options: VirtualizerOptions): ForVirtualizer {
     buildCoreOptions(options.count(), options.scrollElement()),
   );
 
-  // Sanctioned signal write from an effect (external imperative API → signal, not state
-  // propagation): `notify` is a change-notification bridge from the imperative
-  // `@tanstack/virtual-core` core into the signal graph. When `count` / `scrollElement`
-  // change the core is reconfigured imperatively (`setOptions` + `_willUpdate`), so
-  // `notify.set(0)` forces the `virtualItems` / `totalSize` computeds to re-read the core.
-  // The effect never reads `notify`, so there is no self-cycle.
+  // @sanctioned-effect(external-source): `notify` is a change-notification
+  // bridge from the imperative `@tanstack/virtual-core` core into the signal
+  // graph. When `count` / `scrollElement` change the core is reconfigured
+  // imperatively (`setOptions` + `_willUpdate`), so `notify.set(0)` forces the
+  // `virtualItems` / `totalSize` computeds to re-read it. The effect never reads
+  // `notify`, so there is no self-cycle.
   effect(() => {
     virtualizer.setOptions(buildCoreOptions(options.count(), options.scrollElement()));
     virtualizer._willUpdate();

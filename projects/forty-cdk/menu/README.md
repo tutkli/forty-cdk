@@ -41,7 +41,7 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
 </div>
 ```
 
-For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across checkbox / radio items, see the [selected-indicator alignment guide](../../../../../docs/selected-indicator-pattern.md).
+For the recommended `[forceMount]` + `opacity` pattern that keeps indicator columns aligned across checkbox / radio items, see the [selected-indicator alignment guide](../../../docs/selected-indicator-pattern.md).
 
 ## Mount/visibility convention
 
@@ -194,13 +194,13 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
-> `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../../../docs/styling-floating-content.md).
+> `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
 
 ### CSS custom properties
 
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.
+See also: [Styling floating content](../../../docs/styling-floating-content.md) — animation rules and standalone `scale`/`opacity`.
 
 `[forMenuContent]` / `[forMenuSubContent]` are portaled to `document.body` and get their position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close). These also drive the content surface for `[forDropdownMenu]` and `[forContextMenu]`, which reuse `[forMenuContent]`:
 
@@ -222,3 +222,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
   transform: rotate(90deg);
 }
 ```
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_MENU_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

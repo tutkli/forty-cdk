@@ -4,7 +4,7 @@ A non-modal floating panel anchored to its trigger by floating-ui, dismissed on 
 
 A popover is a non-modal dialog: focus moves into the surface on open and returns to the trigger on close, but Tab is allowed to leave (no focus trap). For a modal version, use `[forDialog]`. For a non-interactive label that follows the cursor / focus, use `[forTooltip]`.
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+> New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## Anatomy
 
@@ -133,7 +133,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 The dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the automatic close / focus move; the original DOM event, when present, is on `.event`.
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because Popover always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [CLAUDE.md › Auto-focus hook shape](../../../../../CLAUDE.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because Popover always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [Conventions › Auto-focus hook shape](../../../.claude/rules/conventions.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
 
 ### Open without stealing focus
 
@@ -226,11 +226,11 @@ Implements the [WAI-ARIA Modeless Dialog pattern](https://www.w3.org/WAI/ARIA/ap
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+See also: [Styling floating content](../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
 
 `[forPopoverContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forPopoverArrow]` reads the consumer-settable `--for-arrow-offset`:
 
@@ -243,7 +243,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 | `[forPopoverContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
 | `[forPopoverArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the popover edge — typically a negative `px` (e.g. `-4px`).   |
 
-> `[forPopoverContent]` portals to `document.body`, so ancestor-scoped CSS can't reach it. Style it with global CSS or a class — see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full positioner-property list and the floating-content rules.
+> `[forPopoverContent]` portals to `document.body`, so ancestor-scoped CSS can't reach it. Style it with global CSS or a class — see [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-property list and the floating-content rules.
 
 ```css
 .popover-trigger .chevron {
@@ -273,3 +273,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 - **No backdrop**: popovers don't render an overlay. Outside dismissal is event-driven.
 - **Focus return**: on unmount, focus is sent back to the registered trigger element (unless `returnFocus="false"`). The one exception is an **outside-interaction close** — a pointer-down or focus-out that lands outside the popover: focus stays where the interaction moved it instead of snapping back to the trigger, matching `[forDropdownMenu]` (so a popover on a trigger that also carries a tooltip doesn't rip focus back and re-open that tooltip). Escape and programmatic closes still return focus. The return happens before the portal helper removes the node, so the trigger receives `focusin` against a stable layout.
 - **Arrow offset**: `[forPopoverArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the popover (so the arrow points back at the trigger). Set `--for-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px` (flush with the popover edge); the helper ships no default visual.
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_POPOVER_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

@@ -2,7 +2,7 @@
 
 An editable input paired with a filterable listbox popup, supporting single or multi selection with chips.
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+> New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 Headless: `role="combobox"` on the input, `role="listbox"` on the surface, `role="option"` on items, plus `aria-activedescendant` so DOM focus stays in the input. Implements the `FormValueControl<readonly T[]>` interface from `@angular/forms/signals`.
 
@@ -617,7 +617,7 @@ Implements the [WAI-ARIA Combobox pattern](https://www.w3.org/WAI/ARIA/apg/patte
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed under [Data attributes](#data-attributes).
 
 ### CSS custom properties
 
@@ -631,7 +631,7 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 | `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                            |
 | `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input. |
 
-> `[forComboboxContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with global CSS (or a class you pass through) and the shared positioner properties above. See [Styling floating content](../../../../../docs/styling-floating-content.md) for the full positioner-variable list and the portal styling rules.
+> `[forComboboxContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with global CSS (or a class you pass through) and the shared positioner properties above. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-variable list and the portal styling rules.
 
 ```css
 .option[data-highlighted] {
@@ -645,4 +645,4 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS` / `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS` / `FOR_COMBOBOX_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).

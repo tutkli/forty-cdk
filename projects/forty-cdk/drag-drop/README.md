@@ -5,6 +5,37 @@ Headless, accessible drag-and-drop for sortable lists and cross-list transfers, 
 For repositioning an arbitrary element (no list, no reorder) — e.g. dragging a
 whole dialog around by its header — see [`[forFreeDrag]`](#free-drag).
 
+## Anatomy
+
+```html
+<div forDropListGroup>
+  <ul forDropList (dragDrop)="onDrop($event)">
+    @for (item of items(); track item.id) {
+    <li forDraggable [dragData]="item">
+      <span forDragHandle>⠿</span>
+      {{ item.label }}
+      <ng-template forDragPreview>…floating preview…</ng-template>
+      <ng-template forDragPlaceholder>…gap left behind…</ng-template>
+    </li>
+    }
+  </ul>
+  <!-- repeat forDropList per connected list -->
+</div>
+```
+
+| Piece                | Selector               | Required           | Role                                                                                                                                             |
+| -------------------- | ---------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Drop list            | `[forDropList]`        | yes                | Owns the sortable container: registers its items, computes the drop index, emits `(dragDrop)`, and hosts auto-scroll and the live announcements. |
+| Draggable item       | `[forDraggable]`       | yes                | One per item. Carries the item's `[dragData]`, the keyboard lift, and the `data-dragging` / `data-disabled` hooks.                               |
+| Drag handle          | `[forDragHandle]`      | no                 | Restricts the pointer grab to one child. Without it the whole item is the handle.                                                                |
+| Preview template     | `[forDragPreview]`     | no                 | On an `<ng-template>` inside the item: replaces the default clone that follows the pointer. Pointer drags only.                                  |
+| Placeholder template | `[forDragPlaceholder]` | no                 | On an `<ng-template>` inside the item: replaces the default gap held open in the dragged item's slot. Pointer drags only.                        |
+| Drop-list group      | `[forDropListGroup]`   | only for transfers | Connects sibling lists so items move between them. `[connectedTo]` on each list is the alternative when the lists are not siblings.              |
+| Free drag            | `[forFreeDrag]`        | standalone         | Not part of this anatomy — free repositioning with no list and no reorder. See [Free drag](#free-drag).                                          |
+
+`onDrop` applies `moveItemInArray` (or `transferArrayItem`) to your own signal: **the primitive never
+mutates the consumer's data**, in either the pointer or the keyboard flow.
+
 ## Keyboard
 
 | State  | Key         | Action                                                         |
@@ -294,7 +325,7 @@ still be operable by keyboard); dragging is a pointer convenience, not the only 
 Dragging the rows of a **virtualized** list (one whose off-screen rows are
 recycled out of the DOM) is supported through two opt-in companions:
 
-- a **table** — [`[forTableRowReorder]`](../table/README.md#reordering-under-virtualization)
+- a **table** — [`[forTableRowReorder]`](../../../docs/table-reordering.md#reordering-under-virtualization)
   composed with `[forTableVirtualized]`, and
 - a **plain `*forVirtualFor` list** — `[forVirtualReorder]` composed with
   `[forVirtualViewport]` (see `forty-cdk/virtualization`).
@@ -437,3 +468,7 @@ providers: [
 `total` is the number of valid drop positions in the list being announced: the item count for a
 same-list reorder, and one more than the item count for a transfer into a connected list (the
 append gap counts).
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_DROP_LIST_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

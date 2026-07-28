@@ -87,7 +87,7 @@ export class DemoAspectRatio {}
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). This primitive is purely structural: its only host effect is the native `aspect-ratio` style, so it reflects no `data-*` attributes and writes no CSS custom properties. Style the host through your own class on `[forAspectRatio]`.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). This primitive is purely structural: its only host effect is the native `aspect-ratio` style, so it reflects no `data-*` attributes and writes no CSS custom properties. Style the host through your own class on `[forAspectRatio]`.
 
 ## Behavior notes
 

@@ -4,7 +4,7 @@ A floating card that opens on hover to preview the content behind a link, with a
 
 Use it for profile snapshots, link previews, definition cards — any complementary information that surfaces on dwell. There is no APG pattern for HoverCard. Treat it as a presentational layer: the trigger must already convey full meaning (it's a link, a name, a tag), so keyboard-only users miss nothing if they never see the card. Card content can be interactive — that's its main difference from `[forTooltip]`, where APG bans it.
 
-> New to overlays in forty-cdk? [Your first overlay](../../../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
+> New to overlays in forty-cdk? [Your first overlay](../../../docs/your-first-overlay.md) walks a Popover from empty markup to styled-and-animated and explains the `@if` / open-state model and the portal → global CSS rule.
 
 ## Anatomy
 
@@ -198,11 +198,11 @@ For an **instant, unconditional** open or close that ignores the delays and ever
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ### CSS custom properties
 
-See also: [Styling floating content](../../../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
+See also: [Styling floating content](../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
 
 `[forHoverCardContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forHoverCardArrow]` reads the consumer-settable `--for-arrow-offset`:
 
@@ -215,7 +215,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 | `[forHoverCardContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
 | `[forHoverCardArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the card edge — typically a negative `px` (e.g. `-4px`).      |
 
-> `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element — component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`); see [Styling floating content](../../../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
+> `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element — component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
 
 ```css
 .card[data-state='open'] {
@@ -239,3 +239,7 @@ See also: [Styling floating content](../../../../../docs/styling-floating-conten
 ```
 
 The card's open / close delays are hover-intent debouncing rather than motion, so they are deliberately left unchanged under reduced motion — only the visual transitions (which are yours) should opt out.
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_HOVER_CARD_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

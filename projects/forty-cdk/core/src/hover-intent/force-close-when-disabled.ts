@@ -33,6 +33,8 @@ export interface ForceCloseWhenDisabledOptions {
  * core tier — no semver guarantee.
  */
 export function forceCloseWhenDisabled(options: ForceCloseWhenDisabledOptions): void {
+  // @sanctioned-effect(untracked-read): the `open` read is untracked, so the
+  // effect reacts to `disabled` alone and never cycles on the signal it writes.
   effect(() => {
     if (options.disabled() && untracked(options.open)) {
       options.onForceClose();

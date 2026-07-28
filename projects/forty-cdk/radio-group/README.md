@@ -139,7 +139,7 @@ Implements the [WAI-ARIA Radio Group pattern](https://www.w3.org/WAI/ARIA/apg/pa
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 ```css
 .radio-group-indicator[data-state='unchecked'] {
@@ -153,4 +153,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).

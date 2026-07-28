@@ -191,20 +191,20 @@ State is `data-state` (`open`/`closed`, or `active`/`inactive` for Tabs); flip l
 `data-orientation`. Content is never `[hidden]` — you gate it with `@if` or hide closed
 panels in CSS.
 
-- [Accordion](../projects/forty-cdk/src/lib/accordion/README.md) ·
-  [Disclosure](../projects/forty-cdk/src/lib/disclosure/README.md) ·
-  [Tabs](../projects/forty-cdk/src/lib/tabs/README.md) ·
-  [Tree](../projects/forty-cdk/src/lib/tree/README.md)
+- [Accordion](../projects/forty-cdk/accordion/README.md) ·
+  [Disclosure](../projects/forty-cdk/disclosure/README.md) ·
+  [Tabs](../projects/forty-cdk/tabs/README.md) ·
+  [Tree](../projects/forty-cdk/tree/README.md)
 
 ### Form controls
 
 State is `data-state` (`checked`/`unchecked`/`indeterminate`); also `data-disabled` /
 `data-readonly`. The host is a real `<button>` so `:disabled` / `:focus-visible` work too.
 
-- [Switch](../projects/forty-cdk/src/lib/switch/README.md) ·
-  [Checkbox](../projects/forty-cdk/src/lib/checkbox/README.md) ·
-  [Toggle](../projects/forty-cdk/src/lib/toggle/README.md) ·
-  [Radio Group](../projects/forty-cdk/src/lib/radio-group/README.md)
+- [Switch](../projects/forty-cdk/switch/README.md) ·
+  [Checkbox](../projects/forty-cdk/checkbox/README.md) ·
+  [Toggle](../projects/forty-cdk/toggle/README.md) ·
+  [Radio Group](../projects/forty-cdk/radio-group/README.md)
 
 ### Text & value inputs
 
@@ -212,23 +212,23 @@ Style off `data-disabled` / `data-readonly` / `data-empty`, validation facets
 (`data-invalid`, `data-touched`, …) on Field, and segment facets (`data-highlighted`,
 `data-placeholder`) on the date/time fields and Calendar cells.
 
-- [Input](../projects/forty-cdk/src/lib/input/README.md) ·
-  [Number Input](../projects/forty-cdk/src/lib/number-input/README.md) ·
-  [OTP Input](../projects/forty-cdk/src/lib/otp-input/README.md) ·
-  [Date Field](../projects/forty-cdk/src/lib/date-field/README.md) ·
-  [Time Field](../projects/forty-cdk/src/lib/time-field/README.md) ·
-  [Field](../projects/forty-cdk/src/lib/field/README.md) ·
-  [Fieldset](../projects/forty-cdk/src/lib/fieldset/README.md) ·
-  [Calendar](../projects/forty-cdk/src/lib/calendar/README.md)
+- [Input](../projects/forty-cdk/input/README.md) ·
+  [Number Input](../projects/forty-cdk/number-input/README.md) ·
+  [OTP Input](../projects/forty-cdk/otp-input/README.md) ·
+  [Date Field](../projects/forty-cdk/date-field/README.md) ·
+  [Time Field](../projects/forty-cdk/time-field/README.md) ·
+  [Field](../projects/forty-cdk/field/README.md) ·
+  [Fieldset](../projects/forty-cdk/fieldset/README.md) ·
+  [Calendar](../projects/forty-cdk/calendar/README.md)
 
 ### Range & value display
 
 Paint the bar/fill from a `--for-*-percentage` custom property; color by `data-state`
 (Progress) or `data-quality` (Meter).
 
-- [Slider](../projects/forty-cdk/src/lib/slider/README.md) ·
-  [Progress](../projects/forty-cdk/src/lib/progress/README.md) ·
-  [Meter](../projects/forty-cdk/src/lib/meter/README.md)
+- [Slider](../projects/forty-cdk/slider/README.md) ·
+  [Progress](../projects/forty-cdk/progress/README.md) ·
+  [Meter](../projects/forty-cdk/meter/README.md)
 
 ### Trigger-anchored overlays (portal + floating-ui)
 
@@ -236,43 +236,43 @@ Global CSS, `animate.enter` only, anchor/origin custom properties, `data-state`
 `open`/`closed`. See [Styling floating content](./styling-floating-content.md) and, for
 menu checkmark alignment, [Selected-indicator alignment](./selected-indicator-pattern.md).
 
-- [Popover](../projects/forty-cdk/src/lib/popover/README.md) ·
-  [Tooltip](../projects/forty-cdk/src/lib/tooltip/README.md) ·
-  [Hover Card](../projects/forty-cdk/src/lib/hover-card/README.md) ·
-  [Dropdown Menu](../projects/forty-cdk/src/lib/dropdown-menu/README.md) ·
-  [Context Menu](../projects/forty-cdk/src/lib/context-menu/README.md) ·
-  [Menu](../projects/forty-cdk/src/lib/menu/README.md) ·
-  [Menubar](../projects/forty-cdk/src/lib/menubar/README.md) ·
-  [Navigation Menu](../projects/forty-cdk/src/lib/navigation-menu/README.md) ·
-  [Select](../projects/forty-cdk/src/lib/select/README.md) ·
-  [Combobox](../projects/forty-cdk/src/lib/combobox/README.md)
+- [Popover](../projects/forty-cdk/popover/README.md) ·
+  [Tooltip](../projects/forty-cdk/tooltip/README.md) ·
+  [Hover Card](../projects/forty-cdk/hover-card/README.md) ·
+  [Dropdown Menu](../projects/forty-cdk/dropdown-menu/README.md) ·
+  [Context Menu](../projects/forty-cdk/context-menu/README.md) ·
+  [Menu](../projects/forty-cdk/menu/README.md) ·
+  [Menubar](../projects/forty-cdk/menubar/README.md) ·
+  [Navigation Menu](../projects/forty-cdk/navigation-menu/README.md) ·
+  [Select](../projects/forty-cdk/select/README.md) ·
+  [Combobox](../projects/forty-cdk/combobox/README.md)
 
 ### Modal overlays
 
 Global CSS; declaratively class the surface, programmatically pass `class` on the config.
 Both expose `data-state`; Drawer adds `data-side` / drag state.
 
-- [Dialog](../projects/forty-cdk/src/lib/dialog/README.md) ·
-  [Drawer](../projects/forty-cdk/src/lib/drawer/README.md)
+- [Dialog](../projects/forty-cdk/dialog/README.md) ·
+  [Drawer](../projects/forty-cdk/drawer/README.md)
 
 ### Inline selection list & programmatic toast
 
-- [Listbox](../projects/forty-cdk/src/lib/listbox/README.md) — inline (not portaled);
+- [Listbox](../projects/forty-cdk/listbox/README.md) — inline (not portaled);
   roving tabindex, `data-orientation`, options carry `data-state` + `data-highlighted`.
-- [Toast](../projects/forty-cdk/src/lib/toast/README.md) — rendered by the library's
+- [Toast](../projects/forty-cdk/toast/README.md) — rendered by the library's
   viewport, so style its pieces via global attribute selectors; `data-variant`,
   `data-swipe`, `data-paused`.
 
 ### Layout & display
 
-- [Date Picker](../projects/forty-cdk/src/lib/date-picker/README.md) — overlay composing a
+- [Date Picker](../projects/forty-cdk/date-picker/README.md) — overlay composing a
   projected Calendar; floating rules apply.
-- [Separator](../projects/forty-cdk/src/lib/separator/README.md) ·
-  [Aspect Ratio](../projects/forty-cdk/src/lib/aspect-ratio/README.md) ·
-  [Avatar](../projects/forty-cdk/src/lib/avatar/README.md) ·
-  [Scroll Area](../projects/forty-cdk/src/lib/scroll-area/README.md) ·
-  [Pane Resizer](../projects/forty-cdk/src/lib/pane-resizer/README.md) ·
-  [Toolbar](../projects/forty-cdk/src/lib/toolbar/README.md)
+- [Separator](../projects/forty-cdk/separator/README.md) ·
+  [Aspect Ratio](../projects/forty-cdk/aspect-ratio/README.md) ·
+  [Avatar](../projects/forty-cdk/avatar/README.md) ·
+  [Scroll Area](../projects/forty-cdk/scroll-area/README.md) ·
+  [Pane Resizer](../projects/forty-cdk/pane-resizer/README.md) ·
+  [Toolbar](../projects/forty-cdk/toolbar/README.md)
 
 ---
 

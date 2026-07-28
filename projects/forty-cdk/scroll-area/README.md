@@ -292,7 +292,7 @@ The label may instead point at a visible heading with `aria-labelledby`. The lib
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the for\* selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected data-\* attributes listed per piece in the [API](#api) section.
 
 ```css
 .scroll-area-scrollbar[data-state='hidden'] {
@@ -304,3 +304,7 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
   width: 8px;
 }
 ```
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_SCROLL_AREA_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

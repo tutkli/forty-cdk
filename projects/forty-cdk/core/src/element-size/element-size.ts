@@ -65,6 +65,9 @@ export function injectElementSize(target: Signal<HTMLElement | null>): Signal<El
   };
 
   // React to target changes (and to scrollWidth/Height changes via the observer).
+  // @sanctioned-effect(external-source): `out` mirrors a ResizeObserver, and the
+  // last emitted box is held in `prev` rather than read back from `out`, so no
+  // read in this effect can depend on the signal it writes.
   effect(() => {
     const el = target();
     if (el === observed) return;

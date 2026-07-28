@@ -403,7 +403,7 @@ ref.update({ title: 'Saved', variant: 'success', duration: 3000 });
 
 ## Styling
 
-forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
+forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed per piece in the [API](#api) section.
 
 Toast pieces (`[forToast]`, `[forToastTitle]`, `[forToastDescription]`, `[forToastAction]`, `[forToastClose]`) are rendered _inside_ the library's `<for-toast-viewport>` component on the programmatic path, so they cannot take a consumer class directly — style them with **global attribute selectors** (e.g. `[forToast][data-variant='error']`). The exception is per-toast `class` / `classList` in the `show()` config, which the viewport applies to the `[forToast]` root for you (see [Per-toast classes](#per-toast-classes)). Only `<for-toast-viewport>` itself lives in the consumer's own template, so it is the one element that can take an ordinary `class`. Declarative toasts (`<div forToast class="…">`) take consumer classes the native way.
 
@@ -435,3 +435,7 @@ Written on the `[forToast]` host while a swipe gesture is live, so the consumer 
   border-inline-start: 4px solid red;
 }
 ```
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_TOAST_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

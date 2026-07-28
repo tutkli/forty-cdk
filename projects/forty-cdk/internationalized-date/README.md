@@ -20,4 +20,4 @@ bootstrapApplication(App, {
 });
 ```
 
-See the [Calendar README](../src/lib/calendar/README.md) for the full adapter table and usage examples.
+See the [Calendar README](../calendar/README.md) for the full adapter table and usage examples.

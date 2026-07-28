@@ -285,3 +285,7 @@ the fetch, deduplication, and retry — Angular `resource()` / `httpResource()` 
 ```
 
 See the [Combobox README](../combobox/README.md#virtualization) for the complete worked example wiring `[forCombobox]` with `injectVirtualizer` over a 100k-item list.
+
+## Wrapping in a design system
+
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_VIRTUAL_VIEWPORT_CONTEXT` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
