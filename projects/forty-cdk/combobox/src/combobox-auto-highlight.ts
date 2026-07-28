@@ -1,8 +1,7 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { tryReadHandle } from 'forty-cdk/core';
+import { type LabelSnapshot, tryReadHandle } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
-import type { OptionLabelCache } from './combobox-label-cache';
 import type { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
@@ -199,7 +198,7 @@ function findSelectedEnabled<T>(
  */
 export interface AutoHighlightBridgeDeps<T> {
   /** Eagerly pull the label cache so its `prev` slot is seeded while open. */
-  readonly labelCache: Pick<OptionLabelCache<T>, 'prime'>;
+  readonly labelCache: Pick<LabelSnapshot<T>, 'prime'>;
   /** Lazily build the virtualization navigator (only when `totalCount` is set). */
   readonly requireNavigator: () => VirtualizedNavigator<T>;
   /** Live registered options in DOM order. */

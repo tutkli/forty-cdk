@@ -3391,6 +3391,67 @@ describe('ForSelectIndicator', () => {
       expect(opt2.getAttribute('aria-selected')).toBe('true');
     });
 
+    describe('label snapshot', () => {
+      @Component({
+        imports: HOST_IMPORTS,
+        template: `
+          <div forSelect [(open)]="open" [(value)]="value" [totalCount]="total()">
+            <button forSelectTrigger><span forSelectValue></span></button>
+            @if (open()) {
+              <div forSelectContent>
+                @if (window() === 'first') {
+                  <button forSelectOption value="apple" [posInSet]="0">Apple</button>
+                  <button forSelectOption value="banana" [posInSet]="1">Banana</button>
+                } @else {
+                  <button forSelectOption value="cherry" [posInSet]="2">Cherry</button>
+                  <button forSelectOption value="date" [posInSet]="3">Date</button>
+                }
+              </div>
+            }
+          </div>
+        `,
+      })
+      class VirtualLabelHost {
+        readonly open = signal(false);
+        readonly value = signal<readonly string[]>(['banana']);
+        readonly total = signal<number | undefined>(50);
+        readonly window = signal<'first' | 'second'>('first');
+      }
+
+      const valueEl = () => document.querySelector<HTMLElement>('[forSelectValue]')!;
+
+      it('keeps an off-window label resolvable after the window scrolls past it', async () => {
+        const r = renderHost(VirtualLabelHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        expect(valueEl().textContent).toBe('Banana');
+
+        r.instance.window.set('second');
+        await flush(r.fixture);
+        expect(valueEl().textContent).toBe('Banana');
+      });
+
+      it('restarts the snapshot when totalCount transitions (source rebuild)', async () => {
+        const r = renderHost(VirtualLabelHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        r.instance.window.set('second');
+        await flush(r.fixture);
+        expect(valueEl().textContent).toBe('Banana');
+
+        // A `totalCount` transition is the consumer's "the source was rebuilt"
+        // signal, so a label folded from the previous dataset must not survive
+        // it — the serialized form value is shown until the fold catches up.
+        r.instance.total.set(30);
+        await flush(r.fixture);
+        expect(valueEl().textContent).toBe('banana');
+
+        r.instance.window.set('first');
+        await flush(r.fixture);
+        expect(valueEl().textContent).toBe('Banana');
+      });
+    });
+
     it('open-time scroll-to-selected emits scrollToIndex with the committed option index', async () => {
       const r = renderHost(VirtualSelectHost);
       r.instance.open.set(true);

@@ -7,7 +7,6 @@ import {
   inject,
   input,
   isDevMode,
-  linkedSignal,
   model,
   numberAttribute,
   output,
@@ -25,6 +24,8 @@ import {
   injectHiddenInput,
   IdGenerator,
   isRangeSelectShortcut,
+  LabelSnapshot,
+  type LabelSnapshotEntry,
   resolveListNavigation,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
@@ -35,7 +36,6 @@ import {
   isInArray,
   singleSelected,
   toggleInArray,
-  tryReadHandle,
   injectTextDirection,
   findTypeaheadMatch,
   injectTypeahead,
@@ -53,9 +53,6 @@ import {
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
 import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
-
-/** Sentinel for an option handle whose `input.required` `[value]` is not yet written. */
-const NO_VALUE = Symbol('forty-cdk/select:no-value');
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -495,16 +492,17 @@ export class ForSelect<T = string>
   }
 
   /**
-   * Persisted snapshot of the registered options as `{ value, label }` tuples,
-   * keyed internally by serialized form value. Drives closed-state typeahead
-   * and `[forSelectValue]` label rendering — the live `options` registry is
-   * empty whenever `[forSelectContent]` is unmounted, so the snapshot carries
-   * the last non-empty option set across close → re-open cycles.
+   * Persisted snapshot of the registered options, keyed by serialized form
+   * value. Drives closed-state typeahead and `[forSelectValue]` label rendering
+   * — the live `options` registry is empty whenever `[forSelectContent]` is
+   * unmounted, so the snapshot carries the last non-empty option set across
+   * close → re-open cycles.
    *
-   * A `linkedSignal` that folds the live option set on every `options()`
-   * change. When the listbox unmounts (`items().length === 0`) it returns the
-   * previous accumulator unchanged so labels stay resolvable while closed. When
-   * mounted, the fold is virtualization-aware: the non-virtualized path renders
+   * The value-keyed fold itself lives in `forty-cdk/core`, shared with
+   * `[forCombobox]` so the two can't drift. When the listbox unmounts
+   * (`items().length === 0`) the previous accumulator is returned unchanged so
+   * labels stay resolvable while closed. When mounted, the fold is
+   * virtualization-aware through `carryOver`: the non-virtualized path renders
    * the full option set, so the snapshot is rebuilt from the live options alone
    * — an option the consumer removes *while the listbox is open* is purged on
    * that fold rather than lingering forever. This purge only runs while the
@@ -514,41 +512,25 @@ export class ForSelect<T = string>
    * until the next open. Closed-state typeahead reads that snapshot, so after a
    * while-closed removal it can still commit a value that no longer exists;
    * re-open the listbox (or keep the content mounted) to refresh the snapshot
-   * before relying on the purge. The
-   * virtualized path renders one window at a time, so it carries the previous
-   * accumulator forward and merges the window in, keeping off-window labels
-   * resolvable. Each option's `label` is itself a `Signal<string>`, so this
-   * never reads `textContent` from inside the fold — the canonical replacement
-   * for the previous `afterEveryRender(() => signal.set(...))` snapshot (no
+   * before relying on the purge. The virtualized path renders one window at a
+   * time, so it carries the previous accumulator forward and merges the window
+   * in, keeping off-window labels resolvable — until `totalCount` transitions,
+   * the consumer's own "the source was rebuilt" signal, which restarts the
+   * accumulator so labels from the previous dataset can't survive a query
+   * change.
+   *
+   * Each option's `label` is itself a `Signal<string>`, so this never reads
+   * `textContent` from inside the fold — the canonical replacement for the
+   * previous `afterEveryRender(() => signal.set(...))` snapshot (no
    * state-propagation inside an `effect`). A statically-rendered option that
    * registers before its `[value]` binding is written is skipped this fold and
-   * folded in on the re-run the binding triggers (see {@link #readHandleValue}).
+   * folded in on the re-run the binding triggers.
    */
-  readonly #cachedOptions = linkedSignal<
-    readonly ForSelectOptionHandle<T>[],
-    readonly { value: T; label: string }[]
-  >({
-    source: () => this.#controller.options(),
-    computation: (items, prev) => {
-      if (items.length === 0) {
-        return prev?.value ?? [];
-      }
-      const toFormValue = this.itemToFormValue();
-      const merged = new Map<string, { value: T; label: string }>();
-      if (this.#virtualized()) {
-        for (const entry of prev?.value ?? []) {
-          merged.set(toFormValue(entry.value), entry);
-        }
-      }
-      for (const item of items) {
-        const value = this.#readHandleValue(item);
-        if (value === NO_VALUE) {
-          continue;
-        }
-        merged.set(toFormValue(value), { value, label: item.label() });
-      }
-      return [...merged.values()];
-    },
+  readonly #labelSnapshot = new LabelSnapshot<T>({
+    items: this.#controller.options,
+    totalCount: this.totalCount,
+    itemToFormValue: this.itemToFormValue,
+    carryOver: this.#virtualized,
   });
 
   /**
@@ -576,9 +558,9 @@ export class ForSelect<T = string>
     if (itemToLabel) {
       return values.map(itemToLabel);
     }
-    const cached = this.#cachedOptions();
+    const cached = this.#labelSnapshot.entries();
     const toFormValue = this.itemToFormValue();
-    const cachedByKey = new Map<string, { value: T; label: string }>();
+    const cachedByKey = new Map<string, LabelSnapshotEntry<T>>();
     for (const o of cached) {
       cachedByKey.set(toFormValue(o.value), o);
     }
@@ -633,21 +615,6 @@ export class ForSelect<T = string>
     this.#controller.trigger()?.focus(options);
   }
 
-  /**
-   * Read an option handle's `value()` inside the snapshot fold, tolerating the
-   * NG0950 thrown while a statically-rendered option is between registering
-   * (its constructor, during the content view's creation pass) and having its
-   * `input.required` `[value]` binding written (that view's update pass). The
-   * fold's prime read can run in that gap, so a static option above a `@for`
-   * list would otherwise hard-crash on open. Returns {@link NO_VALUE} in that
-   * window; the fold skips the option and folds it in on the re-run the binding
-   * triggers (the required-input producer is accessed before the read throws,
-   * so the dependency is still tracked). Any non-NG0950 error propagates.
-   */
-  #readHandleValue(item: ForSelectOptionHandle<T>): T | typeof NO_VALUE {
-    return tryReadHandle(() => item.value(), NO_VALUE);
-  }
-
   constructor() {
     super();
     injectHiddenInput<T>({
@@ -665,7 +632,7 @@ export class ForSelect<T = string>
     // not state propagation inside an `effect`.
     effect(() => {
       if (this.open()) {
-        this.#cachedOptions();
+        this.#labelSnapshot.prime();
       }
     });
 
@@ -747,7 +714,7 @@ export class ForSelect<T = string>
     if (!this.#closedTypeahead.handle(event)) {
       return false;
     }
-    const cached = this.#cachedOptions();
+    const cached = this.#labelSnapshot.entries();
     const selected = this.selected();
     const equals = this.compareWith();
     const anchorIndex = selected === null ? -1 : cached.findIndex((o) => equals(o.value, selected));

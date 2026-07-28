@@ -56,6 +56,12 @@ export { Collection, type CollectionHandle } from './collection/collection';
 export { firstEnabledHost, nextEnabledHandle } from './collection/enabled-handle-navigation';
 export { foldSnapshotOnTotalCountTransition } from './collection/fold-snapshot';
 export {
+  LabelSnapshot,
+  type LabelSnapshotDeps,
+  type LabelSnapshotEntry,
+  type LabelSnapshotHandle,
+} from './collection/label-snapshot';
+export {
   registerA11yDescription,
   registerA11yName,
   registerHandle,

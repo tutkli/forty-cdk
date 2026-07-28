@@ -30,8 +30,10 @@ export function tryReadHandle<R>(read: () => R): R | null;
 /**
  * Sentinel overload: return `sentinel` instead of `null` in the NG0950 window.
  * Lets a caller distinguish "input unset" from a legitimately-`null` read value
- * (e.g. `ForSelect`, whose option value may be `null`, folds on a private
- * `NO_VALUE` symbol). Any non-NG0950 error still propagates unchanged.
+ * — a fold that projects the handle's value directly, rather than into a
+ * wrapper object, passes a private sentinel symbol so a `null` value is not
+ * mistaken for an unset binding. Any non-NG0950 error still propagates
+ * unchanged.
  *
  * @param read The handle read to attempt.
  * @param sentinel The value to return when the read throws NG0950.
