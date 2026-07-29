@@ -166,7 +166,7 @@ Measurement always tracks the **active** panel. The Viewport's `--for-navigation
 
 The Viewport must be **declared** inside `[forNavigationMenu]` (DI resolves at the template's declaration site), but it may be **stamped** elsewhere — declare it in an `<ng-template>` inside the root and render that template into a page-level container via `ngTemplateOutlet` when the panel needs to escape the header's stacking or overflow context. Dismiss containment follows the panel rather than the nav subtree: focus or a pointerdown landing inside the Viewport or the active panel counts as inside the navigation, so Tab into an externally-hosted panel does not close it.
 
-Note the remaining boundary: with an external Viewport, a `focusout` fired _inside_ the panel never bubbles to the nav host, so tabbing **out** of an external panel to an unrelated element does not close the menu (the APG close-on-leave rule still applies from the trigger row). Escape and outside pointerdown work in both placements.
+Dismissal is symmetric in both placements. Escape, outside pointerdown **and** the APG close-on-leave rule all work identically whether the Viewport sits inside or outside the `<nav>`: close-on-leave is driven by the dismissible layer's `focus` channel, which observes focus moves document-wide rather than relying on a `focusout` bubbling to the nav host, so tabbing **out** of an externally-hosted panel closes the menu.
 
 ## Limitations
 
@@ -234,7 +234,7 @@ Implements the [WAI-ARIA Disclosure Navigation Menu pattern](https://www.w3.org/
 - **Content panels are mounted via `@if`.** The directive does not apply `[hidden]`; visibility is the consumer's call. Use `animate.enter` / `animate.leave` for transitions.
 - **Indicator follows the active trigger.** A `ResizeObserver` (browser-only) watches the active trigger and the surrounding list and re-measures only when the active trigger switches or one of those boxes resizes — reactive, not per-render polling. Consumers drive the visual via the `--for-navigation-menu-indicator-x|y|width|height` custom properties.
 - **`data-state` on the root.** The `[forNavigationMenu]` host reflects `data-state="open"` whenever any item is open and `"closed"` otherwise — same vocabulary as the trigger / content / item / indicator pieces, useful for top-level CSS hooks (e.g. dimming the rest of the page while the menu is open).
-- **Tab-out closes.** Per APG, moving focus past the last / before the first focusable inside the nav closes any open panel. The root listens for `focusout` and closes when `relatedTarget` falls outside the `<nav>`. Escape and outside pointerdown are already handled by the dismissible layer; this covers the keyboard-Tab case it can't see.
+- **Tab-out closes.** Per APG, moving focus out of the navigation closes any open panel. This is one of the dismissible layer's channels: the layer owns `focus` alongside `pointer`, so a `focusin` landing outside the nav, the Viewport and the active panel closes the menu — including when the panel was re-parented outside the `<nav>` by an external Viewport, whose `focusout` never bubbles to the nav host. The root additionally listens for `focusout` with a `null` `relatedTarget`, the one leave that fires no `focusin` at all (focus leaving the document, or landing on a non-focusable area). Moving focus between the trigger row, the Viewport and the panel never dismisses.
 
 ## Styling
 

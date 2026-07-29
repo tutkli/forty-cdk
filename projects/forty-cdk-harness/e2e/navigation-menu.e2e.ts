@@ -359,4 +359,21 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expect(el(page, 'content-company')).toBeVisible();
     await expect(el(page, 'active')).toHaveText('company');
   });
+
+  test('Tab out of a panel hosted by an external viewport closes it', async ({ page }) => {
+    await gotoFixture(page, 'navigation-menu', { externalViewport: '1' });
+
+    await el(page, 'trigger-company').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'content-company')).toBeVisible();
+
+    await page.keyboard.press('Tab');
+    await expectFocused(el(page, 'link-company-1'));
+
+    await page.keyboard.press('Tab');
+
+    await expectFocused(el(page, 'after'));
+    await expect(el(page, 'content-company')).toHaveCount(0);
+    await expect(el(page, 'active')).toHaveText('none');
+  });
 });
