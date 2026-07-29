@@ -333,7 +333,7 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await page.keyboard.press('Tab');
 
     // Focus is now on the trailing input outside the nav; the open panel
-    // closes per APG (focusout with relatedTarget outside the nav).
+    // closes per APG (the dismissible layer's focus channel sees the focusin).
     await expectFocused(el(page, 'after'));
     await expect(el(page, 'content-products')).toHaveCount(0);
     await expect(el(page, 'active')).toHaveText('none');

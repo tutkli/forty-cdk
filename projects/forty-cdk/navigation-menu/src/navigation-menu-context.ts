@@ -138,9 +138,11 @@ export interface NavigationMenuContext extends ForNavigationMenuContext {
   /** Currently-registered viewport (at most one), or `null`. */
   readonly viewport: Signal<ForNavigationMenuViewportHandle | null>;
   /**
-   * Route a `focusout` observed anywhere on the widget's surface to the root's
-   * single close-on-leave decision. `[forNavigationMenuContent]` delegates its
-   * own host's `focusout` here so the leave is visible to the root even when a
+   * Route a `focusout` observed anywhere on the widget's surface to the root,
+   * which acts on it only when the leave reports no destination
+   * (`relatedTarget === null`) — every other leave is owned by the dismissible
+   * layer's `'focus'` channel. `[forNavigationMenuContent]` delegates its own
+   * host's `focusout` here so such a leave is visible to the root even when a
    * `[forNavigationMenuViewport]` re-parented the panel outside the `<nav>`.
    */
   handleSurfaceFocusOut(event: FocusEvent): void;

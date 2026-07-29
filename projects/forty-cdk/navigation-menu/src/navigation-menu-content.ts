@@ -46,11 +46,13 @@ import {
  * for CSS keyframes that slide the entering and leaving panels together
  * during a transition.
  *
- * The host's `focusout` is delegated to the root's single close-on-leave
- * decision. This host is the panel itself, so a leave fired inside it always
- * reaches the root — which is what makes the rule independent of where a
- * `[forNavigationMenuViewport]` re-parented the panel: an externally-hosted
- * panel's `focusout` never bubbles to the `<nav>`.
+ * The host's `focusout` is delegated to the root, which acts on it only for a
+ * leave that reports no destination (`relatedTarget === null`); every other
+ * leave belongs to the dismissible layer's `'focus'` channel. This host is the
+ * panel itself, so such a leave fired inside it always reaches the root — which
+ * is what makes the rule independent of where a `[forNavigationMenuViewport]`
+ * re-parented the panel: an externally-hosted panel's `focusout` never bubbles
+ * to the `<nav>`.
  */
 @Directive({
   selector: '[forNavigationMenuContent]',

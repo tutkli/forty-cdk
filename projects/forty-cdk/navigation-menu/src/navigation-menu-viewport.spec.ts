@@ -1,8 +1,9 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, signal } from '@angular/core';
+import { Component, signal, viewChild } from '@angular/core';
 
 import { flush as flushAsync } from '../../src/test-utils/flush';
 import { renderHost } from '../../src/test-utils/render';
+import { TestStackedLayer } from '../../src/test-utils/stacked-layer';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';
@@ -221,6 +222,7 @@ class LateTriggerMegaMenuHost {
     ForNavigationMenuTrigger,
     ForNavigationMenuContent,
     ForNavigationMenuViewport,
+    TestStackedLayer,
   ],
   template: `
     <nav forNavigationMenu [(value)]="open">
@@ -248,10 +250,14 @@ class LateTriggerMegaMenuHost {
     <div data-id="outside">
       <ng-container [ngTemplateOutlet]="externalViewport"></ng-container>
     </div>
+    <div testStackedLayer>
+      <button data-id="stacked">stacked</button>
+    </div>
   `,
 })
 class ExternalViewportMegaMenuHost {
   readonly open = signal<string | null>(null);
+  readonly stacked = viewChild.required(TestStackedLayer);
 }
 
 describe('ForNavigationMenuViewport', () => {
@@ -312,7 +318,7 @@ describe('ForNavigationMenuViewport', () => {
   });
 
   describe('containment with a viewport outside the nav', () => {
-    it('keeps the panel open when focus moves into a panel hosted outside the nav', async () => {
+    it('leaves a destination-reporting leave to the layer, which closes on the focusin', async () => {
       const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
       await flush();
 
@@ -326,30 +332,19 @@ describe('ForNavigationMenuViewport', () => {
       expect(panel.parentElement).toBe(viewport);
       expect(root.contains(panel)).toBe(false);
 
-      const link = query<HTMLElement>('[data-id="products-link"]')!;
-      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link }));
-      await flush();
-
-      expect(fixture.componentInstance.open()).toBe('products');
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(query<HTMLElement>('[data-id="products"]')).toBe(panel);
-    });
-
-    it('still closes when focus moves outside the nav, the viewport and the panel', async () => {
-      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
-      await flush();
-
-      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
-      trigger.click();
-      await flush();
-
       const outside = document.createElement('button');
       document.body.appendChild(outside);
       try {
-        const root = query<HTMLElement>('[forNavigationMenu]')!;
         trigger.dispatchEvent(
           new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
         );
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(root.getAttribute('data-state')).toBe('open');
+        expect(query<HTMLElement>('[data-id="products"]')).toBe(panel);
+
+        outside.focus();
         await flush();
 
         expect(fixture.componentInstance.open()).toBeNull();
@@ -357,6 +352,31 @@ describe('ForNavigationMenuViewport', () => {
         expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
       } finally {
         outside.remove();
+      }
+    });
+
+    it('keeps a panel hosted outside the nav open when focus moves into a surface stacked above it', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      query<HTMLButtonElement>('[forNavigationMenuTrigger]')!.click();
+      await flush();
+      const panel = query<HTMLElement>('[data-id="products"]')!;
+      expect(query<HTMLElement>('[forNavigationMenu]')!.contains(panel)).toBe(false);
+
+      query<HTMLAnchorElement>('[data-id="products-link"]')!.focus();
+      await flush();
+
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack([]);
+      try {
+        query<HTMLButtonElement>('[data-id="stacked"]')!.focus();
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(query<HTMLElement>('[data-id="products"]')).toBe(panel);
+      } finally {
+        stacked.unstack();
       }
     });
 
