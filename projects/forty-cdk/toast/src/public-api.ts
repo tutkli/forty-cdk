@@ -1,4 +1,4 @@
-export { ForToast } from './toast';
+export { ForToast, provideForToast } from './toast';
 export { ForToastViewport } from './toast-viewport';
 export { ForToastTitle } from './toast-title';
 export { ForToastDescription } from './toast-description';

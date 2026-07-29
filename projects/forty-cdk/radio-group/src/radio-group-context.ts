@@ -6,6 +6,9 @@ import { type ListNavigationAction, type WritingDirection } from 'forty-cdk/core
  * Lightweight handle each `ForRadio` registers with the group on init so the
  * group can react to changes in any radio's `disabled` (the `firstEnabledHost`
  * computation depends on every registered handle's disabled signal).
+ *
+ * Part of the registration protocol, so it is never exported from
+ * `public-api.ts` — see {@link RadioGroupContext}.
  */
 export interface ForRadioHandle {
   readonly host: HTMLElement;
@@ -40,16 +43,32 @@ export interface ForRadioGroupContext {
   navigate(currentRadio: HTMLElement, action: ListNavigationAction): void;
   /** True when `el` is the first enabled radio in registration order. */
   isFirstEnabledRadio(el: HTMLElement): boolean;
-  registerRadio(handle: ForRadioHandle): void;
-  unregisterRadio(handle: ForRadioHandle): void;
 }
 
 export const FOR_RADIO_GROUP_CONTEXT = new InjectionToken<ForRadioGroupContext>(
   'FOR_RADIO_GROUP_CONTEXT',
 );
 
-export function injectRadioGroupContext(piece: string): ForRadioGroupContext {
-  const ctx = inject(FOR_RADIO_GROUP_CONTEXT, { optional: true });
+/**
+ * The group's internal coordination surface: everything
+ * {@link ForRadioGroupContext} publishes plus the radio-registration protocol
+ * the tab-stop and navigation lookups are driven from.
+ *
+ * Never exported from `public-api.ts`. `[forRadioGroup]` provides it alongside
+ * {@link FOR_RADIO_GROUP_CONTEXT} on the same object, so a consumer who injects
+ * the public token gets the read surface while the pieces get the wiring
+ * protocol.
+ */
+export interface RadioGroupContext extends ForRadioGroupContext {
+  registerRadio(handle: ForRadioHandle): void;
+  unregisterRadio(handle: ForRadioHandle): void;
+}
+
+/** DI token carrying the internal {@link RadioGroupContext}. Provided by `[forRadioGroup]`. */
+export const RADIO_GROUP_CONTEXT = new InjectionToken<RadioGroupContext>('RADIO_GROUP_CONTEXT');
+
+export function injectRadioGroupContext(piece: string): RadioGroupContext {
+  const ctx = inject(RADIO_GROUP_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
       `[forty-cdk/radio-group] ${piece} must be used inside a [forRadioGroup] element.`,

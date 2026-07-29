@@ -159,6 +159,9 @@ export interface ForToastInstance<D = unknown> {
  * `altText` is a signal that returns `''` when the consumer hasn't set
  * `[altText]` on the action — in which case the action is treated as
  * voice-less for announcement purposes.
+ *
+ * Part of the registration protocol, so it is never exported from
+ * `public-api.ts` — see {@link ToastContext}.
  */
 export interface ForToastActionHandle {
   readonly altText: Signal<string>;
@@ -170,6 +173,9 @@ export interface ForToastActionHandle {
  * signal rather than a one-shot DOM read. The signal re-emits when the rendered
  * text changes (e.g. through `ref.update()`), which is what drives the toast to
  * re-announce.
+ *
+ * Part of the registration protocol, so it is never exported from
+ * `public-api.ts` — see {@link ToastContext}.
  */
 export interface ForToastTextHandle {
   /** Generated id host-bound for `aria-labelledby` / `aria-describedby`. */
@@ -179,9 +185,10 @@ export interface ForToastTextHandle {
 }
 
 /**
- * Coordination contract owned by `ForToast`. Title / description register
- * generated ids so the toast can wire `aria-labelledby` / `aria-describedby`
- * reactively. Action and close buttons request close via `requestClose`.
+ * Coordination contract owned by `ForToast`. Exposes the resolved
+ * `aria-labelledby` / `aria-describedby` the registered title and description
+ * compose, and the `requestClose` command action and close buttons route
+ * through.
  */
 export interface ForToastContext {
   readonly variant: Signal<ForToastVariant>;
@@ -190,11 +197,27 @@ export interface ForToastContext {
   readonly labelledBy: Signal<string | null>;
   readonly describedBy: Signal<string | null>;
 
+  /** Request close. Always honored — the directive emits `(dismiss)` and the consumer unmounts. */
+  requestClose(reason: ForToastCloseReason): void;
+}
+
+export const FOR_TOAST_CONTEXT = new InjectionToken<ForToastContext>('FOR_TOAST_CONTEXT');
+
+/**
+ * The toast's internal coordination surface: everything {@link ForToastContext}
+ * publishes plus the title / description / action registration protocol the
+ * `aria-labelledby` / `aria-describedby` wiring and the synthesized
+ * announcement are composed from.
+ *
+ * Never exported from `public-api.ts`. `[forToast]` provides it alongside
+ * {@link FOR_TOAST_CONTEXT} on the same object, so a consumer who injects the
+ * public token gets the read surface while the pieces get the wiring protocol.
+ */
+export interface ToastContext extends ForToastContext {
   registerLabel(handle: ForToastTextHandle): void;
   unregisterLabel(handle: ForToastTextHandle): void;
   registerDescription(handle: ForToastTextHandle): void;
   unregisterDescription(handle: ForToastTextHandle): void;
-
   /**
    * Register an action so the toast can include its `altText` in the
    * synthesized announcement. Actions without `altText` are still allowed
@@ -202,15 +225,13 @@ export interface ForToastContext {
    */
   registerAction(handle: ForToastActionHandle): void;
   unregisterAction(handle: ForToastActionHandle): void;
-
-  /** Request close. Always honored — the directive emits `(dismiss)` and the consumer unmounts. */
-  requestClose(reason: ForToastCloseReason): void;
 }
 
-export const FOR_TOAST_CONTEXT = new InjectionToken<ForToastContext>('FOR_TOAST_CONTEXT');
+/** DI token carrying the internal {@link ToastContext}. Provided by `[forToast]`. */
+export const TOAST_CONTEXT = new InjectionToken<ToastContext>('TOAST_CONTEXT');
 
-export function injectToastContext(piece: string): ForToastContext {
-  const ctx = inject(FOR_TOAST_CONTEXT, { optional: true });
+export function injectToastContext(piece: string): ToastContext {
+  const ctx = inject(TOAST_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/toast] ${piece} must be used inside a [forToast] element.`);
   }

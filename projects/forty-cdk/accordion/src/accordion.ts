@@ -1,4 +1,4 @@
-import { booleanAttribute, Directive, input, model } from '@angular/core';
+import { booleanAttribute, Directive, input, model, type Provider, type Type } from '@angular/core';
 
 import {
   Collection,
@@ -8,6 +8,7 @@ import {
   injectTextDirection,
 } from 'forty-cdk/core';
 import {
+  ACCORDION_CONTEXT,
   FOR_ACCORDION_CONTEXT,
   type ForAccordionContext,
   type ForAccordionTriggerHandle,
@@ -43,7 +44,7 @@ import {
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
+  providers: provideForAccordion(ForAccordion),
 })
 export class ForAccordion implements ForAccordionContext {
   readonly #triggers = new Collection<ForAccordionTriggerHandle>();
@@ -146,11 +147,40 @@ export class ForAccordion implements ForAccordionContext {
     }
   }
 
-  registerTrigger(handle: ForAccordionTriggerHandle): void {
+  private registerTrigger(handle: ForAccordionTriggerHandle): void {
     this.#triggers.register(handle);
   }
 
-  unregisterTrigger(handle: ForAccordionTriggerHandle): void {
+  private unregisterTrigger(handle: ForAccordionTriggerHandle): void {
     this.#triggers.unregister(handle);
   }
+}
+
+/**
+ * The providers a `[forAccordion]` root installs: the public
+ * {@link FOR_ACCORDION_CONTEXT}, aliased to `root`, plus the internal
+ * coordination token the accordion's pieces resolve.
+ *
+ * `ForAccordion` declares its own providers through this helper, so a wrapper
+ * that **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_ACCORDION_CONTEXT` alone leaves the internal token absent
+ * and every piece orphans with the "must be used inside a [forAccordion]
+ * element" error. That token is deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForAccordion(MyAccordion),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForAccordion]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForAccordion(root: Type<ForAccordion>): Provider[] {
+  return [
+    { provide: FOR_ACCORDION_CONTEXT, useExisting: root },
+    { provide: ACCORDION_CONTEXT, useExisting: root },
+  ];
 }

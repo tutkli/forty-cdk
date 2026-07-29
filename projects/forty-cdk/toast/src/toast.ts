@@ -11,8 +11,10 @@ import {
   numberAttribute,
   output,
   PLATFORM_ID,
+  type Provider,
   type Signal,
   signal,
+  type Type,
   untracked,
 } from '@angular/core';
 
@@ -34,6 +36,7 @@ import {
   type ForToastSwipeDirection,
   type ForToastTextHandle,
   type ForToastVariant,
+  TOAST_CONTEXT,
 } from './toast-context';
 
 type SwipeState = 'start' | 'move' | 'cancel' | 'end';
@@ -87,7 +90,7 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
     '(focusout)': 'onMaybeResumeFocus($event)',
     '(keydown)': 'onKeyDown($event)',
   },
-  providers: [{ provide: FOR_TOAST_CONTEXT, useExisting: ForToast }],
+  providers: provideForToast(ForToast),
 })
 export class ForToast implements ForToastContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -334,27 +337,27 @@ export class ForToast implements ForToastContext {
     this.#destroyRef.onDestroy(detachSwipe);
   }
 
-  registerLabel(handle: ForToastTextHandle): void {
+  private registerLabel(handle: ForToastTextHandle): void {
     this.#labels.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
   }
 
-  unregisterLabel(handle: ForToastTextHandle): void {
+  private unregisterLabel(handle: ForToastTextHandle): void {
     this.#labels.update((arr) => arr.filter((h) => h !== handle));
   }
 
-  registerDescription(handle: ForToastTextHandle): void {
+  private registerDescription(handle: ForToastTextHandle): void {
     this.#descriptions.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
   }
 
-  unregisterDescription(handle: ForToastTextHandle): void {
+  private unregisterDescription(handle: ForToastTextHandle): void {
     this.#descriptions.update((arr) => arr.filter((h) => h !== handle));
   }
 
-  registerAction(handle: ForToastActionHandle): void {
+  private registerAction(handle: ForToastActionHandle): void {
     this.#actions.update((arr) => (arr.includes(handle) ? arr : [...arr, handle]));
   }
 
-  unregisterAction(handle: ForToastActionHandle): void {
+  private unregisterAction(handle: ForToastActionHandle): void {
     this.#actions.update((arr) => arr.filter((h) => h !== handle));
   }
 
@@ -443,4 +446,33 @@ export class ForToast implements ForToastContext {
       this.#timerHandle = null;
     }
   }
+}
+
+/**
+ * The providers a `[forToast]` root installs: the public
+ * {@link FOR_TOAST_CONTEXT}, aliased to `root`, plus the internal coordination
+ * token the toast's pieces resolve.
+ *
+ * `ForToast` declares its own providers through this helper, so a wrapper that
+ * **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_TOAST_CONTEXT` alone leaves the internal token absent and
+ * every piece orphans with the "must be used inside a [forToast] element" error.
+ * That token is deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForToast(MyToast),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForToast]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForToast(root: Type<ForToast>): Provider[] {
+  return [
+    { provide: FOR_TOAST_CONTEXT, useExisting: root },
+    { provide: TOAST_CONTEXT, useExisting: root },
+  ];
 }

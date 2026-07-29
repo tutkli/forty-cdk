@@ -6,6 +6,9 @@ import { type ListNavigationAction, type WritingDirection } from 'forty-cdk/core
  * Registry entry for one `ForAccordionTrigger`. Triggers register their host
  * element so the root can drive keyboard navigation over its own triggers
  * without an unscoped DOM query that would leak into nested accordions.
+ *
+ * Part of the registration protocol, so it is never exported from
+ * `public-api.ts` — see {@link AccordionContext}.
  */
 export interface ForAccordionTriggerHandle {
   readonly host: HTMLElement;
@@ -35,8 +38,6 @@ export interface ForAccordionContext {
    * registered triggers, so a nested accordion does not cross-contaminate.
    */
   focusByOffset(currentTrigger: HTMLElement, action: ListNavigationAction): void;
-  registerTrigger(handle: ForAccordionTriggerHandle): void;
-  unregisterTrigger(handle: ForAccordionTriggerHandle): void;
 }
 
 /**
@@ -64,8 +65,26 @@ export const FOR_ACCORDION_ITEM_CONTEXT = new InjectionToken<ForAccordionItemCon
   'FOR_ACCORDION_ITEM_CONTEXT',
 );
 
-export function injectAccordionContext(piece: string): ForAccordionContext {
-  const ctx = inject(FOR_ACCORDION_CONTEXT, { optional: true });
+/**
+ * The accordion's internal coordination surface: everything
+ * {@link ForAccordionContext} publishes plus the trigger-registration protocol
+ * the root drives keyboard navigation from.
+ *
+ * Never exported from `public-api.ts`. `[forAccordion]` provides it alongside
+ * {@link FOR_ACCORDION_CONTEXT} on the same object, so a consumer who injects
+ * the public token gets the read surface while the pieces get the wiring
+ * protocol.
+ */
+export interface AccordionContext extends ForAccordionContext {
+  registerTrigger(handle: ForAccordionTriggerHandle): void;
+  unregisterTrigger(handle: ForAccordionTriggerHandle): void;
+}
+
+/** DI token carrying the internal {@link AccordionContext}. Provided by `[forAccordion]`. */
+export const ACCORDION_CONTEXT = new InjectionToken<AccordionContext>('ACCORDION_CONTEXT');
+
+export function injectAccordionContext(piece: string): AccordionContext {
+  const ctx = inject(ACCORDION_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/accordion] ${piece} must be used inside a [forAccordion] element.`);
   }

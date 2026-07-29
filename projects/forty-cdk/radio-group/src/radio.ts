@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 
 import { hostButtonType, registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
-import { injectRadioGroupContext } from './radio-group-context';
+import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-group-context';
 
 /**
  * Injection key the `[forRadioIndicator]` uses to resolve its parent radio,
@@ -56,8 +56,14 @@ export const FOR_RADIO = new InjectionToken<ForRadio>('FOR_RADIO');
 export class ForRadio {
   protected readonly buttonType = hostButtonType();
 
-  /** Parent group's context — public so siblings like `ForRadioIndicator` can read it. */
-  readonly group = injectRadioGroupContext('ForRadio');
+  readonly #ctx = injectRadioGroupContext('ForRadio');
+
+  /**
+   * Parent group's read surface — public so siblings like `ForRadioIndicator`
+   * can read it. Deliberately typed as the public {@link ForRadioGroupContext}:
+   * the registration protocol behind it stays internal.
+   */
+  readonly group: ForRadioGroupContext = this.#ctx;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /** Unique identifier for this radio's value. Required. */
@@ -80,8 +86,8 @@ export class ForRadio {
     };
     registerHandle(
       handle,
-      (h) => this.group.registerRadio(h),
-      (h) => this.group.unregisterRadio(h),
+      (h) => this.#ctx.registerRadio(h),
+      (h) => this.#ctx.unregisterRadio(h),
       'afterNextRender',
     );
   }
