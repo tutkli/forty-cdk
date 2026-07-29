@@ -261,6 +261,20 @@ test.describe('Menubar', () => {
     await expect(el(page, 'trigger-file')).not.toBeFocused();
   });
 
+  test('a consumer-driven value.set(null) returns focus to the trigger that was open', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+    await el(page, 'open-file-externally').click();
+    await expect(el(page, 'menu-file')).toBeVisible();
+    await expectFocused(el(page, 'item-file-1'));
+
+    await page.keyboard.press('F2');
+
+    await expect(el(page, 'menu-file')).toHaveCount(0);
+    await expectFocused(el(page, 'trigger-file'));
+  });
+
   test.describe('vertical orientation', () => {
     test('ArrowDown / ArrowUp rove among triggers without opening a menu', async ({ page }) => {
       await gotoFixture(page, 'menubar', { orientation: 'vertical' });

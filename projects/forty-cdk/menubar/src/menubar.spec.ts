@@ -748,6 +748,111 @@ describe('ForMenubar', () => {
     });
   });
 
+  describe('consumer-driven close (#1518)', () => {
+    it('keeps the id and aria-labelledby of a menu only ever opened through [(value)]', async () => {
+      const r = renderHost(MenubarAlwaysMountedAnonymousContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const openId = content.id;
+      expect(openId).toMatch(/^for-menubar-content-/);
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+
+      r.instance.open.set(null);
+      await flush(r.fixture);
+
+      expect(content.id).toBe(openId);
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+    });
+
+    it('keeps the closing trigger naming after a trigger-driven open, like the Escape path', async () => {
+      const r = renderHost(MenubarAlwaysMountedAnonymousContentHost);
+      const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      fileTrigger.click();
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const openId = content.id;
+
+      r.instance.open.set(null);
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+      expect(content.id).toBe(openId);
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+    });
+
+    it('names the trigger the consumer switched to, not the one openTrigger last saw', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      const fileTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      fileTrigger.click();
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-labelledby')).toBe('edit-trigger');
+
+      r.instance.open.set(null);
+      await flush(r.fixture);
+
+      expect(content.getAttribute('aria-labelledby')).toBe('edit-trigger');
+      expect(content.id).toBe('always-mounted');
+    });
+
+    it('keeps the accessible name of a menu closed by the consumer', async () => {
+      const r = renderHost(MenubarAlwaysMountedNamedContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-label')).toBe('File actions');
+
+      r.instance.open.set(null);
+      await flush(r.fixture);
+
+      expect(content.getAttribute('aria-label')).toBe('File actions');
+      expect(content.hasAttribute('aria-labelledby')).toBe(false);
+    });
+
+    it('does not emit (valueChange) when the consumer clears the value', async () => {
+      let internalEmits = 0;
+
+      @Component({
+        imports: IMPORTS,
+        template: `
+          <div forMenubar [(value)]="open" (valueChange)="onChange($event)">
+            <button forMenubarTrigger value="a" id="a-trigger">A</button>
+            <div forMenuContent>
+              <button id="a1" forMenuItem>1</button>
+            </div>
+          </div>
+        `,
+      })
+      class Host {
+        readonly open = signal<string | null>(null);
+        onChange(_: string | null): void {
+          internalEmits++;
+        }
+      }
+
+      const r = renderHost(Host);
+      r.instance.open.set('a');
+      await flush(r.fixture);
+
+      r.instance.open.set(null);
+      await flush(r.fixture);
+
+      expect(internalEmits).toBe(0);
+      expect(
+        document.querySelector<HTMLElement>('[forMenuContent]')!.getAttribute('aria-labelledby'),
+      ).toBe('a-trigger');
+    });
+  });
+
   describe('roving tabindex', () => {
     it('only the first enabled trigger is initially tabbable', () => {
       const r = renderHost(MenubarHost);
