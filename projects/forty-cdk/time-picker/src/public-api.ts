@@ -21,4 +21,9 @@ export {
   FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
 } from './time-picker-host-directive';
-export { buildTimeSlots, type ForTimeSlot, type TimePickerGranularity } from './build-time-slots';
+export {
+  buildTimeSlots,
+  type BuildTimeSlotsConfig,
+  type ForTimeSlot,
+  type TimePickerGranularity,
+} from './build-time-slots';
