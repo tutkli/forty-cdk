@@ -67,7 +67,7 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
    * content's destroy hook can still return focus to the trigger.
    */
   readonly lastTriggerHost: Signal<HTMLElement | null>;
-  /** Close the currently-open menu (clears `value`, snapshots the last trigger). */
+  /** Close the currently-open menu by clearing `value`. */
   closeOpen(): void;
 }
 

@@ -47,7 +47,11 @@ import { queryFlag } from './_query-flag';
       }
     </div>
     <input data-testid="after" placeholder="after-menubar" />
+    <button data-testid="open-file-externally" (click)="open.set('file')">Open File menu</button>
   `,
+  host: {
+    '(document:keydown)': 'onDocumentKeyDown($event)',
+  },
 })
 export class MenubarFixture {
   readonly #route = inject(ActivatedRoute);
@@ -63,6 +67,21 @@ export class MenubarFixture {
 
   protected onAutoClose(event: VetoableEvent): void {
     if (this.#vetoClose) event.preventDefault();
+  }
+
+  /**
+   * Consumer-driven close channel: `F2` clears `value` directly instead of
+   * routing through any of the library's own close paths, so the E2E suite can
+   * assert the return-focus of a `[(value)]`-driven close. Paired with the
+   * `open-file-externally` button, which opens the same way. `F2` is a key the
+   * menu ignores, so nothing consumes it before this listener; the listener is
+   * document-level because the open menu is portaled out of this component's
+   * subtree.
+   */
+  protected onDocumentKeyDown(event: KeyboardEvent): void {
+    if (event.key === 'F2') {
+      this.open.set(null);
+    }
   }
 
   /**

@@ -4,9 +4,9 @@ import {
   Directive,
   inject,
   input,
+  linkedSignal,
   model,
   output,
-  signal,
 } from '@angular/core';
 
 import {
@@ -186,24 +186,39 @@ export class ForMenubar implements ForMenubarContext {
   });
 
   /**
-   * The most-recently-active trigger value. Persists past close so the
-   * `[forMenuContent]` destroy hook can still target the trigger (by then
-   * `value()` is already `null`). Updated synchronously by `openTrigger`
-   * and snapshotted in `closeOpen` before clearing `value` — that covers
-   * every internal close path (Escape, item activation, outside dismiss).
+   * The most-recently-active trigger value: `value()` while a menu is open, and
+   * the last non-null value once it closes, so the `[forMenuContent]` destroy
+   * hook can still target the trigger (by then `value()` is already `null`).
+   *
+   * Derived from `value` rather than snapshotted by hand, because `value` is
+   * two-way bindable: a consumer's own `value.set(null)` never reaches
+   * `closeOpen`, and a hand-written snapshot would keep whatever it held before
+   * — resolving to an earlier trigger, or to `null` on a bar whose menus were
+   * only ever opened through `[(value)]`.
+   *
+   * `linkedSignal` computes lazily, so `previous` is only populated when the
+   * signal was read while the source was non-null. It always is: the open
+   * trigger's `aria-controls` host binding reads `contentId()`, which resolves
+   * through {@link lastTrigger}, on the same change-detection pass that opens
+   * the menu. Read it unconditionally in {@link lastTrigger} — a
+   * `value() ?? #lastValue()` short-circuit would skip exactly the reads that
+   * populate `previous`.
    */
-  readonly #lastValue = signal<string | null>(null);
+  readonly #lastValue = linkedSignal<string | null, string | null>({
+    source: this.value,
+    computation: (value, previous) => value ?? previous?.value ?? null,
+  });
 
   /**
    * The most-recently-active trigger handle. Identical to `activeTrigger` while
-   * a menu is open, and persists past close (falling back to `#lastValue`) so
-   * the still-mounted surface keeps the ids and accessible name it was rendered
-   * with for the whole close transition. Consumed by {@link MenubarMenuContext}
-   * for `contentId` / `triggerId` / `ariaLabel`; `null` only while no trigger
-   * has ever been active.
+   * a menu is open, and persists past close (resolving `#lastValue`) so the
+   * still-mounted surface keeps the ids and accessible name it was rendered with
+   * for the whole close transition. Consumed by {@link MenubarMenuContext} for
+   * `contentId` / `triggerId` / `ariaLabel`; `null` only while no trigger has
+   * ever been active.
    */
   readonly lastTrigger = computed<ForMenubarTriggerHandle | null>(() => {
-    const v = this.value() ?? this.#lastValue();
+    const v = this.#lastValue();
     if (v === null) {
       return null;
     }
@@ -312,7 +327,6 @@ export class ForMenubar implements ForMenubarContext {
       return;
     }
     this.menuCtx.prepareOpen(initialFocus, modality);
-    this.#lastValue.set(value);
     if (this.value() === value) {
       this.menuCtx.focusInitialEnabledItem(initialFocus);
       return;
@@ -321,14 +335,9 @@ export class ForMenubar implements ForMenubarContext {
   }
 
   closeOpen(): void {
-    const current = this.value();
-    if (current === null) {
+    if (this.value() === null) {
       return;
     }
-    // Snapshot so [forMenuContent]'s destroy hook can return focus to the
-    // just-closed trigger via menuCtx.trigger (which falls back to #lastValue
-    // once value() is null).
-    this.#lastValue.set(current);
     this.value.set(null);
   }
 
