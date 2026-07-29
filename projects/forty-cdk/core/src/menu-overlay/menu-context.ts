@@ -211,16 +211,17 @@ export interface ForMenuContext {
    * pointer off the surface (hover-follows-pointer).
    */
   clearItemHighlights(): void;
-  /** Returns `true` if focus moved; `false` when no enabled items exist. */
-  focusFirstEnabledItem(): boolean;
-  focusLastEnabledItem(): boolean;
   /**
    * Focuses the first or last enabled item per `target` — the contract-level
    * resolution of {@link initialFocus}, so a piece that reads that signal hands
    * the value straight back instead of re-deriving which of the two granular
    * calls it maps to. `[forMenuContent]` uses it for the mount-time initial
-   * focus; the mapping itself is owned once by core's `MenuItemList`. Returns
-   * `true` if focus moved; `false` when no enabled items exist.
+   * focus; the mapping itself is owned once by core's `MenuItemList`. This is
+   * the contract's only initial-focus entry point — the granular
+   * `focusFirstEnabledItem` / `focusLastEnabledItem` pair stays on the concrete
+   * controllers as an imperative escape hatch and is not part of what an
+   * implementor owes. Returns `true` if focus moved; `false` when no enabled
+   * items exist.
    */
   focusInitialEnabledItem(target: 'first' | 'last'): boolean;
 

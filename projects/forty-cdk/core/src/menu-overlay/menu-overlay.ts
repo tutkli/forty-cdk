@@ -233,6 +233,11 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * Focuses the first enabled item. When the most recent `openMenu` was
    * pointer-activated, this one move suppresses the item's focus-driven
    * `data-highlighted` (one-shot — later calls highlight normally).
+   *
+   * Imperative escape hatch for an explicit first / last move independent of
+   * the resolved {@link initialFocus} target: no piece of the library routes
+   * through it (they all go through {@link focusInitialEnabledItem}), and the
+   * `ForMenuContext` contract deliberately no longer declares it (#1469).
    */
   focusFirstEnabledItem(): boolean {
     return this.#itemList.focusFirstEnabledItem(this.#initialFocusState.consumeHighlight());
@@ -241,7 +246,9 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   /**
    * Focuses the last enabled item. When the most recent `openMenu` was
    * pointer-activated, this one move suppresses the item's focus-driven
-   * `data-highlighted` (one-shot — later calls highlight normally).
+   * `data-highlighted` (one-shot — later calls highlight normally). The
+   * granular counterpart of {@link focusFirstEnabledItem}, and like it an
+   * imperative escape hatch rather than a `ForMenuContext` member (#1469).
    */
   focusLastEnabledItem(): boolean {
     return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());
