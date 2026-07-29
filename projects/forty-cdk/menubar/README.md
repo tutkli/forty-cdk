@@ -75,6 +75,20 @@ export class DemoMenubar {
 
 `@if (open() === '<value>')` controls each menu's mount, so Angular's `animate.enter` / `animate.leave` fire on the natural mount cycle. `[(value)]` is two-way bindable; the menubar flips it on trigger interaction, item activation, Escape, outside dismissal, and cross-menu navigation.
 
+## Mount shapes
+
+The bar provides **one** multiplexed `ForMenuContext`, so a `[forMenuContent]` does not have to be repeated per trigger. Three shapes are supported, and all three preserve a consumer-set static `id` on the surface:
+
+| Shape                       | Markup                                                    | When to reach for it                                                                                                                                                                    |
+| --------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **One `@if` per trigger**   | `@if (open() === 'file') { <div forMenuContent>…</div> }` | The canonical shape. Each menu owns its items, and `animate.enter` / `animate.leave` fire per menu on every switch.                                                                     |
+| **One shared `@if`**        | `@if (open() !== null) { <div forMenuContent>…</div> }`   | One surface for the whole bar, with the consumer swapping the items. Cheaper to author; the surface is _not_ remounted on a switch, so per-menu enter / leave animations do not replay. |
+| **Unconditionally mounted** | `<div forMenuContent>…</div>`                             | The surface stays in the DOM for the bar's whole lifetime. Nothing mounts or unmounts, so no mount-cycle animation runs at all.                                                         |
+
+For the two shared shapes the surface belongs to no single trigger, so a static `id` on it stays put across a menu switch and every trigger's `aria-controls` resolves to it. A surface with no static `id` gets a generated one that follows the active trigger. In every shape the accessible name (`aria-labelledby` / `aria-label`) tracks whichever trigger's menu is currently open.
+
+Only a plain `id="…"` **attribute** is preserved. A `[id]="expr"` property binding evaluates after the directive is constructed, so it is invisible to the adoption and fights the surface's own `[id]` binding.
+
 ## API
 
 ### `ForMenubar`
@@ -173,7 +187,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 - **Hover-leave does _not_ dismiss.** Moving the pointer off the bar (or off the open menu) leaves the menu open. The [APG Menubar pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) prescribes no hover-leave close, and a menubar menu always holds focus while open — dismissing it because the mouse wandered would rip focus out from under a keyboard user and strand it on `<body>`. Dismiss with Escape, an outside pointer interaction, Tab, or by activating an item.
 - **Dismissal.** Escape and an outside pointer interaction close the open menu when `dismissible` is `true` (default). `[dismissible]="false"` suppresses both.
 - **Roving tabindex.** Only one trigger is in the tab sequence at a time — the open trigger, the most-recently-focused trigger, or the first enabled one when nothing's focused.
-- **Mount equals open.** Each menu's `[forMenuContent]` is wrapped in `@if (value() === '<id>')`, so `animate.enter` / `animate.leave` fire on mount / unmount. The directive does not toggle `[hidden]`.
+- **Mount equals open.** In the canonical shape each menu's `[forMenuContent]` is wrapped in `@if (value() === '<id>')`, so `animate.enter` / `animate.leave` fire on mount / unmount. The directive never toggles `[hidden]` — a surface kept mounted (see [Mount shapes](#mount-shapes)) runs no mount-cycle animation.
 - **Disabled triggers stay focusable** (per APG) — they still reflect `data-disabled=""` and `aria-disabled="true"` and are skipped by ArrowLeft / ArrowRight, typeahead, and cross-menu nav.
 
 ## Wrapping in a design system

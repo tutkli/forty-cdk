@@ -183,11 +183,13 @@ export class ForMenubarTrigger {
    * a consumer-set static `id` on the mounted content host is adopted instead
    * (see {@link adoptContentId}).
    *
-   * An unconditionally mounted surface registers before any trigger is active,
-   * so it has no single owner to adopt into: the bar exposes its consumer-set
-   * static `id` as `sharedContentId` and every trigger prefers that over its own
-   * seed, keeping `aria-controls` resolvable to the consumer's id whichever menu
-   * opens.
+   * A surface shared across triggers has no single owner to adopt into — either
+   * because it registered before any trigger was active (mounted
+   * unconditionally) or because it outlived the trigger it registered under (one
+   * `@if (value() !== null)` around the whole bar). The bar exposes its
+   * consumer-set static `id` as `sharedContentId` and every trigger prefers that
+   * over its own seed, keeping `aria-controls` resolvable to the consumer's id
+   * whichever menu opens.
    */
   readonly contentId = computed(() => this.menubar.sharedContentId() ?? this.#ownContentId());
 

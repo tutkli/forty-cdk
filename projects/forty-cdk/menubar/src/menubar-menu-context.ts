@@ -97,7 +97,11 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * while `contentId` falls back to the surface's own consumer-set static `id`
  * (see {@link MenubarMenuContext.sharedContentId}) so an unconditionally
  * mounted surface keeps that id from mount instead of losing it until the first
- * activation.
+ * activation. The same fallback covers the surface shared by every trigger
+ * through one `@if (value() !== null)`: it registers under whichever trigger
+ * opened the bar, but it outlives that trigger's active window, so its static
+ * `id` becomes trigger-agnostic the moment the bar switches menus instead of
+ * staying the property of the trigger that happened to mount it.
  *
  * The dismiss / auto-focus channels forward to the bar-level outputs declared
  * on `[forMenubar]` — `(escapeKeyDown)`, `(pointerDownOutside)`,
@@ -112,7 +116,8 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #positioning: MenubarPositioningSeeds;
   readonly #itemList = createMenuItemList<ForMenuItemHandle>(() => this.#host.loop());
   readonly #contentEl = signal<HTMLElement | null>(null);
-  readonly #sharedContentId = signal<string | null>(null);
+  readonly #contentStaticId = signal<string | null>(null);
+  readonly #contentOwner = signal<ForMenubarTriggerHandle | null>(null);
   readonly #initialFocusState = new InitialFocusState();
   readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
 
@@ -161,7 +166,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly lastCloseReason = this.#closeReasonState.reason;
   readonly triggerId = computed(() => this.#host.lastTrigger()?.triggerId() ?? '');
   readonly contentId = computed(
-    () => this.#host.lastTrigger()?.contentId() ?? this.#sharedContentId() ?? '',
+    () => this.#host.lastTrigger()?.contentId() ?? this.sharedContentId() ?? '',
   );
   readonly ariaLabel = computed(() => this.#host.lastTrigger()?.ariaLabel() ?? null);
   readonly anchor = computed<ReferenceElement | null>(
@@ -171,16 +176,37 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly content = this.#contentEl.asReadonly();
 
   /**
-   * Consumer-set static `id` of a surface that registered while no trigger was
-   * active — an unconditionally mounted `[forMenuContent]`, which belongs to no
+   * Consumer-set static `id` of a `[forMenuContent]` surface that belongs to no
    * single trigger. Every trigger's `contentId` prefers it, so `aria-controls`
    * resolves to the consumer's id whichever menu opens, and this context's own
-   * `contentId` falls back to it so the surface keeps emitting the id before any
-   * trigger has ever been active. `null` for the `@if`-per-trigger composition,
-   * where the surface registers under an active trigger that adopts its id
-   * directly, and for a shared surface carrying no static `id` at all.
+   * `contentId` falls back to it so an unconditionally mounted surface keeps
+   * emitting the id before any trigger has ever been active.
+   *
+   * Two compositions are trigger-agnostic, and they are told apart by *when*
+   * that becomes observable:
+   *
+   * - **Unconditionally mounted** — registers with no active trigger at all, so
+   *   it is shared from mount (`#contentOwner` is `null`).
+   * - **Shared by one `@if (value() !== null)`** — registers *under* whichever
+   *   trigger opened the bar, exactly like the canonical per-trigger surface, so
+   *   at registration the two are indistinguishable. What separates them is
+   *   survival: the shared surface is still the registered content once the bar
+   *   has switched to a different trigger, whereas the `@if`-per-trigger surface
+   *   is destroyed and replaced by the incoming trigger's own. Hence the
+   *   `lastTrigger() !== owner` test rather than a flag set at registration.
+   *
+   * `null` while the surface is still the one its registering trigger owns (the
+   * `@if`-per-trigger composition, where that trigger adopted the id directly),
+   * and for any surface carrying no static `id` at all.
    */
-  readonly sharedContentId = this.#sharedContentId.asReadonly();
+  readonly sharedContentId = computed(() => {
+    const staticId = this.#contentStaticId();
+    if (staticId === null) {
+      return null;
+    }
+    const owner = this.#contentOwner();
+    return owner === null || this.#host.lastTrigger() !== owner ? staticId : null;
+  });
 
   readonly parentMenu = null;
   readonly menubar: MenuSiblingNavigator;
@@ -227,17 +253,16 @@ export class MenubarMenuContext implements ForMenuContext {
 
   registerContent(el: HTMLElement): void {
     const active = this.#host.activeTrigger();
-    if (active !== null) {
-      active.adoptContentId(el);
-    } else {
-      this.#sharedContentId.set(el.getAttribute('id') || null);
-    }
+    active?.adoptContentId(el);
+    this.#contentStaticId.set(el.getAttribute('id') || null);
+    this.#contentOwner.set(active);
     this.#contentEl.set(el);
   }
   unregisterContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
-      this.#sharedContentId.set(null);
+      this.#contentStaticId.set(null);
+      this.#contentOwner.set(null);
     }
   }
 

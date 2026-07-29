@@ -65,13 +65,16 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
   readonly ariaLabel: Signal<string | null>;
 
   /**
-   * Consumer-set static `id` of a `[forMenuContent]` surface that registered
-   * while no trigger was active — an unconditionally mounted surface, which
-   * belongs to no single trigger. Each trigger prefers it over its own generated
-   * seed in {@link ForMenubarTriggerHandle.contentId}, so `aria-controls`
-   * resolves to the consumer's id whichever menu opens. `null` for the
-   * `@if`-per-trigger composition (the active trigger adopts the surface's id
-   * directly on registration) and for a shared surface with no static `id`.
+   * Consumer-set static `id` of a `[forMenuContent]` surface that belongs to no
+   * single trigger — either mounted unconditionally (it registered while no
+   * trigger was active) or shared by every trigger through one
+   * `@if (value() !== null)` (it registered under a trigger, but outlived that
+   * trigger's active window). Each trigger prefers it over its own generated seed
+   * in {@link ForMenubarTriggerHandle.contentId}, so `aria-controls` resolves to
+   * the consumer's id whichever menu opens. `null` for the `@if`-per-trigger
+   * composition (the surface is destroyed with its trigger's menu, and that
+   * trigger adopted its id directly on registration) and for any surface with no
+   * static `id`.
    */
   readonly sharedContentId: Signal<string | null>;
 

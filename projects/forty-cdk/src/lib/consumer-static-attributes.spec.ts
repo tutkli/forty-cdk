@@ -367,6 +367,23 @@ describe('consumer-set static id preservation (#659)', () => {
       readonly value = signal<string | null>(null);
     }
 
+    @Component({
+      imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forMenubar [(value)]="value">
+        <button forMenubarTrigger value="file" id="probe">File</button>
+        <button forMenubarTrigger value="edit" id="probe-edit">Edit</button>
+        @if (value() !== null) {
+          <div forMenuContent id="probe-content">
+            <button forMenuItem>New</button>
+          </div>
+        }
+      </div>`,
+    })
+    class SharedContentHost {
+      readonly value = signal<string | null>('file');
+    }
+
     it('trigger and menu content preserve a consumer-set static id', async () => {
       const fixture = mount(Host);
       await flush(fixture);
@@ -384,6 +401,20 @@ describe('consumer-set static id preservation (#659)', () => {
 
       expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
       expect(attrOf(fixture, '[forMenubarTrigger]', 'aria-controls')).toBe('probe-content');
+    });
+
+    it('a menu content shared by one @if preserves it across a menu switch', async () => {
+      const fixture = mount(SharedContentHost);
+      await flush(fixture);
+      expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
+
+      fixture.componentInstance.value.set('edit');
+      await flush(fixture);
+
+      expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
+      expect(attrOf(fixture, '[forMenubarTrigger][value="edit"]', 'aria-controls')).toBe(
+        'probe-content',
+      );
     });
   });
 
