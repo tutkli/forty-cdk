@@ -9,18 +9,29 @@ import {
 /** Alignment of the active slide within the viewport. */
 export type CarouselAlign = 'start' | 'center' | 'end';
 
-/** Internal handle for a registered slide. */
+/**
+ * Internal handle for a registered slide. Part of the registration protocol, so
+ * it is never exported from `public-api.ts` — see {@link CarouselContext}.
+ */
 export interface ForCarouselSlideHandle {
   readonly host: HTMLElement;
 }
 
-/** Internal handle for a registered indicator (dot). */
+/**
+ * Internal handle for a registered indicator (dot). Part of the registration
+ * protocol, so it is never exported from `public-api.ts` — see
+ * {@link CarouselContext}.
+ */
 export interface ForCarouselIndicatorHandle {
   readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
 }
 
-/** Internal handle for the registered viewport. */
+/**
+ * Internal handle for the registered viewport. Part of the registration
+ * protocol, so it is never exported from `public-api.ts` — see
+ * {@link CarouselContext}.
+ */
 export interface ForCarouselViewportHandle {
   readonly host: HTMLElement;
   readonly id: string;
@@ -56,13 +67,6 @@ export interface ForCarouselContext {
   /** Toggle auto-rotation on/off (the explicit, sticky user choice). Called by the rotation control. */
   toggleAutoplay(): void;
 
-  registerSlide(handle: ForCarouselSlideHandle): void;
-  unregisterSlide(handle: ForCarouselSlideHandle): void;
-  registerIndicator(handle: ForCarouselIndicatorHandle): void;
-  unregisterIndicator(handle: ForCarouselIndicatorHandle): void;
-
-  registerViewport(handle: ForCarouselViewportHandle): void;
-  unregisterViewport(handle: ForCarouselViewportHandle): void;
   viewportId(): string | null;
 
   indexOfSlide(host: HTMLElement): number;
@@ -82,8 +86,30 @@ export interface ForCarouselContext {
 /** DI token providing the carousel context to descendant pieces. */
 export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_CAROUSEL_CONTEXT');
 
-export function injectCarouselContext(piece: string): ForCarouselContext {
-  const ctx = inject(FOR_CAROUSEL_CONTEXT, { optional: true });
+/**
+ * The carousel's internal coordination surface: everything
+ * {@link ForCarouselContext} publishes plus the slide / indicator / viewport
+ * registration protocol the index lookups, geometry observer and roving
+ * tabindex are driven from.
+ *
+ * Never exported from `public-api.ts`. `[forCarousel]` provides it alongside
+ * {@link FOR_CAROUSEL_CONTEXT} on the same object, so a consumer who injects the
+ * public token gets the read surface while the pieces get the wiring protocol.
+ */
+export interface CarouselContext extends ForCarouselContext {
+  registerSlide(handle: ForCarouselSlideHandle): void;
+  unregisterSlide(handle: ForCarouselSlideHandle): void;
+  registerIndicator(handle: ForCarouselIndicatorHandle): void;
+  unregisterIndicator(handle: ForCarouselIndicatorHandle): void;
+  registerViewport(handle: ForCarouselViewportHandle): void;
+  unregisterViewport(handle: ForCarouselViewportHandle): void;
+}
+
+/** DI token carrying the internal {@link CarouselContext}. Provided by `[forCarousel]`. */
+export const CAROUSEL_CONTEXT = new InjectionToken<CarouselContext>('CAROUSEL_CONTEXT');
+
+export function injectCarouselContext(piece: string): CarouselContext {
+  const ctx = inject(CAROUSEL_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/carousel] ${piece} must be used inside a [forCarousel] element.`);
   }

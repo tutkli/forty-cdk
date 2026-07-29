@@ -153,4 +153,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Both supported wrapper patterns — `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+Both supported wrapper patterns — `hostDirectives` with the exported `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` / `FOR_RADIO_GROUP_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing (which spreads `provideForRadioGroup(MyRoot)` into the subclass's own `providers`) — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).

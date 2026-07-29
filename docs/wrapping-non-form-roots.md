@@ -42,10 +42,10 @@ A composed primitive coordinates its pieces through an `InjectionToken` its root
 
 ```ts
 @Directive({
-  selector: '[forAccordion]',
-  providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: ForAccordion }],
+  selector: '[forDisclosure]',
+  providers: [{ provide: FOR_DISCLOSURE_CONTEXT, useExisting: ForDisclosure }],
 })
-export class ForAccordion { … }
+export class ForDisclosure { … }
 ```
 
 Angular inherits compiled metadata through the class hierarchy, but **each decorator declares its own
@@ -70,14 +70,13 @@ import { FOR_POPOVER_CONTEXT, ForPopover } from 'forty-cdk/popover';
 export class MtxPopover extends ForPopover {}
 ```
 
-Every non-form root that needs the re-provide, and the token to name:
+Every non-form root that needs a plain re-provide, and the token to name. The roots whose context is
+**split** are not in this table — they need `provideFor<Primitive>()` instead, see the section below:
 
 | Root                                                | Token to re-provide            |
 | --------------------------------------------------- | ------------------------------ |
-| `ForAccordion`                                      | `FOR_ACCORDION_CONTEXT`        |
 | `ForAvatar`                                         | `FOR_AVATAR_CONTEXT`           |
 | `ForCalendar`                                       | `FOR_CALENDAR_CONTEXT`         |
-| `ForCarousel`                                       | `FOR_CAROUSEL_CONTEXT`         |
 | `ForContextMenu` / `ForDropdownMenu` / `ForMenuSub` | `FOR_MENU_CONTEXT`             |
 | `ForDialog`                                         | `FOR_DIALOG_CONTEXT`           |
 | `ForDisclosure`                                     | `FOR_DISCLOSURE_CONTEXT`       |
@@ -96,8 +95,6 @@ Every non-form root that needs the re-provide, and the token to name:
 | `ForProgress`                                       | `FOR_PROGRESS_CONTEXT`         |
 | `ForScrollArea`                                     | `FOR_SCROLL_AREA_CONTEXT`      |
 | `ForStepper`                                        | `FOR_STEPPER_CONTEXT`          |
-| `ForTabs`                                           | `FOR_TABS_CONTEXT`             |
-| `ForToast`                                          | `FOR_TOAST_CONTEXT`            |
 | `ForToolbar`                                        | `FOR_TOOLBAR_CONTEXT`          |
 | `ForTooltip`                                        | `FOR_TOOLTIP_CONTEXT`          |
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
@@ -110,14 +107,16 @@ Every non-form root that needs the re-provide, and the token to name:
 (`FOR_MENU_GROUP_CONTEXT`), `ForMenuRadioGroup` (`FOR_MENU_RADIO_GROUP_CONTEXT`),
 `ForTreeNodeDrag` (`FOR_TREE_NODE_DRAG_CONTEXT`).
 
-### `ForTable` needs `provideForTable(…)`, not a hand-written provider
+### Split roots need their provider helper, not a hand-written provider
 
-`ForTable` splits its coordination surface in two: the public `FOR_TABLE_CONTEXT` an advanced
+Some roots split their coordination surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` an advanced
 consumer injects, and a second token carrying the piece-registration protocol that is deliberately
-**not** exported ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)). A hand-written
-re-provide of the public token is not enough, and the missing provider cannot be written by name from
-outside the library — worse, `ForTable`'s own constructor injects the registry, so a subclass without
-it fails to construct at all (`NG0201`). Spread the helper:
+**not** exported ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
+[#1524](https://github.com/tutkli/forty-cdk/issues/1524)). A hand-written re-provide of the public
+token is not enough, and the missing provider cannot be written by name from outside the library — so
+every piece orphans with the primitive's "must be used inside a […]" error. Worse for `ForTable`,
+whose own constructor injects the registry: the subclass fails to construct at all (`NG0201`).
+Spread the helper instead:
 
 ```ts
 import { Directive } from '@angular/core';
@@ -131,8 +130,17 @@ import { ForTable, provideForTable } from 'forty-cdk/table';
 export class MtxTable<T> extends ForTable<T> {}
 ```
 
-`ForSelect` and `ForCombobox` are the other two split roots; both are form controls, so their
-helpers are documented in [Wrapping form primitives](wrapping-form-primitives.md#roots-with-a-split-context-use-providefor).
+| Split non-form root | Helper to spread      |
+| ------------------- | --------------------- |
+| `ForAccordion`      | `provideForAccordion` |
+| `ForCarousel`       | `provideForCarousel`  |
+| `ForTable`          | `provideForTable`     |
+| `ForTabs`           | `provideForTabs`      |
+| `ForToast`          | `provideForToast`     |
+
+`ForRadioGroup`, `ForSelect` and `ForCombobox` are split too; all three are form controls, so
+`provideForRadioGroup` / `provideForSelect` / `provideForCombobox` are documented in
+[Wrapping form primitives](wrapping-form-primitives.md#roots-with-a-split-context-use-providefor).
 
 ## What a wrapper must not swallow
 
@@ -160,6 +168,6 @@ systems lose behaviour the primitives were built to give them:
 | Situation                                                        | Pattern                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------- |
 | Styled wrapper around one root                                   | subclass + re-provide the context token                 |
-| Root with a split context (`ForTable`)                           | subclass + spread `provideForTable(MyTable)`            |
+| Root with a split context (`ForTable`, `ForTabs`, …)             | subclass + spread `provideFor<Primitive>(MyRoot)`       |
 | Wrapper that must extend a different base class                  | `hostDirectives`, re-exposing the surface by hand       |
 | Form-value control (`Switch`, `Select`, `Slider`, `Combobox`, …) | [Wrapping form primitives](wrapping-form-primitives.md) |

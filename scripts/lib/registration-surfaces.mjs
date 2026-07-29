@@ -15,6 +15,17 @@
  * `check-entrypoint-public-types.mjs` already enforces the same two rules.
  */
 export const REGISTRATION_SURFACES = {
-  select: ['SelectContext', 'SELECT_CONTEXT', 'ForSelectOverlayContext'],
+  accordion: ['AccordionContext', 'ACCORDION_CONTEXT', 'ForAccordionTriggerHandle'],
+  carousel: [
+    'CarouselContext',
+    'CAROUSEL_CONTEXT',
+    'ForCarouselIndicatorHandle',
+    'ForCarouselSlideHandle',
+    'ForCarouselViewportHandle',
+  ],
   combobox: ['ComboboxContext', 'COMBOBOX_CONTEXT', 'ComboboxRegistrationContext'],
+  'radio-group': ['RadioGroupContext', 'RADIO_GROUP_CONTEXT', 'ForRadioHandle'],
+  select: ['SelectContext', 'SELECT_CONTEXT', 'ForSelectOverlayContext'],
+  tabs: ['TabsContext', 'TABS_CONTEXT', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
+  toast: ['ToastContext', 'TOAST_CONTEXT', 'ForToastActionHandle', 'ForToastTextHandle'],
 };

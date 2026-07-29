@@ -1,4 +1,4 @@
-export { ForCarousel } from './carousel';
+export { ForCarousel, provideForCarousel } from './carousel';
 export { ForCarouselViewport } from './carousel-viewport';
 export { ForCarouselTrack } from './carousel-track';
 export { ForCarouselSlide } from './carousel-slide';

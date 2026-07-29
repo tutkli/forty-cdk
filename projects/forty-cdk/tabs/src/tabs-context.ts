@@ -8,6 +8,10 @@ import {
 
 export type TabsActivationMode = 'automatic' | 'manual';
 
+/**
+ * Registry entry for one `ForTabsTrigger`. Part of the registration protocol,
+ * so it is never exported from `public-api.ts` — see {@link TabsContext}.
+ */
 export interface ForTabsTriggerHandle {
   readonly host: HTMLElement;
   readonly id: Signal<string>;
@@ -15,6 +19,10 @@ export interface ForTabsTriggerHandle {
   readonly disabled: Signal<boolean>;
 }
 
+/**
+ * Registry entry for one `ForTabsContent`. Part of the registration protocol,
+ * so it is never exported from `public-api.ts` — see {@link TabsContext}.
+ */
 export interface ForTabsContentHandle {
   readonly host: HTMLElement;
   readonly id: Signal<string>;
@@ -40,11 +48,6 @@ export interface ForTabsContext {
   /** Moves focus from `currentTrigger`. In automatic mode also selects the new tab. */
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void;
 
-  registerTrigger(handle: ForTabsTriggerHandle): void;
-  unregisterTrigger(handle: ForTabsTriggerHandle): void;
-  registerContent(handle: ForTabsContentHandle): void;
-  unregisterContent(handle: ForTabsContentHandle): void;
-
   /** Looks up the trigger id for a given tab value. Reactive. */
   triggerIdFor(value: string): string | null;
   /** Looks up the content id for a given tab value. Reactive. */
@@ -63,8 +66,27 @@ export interface ForTabsContext {
 
 export const FOR_TABS_CONTEXT = new InjectionToken<ForTabsContext>('FOR_TABS_CONTEXT');
 
-export function injectTabsContext(piece: string): ForTabsContext {
-  const ctx = inject(FOR_TABS_CONTEXT, { optional: true });
+/**
+ * The tabs widget's internal coordination surface: everything
+ * {@link ForTabsContext} publishes plus the trigger / content registration
+ * protocol the id pairing and keyboard navigation are driven from.
+ *
+ * Never exported from `public-api.ts`. `[forTabs]` provides it alongside
+ * {@link FOR_TABS_CONTEXT} on the same object, so a consumer who injects the
+ * public token gets the read surface while the pieces get the wiring protocol.
+ */
+export interface TabsContext extends ForTabsContext {
+  registerTrigger(handle: ForTabsTriggerHandle): void;
+  unregisterTrigger(handle: ForTabsTriggerHandle): void;
+  registerContent(handle: ForTabsContentHandle): void;
+  unregisterContent(handle: ForTabsContentHandle): void;
+}
+
+/** DI token carrying the internal {@link TabsContext}. Provided by `[forTabs]`. */
+export const TABS_CONTEXT = new InjectionToken<TabsContext>('TABS_CONTEXT');
+
+export function injectTabsContext(piece: string): TabsContext {
+  const ctx = inject(TABS_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(`[forty-cdk/tabs] ${piece} must be used inside a [forTabs] element.`);
   }

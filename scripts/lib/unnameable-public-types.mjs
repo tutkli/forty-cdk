@@ -19,17 +19,14 @@
  * section of `.claude/rules/conventions.md`.
  *
  * The nine registration handles (accordion, carousel, radio-group, tabs, toast)
- * leave together with the [#1399] context split that removes the `register*`
- * members surfacing them, tracked by [#1524] — never by a re-export.
+ * left with the [#1399] context split that removed the `register*` members
+ * surfacing them ([#1524]) — never by a re-export. They are now listed in
+ * `registration-surfaces.mjs`, which fails the build if one becomes public
+ * again.
  */
 export const UNNAMEABLE_PUBLIC_TYPES = {
-  accordion: ['ForAccordionTriggerHandle'],
-  carousel: ['ForCarouselIndicatorHandle', 'ForCarouselSlideHandle', 'ForCarouselViewportHandle'],
   dialog: ['ForDialogEntry'],
   drawer: ['ForDrawerEntry'],
   menubar: ['MenubarMenuContext', 'MenubarMenuHost', 'MenubarPositioningSeeds'],
-  'radio-group': ['ForRadioHandle'],
   table: ['ForTableRowContext'],
-  tabs: ['ForTabsContentHandle', 'ForTabsTriggerHandle'],
-  toast: ['ForToastActionHandle', 'ForToastTextHandle'],
 };

@@ -1,4 +1,4 @@
-export { ForAccordion } from './accordion';
+export { ForAccordion, provideForAccordion } from './accordion';
 export { ForAccordionItem } from './accordion-item';
 export { ForAccordionTrigger } from './accordion-trigger';
 export { ForAccordionContent } from './accordion-content';

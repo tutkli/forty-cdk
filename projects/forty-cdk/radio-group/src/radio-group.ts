@@ -6,6 +6,8 @@ import {
   inject,
   input,
   model,
+  type Provider,
+  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -23,6 +25,7 @@ import {
   FOR_RADIO_GROUP_CONTEXT,
   type ForRadioGroupContext,
   type ForRadioHandle,
+  RADIO_GROUP_CONTEXT,
 } from './radio-group-context';
 import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
 
@@ -62,7 +65,7 @@ import { FOR_RADIO_GROUP_DEFAULTS } from './radio-group-defaults';
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },
-  providers: [{ provide: FOR_RADIO_GROUP_CONTEXT, useExisting: ForRadioGroup }],
+  providers: provideForRadioGroup(ForRadioGroup),
 })
 export class ForRadioGroup
   extends FormUiControlBase
@@ -184,11 +187,11 @@ export class ForRadioGroup
     return this.#firstEnabledHost() === el;
   }
 
-  registerRadio(handle: ForRadioHandle): void {
+  private registerRadio(handle: ForRadioHandle): void {
     this.#items.register(handle);
   }
 
-  unregisterRadio(handle: ForRadioHandle): void {
+  private unregisterRadio(handle: ForRadioHandle): void {
     this.#items.unregister(handle);
   }
 
@@ -199,4 +202,34 @@ export class ForRadioGroup
     }
     this.markTouched();
   }
+}
+
+/**
+ * The providers a `[forRadioGroup]` root installs: the public
+ * {@link FOR_RADIO_GROUP_CONTEXT}, aliased to `root`, plus the internal
+ * coordination token each `[forRadio]` resolves.
+ *
+ * `ForRadioGroup` declares its own providers through this helper, so a wrapper
+ * that **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_RADIO_GROUP_CONTEXT` alone leaves the internal token absent
+ * and every radio orphans with the "must be used inside a [forRadioGroup]
+ * element" error. That token is deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForRadioGroup(MyRadioGroup),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForRadioGroup]` needs none of this — a host
+ * directive brings its own providers to the element. See
+ * `FOR_RADIO_GROUP_HOST_DIRECTIVE_INPUTS` for that path's name tuples.
+ */
+export function provideForRadioGroup(root: Type<ForRadioGroup>): Provider[] {
+  return [
+    { provide: FOR_RADIO_GROUP_CONTEXT, useExisting: root },
+    { provide: RADIO_GROUP_CONTEXT, useExisting: root },
+  ];
 }

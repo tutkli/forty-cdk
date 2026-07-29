@@ -1,4 +1,13 @@
-import { booleanAttribute, computed, Directive, inject, input, model } from '@angular/core';
+import {
+  booleanAttribute,
+  computed,
+  Directive,
+  inject,
+  input,
+  model,
+  type Provider,
+  type Type,
+} from '@angular/core';
 
 import {
   Collection,
@@ -14,6 +23,7 @@ import {
   type ForTabsContentHandle,
   type ForTabsContext,
   type ForTabsTriggerHandle,
+  TABS_CONTEXT,
   type TabsActivationMode,
 } from './tabs-context';
 import { FOR_TABS_DEFAULTS } from './tabs-defaults';
@@ -38,7 +48,7 @@ import { FOR_TABS_DEFAULTS } from './tabs-defaults';
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [{ provide: FOR_TABS_CONTEXT, useExisting: ForTabs }],
+  providers: provideForTabs(ForTabs),
 })
 export class ForTabs implements ForTabsContext {
   readonly #defaults = inject(FOR_TABS_DEFAULTS);
@@ -108,20 +118,20 @@ export class ForTabs implements ForTabsContext {
     }
   }
 
-  registerTrigger(handle: ForTabsTriggerHandle): void {
+  private registerTrigger(handle: ForTabsTriggerHandle): void {
     this.#triggers.register(handle);
   }
 
-  unregisterTrigger(handle: ForTabsTriggerHandle): void {
+  private unregisterTrigger(handle: ForTabsTriggerHandle): void {
     this.#triggers.unregister(handle);
     this.roving.unregister(handle.host);
   }
 
-  registerContent(handle: ForTabsContentHandle): void {
+  private registerContent(handle: ForTabsContentHandle): void {
     this.#contents.register(handle);
   }
 
-  unregisterContent(handle: ForTabsContentHandle): void {
+  private unregisterContent(handle: ForTabsContentHandle): void {
     this.#contents.unregister(handle);
   }
 
@@ -154,4 +164,33 @@ export class ForTabs implements ForTabsContext {
     }
     return this.#triggers.items().some((t) => !t.disabled() && t.value() === value);
   }
+}
+
+/**
+ * The providers a `[forTabs]` root installs: the public
+ * {@link FOR_TABS_CONTEXT}, aliased to `root`, plus the internal coordination
+ * token the tabs pieces resolve.
+ *
+ * `ForTabs` declares its own providers through this helper, so a wrapper that
+ * **subclasses** the root has a single call to keep in step with it. That
+ * matters because Angular does not inherit a directive's `providers`: a subclass
+ * carrying its own `@Directive` metadata replaces the array wholesale, so
+ * re-providing `FOR_TABS_CONTEXT` alone leaves the internal token absent and
+ * every piece orphans with the "must be used inside a [forTabs] element" error.
+ * That token is deliberately unnameable outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForTabs(MyTabs),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForTabs]` needs none of this — a host
+ * directive brings its own providers to the element.
+ */
+export function provideForTabs(root: Type<ForTabs>): Provider[] {
+  return [
+    { provide: FOR_TABS_CONTEXT, useExisting: root },
+    { provide: TABS_CONTEXT, useExisting: root },
+  ];
 }
