@@ -10,6 +10,7 @@ import {
   SHARED_ENTRY_POINT,
 } from './lib/core-blessed-tier.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
+import { UNNAMEABLE_PUBLIC_TYPES } from './lib/unnameable-public-types.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
 const CORE_BARREL = join(repoRoot, 'projects', 'forty-cdk', 'core', 'src', 'public-api.ts');
@@ -55,36 +56,101 @@ function coreBarrelExportNames() {
   return names;
 }
 
+/**
+ * The name a top-level declaration of a flattened `.d.ts` introduces, or `null`
+ * for a statement that declares none.
+ */
+function declarationName(stmt) {
+  if (
+    ts.isInterfaceDeclaration(stmt) ||
+    ts.isTypeAliasDeclaration(stmt) ||
+    ts.isClassDeclaration(stmt) ||
+    ts.isEnumDeclaration(stmt) ||
+    ts.isFunctionDeclaration(stmt)
+  ) {
+    return stmt.name?.text ?? null;
+  }
+  if (ts.isVariableStatement(stmt)) {
+    const declaration = stmt.declarationList.declarations[0];
+    return declaration && ts.isIdentifier(declaration.name) ? declaration.name.text : null;
+  }
+  return null;
+}
+
+/**
+ * The public-signature traversal both leak checks share: type references, type
+ * queries, `implements` bases and every clause's type arguments, skipping
+ * `extends`-only bases and `protected` / `private` members.
+ */
+function createVisitor(onTypeEntity, onHeritageExpression) {
+  return function visit(node) {
+    if (ts.isTypeReferenceNode(node)) {
+      onTypeEntity(node.typeName);
+      node.typeArguments?.forEach(visit);
+      return;
+    }
+    if (ts.isTypeQueryNode(node)) {
+      onTypeEntity(node.exprName);
+      node.typeArguments?.forEach(visit);
+      return;
+    }
+    if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
+      node.typeParameters?.forEach(visit);
+      for (const clause of node.heritageClauses ?? []) {
+        for (const type of clause.types) {
+          if (clause.token === ts.SyntaxKind.ImplementsKeyword)
+            onHeritageExpression(type.expression);
+          type.typeArguments?.forEach(visit);
+        }
+      }
+      for (const member of node.members) {
+        if (isNonPublicMember(member)) continue;
+        visit(member);
+      }
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+}
+
 function analyze(fileName, text) {
   const sf = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
 
   const namedLocalToSource = new Map();
   const namespaceLocals = new Set();
   const reexported = new Set();
+  const barrelExports = new Set();
+  const localDeclarations = new Map();
   let reexportsAll = false;
 
   for (const stmt of sf.statements) {
-    if (ts.isImportDeclaration(stmt) && moduleSpecifierText(stmt) === CORE_SPECIFIER) {
+    if (ts.isImportDeclaration(stmt)) {
+      if (moduleSpecifierText(stmt) !== CORE_SPECIFIER) continue;
       const bindings = stmt.importClause?.namedBindings;
       if (bindings && ts.isNamespaceImport(bindings)) {
         namespaceLocals.add(bindings.name.text);
       } else if (bindings && ts.isNamedImports(bindings)) {
         for (const el of bindings.elements) namedLocalToSource.set(el.name.text, sourceName(el));
       }
-    } else if (ts.isExportDeclaration(stmt) && moduleSpecifierText(stmt) === CORE_SPECIFIER) {
-      if (!stmt.exportClause) reexportsAll = true;
-      else if (ts.isNamedExports(stmt.exportClause)) {
-        for (const el of stmt.exportClause.elements) reexported.add(sourceName(el));
-      }
+      continue;
     }
-  }
-
-  const unblessedReexport = [...reexported]
-    .filter((name) => !BLESSED_CORE_SYMBOLS.has(name))
-    .sort();
-
-  if (namedLocalToSource.size === 0 && namespaceLocals.size === 0) {
-    return { unblessed: unblessedReexport, reexported, reexportsAll };
+    if (ts.isExportDeclaration(stmt)) {
+      if (moduleSpecifierText(stmt) === CORE_SPECIFIER) {
+        if (!stmt.exportClause) reexportsAll = true;
+        else if (ts.isNamedExports(stmt.exportClause)) {
+          for (const el of stmt.exportClause.elements) reexported.add(sourceName(el));
+        }
+      } else if (
+        !stmt.moduleSpecifier &&
+        stmt.exportClause &&
+        ts.isNamedExports(stmt.exportClause)
+      ) {
+        for (const el of stmt.exportClause.elements) barrelExports.add(sourceName(el));
+      }
+      continue;
+    }
+    const name = declarationName(stmt);
+    if (name) localDeclarations.set(name, stmt);
   }
 
   const used = new Set();
@@ -114,43 +180,38 @@ function analyze(fileName, text) {
     }
   }
 
-  function visit(node) {
-    if (ts.isTypeReferenceNode(node)) {
-      recordEntity(node.typeName);
-      node.typeArguments?.forEach(visit);
-      return;
-    }
-    if (ts.isTypeQueryNode(node)) {
-      recordEntity(node.exprName);
-      node.typeArguments?.forEach(visit);
-      return;
-    }
-    if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
-      node.typeParameters?.forEach(visit);
-      for (const clause of node.heritageClauses ?? []) {
-        for (const type of clause.types) {
-          if (clause.token === ts.SyntaxKind.ImplementsKeyword)
-            recordHeritageExpression(type.expression);
-          type.typeArguments?.forEach(visit);
-        }
-      }
-      for (const member of node.members) {
-        if (isNonPublicMember(member)) continue;
-        visit(member);
-      }
-      return;
-    }
-    ts.forEachChild(node, visit);
+  if (namedLocalToSource.size > 0 || namespaceLocals.size > 0) {
+    createVisitor(recordEntity, recordHeritageExpression)(sf);
   }
 
-  visit(sf);
+  const leaked = new Set();
+  const pending = [];
 
-  const names = [...used].sort();
-  const unblessedSignature = names.filter((name) => !BLESSED_CORE_SYMBOLS.has(name));
+  function recordLocal(entity) {
+    if (!ts.isIdentifier(entity)) return;
+    const name = entity.text;
+    if (!localDeclarations.has(name) || barrelExports.has(name) || leaked.has(name)) return;
+    leaked.add(name);
+    pending.push(name);
+  }
+
+  const visitLocal = createVisitor(recordLocal, recordLocal);
+  for (const name of barrelExports) {
+    const declaration = localDeclarations.get(name);
+    if (declaration) visitLocal(declaration);
+  }
+  while (pending.length) visitLocal(localDeclarations.get(pending.shift()));
+
+  const unblessedSignature = [...used].sort().filter((name) => !BLESSED_CORE_SYMBOLS.has(name));
+  const unblessedReexport = [...reexported]
+    .filter((name) => !BLESSED_CORE_SYMBOLS.has(name))
+    .sort();
+
   return {
     unblessed: [...new Set([...unblessedSignature, ...unblessedReexport])].sort(),
     reexported,
     reexportsAll,
+    leaked: [...leaked].sort(),
   };
 }
 
@@ -187,13 +248,16 @@ if (staleBlessed.length) {
 const failures = [];
 const published = new Map();
 const starReexports = [];
-let checked = 0;
+const unnameable = [];
+const settledAllowances = [];
+const checkedEntries = new Set();
+let allowed = 0;
 
 for (const file of readdirSync(TYPES_DIR)) {
   if (!file.endsWith('.d.ts') || IGNORED_FILES.has(file)) continue;
-  checked++;
   const entry = file.replace(/^forty-cdk-/, '').replace(/\.d\.ts$/, '');
-  const { unblessed, reexported, reexportsAll } = analyze(
+  checkedEntries.add(entry);
+  const { unblessed, reexported, reexportsAll, leaked } = analyze(
     file,
     readFileSync(join(TYPES_DIR, file), 'utf8'),
   );
@@ -204,6 +268,18 @@ for (const file of readdirSync(TYPES_DIR)) {
     .filter((name) => BLESSED_CORE_SYMBOLS.has(name) && !owned.includes(name))
     .sort();
   if (unblessed.length || foreign.length) failures.push({ entry, unblessed, foreign });
+
+  const deferred = UNNAMEABLE_PUBLIC_TYPES[entry] ?? [];
+  allowed += deferred.length;
+  const unlisted = leaked.filter((name) => !deferred.includes(name));
+  const settled = deferred.filter((name) => !leaked.includes(name)).sort();
+  if (unlisted.length) unnameable.push({ entry, unlisted });
+  if (settled.length) settledAllowances.push({ entry, settled });
+}
+
+for (const entry of Object.keys(UNNAMEABLE_PUBLIC_TYPES)) {
+  if (checkedEntries.has(entry)) continue;
+  settledAllowances.push({ entry, settled: [...UNNAMEABLE_PUBLIC_TYPES[entry]].sort() });
 }
 
 const missingPublishers = Object.entries(CORE_PUBLISHERS)
@@ -266,14 +342,47 @@ if (missingPublishers.length) {
   );
 }
 
-if (failures.length || missingPublishers.length || starReexports.length) process.exit(1);
+if (unnameable.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${unnameable.length} entry point(s) surface a locally-declared type their barrel does not export:`,
+  );
+  for (const { entry, unlisted } of unnameable.sort((a, b) => a.entry.localeCompare(b.entry))) {
+    console.error(`  forty-cdk/${entry}: ${unlisted.join(', ')}`);
+  }
+  console.error(
+    `\nA public signature must hand the consumer only types they can name from a supported import path. Either narrow the leak (drop the member, make it protected, or retype it to a shape they can name — a blessed core type rather than a second local spelling of it), or re-export the type from that entry point's public-api.ts with consumer-facing JSDoc. Listing it in scripts/lib/unnameable-public-types.mjs defers the fix and is not a resolution.`,
+  );
+}
+
+if (settledAllowances.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${settledAllowances.length} entry point(s) list a deferred unnameable type that no longer leaks:`,
+  );
+  for (const { entry, settled } of settledAllowances.sort((a, b) =>
+    a.entry.localeCompare(b.entry),
+  )) {
+    console.error(`  forty-cdk/${entry}: ${settled.join(', ')}`);
+  }
+  console.error(
+    `\nThe deferral list cannot outlive the leak it tracks. Drop the name (or the whole entry) from scripts/lib/unnameable-public-types.mjs.`,
+  );
+}
+
+if (
+  failures.length ||
+  missingPublishers.length ||
+  starReexports.length ||
+  unnameable.length ||
+  settledAllowances.length
+)
+  process.exit(1);
 
 console.log(
-  `[check-entrypoint-public-types] OK — ${checked} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core and published by exactly one entry point (${Object.entries(
+  `[check-entrypoint-public-types] OK — ${checkedEntries.size} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core and published by exactly one entry point (${Object.entries(
     CORE_PUBLISHERS,
   )
     .map(([entry, symbols]) => `${entry}: ${symbols.length}`)
     .join(
       ', ',
-    )}); no internal-tier symbol in a public signature or barrel re-export, and no duplicate re-export path.`,
+    )}); no internal-tier symbol in a public signature or barrel re-export, and no duplicate re-export path; every locally-declared type in a public signature is re-exported by its barrel, bar the ${allowed} deferred in scripts/lib/unnameable-public-types.mjs.`,
 );

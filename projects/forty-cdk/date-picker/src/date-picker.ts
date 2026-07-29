@@ -15,6 +15,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   assertTimeCapable,
   type DateAdapter,
+  type FieldGranularity,
   injectDateAdapter,
   injectHiddenInput,
   clampToBounds,
@@ -25,9 +26,6 @@ import {
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
 import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
-
-/** Date-time precision; `'day'` keeps a pure calendar picker, anything more composes a time field. */
-type DatePickerGranularity = 'day' | 'hour' | 'minute' | 'second';
 
 /**
  * Headless date picker — the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/)
@@ -151,7 +149,7 @@ export class ForDatePicker<D>
    * time-capable adapter (`provideNativeDateAdapter()` or
    * `provideInternationalizedDateTimeAdapter()`).
    */
-  readonly granularity = input<DatePickerGranularity>('day');
+  readonly granularity = input<FieldGranularity>('day');
 
   /**
    * 12- or 24-hour cycle forwarded to `[forDatePickerValue]`'s formatting (and

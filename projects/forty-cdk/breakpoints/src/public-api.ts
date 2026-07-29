@@ -4,6 +4,7 @@ export {
   forBreakpointsTailwind,
   type BreakpointMap,
   type ForBreakpointsDefaults,
+  type TailwindBreakpointName,
 } from './breakpoints-defaults';
 export {
   injectBreakpoints,
