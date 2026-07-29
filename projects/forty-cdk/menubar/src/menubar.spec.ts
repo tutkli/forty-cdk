@@ -12,6 +12,7 @@ import {
 } from '../../src/test-utils';
 import {
   assertDismissibleLayerContract,
+  assertOverlayTriggerAriaContract,
   assertRovingTabindexContract,
 } from '../../src/test-utils/contract';
 import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
@@ -463,6 +464,22 @@ describe('ForMenubar', () => {
     { forwardArrow: 'ArrowRight' },
   );
 
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(MenubarHost);
+        await flush(r.fixture);
+        return {
+          trigger: r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set('file'),
+          surface: () => document.querySelector<HTMLElement>('[forMenuContent]')!,
+        };
+      },
+    },
+    { haspopup: 'menu' },
+  );
+
   describe('a11y baseline', () => {
     it('reflects role="menubar", aria-orientation, data-state, dir', async () => {
       const r = renderHost(MenubarHost);
@@ -483,25 +500,24 @@ describe('ForMenubar', () => {
       expect(root.getAttribute('data-orientation')).toBe('vertical');
     });
 
-    it('wires aria-haspopup / aria-expanded / aria-controls on each trigger', async () => {
+    it('expands only the open trigger, leaving its siblings collapsed menuitems', async () => {
       const r = renderHost(MenubarHost);
       const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
-
-      for (const t of triggers) {
-        expect(t.getAttribute('role')).toBe('menuitem');
-        expect(t.getAttribute('aria-haspopup')).toBe('menu');
-        expect(t.getAttribute('aria-expanded')).toBe('false');
-        expect(t.hasAttribute('aria-controls')).toBe(false);
-      }
+      expect(triggers.length).toBeGreaterThan(1);
 
       r.instance.open.set('file');
       await flush(r.fixture);
 
-      const fileTrigger = triggers.find((t) => t.textContent?.trim() === 'File')!;
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(fileTrigger.getAttribute('aria-expanded')).toBe('true');
-      expect(fileTrigger.getAttribute('aria-controls')).toBe(content.id);
-      expect(fileTrigger.getAttribute('data-state')).toBe('open');
+      for (const t of triggers) {
+        expect(t.getAttribute('role')).toBe('menuitem');
+        expect(t.getAttribute('aria-haspopup')).toBe('menu');
+
+        const isOpen = t.textContent?.trim() === 'File';
+        expect(t.getAttribute('aria-expanded')).toBe(isOpen ? 'true' : 'false');
+        expect(t.getAttribute('aria-controls')).toBe(isOpen ? content.id : null);
+        expect(t.getAttribute('data-state')).toBe(isOpen ? 'open' : 'closed');
+      }
     });
 
     it('sets data-state="open" on root while a menu is open', async () => {

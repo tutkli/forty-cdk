@@ -9,7 +9,10 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDismissibleLayerContract,
+  assertOverlayTriggerAriaContract,
+} from '../../src/test-utils/contract';
 import { ForDialog } from './dialog';
 import { ForDialogBackdrop } from './dialog-backdrop';
 import { ForDialogClose } from './dialog-close';
@@ -1329,15 +1332,28 @@ describe('ForDialogTrigger', () => {
     readonly dialogId = 'my-dialog';
   }
 
-  it('reflects type=button, aria-haspopup, and aria-expanded=false when closed', async () => {
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(TriggerHost);
+        await flush(r.fixture);
+        return {
+          trigger: r.query<HTMLButtonElement>('[forDialogTrigger]')!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forDialog]')!,
+        };
+      },
+    },
+    { haspopup: 'dialog' },
+  );
+
+  it('reflects type=button and no disabled marker when closed and enabled', async () => {
     const r = renderHost(TriggerHost);
     await flush(r.fixture);
     const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
 
     expect(trigger.getAttribute('type')).toBe('button');
-    expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
-    expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(trigger.hasAttribute('aria-controls')).toBe(false);
     expect(trigger.getAttribute('data-state')).toBe('closed');
     // Disabled-related attributes are absent when not disabled — never
     // emitted as "false". Consumers must select on `:not([aria-disabled])`.
@@ -1346,7 +1362,7 @@ describe('ForDialogTrigger', () => {
     expect(trigger.hasAttribute('disabled')).toBe(false);
   });
 
-  it('flips aria-expanded, aria-controls, and data-state when the dialog opens', async () => {
+  it('flips data-state and points aria-controls at [controls] when the dialog opens', async () => {
     const r = renderHost(TriggerHost);
     await flush(r.fixture);
     const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
@@ -1355,7 +1371,6 @@ describe('ForDialogTrigger', () => {
     await flush(r.fixture);
 
     expect(r.instance.open()).toBe(true);
-    expect(trigger.getAttribute('aria-expanded')).toBe('true');
     expect(trigger.getAttribute('aria-controls')).toBe('my-dialog');
     expect(trigger.getAttribute('data-state')).toBe('open');
   });

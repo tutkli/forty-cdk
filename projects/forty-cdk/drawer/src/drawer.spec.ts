@@ -15,7 +15,10 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDismissibleLayerContract,
+  assertOverlayTriggerAriaContract,
+} from '../../src/test-utils/contract';
 import { ForDrawer } from './drawer';
 import { ForDrawerBackdrop } from './drawer-backdrop';
 import { ForDrawerClose } from './drawer-close';
@@ -1756,15 +1759,28 @@ describe('ForDrawerTrigger', () => {
     readonly drawerId = 'my-drawer';
   }
 
-  it('reflects type=button, aria-haspopup, and aria-expanded=false when closed', async () => {
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(TriggerHost);
+        await flush(r.fixture);
+        return {
+          trigger: r.query<HTMLButtonElement>('[forDrawerTrigger]')!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forDrawer]')!,
+        };
+      },
+    },
+    { haspopup: 'dialog' },
+  );
+
+  it('reflects type=button and no disabled marker when closed and enabled', async () => {
     const r = renderHost(TriggerHost);
     await flush(r.fixture);
     const trigger = r.query<HTMLButtonElement>('[forDrawerTrigger]')!;
 
     expect(trigger.getAttribute('type')).toBe('button');
-    expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
-    expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    expect(trigger.hasAttribute('aria-controls')).toBe(false);
     expect(trigger.getAttribute('data-state')).toBe('closed');
     // Disabled-related attributes are absent when not disabled — never
     // emitted as "false". Consumers must select on `:not([aria-disabled])`.
@@ -1773,7 +1789,7 @@ describe('ForDrawerTrigger', () => {
     expect(trigger.hasAttribute('disabled')).toBe(false);
   });
 
-  it('flips aria-expanded, aria-controls, data-state when drawer opens', async () => {
+  it('flips data-state and points aria-controls at [controls] when the drawer opens', async () => {
     const r = renderHost(TriggerHost);
     await flush(r.fixture);
     const trigger = r.query<HTMLButtonElement>('[forDrawerTrigger]')!;
@@ -1782,7 +1798,6 @@ describe('ForDrawerTrigger', () => {
     await flush(r.fixture);
 
     expect(r.instance.open()).toBe(true);
-    expect(trigger.getAttribute('aria-expanded')).toBe('true');
     expect(trigger.getAttribute('aria-controls')).toBe('my-drawer');
     expect(trigger.getAttribute('data-state')).toBe('open');
   });

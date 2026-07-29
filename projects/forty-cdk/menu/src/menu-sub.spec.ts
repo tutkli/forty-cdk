@@ -9,7 +9,10 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
-import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDismissibleLayerContract,
+  assertOverlayTriggerAriaContract,
+} from '../../src/test-utils/contract';
 import { type VetoableNativeEvent, type WritingDirection } from 'forty-cdk/core';
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
@@ -136,24 +139,31 @@ function pointerEvent(
 describe('ForMenuSub', () => {
   afterEachOverlayCleanup();
 
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(SubMenuHost);
+        r.instance.open.set(true);
+        await flush(r.fixture);
+        return {
+          trigger: document.querySelector<HTMLElement>('[forMenuSubTrigger]')!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.subOpen.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forMenuSubContent]')!,
+        };
+      },
+    },
+    { haspopup: 'menu' },
+  );
+
   describe('a11y baseline', () => {
-    it('wires aria-haspopup, aria-expanded, aria-controls on the SubTrigger', async () => {
+    it('gives the SubTrigger the menuitem role', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const more = document.querySelector<HTMLElement>('[forMenuSubTrigger]')!;
       expect(more.getAttribute('role')).toBe('menuitem');
-      expect(more.getAttribute('aria-haspopup')).toBe('menu');
-      expect(more.getAttribute('aria-expanded')).toBe('false');
-      expect(more.hasAttribute('aria-controls')).toBe(false);
-
-      r.instance.subOpen.set(true);
-      await flush(r.fixture);
-
-      expect(more.getAttribute('aria-expanded')).toBe('true');
-      const subContent = document.querySelector<HTMLElement>('[forMenuSubContent]')!;
-      expect(more.getAttribute('aria-controls')).toBe(subContent.id);
     });
 
     it('labels submenu content by its sub-trigger', async () => {

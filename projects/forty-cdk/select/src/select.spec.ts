@@ -20,6 +20,7 @@ import {
 import {
   assertDismissibleLayerContract,
   assertFormControlContract,
+  assertOverlayTriggerAriaContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
@@ -245,22 +246,17 @@ describe('ForSelect', () => {
   });
 
   describe('a11y baseline', () => {
-    it('wires combobox role + aria-haspopup + aria-expanded + aria-controls', async () => {
+    it('pairs the combobox trigger with the listbox surface it labels', async () => {
       const r = renderHost(SelectHost);
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
 
       expect(trigger.getAttribute('role')).toBe('combobox');
-      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
-      expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
 
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.getAttribute('role')).toBe('listbox');
-      expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
 
@@ -1470,6 +1466,22 @@ describe('ForSelect', () => {
       return result;
     },
     { flags: ['disabled', 'required'] },
+  );
+
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(SelectHost);
+        await flush(r.fixture);
+        return {
+          trigger: r.query<HTMLButtonElement>('[forSelectTrigger]')!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forSelectContent]')!,
+        };
+      },
+    },
+    { haspopup: 'listbox' },
   );
 
   describe('modal mode', () => {
