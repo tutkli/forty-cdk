@@ -381,7 +381,13 @@ Chips are intentionally **out of the Tab cycle** — Tab from outside lands on t
 
 In RTL the chip cluster lays out right-to-left, so **ArrowRight** moves to the visually-next chip (DOM-previous) and **ArrowLeft** moves to the visually-previous one (DOM-next, hopping to the input at the leftmost visual edge).
 
-`[forComboboxChipRemove]` is a click-only target (also out of Tab cycle) with auto-generated `aria-label="Remove <chip label>"`.
+`[forComboboxChipRemove]` is a click-only target (also out of Tab cycle) with auto-generated `aria-label="Remove <chip label>"`. The name is computed per chip, so the piece takes no `[ariaLabel]` input and ignores a static `aria-label` attribute — localize it centrally by overriding the scope's builder:
+
+```ts
+@Component({
+  providers: [provideForComboboxDefaults({ chipRemoveLabel: (label) => `Quitar ${label}` })],
+})
+```
 
 ### Multi-mode Backspace heuristic
 

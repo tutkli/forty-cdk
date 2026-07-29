@@ -3,6 +3,7 @@ import { computed, Directive, inject } from '@angular/core';
 import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { ForComboboxChip } from './combobox-chip';
+import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 
 /**
  * Remove button inside a `[forComboboxChip]`. Apply on a
@@ -12,8 +13,13 @@ import { ForComboboxChip } from './combobox-chip';
  * own ArrowLeft/Right + Backspace/Delete keys; this button exists for
  * mouse / touch users.
  *
- * The host carries a generated `aria-label` ("Remove `<chip label>`")
- * derived from the parent chip's resolved option label.
+ * The host carries a generated `aria-label` (`'Remove <chip label>'` by
+ * default) built from the parent chip's resolved option label by the scope's
+ * `chipRemoveLabel` builder — override it with
+ * `provideForComboboxDefaults({ chipRemoveLabel })` to localize every chip
+ * remove button in the scope. Because the name is computed per chip, the piece
+ * exposes no per-instance `[ariaLabel]` input and does not adopt a static
+ * `aria-label` attribute (one static value would name every chip identically).
  */
 @Directive({
   selector: '[forComboboxChipRemove]',
@@ -34,6 +40,7 @@ export class ForComboboxChipRemove {
   // binds them with the same value source.
   protected readonly ctx = injectComboboxContext<unknown>('ForComboboxChipRemove');
   readonly #chip = inject<ForComboboxChip<unknown>>(ForComboboxChip, { optional: true });
+  readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
 
   /** Disabled when the combobox is disabled or read-only — chip removal is unavailable. */
   protected readonly isDisabled = computed(
@@ -49,7 +56,9 @@ export class ForComboboxChipRemove {
     reflectDisabled(this.isDisabled);
   }
 
-  protected readonly ariaLabel = computed(() => `Remove ${this.#chip!.label()}`);
+  protected readonly ariaLabel = computed(() =>
+    this.#defaults.chipRemoveLabel(this.#chip!.label()),
+  );
 
   protected onClick(event: MouseEvent): void {
     if (this.isDisabled()) {
