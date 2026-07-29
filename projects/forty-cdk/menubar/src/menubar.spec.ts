@@ -393,14 +393,8 @@ class MenubarOutputsHost {
 const menubarTriggers = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forMenubarTrigger]'));
 
-/**
- * Builds a mouse pointer event. jsdom's `PointerEvent` constructor doesn't
- * populate `pointerType` from its init dict, so the spec defines it directly.
- */
 function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
-  const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-  Object.defineProperty(event, 'pointerType', { value: 'mouse', configurable: true });
-  return event;
+  return new PointerEvent(type, { bubbles: true, cancelable: true, pointerType: 'mouse' });
 }
 
 describe('ForMenubar', () => {

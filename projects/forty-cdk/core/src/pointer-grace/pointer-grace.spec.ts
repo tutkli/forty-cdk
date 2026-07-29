@@ -173,13 +173,9 @@ describe('attachPointerGrace', () => {
   ];
 
   function dispatchMove(x: number, y: number, pointerType = 'mouse'): void {
-    const event = new Event('pointermove') as PointerEvent;
-    Object.defineProperties(event, {
-      clientX: { value: x, configurable: true },
-      clientY: { value: y, configurable: true },
-      pointerType: { value: pointerType, configurable: true },
-    });
-    document.dispatchEvent(event);
+    document.dispatchEvent(
+      new PointerEvent('pointermove', { clientX: x, clientY: y, pointerType }),
+    );
   }
 
   it('does not fire onExit while the mouse stays inside the polygon', () => {
