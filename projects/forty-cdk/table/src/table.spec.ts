@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { flush, installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { flush, installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
@@ -48,18 +48,6 @@ const TABLE_IMPORTS = [
   ForTableHeaderCell,
   ForTableCell,
 ] as const;
-
-function pointerEvent(
-  type: string,
-  init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
-): PointerEvent {
-  const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-  Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
-  Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
-  Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
-  Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
-  return ev;
-}
 
 @Component({
   imports: [
