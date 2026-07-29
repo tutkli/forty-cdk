@@ -27,6 +27,7 @@ import { ForNavigationMenuTrigger } from './navigation-menu-trigger';
             <div forNavigationMenuContent>
               <a href="/p/a" forNavigationMenuLink>A</a>
               <a href="/p/b" forNavigationMenuLink active>B</a>
+              <span data-id="products-static">filters</span>
             </div>
           }
         </li>
@@ -855,6 +856,39 @@ describe('ForNavigationMenu', () => {
       trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
       await flush();
       expect(fixture.componentInstance.open()).toBeNull();
+    });
+
+    it('resolves a null relatedTarget against activeElement, not against the event', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      await flush();
+
+      query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
+      await flush();
+      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('keeps the panel open when the leave follows a press inside the widget', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      await flush();
+
+      const inner = query<HTMLElement>('[data-id="products-static"]')!;
+      inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: null }),
+      );
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(query<HTMLElement>('[forNavigationMenuContent]')).not.toBeNull();
     });
 
     it('is a no-op when nothing is open (avoids extra work for every Tab)', async () => {

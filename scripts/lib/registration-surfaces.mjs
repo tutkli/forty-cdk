@@ -24,6 +24,13 @@ export const REGISTRATION_SURFACES = {
     'ForCarouselViewportHandle',
   ],
   combobox: ['ComboboxContext', 'COMBOBOX_CONTEXT', 'ComboboxRegistrationContext'],
+  'navigation-menu': [
+    'NavigationMenuContext',
+    'NAVIGATION_MENU_CONTEXT',
+    'ForNavigationMenuContentHandle',
+    'ForNavigationMenuTriggerHandle',
+    'ForNavigationMenuViewportHandle',
+  ],
   'radio-group': ['RadioGroupContext', 'RADIO_GROUP_CONTEXT', 'ForRadioHandle'],
   select: ['SelectContext', 'SELECT_CONTEXT', 'ForSelectOverlayContext'],
   tabs: ['TabsContext', 'TABS_CONTEXT', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],

@@ -59,6 +59,7 @@ import { queryFlag } from './_query-flag';
             <div forNavigationMenuContent data-id="products" data-testid="content-products">
               <a data-testid="link-products-1" href="#products-web">Web</a>
               <a data-testid="link-products-2" href="#products-mobile">Mobile</a>
+              <span data-testid="dead-products">Featured</span>
             </div>
           }
         </li>

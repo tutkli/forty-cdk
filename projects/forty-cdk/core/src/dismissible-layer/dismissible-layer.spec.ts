@@ -186,6 +186,52 @@ describe('DismissibleLayer', () => {
     });
   });
 
+  describe('pointer-down inside', () => {
+    it('invokes onPointerDownInside instead of the outside handlers for a press on the host', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['pointer'],
+        onPointerDownInside: () => calls.push('inside'),
+        onPointerDownOutside: () => calls.push('outside'),
+        onInteractOutside: () => calls.push('interact'),
+      });
+
+      document.dispatchEvent(pointerDown(host.querySelector('#inside')!));
+
+      expect(calls).toEqual(['inside']);
+    });
+
+    it('reports a press inside an exempt element as inside, sharing the containment rule', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['pointer'],
+        exemptElements: () => [outside],
+        onPointerDownInside: () => calls.push('inside'),
+        onPointerDownOutside: () => calls.push('outside'),
+      });
+
+      document.dispatchEvent(pointerDown(outside.querySelector('#out')!));
+
+      expect(calls).toEqual(['inside']);
+    });
+
+    it('does not fire for a press the layer resolves as outside', () => {
+      const calls: string[] = [];
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['pointer'],
+        onPointerDownInside: () => calls.push('inside'),
+        onPointerDownOutside: () => calls.push('outside'),
+      });
+
+      document.dispatchEvent(pointerDown(outside));
+
+      expect(calls).toEqual(['outside']);
+    });
+  });
+
   describe('focus outside', () => {
     it('invokes onFocusOutside then onInteractOutside when focus moves outside', () => {
       const calls: string[] = [];

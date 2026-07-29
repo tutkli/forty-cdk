@@ -65,6 +65,21 @@ export interface DismissibleLayerActivateOptions {
   /** Fired when the user pointer-downs outside this layer's host. */
   onPointerDownOutside?: (event: PointerEvent) => void;
 
+  /**
+   * Fired when the user pointer-downs **inside** this layer's host or one of its
+   * `exemptElements` — the mirror of `onPointerDownOutside`, for an owner that
+   * needs to know a press landed on its own surface. The point is the shared
+   * containment rule: the layer already resolves host + exempt elements (and the
+   * layers stacked above it) from one place, so an owner asking "was that press
+   * mine?" gets the same answer the dismissal path gets, instead of re-deriving
+   * the surface set from its own host listeners.
+   *
+   * NavigationMenu uses it to tell a pointer-induced blur (a press on a
+   * non-focusable region of its own panel, which leaves `document.activeElement`
+   * on `<body>`) from focus genuinely leaving the document.
+   */
+  onPointerDownInside?: (event: PointerEvent) => void;
+
   /** Fired when focus moves outside this layer's host. */
   onFocusOutside?: (event: FocusEvent) => void;
 
@@ -432,7 +447,11 @@ export class DismissibleLayer {
    */
   handlePointerDown(event: PointerEvent): void {
     const target = resolveEventTarget(event);
-    if (!target || this.#stack.containsFromLayer(this, target)) {
+    if (!target) {
+      return;
+    }
+    if (this.#stack.containsFromLayer(this, target)) {
+      this.#options.onPointerDownInside?.(event);
       return;
     }
     this.#options.onPointerDownOutside?.(event);

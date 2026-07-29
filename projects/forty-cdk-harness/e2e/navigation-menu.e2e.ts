@@ -377,3 +377,57 @@ test.describe('NavigationMenu keyboard / focus', () => {
     await expect(el(page, 'active')).toHaveText('none');
   });
 });
+
+/**
+ * A `focusout` whose `relatedTarget` is `null` reports no destination at all and
+ * fires no `focusin`, so the dismissible layer's `focus` channel never sees it.
+ * The close-on-leave rule must still reach the same verdict in both Viewport
+ * placements, and must tell that leave apart from focus merely falling to
+ * `<body>` because the user pressed a non-focusable region of the panel.
+ *
+ * Headless Chromium has no browser chrome to Tab into, so the deterministic
+ * stand-in for the leave is blurring the focused element: same `null`
+ * `relatedTarget`, same `<body>` `activeElement`, same code path.
+ */
+test.describe('NavigationMenu null-relatedTarget focus leave', () => {
+  const PLACEMENTS = [
+    { label: 'an internal Viewport', query: {} as Record<string, string> },
+    { label: 'an external Viewport', query: { externalViewport: '1' } },
+  ];
+
+  for (const { label, query } of PLACEMENTS) {
+    test(`a leave with no destination closes the panel with ${label}`, async ({ page }) => {
+      await gotoFixture(page, 'navigation-menu', query);
+
+      await el(page, 'trigger-products').focus();
+      await page.keyboard.press('ArrowDown');
+      await expect(el(page, 'content-products')).toBeVisible();
+
+      await el(page, 'link-products-1').focus();
+      await expectFocused(el(page, 'link-products-1'));
+
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+      await expect(el(page, 'content-products')).toHaveCount(0);
+      await expect(el(page, 'active')).toHaveText('none');
+    });
+
+    test(`pressing a non-focusable region of the panel keeps it open with ${label}`, async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'navigation-menu', query);
+
+      await el(page, 'trigger-products').focus();
+      await page.keyboard.press('ArrowDown');
+      await expect(el(page, 'content-products')).toBeVisible();
+
+      await el(page, 'link-products-1').focus();
+      await expectFocused(el(page, 'link-products-1'));
+
+      await el(page, 'dead-products').click();
+
+      await expect(el(page, 'content-products')).toBeVisible();
+      await expect(el(page, 'active')).toHaveText('products');
+    });
+  }
+});

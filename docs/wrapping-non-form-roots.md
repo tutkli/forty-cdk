@@ -89,7 +89,6 @@ Every non-form root that needs a plain re-provide, and the token to name. The ro
 | `ForHoverCard`                                      | `FOR_HOVER_CARD_CONTEXT`       |
 | `ForMenubar`                                        | `FOR_MENUBAR_CONTEXT`          |
 | `ForMeter`                                          | `FOR_METER_CONTEXT`            |
-| `ForNavigationMenu`                                 | `FOR_NAVIGATION_MENU_CONTEXT`  |
 | `ForPagination`                                     | `FOR_PAGINATION_CONTEXT`       |
 | `ForPopover`                                        | `FOR_POPOVER_CONTEXT`          |
 | `ForProgress`                                       | `FOR_PROGRESS_CONTEXT`         |
@@ -130,13 +129,14 @@ import { ForTable, provideForTable } from 'forty-cdk/table';
 export class MtxTable<T> extends ForTable<T> {}
 ```
 
-| Split non-form root | Helper to spread      |
-| ------------------- | --------------------- |
-| `ForAccordion`      | `provideForAccordion` |
-| `ForCarousel`       | `provideForCarousel`  |
-| `ForTable`          | `provideForTable`     |
-| `ForTabs`           | `provideForTabs`      |
-| `ForToast`          | `provideForToast`     |
+| Split non-form root | Helper to spread           |
+| ------------------- | -------------------------- |
+| `ForAccordion`      | `provideForAccordion`      |
+| `ForCarousel`       | `provideForCarousel`       |
+| `ForNavigationMenu` | `provideForNavigationMenu` |
+| `ForTable`          | `provideForTable`          |
+| `ForTabs`           | `provideForTabs`           |
+| `ForToast`          | `provideForToast`          |
 
 `ForRadioGroup`, `ForSelect` and `ForCombobox` are split too; all three are form controls, so
 `provideForRadioGroup` / `provideForSelect` / `provideForCombobox` are documented in

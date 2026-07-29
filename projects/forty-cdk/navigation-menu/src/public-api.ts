@@ -1,4 +1,4 @@
-export { ForNavigationMenu } from './navigation-menu';
+export { ForNavigationMenu, provideForNavigationMenu } from './navigation-menu';
 export { ForNavigationMenuList } from './navigation-menu-list';
 export { ForNavigationMenuItem } from './navigation-menu-item';
 export { ForNavigationMenuTrigger } from './navigation-menu-trigger';
@@ -11,9 +11,6 @@ export {
   FOR_NAVIGATION_MENU_ITEM_CONTEXT,
   type ForNavigationMenuContext,
   type ForNavigationMenuItemContext,
-  type ForNavigationMenuTriggerHandle,
-  type ForNavigationMenuContentHandle,
-  type ForNavigationMenuViewportHandle,
   type ForNavigationMenuMotion,
   type NavigationMenuScheduleReason,
 } from './navigation-menu-context';
