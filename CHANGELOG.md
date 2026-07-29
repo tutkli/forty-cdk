@@ -7,13 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-The pre-1.0 naming and API-alignment sweep ([#1400](https://github.com/tutkli/forty-cdk/issues/1400)):
-fifteen inconsistencies where the same concept was spelled two ways across the library, resolved onto one
-name each. Nothing here changes behaviour except where noted — it is a rename pass, deliberately taken
-before 1.0 freezes the surface, with **no deprecated aliases anywhere**. Two renames are silent at compile
-time and need a template grep: `(action)` on `[forComboboxAction]` and `(valueComplete)` / `(valueInvalid)`
-on `[forOtpInput]` both sit on native elements, so a stale binding registers a DOM listener for an event
-that never fires instead of failing the build.
+## [0.16.0] - 2026-07-29
+
+Headlined by the pre-1.0 naming and API-alignment sweep
+([#1400](https://github.com/tutkli/forty-cdk/issues/1400)): fifteen inconsistencies where the same concept
+was spelled two ways across the library, resolved onto one name each. That sweep changes no behaviour except
+where noted — it is a rename pass, deliberately taken before 1.0 freezes the surface, with **no deprecated
+aliases anywhere**. Two of its renames are silent at compile time and need a template grep: `(action)` on
+`[forComboboxAction]` and `(valueComplete)` / `(valueInvalid)` on `[forOtpInput]` both sit on native
+elements, so a stale binding registers a DOM listener for an event that never fires instead of failing the
+build. Alongside it, the tail of the July 18 audit closes out: keyboard operability on non-button
+checkbox / switch hosts, `type="button"` precedence across fifty pieces, and four menubar
+accessible-name / id defects.
+
+### Added
+
+- **Combobox** — `ForComboboxDefaults` gains a `chipRemoveLabel: (label: string) => string` builder, so
+  `[forComboboxChipRemove]`'s accessible name can be localized per scope through
+  `provideForComboboxDefaults({ chipRemoveLabel })`. The name is computed per chip, so the piece
+  deliberately does not adopt a consumer static `aria-label`; the scope default is the channel. The library
+  fallback is `` (label) => `Remove ${label}` ``, byte-identical to the previous hardcoded output.
+- **Shared** — `accessibleTextContent` is published from `forty-cdk/shared`, so a consumer reasoning about
+  the text the library derives from an element (option label, typeahead matching, reorder announcements) has
+  a supported path to the same definition instead of forking the walk. Same function object as the internal
+  one; no behaviour or signature change.
+- **Breakpoints / Time picker** — two types that a public signature already exposed but no barrel exported
+  are now nameable: `TailwindBreakpointName` from `forty-cdk/breakpoints` (the fallback union behind
+  `BreakpointName`) and `BuildTimeSlotsConfig` from `forty-cdk/time-picker` (the parameter of the exported
+  `buildTimeSlots`). Consumers no longer have to fall back to structural typing to hold either.
 
 ### Changed
 
@@ -119,6 +140,21 @@ that never fires instead of failing the build.
   minus `collisionPadding` on both edges in `item-aligned`), so `max-height: var(--for-available-height)`
   now works unchanged across both modes. `--for-available-width` stays `popper`-only — item-aligned
   computes no width budget.
+- **All button-hosted pieces — BREAKING.** The fifty pieces that force submit protection now resolve
+  `type="button"` through a host **binding** instead of a static host attribute, so the directive's value
+  wins over a consumer's own static `type`. `<button forCheckbox type="submit">` no longer submits its
+  surrounding `<form>` on click — it is treated as an authoring error rather than an override, which is the
+  behaviour the JSDoc always promised. The flip side: a non-`<button>` host now gets **no** `type` attribute
+  at all instead of an invalid `type="button"` (`type` is not valid on `<div>` / `<span>`), so CSS or
+  querying keyed on `[type="button"]` must switch to the piece's own attribute selector. `[forButton]` is
+  deliberately exempt and still preserves a consumer `type` — a `[forButton]` on a real submit button is
+  legitimate usage.
+- **Core (menu) — BREAKING.** `ForMenuContext` drops `focusFirstEnabledItem` and `focusLastEnabledItem`.
+  Every piece resolves its initial focus through the single `focusInitialEnabledItem(target)` entry, so the
+  contract asks for one way to say it instead of three. Source-breaking only for an external implementor of
+  the interface, and the migration is deleting two methods. The pair stays on the concrete controllers
+  (`[forDropdownMenu]`, `[forContextMenu]`, `[forMenuSub]`) as the imperative escape hatch for an explicit
+  first / last move independent of the resolved `initialFocus` target.
 
 ### Removed
 
@@ -137,6 +173,41 @@ that never fires instead of failing the build.
   `[step]="0.1"` previously jumped by an absolute `10` (100 grid steps); it now jumps by
   `step × stepMultiplier` = `1` (10 grid steps), as the JSDoc had always promised. Behaviour is unchanged
   at the default `step` of `1`.
+- **Checkbox / Switch** — `[forCheckbox]` and `[forSwitch]` on a non-`<button>` host are now keyboard
+  operable. They accept any host element and announce `role="checkbox"` / `role="switch"` plus their
+  `aria-checked` state, but bound only `(click)`, so a `<div forCheckbox>` was not even focusable: no
+  `tabindex` and no key handler. Both now synthesize `tabindex="0"` and activation on `Enter` (keydown) /
+  `Space` (keyup) on a non-button host, always suppressing `Space` page scrolling — including while
+  `disabled` — and dropping a half-finished `Space` press on blur. A native `<button>` host is untouched
+  (the platform already synthesizes the click). The fix lives in host bindings, so a `hostDirectives`-composed
+  wrapper gets it too.
+- **Drag & drop** — a `[forDropList]` that hands its floating preview to the drop animation now releases its
+  reference when the animation settles. The field kept pointing at a disposed preview for the rest of the
+  list's lifetime after the first animated drop, and the destroy hook then called `destroy()` on it a second
+  time.
+- **Menubar** — a menu surface no longer renders `id=""` / `aria-labelledby=""` mid-close. The ids and the
+  accessible name now survive the whole close transition (including a deferred exit animation), and a surface
+  that has never been associated with a trigger emits no attribute at all rather than an empty one.
+- **Menubar** — a consumer's static `id` on a `[forMenuContent]` that belongs to no single trigger is
+  preserved. Both trigger-agnostic mount shapes were affected: an unconditionally mounted surface carried no
+  `id` while closed and flipped to a generated `for-menubar-content-N` on the first activation, and a single
+  surface shared by every trigger through one `@if (value() !== null)` lost the id the moment the open menu
+  switched. `aria-controls` on every trigger now resolves to the consumer's id in both shapes. The canonical
+  one-`@if`-per-trigger shape keeps its per-trigger adoption unchanged.
+- **Menubar** — closing a menu through the documented `[(value)]` two-way binding no longer degrades the
+  surface. The last-open-trigger snapshot is now derived from `value` instead of being written by the
+  trigger-driven open / close paths only, so a consumer-driven close (or a bar whose menus are only ever
+  opened by a `[(value)]` write) keeps the surface's `id` / `aria-labelledby` during the close and returns
+  focus to the trigger.
+- **Select** — a virtualized `[forSelect]` no longer shows a label folded from a previous dataset. The label
+  snapshot now restarts on a `totalCount` transition — the consumer's own "the source was rebuilt" signal —
+  so a stale option label cannot survive a query change. Non-virtualized selects are unaffected (they never
+  see a transition), and closed-state typeahead, the purge of options removed while open and the
+  close → re-open persistence all keep their current semantics.
+- **Toast (SSR)** — `ForToastManager` no longer installs its document-level hotkey listener during a server
+  render. A `[forToastViewport]` registers synchronously on construction, so rendering one under Angular
+  Universal reached `document.addEventListener` on the server; the listener is now gated on
+  `isPlatformBrowser`.
 
 ## [0.15.0] - 2026-07-27
 
@@ -1094,7 +1165,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/tutkli/forty-cdk/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/tutkli/forty-cdk/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/tutkli/forty-cdk/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/tutkli/forty-cdk/compare/v0.12.0...v0.13.0
