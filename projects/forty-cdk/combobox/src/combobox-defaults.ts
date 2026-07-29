@@ -34,6 +34,14 @@ export interface ForComboboxDefaults {
    * translate every combobox clear button in the scope.
    */
   clearAriaLabel: string;
+  /**
+   * Builds the `aria-label` for a chip's remove button
+   * (`[forComboboxChipRemove]`) from the chip's resolved option label.
+   * Override it here to translate every combobox chip remove button in the
+   * scope — the name is computed per chip, so the piece exposes no
+   * per-instance `[ariaLabel]` input.
+   */
+  chipRemoveLabel: (label: string) => string;
 }
 
 /**
@@ -46,6 +54,7 @@ export const FOR_COMBOBOX_FALLBACK_DEFAULTS: ForComboboxDefaults = {
   collisionPadding: 8,
   chipsAriaLabel: 'Selected items',
   clearAriaLabel: 'Clear',
+  chipRemoveLabel: (label) => `Remove ${label}`,
 };
 
 const { token, provideDefaults } = createDefaults<ForComboboxDefaults>(
