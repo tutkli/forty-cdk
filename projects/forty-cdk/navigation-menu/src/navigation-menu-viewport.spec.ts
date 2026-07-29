@@ -436,6 +436,45 @@ describe('ForNavigationMenuViewport', () => {
       expect(query<HTMLElement>('[data-id="products"]')).not.toBeNull();
     });
 
+    it('closes on a null-relatedTarget leave fired inside a panel hosted outside the nav', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const root = query<HTMLElement>('[forNavigationMenu]')!;
+      const link = query<HTMLAnchorElement>('[data-id="products-link"]')!;
+      expect(root.contains(link)).toBe(false);
+
+      link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBeNull();
+      expect(root.getAttribute('data-state')).toBe('closed');
+      expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
+    });
+
+    it('keeps the panel open when a null-relatedTarget leave follows a press inside it', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const inner = query<HTMLElement>('[data-id="products-static"]')!;
+      inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      query<HTMLAnchorElement>('[data-id="products-link"]')!.dispatchEvent(
+        new FocusEvent('focusout', { bubbles: true, relatedTarget: null }),
+      );
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(query<HTMLElement>('[data-id="products"]')).not.toBeNull();
+    });
+
     it('still closes on a pointerdown outside the nav, the viewport and the panel', async () => {
       const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
       await flush();

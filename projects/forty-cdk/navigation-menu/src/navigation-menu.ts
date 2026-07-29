@@ -9,14 +9,17 @@ import {
   input,
   linkedSignal,
   model,
+  type Provider,
   signal,
   type Signal,
+  type Type,
 } from '@angular/core';
 
 import {
   Collection,
   injectDismissibleLayer,
   createDebouncedAction,
+  createPointerSuppression,
   createSkipDelayWindow,
   type ListNavigationAction,
   type WritingDirection,
@@ -26,6 +29,7 @@ import {
 } from 'forty-cdk/core';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
+  NAVIGATION_MENU_CONTEXT,
   type ForNavigationMenuContentHandle,
   type ForNavigationMenuContext,
   type ForNavigationMenuMotion,
@@ -73,9 +77,9 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
-    '(focusout)': 'onFocusOut($event)',
+    '(focusout)': 'handleSurfaceFocusOut($event)',
   },
-  providers: [{ provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: ForNavigationMenu }],
+  providers: provideForNavigationMenu(ForNavigationMenu),
 })
 export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -183,6 +187,16 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   readonly #dismiss = injectDismissibleLayer();
 
+  /**
+   * Short window opened by a pointerdown the dismissible layer resolved as
+   * *inside* the widget's surface, so a `null`-`relatedTarget` focusout that
+   * follows it is read as "the press moved focus to nothing" rather than as
+   * "focus left the document". Both leaves are indistinguishable from the
+   * `FocusEvent` alone — `document.activeElement` is `<body>` either way — and
+   * the pointer is the only thing that tells them apart.
+   */
+  readonly #surfacePointerDown = createPointerSuppression();
+
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.#cancelPending();
@@ -214,7 +228,10 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * observes `focusin` on the document, so it also fires for a panel that a
    * `[forNavigationMenuViewport]` re-parented outside the `<nav>`, whose
    * `focusout` never bubbles to the nav host. Both channels treat the nav host,
-   * the registered viewport and the active panel as inside.
+   * the registered viewport and the active panel as inside, and the layer
+   * reports a press it resolved as *inside* that same set through
+   * `onPointerDownInside` — the one input {@link handleSurfaceFocusOut} needs to
+   * tell a pointer-induced blur from focus leaving the document.
    */
   open(value: string): void {
     if (this.disabled()) return;
@@ -235,6 +252,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
         trigger?.focus();
       },
       onPointerDownOutside: () => this.close(),
+      onPointerDownInside: () => this.#surfacePointerDown.suppress(),
       onFocusOutside: () => this.close(),
     });
   }
@@ -294,22 +312,52 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * therefore sees a focus move out of the *panel* even when the panel was
    * re-parented outside the nav by a `[forNavigationMenuViewport]`.
    *
-   * This host-bubbled handler covers the one case `focusin` cannot report: a
-   * `null` `relatedTarget`, i.e. focus leaving the document (Tab past the last
+   * This handler covers the one leave `focusin` cannot report: a `null`
+   * `relatedTarget`, i.e. focus leaving the document (Tab past the last
    * focusable, into the browser chrome) or landing on a non-focusable area, for
-   * which no `focusin` is fired at all.
+   * which no `focusin` is fired at all. It runs on the nav host **and** on
+   * `[forNavigationMenuContent]`, whose host is the panel itself, so the leave
+   * reaches the root regardless of where the Viewport re-parented the panel —
+   * a `focusout` fired inside an externally-hosted panel never bubbles to the
+   * `<nav>`.
    *
-   * Containment spans the nav host plus the registered viewport and the active
-   * content panel, matching the layer's exempt list: a
-   * `[forNavigationMenuViewport]` stamped outside the nav re-parents the panel
-   * out of the nav's subtree, so Tab into it must not read as focus leaving the
-   * navigation.
+   * A `null` `relatedTarget` says nothing about *where* focus went, so the
+   * decision is deferred one microtask and taken against
+   * `document.activeElement` once the focus update has settled. Containment is
+   * the single `#containsFocusTarget` rule — the nav host plus the
+   * registered viewport and the active content panel, the same set that feeds
+   * the layer's `exemptElements` — so Tab into an externally-hosted panel never
+   * reads as focus leaving the navigation.
+   *
+   * The remaining ambiguity is that focus landing on `<body>` looks identical
+   * whether the user tabbed out of the document or pressed a non-focusable
+   * region *inside* the widget (a caption, a padding area of the panel). The
+   * layer resolves that press with the very same containment set and reports it
+   * through `onPointerDownInside`, so a pointer-induced blur is skipped instead
+   * of spuriously dismissing a panel the user is still interacting with.
    */
-  protected onFocusOut(event: FocusEvent): void {
+  protected handleSurfaceFocusOut(event: FocusEvent): void {
     if (this.value() === null) {
       return;
     }
-    if (this.#containsFocusTarget(event.relatedTarget as Node | null)) {
+    const related = event.relatedTarget as Node | null;
+    if (related !== null) {
+      if (!this.#containsFocusTarget(related)) {
+        this.close();
+      }
+      return;
+    }
+    queueMicrotask(() => this.#closeIfFocusLeftSurface());
+  }
+
+  #closeIfFocusLeftSurface(): void {
+    if (this.value() === null) {
+      return;
+    }
+    if (this.#surfacePointerDown.isSuppressed()) {
+      return;
+    }
+    if (this.#containsFocusTarget(this.#document.activeElement)) {
       return;
     }
     this.close();
@@ -350,28 +398,29 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.triggerHostFor(value)?.focus();
   }
 
-  registerTrigger(handle: ForNavigationMenuTriggerHandle): void {
+  private registerTrigger(handle: ForNavigationMenuTriggerHandle): void {
     this.#triggers.register(handle);
   }
-  unregisterTrigger(handle: ForNavigationMenuTriggerHandle): void {
+  private unregisterTrigger(handle: ForNavigationMenuTriggerHandle): void {
     this.#triggers.unregister(handle);
   }
-  registerContent(handle: ForNavigationMenuContentHandle): void {
+  private registerContent(handle: ForNavigationMenuContentHandle): void {
     this.#contents.register(handle);
   }
-  unregisterContent(handle: ForNavigationMenuContentHandle): void {
+  private unregisterContent(handle: ForNavigationMenuContentHandle): void {
     this.#contents.unregister(handle);
     this.#clearMotion(handle.value());
   }
-  registerViewport(handle: ForNavigationMenuViewportHandle): void {
+  private registerViewport(handle: ForNavigationMenuViewportHandle): void {
     this.#viewport.set(handle);
   }
-  unregisterViewport(handle: ForNavigationMenuViewportHandle): void {
+  private unregisterViewport(handle: ForNavigationMenuViewportHandle): void {
     if (this.#viewport() === handle) {
       this.#viewport.set(null);
     }
   }
-  readonly viewport: Signal<ForNavigationMenuViewportHandle | null> = this.#viewport.asReadonly();
+  private readonly viewport: Signal<ForNavigationMenuViewportHandle | null> =
+    this.#viewport.asReadonly();
 
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
@@ -525,4 +574,34 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.#openAction.cancel();
     this.#pendingOpenValue = null;
   }
+}
+
+/**
+ * The providers a `[forNavigationMenu]` root installs: the public
+ * {@link FOR_NAVIGATION_MENU_CONTEXT}, aliased to `root`, plus the internal
+ * coordination token the navigation menu's pieces resolve.
+ *
+ * `ForNavigationMenu` declares its own providers through this helper, so a
+ * wrapper that **subclasses** the root has a single call to keep in step with
+ * it. That matters because Angular does not inherit a directive's `providers`: a
+ * subclass carrying its own `@Directive` metadata replaces the array wholesale,
+ * so re-providing `FOR_NAVIGATION_MENU_CONTEXT` alone leaves the internal token
+ * absent and every piece orphans with the "must be used inside a
+ * [forNavigationMenu] element" error. That token is deliberately unnameable
+ * outside the library
+ * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * wrapper cannot list it by hand.
+ *
+ * ```ts
+ * providers: provideForNavigationMenu(MyNavigationMenu),
+ * ```
+ *
+ * Wrapping through `hostDirectives: [ForNavigationMenu]` needs none of this — a
+ * host directive brings its own providers to the element.
+ */
+export function provideForNavigationMenu(root: Type<ForNavigationMenu>): Provider[] {
+  return [
+    { provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: root },
+    { provide: NAVIGATION_MENU_CONTEXT, useExisting: root },
+  ];
 }
