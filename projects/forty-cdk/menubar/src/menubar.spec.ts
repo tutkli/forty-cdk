@@ -270,6 +270,42 @@ class MenubarAlwaysMountedNamedContentHost {
   readonly open = signal<string | null>(null);
 }
 
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file" id="file-trigger">File</button>
+      <button forMenubarTrigger value="edit" id="edit-trigger">Edit</button>
+      @if (open() !== null) {
+        <div forMenuContent id="shared-menu">
+          <button forMenuItem>New</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarSharedContentHost {
+  readonly open = signal<string | null>(null);
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file" id="file-trigger">File</button>
+      <button forMenubarTrigger value="edit" id="edit-trigger">Edit</button>
+      @if (open() !== null) {
+        <div forMenuContent>
+          <button forMenuItem>New</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarSharedAnonymousContentHost {
+  readonly open = signal<string | null>(null);
+}
+
 type MenubarVetoChannel =
   | 'none'
   | 'escape'
@@ -565,6 +601,89 @@ describe('ForMenubar', () => {
 
       expect(editTrigger!.getAttribute('aria-controls')).toBe('always-mounted');
       expect(document.querySelector<HTMLElement>('[forMenuContent]')!.id).toBe('always-mounted');
+    });
+  });
+
+  describe('surface shared by one @if (#1520)', () => {
+    it('keeps the consumer static id across a menu switch and back', async () => {
+      const r = renderHost(MenubarSharedContentHost);
+      const [fileTrigger, editTrigger] = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.id).toBe('shared-menu');
+      expect(fileTrigger!.getAttribute('aria-controls')).toBe('shared-menu');
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      expect(document.querySelector<HTMLElement>('[forMenuContent]')).toBe(content);
+      expect(content.id).toBe('shared-menu');
+      expect(editTrigger!.getAttribute('aria-controls')).toBe('shared-menu');
+      expect(fileTrigger!.hasAttribute('aria-controls')).toBe(false);
+
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      expect(content.id).toBe('shared-menu');
+      expect(fileTrigger!.getAttribute('aria-controls')).toBe('shared-menu');
+      expect(document.getElementById('shared-menu')).toBe(content);
+    });
+
+    it('re-adopts the static id when the surface remounts under another trigger', async () => {
+      const r = renderHost(MenubarSharedContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBeNull();
+      expect(document.querySelector('[forMenuContent]')).toBeNull();
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const editTrigger = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+      expect(content.id).toBe('shared-menu');
+      expect(editTrigger.getAttribute('aria-controls')).toBe('shared-menu');
+    });
+
+    it('a shared surface with no static id follows the active trigger generated id', async () => {
+      const r = renderHost(MenubarSharedAnonymousContentHost);
+      const [fileTrigger, editTrigger] = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      const fileContentId = content.id;
+      expect(fileContentId).toMatch(/^for-menubar-content-/);
+      expect(fileTrigger!.getAttribute('aria-controls')).toBe(fileContentId);
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      expect(document.querySelector<HTMLElement>('[forMenuContent]')).toBe(content);
+      expect(content.id).toMatch(/^for-menubar-content-/);
+      expect(content.id).not.toBe(fileContentId);
+      expect(editTrigger!.getAttribute('aria-controls')).toBe(content.id);
+    });
+
+    it('keeps aria-labelledby pointing at the trigger that owns the open menu', async () => {
+      const r = renderHost(MenubarSharedContentHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      expect(content.getAttribute('aria-labelledby')).toBe('edit-trigger');
     });
   });
 
