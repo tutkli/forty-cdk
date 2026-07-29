@@ -117,23 +117,17 @@ class SubMenuDismissContractHost {
   }
 }
 
-/**
- * Builds a pointer event with an explicit `pointerType`. jsdom's
- * `PointerEvent` constructor doesn't populate `pointerType` / `clientX` /
- * `clientY` from its init dict, and the hover listeners gate on the pointer
- * being hover-capable, so the spec defines them directly.
- */
 function pointerEvent(
   type: 'pointerenter' | 'pointerleave' | 'pointermove',
   { pointerType = 'mouse', clientX = 0, clientY = 0 } = {},
 ): PointerEvent {
-  const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-  Object.defineProperties(event, {
-    pointerType: { value: pointerType, configurable: true },
-    clientX: { value: clientX, configurable: true },
-    clientY: { value: clientY, configurable: true },
+  return new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    pointerType,
+    clientX,
+    clientY,
   });
-  return event;
 }
 
 describe('ForMenuSub', () => {
