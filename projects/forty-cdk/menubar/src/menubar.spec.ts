@@ -227,6 +227,7 @@ class MenubarStaticIdHost {
   template: `
     <div forMenubar [(value)]="open">
       <button forMenubarTrigger value="file" id="file-trigger">File</button>
+      <button forMenubarTrigger value="edit" id="edit-trigger">Edit</button>
       <div forMenuContent id="always-mounted">
         <button forMenuItem>New</button>
       </div>
@@ -234,6 +235,21 @@ class MenubarStaticIdHost {
   `,
 })
 class MenubarAlwaysMountedContentHost {
+  readonly open = signal<string | null>(null);
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="file" id="file-trigger">File</button>
+      <div forMenuContent>
+        <button forMenuItem>New</button>
+      </div>
+    </div>
+  `,
+})
+class MenubarAlwaysMountedAnonymousContentHost {
   readonly open = signal<string | null>(null);
 }
 
@@ -502,7 +518,7 @@ describe('ForMenubar', () => {
     });
 
     it('content mounted while no trigger is active still wires aria on the next activation', async () => {
-      const r = renderHost(MenubarAlwaysMountedContentHost);
+      const r = renderHost(MenubarAlwaysMountedAnonymousContentHost);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
@@ -516,11 +532,45 @@ describe('ForMenubar', () => {
       expect(fileTrigger.getAttribute('aria-controls')).toBe(content.id);
       expect(content.getAttribute('aria-labelledby')).toBe('file-trigger');
     });
+
+    it('an unconditionally mounted surface keeps its static id across closed → open → closed', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
+      expect(content.id).toBe('always-mounted');
+
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      expect(content.id).toBe('always-mounted');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBeNull();
+      expect(content.id).toBe('always-mounted');
+      expect(document.getElementById('always-mounted')).toBe(content);
+    });
+
+    it('every trigger of an unconditionally mounted surface points aria-controls at the static id', async () => {
+      const r = renderHost(MenubarAlwaysMountedContentHost);
+      const [fileTrigger, editTrigger] = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      expect(fileTrigger!.getAttribute('aria-controls')).toBe('always-mounted');
+
+      r.instance.open.set('edit');
+      await flush(r.fixture);
+
+      expect(editTrigger!.getAttribute('aria-controls')).toBe('always-mounted');
+      expect(document.querySelector<HTMLElement>('[forMenuContent]')!.id).toBe('always-mounted');
+    });
   });
 
   describe('surface naming across the close (#1452)', () => {
     it('keeps the closing trigger id and aria-labelledby while the surface is still mounted', async () => {
-      const r = renderHost(MenubarAlwaysMountedContentHost);
+      const r = renderHost(MenubarAlwaysMountedAnonymousContentHost);
       r.instance.open.set('file');
       await flush(r.fixture);
 
@@ -554,7 +604,7 @@ describe('ForMenubar', () => {
     });
 
     it('emits no id and no aria-labelledby while no trigger has ever been active', async () => {
-      const r = renderHost(MenubarAlwaysMountedContentHost);
+      const r = renderHost(MenubarAlwaysMountedAnonymousContentHost);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
@@ -563,7 +613,7 @@ describe('ForMenubar', () => {
     });
 
     it('the trigger keeps pointing aria-controls at the surface it named while open', async () => {
-      const r = renderHost(MenubarAlwaysMountedContentHost);
+      const r = renderHost(MenubarAlwaysMountedAnonymousContentHost);
       r.instance.open.set('file');
       await flush(r.fixture);
 

@@ -175,15 +175,21 @@ export class ForMenubarTrigger {
   readonly ariaLabel = input<string | null>(null);
 
   readonly triggerId = hostId('for-menubar-trigger');
-  readonly #contentId = signal(this.#idGen.next('for-menubar-content'));
+  readonly #ownContentId = signal(this.#idGen.next('for-menubar-content'));
 
   /**
    * Id of this trigger's `[forMenuContent]` surface — the `aria-controls`
    * target while open, and the surface's own `id`. Seeded with a generated id;
    * a consumer-set static `id` on the mounted content host is adopted instead
    * (see {@link adoptContentId}).
+   *
+   * An unconditionally mounted surface registers before any trigger is active,
+   * so it has no single owner to adopt into: the bar exposes its consumer-set
+   * static `id` as `sharedContentId` and every trigger prefers that over its own
+   * seed, keeping `aria-controls` resolvable to the consumer's id whichever menu
+   * opens.
    */
-  readonly contentId = this.#contentId.asReadonly();
+  readonly contentId = computed(() => this.menubar.sharedContentId() ?? this.#ownContentId());
 
   readonly effectiveDisabled = computed(() => this.disabled() || this.menubar.disabled());
 
@@ -233,7 +239,7 @@ export class ForMenubarTrigger {
    * content host carries no static `id`.
    */
   adoptContentId(el: HTMLElement): void {
-    adoptHostId(el, this.#contentId);
+    adoptHostId(el, this.#ownContentId);
   }
 
   protected onPointerDown(): void {

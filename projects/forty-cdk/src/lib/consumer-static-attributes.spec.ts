@@ -353,11 +353,37 @@ describe('consumer-set static id preservation (#659)', () => {
       readonly value = signal('file');
     }
 
+    @Component({
+      imports: [ForMenubar, ForMenubarTrigger, ForMenuContent, ForMenuItem],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `<div forMenubar [(value)]="value">
+        <button forMenubarTrigger value="file" id="probe">File</button>
+        <div forMenuContent id="probe-content">
+          <button forMenuItem>New</button>
+        </div>
+      </div>`,
+    })
+    class AlwaysMountedHost {
+      readonly value = signal<string | null>(null);
+    }
+
     it('trigger and menu content preserve a consumer-set static id', async () => {
       const fixture = mount(Host);
       await flush(fixture);
       expect(idOf(fixture, '[forMenubarTrigger]')).toBe('probe');
       expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
+    });
+
+    it('an unconditionally mounted menu content preserves it while the bar is closed', async () => {
+      const fixture = mount(AlwaysMountedHost);
+      await flush(fixture);
+      expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
+
+      fixture.componentInstance.value.set('file');
+      await flush(fixture);
+
+      expect(idOf(fixture, '[forMenuContent]')).toBe('probe-content');
+      expect(attrOf(fixture, '[forMenubarTrigger]', 'aria-controls')).toBe('probe-content');
     });
   });
 
