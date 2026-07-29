@@ -17,6 +17,10 @@
  * JSDoc that reads as consumer documentation). Which one applies per entry — and
  * why each of these is deferred rather than fixed — is recorded in the core tier
  * section of `.claude/rules/conventions.md`.
+ *
+ * The nine registration handles (accordion, carousel, radio-group, tabs, toast)
+ * leave together with the [#1399] context split that removes the `register*`
+ * members surfacing them, tracked by [#1524] — never by a re-export.
  */
 export const UNNAMEABLE_PUBLIC_TYPES = {
   accordion: ['ForAccordionTriggerHandle'],
