@@ -227,11 +227,14 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * work from anywhere in the widget rather than only from the trigger row — it
    * observes `focusin` on the document, so it also fires for a panel that a
    * `[forNavigationMenuViewport]` re-parented outside the `<nav>`, whose
-   * `focusout` never bubbles to the nav host. Both channels treat the nav host,
-   * the registered viewport and the active panel as inside, and the layer
-   * reports a press it resolved as *inside* that same set through
-   * `onPointerDownInside` — the one input {@link handleSurfaceFocusOut} needs to
-   * tell a pointer-induced blur from focus leaving the document.
+   * `focusout` never bubbles to the nav host. It is also the sole owner of every
+   * leave that reports a destination, which is what keeps the widget's
+   * containment rule single ({@link handleSurfaceFocusOut}). Both channels treat
+   * the nav host, the registered viewport and the active panel — plus any layer
+   * stacked above them — as inside, and the layer reports a press it resolved as
+   * *inside* that same set through `onPointerDownInside` — the one input
+   * {@link handleSurfaceFocusOut} needs to tell a pointer-induced blur from
+   * focus leaving the document.
    */
   open(value: string): void {
     if (this.disabled()) return;
@@ -306,11 +309,20 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   /**
-   * APG: moving focus out of the navigation closes any open dropdown. The
-   * primary channel for this is the dismissible layer's `'focus'` channel
-   * (declared in {@link open}), which observes `focusin` on the document and
-   * therefore sees a focus move out of the *panel* even when the panel was
-   * re-parented outside the nav by a `[forNavigationMenuViewport]`.
+   * APG: moving focus out of the navigation closes any open dropdown. Every
+   * leave that reports a destination is owned by the dismissible layer's
+   * `'focus'` channel (declared in {@link open}) and returns from here
+   * untouched, so the question "did focus leave the widget?" has exactly one
+   * owner ([#1535](https://github.com/tutkli/forty-cdk/issues/1535)). The layer
+   * observes `focusin` on the document, which buys three things a host listener
+   * cannot: it sees a focus move out of the *panel* even when the panel was
+   * re-parented outside the nav by a `[forNavigationMenuViewport]`, it resolves
+   * containment **stack-aware** — an interactive surface stacked above the panel
+   * counts as inside, so it never dismisses the panel it is anchored to
+   * ([#1379](https://github.com/tutkli/forty-cdk/issues/1379)) — and it is
+   * routed **per channel**, so a real dismissible layer above the navigation
+   * (a Dialog opened from a mega-menu link) owns the leave and the navigation
+   * stays open behind it.
    *
    * This handler covers the one leave `focusin` cannot report: a `null`
    * `relatedTarget`, i.e. focus leaving the document (Tab past the last
@@ -324,10 +336,9 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * A `null` `relatedTarget` says nothing about *where* focus went, so the
    * decision is deferred one microtask and taken against
    * `document.activeElement` once the focus update has settled. Containment is
-   * the single `#containsFocusTarget` rule — the nav host plus the
-   * registered viewport and the active content panel, the same set that feeds
-   * the layer's `exemptElements` — so Tab into an externally-hosted panel never
-   * reads as focus leaving the navigation.
+   * the `#containsFocusTarget` rule — the nav host plus the registered viewport
+   * and the active content panel, the same set that feeds the layer's
+   * `exemptElements`.
    *
    * The remaining ambiguity is that focus landing on `<body>` looks identical
    * whether the user tabbed out of the document or pressed a non-focusable
@@ -340,11 +351,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     if (this.value() === null) {
       return;
     }
-    const related = event.relatedTarget as Node | null;
-    if (related !== null) {
-      if (!this.#containsFocusTarget(related)) {
-        this.close();
-      }
+    if (event.relatedTarget !== null) {
       return;
     }
     queueMicrotask(() => this.#closeIfFocusLeftSurface());

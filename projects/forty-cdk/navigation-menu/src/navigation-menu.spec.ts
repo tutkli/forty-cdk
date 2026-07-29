@@ -1,7 +1,7 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
+import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { flush, pressKey, renderHost } from '../../src/test-utils';
+import { flush, pressKey, renderHost, TestStackedLayer } from '../../src/test-utils';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';
@@ -102,6 +102,39 @@ class OverlappingNavMenuHost {
   readonly mountProducts = signal(false);
   readonly mountSolutions = signal(false);
   readonly mountAbout = signal(false);
+}
+
+@Component({
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+    ForNavigationMenuLink,
+    TestStackedLayer,
+  ],
+  template: `
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="products">
+          <button forNavigationMenuTrigger>Products</button>
+          @if (open() === 'products') {
+            <div forNavigationMenuContent>
+              <a href="/p/a" forNavigationMenuLink>A</a>
+            </div>
+          }
+        </li>
+      </ul>
+    </nav>
+    <div testStackedLayer>
+      <button data-id="stacked">stacked</button>
+    </div>
+  `,
+})
+class StackedLayerNavMenuHost {
+  readonly open = signal<string | null>(null);
+  readonly stacked = viewChild.required(TestStackedLayer);
 }
 
 function pointer(
@@ -794,7 +827,7 @@ describe('ForNavigationMenu', () => {
   });
 
   describe('focusout (Tab out closes per APG)', () => {
-    it('closes when focus moves to an element outside the nav', async () => {
+    it('leaves a destination-reporting leave to the layer, which closes on the focusin', async () => {
       const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
       await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
@@ -806,44 +839,18 @@ describe('ForNavigationMenu', () => {
       document.body.appendChild(outside);
       try {
         const root = query<HTMLElement>('[forNavigationMenu]')!;
-        // focusout bubbles, so dispatching on a descendant link or trigger
-        // works. We use a link inside the open content as the source.
         const link = root.querySelector<HTMLElement>('a[forNavigationMenuLink]')!;
         link.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }));
+        await flush();
+        expect(fixture.componentInstance.open()).toBe('products');
+
+        outside.focus();
         await flush();
         expect(fixture.componentInstance.open()).toBeNull();
         expect(root.getAttribute('data-state')).toBe('closed');
       } finally {
         outside.remove();
       }
-    });
-
-    it('does not close when focus stays inside the nav (e.g. trigger → link)', async () => {
-      const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
-      await flush();
-      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
-      trigger.click();
-      await flush();
-
-      const link = query<HTMLAnchorElement>('a[forNavigationMenuLink]')!;
-      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: link }));
-      await flush();
-
-      expect(fixture.componentInstance.open()).toBe('products');
-    });
-
-    it('does not close when focus moves between two triggers in the nav', async () => {
-      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
-      await flush();
-      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
-      triggers[0]!.click();
-      await flush();
-
-      triggers[0]!.dispatchEvent(
-        new FocusEvent('focusout', { bubbles: true, relatedTarget: triggers[1]! }),
-      );
-      await flush();
-      expect(fixture.componentInstance.open()).toBe('products');
     });
 
     it('treats null relatedTarget (focus leaving the document) as outside and closes', async () => {
@@ -897,19 +904,11 @@ describe('ForNavigationMenu', () => {
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
       const root = query<HTMLElement>('[forNavigationMenu]')!;
 
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      try {
-        trigger.dispatchEvent(
-          new FocusEvent('focusout', { bubbles: true, relatedTarget: outside }),
-        );
-        await flush();
-        // Open stays null (nothing was open) and data-state stays "closed".
-        expect(fixture.componentInstance.open()).toBeNull();
-        expect(root.getAttribute('data-state')).toBe('closed');
-      } finally {
-        outside.remove();
-      }
+      trigger.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+      await flush();
+      // Open stays null (nothing was open) and data-state stays "closed".
+      expect(fixture.componentInstance.open()).toBeNull();
+      expect(root.getAttribute('data-state')).toBe('closed');
     });
   });
 
@@ -957,6 +956,78 @@ describe('ForNavigationMenu', () => {
       query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
       await flush();
       expect(fixture.componentInstance.open()).toBe('products');
+    });
+  });
+
+  describe('a dismissible layer stacked above the open panel', () => {
+    it('keeps the panel open when focus moves into an interactive Escape-only surface above it', async () => {
+      const { fixture, query, flush } = renderHost(StackedLayerNavMenuHost);
+      await flush();
+      query<HTMLButtonElement>('[forNavigationMenuTrigger]')!.click();
+      await flush();
+      query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
+      await flush();
+
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack([]);
+      try {
+        query<HTMLButtonElement>('[data-id="stacked"]')!.focus();
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(query<HTMLElement>('[forNavigationMenuContent]')).not.toBeNull();
+      } finally {
+        stacked.unstack();
+      }
+    });
+
+    it('leaves the panel open when a real layer above owns the leave', async () => {
+      const { fixture, query, flush } = renderHost(StackedLayerNavMenuHost);
+      await flush();
+      query<HTMLButtonElement>('[forNavigationMenuTrigger]')!.click();
+      await flush();
+      query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
+      await flush();
+
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack(['pointer', 'focus']);
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        outside.focus();
+        await flush();
+
+        expect(stacked.focusOutside()).toBe(1);
+        expect(fixture.componentInstance.open()).toBe('products');
+        expect(query<HTMLElement>('[forNavigationMenuContent]')).not.toBeNull();
+      } finally {
+        outside.remove();
+        stacked.unstack();
+      }
+    });
+
+    it('closes the panel once the layer above is gone', async () => {
+      const { fixture, query, flush } = renderHost(StackedLayerNavMenuHost);
+      await flush();
+      query<HTMLButtonElement>('[forNavigationMenuTrigger]')!.click();
+      await flush();
+      query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
+      await flush();
+
+      const stacked = fixture.componentInstance.stacked();
+      stacked.stack(['pointer', 'focus']);
+      stacked.unstack();
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        outside.focus();
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBeNull();
+      } finally {
+        outside.remove();
+      }
     });
   });
 
