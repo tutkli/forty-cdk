@@ -12,4 +12,5 @@ export { mountOverlay, type MountOverlayResult } from './overlay';
 export { afterEachOverlayCleanup } from './overlay-cleanup';
 export { installObserverPolyfills } from './observers';
 export { pointerDownOn, focusInOn } from './outside-events';
+export { pointerEvent } from './pointer';
 export { withReducedMotion } from './reduced-motion';

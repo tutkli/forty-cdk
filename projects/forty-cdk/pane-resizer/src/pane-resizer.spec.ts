@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { pressKey, renderHost } from '../../src/test-utils';
+import { pointerEvent, pressKey, renderHost } from '../../src/test-utils';
 import { ForPaneResizer } from './pane-resizer';
 
 @Component({
@@ -77,18 +77,6 @@ function press(el: HTMLElement, key: string, init: KeyboardEventInit = {}): Keyb
   const down = pressKey(el, key, init);
   pressKey(el, key, { ...init, type: 'keyup' });
   return down;
-}
-
-function pointerEvent(
-  type: string,
-  init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
-): PointerEvent {
-  const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-  Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
-  Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
-  Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
-  Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
-  return ev;
 }
 
 describe('ForPaneResizer', () => {

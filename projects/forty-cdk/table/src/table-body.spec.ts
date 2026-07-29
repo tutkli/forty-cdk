@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 import { type ComponentFixture } from '@angular/core/testing';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
-import { installObserverPolyfills, renderHost } from '../../src/test-utils';
+import { installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/virtualization';
 import { ForDragPlaceholder, moveItemInArray } from 'forty-cdk/drag-drop';
 
@@ -32,18 +32,6 @@ interface Row {
   id: number;
   name: string;
   role: string;
-}
-
-function pointerEvent(
-  type: string,
-  init: { clientX?: number; clientY?: number; button?: number; pointerId?: number } = {},
-): PointerEvent {
-  const ev = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
-  Object.defineProperty(ev, 'clientX', { value: init.clientX ?? 0 });
-  Object.defineProperty(ev, 'clientY', { value: init.clientY ?? 0 });
-  Object.defineProperty(ev, 'button', { value: init.button ?? 0 });
-  Object.defineProperty(ev, 'pointerId', { value: init.pointerId ?? 1 });
-  return ev;
 }
 
 function buildRows(): Row[] {
