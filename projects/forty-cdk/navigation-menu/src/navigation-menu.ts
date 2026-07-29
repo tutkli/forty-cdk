@@ -204,6 +204,18 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     }
   }
 
+  /**
+   * Opens the item with the given `value` and arms the dismissible layer.
+   *
+   * The layer owns both outside-interaction channels: `'pointer'` for an
+   * outside pointerdown and `'focus'` for a focus move landing outside the
+   * widget. The `'focus'` channel is what makes the APG close-on-leave rule
+   * work from anywhere in the widget rather than only from the trigger row — it
+   * observes `focusin` on the document, so it also fires for a panel that a
+   * `[forNavigationMenuViewport]` re-parented outside the `<nav>`, whose
+   * `focusout` never bubbles to the nav host. Both channels treat the nav host,
+   * the registered viewport and the active panel as inside.
+   */
   open(value: string): void {
     if (this.disabled()) return;
     this.#cancelPending();
@@ -211,7 +223,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.#recordMotion(this.value(), value);
     this.value.set(value);
     this.#dismiss.activate({
-      channels: ['pointer'],
+      channels: ['pointer', 'focus'],
       exemptElements: () => this.#surfaceElements(),
       onEscapeKeyDown: () => {
         if (!this.#containsFocusTarget(this.#document.activeElement)) {
@@ -223,6 +235,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
         trigger?.focus();
       },
       onPointerDownOutside: () => this.close(),
+      onFocusOutside: () => this.close(),
     });
   }
 
@@ -275,18 +288,22 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   /**
-   * APG: moving focus out of the navigation closes any open dropdown. Fires
-   * when Tab/Shift+Tab walks past the last/first focusable inside the nav,
-   * or when something else steals focus. The dismissible layer already
-   * handles Escape and outside pointerdown; this covers the keyboard-tab
-   * case the layer can't see.
+   * APG: moving focus out of the navigation closes any open dropdown. The
+   * primary channel for this is the dismissible layer's `'focus'` channel
+   * (declared in {@link open}), which observes `focusin` on the document and
+   * therefore sees a focus move out of the *panel* even when the panel was
+   * re-parented outside the nav by a `[forNavigationMenuViewport]`.
    *
-   * Containment spans the nav host plus the registered viewport and the
-   * active content panel: a `[forNavigationMenuViewport]` stamped outside
-   * the nav re-parents the panel out of the nav's subtree, so Tab into it
-   * must not read as focus leaving the navigation. A `null` `relatedTarget`
-   * means focus is leaving the document or moving to a non-focusable area —
-   * both qualify as "outside".
+   * This host-bubbled handler covers the one case `focusin` cannot report: a
+   * `null` `relatedTarget`, i.e. focus leaving the document (Tab past the last
+   * focusable, into the browser chrome) or landing on a non-focusable area, for
+   * which no `focusin` is fired at all.
+   *
+   * Containment spans the nav host plus the registered viewport and the active
+   * content panel, matching the layer's exempt list: a
+   * `[forNavigationMenuViewport]` stamped outside the nav re-parents the panel
+   * out of the nav's subtree, so Tab into it must not read as focus leaving the
+   * navigation.
    */
   protected onFocusOut(event: FocusEvent): void {
     if (this.value() === null) {

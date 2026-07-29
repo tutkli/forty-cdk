@@ -360,6 +360,66 @@ describe('ForNavigationMenuViewport', () => {
       }
     });
 
+    it('keeps the panel open when focus lands inside a panel hosted outside the nav', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      query<HTMLAnchorElement>('[data-id="products-link"]')!.focus();
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(query<HTMLElement>('[data-id="products"]')).not.toBeNull();
+    });
+
+    it('closes when focus leaves a panel hosted outside the nav for an unrelated element', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      const link = query<HTMLAnchorElement>('[data-id="products-link"]')!;
+      link.focus();
+      await flush();
+      expect(document.activeElement).toBe(link);
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const root = query<HTMLElement>('[forNavigationMenu]')!;
+        outside.focus();
+        await flush();
+
+        expect(fixture.componentInstance.open()).toBeNull();
+        expect(root.getAttribute('data-state')).toBe('closed');
+        expect(query<HTMLElement>('[data-id="products"]')).toBeNull();
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('keeps the panel open when focus returns from the panel to its trigger', async () => {
+      const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
+      await flush();
+
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      query<HTMLAnchorElement>('[data-id="products-link"]')!.focus();
+      await flush();
+      trigger.focus();
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+      expect(query<HTMLElement>('[data-id="products"]')).not.toBeNull();
+    });
+
     it('keeps the panel open on a pointerdown inside a panel hosted outside the nav', async () => {
       const { fixture, query, flush } = renderHost(ExternalViewportMegaMenuHost);
       await flush();

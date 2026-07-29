@@ -879,6 +879,53 @@ describe('ForNavigationMenu', () => {
     });
   });
 
+  describe('focus channel on the dismissible layer', () => {
+    it('closes when focus lands on an element outside the nav', async () => {
+      const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const root = query<HTMLElement>('[forNavigationMenu]')!;
+        outside.focus();
+        await flush();
+        expect(fixture.componentInstance.open()).toBeNull();
+        expect(root.getAttribute('data-state')).toBe('closed');
+      } finally {
+        outside.remove();
+      }
+    });
+
+    it('does not close when focus moves to another trigger inside the nav', async () => {
+      const { fixture, queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+      triggers[0]!.click();
+      await flush();
+
+      triggers[1]!.focus();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('does not close when focus lands on a link inside the open panel', async () => {
+      const { fixture, query, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = query<HTMLButtonElement>('[forNavigationMenuTrigger]')!;
+      trigger.click();
+      await flush();
+
+      query<HTMLAnchorElement>('a[forNavigationMenuLink]')!.focus();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+  });
+
   describe('link reflects active state', () => {
     it('sets aria-current="page" and data-active on active links', async () => {
       const { fixture, query, queryAll, flush } = renderHost(NavMenuHost);
