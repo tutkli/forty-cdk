@@ -282,12 +282,6 @@ export class MenubarMenuContext implements ForMenuContext {
   clearItemHighlights(): void {
     this.#itemList.clearHighlights();
   }
-  focusFirstEnabledItem(): boolean {
-    return this.#itemList.focusFirstEnabledItem(this.#initialFocusState.consumeHighlight());
-  }
-  focusLastEnabledItem(): boolean {
-    return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());
-  }
   focusInitialEnabledItem(target: 'first' | 'last'): boolean {
     return this.#itemList.focusInitialEnabledItem(
       target,

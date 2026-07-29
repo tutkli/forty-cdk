@@ -104,7 +104,7 @@ export interface OverlayShellDismissConfig {
  * - `'container'` — host element (gets `tabindex="-1"` semantics from the
  *   primitive's host bindings).
  * - `move()` — primitive-owned focus algorithm (e.g. Menu's
- *   `focusFirstEnabledItem`, Select's `focusSelectedOption`). Should return
+ *   `focusInitialEnabledItem`, Select's `focusSelectedOption`). Should return
  *   `true` on success and `false` if no candidate was found, so the shell can
  *   fall back to focusing the host element.
  */
