@@ -12,7 +12,10 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDismissibleLayerContract,
+  assertOverlayTriggerAriaContract,
+} from '../../src/test-utils/contract';
 import { ForPopover } from './popover';
 import { ForPopoverAnchor } from './popover-anchor';
 import { ForPopoverArrow } from './popover-arrow';
@@ -149,27 +152,32 @@ describe('ForPopover', () => {
     });
   });
 
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(PopoverHost);
+        await flush(r.fixture);
+        return {
+          trigger: r.query<HTMLButtonElement>('[forPopoverTrigger]')!,
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forPopoverContent]')!,
+        };
+      },
+    },
+    { haspopup: 'dialog' },
+  );
+
   describe('a11y baseline', () => {
-    it('wires aria-haspopup, aria-expanded, aria-controls on the trigger', async () => {
+    it('leaves an enabled trigger free of every disabled marker', () => {
       const r = renderHost(PopoverHost);
       const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
 
-      expect(trigger.getAttribute('aria-haspopup')).toBe('dialog');
-      expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
       // Disabled-related attributes are absent when not disabled — never
       // emitted as "false". Consumers must select on `:not([aria-disabled])`.
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.hasAttribute('disabled')).toBe(false);
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(trigger.getAttribute('aria-expanded')).toBe('true');
-
-      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
-      expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 
     it('sets role=dialog and omits aria-modal on the non-modal content', async () => {

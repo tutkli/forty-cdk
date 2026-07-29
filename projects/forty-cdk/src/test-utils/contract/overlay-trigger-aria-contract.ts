@@ -2,8 +2,19 @@
  * Shared mini-contract for the ARIA trio every trigger-anchored overlay
  * stamps on its trigger: `aria-haspopup`, `aria-expanded`, and the
  * open-gated `aria-controls` pointing at the surface's id. Adopted by:
- * Popover, DropdownMenu, ContextMenu, Select, DatePicker, DateRangePicker,
- * TimePicker.
+ * Popover, DropdownMenu, MenuSub, Menubar, Select, Combobox (both anatomies —
+ * `[forComboboxInput]` in the editable one, `[forComboboxTrigger]` in the
+ * picker one), DatePicker, DateRangePicker, TimePicker, Dialog and Drawer.
+ *
+ * Dialog and Drawer are free-floating overlays whose surface lifecycle is
+ * decoupled from the trigger, yet they fit verbatim: `[forDialogTrigger]` /
+ * `[forDrawerTrigger]` own an `[(open)]` model and gate `aria-controls` on it,
+ * so the only per-primitive detail is that the consumer wires the surface's id
+ * through `[controls]` rather than the root doing it.
+ *
+ * ContextMenu is the one trigger-anchored overlay outside the roster:
+ * `[forContextMenuTrigger]` is a right-click *region*, not a popup control, so
+ * it emits none of the trio (no role, no `aria-haspopup`, no `aria-expanded`).
  *
  * The trio was re-asserted per primitive (`describe('a11y baseline')`) and a
  * third time in the SSR smoke suite, so nine overlays each owned their own

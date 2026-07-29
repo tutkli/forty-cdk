@@ -19,6 +19,7 @@ import {
 } from '../../src/test-utils';
 import {
   assertFormControlContract,
+  assertOverlayTriggerAriaContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
@@ -189,22 +190,17 @@ describe('ForCombobox', () => {
   });
 
   describe('a11y baseline', () => {
-    it('wires combobox role + aria-haspopup + aria-controls', async () => {
+    it('wires the combobox role + aria-autocomplete on the input and listbox on the surface', async () => {
       const r = renderHost(ComboboxHost);
       const input = getInput();
       expect(input.getAttribute('role')).toBe('combobox');
-      expect(input.getAttribute('aria-haspopup')).toBe('listbox');
-      expect(input.getAttribute('aria-expanded')).toBe('false');
       expect(input.getAttribute('aria-autocomplete')).toBe('list');
-      expect(input.hasAttribute('aria-controls')).toBe(false);
 
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forComboboxContent]')!;
       expect(content.getAttribute('role')).toBe('listbox');
-      expect(input.getAttribute('aria-expanded')).toBe('true');
-      expect(input.getAttribute('aria-controls')).toBe(content.id);
     });
 
     it('drops aria-controls when the listbox closes', async () => {
@@ -707,6 +703,22 @@ describe('ForCombobox', () => {
       return result;
     },
     { flags: ['disabled', 'required'] },
+  );
+
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(ComboboxHost);
+        await flush(r.fixture);
+        return {
+          trigger: getInput(),
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => document.querySelector<HTMLElement>('[forComboboxContent]')!,
+        };
+      },
+    },
+    { haspopup: 'listbox' },
   );
 
   describe('touched contract', () => {
@@ -2745,6 +2757,22 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
 
   afterEachOverlayCleanup();
 
+  assertOverlayTriggerAriaContract(
+    {
+      mount: async () => {
+        const r = renderHost(PickerHost);
+        await flush(r.fixture);
+        return {
+          trigger: getTrigger(),
+          flush: () => flush(r.fixture),
+          open: () => r.instance.open.set(true),
+          surface: () => getContent(),
+        };
+      },
+    },
+    { haspopup: 'listbox' },
+  );
+
   describe('role split', () => {
     it('the list carries role=listbox; content becomes a neutral popup surface', async () => {
       const r = renderHost(PickerHost);
@@ -2910,20 +2938,15 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(message).toMatch(/#root="forCombobox"/);
     });
 
-    it('wires aria-haspopup + aria-expanded + aria-controls + data-state', async () => {
+    it('forces type=button and reflects data-state across the open transition', async () => {
       const r = renderHost(PickerHost);
       const trigger = getTrigger();
       expect(trigger.getAttribute('type')).toBe('button');
-      expect(trigger.getAttribute('aria-haspopup')).toBe('listbox');
-      expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(trigger.hasAttribute('aria-controls')).toBe(false);
       expect(trigger.getAttribute('data-state')).toBe('closed');
 
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(trigger.getAttribute('aria-controls')).toBe(getContent().id);
       expect(trigger.getAttribute('data-state')).toBe('open');
     });
 
