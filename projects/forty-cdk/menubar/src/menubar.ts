@@ -248,6 +248,13 @@ export class ForMenubar implements ForMenubarContext {
    */
   readonly menuCtx: MenubarMenuContext = new MenubarMenuContext(this, this.#defaults);
 
+  /**
+   * Consumer-set static `id` of an unconditionally mounted `[forMenuContent]`,
+   * surfaced from {@link MenubarMenuContext.sharedContentId} so each trigger's
+   * `contentId` can prefer it over its own generated seed.
+   */
+  readonly sharedContentId = this.menuCtx.sharedContentId;
+
   // -- ForMenubarContext ----------------------------------------------------
 
   registerTrigger(handle: ForMenubarTriggerHandle): void {
