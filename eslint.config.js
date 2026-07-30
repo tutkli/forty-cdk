@@ -23,6 +23,193 @@ const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
 /**
+ * ARIA 1.2 global states and properties — supported by every role, so they
+ * never need a per-role table entry.
+ *
+ * https://www.w3.org/TR/wai-aria-1.2/#global_states
+ */
+const GLOBAL_ARIA_PROPERTIES = new Set([
+  'aria-atomic',
+  'aria-busy',
+  'aria-controls',
+  'aria-current',
+  'aria-describedby',
+  'aria-details',
+  'aria-disabled',
+  'aria-dropeffect',
+  'aria-errormessage',
+  'aria-flowto',
+  'aria-grabbed',
+  'aria-haspopup',
+  'aria-hidden',
+  'aria-invalid',
+  'aria-keyshortcuts',
+  'aria-label',
+  'aria-labelledby',
+  'aria-live',
+  'aria-owns',
+  'aria-relevant',
+  'aria-roledescription',
+]);
+
+/**
+ * Role → non-global states and properties the role supports, including the
+ * ones it inherits from its superclass roles, transcribed from
+ * https://www.w3.org/TR/wai-aria-1.2/#role_definitions.
+ *
+ * Only the roles the library actually emits are listed. A role missing from
+ * this table is skipped by `aria-attr-allowed-on-role` rather than reported,
+ * so a primitive reaching for a new role can never fail the build before its
+ * row is transcribed.
+ */
+const ROLE_SUPPORTED_ARIA_PROPERTIES = {
+  alert: [],
+  button: ['aria-expanded', 'aria-pressed'],
+  checkbox: ['aria-checked', 'aria-expanded', 'aria-readonly', 'aria-required'],
+  columnheader: [
+    'aria-colindex',
+    'aria-colspan',
+    'aria-expanded',
+    'aria-level',
+    'aria-posinset',
+    'aria-readonly',
+    'aria-required',
+    'aria-rowindex',
+    'aria-rowspan',
+    'aria-selected',
+    'aria-setsize',
+    'aria-sort',
+  ],
+  combobox: [
+    'aria-activedescendant',
+    'aria-autocomplete',
+    'aria-expanded',
+    'aria-readonly',
+    'aria-required',
+  ],
+  dialog: ['aria-modal'],
+  grid: [
+    'aria-activedescendant',
+    'aria-colcount',
+    'aria-multiselectable',
+    'aria-readonly',
+    'aria-rowcount',
+  ],
+  gridcell: [
+    'aria-colindex',
+    'aria-colspan',
+    'aria-expanded',
+    'aria-readonly',
+    'aria-required',
+    'aria-rowindex',
+    'aria-rowspan',
+    'aria-selected',
+  ],
+  group: ['aria-activedescendant'],
+  listbox: [
+    'aria-activedescendant',
+    'aria-expanded',
+    'aria-multiselectable',
+    'aria-orientation',
+    'aria-readonly',
+    'aria-required',
+  ],
+  menu: ['aria-activedescendant', 'aria-orientation'],
+  menubar: ['aria-activedescendant', 'aria-orientation'],
+  menuitem: ['aria-expanded', 'aria-posinset', 'aria-setsize'],
+  menuitemcheckbox: [
+    'aria-checked',
+    'aria-expanded',
+    'aria-posinset',
+    'aria-readonly',
+    'aria-required',
+    'aria-setsize',
+  ],
+  menuitemradio: [
+    'aria-checked',
+    'aria-expanded',
+    'aria-posinset',
+    'aria-readonly',
+    'aria-required',
+    'aria-setsize',
+  ],
+  meter: ['aria-valuemax', 'aria-valuemin', 'aria-valuenow', 'aria-valuetext'],
+  navigation: [],
+  option: ['aria-checked', 'aria-posinset', 'aria-selected', 'aria-setsize'],
+  progressbar: ['aria-valuemax', 'aria-valuemin', 'aria-valuenow', 'aria-valuetext'],
+  radio: ['aria-checked', 'aria-posinset', 'aria-setsize'],
+  radiogroup: ['aria-activedescendant', 'aria-orientation', 'aria-readonly', 'aria-required'],
+  region: [],
+  row: [
+    'aria-activedescendant',
+    'aria-colindex',
+    'aria-expanded',
+    'aria-level',
+    'aria-posinset',
+    'aria-rowindex',
+    'aria-selected',
+    'aria-setsize',
+  ],
+  rowgroup: [],
+  searchbox: [
+    'aria-activedescendant',
+    'aria-autocomplete',
+    'aria-multiline',
+    'aria-placeholder',
+    'aria-readonly',
+    'aria-required',
+  ],
+  separator: [
+    'aria-orientation',
+    'aria-valuemax',
+    'aria-valuemin',
+    'aria-valuenow',
+    'aria-valuetext',
+  ],
+  slider: [
+    'aria-orientation',
+    'aria-readonly',
+    'aria-valuemax',
+    'aria-valuemin',
+    'aria-valuenow',
+    'aria-valuetext',
+  ],
+  spinbutton: [
+    'aria-activedescendant',
+    'aria-readonly',
+    'aria-required',
+    'aria-valuemax',
+    'aria-valuemin',
+    'aria-valuenow',
+    'aria-valuetext',
+  ],
+  status: [],
+  switch: ['aria-checked', 'aria-expanded', 'aria-readonly', 'aria-required'],
+  tab: ['aria-expanded', 'aria-posinset', 'aria-selected', 'aria-setsize'],
+  tablist: ['aria-activedescendant', 'aria-multiselectable', 'aria-orientation'],
+  tabpanel: [],
+  textbox: [
+    'aria-activedescendant',
+    'aria-autocomplete',
+    'aria-multiline',
+    'aria-placeholder',
+    'aria-readonly',
+    'aria-required',
+  ],
+  toolbar: ['aria-activedescendant', 'aria-orientation'],
+  tooltip: [],
+  tree: ['aria-activedescendant', 'aria-multiselectable', 'aria-orientation', 'aria-required'],
+  treeitem: [
+    'aria-checked',
+    'aria-expanded',
+    'aria-level',
+    'aria-posinset',
+    'aria-selected',
+    'aria-setsize',
+  ],
+};
+
+/**
  * Tiny inline plugin holding rules that don't fit the off-the-shelf
  * AST-selector / no-restricted-imports machinery.
  *
@@ -1826,6 +2013,136 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    // Enforces CLAUDE.md § "ARIA emission" / `.claude/rules/conventions.md` §
+    // "the truthy-only rule governs the *value*, not the *applicability*":
+    // emitting an `aria-*` property on a role that does not support it is an
+    // `aria-allowed-attr` violation. The state is simply not conveyed — the
+    // attribute lands in the DOM, automated a11y tooling flags it, and the
+    // primitive silently has no ARIA channel for the state it thinks it
+    // announced. Both known instances (`aria-readonly` on nine hosts,
+    // tutkli/forty-cdk#1472; on `[forRadio]`, #1393 item 13) were found by
+    // hand, after passing tests had already pinned the invalid emission.
+    //
+    // The check is mechanical because the shape is uniform: a directive's
+    // `host` block carries the literal `role: '<name>'` and the
+    // `'[attr.aria-*]'` bindings in the same object literal, in the same file.
+    //
+    // Semantics:
+    //   - Only `@Component` / `@Directive` decorators with an inline `host`
+    //     object literal are considered.
+    //   - The role comes from a static `role: '<name>'` in that `host` block,
+    //     or — when there is none — from the element the selector pins, for
+    //     the two elements whose role is statically decidable regardless of
+    //     attributes: `<button>` (`button`) and `<textarea>` (`textbox`).
+    //     `input[…]` and `select[…]` are deliberately absent: their role
+    //     depends on `type` / `multiple` / `size`, which the selector does not
+    //     constrain.
+    //   - A `'[attr.role]'` binding anywhere in the block skips the host — a
+    //     dynamic role cannot be resolved statically.
+    //   - ARIA 1.2 global properties (`aria-label`, `aria-disabled`,
+    //     `aria-busy`, …) are supported on every role and are never reported.
+    //   - A role absent from `ROLE_SUPPORTED_ARIA_PROPERTIES` is skipped, so a
+    //     primitive reaching for a new role cannot fail the build before its
+    //     row is transcribed.
+    //
+    // The rule reports only: the correct resolution is a judgement call (drop
+    // the emission and keep the `data-*` hook, or move it to the piece whose
+    // role supports it), so there is no autofix.
+    //
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/aria-attr-allowed-on-role.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#1476, #1472, #1393
+    'aria-attr-allowed-on-role': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid aria-* host bindings on a role that does not support them (aria-allowed-attr).',
+        },
+        schema: [],
+        messages: {
+          unsupported:
+            '`{{attr}}` is not a supported property of `role="{{role}}"`. ' +
+            'Drop the emission (keep the `data-*` hook) or move it to the piece whose role supports it.',
+        },
+      },
+      create(context) {
+        const IMPLICIT_ROLE_BY_ELEMENT = { button: 'button', textarea: 'textbox' };
+
+        function staticString(node) {
+          return node && node.type === 'Literal' && typeof node.value === 'string'
+            ? node.value
+            : null;
+        }
+        function keyOf(property) {
+          if (property.type !== 'Property' || property.computed) return null;
+          if (property.key.type === 'Identifier') return property.key.name;
+          if (property.key.type === 'Literal' && typeof property.key.value === 'string') {
+            return property.key.value;
+          }
+          return null;
+        }
+        function findProperty(objectExpression, name) {
+          return objectExpression.properties.find((p) => keyOf(p) === name) ?? null;
+        }
+        // Resolves the implicit role only when every branch of a grouped
+        // selector pins the same statically-decidable element; anything else
+        // (a bare attribute selector, a custom element, a mixed group) leaves
+        // the role unknown.
+        function implicitRoleFromSelector(selector) {
+          const branches = selector
+            .split(',')
+            .map((branch) => branch.trim())
+            .filter(Boolean);
+          if (!branches.length) return null;
+          let resolved = null;
+          for (const branch of branches) {
+            const element = /^([a-z][a-z0-9-]*)/.exec(branch);
+            const role = element ? IMPLICIT_ROLE_BY_ELEMENT[element[1]] : undefined;
+            if (!role || (resolved !== null && resolved !== role)) return null;
+            resolved = role;
+          }
+          return resolved;
+        }
+        return {
+          Decorator(node) {
+            const call = node.expression;
+            if (call.type !== 'CallExpression' || call.callee.type !== 'Identifier') return;
+            if (call.callee.name !== 'Component' && call.callee.name !== 'Directive') return;
+            const metadata = call.arguments[0];
+            if (!metadata || metadata.type !== 'ObjectExpression') return;
+            const hostProperty = findProperty(metadata, 'host');
+            if (!hostProperty || hostProperty.value.type !== 'ObjectExpression') return;
+            const host = hostProperty.value;
+            if (findProperty(host, '[attr.role]')) return;
+
+            const roleProperty = findProperty(host, 'role');
+            let role = roleProperty ? staticString(roleProperty.value) : null;
+            if (roleProperty && role === null) return;
+            if (role === null) {
+              const selectorProperty = findProperty(metadata, 'selector');
+              const selector = selectorProperty ? staticString(selectorProperty.value) : null;
+              role = selector === null ? null : implicitRoleFromSelector(selector);
+            }
+            if (role === null) return;
+            role = role.trim();
+            if (!Object.prototype.hasOwnProperty.call(ROLE_SUPPORTED_ARIA_PROPERTIES, role)) return;
+            const supported = new Set(ROLE_SUPPORTED_ARIA_PROPERTIES[role]);
+
+            for (const property of host.properties) {
+              const key = keyOf(property);
+              if (key === null) continue;
+              const bound = /^\[attr\.(aria-[a-z-]+)\]$/.exec(key);
+              const attr = bound ? bound[1] : /^aria-[a-z-]+$/.test(key) ? key : null;
+              if (attr === null) continue;
+              if (GLOBAL_ARIA_PROPERTIES.has(attr) || supported.has(attr)) continue;
+              context.report({ node: property, messageId: 'unsupported', data: { attr, role } });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -2012,6 +2329,10 @@ module.exports = tseslint.config(
       // `disabled`, when the control folds in fieldset-disabled
       // (tutkli/forty-cdk#695, #728, #741). ----
       'forty-cdk/hidden-input-effective-disabled': 'error',
+
+      // ---- `aria-*` host bindings must be supported by the host's role
+      // (`aria-allowed-attr`; tutkli/forty-cdk#1476, #1472, #1393 item 13). ----
+      'forty-cdk/aria-attr-allowed-on-role': 'error',
 
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----
