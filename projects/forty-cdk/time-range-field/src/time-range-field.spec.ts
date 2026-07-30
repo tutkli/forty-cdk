@@ -201,6 +201,7 @@ describe('ForTimeRangeField', () => {
     {
       flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'],
       roleSupportsAriaReadonly: false,
+      roleSupportsAriaRequired: false,
     },
   );
 
@@ -740,10 +741,12 @@ describe('ForTimeRangeField', () => {
       await flush(r.fixture);
     };
 
-    it('flows schema-driven required into aria-required', async () => {
+    it('flows schema-driven required into data-required (role="group" has no aria-required)', async () => {
       const r = renderHost(FormHost);
       await flush(r.fixture);
-      expect(r.query('[forTimeRangeField]')!.getAttribute('aria-required')).toBe('true');
+      const field = r.query('[forTimeRangeField]')!;
+      expect(field.getAttribute('data-required')).toBe('');
+      expect(field.hasAttribute('aria-required')).toBe(false);
     });
 
     it('two-way binds the composed range with the field', async () => {

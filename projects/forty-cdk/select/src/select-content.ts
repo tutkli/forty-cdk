@@ -43,10 +43,11 @@ import { type ForSelectContext, injectSelectContext } from './select-context';
  *   trigger-anchored). The batteries-included touch presentation. Same Escape /
  *   outside-pointer dismiss, `dismissible` / `returnFocus` / `ariaLabel`, and
  *   `autoFocusOnOpen` / `autoFocusOnClose` veto hooks; every anchored-
- *   positioning input is a no-op. `aria-modal="true"` is reflected as a hint —
- *   the real modality comes from the `inert` siblings the shell applies (the
- *   surface keeps `role="listbox"`, for which several screen readers ignore
- *   `aria-modal`).
+ *   positioning input is a no-op. Modality is conveyed behaviorally, by the
+ *   `inert` siblings the shell applies, and reflected as `data-modal` for
+ *   styling: the surface keeps `role="listbox"`, which does not support
+ *   `aria-modal`, so emitting it would be an `aria-allowed-attr` violation
+ *   that announces nothing.
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
@@ -62,10 +63,10 @@ import { type ForSelectContext, injectSelectContext } from './select-context';
     '[id]': 'ctx.overlay.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-multiselectable]': 'ctx.multiple() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
+    '[attr.data-modal]': 'ctx.modal() ? "" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
     '(keydown)': 'onKeyDown($event)',
   },

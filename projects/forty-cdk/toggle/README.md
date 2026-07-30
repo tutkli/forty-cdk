@@ -126,7 +126,7 @@ export class DemoFormats {
 
 > **Requiring a non-empty selection.** `ForToggleGroup`'s value is a `readonly string[]`, and Angular's
 > `required()` treats only `''`, `false`, `null`, and `NaN` as empty — an empty array `[]` counts as
-> _present_, so `required(s.formats)` reflects `aria-required="true"` but never makes the form invalid
+> _present_, so `required(s.formats)` reflects `data-required` but never makes the form invalid
 > on its own. Enforce "at least one" with the explicit `validate(...)` length rule above, or with
 > Angular's `minLength(s.formats, 1)` (which emits a `minLengthError` instead of a `requiredError`).
 > The single-`boolean` `ForToggle` above is unaffected: `required(s.bold)` works because `false` is
@@ -145,7 +145,7 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `checked`  | `model<boolean>`                                          | Two-way bindable on/off state. Required by `FormCheckboxControl`; what `[formField]` binds. The host reflects it via `aria-pressed` and `data-state`.<br>**Default:** `false` |
 | `disabled` | `input<boolean>`                                          | When `true`, click is ignored; reflects `aria-disabled="true"` + `data-disabled`. Stays focusable (per APG) — no native `disabled`.<br>**Default:** `false`                   |
 | `readonly` | `input<boolean>`                                          | When `true`, click is ignored but the host stays focusable. Reflected as `data-readonly` only — `aria-readonly` is not supported on `role="button"`.<br>**Default:** `false`  |
-| `required` | `input<boolean>`                                          | Reflected as `aria-required`.<br>**Default:** `false`                                                                                                                         |
+| `required` | `input<boolean>`                                          | Reflected as `data-required` only — `aria-required` is not supported on `role="button"`.<br>**Default:** `false`                                                              |
 | `invalid`  | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                                                                       |
 | `pending`  | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                                                                          |
 | `dirty`    | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                                                                            |
@@ -158,6 +158,7 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `data-state`    | `checked` \| `unchecked` |
 | `data-disabled` | present \| absent        |
 | `data-readonly` | present \| absent        |
+| `data-required` | present \| absent        |
 
 ### `ForToggleGroup`
 
@@ -167,7 +168,7 @@ Choose between the two form-control shapes by the value you need: `ForToggle` (`
 | `multiple`    | `input<boolean>`                                          | When `true`, items toggle independently. When `false`, single mode (clicking the pressed item clears).<br>**Default:** `false`                                                                           |
 | `disabled`    | `input<boolean>`                                          | Disables every item regardless of per-item state.<br>**Default:** `false`                                                                                                                                |
 | `readonly`    | `input<boolean>`                                          | Click is ignored, items remain focusable. Reflected as `data-readonly` on the root only — `aria-readonly` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false` |
-| `required`    | `input<boolean>`                                          | Reflected as `aria-required`.<br>**Default:** `false`                                                                                                                                                    |
+| `required`    | `input<boolean>`                                          | Reflected as `data-required` on the root only — `aria-required` is supported on neither `role="group"` nor the items' `role="button"`.<br>**Default:** `false`                                           |
 | `invalid`     | `input<boolean>`                                          | Reflected as `aria-invalid` and `data-invalid`.<br>**Default:** `false`                                                                                                                                  |
 | `pending`     | `input<boolean>`                                          | Reflected as `aria-busy` and `data-pending`.<br>**Default:** `false`                                                                                                                                     |
 | `dirty`       | `input<boolean>`                                          | Reflected as `data-dirty`.<br>**Default:** `false`                                                                                                                                                       |

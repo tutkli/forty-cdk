@@ -151,6 +151,7 @@ describe('ForTimeField', () => {
     {
       flags: ['readonly', 'required', 'invalid', 'touched', 'dirty'],
       roleSupportsAriaReadonly: false,
+      roleSupportsAriaRequired: false,
     },
   );
 
@@ -739,10 +740,12 @@ describe('ForTimeField', () => {
       expect(adapter.getMinutes(value)).toBe(45);
     });
 
-    it('flows schema-driven required into aria-required', async () => {
+    it('flows schema-driven required into data-required (role="group" has no aria-required)', async () => {
       const r = renderHost(FormHost);
       await flush(r.fixture);
-      expect(r.query('[forTimeField]')!.getAttribute('aria-required')).toBe('true');
+      const field = r.query('[forTimeField]')!;
+      expect(field.getAttribute('data-required')).toBe('');
+      expect(field.hasAttribute('aria-required')).toBe(false);
     });
   });
 

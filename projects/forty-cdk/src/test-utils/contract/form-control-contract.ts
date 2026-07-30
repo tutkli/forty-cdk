@@ -33,7 +33,9 @@
  *     `Toggle`) pass `roleSupportsAriaReadonly: false`: they reflect
  *     `data-readonly` only, and the ARIA announcement — where the state has a
  *     supporting role at all — lives on a child (the slider thumb, each
- *     spinbutton segment).
+ *     spinbutton segment). The same hosts pass `roleSupportsAriaRequired:
+ *     false` for the identical reason: neither `group` nor `button` supports
+ *     `aria-required` either, so they reflect `data-required` only.
  *
  * The contract owns every assertion that is identical across the adopters:
  *
@@ -51,7 +53,9 @@
  *       - `readonly`  → `aria-readonly="true"` + `data-readonly=""` (no native
  *         disabled); `data-readonly=""` alone when the control's role does not
  *         support `aria-readonly` (`roleSupportsAriaReadonly: false`)
- *       - `required`  → `aria-required="true"`
+ *       - `required`  → `aria-required="true"`; `data-required=""` alone when
+ *         the control's role does not support `aria-required`
+ *         (`roleSupportsAriaRequired: false`)
  *       - `invalid`   → `aria-invalid="true"` + `data-invalid=""`
  *       - `pending`   → `aria-busy="true"` + `data-pending=""`
  *       - `touched`   → `data-touched=""` (no ARIA mirror)
@@ -116,6 +120,17 @@ export interface FormControlContractOptions {
    * `data-readonly=""` and the *absence* of `aria-readonly`. Defaults to `true`.
    */
   roleSupportsAriaReadonly?: boolean;
+  /**
+   * Whether the control's role supports the `aria-required` property. WAI-ARIA
+   * gates it to `checkbox`, `combobox`, `gridcell`, `listbox`, `radiogroup`,
+   * `spinbutton`, `textbox`, `tree` (inherited into `columnheader`,
+   * `rowheader`, `searchbox`, `switch`, the `menuitem*` pair); neither
+   * `role="group"` nor `role="button"` is in that set, so emitting it there is
+   * an `aria-allowed-attr` violation. Set to `false` for a control whose host
+   * carries an unsupporting role — the `required` assertion then demands
+   * `data-required=""` and the *absence* of `aria-required`. Defaults to `true`.
+   */
+  roleSupportsAriaRequired?: boolean;
 }
 
 const ALL_FLAGS: ReadonlyArray<FormControlFlag | 'name'> = [
@@ -147,6 +162,7 @@ export function assertFormControlContract(
   const has = (f: FormControlFlag | 'name'): boolean => flags.has(f);
   const customRoleStaysFocusable = options.customRoleStaysFocusable ?? false;
   const roleSupportsAriaReadonly = options.roleSupportsAriaReadonly ?? true;
+  const roleSupportsAriaRequired = options.roleSupportsAriaRequired ?? true;
 
   describe('form-control contract', () => {
     it('omits truthy-only ARIA flags when the underlying signal is false', async () => {
@@ -232,15 +248,26 @@ export function assertFormControlContract(
     }
 
     if (has('required')) {
-      it('reflects required → aria-required', async () => {
+      const requiredTitle = roleSupportsAriaRequired
+        ? 'reflects required → aria-required'
+        : 'reflects required → data-required only, never aria-required on an unsupporting role';
+      it(requiredTitle, async () => {
         const ctx = await mount();
         ctx.setFlag('required', true);
         await ctx.flush();
-        expect(ctx.control.getAttribute('aria-required')).toBe('true');
+        if (roleSupportsAriaRequired) {
+          expect(ctx.control.getAttribute('aria-required')).toBe('true');
+        } else {
+          expect(ctx.control.hasAttribute('aria-required')).toBe(false);
+          expect(ctx.control.getAttribute('data-required')).toBe('');
+        }
 
         ctx.setFlag('required', false);
         await ctx.flush();
         expect(ctx.control.hasAttribute('aria-required')).toBe(false);
+        if (!roleSupportsAriaRequired) {
+          expect(ctx.control.hasAttribute('data-required')).toBe(false);
+        }
       });
     }
 
