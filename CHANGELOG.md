@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-07-30
+
+A coherence release: every breaking change here removes a _second_ way of saying something the library
+already said once, and none of them changes behaviour. The disabled state now travels on a single channel
+across thirteen hosts, nine hosts stop emitting an `aria-*` property their role does not support, and the
+registration-context split reaches six more roots — retiring their `register*` protocols and twelve handle
+types from the public surface. Each migration is a selector swap or a provider swap, both mechanical.
+Alongside them, the navigation-menu focus-leave family is resolved end to end: three stacked fixes that
+together make dismissal one containment rule in both viewport placements. The rest is keyboard and
+server-rendering repair — menubar, toolbar and menu chains, a virtualized grid's header, and the tabs ARIA
+pairing that a real server render never emitted.
+
+### Changed
+
+- **Overlay triggers / form controls — BREAKING.** Thirteen hosts stop emitting `aria-disabled="true"` when
+  disabled, leaving the native `disabled` attribute as the single channel: the seven `<button>` triggers
+  `[forSelectTrigger]`, `[forPopoverTrigger]`, `[forDialogTrigger]`, `[forDrawerTrigger]`,
+  `[forDisclosureTrigger]`, `[forDatePickerTrigger]` and `[forTimePickerTrigger]`
+  ([#1455](https://github.com/tutkli/forty-cdk/issues/1455)), plus the six native form-element hosts
+  `[forInput]`, `[forTextarea]`, `[forSearch]`, `[forComboboxInput]`, `[forNumberInput]` and `[forOtpInput]`
+  ([#1550](https://github.com/tutkli/forty-cdk/issues/1550)). The HTML content attribute already maps to the
+  unavailable state through HTML-AAM, so the ARIA copy was read by nothing while giving consumers two
+  selectors for one condition. Consumer CSS or test selectors keyed on `[aria-disabled]`,
+  `[aria-disabled="true"]` or `:not([aria-disabled])` for these thirteen must move to `:disabled` or
+  `[data-disabled]`, both emitted today and unchanged. Nothing else moves: focusability, tab order, click
+  suppression, `data-disabled=""` and the rest of the form ARIA (`aria-readonly` / `aria-required` /
+  `aria-invalid` / `aria-busy`) are untouched. `role="combobox"` triggers resolve to the native channel like
+  the others — the native attribute is their activation guard, so dropping it would let a disabled trigger
+  open. `[forAccordionTrigger]` and `[forFieldset]` keep both attributes on purpose: each reads a
+  _different_ signal on each channel, so the two can never describe the same state.
+- **Accordion / Carousel / RadioGroup / Tabs / Toast / NavigationMenu — BREAKING.** Six more roots split
+  their registration protocol out of the public context
+  ([#1524](https://github.com/tutkli/forty-cdk/issues/1524),
+  [#1530](https://github.com/tutkli/forty-cdk/issues/1530)). Their `register*` / `unregister*` members leave
+  `For<Primitive>Context`, and twelve handle types — the nine on those five primitives plus
+  `ForNavigationMenuTriggerHandle` / `ForNavigationMenuContentHandle` / `ForNavigationMenuViewportHandle` —
+  are no longer exported. `FOR_<PRIMITIVE>_CONTEXT` and `For<Primitive>Context` keep their exports and their
+  read surface, so a consumer only injecting one is unaffected. **A wrapper that subclasses one of these
+  roots must now spread the new `provideForAccordion(MyRoot)` / `provideForCarousel` /
+  `provideForRadioGroup` / `provideForTabs` / `provideForToast` / `provideForNavigationMenu` helper**: a
+  hand-written re-provide of the public token alone leaves the internal token absent, and every child piece
+  orphans with the same "must be used inside" error a consumer would hit. `ForRadioGroupContext` /
+  `ForTabsContext` keep `hasSelected*` / `isFirstEnabled*` — a hand-written item piece needs them to answer
+  "do I own the group's tab stop?" — and `ForAccordionItemContext.adopt*Id` stays, being the library-wide
+  static-id adoption seam rather than registry membership.
+- **Date field / Date range field / Time field / Time range field / Slider / Toggle group / Toggle —
+  BREAKING.** Seven hosts stop emitting `aria-required` and reflect `data-required=""` instead
+  ([#1539](https://github.com/tutkli/forty-cdk/issues/1539)). `role="group"` supports only
+  `aria-activedescendant` beyond the globals, and `role="button"` only `aria-expanded` / `aria-pressed`, so
+  the property announced nothing. Unlike read-only, the requirement is deliberately **not** re-announced
+  from a child: `role="slider"` does not support it either, and re-emitting it per `role="spinbutton"`
+  segment would say "required" once per part of a composite field. `data-required` plus the consumer's own
+  label / description wiring is the field-level channel. Select on `[data-required]` in place of
+  `[aria-required]`.
+- **Select / Time picker — BREAKING.** `[forSelectContent]` and `[forTimePickerContent]` stop emitting
+  `aria-modal` and reflect `data-modal` instead ([#1539](https://github.com/tutkli/forty-cdk/issues/1539)).
+  The property is gated to `role="dialog"` / `alertdialog` and these surfaces are `role="listbox"`;
+  modality has always come from the modal shell's `inert` siblings and focus trap, which are unchanged, so
+  the attribute announced nothing. Select on `[data-modal]` in CSS.
+
+### Fixed
+
+- **Navigation menu** — the APG close-on-leave rule now works from anywhere in the widget, in both viewport
+  placements ([#1453](https://github.com/tutkli/forty-cdk/issues/1453),
+  [#1530](https://github.com/tutkli/forty-cdk/issues/1530)). `[forNavigationMenu]` declares the `'focus'`
+  channel on its dismissible layer, so a panel that a `[forNavigationMenuViewport]` re-parented outside the
+  `<nav>` — whose `focusout` never bubbled to the nav host — is dismissed like an internally placed one, and
+  tabbing out of the document from that external panel closes it. Focus moving between the trigger row, the
+  viewport and the panel still never dismisses. The dismiss widening is deliberate and library-wide for the
+  primitive: a focus move landing outside the widget now closes an open panel even when the host-bubbled
+  handler never saw it.
+- **Navigation menu** — staying _inside_ the widget no longer dismisses it
+  ([#1530](https://github.com/tutkli/forty-cdk/issues/1530),
+  [#1535](https://github.com/tutkli/forty-cdk/issues/1535)). Pressing a non-focusable region of an open
+  panel sent focus to `<body>`, which is indistinguishable from leaving the document, and closed the panel;
+  the layer now answers whether a press was its own, and a leave with no destination is read as
+  pointer-induced. Focus moving into an interactive surface stacked above the panel — a hover card anchored
+  inside a mega-menu — keeps it open too, since containment is resolved by the layer's stack-aware rule
+  instead of a host listener that bypassed it. When a real dismissible layer sits above an open navigation
+  menu (a dialog opened from a mega-menu link), the navigation now **stays open behind it**: per-channel
+  routing decides the owner, not whichever path fired first.
+- **Menubar / Toolbar / Navigation menu** — arrowing or typing along an overflowing bar now reveals the item
+  it focuses ([#1460](https://github.com/tutkli/forty-cdk/issues/1460)). All three in-flow roving
+  collections follow focus with `scrollIntoView({ block: 'nearest' })`, matching the Listbox / Select / Tree
+  idiom, so a roved item can no longer stay out of view.
+- **Menu** — `ArrowLeft` / `ArrowRight` on an open submenu chain no longer dismantles it when there is
+  nowhere to go ([#1460](https://github.com/tutkli/forty-cdk/issues/1460)). The horizontal-arrow handler
+  collapsed the whole chain and only then asked the bar to switch, so a bar with no available sibling
+  (disabled, no registered triggers, or on the last trigger with `loop` off) tore down the user's chain and
+  moved nowhere. It now switches first and collapses only once the bar confirms a real move; the happy path
+  performs the same work in the same tick.
+- **Tabs** — a server render now emits the trigger↔panel ARIA pairing
+  ([#1409](https://github.com/tutkli/forty-cdk/issues/1409)). `[forTabsTrigger]` and `[forTabsContent]`
+  registered through a render hook that never fires on the server, so the pre-hydration DOM shipped panels
+  with no `aria-labelledby` and the selected trigger with no `aria-controls`. Both now register
+  synchronously, with the root's lookups guarding against a not-yet-bound sibling instead of deferring.
+  Consumer-set static `id` adoption is unaffected — the pairing still points at the consumer's id on both
+  sides.
+- **Table** — in a virtualized grid whose header joins the roving grid, `ArrowUp` / `PageUp` from the top of
+  the data now crosses up into the header cell of the same column
+  ([#1427](https://github.com/tutkli/forty-cdk/issues/1427)), matching the non-virtualized policy that
+  `Ctrl+Home` already followed. The grid also scrolls to row 0 first, so it is never left focused on its
+  header while the window sits at the bottom of the dataset. `PageUp` deeper than one page and `ArrowUp`
+  from any later row still page by window.
+
 ## [0.16.0] - 2026-07-29
 
 Headlined by the pre-1.0 naming and API-alignment sweep
@@ -1166,6 +1271,7 @@ primitives.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
 [Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...HEAD
+[0.17.0]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/tutkli/forty-cdk/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/tutkli/forty-cdk/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/tutkli/forty-cdk/compare/v0.13.0...v0.14.0
