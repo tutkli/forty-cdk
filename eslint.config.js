@@ -2143,6 +2143,157 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    // Enforces `.claude/rules/conventions.md` § "the two channels are mutually
+    // exclusive": a host that reflects its disabled state through the native
+    // `disabled` attribute must not also emit `aria-disabled` for that same
+    // state. The HTML attribute already maps to the unavailable state through
+    // HTML-AAM, so the ARIA copy is read by nothing and leaves consumers two
+    // selectors for one condition (tutkli/forty-cdk#1455, #1550).
+    //
+    // The rule became mechanisable only once #1550 closed the six native
+    // form-element hosts: while they emitted both, no syntactic scan could
+    // tell them from a trigger without a hand-maintained allowlist. It now
+    // needs none, because the exemption is expressed as a condition:
+    //
+    //   - Only `@Component` / `@Directive` decorators with an inline `host`
+    //     object literal carrying an `'[attr.aria-disabled]'` binding are
+    //     considered.
+    //   - The native channel is a `reflectDisabled(<signal>)` call anywhere in
+    //     the decorated class body; the argument is normalized to its access
+    //     path (`this.ctx.effectiveDisabled` → `ctx.effectiveDisabled`).
+    //   - The binding is reported only when its expression references one of
+    //     those very paths — i.e. the ARIA attribute restates the signal the
+    //     native attribute already carries.
+    //
+    // That condition is what exempts the two legitimate doublers, by
+    // construction rather than by name: `[forAccordionTrigger]` reflects
+    // `item.disabled` natively while its `aria-disabled` reads `ariaDisabled()`
+    // (the APG "expanded panel that refuses to collapse" state), and
+    // `[forFieldset]` reflects `nativeDisabled` while its ARIA branch reads
+    // `!isNativeFieldset() && disabled()` — a host that by definition never
+    // takes the native attribute.
+    //
+    // Two shapes stay out of reach, both guarded instead by the `disabled`
+    // branch of `assertFormControlContract`: `[forOtpInput]` writes both
+    // channels imperatively (`toggleAttribute('disabled', …)` next to
+    // `setAttr(el, 'aria-disabled', …)`) onto an injected input, which no host
+    // block sees; and `[forInput]` / `[forTextarea]` / `[forSearch]` call
+    // `reflectDisabled` from `TextValueControlBase` rather than their own
+    // bodies, so a single-file scan cannot see their native channel. Catching
+    // the shape people actually write beats catching nothing.
+    //
+    // The rule reports only: dropping the emission vs. re-expressing the ARIA
+    // condition is a judgement call, so there is no autofix.
+    //
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/no-doubled-disabled-reflection.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#1550, #1455, #561
+    'no-doubled-disabled-reflection': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid an `aria-disabled` host binding that restates the signal the same class reflects through the native `disabled` attribute.',
+        },
+        schema: [],
+        messages: {
+          doubled:
+            '`aria-disabled` restates `{{signal}}`, which this class already reflects through the native `disabled` attribute. ' +
+            'Drop the binding — the native attribute exposes the state through HTML-AAM and `data-disabled=""` stays as the styling hook. (tutkli/forty-cdk#1550.)',
+        },
+      },
+      create(context) {
+        function keyOf(property) {
+          if (property.type !== 'Property' || property.computed) return null;
+          if (property.key.type === 'Identifier') return property.key.name;
+          if (property.key.type === 'Literal' && typeof property.key.value === 'string') {
+            return property.key.value;
+          }
+          return null;
+        }
+        function findProperty(objectExpression, name) {
+          return objectExpression.properties.find((p) => keyOf(p) === name) ?? null;
+        }
+        // Normalizes a signal reference to a dotted access path, dropping a
+        // leading `this` so it lines up with the template syntax used inside a
+        // host binding string: `this.ctx.effectiveDisabled` → `ctx.effectiveDisabled`.
+        function accessPath(node) {
+          const parts = [];
+          let current = node;
+          while (current && current.type === 'MemberExpression' && !current.computed) {
+            if (current.property.type !== 'Identifier') return null;
+            parts.unshift(current.property.name);
+            current = current.object;
+          }
+          if (!current) return null;
+          if (current.type === 'ThisExpression') return parts.length ? parts.join('.') : null;
+          if (current.type === 'Identifier') {
+            parts.unshift(current.name);
+            return parts.join('.');
+          }
+          return null;
+        }
+        function nativelyReflectedSignals(classNode) {
+          const paths = new Set();
+          const stack = [classNode.body];
+          while (stack.length) {
+            const current = stack.pop();
+            if (!current || typeof current !== 'object') continue;
+            if (Array.isArray(current)) {
+              for (const item of current) stack.push(item);
+              continue;
+            }
+            if (!current.type) continue;
+            if (
+              current.type === 'CallExpression' &&
+              current.callee.type === 'Identifier' &&
+              current.callee.name === 'reflectDisabled'
+            ) {
+              const path = accessPath(current.arguments[0]);
+              if (path !== null) paths.add(path);
+            }
+            for (const key in current) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(current[key]);
+            }
+          }
+          return paths;
+        }
+        // Access paths read by a host-binding expression, with string literals
+        // stripped first so a `"true"` value never reads as an identifier.
+        function referencedPaths(expression) {
+          const withoutLiterals = expression.replace(/'[^']*'|"[^"]*"/g, ' ');
+          return withoutLiterals.match(/[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*/g) ?? [];
+        }
+        return {
+          Decorator(node) {
+            const call = node.expression;
+            if (call.type !== 'CallExpression' || call.callee.type !== 'Identifier') return;
+            if (call.callee.name !== 'Component' && call.callee.name !== 'Directive') return;
+            const metadata = call.arguments[0];
+            if (!metadata || metadata.type !== 'ObjectExpression') return;
+            const hostProperty = findProperty(metadata, 'host');
+            if (!hostProperty || hostProperty.value.type !== 'ObjectExpression') return;
+            const binding = findProperty(hostProperty.value, '[attr.aria-disabled]');
+            if (!binding) return;
+            const expression =
+              binding.value.type === 'Literal' && typeof binding.value.value === 'string'
+                ? binding.value.value
+                : null;
+            if (expression === null) return;
+            const classNode = node.parent;
+            if (!classNode || !classNode.body) return;
+
+            const reflected = nativelyReflectedSignals(classNode);
+            if (!reflected.size) return;
+            const doubled = referencedPaths(expression).find((path) => reflected.has(path));
+            if (doubled === undefined) return;
+            context.report({ node: binding, messageId: 'doubled', data: { signal: doubled } });
+          },
+        };
+      },
+    },
   },
 };
 
@@ -2333,6 +2484,11 @@ module.exports = tseslint.config(
       // ---- `aria-*` host bindings must be supported by the host's role
       // (`aria-allowed-attr`; tutkli/forty-cdk#1476, #1472, #1393 item 13). ----
       'forty-cdk/aria-attr-allowed-on-role': 'error',
+
+      // ---- A host reflecting native `disabled` must not also emit
+      // `aria-disabled` for that same state (tutkli/forty-cdk#1550, #1455,
+      // #561 D2). ----
+      'forty-cdk/no-doubled-disabled-reflection': 'error',
 
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----

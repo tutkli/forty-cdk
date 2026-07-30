@@ -50,7 +50,6 @@ import { FOR_SEARCH_GROUP, type ForSearchContext } from './search-context';
   exportAs: 'forSearch',
   host: {
     role: 'searchbox',
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',

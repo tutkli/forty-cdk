@@ -127,8 +127,10 @@ the value is empty and refocuses the input on activation.
 ## Accessibility
 
 - The `role="searchbox"` attribute is set statically by the directive.
-- Validation state (`aria-required`, `aria-invalid`, `aria-readonly`,
-  `aria-disabled`) is reflected as truthy-only attributes (absent when `false`).
+- Validation state (`aria-required`, `aria-invalid`, `aria-readonly`) is
+  reflected as truthy-only attributes (absent when `false`). The disabled state
+  reflects through the native `disabled` attribute alone — no `aria-disabled` —
+  so style it with `:disabled` or `[data-disabled]`.
 - `[forSearchClear]` carries `aria-label="Clear"` by default so the icon-only
   button has an accessible name. Override it per-instance with `[ariaLabel]`, or
   centrally (and for localization) with `provideForSearchDefaults`:

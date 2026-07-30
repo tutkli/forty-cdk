@@ -115,7 +115,7 @@ export class DemoSignup {
 | Property   | Type                                                      | Description                                                                                                                |
 | ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                    |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.<br>**Default:** —                                   |
+| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                       |
 | `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                   |
 | `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                         |
 | `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                         |
@@ -140,7 +140,7 @@ export class DemoSignup {
 | Property   | Type                                                      | Description                                                                                                                |
 | ---------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `value`    | `model<string>`                                           | Two-way bindable text value. Defaults to `''`; reflected as `data-empty` while empty.<br>**Default:** —                    |
-| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `aria-disabled="true"` + `data-disabled`.<br>**Default:** —                                   |
+| `disabled` | `input<boolean>`                                          | Reflects native `disabled` + `data-disabled` (no `aria-disabled`).<br>**Default:** —                                       |
 | `readonly` | `input<boolean>`                                          | Reflects native `readonly` + `aria-readonly="true"` + `data-readonly`.<br>**Default:** —                                   |
 | `required` | `input<boolean>`                                          | Reflects `aria-required="true"`.<br>**Default:** —                                                                         |
 | `invalid`  | `input<boolean>`                                          | Reflects `aria-invalid="true"` + `data-invalid`.<br>**Default:** —                                                         |
@@ -166,7 +166,8 @@ export class DemoSignup {
 
 - **The native element is the control.** It stays the focusable, submittable form field, so screen readers, mobile keyboards (`type`, `inputmode`), autofill, and native validation all behave exactly as they would on a bare `<input>` / `<textarea>`.
 - **No hidden input.** Because the visible element carries `name` and its `.value` _is_ the form value, the browser serializes it natively — unlike `ForSwitch` (a `<button>`) or `ForNumberInput` (formatted display), which mount a hidden input. A disabled control is skipped by native serialization automatically.
-- **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it — style the disabled state with `:disabled` or `[data-disabled]`.
+- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
 
 ## Styling

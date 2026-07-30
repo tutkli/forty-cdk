@@ -44,15 +44,15 @@
  *     corresponding flag is `false` — never `"false"`.
  *   - Each flag, when set to `true`, reflects on the control's host
  *     element with the canonical attribute set:
- *       - `disabled`  → `aria-disabled="true"` + `data-disabled=""`. Native
- *         form elements (`<input>`, `<textarea>`) also reflect the native
- *         `disabled` attribute; custom-role controls (`role="checkbox"`,
- *         `"switch"`, a toggle `<button>`, …) deliberately do NOT — they stay
- *         focusable so assistive tech can announce them, per the APG
- *         (`customRoleStaysFocusable`). Single-purpose `<button>` triggers
- *         (`[forSelectTrigger]`, `[forDatePickerTrigger]`,
- *         `[forTimePickerTrigger]`) reflect the native attribute *only* and
- *         emit no `aria-disabled` (`nativeDisabledOnly`).
+ *       - `disabled`  → native `disabled` + `data-disabled=""`, and the
+ *         *absence* of `aria-disabled`: the two channels are mutually
+ *         exclusive, because the HTML attribute already exposes the
+ *         unavailable state through HTML-AAM (#1455, #1550). Custom-role
+ *         controls (`role="checkbox"`, `"switch"`, a toggle `<button>`, …)
+ *         are the opposite carve-out — they emit `aria-disabled` +
+ *         `data-disabled` and never the native attribute, so they stay
+ *         focusable for assistive tech per the APG
+ *         (`customRoleStaysFocusable`).
  *       - `readonly`  → `aria-readonly="true"` + `data-readonly=""` (no native
  *         disabled); `data-readonly=""` alone when the control's role does not
  *         support `aria-readonly` (`roleSupportsAriaReadonly: false`)
@@ -113,19 +113,6 @@ export interface FormControlContractOptions {
    */
   customRoleStaysFocusable?: boolean;
   /**
-   * Whether the control's host is a single-purpose `<button>` trigger whose
-   * disabled state reflects through the native `disabled` attribute *only*.
-   * Per rule #561 D2 the two channels are mutually exclusive on such a
-   * trigger: the native attribute already conveys the state to assistive
-   * technology and is what suppresses activation, so a second
-   * `aria-disabled="true"` is redundant noise. The `disabled` assertion then
-   * demands the native attribute, `data-disabled=""`, and the *absence* of
-   * `aria-disabled`. Mutually exclusive with {@link customRoleStaysFocusable}
-   * (which is the opposite carve-out — aria only, never native). Defaults to
-   * `false`.
-   */
-  nativeDisabledOnly?: boolean;
-  /**
    * Whether the control's role supports the `aria-readonly` property. WAI-ARIA
    * gates it to `checkbox`, `combobox`, `grid`, `gridcell`, `listbox`,
    * `radiogroup`, `slider`, `spinbutton`, `textbox` (inherited into
@@ -177,7 +164,6 @@ export function assertFormControlContract(
   const flags = new Set(options.flags ?? ALL_FLAGS);
   const has = (f: FormControlFlag | 'name'): boolean => flags.has(f);
   const customRoleStaysFocusable = options.customRoleStaysFocusable ?? false;
-  const nativeDisabledOnly = options.nativeDisabledOnly ?? false;
   const roleSupportsAriaReadonly = options.roleSupportsAriaReadonly ?? true;
   const roleSupportsAriaRequired = options.roleSupportsAriaRequired ?? true;
 
@@ -223,28 +209,13 @@ export function assertFormControlContract(
           expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
           expect(ctx.control.hasAttribute('data-disabled')).toBe(false);
         });
-      } else if (nativeDisabledOnly) {
-        it('reflects disabled → native disabled + data-disabled, never aria-disabled on a single-purpose trigger', async () => {
-          const ctx = await mount();
-          ctx.setFlag('disabled', true);
-          await ctx.flush();
-          expect(ctx.control.hasAttribute('disabled')).toBe(true);
-          expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
-          expect(ctx.control.getAttribute('data-disabled')).toBe('');
-
-          ctx.setFlag('disabled', false);
-          await ctx.flush();
-          expect(ctx.control.hasAttribute('disabled')).toBe(false);
-          expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
-          expect(ctx.control.hasAttribute('data-disabled')).toBe(false);
-        });
       } else {
-        it('reflects disabled → native disabled + aria-disabled + data-disabled', async () => {
+        it('reflects disabled → native disabled + data-disabled, never aria-disabled', async () => {
           const ctx = await mount();
           ctx.setFlag('disabled', true);
           await ctx.flush();
           expect(ctx.control.hasAttribute('disabled')).toBe(true);
-          expect(ctx.control.getAttribute('aria-disabled')).toBe('true');
+          expect(ctx.control.hasAttribute('aria-disabled')).toBe(false);
           expect(ctx.control.getAttribute('data-disabled')).toBe('');
 
           ctx.setFlag('disabled', false);

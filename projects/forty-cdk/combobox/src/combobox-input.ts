@@ -51,7 +51,6 @@ import { injectComboboxContext } from './combobox-context';
     '[attr.aria-controls]': 'ctx.open() ? ctx.listboxId() : null',
     '[attr.aria-autocomplete]': 'ariaAutocomplete()',
     '[attr.aria-activedescendant]': 'ctx.open() ? (ctx.activeId() ?? null) : null',
-    '[attr.aria-disabled]': 'ctx.effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx.readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx.required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx.invalid() ? "true" : null',

@@ -5,7 +5,8 @@ Each `*.fixture.ts` file in this directory intentionally violates exactly one
 (the seven test-isolation rules in the `@forty-cdk-test-isolation-rules` block,
 plus `no-effect-state-propagation`, `require-defaults-sibling`,
 `no-unused-defaults-sibling`, `require-host-directive-sibling`,
-`hidden-input-effective-disabled`, `aria-attr-allowed-on-role`, and
+`hidden-input-effective-disabled`, `aria-attr-allowed-on-role`,
+`no-doubled-disabled-reflection`, and
 `require-sanctioned-effect-marker`). They
 are documentation-as-code: by linting them with the rule _enabled_ you can
 verify it fires.
@@ -42,6 +43,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `no-unused-defaults-sibling.fixture.ts` — 1 error (exports a defaults token no non-defaults, non-spec sibling injects; the reverse direction of `require-defaults-sibling`). A co-located support file [`public-api.ts`](public-api.ts) re-exports that token by name, modelling the entry barrel every real primitive has — the fixture must still fire despite it, proving the rule treats a barrel re-export as _not_ a consumer (re-exporting ≠ injecting).
 - `require-host-directive-sibling.fixture.ts` — 3 errors (direct `FormValueControl`, the `Omit<FormValueControl<…>, …>` slider shape, and `FormCheckboxControl`; the abstract base is allowed).
 - `aria-attr-allowed-on-role.fixture.ts` — 3 errors (`aria-readonly` on `role="group"`, `aria-checked` on an explicit `role="button"`, and `aria-checked` on the implicit `button[…]` role; the supported placements, the global properties, the unresolvable `input[…]` selector, a dynamic `'[attr.role]'`, and an untranscribed role are all allowed).
+- `no-doubled-disabled-reflection.fixture.ts` — 2 errors (an own-member `effectiveDisabled` and a context-read `ctx.effectiveDisabled`, each emitting `aria-disabled` for the very signal the class reflects natively; the `[forAccordionTrigger]` shape — a distinct `ariaDisabled` condition — the `[forFieldset]` shape — an ARIA branch gated on a non-native host — and the custom-role control with no `reflectDisabled` call at all are allowed).
 - `hidden-input-effective-disabled.fixture.ts` — 2 errors (an in-body `effectiveDisabled` control and a control inheriting it from `FormUiControlBase`, both passing the raw `disabled` to `injectHiddenInput`; the `this.effectiveDisabled` case and the wrapped `computed(() => this.effectiveDisabled() || …)` case are allowed).
 
 The default `pnpm lint` ignores this directory (configured at the top of

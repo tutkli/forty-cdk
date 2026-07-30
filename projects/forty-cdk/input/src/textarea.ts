@@ -50,7 +50,6 @@ import { injectElementSize, TextValueControlBase } from 'forty-cdk/core';
   selector: '[forTextarea]',
   exportAs: 'forTextarea',
   host: {
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',

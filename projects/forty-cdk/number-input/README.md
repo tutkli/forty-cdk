@@ -173,7 +173,8 @@ Implements the [WAI-ARIA Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/pat
 - **`role="spinbutton"` on a text input.** `aria-valuenow` / `aria-valuemin` / `aria-valuemax` reflect the value and bounds; `aria-valuetext` is emitted only when `formatOptions` is set (so the formatted text — "$1,234.50" — is announced instead of the bare number). `inputmode` is `numeric`, or `decimal` when fractional values are possible.
 - **Clamp on commit, validate on input.** Keystrokes update the parsed value live so you can type transient out-of-range text without fighting the caret; clamping to `[min, max]` happens on blur / Enter / step actions.
 - **Hidden input for submission.** Because the displayed text can be formatted, the visible input does **not** carry `name`; setting `name` mounts a hidden `<input>` with the raw number so native `<form>` serialization sees the value, not "$1,234.50". A disabled control is skipped automatically.
-- **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it — style the disabled state with `:disabled` or `[data-disabled]`.
+- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** If you're not using Signal Forms, don't install it — the directive runs fine on a plain `[(value)]` binding (the only `@angular/forms/signals` reference is a type import, erased at build).
 
 ## Styling
