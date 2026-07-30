@@ -174,7 +174,8 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
  * stays in the root and is threaded through {@link ListboxOverlayControllerDeps}
  * callbacks where it must run as a side effect of a shared transition.
  *
- * Internal — lives in `_internal/`, never re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  *
  * @typeParam H Primitive option-handle type.
  * @typeParam Focus Initial-focus union.
