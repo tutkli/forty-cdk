@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Ensure npm supports trusted publishing
+        run: |
+          npm install -g npm@11
+          npm --version
+
+      - name: Verify tag matches the library version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./projects/forty-cdk/package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match projects/forty-cdk/package.json version ${pkg}"
+            exit 1
+          fi
+          echo "Releasing forty-cdk ${pkg}"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Verify the built tarball version
+        run: |
+          built="$(node -p "require('./dist/forty-cdk/package.json').version")"
+          if [ "$built" != "${GITHUB_REF_NAME#v}" ]; then
+            echo "::error::dist version ${built} does not match tag ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+      - name: Publish to npm
+        run: npm publish ./dist/forty-cdk --provenance
