@@ -14,6 +14,7 @@ import {
   firstEnabledHost,
   type ListNavigationAction,
   rovingListTarget,
+  tryReadHandle,
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
@@ -137,7 +138,7 @@ export class ForTabs implements ForTabsContext {
 
   triggerIdFor(value: string): string | null {
     for (const t of this.#triggers.items()) {
-      if (t.value() === value) {
+      if (tryReadHandle(() => t.value()) === value) {
         return t.id();
       }
     }
@@ -146,7 +147,7 @@ export class ForTabs implements ForTabsContext {
 
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
-      if (c.value() === value) {
+      if (tryReadHandle(() => c.value()) === value) {
         return c.id();
       }
     }
@@ -162,7 +163,9 @@ export class ForTabs implements ForTabsContext {
     if (value === null) {
       return false;
     }
-    return this.#triggers.items().some((t) => !t.disabled() && t.value() === value);
+    return this.#triggers
+      .items()
+      .some((t) => !t.disabled() && tryReadHandle(() => t.value()) === value);
   }
 }
 
