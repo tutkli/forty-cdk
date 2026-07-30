@@ -4159,6 +4159,54 @@ describe('ForTable', () => {
         expect(document.activeElement).toBe(cell(el, 'cell-19-a'));
       });
 
+      it('ArrowUp from data row 0 in a header-less grid stops there instead of resolving a row above the dataset', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-0-a')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'ArrowUp');
+        await flush();
+
+        expect(document.activeElement).toBe(start);
+        expect(scrollToRow).not.toHaveBeenCalled();
+      });
+
+      it('PageUp from data row 0 in a header-less grid stops there', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-0-b')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'PageUp');
+        await flush();
+
+        expect(document.activeElement).toBe(start);
+        expect(scrollToRow).not.toHaveBeenCalled();
+      });
+
+      it('PageUp from within the first page of a header-less grid clamps to data row 0 rather than overshooting the dataset', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-1-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'PageUp');
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-0-b'));
+      });
+
       it('Ctrl+End reaches the last row of the dataset, outside the window', async () => {
         const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
         const { el, instance, flush } = renderHost(CrossWindowTableHost);
@@ -4239,6 +4287,78 @@ describe('ForTable', () => {
 
         expect(scrollToRow).toHaveBeenCalledWith(0);
         expect(document.activeElement).toBe(cell(el, 'h-a'));
+      });
+
+      it('ArrowUp from the first data row crosses into the header cell of the same column when the header participates (#1427)', async () => {
+        const { el, instance, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-0-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'ArrowUp');
+        await flush();
+
+        const headerB = cell(el, 'h-b')!;
+        expect(document.activeElement).toBe(headerB);
+        expect(headerB.getAttribute('data-highlighted')).toBe('');
+      });
+
+      it('PageUp from within the first page of data rows crosses into the header cell, matching the non-virtualized clamp (#1427)', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-1-a')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'PageUp');
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'h-a'));
+        expect(scrollToRow).toHaveBeenCalledWith(0);
+      });
+
+      it('PageUp beyond the first page still pages cross-window instead of crossing into the header', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        const start = cell(el, 'cell-24-a')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'PageUp');
+        await flush();
+        expect(scrollToRow).toHaveBeenCalledWith(19);
+        expect(document.activeElement).not.toBe(cell(el, 'h-a'));
+
+        instance.windowIndices.set([17, 18, 19, 20]);
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-19-a'));
+      });
+
+      it('ArrowUp from a data row other than the first still pages cross-window with a participating header', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(VirtualizedGridWithHeaderHost);
+        instance.windowIndices.set([1, 2, 3]);
+        await flush();
+        const start = cell(el, 'cell-1-b')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'ArrowUp');
+        await flush();
+        expect(scrollToRow).toHaveBeenCalledWith(0);
+
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-0-b'));
       });
 
       it('Ctrl+End does not scroll to the top when the header participates', async () => {

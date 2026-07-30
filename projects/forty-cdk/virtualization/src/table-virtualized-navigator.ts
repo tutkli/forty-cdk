@@ -123,8 +123,7 @@ export class TableVirtualizedNavigator {
 
   #resolve(row: number, col: number, direction: 1 | -1): boolean {
     const count = this.#deps.rowCount();
-    const loaded = this.#deps.loadedRowCount?.();
-    const bound = loaded !== undefined && loaded < count ? loaded : count;
+    const bound = Math.min(this.#deps.loadedRowCount?.() ?? count, count);
     let target = row;
     let dir = direction;
     if (bound > 0 && target >= bound) {
