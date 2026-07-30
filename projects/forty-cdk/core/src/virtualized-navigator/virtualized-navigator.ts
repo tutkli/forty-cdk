@@ -120,7 +120,8 @@ export interface VirtualizedNavigatorDeps<H> {
  *   adapter's bridge effect calls `tryResolvePending` once the freshly-mounted
  *   item carries that position.
  *
- * Internal — lives in `_internal/`, never re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  *
  * @typeParam H Primitive handle type (option / node).
  * @typeParam E Position-snapshot entry; widens {@link VirtualizedNavigatorEntry}.
