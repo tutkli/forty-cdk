@@ -203,7 +203,6 @@ export class ForOtpInput
       el.toggleAttribute('disabled', this.effectiveDisabled());
       el.toggleAttribute('readonly', this.readonly());
       setAttr(el, 'aria-label', this.#field?.labelledBy() ? null : this.ariaLabel() || null);
-      setAttr(el, 'aria-disabled', this.effectiveDisabled() ? 'true' : null);
       setAttr(el, 'aria-readonly', this.readonly() ? 'true' : null);
       setAttr(el, 'aria-required', this.required() ? 'true' : null);
       setAttr(el, 'aria-invalid', this.invalid() ? 'true' : null);

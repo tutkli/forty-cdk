@@ -47,17 +47,19 @@ import { effect, ElementRef, inject, type Signal } from '@angular/core';
  * `<button>` triggers whose disabled state the **consumer** drives through an
  * input. See the disabled-reflection rule in `.claude/rules/conventions.md`.
  *
- * On a `<button>` trigger the two channels are **mutually exclusive**: a host
- * calling this helper must not also host-bind `[attr.aria-disabled]` for the
- * same state (#1455). The native attribute already exposes the unavailable
- * state through HTML-AAM, so the ARIA copy is redundant noise that leaves
- * consumers two selectors for one condition. `data-disabled=""` stays as the
- * styling hook. The exclusion is per state, not per attribute — a trigger
- * whose `aria-disabled` encodes a *different* condition may keep it, provided
- * it can never be `"true"` while this helper owns the native attribute
- * (`[forAccordionTrigger]`, whose `aria-disabled` marks an expanded panel the
- * accordion refuses to collapse). The rule does not reach the native
- * `<input>` / `<textarea>` hosts, which still emit both — tracked by #1550.
+ * The two channels are **mutually exclusive**: a host calling this helper must
+ * not also host-bind `[attr.aria-disabled]` for the same state (#1455, #1550).
+ * The native attribute already exposes the unavailable state through HTML-AAM,
+ * so the ARIA copy is redundant noise that leaves consumers two selectors for
+ * one condition. `data-disabled=""` stays as the styling hook. The rule holds
+ * for every native-`disabled` host — the overlay triggers and the native
+ * `<input>` / `<textarea>` form elements alike. The exclusion is per state,
+ * not per attribute: a host whose `aria-disabled` encodes a *different*
+ * condition may keep it, provided it can never be `"true"` while this helper
+ * owns the native attribute (`[forAccordionTrigger]`, whose `aria-disabled`
+ * marks an expanded panel the accordion refuses to collapse; `[forFieldset]`,
+ * whose ARIA branch is gated on a non-native host). The declarative form is
+ * enforced by the `forty-cdk/no-doubled-disabled-reflection` ESLint rule.
  *
  * @param disabled Signal whose truthiness drives the native `disabled`
  *   attribute on the host element.

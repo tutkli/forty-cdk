@@ -32,7 +32,6 @@ import { TextValueControlBase } from 'forty-cdk/core';
   selector: '[forInput]',
   exportAs: 'forInput',
   host: {
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'readonly() ? "true" : null',
     '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',

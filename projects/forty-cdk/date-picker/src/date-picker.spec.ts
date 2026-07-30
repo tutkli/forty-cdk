@@ -284,7 +284,7 @@ describe('ForDatePicker', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'], nativeDisabledOnly: true },
+    { flags: ['disabled', 'required'] },
   );
 
   assertOverlayTriggerAriaContract(

@@ -190,7 +190,8 @@ The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additio
 - **Mobile autofill & keypad.** `autocomplete="one-time-code"` (toggle with `oneTimeCode`) drives SMS autofill; `inputmode` is `numeric` for `type="numeric"` (plus a legacy `pattern="[0-9]*"` for older iOS), `text` otherwise.
 - **Character filtering happens live.** Rejected characters (per `type` / `allowedPattern`) are dropped before they reach the value and fire `(reject)`. Paste runs through `pasteTransformer`, is filtered, and sliced to `length`. A rejected keystroke never moves the insertion point: the caret stays at the position it was being edited at, so typing a disallowed character mid-code leaves the next character landing in the slot the user was on. A paste replaces the whole code and leaves the caret at the end.
 - **Fake caret is yours to style.** The slot exposes `hasFakeCaret()`; render and animate the blink in CSS, gated on `prefers-reduced-motion`. There is no JS-driven blink.
-- **Falsy state styling selects on absence.** `aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
+- **Disabled reflects through one channel.** The native `disabled` attribute already exposes the unavailable state through HTML-AAM, so no `aria-disabled` is emitted alongside it — style the disabled state with `:disabled` or `[data-disabled]`.
+- **Falsy state styling selects on absence.** `aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy` are emitted only when truthy — style the off state with `:not([aria-invalid])`, never `[aria-invalid="false"]`.
 - **`@angular/forms` is an optional peer.** The directive runs fine on a plain `[(value)]` binding; the only `@angular/forms/signals` reference is a type import, erased at build.
 
 ## Styling
