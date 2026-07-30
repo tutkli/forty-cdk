@@ -11,8 +11,15 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
  * Wires APG Date Picker Dialog attributes: `aria-haspopup="dialog"`,
  * `aria-expanded` reflecting `open()`, and `aria-controls` pointing to the
  * content while open. It also reflects the root's form-control state
- * (`aria-disabled` / `aria-readonly` / `aria-required` / `aria-invalid` /
- * `aria-busy`) so the focusable element advertises validity to assistive tech.
+ * (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) so the
+ * focusable element advertises validity to assistive tech.
+ *
+ * Disabling: the native `disabled` attribute is the single reflection channel
+ * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
+ * trigger the native attribute already conveys the state to assistive
+ * technology, and it is what suppresses activation here (rule #561 D2). It is
+ * reflected non-destructively — the directive only removes the attribute when
+ * it set it itself — and `data-disabled=""` stays as the styling hook.
  *
  * The trigger is exempt from the surface's dismissible layer — its own click
  * toggles open/close, so an outside-pointer dismissal never races with it.
@@ -33,7 +40,6 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
-    '[attr.aria-disabled]': 'ctx().effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx().required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx().invalid() ? "true" : null',

@@ -14,7 +14,10 @@ import { injectDisclosureContext } from './disclosure-context';
  *
  * Disabling: the trigger merges its own `disabled` input OR the root's
  * `disabled` into `effectiveDisabled`, which drives the native `disabled`
- * attribute, `aria-disabled`, `data-disabled`, and the click guard.
+ * attribute, `data-disabled`, and the click guard. The native attribute is the
+ * single reflection channel — no `aria-disabled` is emitted, because on a real
+ * single-purpose `<button>` trigger the native attribute already conveys the
+ * state to assistive technology (rule #561 D2).
  */
 @Directive({
   selector: '[forDisclosureTrigger]',
@@ -24,7 +27,6 @@ import { injectDisclosureContext } from './disclosure-context';
     '[id]': 'ctx.triggerId()',
     '[attr.aria-expanded]': 'ctx.open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx.open() ? ctx.contentId() : null',
-    '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(click)': 'onClick()',

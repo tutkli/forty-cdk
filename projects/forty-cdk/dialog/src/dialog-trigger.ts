@@ -39,7 +39,6 @@ import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
     '[attr.aria-controls]': 'open() ? controls() : null',
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
-    '[attr.aria-disabled]': 'disabled() ? "true" : null',
     '(click)': 'onClick()',
   },
 })
@@ -65,10 +64,12 @@ export class ForDialogTrigger {
   readonly controls = input<string | null>(null);
 
   /**
-   * When true, click is ignored and the host reflects `data-disabled=""`,
-   * `aria-disabled="true"`, and the native `disabled` attribute so the
-   * trigger is announced as disabled by assistive tech and dropped from
-   * the tab order.
+   * When true, click is ignored and the host reflects `data-disabled=""` plus
+   * the native `disabled` attribute so the trigger is announced as disabled by
+   * assistive tech and dropped from the tab order. The native attribute is the
+   * single reflection channel — no `aria-disabled` is emitted, because on a
+   * real single-purpose `<button>` trigger it already conveys the state (rule
+   * #561 D2).
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 

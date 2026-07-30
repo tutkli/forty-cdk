@@ -13,6 +13,18 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
  * layer — clicks on it route through `(click)` instead of triggering an
  * outside-pointer dismissal race.
  *
+ * Disabling: the native `disabled` attribute is the single reflection channel
+ * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
+ * trigger the native attribute already conveys the state to assistive
+ * technology, and it is what suppresses activation here (rule #561 D2). The
+ * `role="combobox"` override does not change that: the HTML `disabled`
+ * attribute maps to the unavailable state regardless of the ARIA role, and a
+ * native `<select disabled>` leaves the tab order the same way. It is
+ * reflected non-destructively — the directive only removes the attribute when
+ * it set it itself — and `data-disabled=""` stays as the styling hook. The
+ * remaining form-control state (`aria-readonly` / `aria-required` /
+ * `aria-invalid` / `aria-busy`) is unaffected.
+ *
  * The root is normally resolved via DI from the enclosing `[forSelect]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
  * (e.g. via `ngTemplateOutlet`), DI resolves at the template's declaration
@@ -38,7 +50,6 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
-    '[attr.aria-disabled]': 'ctx().effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx().required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx().invalid() ? "true" : null',

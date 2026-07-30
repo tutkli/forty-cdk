@@ -176,7 +176,7 @@ describe('ForDisclosure', () => {
       const root = query<HTMLElement>('[forDisclosure]')!;
 
       expect(trigger.hasAttribute('disabled')).toBe(true);
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(root.getAttribute('data-disabled')).toBe('');
 
       trigger.click();
@@ -205,7 +205,8 @@ describe('ForDisclosure', () => {
       expect(root.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(content.hasAttribute('data-disabled')).toBe(false);
-      // aria-disabled is truthy-only — absent (not "false") on the falsy path.
+      // The trigger never emits aria-disabled: the native attribute is its
+      // single reflection channel (#561 D2).
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
     });
   });
@@ -236,7 +237,7 @@ describe('ForDisclosure', () => {
 
       expect(root.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
 
       trigger.click();
@@ -254,7 +255,7 @@ describe('ForDisclosure', () => {
       const trigger = query<HTMLButtonElement>('button')!;
 
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
 
       trigger.click();

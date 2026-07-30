@@ -145,7 +145,9 @@ export interface ForSelectContext<T = unknown> {
   /**
    * The select's effective disabled — its own `disabled` input OR'd with a
    * surrounding disabled `[forFieldset]`. Trigger and options read this so a
-   * disabled select (or fieldset) is inert and exposes `aria-disabled`.
+   * disabled select (or fieldset) is inert: the trigger reflects the native
+   * `disabled` attribute (its single channel, #561 D2) and the options, which
+   * must stay focusable, reflect `aria-disabled`.
    */
   readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;

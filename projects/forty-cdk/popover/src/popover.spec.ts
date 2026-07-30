@@ -174,7 +174,8 @@ describe('ForPopover', () => {
       const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
 
       // Disabled-related attributes are absent when not disabled — never
-      // emitted as "false". Consumers must select on `:not([aria-disabled])`.
+      // emitted as "false". The trigger never emits `aria-disabled` at all:
+      // the native attribute is its single reflection channel (#561 D2).
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.hasAttribute('disabled')).toBe(false);
@@ -260,7 +261,7 @@ describe('ForPopover', () => {
       const root = r.query<HTMLElement>('[forPopover]')!;
       expect(root.getAttribute('data-disabled')).toBe('');
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
     });
 
@@ -277,7 +278,7 @@ describe('ForPopover', () => {
       const root = r.query<HTMLElement>('[forPopover]')!;
       expect(root.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
     });
 
@@ -292,7 +293,7 @@ describe('ForPopover', () => {
       expect(r.instance.open()).toBe(false);
 
       expect(trigger.getAttribute('data-disabled')).toBe('');
-      expect(trigger.getAttribute('aria-disabled')).toBe('true');
+      expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.getAttribute('disabled')).toBe('');
     });
 

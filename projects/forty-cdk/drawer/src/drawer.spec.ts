@@ -1783,7 +1783,8 @@ describe('ForDrawerTrigger', () => {
     expect(trigger.getAttribute('type')).toBe('button');
     expect(trigger.getAttribute('data-state')).toBe('closed');
     // Disabled-related attributes are absent when not disabled — never
-    // emitted as "false". Consumers must select on `:not([aria-disabled])`.
+    // emitted as "false". The trigger never emits `aria-disabled` at all: the
+    // native attribute is its single reflection channel (#561 D2).
     expect(trigger.hasAttribute('data-disabled')).toBe(false);
     expect(trigger.hasAttribute('aria-disabled')).toBe(false);
     expect(trigger.hasAttribute('disabled')).toBe(false);
@@ -1809,7 +1810,7 @@ describe('ForDrawerTrigger', () => {
     const trigger = r.query<HTMLButtonElement>('[forDrawerTrigger]')!;
 
     expect(trigger.getAttribute('data-disabled')).toBe('');
-    expect(trigger.getAttribute('aria-disabled')).toBe('true');
+    expect(trigger.hasAttribute('aria-disabled')).toBe(false);
     expect(trigger.getAttribute('disabled')).toBe('');
     trigger.click();
     await flush(r.fixture);

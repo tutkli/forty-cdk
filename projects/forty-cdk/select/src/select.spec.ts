@@ -1465,7 +1465,7 @@ describe('ForSelect', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'required'], nativeDisabledOnly: true },
   );
 
   assertOverlayTriggerAriaContract(

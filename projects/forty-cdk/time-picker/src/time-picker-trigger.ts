@@ -12,6 +12,17 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
  * the listbox. The button is exempt from the listbox's dismissible layer so
  * clicks on it toggle without dismissal racing.
  *
+ * Disabling: the native `disabled` attribute is the single reflection channel
+ * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
+ * trigger the native attribute already conveys the state to assistive
+ * technology, and it is what suppresses activation here (rule #561 D2). The
+ * `role="combobox"` override does not change that: the HTML `disabled`
+ * attribute maps to the unavailable state regardless of the ARIA role. It is
+ * reflected non-destructively — the directive only removes the attribute when
+ * it set it itself — and `data-disabled=""` stays as the styling hook. The
+ * remaining form-control state (`aria-readonly` / `aria-required` /
+ * `aria-invalid` / `aria-busy`) is unaffected.
+ *
  * Keyboard:
  * - **Click / Enter / Space** — toggle (open focuses the selected slot, or first).
  * - **ArrowDown** — open + focus selected slot (or first).
@@ -27,7 +38,6 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
     '[attr.aria-haspopup]': '"listbox"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().overlay.contentId() : null',
-    '[attr.aria-disabled]': 'ctx().effectiveDisabled() ? "true" : null',
     '[attr.aria-readonly]': 'ctx().readonly() ? "true" : null',
     '[attr.aria-required]': 'ctx().required() ? "true" : null',
     '[attr.aria-invalid]': 'ctx().invalid() ? "true" : null',

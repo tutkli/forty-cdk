@@ -158,9 +158,9 @@ The popover opens / closes alongside the input but never steals focus from it �
 
 ### `ForPopoverTrigger`
 
-| Property   | Type             | Description                                                                                                                                                                               |
-| ---------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives `disabled` / `aria-disabled` / `data-disabled` and the click guard.<br>**Default:** `false` |
+| Property   | Type             | Description                                                                                                                                                                                                                                |
+| ---------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `disabled` | `input<boolean>` | Disables this trigger only — merged OR with the root's `disabled`. The effective state drives the native `disabled` attribute, `data-disabled` and the click guard — no `aria-disabled` (single channel, #561 D2).<br>**Default:** `false` |
 
 | Data attribute  | Values             |
 | --------------- | ------------------ |
