@@ -202,6 +202,28 @@ test.describe('Table virtualized', () => {
       await expectFocused(el(page, 'cell-0-id'));
     });
 
+    test('ArrowUp / PageUp from the first data row cross into the participating header row, preserving the column', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'table-virtualized');
+
+      const start = el(page, 'cell-0-name');
+      await start.click();
+      await expectFocused(start);
+
+      await page.keyboard.press('ArrowUp');
+      await expectFocused(el(page, 'header-name'));
+
+      await page.keyboard.press('ArrowDown');
+      await expectFocused(el(page, 'cell-0-name'));
+
+      await page.keyboard.press('PageUp');
+      await expectFocused(el(page, 'header-name'));
+
+      await page.keyboard.press('PageUp');
+      await expectFocused(el(page, 'header-name'));
+    });
+
     test('PageDown pages down by one window (preserving column, not jumping to the end) and clamps; PageUp is symmetric', async ({
       page,
     }) => {
@@ -272,7 +294,7 @@ test.describe('Table virtualized', () => {
       await expectFocused(el(page, 'cell-0-id'));
 
       await page.keyboard.press('PageUp');
-      await expectFocused(el(page, 'cell-0-id'));
+      await expectFocused(el(page, 'header-id'));
     });
   });
 

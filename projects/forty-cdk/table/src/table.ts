@@ -515,8 +515,10 @@ export class ForTable<T = unknown> implements ForTableContext {
     const navigation = this.#registry.virtualRowNavigation();
     const fromRow = this.focusedRowIndex();
     const total = this.rowCount();
-    const headerIsGridStart = action === 'first' && this.#headerParticipates();
-    if (headerIsGridStart) {
+    const pageSize = this.#pageSize();
+    const headerIsRowTarget =
+      this.#headerParticipates() && targetsHeaderRow(action, fromRow, pageSize);
+    if (headerIsRowTarget) {
       navigation?.scrollToRow(0);
     }
     if (
@@ -524,17 +526,10 @@ export class ForTable<T = unknown> implements ForTableContext {
       total !== undefined &&
       fromRow !== null &&
       ROW_CROSSING_ACTIONS.has(action) &&
-      !headerIsGridStart
+      !headerIsRowTarget
     ) {
       const col = currentIndex < 0 ? 0 : currentIndex % cols;
-      const target = resolveCrossWindowRowTarget(
-        action,
-        fromRow,
-        col,
-        total,
-        cols,
-        this.#pageSize(),
-      );
+      const target = resolveCrossWindowRowTarget(action, fromRow, col, total, cols, pageSize);
       if (target !== null) {
         navigation.navigateTo(target.row, target.col, target.direction);
       }
@@ -543,7 +538,7 @@ export class ForTable<T = unknown> implements ForTableContext {
 
     const next = moveGridIndex(currentIndex < 0 ? 0 : currentIndex, cells.length, action, {
       cols,
-      pageSize: this.#pageSize(),
+      pageSize,
       isDisabled: (i) => cells[i]!.disabled(),
     });
     if (next === null) {
@@ -572,13 +567,13 @@ export class ForTable<T = unknown> implements ForTableContext {
  * `last` jumps to the last cell of the whole grid. The `direction` (`+1` for
  * down / first, `-1` for up / last) is threaded to the virtualization bridge so
  * it can step over full-span variant rows onto the adjacent data row. Returns
- * `null` when the move would not change the focused row. `first` is routed
- * through the non-virtualized `moveGridIndex` path (to the first header cell)
- * when the header participates in roving, so this resolver's `first` case
- * applies only to a header-less grid. That routing decides the focus *target*
- * only: `Ctrl+Home` still scrolls a virtualized window back to row 0 through
- * `scrollToRow(0)` before falling through, so the grid is never left focused on
- * its header while the window sits at the bottom of the dataset.
+ * `null` when the move would not change the focused row. The actions
+ * {@link targetsHeaderRow} claims for a participating header row — `first`,
+ * plus `prev-row` / `page-up` from within the first page of data rows — are
+ * routed through the non-virtualized `moveGridIndex` path instead, so this
+ * resolver's `first` case applies only to a header-less grid and its `prev-row`
+ * / `page-up` cases clamp at data row 0 only when the header does not
+ * participate.
  */
 function resolveCrossWindowRowTarget(
   action: GridNavigationAction,
@@ -608,6 +603,42 @@ function resolveCrossWindowRowTarget(
     default:
       return null;
   }
+}
+
+/**
+ * Whether a row-crossing action lands on the header row of the composite grid,
+ * given the absolute data row the move starts from (`null` when the focused cell
+ * is not in a data row — a header cell, typically). Only meaningful when the
+ * header participates in roving, in which case it is the grid's row 0 and the
+ * data rows start at grid row 1:
+ *
+ * - `first` (`Ctrl+Home`) targets the first cell of the grid, i.e. the header.
+ * - `prev-row` (`ArrowUp`) from data row 0 steps above the data, into the header.
+ * - `page-up` from within the first page of data rows clamps to grid row 0,
+ *   which is the header — mirroring `moveGridIndex`'s clamp exactly.
+ *
+ * A header target is rendered whether or not the virtual window contains data
+ * row 0, so `[forTable]` resolves these through the non-virtualized
+ * `moveGridIndex` path rather than through the cross-window bridge; the caller
+ * still asks the virtualizer to scroll back to row 0 first, so the grid is never
+ * left focused on its header while the window sits at the bottom of the dataset
+ * ([#1499](https://github.com/tutkli/forty-cdk/issues/1499)).
+ */
+function targetsHeaderRow(
+  action: GridNavigationAction,
+  fromRow: number | null,
+  pageSize: number,
+): boolean {
+  if (action === 'first') {
+    return true;
+  }
+  if (fromRow === null) {
+    return false;
+  }
+  if (action === 'prev-row') {
+    return fromRow === 0;
+  }
+  return action === 'page-up' && fromRow - Math.max(1, pageSize) < 0;
 }
 
 /**
