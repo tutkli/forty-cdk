@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 
 import { flush, pressKey, renderHost } from '../../src/test-utils';
 import { assertRovingTabindexContract } from '../../src/test-utils/contract';
@@ -178,6 +179,21 @@ describe('ForToolbar', () => {
       pressKey(buttons[1]!, 'ArrowUp');
       await flush();
       expect(document.activeElement).toBe(buttons[0]);
+    });
+
+    it('scrolls the newly focused item into view with block: "nearest"', async () => {
+      const { queryAll, flush } = renderHost(ToolbarHost);
+      await flush();
+      const buttons = queryAll<HTMLButtonElement>('button');
+      const scrollSpy = vi.fn();
+      buttons[1]!.scrollIntoView = scrollSpy;
+
+      buttons[0]!.focus();
+      pressKey(buttons[0]!, 'ArrowRight');
+      await flush();
+
+      expect(document.activeElement).toBe(buttons[1]);
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
     });
   });
 

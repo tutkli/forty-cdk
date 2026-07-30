@@ -126,7 +126,7 @@ describe('menubar menu context positioning fallback drift guard', () => {
       lastTrigger: signal(null),
       lastTriggerHost: signal(null),
       closeOpen: () => {},
-      switchToSibling: () => {},
+      switchToSibling: () => false,
     } as unknown as MenubarMenuHost;
   }
 

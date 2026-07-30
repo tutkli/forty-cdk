@@ -381,9 +381,11 @@ test.describe('NavigationMenu keyboard / focus', () => {
 /**
  * A `focusout` whose `relatedTarget` is `null` reports no destination at all and
  * fires no `focusin`, so the dismissible layer's `focus` channel never sees it.
- * The close-on-leave rule must still reach the same verdict in both Viewport
- * placements, and must tell that leave apart from focus merely falling to
- * `<body>` because the user pressed a non-focusable region of the panel.
+ * The close-on-leave rule must still reach the same verdict in all three panel
+ * placements — including the Viewport-less one, where the panel is never
+ * re-parented and stays a plain DOM child of its `[forNavigationMenuItem]` — and
+ * must tell that leave apart from focus merely falling to `<body>` because the
+ * user pressed a non-focusable region of the panel.
  *
  * Headless Chromium has no browser chrome to Tab into, so the deterministic
  * stand-in for the leave is blurring the focused element: same `null`
@@ -393,6 +395,7 @@ test.describe('NavigationMenu null-relatedTarget focus leave', () => {
   const PLACEMENTS = [
     { label: 'an internal Viewport', query: {} as Record<string, string> },
     { label: 'an external Viewport', query: { externalViewport: '1' } },
+    { label: 'no Viewport', query: { noViewport: '1' } },
   ];
 
   for (const { label, query } of PLACEMENTS) {

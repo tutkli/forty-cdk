@@ -311,7 +311,11 @@ export class ForMenubar implements ForMenubarContext {
     const target = nextEnabledHandle(this.#triggerCollection.items(), currentTrigger, action, {
       loop: this.loop(),
     });
-    target?.host.focus();
+    if (target === null) {
+      return;
+    }
+    target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
   }
 
   openTrigger(
@@ -341,13 +345,13 @@ export class ForMenubar implements ForMenubarContext {
     this.value.set(null);
   }
 
-  switchToSibling(direction: 'next' | 'prev'): void {
+  switchToSibling(direction: 'next' | 'prev'): boolean {
     if (this.disabled()) {
-      return;
+      return false;
     }
     const items = this.#triggerCollection.items();
     if (items.length === 0) {
-      return;
+      return false;
     }
     const currentValue = this.value();
     const currentIndex = items.findIndex((t) => t.value() === currentValue);
@@ -355,9 +359,10 @@ export class ForMenubar implements ForMenubarContext {
       loop: this.loop(),
     });
     if (target === null) {
-      return;
+      return false;
     }
     this.openTrigger(target.value(), 'first');
+    return true;
   }
 
   pointerEnterTrigger(value: string): void {
@@ -388,6 +393,10 @@ export class ForMenubar implements ForMenubarContext {
       (t) => t.host.textContent ?? '',
       (t) => t.disabled(),
     );
-    match?.host.focus();
+    if (!match) {
+      return;
+    }
+    match.host.focus();
+    match.host.scrollIntoView?.({ block: 'nearest' });
   }
 }
