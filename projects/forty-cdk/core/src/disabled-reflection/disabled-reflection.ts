@@ -32,6 +32,21 @@ import { effect, ElementRef, inject, type Signal } from '@angular/core';
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.
  *
+ * **Not** the right tool for every clobber-capable host. Two kinds of control
+ * must reflect `aria-disabled` + `data-disabled` with an in-handler activation
+ * guard instead, and never reach for this helper: one carrying a **custom ARIA
+ * role** (`role="checkbox" | "switch" | "radio" | "tab" | "option" |
+ * "menuitem"`, or a toggle `<button>` reflecting `aria-pressed`), because the
+ * native attribute drops it from the focus order and the APG requires a
+ * disabled control to stay focusable; and one whose disabled state the
+ * primitive **auto-computes from its own position** and can flip while the
+ * button holds focus (calendar prev / next / view trigger — #1285; carousel
+ * prev / next — #1392 item 4), because the attribute would eject the user's
+ * focus to `<body>` at the moment they reach the bound. Native `disabled` is
+ * correct only on genuine native form elements and on real single-purpose
+ * `<button>` triggers whose disabled state the **consumer** drives through an
+ * input. See the disabled-reflection rule in `.claude/rules/conventions.md`.
+ *
  * @param disabled Signal whose truthiness drives the native `disabled`
  *   attribute on the host element.
  */

@@ -51,8 +51,10 @@ export interface HoverIntentScheduler {
  * the single pending timer and the open / close logic, parameterized by the
  * resolved open / close delays plus a {@link HoverIntentCoordinator}. The
  * directive constructs it once (after its `open` signal exists) and delegates
- * its public scheduling methods to the returned handle. Internal — not
- * re-exported from `public-api.ts`.
+ * its public scheduling methods to the returned handle.
+ *
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export function createHoverIntent(options: HoverIntentOptions): HoverIntentScheduler {
   let pendingTimer: ReturnType<typeof setTimeout> | null = null;

@@ -122,8 +122,9 @@ export interface TableVirtualRowNavigation {
  * rows, the declarative body's row count, the virtualization seams and the
  * resized column widths wire themselves into the `[forTable]` root.
  *
- * Deliberately **not** part of `ForTableContext` and never re-exported from a
- * public entry point. It lives in the core internal tier because
+ * Deliberately **not** part of `ForTableContext`, and never re-exported from a
+ * stable entry point. It lives in the core internal tier — exported from
+ * `forty-cdk/core` with no semver guarantee — because
  * `forty-cdk/virtualization`'s `[forTableVirtualized]` registers through it from
  * a second entry point, and a consumer must not be able to name — let alone
  * call — the wiring protocol the library refactors freely.
