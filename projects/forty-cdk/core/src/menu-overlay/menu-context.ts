@@ -22,8 +22,14 @@ import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
  * layer free of any concrete-root import.
  */
 export interface MenuSiblingNavigator {
-  /** Move focus/open to the previous or next sibling menu. */
-  switchToSibling(direction: 'next' | 'prev'): void;
+  /**
+   * Move focus/open to the previous or next sibling menu, returning whether the
+   * bar actually moved. `false` means there was nowhere to go — the bar is
+   * disabled, it has no registered triggers, or no enabled sibling exists in
+   * that direction with `loop` off — so a caller must not tear down state (an
+   * open submenu chain) it would then be unable to leave.
+   */
+  switchToSibling(direction: 'next' | 'prev'): boolean;
 }
 
 /**

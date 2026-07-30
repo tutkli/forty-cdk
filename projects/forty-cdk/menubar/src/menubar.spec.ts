@@ -165,6 +165,40 @@ class MenubarNestedSubmenuHost {
 }
 
 @Component({
+  imports: [
+    ForMenubar,
+    ForMenubarTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  template: `
+    <div forMenubar [(value)]="open" [loop]="loop()" [disabled]="barDisabled()">
+      <button forMenubarTrigger value="file">File</button>
+      @if (open() === 'file') {
+        <div forMenuContent>
+          <div forMenuSub [(open)]="recent">
+            <button id="lone-recent" forMenuSubTrigger>Open recent</button>
+            @if (recent()) {
+              <div forMenuSubContent>
+                <button id="lone-a" forMenuItem>a.txt</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class LoneMenubarHost {
+  readonly open = signal<string | null>(null);
+  readonly loop = signal(false);
+  readonly barDisabled = signal(false);
+  readonly recent = signal(false);
+}
+
+@Component({
   imports: [ForMenubar, ForMenubarTrigger],
   template: `
     <div forMenubar [(value)]="open">
@@ -1094,6 +1128,20 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
       expect(r.instance.open()).toBeNull();
     });
+
+    it('scrolls the newly focused trigger into view with block: "nearest"', async () => {
+      const r = renderHost(MenubarHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      const scrollSpy = vi.fn();
+      triggers[1]!.scrollIntoView = scrollSpy;
+      triggers[0]!.focus();
+
+      pressKey(triggers[0]!, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(triggers[1]);
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
   });
 
   describe('cross-menu navigation (menu open)', () => {
@@ -1226,6 +1274,20 @@ describe('ForMenubar', () => {
       pressKey(triggers[1]!, 'f');
       await flush(r.fixture);
       expect(triggers[0]!.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('scrolls the matched trigger into view with block: "nearest"', async () => {
+      const r = renderHost(MenubarHost);
+      const triggers = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]');
+      const scrollSpy = vi.fn();
+      triggers[2]!.scrollIntoView = scrollSpy;
+      triggers[0]!.focus();
+
+      pressKey(triggers[0]!, 'v');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(triggers[2]);
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
     });
   });
 
@@ -1705,6 +1767,42 @@ describe('ForMenubar', () => {
 
       expect(r.instance.recent()).toBe(false);
       expect(r.instance.open()).toBe('file');
+    });
+
+    it('leaves the chain intact when the bar has no enabled sibling to move to', async () => {
+      const r = renderHost(LoneMenubarHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('lone-a')!;
+      item.focus();
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+      expect(r.instance.recent()).toBe(true);
+      expect(document.activeElement).toBe(item);
+    });
+
+    it('leaves the chain intact when the bar is disabled', async () => {
+      const r = renderHost(LoneMenubarHost);
+      r.instance.loop.set(true);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+      r.instance.recent.set(true);
+      await flush(r.fixture);
+      r.instance.barDisabled.set(true);
+      await flush(r.fixture);
+
+      const item = document.getElementById('lone-a')!;
+      item.focus();
+      pressKey(item, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+      expect(r.instance.recent()).toBe(true);
     });
 
     it('RTL ArrowRight inside a submenu still collapses only that level', async () => {

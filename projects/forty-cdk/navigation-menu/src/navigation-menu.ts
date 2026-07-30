@@ -398,11 +398,20 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     const target = nextEnabledHandle(this.#triggers.items(), currentTrigger, action, {
       loop: this.loop(),
     });
-    target?.host.focus();
+    if (target === null) {
+      return;
+    }
+    target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
   }
 
   focusTrigger(value: string): void {
-    this.triggerHostFor(value)?.focus();
+    const host = this.triggerHostFor(value);
+    if (!host) {
+      return;
+    }
+    host.focus();
+    host.scrollIntoView?.({ block: 'nearest' });
   }
 
   private registerTrigger(handle: ForNavigationMenuTriggerHandle): void {

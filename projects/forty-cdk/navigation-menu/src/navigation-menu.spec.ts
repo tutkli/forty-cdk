@@ -685,6 +685,40 @@ describe('ForNavigationMenu', () => {
       expect(document.activeElement).toBe(triggers[0]);
     });
 
+    it('scrolls the newly focused trigger into view with block: "nearest"', async () => {
+      const { queryAll, flush } = renderHost(NavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+      const scrollSpy = vi.fn();
+      triggers[1]!.scrollIntoView = scrollSpy;
+
+      triggers[0]!.focus();
+      pressKey(triggers[0]!, 'ArrowRight');
+      await flush();
+
+      expect(document.activeElement).toBe(triggers[1]);
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
+
+    it('scrolls the trigger into view when Escape from inside the panel returns focus to it', async () => {
+      const { fixture, queryAll, query, flush } = renderHost(NavMenuHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+      const scrollSpy = vi.fn();
+      trigger.scrollIntoView = scrollSpy;
+
+      trigger.click();
+      await flush();
+      const link = query<HTMLAnchorElement>('[forNavigationMenuLink]')!;
+      link.focus();
+      pressKey(link, 'Escape');
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBeNull();
+      expect(document.activeElement).toBe(trigger);
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'nearest' });
+    });
+
     it('Escape closes and returns focus to the trigger', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       await flush();

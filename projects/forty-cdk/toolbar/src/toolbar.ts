@@ -117,7 +117,11 @@ export class ForToolbar implements ForToolbarContext {
     const target = nextEnabledHandle(this.#items.items(), currentItem, action, {
       loop: this.loop(),
     });
-    target?.host.focus();
+    if (target === null) {
+      return;
+    }
+    target.host.focus();
+    target.host.scrollIntoView?.({ block: 'nearest' });
   }
 
   isFirstFocusableItem(el: HTMLElement): boolean {
