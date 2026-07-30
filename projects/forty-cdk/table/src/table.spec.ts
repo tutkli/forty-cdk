@@ -4159,6 +4159,54 @@ describe('ForTable', () => {
         expect(document.activeElement).toBe(cell(el, 'cell-19-a'));
       });
 
+      it('ArrowUp from data row 0 in a header-less grid stops there instead of resolving a row above the dataset', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-0-a')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'ArrowUp');
+        await flush();
+
+        expect(document.activeElement).toBe(start);
+        expect(scrollToRow).not.toHaveBeenCalled();
+      });
+
+      it('PageUp from data row 0 in a header-less grid stops there', async () => {
+        const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-0-b')!;
+        start.focus();
+        await flush();
+        scrollToRow.mockClear();
+
+        press(start, 'PageUp');
+        await flush();
+
+        expect(document.activeElement).toBe(start);
+        expect(scrollToRow).not.toHaveBeenCalled();
+      });
+
+      it('PageUp from within the first page of a header-less grid clamps to data row 0 rather than overshooting the dataset', async () => {
+        const { el, instance, flush } = renderHost(CrossWindowTableHost);
+        instance.windowIndices.set([0, 1, 2]);
+        await flush();
+        const start = cell(el, 'cell-1-b')!;
+        start.focus();
+        await flush();
+
+        press(start, 'PageUp');
+        await flush();
+
+        expect(document.activeElement).toBe(cell(el, 'cell-0-b'));
+      });
+
       it('Ctrl+End reaches the last row of the dataset, outside the window', async () => {
         const scrollToRow = vi.spyOn(ForTableVirtualized.prototype, 'scrollToRow');
         const { el, instance, flush } = renderHost(CrossWindowTableHost);
