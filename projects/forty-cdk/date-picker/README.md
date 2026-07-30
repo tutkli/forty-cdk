@@ -173,6 +173,7 @@ Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `r
 | `[forDatePicker]`        | `data-disabled`    | present \| absent  |
 | `[forDatePickerTrigger]` | `data-state`       | `open` \| `closed` |
 | `[forDatePickerTrigger]` | `data-disabled`    | present \| absent  |
+| `[forDatePickerTrigger]` | `data-readonly`    | present \| absent  |
 | `[forDatePickerContent]` | `data-state`       | `open` \| `closed` |
 | `[forDatePickerValue]`   | `data-placeholder` | present \| absent  |
 
@@ -333,9 +334,9 @@ Inside the surface, the projected `ForCalendar` owns the full grid keyboard map 
 
 Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/).
 
-- **`aria-haspopup="dialog"`** on the trigger, with `aria-expanded` reflecting `open()` and `aria-controls` pointing at the surface while open.
+- **`role="combobox"`** on the trigger with **`aria-haspopup="dialog"`**, `aria-expanded` reflecting `open()`, and `aria-controls` pointing at the surface while open — the same shape `[forSelectTrigger]` / `[forTimePickerTrigger]` ship, with the `dialog` popup token ARIA 1.2 allows for a combobox surface. The role is also what makes the form-control ARIA below legal: `role="button"` supports neither `aria-readonly` nor `aria-required`.
 - **`role="dialog"`** on the surface, named by `[ariaLabel]` (or `aria-labelledby` the trigger when no label is set). `aria-modal="true"` only in modal mode (truthy-only).
-- **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus. The disabled state is the exception: it reflects through the native `disabled` attribute alone (plus `data-disabled`), never `aria-disabled` — one channel per #561 D2.
+- **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus, alongside the `data-readonly` styling hook. The disabled state is the exception: it reflects through the native `disabled` attribute alone (plus `data-disabled`), never `aria-disabled` — one channel per #561 D2.
 - **Focus management**: focus enters the surface on open (the calendar's roving cell in non-modal mode) and returns to the trigger on close, both vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)`.
 - **Dismissal**: Escape (`(escapeKeyDown)`) and outside-pointer (`(pointerDownOutside)` / `(interactOutside)`) close the surface, each vetoable.
 

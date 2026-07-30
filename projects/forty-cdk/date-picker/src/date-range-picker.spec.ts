@@ -110,6 +110,7 @@ class Host {
       forDateRangePicker
       [(value)]="value"
       [disabled]="isDisabled()"
+      [readonly]="isReadonly()"
       [required]="isRequired()"
       ariaLabel="Choose date range"
     >
@@ -120,6 +121,7 @@ class Host {
 class RangeFormControlHost {
   readonly value = signal<DateRange<Date> | null>(null);
   readonly isDisabled = signal(false);
+  readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
 }
 
@@ -158,6 +160,9 @@ describe('ForDateRangePicker', () => {
             case 'disabled':
               r.instance.isDisabled.set(flagValue);
               return;
+            case 'readonly':
+              r.instance.isReadonly.set(flagValue);
+              return;
             case 'required':
               r.instance.isRequired.set(flagValue);
               return;
@@ -166,7 +171,7 @@ describe('ForDateRangePicker', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'readonly', 'required'] },
   );
 
   assertOverlayTriggerAriaContract(
@@ -189,6 +194,11 @@ describe('ForDateRangePicker', () => {
     it('wires the trigger as a native button', () => {
       const r = renderHost(Host);
       expect(trigger(r).getAttribute('type')).toBe('button');
+    });
+
+    it('gives the trigger role=combobox so its form-control ARIA is supported', () => {
+      const r = renderHost(Host);
+      expect(trigger(r).getAttribute('role')).toBe('combobox');
     });
 
     it('gives the open surface role=dialog and the configured accessible name', async () => {
