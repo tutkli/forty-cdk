@@ -2191,6 +2191,34 @@ const OPEN_STATE_FIXTURES: ReadonlyArray<Type<unknown>> = [
   CarouselAutoplayFixture,
 ];
 
+/**
+ * The global Angular gates its render hooks on. Setting it makes
+ * `afterNextRender` / `afterEveryRender` genuinely inert, which is what a real
+ * server render does — mocking `PLATFORM_ID` alone leaves the hooks firing, so
+ * a primitive whose correctness depends on the callback having run would pass
+ * here for a reason production never provides (see #1377, #1409).
+ */
+const serverModeGlobal = globalThis as unknown as { ngServerMode?: boolean };
+
+/**
+ * Browser globals a Node server does not have. jsdom supplies all of them, so
+ * an ungated access passes here and only fails on a consumer's server — these
+ * are stubbed to `undefined` for the suite (restored by the runner's
+ * `unstubGlobals` invariant) so the access throws in the fixture's own render
+ * case instead. `requestAnimationFrame` is also what made a blanket
+ * "no timer scheduled" assertion impossible before: Angular's zoneless
+ * scheduler races `setTimeout` against it, and jsdom's shim implements the
+ * frame as a ~16.7ms `setTimeout`.
+ */
+const ABSENT_ON_A_REAL_SERVER = [
+  'requestAnimationFrame',
+  'cancelAnimationFrame',
+  'matchMedia',
+  'IntersectionObserver',
+  'ResizeObserver',
+  'MutationObserver',
+] as const;
+
 function configureServer(): void {
   TestBed.configureTestingModule({
     providers: [
@@ -2202,15 +2230,28 @@ function configureServer(): void {
 
 describe('SSR smoke tests', () => {
   beforeEach(() => {
+    serverModeGlobal.ngServerMode = true;
+    for (const name of ABSENT_ON_A_REAL_SERVER) {
+      vi.stubGlobal(name, undefined);
+    }
     configureServer();
   });
 
   afterEach(() => {
     TestBed.resetTestingModule();
+    delete serverModeGlobal.ngServerMode;
   });
 
   it('reports the server platform', () => {
     expect(isPlatformServer(TestBed.inject(PLATFORM_ID))).toBe(true);
+  });
+
+  it('runs under real server mode with the browser-only globals absent', () => {
+    const globals = globalThis as unknown as Record<string, unknown>;
+    expect(serverModeGlobal.ngServerMode).toBe(true);
+    for (const name of ABSENT_ON_A_REAL_SERVER) {
+      expect(globals[name]).toBeUndefined();
+    }
   });
 
   for (const fixture of FIXTURES) {
@@ -2349,25 +2390,52 @@ describe('SSR smoke tests', () => {
     }
   });
 
-  // Timers get a cadence-scoped assertion rather than a blanket
-  // "no timer was scheduled" sweep. This suite mocks only `PLATFORM_ID`, so
-  // Angular's own zoneless scheduler still runs a real `setTimeout` per
-  // render and jsdom's `requestAnimationFrame` shim still pumps a ~16.7ms
-  // `setInterval` — framework noise a blanket spy would report as a library
-  // bug on every fixture. Asserting the *primitive's* configured cadence
-  // never reaches the timer API keeps the signal and drops the noise.
-  it('an autoplaying Carousel starts no rotation interval server-side', () => {
-    const intervalSpy = vi.spyOn(globalThis, 'setInterval');
-    const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+  describe('server render schedules no timer', () => {
+    for (const fixture of OPEN_STATE_FIXTURES) {
+      it(`${fixture.name} schedules no timer`, () => {
+        const timeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+        const intervalSpy = vi.spyOn(globalThis, 'setInterval');
 
-    const f = TestBed.createComponent(CarouselAutoplayFixture);
-    f.detectChanges();
+        const f = TestBed.createComponent(fixture);
+        f.detectChanges();
 
-    // The fixture binds [autoplayInterval]="1000".
-    const scheduledDelays = [...intervalSpy.mock.calls, ...timeoutSpy.mock.calls].map(
-      ([, delay]) => delay,
-    );
-    expect(scheduledDelays).not.toContain(1000);
+        const delays = timeoutSpy.mock.calls
+          .map(([, delay]) => delay)
+          .filter((delay) => delay !== undefined);
+
+        expect(delays).toEqual([]);
+        expect(intervalSpy.mock.calls.map(([, delay]) => delay)).toEqual([]);
+      });
+    }
+  });
+
+  describe('server render resolves no floating position', () => {
+    const POSITIONER_PROPERTIES = [
+      'translate',
+      'clip-path',
+      '--for-anchor-width',
+      '--for-anchor-height',
+      '--for-available-width',
+      '--for-available-height',
+      '--for-content-transform-origin',
+    ];
+
+    for (const fixture of OPEN_STATE_FIXTURES) {
+      it(`${fixture.name} leaves every surface unpositioned`, () => {
+        const f = TestBed.createComponent(fixture);
+        f.detectChanges();
+
+        const written = Array.from(
+          (f.nativeElement as HTMLElement).querySelectorAll<HTMLElement>('[style]'),
+        ).flatMap((el) =>
+          POSITIONER_PROPERTIES.filter(
+            (property) => el.style.getPropertyValue(property) !== '',
+          ).map((property) => `${el.tagName.toLowerCase()}: ${property}`),
+        );
+
+        expect(written).toEqual([]);
+      });
+    }
   });
 
   it('opening a free-floating overlay (Drawer) does not portal or mutate <body> server-side', () => {
@@ -2859,17 +2927,7 @@ describe('SSR smoke tests', () => {
     items.forEach((item) => expect(item.getAttribute('aria-pressed')).toBe('false'));
   });
 
-  describe('ForStepper under real server mode (afterNextRender never fires)', () => {
-    const serverModeGlobal = globalThis as unknown as { ngServerMode?: boolean };
-
-    beforeEach(() => {
-      serverModeGlobal.ngServerMode = true;
-    });
-
-    afterEach(() => {
-      delete serverModeGlobal.ngServerMode;
-    });
-
+  describe('ForStepper server markup', () => {
     it('renders step 1 active — not the completed state — when item registration never flushes', () => {
       const f = TestBed.createComponent(StepperServerFixture);
       f.detectChanges();
@@ -2908,17 +2966,7 @@ describe('SSR smoke tests', () => {
     });
   });
 
-  describe('ForTabs under real server mode (afterNextRender never fires)', () => {
-    const serverModeGlobal = globalThis as unknown as { ngServerMode?: boolean };
-
-    beforeEach(() => {
-      serverModeGlobal.ngServerMode = true;
-    });
-
-    afterEach(() => {
-      delete serverModeGlobal.ngServerMode;
-    });
-
+  describe('ForTabs server markup', () => {
     it('wires every trigger/panel aria pairing server-side (aria-labelledby / aria-controls)', () => {
       const f = TestBed.createComponent(TabsServerFixture);
       f.detectChanges();
