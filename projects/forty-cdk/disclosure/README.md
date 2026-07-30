@@ -76,7 +76,7 @@ The library ships no styles. Hide animations / transitions can be driven off `da
 | `data-state`    | `open` \| `closed` |
 | `data-disabled` | present \| absent  |
 
-Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (`disabled`, `aria-disabled`, `data-disabled`) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.
+Reflects on its host: `id`, `aria-expanded`, `aria-controls`, `disabled`, `data-state`. Toggles the state on click. The disabled reflection (the native `disabled` attribute plus `data-disabled`; no `aria-disabled`, single channel per #561 D2) and the click guard follow the effective state — the trigger's own `disabled` OR the root's.
 
 `aria-controls` is emitted only while open — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the recommended `@if (open())` mount pattern.
 

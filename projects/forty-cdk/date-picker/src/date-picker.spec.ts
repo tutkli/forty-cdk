@@ -284,7 +284,7 @@ describe('ForDatePicker', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'required'], nativeDisabledOnly: true },
   );
 
   assertOverlayTriggerAriaContract(
@@ -819,13 +819,13 @@ describe('ForDatePicker', () => {
   });
 
   describe('disabled', () => {
-    it('reflects aria-disabled and blocks opening', async () => {
+    it('reflects native disabled only — never aria-disabled — and blocks opening', async () => {
       const r = renderHost(Host);
       r.instance.disabled.set(true);
       await flush(r.fixture);
 
       const t = trigger(r);
-      expect(t.getAttribute('aria-disabled')).toBe('true');
+      expect(t.hasAttribute('aria-disabled')).toBe(false);
       expect(t.hasAttribute('disabled')).toBe(true);
       expect(r.query('[forDatePicker]')!.getAttribute('data-disabled')).toBe('');
 

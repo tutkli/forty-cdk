@@ -208,7 +208,7 @@ describe('ForTimePicker', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'required'], nativeDisabledOnly: true },
   );
 
   assertOverlayTriggerAriaContract(
@@ -565,7 +565,8 @@ describe('ForTimePicker', () => {
       await flush(r.fixture);
 
       expect(getTrigger().getAttribute('data-disabled')).toBe('');
-      expect(getTrigger().getAttribute('aria-disabled')).toBe('true');
+      expect(getTrigger().hasAttribute('disabled')).toBe(true);
+      expect(getTrigger().hasAttribute('aria-disabled')).toBe(false);
     });
   });
 
