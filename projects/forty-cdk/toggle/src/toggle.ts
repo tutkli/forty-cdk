@@ -20,7 +20,8 @@ import { hostButtonType, FormUiControlBase, injectHiddenInput } from 'forty-cdk/
  * A read-only toggle is reflected as the boolean `data-readonly` styling hook
  * only: `aria-readonly` is not a supported property of `role="button"`, so
  * there is no ARIA channel for the state on a toggle button. Click stays a
- * no-op and the button stays focusable.
+ * no-op and the button stays focusable. `required` is reflected the same way,
+ * as `data-required`, for the same reason.
  *
  * @example
  * ```html
@@ -37,12 +38,12 @@ import { hostButtonType, FormUiControlBase, injectHiddenInput } from 'forty-cdk/
     '[attr.type]': 'buttonType()',
     '[attr.aria-pressed]': 'checked() ? "true" : "false"',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.name]': 'name() || null',
     '[attr.data-state]': 'checked() ? "checked" : "unchecked"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '(click)': 'onClick()',
     '(blur)': 'markTouched()',

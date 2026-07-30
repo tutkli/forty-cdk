@@ -85,14 +85,15 @@ test.describe('Select', () => {
   // driven by keyboard because WebKit does not focus a <button> on mouse click
   // (and blurs it), which would hand the modal shell the wrong return target.
   test.describe('modal mode', () => {
-    test('open moves focus to the first enabled option and reflects aria-modal', async ({
+    test('open moves focus to the first enabled option and reflects data-modal', async ({
       page,
     }) => {
       await gotoFixture(page, 'select', { modal: '1' });
       await el(page, 'trigger').focus();
       await page.keyboard.press('Enter');
       await expect(el(page, 'content')).toBeVisible();
-      await expect(el(page, 'content')).toHaveAttribute('aria-modal', 'true');
+      await expect(el(page, 'content')).toHaveAttribute('data-modal', '');
+      await expect(el(page, 'content')).not.toHaveAttribute('aria-modal', /.*/);
       // No value → the shared move algorithm (selected → first → last) lands on
       // the first enabled option (banana is disabled, apple is first).
       await expectFocused(el(page, 'opt-apple'));

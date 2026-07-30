@@ -185,6 +185,7 @@ describe('ForToggleGroup', () => {
     {
       flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
       roleSupportsAriaReadonly: false,
+      roleSupportsAriaRequired: false,
     },
   );
 
@@ -628,10 +629,11 @@ describe('ForToggleGroup', () => {
       expect(bold.getAttribute('aria-pressed')).toBe('false');
     });
 
-    it('flows schema `required` into aria-required on the group', async () => {
+    it('flows schema `required` into data-required on the group (role="group" has no aria-required)', async () => {
       const { el, flush } = renderHost(SignalFormsHost);
       await flush();
-      expect(groupOf(el).getAttribute('aria-required')).toBe('true');
+      expect(groupOf(el).getAttribute('data-required')).toBe('');
+      expect(groupOf(el).hasAttribute('aria-required')).toBe(false);
     });
 
     it('treats Angular `required` on the array value as a no-op (empty `[]` stays valid)', async () => {

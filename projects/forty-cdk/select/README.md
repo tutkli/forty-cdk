@@ -247,7 +247,7 @@ What modal mode changes:
 
 - **Focus** is trapped inside the surface (Tab / Shift+Tab cycle through the options; they no longer commit-and-advance the way the anchored listbox does). The rest of the page is `inert` while open, and body scroll is locked.
 - **Initial focus** still lands on the selected option (then first / last enabled), via the shared focus algorithm.
-- **`aria-modal="true"`** is reflected on the surface as a hint. The surface keeps `role="listbox"` (several screen readers ignore `aria-modal` outside window roles), so the real modality comes from the `inert` background the shell applies — not from the attribute alone.
+- **`data-modal`** is reflected on the surface for styling. `aria-modal` is deliberately **not** emitted: the surface keeps `role="listbox"`, which does not support the property ([ARIA 1.2 §aria-modal](https://www.w3.org/TR/wai-aria-1.2/#aria-modal) gates it to `dialog` / `alertdialog`), so the attribute would announce nothing while tripping `aria-allowed-attr`. Modality comes from the `inert` background the shell applies.
 - **Dismiss** (`dismissible`), **return-focus** (`returnFocus`), `ariaLabel`, and the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto hooks all behave the same as popover mode.
 
 The mode is read **once** when `[forSelectContent]` mounts (the two shells are structurally different; switching at runtime would need a remount, and the surface mounts lazily via `@if (open())`, well after `modal` settles). Every **anchored-positioning input is a no-op** in modal mode: `position` (`popper` / `item-aligned`), `side`, `align`, `sideOffset`, `alignOffset`, `sticky`, `hideWhenDetached`, `avoidCollisions`, `collisionPadding`, `arrowPadding`.

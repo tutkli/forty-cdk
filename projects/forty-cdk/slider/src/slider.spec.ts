@@ -193,6 +193,7 @@ describe('ForSlider', () => {
     {
       flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'],
       roleSupportsAriaReadonly: false,
+      roleSupportsAriaRequired: false,
     },
   );
 

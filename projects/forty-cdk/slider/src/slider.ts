@@ -67,6 +67,10 @@ import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
  * `data-readonly` styling hook only. `aria-readonly` is not a supported
  * property of `role="group"`, so the ARIA announcement lives on each
  * `[forSliderThumb]` — `role="slider"` does support it.
+ *
+ * A required slider carries the boolean `data-required` hook on this same
+ * root. `aria-required` is supported on neither `role="group"` nor
+ * `role="slider"`, so it has no ARIA channel anywhere in the composition.
  */
 @Directive({
   selector: '[forSlider]',
@@ -74,11 +78,11 @@ import { FOR_SLIDER_DEFAULTS } from './slider-defaults';
   host: {
     role: 'group',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',

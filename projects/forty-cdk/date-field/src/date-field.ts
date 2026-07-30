@@ -68,6 +68,11 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
  * property of `role="group"`, so the ARIA announcement lives on each
  * `[forDateFieldSegment]` — `role="spinbutton"` does support it.
  *
+ * A required field carries the boolean `data-required` hook on the same root.
+ * `aria-required` is not supported on `role="group"` either, and it is
+ * deliberately not repeated on every segment — a composite field would
+ * announce "required" once per part.
+ *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
  *   date-time) type.
  *
@@ -98,9 +103,9 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
     '[attr.dir]': 'dir()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.data-empty]': 'empty() ? "" : null',
     '(focusout)': 'onFocusOut($event)',

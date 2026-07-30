@@ -117,7 +117,11 @@ describe('ForToggle', () => {
       };
       return result;
     },
-    { customRoleStaysFocusable: true, roleSupportsAriaReadonly: false },
+    {
+      customRoleStaysFocusable: true,
+      roleSupportsAriaReadonly: false,
+      roleSupportsAriaRequired: false,
+    },
   );
 
   describe('click', () => {
@@ -302,10 +306,12 @@ describe('ForToggle', () => {
       expect(bold.getAttribute('data-state')).toBe('unchecked');
     });
 
-    it('flows `required` from the schema into aria-required', async () => {
+    it('flows `required` from the schema into data-required (role="button" has no aria-required)', async () => {
       const r = renderHost(SignalFormsHost);
       await r.flush();
-      expect(toggleById(r.el, 'bold').getAttribute('aria-required')).toBe('true');
+      const bold = toggleById(r.el, 'bold');
+      expect(bold.getAttribute('data-required')).toBe('');
+      expect(bold.hasAttribute('aria-required')).toBe(false);
     });
 
     it('flows schema-driven readonly into data-readonly, never aria-readonly', async () => {

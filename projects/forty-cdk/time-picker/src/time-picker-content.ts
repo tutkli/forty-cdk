@@ -24,6 +24,11 @@ import { injectTimePickerContext } from './time-picker-context';
  * enabled slot (`'first'`), or the last enabled slot (`'last'`) according to
  * the trigger's hint. On destroy, focus returns to the trigger when
  * `returnFocus` is true.
+ *
+ * In modal mode, modality is conveyed behaviorally — by the `inert` siblings
+ * the shell applies — and reflected as `data-modal` for styling. `aria-modal`
+ * is deliberately not emitted: `role="listbox"` does not support it, so the
+ * attribute would be an `aria-allowed-attr` violation that announces nothing.
  */
 @Directive({
   selector: '[forTimePickerContent]',
@@ -34,10 +39,10 @@ import { injectTimePickerContext } from './time-picker-context';
     '[id]': 'ctx.overlay.contentId()',
     '[attr.aria-labelledby]': 'labelledBy()',
     '[attr.aria-label]': 'resolvedAriaLabel()',
-    '[attr.aria-modal]': 'ctx.modal() ? "true" : null',
     '[attr.aria-orientation]': 'ctx.orientation()',
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-orientation]': 'ctx.orientation()',
+    '[attr.data-modal]': 'ctx.modal() ? "" : null',
   },
 })
 export class ForTimePickerContent {

@@ -1489,7 +1489,7 @@ describe('ForSelect', () => {
     // select.e2e.ts (jsdom mis-models `inert`, `document.activeElement`, and
     // the focus-event order). The Vitest layer asserts the wiring branches:
     // which ARIA / dismiss / veto outputs fire on the modal-shell path.
-    it('reflects aria-modal="true" on the listbox surface in modal mode', async () => {
+    it('reflects data-modal on the listbox surface in modal mode, never aria-modal', async () => {
       const r = renderHost(SelectHost);
       r.instance.modal.set(true);
       r.instance.open.set(true);
@@ -1497,15 +1497,17 @@ describe('ForSelect', () => {
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.getAttribute('role')).toBe('listbox');
-      expect(content.getAttribute('aria-modal')).toBe('true');
+      expect(content.getAttribute('data-modal')).toBe('');
+      expect(content.hasAttribute('aria-modal')).toBe(false);
     });
 
-    it('omits aria-modal in the default (non-modal) mode', async () => {
+    it('omits data-modal in the default (non-modal) mode', async () => {
       const r = renderHost(SelectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
+      expect(content.hasAttribute('data-modal')).toBe(false);
       expect(content.hasAttribute('aria-modal')).toBe(false);
     });
 
@@ -1994,14 +1996,14 @@ describe('ForSelect', () => {
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('modal mode opens, reflects aria-modal, and dismisses on Escape without zone.js', async () => {
+    it('modal mode opens, reflects data-modal, and dismisses on Escape without zone.js', async () => {
       const r = renderHost(SelectHost);
       r.instance.modal.set(true);
       r.instance.open.set(true);
       await flush(r.fixture);
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
-      expect(content.getAttribute('aria-modal')).toBe('true');
+      expect(content.getAttribute('data-modal')).toBe('');
 
       pressKey(document, 'Escape');
       await flush(r.fixture);

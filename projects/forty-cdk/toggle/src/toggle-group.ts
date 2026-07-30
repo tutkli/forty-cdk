@@ -65,6 +65,8 @@ import {
  * on this root only: `aria-readonly` is a supported property of neither
  * `role="group"` nor the items' `role="button"`, so there is no ARIA channel
  * for the state. Clicks stay no-ops and the items stay focusable.
+ *
+ * `required` is reflected the same way, as `data-required` on the root.
  */
 @Directive({
   selector: '[forToggleGroup]',
@@ -72,11 +74,11 @@ import {
   host: {
     role: 'group',
     '[attr.aria-disabled]': 'effectiveDisabled() ? "true" : null',
-    '[attr.aria-required]': 'required() ? "true" : null',
     '[attr.aria-invalid]': 'invalid() ? "true" : null',
     '[attr.aria-busy]': 'pending() ? "true" : null',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-required]': 'required() ? "" : null',
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
