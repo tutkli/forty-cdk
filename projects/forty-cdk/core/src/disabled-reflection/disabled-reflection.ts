@@ -57,7 +57,7 @@ import { effect, ElementRef, inject, type Signal } from '@angular/core';
  * it can never be `"true"` while this helper owns the native attribute
  * (`[forAccordionTrigger]`, whose `aria-disabled` marks an expanded panel the
  * accordion refuses to collapse). The rule does not reach the native
- * `<input>` / `<textarea>` hosts, which still emit both.
+ * `<input>` / `<textarea>` hosts, which still emit both — tracked by #1550.
  *
  * @param disabled Signal whose truthiness drives the native `disabled`
  *   attribute on the host element.
