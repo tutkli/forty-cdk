@@ -149,7 +149,7 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
 
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import {
   ForNavigationMenu,
@@ -1718,6 +1718,32 @@ class StepperServerFixture {}
 class DropdownMenuOpenFixture {}
 
 @Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  template: `
+    <div forDropdownMenu [open]="true">
+      <button forDropdownMenuTrigger>Options</button>
+      <div forMenuContent>
+        <button forMenuItem>Cut</button>
+        <div forMenuSub [open]="true">
+          <button forMenuSubTrigger>More tools</button>
+          <div forMenuSubContent>
+            <button forMenuItem>Developer tools</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+})
+class MenuSubOpenFixture {}
+
+@Component({
   imports: [ForContextMenu, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
   template: `
     <div forContextMenu [open]="true">
@@ -2105,6 +2131,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DragDropFixture,
   FreeDragFixture,
   DropdownMenuOpenFixture,
+  MenuSubOpenFixture,
   ContextMenuOpenFixture,
   HoverCardOpenFixture,
   ListboxFixture,
@@ -2155,6 +2182,7 @@ const OPEN_STATE_FIXTURES: ReadonlyArray<Type<unknown>> = [
   NavigationMenuOpenFixture,
   MenubarOpenFixture,
   DropdownMenuOpenFixture,
+  MenuSubOpenFixture,
   ContextMenuOpenFixture,
   HoverCardOpenFixture,
   DateRangePickerOpenFixture,
@@ -2512,6 +2540,30 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
+  });
+
+  it('opening a submenu does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(MenuSubOpenFixture);
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    const subContent = root.querySelector('[forMenuSubContent]') as HTMLElement;
+    expect(subContent.getAttribute('role')).toBe('menu');
+    expect(subContent.getAttribute('data-state')).toBe('open');
+    expect(root.contains(subContent)).toBe(true);
+    expect(subContent.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forMenuSubContent]')).toBeNull();
+  });
+
+  it('an open submenu wires the sub-trigger ARIA server-side', () => {
+    const f = TestBed.createComponent(MenuSubOpenFixture);
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    const subTrigger = root.querySelector('[forMenuSubTrigger]') as HTMLElement;
+    const subContent = root.querySelector('[forMenuSubContent]') as HTMLElement;
+    expect(subTrigger.getAttribute('role')).toBe('menuitem');
+    expect(subTrigger.getAttribute('aria-haspopup')).toBe('menu');
+    expect(subTrigger.getAttribute('aria-expanded')).toBe('true');
+    expect(subTrigger.getAttribute('aria-controls')).toBe(subContent.getAttribute('id'));
   });
 
   it('opening ContextMenu does not portal or mutate <body> server-side', () => {
