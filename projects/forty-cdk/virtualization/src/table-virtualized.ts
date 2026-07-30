@@ -74,9 +74,10 @@ export class ForTableVirtualized {
   readonly scrollElement = input<HTMLElement | null>(null);
 
   readonly #scrollElement = computed(() => this.scrollElement() ?? this.#rootEl);
+  readonly #rowCount = computed(() => this.#ctx.rowCount() ?? 0);
 
   readonly #virtualizer = injectVirtualizer({
-    count: computed(() => this.#ctx.rowCount() ?? 0),
+    count: this.#rowCount,
     estimateSize: () => this.estimateRowSize(),
     scrollElement: this.#scrollElement,
   });
@@ -85,7 +86,7 @@ export class ForTableVirtualized {
     rows: this.#registration.rows,
     scrollToRow: (index) => this.scrollToRow(index),
     scrollViewportRect: () => this.#scrollElement().getBoundingClientRect(),
-    rowCount: () => this.#ctx.rowCount() ?? 0,
+    rowCount: this.#rowCount,
     loadedRowCount: () => this.#ctx.loadedRowCount(),
   });
 

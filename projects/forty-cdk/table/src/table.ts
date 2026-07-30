@@ -510,7 +510,10 @@ export class ForTable<T = unknown> implements ForTableContext {
       return false;
     }
     event.preventDefault();
-    const currentIndex = cells.findIndex((cell) => cell.host === host);
+    const currentIndex = Math.max(
+      0,
+      cells.findIndex((cell) => cell.host === host),
+    );
 
     const navigation = this.#registry.virtualRowNavigation();
     const fromRow = this.focusedRowIndex();
@@ -528,7 +531,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       ROW_CROSSING_ACTIONS.has(action) &&
       !headerIsRowTarget
     ) {
-      const col = currentIndex < 0 ? 0 : currentIndex % cols;
+      const col = currentIndex % cols;
       const target = resolveCrossWindowRowTarget(action, fromRow, col, total, cols, pageSize);
       if (target !== null) {
         navigation.navigateTo(target.row, target.col, target.direction);
@@ -536,7 +539,7 @@ export class ForTable<T = unknown> implements ForTableContext {
       return true;
     }
 
-    const next = moveGridIndex(currentIndex < 0 ? 0 : currentIndex, cells.length, action, {
+    const next = moveGridIndex(currentIndex, cells.length, action, {
       cols,
       pageSize,
       isDisabled: (i) => cells[i]!.disabled(),
@@ -563,7 +566,8 @@ export class ForTable<T = unknown> implements ForTableContext {
  * Resolves the absolute `(row, 0-based column)` target and travel `direction`
  * for a row-crossing grid action against the true `total` row count. Arrow
  * row-moves preserve the current column; `page-up` / `page-down` move by
- * `pageSize` rows (clamped to the dataset bounds) preserving the column;
+ * `pageSize` rows (the caller's `#pageSize()` is already at least 1, and the
+ * move is clamped to the dataset bounds) preserving the column;
  * `last` jumps to the last cell of the whole grid. The `direction` (`+1` for
  * down / first, `-1` for up / last) is threaded to the virtualization bridge so
  * it can step over full-span variant rows onto the adjacent data row. Returns
@@ -589,11 +593,11 @@ function resolveCrossWindowRowTarget(
     case 'prev-row':
       return fromRow - 1 >= 0 ? { row: fromRow - 1, col, direction: -1 } : null;
     case 'page-down': {
-      const row = Math.min(total - 1, fromRow + Math.max(1, pageSize));
+      const row = Math.min(total - 1, fromRow + pageSize);
       return row > fromRow ? { row, col, direction: 1 } : null;
     }
     case 'page-up': {
-      const row = Math.max(0, fromRow - Math.max(1, pageSize));
+      const row = Math.max(0, fromRow - pageSize);
       return row < fromRow ? { row, col, direction: -1 } : null;
     }
     case 'first':
@@ -614,8 +618,9 @@ function resolveCrossWindowRowTarget(
  *
  * - `first` (`Ctrl+Home`) targets the first cell of the grid, i.e. the header.
  * - `prev-row` (`ArrowUp`) from data row 0 steps above the data, into the header.
- * - `page-up` from within the first page of data rows clamps to grid row 0,
- *   which is the header — mirroring `moveGridIndex`'s clamp exactly.
+ * - `page-up` from within the first page of data rows (`fromRow < pageSize`)
+ *   clamps to grid row 0, which is the header — mirroring `moveGridIndex`'s
+ *   clamp exactly.
  *
  * A header target is rendered whether or not the virtual window contains data
  * row 0, so `[forTable]` resolves these through the non-virtualized
@@ -638,7 +643,7 @@ function targetsHeaderRow(
   if (action === 'prev-row') {
     return fromRow === 0;
   }
-  return action === 'page-up' && fromRow - Math.max(1, pageSize) < 0;
+  return action === 'page-up' && fromRow < pageSize;
 }
 
 /**
