@@ -23,9 +23,10 @@ import { InjectionToken, Optional, type Provider, SkipSelf } from '@angular/core
  * - Returns a `Provider[]` so callers can spread additional providers
  *   (e.g. a per-scope coordinator class) into the same array.
  *
- * The helper is internal — primitives re-export their generated
- * `provideFor<X>Defaults` and (when public) their token. Internal — not
- * re-exported from `public-api.ts`.
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee. What consumers see is the generated
+ * pair each primitive re-exports from its own barrel: `provideFor<X>Defaults`
+ * and (when public) its token.
  *
  * @param name Display name of the token (used as the InjectionToken's
  *   description, e.g. `'FOR_TOOLTIP_DEFAULTS'`).

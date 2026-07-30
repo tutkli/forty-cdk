@@ -55,7 +55,9 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
  * or push the resolved ambient from this callback so a recompute becomes a
  * signal read rather than a DOM walk.
  *
- * Internal — not re-exported from `public-api.ts`.
+ * The class itself is module-private — unexported, so it reaches neither
+ * `core/src/public-api.ts` nor the emitted `.d.ts`. The module's exported
+ * surface is {@link injectTextDirection} alone.
  */
 @Injectable({ providedIn: 'root' })
 class AmbientDirection {

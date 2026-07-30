@@ -9,8 +9,10 @@
  * guards, skip-delay). This factory owns only the timing mechanics so those
  * policies stay at the call site — the caller arms with `schedule(delay)`,
  * which clears any in-flight timer first, runs `run` immediately when the
- * clamped delay is `0`, else fires it once after the delay. Internal — not
- * re-exported from `public-api.ts`.
+ * clamped delay is `0`, else fires it once after the delay.
+ *
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
  */
 export interface DebouncedAction {
   /**
