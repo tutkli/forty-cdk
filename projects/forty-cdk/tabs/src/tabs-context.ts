@@ -48,9 +48,24 @@ export interface ForTabsContext {
   /** Moves focus from `currentTrigger`. In automatic mode also selects the new tab. */
   navigate(currentTrigger: HTMLElement, action: ListNavigationAction): void;
 
-  /** Looks up the trigger id for a given tab value. Reactive. */
+  /**
+   * Looks up the trigger id for a given tab value. Reactive.
+   *
+   * Triggers and contents register synchronously in their constructors, so the
+   * pairing resolves during the first change-detection pass — including a real
+   * server render, where `afterNextRender` never fires and a deferred
+   * registration would leave the pre-hydration DOM without its
+   * `aria-labelledby` / `aria-controls` linkage. A handle whose
+   * `input.required` `value` binding has not been written yet is skipped
+   * rather than read (see `tryReadHandle`), and the tracked dependency re-runs
+   * the lookup once that binding lands.
+   */
   triggerIdFor(value: string): string | null;
-  /** Looks up the content id for a given tab value. Reactive. */
+  /**
+   * Looks up the content id for a given tab value. Reactive. Same
+   * synchronous-registration and not-yet-bound handling as
+   * {@link triggerIdFor}.
+   */
   contentIdFor(value: string): string | null;
   /** True when `el` is the first enabled trigger in registration order. */
   isFirstEnabledTrigger(el: HTMLElement): boolean;

@@ -339,6 +339,40 @@ class AccordionRtlFixture {}
 class TabsFixture {}
 
 @Component({
+  imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
+  template: `
+    <div forTabs value="a">
+      <div forTabsList>
+        <button forTabsTrigger value="a">A</button>
+        <button forTabsTrigger value="b" id="static-tab-b">B</button>
+      </div>
+      <section forTabsContent value="a">A body</section>
+      <section forTabsContent value="b" id="static-panel-b">B body</section>
+    </div>
+  `,
+})
+class TabsServerFixture {}
+
+@Component({
+  imports: [ForTabs, ForTabsList, ForTabsTrigger, ForTabsContent],
+  template: `
+    <div forTabs value="a">
+      <div forTabsList>
+        @for (tab of tabs; track tab) {
+          <button forTabsTrigger [value]="tab" [attr.data-tab]="tab">{{ tab }}</button>
+        }
+      </div>
+      @for (tab of tabs; track tab) {
+        <section forTabsContent [value]="tab" [attr.data-panel]="tab">{{ tab }} body</section>
+      }
+    </div>
+  `,
+})
+class TabsServerRepeatFixture {
+  readonly tabs = ['a', 'b'];
+}
+
+@Component({
   imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],
   template: `
     <table forTable aria-label="People">
@@ -2008,6 +2042,8 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   AccordionFixture,
   AccordionRtlFixture,
   TabsFixture,
+  TabsServerFixture,
+  TabsServerRepeatFixture,
   TableFixture,
   TableGridFixture,
   TableBodyFixture,
@@ -2817,6 +2853,63 @@ describe('SSR smoke tests', () => {
 
       expect(panels[0]!.getAttribute('aria-labelledby')).toBe(triggers[0]!.getAttribute('id'));
       expect(triggers[0]!.getAttribute('aria-controls')).toBe(panels[0]!.getAttribute('id'));
+    });
+  });
+
+  describe('ForTabs under real server mode (afterNextRender never fires)', () => {
+    const serverModeGlobal = globalThis as unknown as { ngServerMode?: boolean };
+
+    beforeEach(() => {
+      serverModeGlobal.ngServerMode = true;
+    });
+
+    afterEach(() => {
+      delete serverModeGlobal.ngServerMode;
+    });
+
+    it('wires every trigger/panel aria pairing server-side (aria-labelledby / aria-controls)', () => {
+      const f = TestBed.createComponent(TabsServerFixture);
+      f.detectChanges();
+      const root = f.nativeElement as HTMLElement;
+
+      const triggers = Array.from(root.querySelectorAll<HTMLElement>('[forTabsTrigger]'));
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[forTabsContent]'));
+
+      expect(triggers[0]!.getAttribute('aria-selected')).toBe('true');
+      expect(triggers[1]!.getAttribute('aria-selected')).toBe('false');
+
+      for (const [i, panel] of panels.entries()) {
+        const trigger = triggers[i]!;
+        expect(panel.getAttribute('aria-labelledby')).toBe(trigger.getAttribute('id'));
+        expect(trigger.getAttribute('aria-controls')).toBe(panel.getAttribute('id'));
+      }
+    });
+
+    it('pairs a consumer-set static id instead of a generated one server-side', () => {
+      const f = TestBed.createComponent(TabsServerFixture);
+      f.detectChanges();
+      const root = f.nativeElement as HTMLElement;
+
+      const trigger = root.querySelectorAll<HTMLElement>('[forTabsTrigger]')[1]!;
+      const panel = root.querySelectorAll<HTMLElement>('[forTabsContent]')[1]!;
+
+      expect(trigger.getAttribute('id')).toBe('static-tab-b');
+      expect(panel.getAttribute('id')).toBe('static-panel-b');
+      expect(panel.getAttribute('aria-labelledby')).toBe('static-tab-b');
+      expect(trigger.getAttribute('aria-controls')).toBe('static-panel-b');
+    });
+
+    it('pairs triggers and panels rendered by sibling @for blocks server-side, without NG0950', () => {
+      const f = TestBed.createComponent(TabsServerRepeatFixture);
+      expect(() => f.detectChanges()).not.toThrow();
+      const root = f.nativeElement as HTMLElement;
+
+      for (const tab of ['a', 'b']) {
+        const trigger = root.querySelector<HTMLElement>(`[data-tab="${tab}"]`)!;
+        const panel = root.querySelector<HTMLElement>(`[data-panel="${tab}"]`)!;
+        expect(panel.getAttribute('aria-labelledby')).toBe(trigger.getAttribute('id'));
+        expect(trigger.getAttribute('aria-controls')).toBe(panel.getAttribute('id'));
+      }
     });
   });
 });

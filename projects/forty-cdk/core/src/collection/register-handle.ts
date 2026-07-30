@@ -10,10 +10,13 @@ import { resolveHostId } from '../host-id/host-id';
  * - `'afterNextRender'` — defer the `register` call until Angular's
  *   `afterNextRender` hook fires. Required when the parent's lookups read
  *   `input.required` signals from the handle during host-binding evaluation
- *   that interleaves with sibling directives' input-binding step (Tabs,
- *   NavigationMenu). The `unregister` call always runs eagerly via
- *   `DestroyRef.onDestroy`, so destroy-before-register is a safe no-op as
- *   long as `unregister` is reference-based.
+ *   that interleaves with sibling directives' input-binding step
+ *   (NavigationMenu). Note the hook never fires in a real server render, so a
+ *   deferred registration is invisible to SSR: prefer `'sync'` plus a
+ *   `tryReadHandle`-guarded lookup when the registration drives static markup
+ *   the pre-hydration DOM needs (Tabs). The `unregister` call always runs
+ *   eagerly via `DestroyRef.onDestroy`, so destroy-before-register is a safe
+ *   no-op as long as `unregister` is reference-based.
  */
 export type RegistrationScheduling = 'sync' | 'afterNextRender';
 
