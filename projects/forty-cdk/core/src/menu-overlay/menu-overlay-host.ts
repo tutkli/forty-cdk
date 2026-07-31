@@ -4,6 +4,7 @@ import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navig
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 import type { ForMenuCloseReason } from './menu-context';
 import type { MenuItemHandle } from './menu-item-list';
+import type { MenuOpenerOptions } from './menu-opener-registry';
 import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
 
 /**
@@ -62,6 +63,33 @@ export abstract class MenuOverlayHost<H extends MenuItemHandle = MenuItemHandle>
 
   unregisterTrigger(el: HTMLElement): void {
     this._overlay.unregisterTrigger(el);
+  }
+
+  /**
+   * The `MenuOpenerRegistration` protocol, forwarded once for every root. Kept
+   * `protected` on purpose: it is the piece-registration protocol (#1399), so it
+   * must stay out of the roots' emitted `.d.ts` while remaining callable at
+   * runtime — which is what the trigger directives' `asMenuOpenerRegistration`
+   * narrowing relies on.
+   */
+  protected registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
+    this._overlay.registerOpener(element, options);
+  }
+
+  protected unregisterOpener(element: HTMLElement): void {
+    this._overlay.unregisterOpener(element);
+  }
+
+  protected activateOpener(element: HTMLElement): void {
+    this._overlay.activateOpener(element);
+  }
+
+  protected setVirtualAnchor(x: number, y: number): void {
+    this._overlay.setVirtualAnchor(x, y);
+  }
+
+  protected setVirtualAnchorFromRect(rect: DOMRect): void {
+    this._overlay.setVirtualAnchorFromRect(rect);
   }
 
   registerContent(el: HTMLElement): void {

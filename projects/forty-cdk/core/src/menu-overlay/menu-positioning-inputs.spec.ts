@@ -4,7 +4,7 @@ import { By } from '@angular/platform-browser';
 
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForDropdownMenu } from 'forty-cdk/dropdown-menu';
-import { ForMenuSub } from 'forty-cdk/menu';
+import { ForMenu, ForMenuSub } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger, provideForMenubarDefaults } from 'forty-cdk/menubar';
 
 import { FOR_MENUBAR_FALLBACK_DEFAULTS } from '../../../menubar/src/menubar-defaults';
@@ -15,10 +15,11 @@ import {
 import { MENU_POSITIONING_DEFAULTS } from './menu-positioning-inputs';
 
 @Component({
-  imports: [ForDropdownMenu, ForContextMenu, ForMenuSub],
+  imports: [ForDropdownMenu, ForContextMenu, ForMenu, ForMenuSub],
   template: `
     <div forDropdownMenu></div>
     <div forContextMenu></div>
+    <div forMenu></div>
     <div forContextMenu>
       <div forMenuSub></div>
     </div>
@@ -38,7 +39,7 @@ class MenubarTriggerPositioningHost {}
 
 /**
  * Guard for issue #575 (decision D10): Angular's NG8110 restriction stops the
- * three menu roots from declaring their positioning inputs through a shared
+ * menu roots from declaring their positioning inputs through a shared
  * factory, so each declares them inline. This asserts the inputs they share
  * keep identical default values — the place the audit found real copy-paste
  * drift (`[forMenuSub]`'s hardcoded `0` offsets that diverged from the
@@ -49,7 +50,12 @@ class MenubarTriggerPositioningHost {}
  * companion suites below.
  */
 describe('menu positioning inputs drift guard', () => {
-  function setup(): { dropdown: ForDropdownMenu; context: ForContextMenu; sub: ForMenuSub } {
+  function setup(): {
+    dropdown: ForDropdownMenu;
+    context: ForContextMenu;
+    menu: ForMenu;
+    sub: ForMenuSub;
+  } {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
     });
@@ -61,14 +67,15 @@ describe('menu positioning inputs drift guard', () => {
     const context = fixture.debugElement
       .query(By.directive(ForContextMenu))
       .injector.get(ForContextMenu);
+    const menu = fixture.debugElement.query(By.directive(ForMenu)).injector.get(ForMenu);
     const sub = fixture.debugElement.query(By.directive(ForMenuSub)).injector.get(ForMenuSub);
-    return { dropdown, context, sub };
+    return { dropdown, context, menu, sub };
   }
 
-  it('keeps the non-seed positioning defaults identical across the three roots', () => {
-    const { dropdown, context, sub } = setup();
+  it('keeps the non-seed positioning defaults identical across the roots', () => {
+    const { dropdown, context, menu, sub } = setup();
 
-    for (const root of [dropdown, context, sub]) {
+    for (const root of [dropdown, context, menu, sub]) {
       expect(root.align()).toBe(MENU_POSITIONING_DEFAULTS.align);
       expect(root.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
       expect(root.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
@@ -83,21 +90,25 @@ describe('menu positioning inputs drift guard', () => {
   });
 
   it('shares the top-level `side` default, with the submenu resolving from dir', () => {
-    const { dropdown, context, sub } = setup();
+    const { dropdown, context, menu, sub } = setup();
 
     expect(dropdown.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
     expect(context.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
+    expect(menu.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
     expect(sub.side()).toBe('right');
   });
 
   it('seeds the per-root offsets from the defaults providers (no silent drift)', () => {
-    const { dropdown, context, sub } = setup();
+    const { dropdown, context, menu, sub } = setup();
 
     expect(dropdown.sideOffset()).toBe(4);
     expect(dropdown.collisionPadding()).toBe(8);
 
     expect(context.sideOffset()).toBe(0);
     expect(context.collisionPadding()).toBe(8);
+
+    expect(menu.sideOffset()).toBe(0);
+    expect(menu.collisionPadding()).toBe(8);
 
     expect(sub.sideOffset()).toBe(0);
     expect(sub.collisionPadding()).toBe(8);

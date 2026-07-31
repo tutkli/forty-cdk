@@ -10,11 +10,11 @@ import { createDefaults } from 'forty-cdk/core';
  * They tune the pointer-driven submenu interaction — hovering a
  * `[forMenuSubTrigger]` opens its submenu after `subMenuOpenDelay`, and
  * leaving it (without travelling into the submenu through the pointer-grace
- * "safe triangle") closes it after `subMenuCloseDelay` — and the submenu's
- * floating-ui placement offsets (`sideOffset` / `collisionPadding`), so the
- * submenu reads them from a provider like `[forDropdownMenu]` /
- * `[forContextMenu]` do instead of hardcoding them. Click / Enter / Space /
- * ArrowRight semantics are unaffected by these values.
+ * "safe triangle") closes it after `subMenuCloseDelay` — and the floating-ui
+ * placement offsets (`sideOffset` / `collisionPadding`) of both `[forMenuSub]`
+ * and the `[forMenu]` root, so they read them from a provider like
+ * `[forDropdownMenu]` / `[forContextMenu]` do instead of hardcoding them.
+ * Click / Enter / Space / ArrowRight semantics are unaffected by these values.
  */
 export interface ForMenuDefaults {
   /**
@@ -38,15 +38,16 @@ export interface ForMenuDefaults {
    */
   subMenuPointerGraceDuration: number;
   /**
-   * Distance (px) between the sub-trigger and the submenu content along the
-   * resolved `side` axis. Default `0` — a
-   * submenu sits flush against its parent item.
+   * Distance (px) between the anchor and the menu content along the resolved
+   * `side` axis, for both `[forMenuSub]` and the `[forMenu]` root. Default `0` —
+   * a submenu sits flush against its parent item, and a shared menu sits flush
+   * against whichever opener fired, which is what a pointer-anchored open wants.
    */
   sideOffset: number;
   /**
    * Padding (px) added to the viewport edges for collision-aware positioning
-   * of the submenu. Higher values keep the submenu further from the edge when
-   * `flip` / `shift` runs. Default `8`.
+   * of `[forMenuSub]` and the `[forMenu]` root. Higher values keep the menu
+   * further from the edge when `flip` / `shift` runs. Default `8`.
    */
   collisionPadding: number;
 }

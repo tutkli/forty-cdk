@@ -1,6 +1,5 @@
 import {
   booleanAttribute,
-  computed,
   Directive,
   inject,
   input,
@@ -8,7 +7,6 @@ import {
   numberAttribute,
   output,
 } from '@angular/core';
-import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   type FloatingAlign,
@@ -241,11 +239,15 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
     autoFocusOnClose: this.autoFocusOnClose,
   });
 
-  readonly anchor = computed<ReferenceElement | null>(() => this._overlay.trigger());
-  readonly dismissibleExemptions = computed<readonly HTMLElement[]>(() => {
-    const t = this._overlay.trigger();
-    return t ? [t] : [];
-  });
+  /** Trigger-anchored: the single registered opener's element. */
+  readonly anchor = this._overlay.openerAnchor;
+
+  /**
+   * The trigger button is exempt — its own click handler toggles, so without the
+   * exemption the same pointer-down would also fire pointer-down-outside and
+   * double-close.
+   */
+  readonly dismissibleExemptions = this._overlay.openerExemptions;
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;

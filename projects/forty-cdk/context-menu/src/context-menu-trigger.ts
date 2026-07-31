@@ -10,7 +10,12 @@ import {
   input,
 } from '@angular/core';
 
-import { createDebouncedAction, type DebouncedAction } from 'forty-cdk/core';
+import {
+  asMenuOpenerRegistration,
+  createDebouncedAction,
+  hostId,
+  type DebouncedAction,
+} from 'forty-cdk/core';
 import { type ForContextMenuContext, injectContextMenuContext } from './context-menu-context';
 
 const LONG_PRESS_DELAY_MS = 500;
@@ -81,7 +86,7 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
   exportAs: 'forContextMenuTrigger',
   host: {
     tabindex: '-1',
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'id()',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
     '(pointerdown)': 'onPointerDown($event)',
@@ -102,6 +107,13 @@ export class ForContextMenuTrigger {
   readonly #longPress: DebouncedAction = createDebouncedAction(() => this.#onLongPress());
 
   /**
+   * The region's own aria-wiring id, adopting a consumer-set static `id`. It is
+   * per-opener rather than per-root so a menu shared by several openers
+   * (`[forMenu]`) never emits the same `id` twice.
+   */
+  readonly id = hostId('for-context-menu-trigger');
+
+  /**
    * Optional explicit reference to the `[forContextMenu]` root, named after
    * the selector `routerLink`-style. The bare valueless attribute keeps
    * resolving the enclosing root via DI; pass the root explicitly
@@ -114,6 +126,8 @@ export class ForContextMenuTrigger {
   readonly forContextMenuTrigger = input<ForContextMenuContext | ''>('');
 
   protected readonly ctx = injectContextMenuContext(this.forContextMenuTrigger);
+
+  readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -128,8 +142,14 @@ export class ForContextMenuTrigger {
     // the resolved root changes (explicit reference swapped at runtime).
     effect((onCleanup) => {
       const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
+      const openers = this.#openerRegistration();
+      if (openers === null) {
+        ctx.registerTrigger(el);
+        onCleanup(() => ctx.unregisterTrigger(el));
+        return;
+      }
+      openers.registerOpener(el, { id: this.id });
+      onCleanup(() => openers.unregisterOpener(el));
     });
     inject(DestroyRef).onDestroy(() => this.#longPress.cancel());
   }
@@ -176,6 +196,7 @@ export class ForContextMenuTrigger {
       return;
     }
     if (pointerActivation) {
+      this.#activate();
       this.ctx().setVirtualAnchor(event.clientX, event.clientY);
       this.ctx().openMenu('first', 'pointer');
       return;
@@ -206,6 +227,7 @@ export class ForContextMenuTrigger {
       return;
     }
     this.#longPressOpened = true;
+    this.#activate();
     this.ctx().setVirtualAnchor(this.#pressX, this.#pressY);
     this.ctx().openMenu('first', 'pointer');
   }
@@ -216,7 +238,12 @@ export class ForContextMenuTrigger {
     // Anchor at the focused element when it lives inside the trigger; fall
     // back to the trigger itself otherwise (e.g. focus is on the trigger).
     const anchorEl = focused && trigger.contains(focused) ? focused : trigger;
+    this.#activate();
     this.ctx().setVirtualAnchorFromRect(anchorEl.getBoundingClientRect());
     this.ctx().openMenu('first');
+  }
+
+  #activate(): void {
+    this.#openerRegistration()?.activateOpener(this.#host.nativeElement);
   }
 }

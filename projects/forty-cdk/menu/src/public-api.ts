@@ -1,3 +1,4 @@
+export { ForMenu } from './menu';
 export { ForMenuContent } from './menu-content';
 export { ForMenuItem } from './menu-item';
 export { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';

@@ -1,8 +1,8 @@
-# Menu (shared pieces)
+# Menu (shared pieces + shared-opener root)
 
 The shared menu surface — items, checkbox / radio items, groups, separators and submenus — composed by every menu-family primitive.
 
-Shared surface and item directives consumed by `[forDropdownMenu]` (button trigger) and `[forContextMenu]` (right-click). The folder doesn't expose its own root primitive — open the menu via one of those two flavors.
+Shared surface and item directives consumed by `[forDropdownMenu]` (button trigger) and `[forContextMenu]` (right-click), plus **`[forMenu]`** — the opener-agnostic root for one menu definition driven by [several openers at once](#shared-openers-formenu). For a single opener, reach for one of the two presets; they are `[forMenu]` with the opener already chosen.
 
 ## Anatomy
 
@@ -155,12 +155,80 @@ A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in 
 
 `'start'` prefers the top side when it falls back, `'end'` prefers the bottom. The lever is a pure opt-in — the default `'none'` reproduces today's beside-parent behaviour exactly. `[forDropdownMenu]` and `[forContextMenu]` expose the same input for their own content surface.
 
+## Shared openers (`[forMenu]`)
+
+`[forDropdownMenu]` and `[forContextMenu]` each provide their own menu context, and Angular resolves that context at the template's **declaration site** — so a single `[forMenuContent]` block can only ever see one of them. A table row that needs the same actions from a kebab button _and_ from a right-click over the whole row therefore had to duplicate every item and keep the two copies in sync.
+
+`[forMenu]` is the opener-agnostic root that removes the duplication: one content block, any number of heterogeneous openers.
+
+```html
+<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+  <!-- opener A: the whole row is the right-click region -->
+  <td [forContextMenuTrigger]="row">…cells…</td>
+
+  <!-- opener B: the kebab button at the end of the row -->
+  <td>
+    <button [forDropdownMenuTrigger]="row" class="kebab">⋮</button>
+  </td>
+
+  @if (open()) {
+  <div forMenuContent class="menu">
+    <button forMenuItem (activate)="edit()">Edit</button>
+    <button forMenuItem (activate)="remove()">Delete</button>
+  </div>
+  }
+</tr>
+```
+
+Exactly one instance is open at a time, and everything the mounted surface resolves follows the **active opener** — the one that fired:
+
+- **Return focus** lands on that opener, not on a single fixed trigger.
+- **The anchor** is the opener's own element for a button opener, or its recorded pointer / rect position for a right-click opener (`contextmenu`, long-press, `Shift+F10`, the `ContextMenu` key).
+- **Ids** are per opener, so two openers never emit the same `id`. The button opener's `aria-controls` still points at the shared surface.
+- **Outside-dismissal** exempts the button opener only (its own click toggles, so without the exemption the same pointer-down would double-close). A left-click on the right-click region closes the menu like any other outside click.
+
+Two boundaries worth knowing:
+
+- **`[forContextMenuTrigger]` must be bound explicitly** — `[forContextMenuTrigger]="row"` with `#row="forMenu"`. It resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`). `[forDropdownMenuTrigger]` resolves this root through DI like any other menu piece, so binding it is optional.
+- **Name a shared menu with `[ariaLabel]`.** With heterogeneous openers the root cannot know whether the active one is a labelling control, and pointing `aria-labelledby` at a whole right-click region would announce the entire row as the menu's name. So — like `[forContextMenu]` — `[forMenu]` never emits the trigger-id fallback.
+
+Positioning inputs are shared by every opener (per-opener overrides are not supported yet) and seeded from `provideForMenuDefaults`: `sideOffset` defaults to `0`, flush against the anchor, which is what a pointer-anchored open wants. A button-only shared menu typically sets `[sideOffset]="4"` to match `[forDropdownMenu]`.
+
 ## API
+
+### `ForMenu`
+
+Selector `[forMenu]`, `exportAs: 'forMenu'`.
+
+| Input                       | Type                                | Default          | Notes                                                      |
+| --------------------------- | ----------------------------------- | ---------------- | ---------------------------------------------------------- |
+| `open`                      | `model<boolean>`                    | `false`          | Two-way. `(openChange)` fires on internal transitions only |
+| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | Shared by every opener                                     |
+| `align`                     | `FloatingAlign \| undefined`        | `'start'`        |                                                            |
+| `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`                              |
+| `alignOffset`               | `number`                            | `0`              |                                                            |
+| `avoidCollisions`           | `boolean`                           | `true`           |                                                            |
+| `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         |                                                            |
+| `collisionPadding`          | `number`                            | `8`              | From `provideForMenuDefaults`                              |
+| `arrowPadding`              | `number`                            | `0`              |                                                            |
+| `sticky`                    | `'partial' \| 'always' \| false`    | `'partial'`      |                                                            |
+| `hideWhenDetached`          | `boolean`                           | `false`          |                                                            |
+| `clipUntilPositioned`       | `boolean`                           | `true`           |                                                            |
+| `loop`                      | `boolean`                           | `true`           |                                                            |
+| `dir`                       | `'ltr' \| 'rtl' \| null`            | `null` (ambient) | Reflected to the host `dir` attribute                      |
+| `disabled`                  | `boolean`                           | `false`          | Blocks every opener                                        |
+| `dismissible`               | `boolean`                           | `true`           |                                                            |
+| `returnFocus`               | `boolean`                           | `true`           | Returns focus to the **active** opener                     |
+| `ariaLabel`                 | `string \| null`                    | `null`           | The only name hook — no trigger-id fallback                |
+
+Outputs match the other trigger-anchored overlays: `(escapeKeyDown)`, `(pointerDownOutside)`, `(focusOutside)`, `(interactOutside)`, `(autoFocusOnOpen)`, `(autoFocusOnClose)` — all vetoable via `preventDefault()`.
 
 ### Data attributes
 
 | Piece                                      | Attribute          | Values                     |
 | ------------------------------------------ | ------------------ | -------------------------- |
+| `[forMenu]`                                | `data-state`       | `open` \| `closed`         |
+| `[forMenu]`                                | `data-disabled`    | present \| absent          |
 | `[forMenuContent]` / `[forMenuSubContent]` | `data-state`       | `open` \| `closed`         |
 | `[forMenuItem]`                            | `data-disabled`    | present \| absent          |
 | `[forMenuItem]`                            | `data-highlighted` | present \| absent          |
@@ -183,7 +251,7 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 - Apply each item directive to a `<button>` so Space / Enter activation come from native button behavior.
 - Disabled items keep `tabindex="-1"` and `aria-disabled="true"` (never the native `disabled` attribute) — they are skipped by arrow-key navigation, typeahead, Home/End, and pointer hover, and click / keyboard activation are no-ops, but they stay in the DOM so screen readers can still announce them.
-- The `role="menu"` surface takes its accessible name from a consumer-set static `aria-labelledby` on `[forMenuContent]` when present (it is preserved, never clobbered), else from the root's `ariaLabel` (reflected as `aria-label`); with neither it falls back to `aria-labelledby` pointing at the trigger — the `[forDropdownMenuTrigger]` button, the `[forMenubarTrigger]`, or the `[forMenuSubTrigger]`. `[forContextMenu]` is the exception: its trigger is the whole right-click region, so no fallback is emitted there and `[ariaLabel]` (or your own `aria-labelledby`) is the way to name the menu.
+- The `role="menu"` surface takes its accessible name from a consumer-set static `aria-labelledby` on `[forMenuContent]` when present (it is preserved, never clobbered), else from the root's `ariaLabel` (reflected as `aria-label`); with neither it falls back to `aria-labelledby` pointing at the trigger — the `[forDropdownMenuTrigger]` button, the `[forMenubarTrigger]`, or the `[forMenuSubTrigger]`. `[forContextMenu]` and `[forMenu]` are the exceptions: a right-click region — or, for a shared menu, an opener that may be one — is not a labelling element, so no fallback is emitted there and `[ariaLabel]` (or your own `aria-labelledby`) is the way to name the menu.
 - `[forMenuSeparator]` never registers with the menu's item collection — it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding items already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
 - `[forMenuGroup]` is purely advisory grouping — items inside still register flatly with the parent menu, so navigation flows through groups without interruption.
 - `[forMenuGroup]` and `[forMenuRadioGroup]` both expose `role="group"`; give either an accessible name by projecting a `[forMenuGroupLabel]` inside it, which the group references via `aria-labelledby`.

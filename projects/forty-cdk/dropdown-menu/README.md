@@ -113,6 +113,18 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 </ng-template>
 ```
 
+### Sharing one menu with a second opener
+
+`[forDropdownMenu]` is a **single-opener preset**: one root, one button trigger. When the same actions must also be reachable another way — the canonical case being a table row with a kebab button _and_ a right-click region over the whole row — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
+
+```html
+<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+  <td [forContextMenuTrigger]="row">…cells…</td>
+  <td><button [forDropdownMenuTrigger]="row">⋮</button></td>
+  <!-- one content block, no duplication -->
+</tr>
+```
+
 ## API
 
 ### `ForDropdownMenu`

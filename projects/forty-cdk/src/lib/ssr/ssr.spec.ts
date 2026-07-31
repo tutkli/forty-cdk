@@ -149,7 +149,13 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
 
 import { ForContextMenu, ForContextMenuTrigger } from 'forty-cdk/context-menu';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
-import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
+import {
+  ForMenu,
+  ForMenuContent,
+  ForMenuItem,
+  ForMenuSub,
+  ForMenuSubTrigger,
+} from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import {
   ForNavigationMenu,
@@ -1760,6 +1766,20 @@ class MenuSubOpenFixture {}
 class ContextMenuOpenFixture {}
 
 @Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forMenu #row="forMenu" [open]="true" ariaLabel="Row actions">
+      <div data-opener="region" [forContextMenuTrigger]="row">Row</div>
+      <button data-opener="kebab" [forDropdownMenuTrigger]="row">⋮</button>
+      <div forMenuContent>
+        <button forMenuItem>Edit</button>
+      </div>
+    </div>
+  `,
+})
+class MenuMultiOpenerOpenFixture {}
+
+@Component({
   imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
   template: `
     <span forHoverCard [open]="true">
@@ -2136,6 +2156,7 @@ const FIXTURES: ReadonlyArray<Type<unknown>> = [
   DropdownMenuOpenFixture,
   MenuSubOpenFixture,
   ContextMenuOpenFixture,
+  MenuMultiOpenerOpenFixture,
   HoverCardOpenFixture,
   ListboxFixture,
   ListboxVirtualizedFixture,
@@ -2187,6 +2208,7 @@ const OPEN_STATE_FIXTURES: ReadonlyArray<Type<unknown>> = [
   DropdownMenuOpenFixture,
   MenuSubOpenFixture,
   ContextMenuOpenFixture,
+  MenuMultiOpenerOpenFixture,
   HoverCardOpenFixture,
   DateRangePickerOpenFixture,
   TimePickerOpenFixture,
@@ -2644,6 +2666,31 @@ describe('SSR smoke tests', () => {
     expect(f.nativeElement.contains(content)).toBe(true);
     expect(content.parentElement).not.toBe(document.body);
     expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
+  });
+
+  it('opening a multi-opener [forMenu] does not portal or mutate <body> server-side', () => {
+    const f = TestBed.createComponent(MenuMultiOpenerOpenFixture);
+    f.detectChanges();
+    const content = f.nativeElement.querySelector('[forMenuContent]') as HTMLElement;
+    expect(f.nativeElement.contains(content)).toBe(true);
+    expect(content.parentElement).not.toBe(document.body);
+    expect(document.body.querySelector(':scope > [forMenuContent]')).toBeNull();
+  });
+
+  it('gives each [forMenu] opener its own id server-side', () => {
+    const f = TestBed.createComponent(MenuMultiOpenerOpenFixture);
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    const region = root.querySelector('[data-opener="region"]') as HTMLElement;
+    const button = root.querySelector('[data-opener="kebab"]') as HTMLElement;
+    const content = root.querySelector('[forMenuContent]') as HTMLElement;
+
+    expect(region.getAttribute('id')).toBeTruthy();
+    expect(button.getAttribute('id')).toBeTruthy();
+    expect(region.getAttribute('id')).not.toBe(button.getAttribute('id'));
+    expect(button.getAttribute('aria-controls')).toBe(content.getAttribute('id'));
+    expect(content.getAttribute('aria-label')).toBe('Row actions');
+    expect(content.getAttribute('aria-labelledby')).toBeNull();
   });
 
   it('opening HoverCard does not portal or mutate <body> server-side', () => {

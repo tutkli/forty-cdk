@@ -201,6 +201,11 @@ export { CloseReasonState } from './overlay-controller/close-reason-state';
 export { ElementRegistry } from './overlay-controller/element-registry';
 export { InitialFocusState } from './overlay-controller/initial-focus-state';
 export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-item-list';
+export {
+  asMenuOpenerRegistration,
+  type MenuOpenerOptions,
+  type MenuOpenerRegistration,
+} from './menu-overlay/menu-opener-registry';
 export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
 export { MENU_POSITIONING_DEFAULTS } from './menu-overlay/menu-positioning-inputs';
