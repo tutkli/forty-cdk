@@ -266,6 +266,22 @@ describe('ForToggleGroup', () => {
       }
     });
 
+    it('clears both group disabled channels when disabled flips back to false', async () => {
+      const r = renderHost(ToggleGroupHost);
+      r.instance.groupDisabled.set(true);
+      await r.flush();
+
+      const group = groupOf(r.el);
+      expect(group.getAttribute('aria-disabled')).toBe('true');
+      expect(group.getAttribute('data-disabled')).toBe('');
+
+      r.instance.groupDisabled.set(false);
+      await r.flush();
+      expect(group.hasAttribute('aria-disabled')).toBe(false);
+      expect(group.hasAttribute('data-disabled')).toBe(false);
+      expect(group.hasAttribute('disabled')).toBe(false);
+    });
+
     it('keeps a disabled item focusable (aria-disabled, no native disabled)', async () => {
       const r = renderHost(ToggleGroupHost);
       r.instance.groupDisabled.set(true);
