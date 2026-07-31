@@ -10,6 +10,11 @@ export {
 } from './column-def';
 export { ForRowDef, ForRowCell } from './row-def';
 export {
+  FOR_TABLE_DEF_REGISTRY,
+  type ForTableDefRegistry,
+  provideForTableDefRegistry,
+} from './def-registry';
+export {
   ForTableBody,
   type TableRowActivateEvent,
   type TableRowContextMenuEvent,

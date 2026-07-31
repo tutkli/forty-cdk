@@ -10,9 +10,13 @@
  * names becomes public again (exported from the barrel, or referenced from an
  * exported declaration's signature).
  *
- * The table's protocol is not listed here: it lives in the `forty-cdk/core`
- * internal tier (the virtualization entry point registers through it), where
- * `check-entrypoint-public-types.mjs` already enforces the same two rules.
+ * The table's piece-registration protocol is not listed here: it lives in the
+ * `forty-cdk/core` internal tier (the virtualization entry point registers
+ * through it), where `check-entrypoint-public-types.mjs` already enforces the
+ * same two rules. Its **def**-registration protocol is listed, because that one
+ * is reached only from within `forty-cdk/table` and so stays in the entry point's
+ * own sources — next to the deliberately public `FOR_TABLE_DEF_REGISTRY` read
+ * token a scaffold wrapper provides.
  */
 export const REGISTRATION_SURFACES = {
   accordion: ['AccordionContext', 'ACCORDION_CONTEXT', 'ForAccordionTriggerHandle'],
@@ -33,6 +37,7 @@ export const REGISTRATION_SURFACES = {
   ],
   'radio-group': ['RadioGroupContext', 'RADIO_GROUP_CONTEXT', 'ForRadioHandle'],
   select: ['SelectContext', 'SELECT_CONTEXT', 'ForSelectOverlayContext'],
+  table: ['TableDefRegistration', 'TABLE_DEF_REGISTRATION', 'TableDefHandle', 'TableDefRegistry'],
   tabs: ['TabsContext', 'TABS_CONTEXT', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
   toast: ['ToastContext', 'TOAST_CONTEXT', 'ForToastActionHandle', 'ForToastTextHandle'],
 };

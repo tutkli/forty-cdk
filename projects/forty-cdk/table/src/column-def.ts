@@ -9,6 +9,11 @@ import {
 } from '@angular/core';
 
 import {
+  registerTableColumnDef,
+  registerTableColumnDragPlaceholder,
+  registerTablePlaceholderCellDefault,
+} from './def-registry';
+import {
   assertColumnName,
   assertColumnTrack,
   coerceSticky,
@@ -118,11 +123,19 @@ export class ForPlaceholderCell {
  * rows and `placeholderCells` row variants): the column's own
  * `[forPlaceholderCell]` → this default → an empty cell when neither exists.
  * The template receives no context, exactly like `[forPlaceholderCell]`.
+ *
+ * It registers itself with the surrounding body's def registry at construction,
+ * so a wrapping component can declare it (or project it) — see
+ * {@link ForTableDefRegistry}. Declared outside any registry it throws.
  */
 @Directive({ selector: 'ng-template[forPlaceholderCellDefault]' })
 export class ForPlaceholderCellDefault {
   /** The captured default placeholder-cell template. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
+
+  constructor() {
+    registerTablePlaceholderCellDefault(this);
+  }
 }
 
 /**
@@ -132,11 +145,19 @@ export class ForPlaceholderCellDefault {
  * `ForTableBody` stamps it as every reorderable header cell's
  * `[forDragPlaceholder]`, so during a pointer reorder the dragged column's slot
  * shows this template. Omit it to keep drag-drop's default placeholder behaviour.
+ *
+ * It registers itself with the surrounding body's def registry at construction,
+ * so a wrapping component can declare it (or project it) — see
+ * {@link ForTableDefRegistry}. Declared outside any registry it throws.
  */
 @Directive({ selector: 'ng-template[forColumnDragPlaceholder]' })
 export class ForColumnDragPlaceholder {
   /** The captured placeholder template rendered in a reordered column's slot. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
+
+  constructor() {
+    registerTableColumnDragPlaceholder(this);
+  }
 }
 
 /**
@@ -145,6 +166,13 @@ export class ForColumnDragPlaceholder {
  * place. Place `[forColumnDef]` on an `<ng-container>` inside a `<for-table-body>`;
  * the container renders nothing itself — `ForTableBody` harvests the defs and
  * stamps the header row and data rows from them.
+ *
+ * The def **registers itself** with the surrounding body through DI at
+ * construction (and unregisters when destroyed), so it does not have to be
+ * declared content of the `<for-table-body>` element: a preset column component
+ * may declare it in its own view, and a scaffold wrapper may project it into a
+ * body it owns. See {@link ForTableDefRegistry} for both recipes. A def with no
+ * reachable registry throws — it used to be silently inert.
  *
  * @example
  * ```html
@@ -298,6 +326,7 @@ export class ForColumnDef {
   readonly placeholderCell = contentChild(ForPlaceholderCell);
 
   constructor() {
+    registerTableColumnDef(this);
     effect(() => assertColumnName(this.name(), 'ForColumnDef'));
     effect(() => {
       const width = this.width();

@@ -5,8 +5,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  contentChild,
-  contentChildren,
   DestroyRef,
   type ElementRef,
   inject,
@@ -20,9 +18,15 @@ import {
 
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
-import { ForColumnDef, ForColumnDragPlaceholder, ForPlaceholderCellDefault } from './column-def';
+import { type ForColumnDef } from './column-def';
+import {
+  assertTableDefRegistry,
+  type ForTableDefRegistry,
+  provideForTableDefRegistry,
+  TableDefRegistry,
+} from './def-registry';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
-import { ForRowDef } from './row-def';
+import { type ForRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
@@ -110,6 +114,18 @@ interface RenderRow<T> {
  * `[forTable]` and its rows. Consumers who want full DOM control keep using the
  * raw `[forTableCell]` / `[forTableHeaderCell]` primitives directly.
  *
+ * **Defs register themselves; they are not content-queried.** Each
+ * `[forColumnDef]` / `[forRowDef]` / `[forColumnDragPlaceholder]` /
+ * `[forPlaceholderCellDefault]` resolves this body's def registry through DI at
+ * construction, so a **preset column component** can declare a def in its own
+ * view (a content query would never see a view) and a **scaffold wrapper** can
+ * project consumer defs into a body it owns (see `defs`). Registrations are
+ * exposed in **document order** — identical to the DOM order the content queries
+ * resolved, including a def mounted later by `@if` and a `@for`-reordered set of
+ * defs — and `displayedColumns` still pins an explicit render order on top.
+ * Subclassing this component is not a supported wrapping shape; compose it in a
+ * wrapper's template instead.
+ *
  * Sort and resize affordances are auto-wired from the per-column `sortable` /
  * `resizable` flags. Sort stays consumer-applied (BYO-data): the body derives each
  * header's `aria-sort` from `sort` and re-emits activation through `sortChange`.
@@ -157,6 +173,7 @@ interface RenderRow<T> {
   selector: 'for-table-body',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { style: 'display: contents' },
+  providers: provideForTableDefRegistry(),
   imports: [
     NgTemplateOutlet,
     ForTableHeaderRow,
@@ -420,8 +437,8 @@ export class ForTableBody<T = unknown> {
   readonly rowKey = input<(row: T, index: number) => unknown>();
 
   /**
-   * Which columns render, in order. Defaults to every declared `[forColumnDef]`
-   * in DOM order. Names not matching a declared column are skipped.
+   * Which columns render, in order. Defaults to every registered `[forColumnDef]`
+   * in document order. Names not matching a registered column are skipped.
    */
   readonly displayedColumns = input<readonly string[] | null>(null);
 
@@ -556,17 +573,52 @@ export class ForTableBody<T = unknown> {
    */
   readonly rowAttrs = input<(row: T, index: number) => Record<string, string | null> | undefined>();
 
-  /** Declared column definitions, in DOM order. */
-  protected readonly columns = contentChildren(ForColumnDef);
+  /**
+   * An external def registry to render from, for a **scaffold wrapper**: a
+   * component whose template owns the `[forTable]` shell and this body, and whose
+   * consumers declare their `[forColumnDef]` / `[forRowDef]` blocks as projected
+   * content. Those defs are content of the wrapper, not of this body, so they
+   * register with the wrapper's own registry — provide one with
+   * `provideForTableDefRegistry()` and bind `inject(FOR_TABLE_DEF_REGISTRY)` here.
+   *
+   * When set, this registry **replaces** the body's own: defs the wrapper declares
+   * inside the `<for-table-body>` tags would register with the body instead and be
+   * ignored, so the body throws rather than dropping them — declare a wrapper's
+   * own defs next to the projected ones (outside the body element), where they
+   * reach the same registry. Defaults to `null` (the body renders the defs
+   * declared in its own content).
+   */
+  readonly defs = input<ForTableDefRegistry | null>(null);
 
-  /** Declared full-span row variants, in DOM order (first match wins per datum). */
-  protected readonly rowDefs = contentChildren(ForRowDef);
+  readonly #ownDefs = inject(TableDefRegistry);
 
-  /** The optional shared drag placeholder for reorderable columns, or `undefined`. */
-  protected readonly columnDragPlaceholder = contentChild(ForColumnDragPlaceholder);
+  readonly #defs = computed<TableDefRegistry>(() => {
+    const external = this.defs();
+    if (!external) {
+      return this.#ownDefs;
+    }
+    const registry = assertTableDefRegistry(external);
+    if (!this.#ownDefs.isEmpty()) {
+      throw new Error(
+        `[forty-cdk/table] <for-table-body> renders the [defs] registry it was given, so the ` +
+          `def(s) declared inside its own tags are ignored. Declare them alongside the projected ` +
+          `defs — outside the <for-table-body> element — so they register with the same registry.`,
+      );
+    }
+    return registry;
+  });
 
-  /** The optional body-level default placeholder-cell template, or `undefined`. */
-  protected readonly placeholderCellDefault = contentChild(ForPlaceholderCellDefault);
+  /** The registered column definitions, in document order. */
+  protected readonly columns = computed(() => this.#defs().columnDefs());
+
+  /** The registered full-span row variants, in document order (first match wins per datum). */
+  protected readonly rowDefs = computed(() => this.#defs().rowDefs());
+
+  /** The optional shared drag placeholder for reorderable columns, or `null`. */
+  protected readonly columnDragPlaceholder = computed(() => this.#defs().columnDragPlaceholder());
+
+  /** The optional body-level default placeholder-cell template, or `null`. */
+  protected readonly placeholderCellDefault = computed(() => this.#defs().placeholderCellDefault());
 
   /**
    * Resolves the placeholder template a column stamps into its cell, in both
