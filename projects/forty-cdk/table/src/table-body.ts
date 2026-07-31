@@ -14,12 +14,13 @@ import {
   model,
   output,
   type Signal,
+  type TemplateRef,
   viewChildren,
 } from '@angular/core';
 
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
-import { ForColumnDef, ForColumnDragPlaceholder } from './column-def';
+import { ForColumnDef, ForColumnDragPlaceholder, ForPlaceholderCellDefault } from './column-def';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
 import { ForRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
@@ -141,10 +142,12 @@ interface RenderRow<T> {
  * renders the standard per-column row. Each def declares one of two shapes: a
  * `[forRowCell]` template stamps a **full-span** row (group headers, section
  * separators, summary / empty-state rows) whose single cell spans every column;
- * the `placeholderCells` flag stamps **per-column placeholder cells** from each
- * column's `[forPlaceholderCell]` (interleaved / trailing skeleton rows for
- * infinite scroll). Either way variant rows are presentational and
- * non-selectable, and still count towards `aria-rowindex` / `aria-rowcount`. A
+ * the `placeholderCells` flag stamps **per-column placeholder cells** (interleaved
+ * / trailing skeleton rows for infinite scroll) from each column's
+ * `[forPlaceholderCell]`, falling back to the body-level
+ * `[forPlaceholderCellDefault]` for a column that declares none. Either way
+ * variant rows are presentational and non-selectable, and still count towards
+ * `aria-rowindex` / `aria-rowcount`. A
  * full-span cell stays out of the roving 2D navigation grid (registers no cell
  * handle, so arrow keys step over the row); placeholder cells keep the grid
  * rectangular (one cell per column) but are stamped disabled so grid navigation
@@ -289,12 +292,10 @@ interface RenderRow<T> {
                 [sticky]="col.sticky()"
                 [class]="col.cellClass()"
               >
-                @if (col.placeholderCell(); as placeholderCell) {
-                  <ng-container
-                    [ngTemplateOutlet]="placeholderCell.template"
-                    [ngTemplateOutletInjector]="cell.injector"
-                  />
-                }
+                <ng-container
+                  [ngTemplateOutlet]="placeholderTemplateFor(col)"
+                  [ngTemplateOutletInjector]="cell.injector"
+                />
               </div>
             }
           </div>
@@ -332,12 +333,10 @@ interface RenderRow<T> {
                     [sticky]="col.sticky()"
                     [class]="col.cellClass()"
                   >
-                    @if (col.placeholderCell(); as placeholderCell) {
-                      <ng-container
-                        [ngTemplateOutlet]="placeholderCell.template"
-                        [ngTemplateOutletInjector]="cell.injector"
-                      />
-                    }
+                    <ng-container
+                      [ngTemplateOutlet]="placeholderTemplateFor(col)"
+                      [ngTemplateOutletInjector]="cell.injector"
+                    />
                   </div>
                 }
               } @else {
@@ -433,7 +432,11 @@ export class ForTableBody<T = unknown> {
    */
   readonly sort = input<TableSortDescriptor | null>(null);
 
-  /** When set, render `placeholderRows` skeleton rows (from `[forPlaceholderCell]`) instead of data. */
+  /**
+   * When set, render `placeholderRows` skeleton rows instead of data. Each cell
+   * stamps the column's own `[forPlaceholderCell]`, else the body-level
+   * `[forPlaceholderCellDefault]`, else nothing.
+   */
   readonly loading = input(false);
 
   /** Number of placeholder rows rendered while `loading`. Default `3`. */
@@ -561,6 +564,18 @@ export class ForTableBody<T = unknown> {
 
   /** The optional shared drag placeholder for reorderable columns, or `undefined`. */
   protected readonly columnDragPlaceholder = contentChild(ForColumnDragPlaceholder);
+
+  /** The optional body-level default placeholder-cell template, or `undefined`. */
+  protected readonly placeholderCellDefault = contentChild(ForPlaceholderCellDefault);
+
+  /**
+   * Resolves the placeholder template a column stamps into its cell, in both
+   * stamping paths: the column's own `[forPlaceholderCell]`, else the body-level
+   * `[forPlaceholderCellDefault]`, else `null` for an empty cell.
+   */
+  protected placeholderTemplateFor(col: ForColumnDef): TemplateRef<unknown> | null {
+    return col.placeholderCell()?.template ?? this.placeholderCellDefault()?.template ?? null;
+  }
 
   /** The role a stamped cell carries: `'cell'` in `table` mode, `'gridcell'` otherwise. */
   protected readonly cellRole = computed(() =>

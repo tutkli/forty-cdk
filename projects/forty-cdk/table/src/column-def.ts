@@ -94,12 +94,34 @@ export class ForDataCell<T, V extends T = never> {
  * Marks the placeholder/skeleton template of a column definition. Optional;
  * place on an `<ng-template forPlaceholderCell>` inside a `[forColumnDef]`. When
  * `ForTableBody` is in its `loading` state it stamps this into the column's
- * `[forTableCell]` for each placeholder row (falling back to an empty cell when
- * a column omits it).
+ * `[forTableCell]` for each placeholder row.
+ *
+ * It is the first step of a three-step resolution: a column's own
+ * `[forPlaceholderCell]` wins, else the body-level
+ * `[forPlaceholderCellDefault]`, else the cell stays empty.
  */
 @Directive({ selector: 'ng-template[forPlaceholderCell]' })
 export class ForPlaceholderCell {
   /** The captured placeholder-cell template. */
+  readonly template = inject<TemplateRef<unknown>>(TemplateRef);
+}
+
+/**
+ * Marks the **body-level default** placeholder/skeleton template. Optional and
+ * declared **once per body** (not per column); place on an
+ * `<ng-template forPlaceholderCellDefault>` among the `[forColumnDef]`s.
+ * `ForTableBody` stamps it into every displayed column that declares no
+ * `[forPlaceholderCell]` of its own — most columns of a table share one skeleton
+ * shape, so it is declared once rather than repeated per def.
+ *
+ * Resolution order per column, in both stamping paths (`[loading]` placeholder
+ * rows and `placeholderCells` row variants): the column's own
+ * `[forPlaceholderCell]` → this default → an empty cell when neither exists.
+ * The template receives no context, exactly like `[forPlaceholderCell]`.
+ */
+@Directive({ selector: 'ng-template[forPlaceholderCellDefault]' })
+export class ForPlaceholderCellDefault {
+  /** The captured default placeholder-cell template. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
 }
 
@@ -269,7 +291,10 @@ export class ForColumnDef {
   readonly header = contentChild.required(ForHeaderCell);
   /** The column's data-cell template. */
   readonly dataCell = contentChild.required(ForDataCell);
-  /** The column's optional placeholder-cell template. */
+  /**
+   * The column's optional placeholder-cell template. When absent, `ForTableBody`
+   * falls back to its `[forPlaceholderCellDefault]`, then to an empty cell.
+   */
   readonly placeholderCell = contentChild(ForPlaceholderCell);
 
   constructor() {

@@ -212,6 +212,7 @@ import {
   ForTableRowReorder,
   ForTableSortHeader,
   ForPlaceholderCell,
+  ForPlaceholderCellDefault,
   ForRowCell,
   ForRowDef,
 } from 'forty-cdk/table';
@@ -509,11 +510,13 @@ class TableBodyRowVariantFixture {
     ForHeaderCell,
     ForDataCell,
     ForPlaceholderCell,
+    ForPlaceholderCellDefault,
     ForRowDef,
   ],
   template: `
     <div forTable mode="grid" aria-label="Feed">
       <for-table-body [rows]="rows" [rowKey]="rowKey">
+        <ng-template forPlaceholderCellDefault><span class="skeleton-default">…</span></ng-template>
         <ng-container forColumnDef="name">
           <ng-template forHeaderCell>Name</ng-template>
           <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
@@ -2789,7 +2792,8 @@ describe('SSR smoke tests', () => {
     const cells = Array.from(placeholder.querySelectorAll('[forTableCell]'));
     expect(cells.length).toBe(2);
     expect(cells[0]!.getAttribute('aria-disabled')).toBe('true');
-    expect(placeholder.querySelector('.skeleton')).not.toBeNull();
+    expect(cells[0]!.querySelector('.skeleton')).not.toBeNull();
+    expect(cells[1]!.querySelector('.skeleton-default')).not.toBeNull();
   });
 
   it('<for-table-body> stamps draggable reorder header cells server-side without a drag preview in <body>', () => {

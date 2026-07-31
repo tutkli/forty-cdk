@@ -55,8 +55,9 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 - **`<for-table-body>`** takes `[rows]` (already sorted / filtered / paged by you — BYO-data),
   optional `[rowKey]` (row identity used for `@for` tracking **and** each row's selection `[value]`),
   optional `[displayedColumns]` (which columns render, in order; defaults to declaration order), and
-  `[loading]` / `[placeholderRows]` (render `forPlaceholderCell` skeletons for the initial full-replace
-  load; see [Interleaved placeholder rows](#interleaved-placeholder-rows) for the infinite-scroll shape
+  `[loading]` / `[placeholderRows]` (render `forPlaceholderCell` skeletons — or the body-level
+  `forPlaceholderCellDefault` — for the initial full-replace load; see
+  [Interleaved placeholder rows](#interleaved-placeholder-rows) for the infinite-scroll shape
   that keeps loaded rows and appends trailing skeletons). It **owns
   `grid-template-columns`**: each column contributes its `[width]`, falling back to the published
   `--for-table-col-<name>-width` resize var — so a resized column drives its own track with no glue.
@@ -458,8 +459,10 @@ real rows:
 - The matched rows are **non-selectable**, and their cells are stamped **disabled** — so grid-mode arrow
   navigation steps over them while the roving grid stays rectangular (one cell per column, unlike a
   full-span variant).
-- A column that omits `[forPlaceholderCell]` stamps an empty cell, so you mark only the columns whose
-  skeleton shape you care about (a circle for an avatar column, a bar for text).
+- A column that omits `[forPlaceholderCell]` falls back to the body-level
+  [`[forPlaceholderCellDefault]`](#shared-skeleton-forplaceholdercelldefault), then to an empty cell —
+  so you mark only the columns whose skeleton shape differs from the shared one (a circle for an avatar
+  column, a bar for text).
 - It composes with `[forTableVirtualized]` for free: placeholder rows are ordinary data — they count in
   the total and get windowed and positioned like any row.
 
@@ -504,6 +507,45 @@ protected readonly isPlaceholder = (row: Row): boolean => row.pending === true;
 // A placeholder datum still needs a defined, unique rowKey (a negative-id namespace, say),
 // exactly like a full-span variant — see the Row variants requirements above.
 protected readonly rowKey = (row: Row): number => row.id;
+```
+
+### Shared skeleton: `[forPlaceholderCellDefault]`
+
+Most columns of a table share one skeleton shape, and repeating the same `[forPlaceholderCell]` in every
+def is duplication for what is a table-level concern. Declare it **once per body** on an
+`<ng-template forPlaceholderCellDefault>` among the column defs; every displayed column that declares no
+`[forPlaceholderCell]` of its own stamps it instead.
+
+Each cell resolves its placeholder in three steps, identically in **both** stamping paths (`[loading]`
+rows and `placeholderCells` variant rows):
+
+1. the column's own `[forPlaceholderCell]`, if it has one;
+2. else the body-level `[forPlaceholderCellDefault]`, if declared;
+3. else an empty cell.
+
+So the default never overrides a column that opted into its own shape, and a table with neither template
+keeps the empty cell it rendered before. The default takes no template context, exactly like the
+per-column template.
+
+```html
+<for-table-body [rows]="rows()" [rowKey]="rowKey" [loading]="loading()">
+  <!-- the shape 6 of these 7 columns share -->
+  <ng-template forPlaceholderCellDefault><span class="skeleton skeleton--bar"></span></ng-template>
+
+  <ng-container forColumnDef="avatar" width="48px">
+    <ng-template forHeaderCell></ng-template>
+    <ng-template forDataCell [forDataCellRow]="rows()" let-row
+      ><img [src]="row.avatar" alt=""
+    /></ng-template>
+    <!-- this one column overrides it -->
+    <ng-template forPlaceholderCell><span class="skeleton skeleton--circle"></span></ng-template>
+  </ng-container>
+
+  <ng-container forColumnDef="name">
+    <ng-template forHeaderCell>Name</ng-template>
+    <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+  </ng-container>
+</for-table-body>
 ```
 
 ## Whole-row navigation lists

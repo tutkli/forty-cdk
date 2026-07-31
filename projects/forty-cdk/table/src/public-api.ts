@@ -4,6 +4,7 @@ export {
   ForHeaderCell,
   ForDataCell,
   ForPlaceholderCell,
+  ForPlaceholderCellDefault,
   ForColumnDragPlaceholder,
   type ForDataCellContext,
 } from './column-def';
