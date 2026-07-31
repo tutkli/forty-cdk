@@ -62,11 +62,12 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  * `forty-cdk/context-menu`), so bind it explicitly —
  * `[forContextMenuTrigger]="row"` with `#row="forMenu"`.
  *
- * Accessible name: with heterogeneous openers the root cannot know whether the
- * active one is a labelling control, and pointing `aria-labelledby` at a whole
- * right-click region would announce the entire row as the menu's name. So — like
- * `[forContextMenu]` — it opts out of the trigger-id fallback entirely and
- * `[ariaLabel]` is the way to name a shared menu.
+ * Accessible name: the labelling policy follows the active opener too. A button
+ * opener is a discrete labelling control, so the surface falls back to
+ * `aria-labelledby="<openerId>"` for it; a right-click region is not — pointing
+ * the menu's name at a whole row would announce the entire row — so nothing is
+ * emitted for that one. `[ariaLabel]` wins over both, and a shared menu with any
+ * region opener still wants it.
  *
  * Positioning is shared by every opener (per-opener overrides are out of scope
  * for now), and seeded from `provideForMenuDefaults` — `sideOffset` defaults to
@@ -200,12 +201,15 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**
-   * Accessible name reflected as `aria-label` on `[forMenuContent]`. This is the
-   * only name hook a shared menu exposes: its openers may be right-click regions
-   * rather than labelling controls, so the surface never falls back to
-   * `aria-labelledby="<openerId>"`. With no `ariaLabel` (and no consumer-set
-   * static `aria-labelledby` on the content) the surface exposes no accessible
-   * name at all.
+   * Accessible name reflected as `aria-label` on `[forMenuContent]`. It wins over
+   * the per-opener `aria-labelledby="<openerId>"` fallback for every opener, so
+   * set it when the menu needs one name regardless of how it was opened.
+   *
+   * Without it the surface names itself after the **active** opener when that
+   * opener is a labelling control (a `[forDropdownMenuTrigger]` button) and
+   * exposes no accessible name when it is not (a `[forContextMenuTrigger]`
+   * region, whose whole text would otherwise be announced as the menu's name) —
+   * so a shared menu with any region opener still wants an `ariaLabel`.
    */
   readonly ariaLabel = input<string | null>(null);
 
@@ -277,10 +281,14 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
   readonly dismissibleExemptions = this._overlay.openerExemptions;
 
   /**
-   * A shared menu never names itself after an opener: see the `ariaLabel`
-   * contract above.
+   * Resolved against the **active** opener, because a shared menu's openers are
+   * heterogeneous: a `[forDropdownMenuTrigger]` button is a discrete labelling
+   * control, a `[forContextMenuTrigger]` region is not. So `[forMenuContent]`
+   * falls back to `aria-labelledby="<openerId>"` for a button-opened instance and
+   * emits nothing for a region-opened one — and flips as the menu is reopened
+   * from the other opener. `false` while no single opener is resolvable.
    */
-  readonly triggerLabelsMenu = false;
+  readonly triggerLabelsMenu = this._overlay.openerLabelsMenu;
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;

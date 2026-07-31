@@ -44,6 +44,17 @@ export interface MenuOpenerOptions {
    * any other outside click. Defaults to `false`.
    */
   readonly dismissibleExempt?: boolean;
+  /**
+   * Whether this opener's own accessible name is a valid name for the menu
+   * surface. A discrete labelling control (a `[forDropdownMenuTrigger]` button)
+   * passes `true`, so the surface can fall back to
+   * `aria-labelledby="<openerId>"`; a right-click region
+   * (`[forContextMenuTrigger]`) passes `false`, because pointing the menu's name
+   * at a whole row would announce the row's entire text. Defaults to `false` —
+   * the conservative answer, which is also what a root with no resolvable active
+   * opener reports.
+   */
+  readonly labelsMenu?: boolean;
 }
 
 /**
@@ -91,6 +102,7 @@ interface MenuOpenerEntry {
   readonly id: Signal<string>;
   readonly virtualAnchor: WritableSignal<ReferenceElement | null>;
   readonly dismissibleExempt: boolean;
+  readonly labelsMenu: boolean;
 }
 
 /**
@@ -101,8 +113,9 @@ interface MenuOpenerEntry {
  * duplicated-markup problem `[forMenu]` exists to solve.
  *
  * Everything the mounted surface reads resolves against the **active** opener:
- * the element return-focus lands on, the id the surface names itself after, and
- * the floating-ui anchor. "Active" is whichever opener last called
+ * the element return-focus lands on, the id the surface names itself after,
+ * whether that id is a valid name at all, and the floating-ui anchor. "Active"
+ * is whichever opener last called
  * {@link activate}, falling back to the sole registered opener so a
  * single-opener root (every preset) and a programmatic open both behave exactly
  * as they did before the registry existed.
@@ -169,6 +182,20 @@ export class MenuOpenerRegistry {
       .map((entry) => entry.element),
   );
 
+  /**
+   * Whether the **active** opener's accessible name is a valid name for the menu
+   * surface, so `[forMenuContent]` may fall back to
+   * `aria-labelledby="<openerId>"`. Per-opener rather than per-root because a
+   * shared menu's openers are heterogeneous — a button opener is a labelling
+   * control, a right-click region is not — and the answer therefore flips as the
+   * menu is opened from a different one (#1573).
+   *
+   * `false` while no single opener is resolvable: the surface would otherwise
+   * name itself after the root's seeded trigger id, which no element carries
+   * once every opener owns an id of its own.
+   */
+  readonly labelsMenu = computed<boolean>(() => this.#active()?.labelsMenu ?? false);
+
   constructor(seedId: WritableSignal<string>) {
     this.#seedId = seedId;
     this.id = computed(() => this.#active()?.id() ?? this.#seedId());
@@ -192,6 +219,7 @@ export class MenuOpenerRegistry {
       id: id ?? this.#seedId,
       virtualAnchor: signal<ReferenceElement | null>(null),
       dismissibleExempt: options.dismissibleExempt ?? false,
+      labelsMenu: options.labelsMenu ?? false,
     };
     this.#entries.update((entries) => [
       ...entries.filter((existing) => existing.element !== element),
