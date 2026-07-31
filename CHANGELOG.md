@@ -7,6 +7,117 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-07-31
+
+A composition release. The menu family stops assuming one menu has one opener: a new `[forMenu]` root
+drives a single content definition from any number of heterogeneous openers, each with its own anchor,
+id, accessible name and — through `[menuPositioning]` — its own placement, which the two presets resolve
+too. The declarative table gains the seam a design system needs to wrap it: defs now register through DI,
+so a preset column component can keep its def in its own view and a scaffold wrapper can re-project
+consumer defs. Alongside them, the read-only state becomes stylable on nine hosts that already enforced
+it, and the date picker's trigger finally declares a role that supports the properties it was announcing
+— which is also what surfaced the labelling bug underneath it.
+
+### Added
+
+- **Menu.** New `[forMenu]` root ([#1324](https://github.com/tutkli/forty-cdk/issues/1324)) — an
+  opener-agnostic menu whose single `[forMenuContent]` definition is driven by any number of openers, so a
+  table row can expose the same actions from a kebab `[forDropdownMenuTrigger]` **and** a row-wide
+  `[forContextMenuTrigger]` without duplicating an item. Return-focus, the surface's `aria-labelledby`
+  fallback, the floating-ui anchor, the dismissible exemption and the trigger `id` all resolve against the
+  **active** opener, so a pointer-anchored right-click region and an element-anchored button coexist. A
+  shared menu whose active opener is a button names itself after that button; one opened from a region
+  emits nothing and wants `[ariaLabel]`
+  ([#1573](https://github.com/tutkli/forty-cdk/issues/1573)). `[forDropdownMenu]` and `[forContextMenu]`
+  stay as single-opener presets, unchanged for consumers.
+- **Menu.** Per-opener positioning overrides ([#1574](https://github.com/tutkli/forty-cdk/issues/1574)) —
+  `[forDropdownMenuTrigger]` and `[forContextMenuTrigger]` accept a `[menuPositioning]` seed
+  (`side` / `align` / `sideOffset` / `alignOffset`, every key optional, typed by the new
+  `MenuOpenerPositioning` published from `forty-cdk/shared`), resolved against the active opener with the
+  root's own input as the per-key fallback. The presets resolve it too — the triggers are shared with
+  `[forMenu]`, so an override must not go silently inert under a preset root. The remaining six
+  positioning inputs stay root-only: they are collision and viewport policy for the surface, not a
+  property of the opener that fired.
+- **Table (declarative layer).** A def registration seam for wrapper components
+  ([#1372](https://github.com/tutkli/forty-cdk/issues/1372)) — `[forColumnDef]`, `[forRowDef]`,
+  `[forColumnDragPlaceholder]` and `[forPlaceholderCellDefault]` now register themselves through DI in
+  document order instead of being discovered by content queries, which makes both design-system authoring
+  shapes expressible: a **preset column component** keeping its def in its own view, and a **scaffold
+  wrapper** re-projecting consumer defs into `<for-table-body [defs]>`. Public surface is the reachability
+  only — `FOR_TABLE_DEF_REGISTRY`, the read-only `ForTableDefRegistry` interface and
+  `provideForTableDefRegistry()` — and a body whose registry is unreachable throws a
+  `[forty-cdk/table]` error naming the provider helper
+  ([#1563](https://github.com/tutkli/forty-cdk/issues/1563)). Subclassing `<for-table-body>` is not a
+  wrapping shape: Angular inherits neither `template` nor `imports`, so a subclassed body renders nothing.
+- **Table (declarative layer).** `fallbackWidth` on `[forColumnDef]`
+  ([#1370](https://github.com/tutkli/forty-cdk/issues/1370)) — a `grid-template-columns` track fragment
+  used as the resize-var fallback for a column with no explicit `width`, so a column can render as a
+  weighted, floor-bounded fluid track (`minmax(120px, 2.5fr)`) before its first resize and still be driven
+  by the resizer. Unlike `width` it never pins the column, and an unset value produces the same
+  `minmax(0, 1fr)` track as before. A dev-mode guard now validates both inputs, rejecting only fragments
+  that escape the value they are interpolated into (an empty fragment, a `;` / `{` / `}` / quote / comment
+  opener, unbalanced parentheses) — a stray `)` used to close the enclosing `var(` early and swallow every
+  later column.
+- **Table (declarative layer).** `<ng-template forPlaceholderCellDefault>`
+  ([#1371](https://github.com/tutkli/forty-cdk/issues/1371)) — a body-level default placeholder template,
+  so a table whose columns share one skeleton shape declares it once instead of repeating
+  `[forPlaceholderCell]` in every def. Resolution per column is the column's own template → the body
+  default → an empty cell, unchanged when neither exists.
+- **Form controls.** A `data-readonly` styling hook on nine hosts that already enforced the state: the six
+  `[forListbox]`, `[forCombobox]`, `[forSelect]`, `[forTimePicker]`, `[forDatePicker]` and `[forOtpInput]`
+  roots ([#1560](https://github.com/tutkli/forty-cdk/issues/1560)) and the `[forSelectTrigger]`,
+  `[forTimePickerTrigger]` and `[forDatePickerTrigger]` buttons
+  ([#1554](https://github.com/tutkli/forty-cdk/issues/1554),
+  [#1542](https://github.com/tutkli/forty-cdk/issues/1542)). The library ships no CSS, so `data-*` **is**
+  the styling API, and `readonly` is not a valid attribute of `<button>` — the `data-*` channel is the only
+  one available on a trigger. Emitted truthy-only (`data-readonly=""` / absent), like `data-disabled`.
+
+### Changed
+
+- **Date picker — BREAKING.** `[forDatePickerTrigger]` now declares `role="combobox"`
+  ([#1542](https://github.com/tutkli/forty-cdk/issues/1542)). It was the only picker trigger with no
+  `role`, so it took the implicit `button` role of its host while emitting `aria-readonly` and
+  `aria-required` — two `aria-allowed-attr` violations, on the only focusable surface a closed date picker
+  exposes. The role supports both properties, so the announcement is kept rather than dropped, and it is
+  the shape `[forSelectTrigger]` and `[forTimePickerTrigger]` already ship. Consequences for consumers: the
+  button's text content no longer contributes to its accessible name (`combobox` is Name From: author — the
+  primitive nominates the trigger as the field's labelled element, see Fixed), and selectors or assertions
+  keyed on the implicit `button` role must move to `combobox`.
+- **Menu — BREAKING.** `ForMenuContext.triggerLabelsMenu` widens from `boolean` to `Signal<boolean>`
+  ([#1573](https://github.com/tutkli/forty-cdk/issues/1573)). The member is read inside a `computed`, so a
+  plain boolean could never change after the surface's first evaluation — which is why a shared menu could
+  not derive its labelling policy from the active opener. `ForMenuContext` is published by
+  `forty-cdk/shared`, so a consumer implementing the interface by hand must wrap the value in a signal; the
+  three library implementors that omit the member keep the `true` default. Pre-1.0 this lands without a
+  major.
+- **Menubar — BREAKING.** A switch between sibling triggers is no longer a close, and it parks focus on the
+  trigger ([#1458](https://github.com/tutkli/forty-cdk/issues/1458),
+  [#1555](https://github.com/tutkli/forty-cdk/issues/1555)). Hovering a sibling trigger while another menu
+  is open now moves DOM focus to the **hovered trigger** instead of dragging it into the popup that just
+  opened — the shape the APG reference implementation ships, with `ArrowDown` as the keyboard handoff into
+  the menu the switch left open. And the outgoing surface no longer fires `(autoFocusOnClose)` nor performs
+  a return-focus move on any switch modality (hover, cross-menu `ArrowLeft` / `ArrowRight`, a click on a
+  sibling trigger), because focus goes straight to wherever the incoming open puts it. `(autoFocusOnOpen)`
+  correspondingly stops firing on a hover-switch: there is no focus move to veto. Genuine closes — Escape,
+  an outside interaction, Tab, a consumer's own `value.set(null)` — keep their current emissions and
+  return-focus. A click open still enters the menu, and hovering the already-open trigger is a no-op.
+- **Table (declarative layer) — BREAKING.** A def with no reachable registry now throws a
+  `[forty-cdk/table]` error instead of being silently inert
+  ([#1372](https://github.com/tutkli/forty-cdk/issues/1372)), and a `<for-table-body>` with a bound
+  `[defs]` throws if defs were also declared inside its own tags, since those would be dropped. The raw
+  `[forTableCell]` / `[forTableHeaderCell]` path is unaffected.
+
+### Fixed
+
+- **Date picker / time picker.** Inside a `[forField]`, the labelling and focus target is the trigger, not
+  the root ([#1553](https://github.com/tutkli/forty-cdk/issues/1553)). `[forDatePicker]` and
+  `[forDateRangePicker]` never nominated their trigger, so `aria-labelledby` / `controlId` landed on the
+  non-focusable `<div>` wrapper: the label's `for` pointed at an element that cannot take focus, a
+  non-`<label>` `[forLabel]` click reached nothing, and — once the trigger became a `role="combobox"` — the
+  control had no accessible name at all. All three roots also implement `FormValueControl.focus()`
+  forwarding to their trigger, so Signal Forms' focus-on-error lands on the focusable element instead of
+  the wrapper (the time picker already nominated its trigger; this was its missing half).
+
 ## [0.17.0] - 2026-07-30
 
 A coherence release: every breaking change here removes a _second_ way of saying something the library
@@ -1270,7 +1381,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.18.0...HEAD
+[0.18.0]: https://github.com/tutkli/forty-cdk/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/tutkli/forty-cdk/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/tutkli/forty-cdk/compare/v0.14.0...v0.15.0
