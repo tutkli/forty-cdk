@@ -700,3 +700,117 @@ protected readonly isSeparator = (row: Row): row is SeparatorRow => row.kind ===
   </ng-container>
 </for-table-body>
 ```
+
+## Wrapping the declarative body
+
+A design system layered on forty eventually wants to hide the low-level defs behind its own
+authoring shapes: a **preset column component** collapsing a column's header / data / placeholder
+templates into one line, and a **scaffold wrapper table** that bakes in the `[forTable]` root,
+virtualization wiring and shared row defs so a consumer only declares columns. Both work, because
+`<for-table-body>` does **not** content-query its building blocks: each `[forColumnDef]`,
+`[forRowDef]`, `[forColumnDragPlaceholder]` and `[forPlaceholderCellDefault]` **registers itself**
+with the surrounding def registry through DI at construction (and unregisters when destroyed).
+
+Registered defs are exposed in **document order**, so a def that constructs late — one declared in a
+preset's view, one mounted by `@if` — still renders in its authored place, and `[displayedColumns]`
+still pins an explicit order on top. A def with no reachable registry throws a `[forty-cdk/table]`
+error instead of being silently inert.
+
+### Preset column component
+
+Element DI follows the **declaration** tree, so a preset host declared inside the body's tags lets
+the def in the preset's own view resolve the body's registry. No providers, no registration code:
+
+```ts
+import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ForColumnDef, ForDataCell, ForHeaderCell } from 'forty-cdk/table';
+
+@Component({
+  selector: 'ds-text-column',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <ng-container [forColumnDef]="name()" [sortable]="sortable()" [width]="width()">
+      <ng-template forHeaderCell>{{ header() }}</ng-template>
+      <ng-template forDataCell let-row>{{ value()(row) }}</ng-template>
+    </ng-container>
+  `,
+})
+export class DsTextColumn<T> {
+  readonly name = input.required<string>();
+  readonly header = input.required<string>();
+  readonly value = input.required<(row: T) => unknown>();
+  readonly sortable = input(false, { transform: booleanAttribute });
+  readonly width = input<string | null>(null);
+}
+```
+
+```html
+<div forTable mode="grid" ariaLabel="People">
+  <for-table-body [rows]="rows()" [rowKey]="rowKey">
+    <ds-text-column name="code" header="Code" [value]="pickCode" width="8rem" />
+    <ds-text-column name="name" header="Name" [value]="pickName" sortable />
+  </for-table-body>
+</div>
+```
+
+### Scaffold wrapper table
+
+Defs a consumer projects through the wrapper's `<ng-content>` are content of the **wrapper**, not of
+the `<for-table-body>` inside the wrapper's template — their declaration ancestors are the wrapper's
+host, so they never see the body's own registry. Provide one on the wrapper with
+`provideForTableDefRegistry()` and hand it to the inner body through `[defs]`:
+
+```ts
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import {
+  FOR_TABLE_DEF_REGISTRY,
+  ForTable,
+  ForTableBody,
+  provideForTableDefRegistry,
+} from 'forty-cdk/table';
+
+@Component({
+  selector: 'ds-data-table',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: provideForTableDefRegistry(),
+  imports: [ForTable, ForTableBody],
+  template: `
+    <div forTable mode="grid" [ariaLabel]="ariaLabel()">
+      <for-table-body [rows]="rows()" [rowKey]="rowKey()" [defs]="defs">
+        <ng-content />
+      </for-table-body>
+    </div>
+  `,
+})
+export class DsDataTable<T> {
+  readonly rows = input.required<readonly T[]>();
+  readonly rowKey = input<(row: T, index: number) => unknown>();
+  readonly ariaLabel = input.required<string>();
+  protected readonly defs = inject(FOR_TABLE_DEF_REGISTRY);
+}
+```
+
+```html
+<ds-data-table [rows]="rows()" [rowKey]="rowKey" ariaLabel="People">
+  <ng-container forColumnDef="name" sortable>
+    <ng-template forHeaderCell>Name</ng-template>
+    <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+  </ng-container>
+</ds-data-table>
+```
+
+Three rules for the scaffold shape:
+
+- **A bound `[defs]` replaces the body's own registry.** Defs the wrapper declares **inside** the
+  `<for-table-body>` tags would register with the body instead and be ignored, so the body throws
+  rather than dropping them. Declare the wrapper's own baked-in defs (a shared placeholder row def,
+  a fixed actions column) next to the projected ones — anywhere in the wrapper's template outside
+  the `<for-table-body>` element — where they reach the same registry and interleave with the
+  projected defs by document order.
+- **`FOR_TABLE_DEF_REGISTRY` is a read token.** `ForTableDefRegistry` exposes `columnNames` (every
+  registered column's `name`, in document order — useful to derive the wrapper's own
+  `[displayedColumns]`); the registration protocol behind it is internal, so only the registry
+  `provideForTableDefRegistry()` installs is accepted by `[defs]`.
+- **Compose the body, don't subclass it.** A component subclass replaces its base's `providers`
+  wholesale, which would strip the registry the defs resolve.

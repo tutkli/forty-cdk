@@ -614,6 +614,17 @@ The argument is the subclass, so the public `FOR_TABLE_CONTEXT` aliases it and a
 
 The rest of the wrapper story — what a wrapper must not swallow, and the plain re-provide every other composed root needs — is in [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
 
+## Wrapping the declarative body
+
+`<for-table-body>` does not content-query its building blocks: every `[forColumnDef]` / `[forRowDef]` / `[forColumnDragPlaceholder]` / `[forPlaceholderCellDefault]` **registers itself** with the surrounding def registry through DI at construction, and registrations are exposed in document order. That makes the two authoring shapes a design system layers on top expressible, and both are recipes rather than new API surface:
+
+- **A preset column component** (`<ds-text-column name="code" [header]="…" [value]="…" />` collapsing the recurring header / data / placeholder block into one line) needs **nothing extra**. Element DI follows the declaration tree, so a preset host declared inside the body's tags lets the def in the preset's own **view** resolve the body's registry — a content query never could, because a view is not content.
+- **A scaffold wrapper table** (`<ds-data-table>` whose template owns the `[forTable]` root, the body and the shared row defs, with consumer columns arriving through `<ng-content>`) needs one seam: those projected defs are content of the wrapper, not of the inner body, so the wrapper declares `providers: provideForTableDefRegistry()` and binds `inject(FOR_TABLE_DEF_REGISTRY)` to the body's `[defs]`. The wrapper's own baked-in defs go next to the projected ones, outside the `<for-table-body>` element, so they reach the same registry.
+
+A def with no reachable registry throws a `[forty-cdk/table]` error (it used to be silently inert), and subclassing `ForTableBody` is not a supported wrapping shape — compose it in a wrapper's template.
+
+→ Both recipes in full: **[Table: declarative columns — Wrapping the declarative body](../../../docs/table-declarative-columns.md#wrapping-the-declarative-body)**
+
 ## Accessibility
 
 Implements the [WAI-ARIA Table pattern](https://www.w3.org/WAI/ARIA/apg/patterns/table/) and the [WAI-ARIA Grid pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/).

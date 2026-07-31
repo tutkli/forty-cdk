@@ -1,0 +1,322 @@
+import {
+  computed,
+  DestroyRef,
+  ElementRef,
+  inject,
+  Injectable,
+  InjectionToken,
+  type Provider,
+  type Signal,
+} from '@angular/core';
+
+import { Collection, tryReadHandle } from 'forty-cdk/core';
+
+import type {
+  ForColumnDef,
+  ForColumnDragPlaceholder,
+  ForPlaceholderCellDefault,
+} from './column-def';
+import type { ForRowDef } from './row-def';
+
+/**
+ * The def registry a `<for-table-body>` renders from — the seam that lets a
+ * **scaffold wrapper** own the table shell while its consumers keep declaring
+ * plain `[forColumnDef]` / `[forRowDef]` blocks.
+ *
+ * Defs discover their registry through DI at construction, and element DI follows
+ * the **declaration** tree: a def projected through a wrapper's `<ng-content>` is
+ * a child of the wrapper's host, not of the `<for-table-body>` inside the
+ * wrapper's template, so it never sees the body's own registry. A wrapper
+ * therefore provides its own registry with `provideForTableDefRegistry()` and
+ * hands it to its inner body through `[defs]`; projected defs register with it,
+ * and the body renders them exactly as if they had been declared inside its own
+ * tags. See the table README for the full recipe.
+ *
+ * A **preset column component** (`<ds-text-column name="code" …>` collapsing a
+ * column's header / data templates into one line) needs none of this: the preset
+ * host is declared inside the body's tags, so the def in the preset's view
+ * resolves the body's registry through the element-injector chain.
+ *
+ * The read members here are the whole public surface. How defs wire themselves
+ * into a registry is a separate, unexported protocol, so the library keeps
+ * refactoring it; the only supported implementation is the one
+ * `provideForTableDefRegistry()` installs, and `<for-table-body>` rejects any
+ * other value bound to `[defs]`.
+ */
+export interface ForTableDefRegistry {
+  /**
+   * The `name` of every registered `[forColumnDef]`, in document order — the
+   * default column order a bound `<for-table-body>` renders. A wrapper can seed
+   * its own `[displayedColumns]` from it (say, to move a fixed action column to
+   * the end) without knowing which defs its consumer projected.
+   *
+   * Reading it resolves each def's required `name` input, so read it from a
+   * template, a `computed`, or an `afterNextRender` — not from a constructor,
+   * where the projected defs' inputs are not bound yet.
+   */
+  readonly columnNames: Signal<readonly string[]>;
+}
+
+export const FOR_TABLE_DEF_REGISTRY = new InjectionToken<ForTableDefRegistry>(
+  'FOR_TABLE_DEF_REGISTRY',
+);
+
+/**
+ * One registered def paired with the DOM node that positions it — the comment
+ * anchor of its `<ng-container>`, or the element it sits on. The node orders the
+ * registry in document position, so a def declared inside a preset component's
+ * view (which constructs after every directly declared def) still renders in its
+ * authored place.
+ */
+export interface TableDefHandle<D> {
+  /**
+   * The def's host, read only to resolve document order — never for element
+   * APIs, because a def declared on an `<ng-container>` (the documented shape)
+   * or an `<ng-template>` hosts on that anchor's comment node.
+   */
+  readonly host: HTMLElement;
+  /** The registered def instance. */
+  readonly def: D;
+}
+
+/**
+ * The def-registration protocol: how the four declarative pieces wire themselves
+ * into the registry a `<for-table-body>` reads. Deliberately kept off
+ * {@link ForTableDefRegistry} — this is the surface the library refactors, and
+ * nothing outside `forty-cdk/table` needs to call it.
+ */
+export interface TableDefRegistration {
+  /** Whether nothing at all has registered — the body's guard against defs registered on the wrong registry. */
+  readonly isEmpty: Signal<boolean>;
+  /** Registers a column def. */
+  registerColumnDef(handle: TableDefHandle<ForColumnDef>): void;
+  /** Unregisters a column def. Reference-based. */
+  unregisterColumnDef(handle: TableDefHandle<ForColumnDef>): void;
+  /** Registers a row variant def. */
+  registerRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void;
+  /** Unregisters a row variant def. Reference-based. */
+  unregisterRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void;
+  /** Registers the shared column drag placeholder template. */
+  registerColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void;
+  /** Unregisters the shared column drag placeholder template. Reference-based. */
+  unregisterColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void;
+  /** Registers the body-level default placeholder-cell template. */
+  registerPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void;
+  /** Unregisters the body-level default placeholder-cell template. Reference-based. */
+  unregisterPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void;
+}
+
+export const TABLE_DEF_REGISTRATION = new InjectionToken<TableDefRegistration>(
+  'TABLE_DEF_REGISTRATION',
+);
+
+/**
+ * Owns the registered declarative defs of one `<for-table-body>`, exposing them
+ * in document order.
+ *
+ * Document order (rather than construction order) is what keeps the seam a
+ * drop-in replacement for the content queries it replaces: a def inside a preset
+ * component's view constructs after every directly declared def, an `@if`-mounted
+ * def constructs whenever it mounts, and a `@for`-reordered set of defs moves its
+ * nodes without re-running constructors. `Collection` resolves all three from the
+ * handles' host nodes.
+ */
+@Injectable()
+export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistration {
+  readonly #columns = new Collection<TableDefHandle<ForColumnDef>>();
+  readonly #rowDefs = new Collection<TableDefHandle<ForRowDef<unknown>>>();
+  readonly #dragPlaceholders = new Collection<TableDefHandle<ForColumnDragPlaceholder>>();
+  readonly #placeholderDefaults = new Collection<TableDefHandle<ForPlaceholderCellDefault>>();
+
+  /**
+   * Registered column defs, in document order.
+   *
+   * A def registers in its view's **creation** pass but has its required `name`
+   * bound in that view's **update** pass, and for a def declared in a preset
+   * component's view those two passes straddle the body's own render — so a def
+   * is held back until its name can be read, and `tryReadHandle` tracks the
+   * unset signal so the binding's write folds it in. See `tryReadHandle`.
+   */
+  readonly columnDefs: Signal<readonly ForColumnDef[]> = computed(() =>
+    this.#columns
+      .items()
+      .map((handle) => handle.def)
+      .filter((def) => tryReadHandle(() => def.name()) !== null),
+  );
+
+  /**
+   * Registered row variant defs, in document order (first match wins per datum).
+   * Held back until the def's required `when` predicate can be read, exactly like
+   * {@link columnDefs}.
+   */
+  readonly rowDefs: Signal<readonly ForRowDef<unknown>[]> = computed(() =>
+    this.#rowDefs
+      .items()
+      .map((handle) => handle.def)
+      .filter((def) => tryReadHandle(() => def.when()) !== null),
+  );
+
+  /** The shared column drag placeholder (the first in document order), or `null`. */
+  readonly columnDragPlaceholder: Signal<ForColumnDragPlaceholder | null> = computed(
+    () => this.#dragPlaceholders.items()[0]?.def ?? null,
+  );
+
+  /** The body-level default placeholder-cell template (the first in document order), or `null`. */
+  readonly placeholderCellDefault: Signal<ForPlaceholderCellDefault | null> = computed(
+    () => this.#placeholderDefaults.items()[0]?.def ?? null,
+  );
+
+  /** The `name` of every registered column def, in document order. */
+  readonly columnNames: Signal<readonly string[]> = computed(() =>
+    this.columnDefs().map((def) => def.name()),
+  );
+
+  /** Whether no def of any kind is registered. */
+  readonly isEmpty: Signal<boolean> = computed(
+    () =>
+      this.#columns.items().length === 0 &&
+      this.#rowDefs.items().length === 0 &&
+      this.#dragPlaceholders.items().length === 0 &&
+      this.#placeholderDefaults.items().length === 0,
+  );
+
+  /** Registers a column def so it joins the rendered columns at its document position. */
+  registerColumnDef(handle: TableDefHandle<ForColumnDef>): void {
+    this.#columns.register(handle);
+  }
+
+  /** Unregisters a column def. Reference-based. */
+  unregisterColumnDef(handle: TableDefHandle<ForColumnDef>): void {
+    this.#columns.unregister(handle);
+  }
+
+  /** Registers a row variant def so its matched data rows render the variant. */
+  registerRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void {
+    this.#rowDefs.register(handle);
+  }
+
+  /** Unregisters a row variant def. Reference-based. */
+  unregisterRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void {
+    this.#rowDefs.unregister(handle);
+  }
+
+  /** Registers the shared drag placeholder stamped into every reorderable header cell. */
+  registerColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void {
+    this.#dragPlaceholders.register(handle);
+  }
+
+  /** Unregisters the shared column drag placeholder. Reference-based. */
+  unregisterColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void {
+    this.#dragPlaceholders.unregister(handle);
+  }
+
+  /** Registers the default placeholder-cell template columns fall back to. */
+  registerPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void {
+    this.#placeholderDefaults.register(handle);
+  }
+
+  /** Unregisters the default placeholder-cell template. Reference-based. */
+  unregisterPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void {
+    this.#placeholderDefaults.unregister(handle);
+  }
+}
+
+/**
+ * The provider set installing a def registry on a host: the registry itself, the
+ * public {@link FOR_TABLE_DEF_REGISTRY} read token, and the internal
+ * registration protocol the declarative defs resolve.
+ *
+ * `<for-table-body>` declares it so defs declared inside its own tags register
+ * with it. A **scaffold wrapper** declares it too, so defs its consumers project
+ * through `<ng-content>` reach a registry at all, and binds
+ * `inject(FOR_TABLE_DEF_REGISTRY)` to its inner body's `[defs]`.
+ */
+export function provideForTableDefRegistry(): Provider[] {
+  return [
+    TableDefRegistry,
+    { provide: FOR_TABLE_DEF_REGISTRY, useExisting: TableDefRegistry },
+    { provide: TABLE_DEF_REGISTRATION, useExisting: TableDefRegistry },
+  ];
+}
+
+function injectTableDefRegistration(piece: string): TableDefRegistration {
+  const registration = inject(TABLE_DEF_REGISTRATION, { optional: true });
+  if (!registration) {
+    throw new Error(
+      `[forty-cdk/table] ${piece} must be used inside a <for-table-body>, or inside a component ` +
+        `providing provideForTableDefRegistry() whose registry is bound to a body's [defs].`,
+    );
+  }
+  return registration;
+}
+
+function injectDefHost(): HTMLElement {
+  return inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+}
+
+/**
+ * Registers a `[forColumnDef]` with the surrounding registry for the def's
+ * lifetime. Call it from the def's constructor — it resolves the registry, the
+ * host node, and the `DestroyRef` from the ambient injection context.
+ */
+export function registerTableColumnDef(def: ForColumnDef): void {
+  const registration = injectTableDefRegistration('ForColumnDef');
+  const handle: TableDefHandle<ForColumnDef> = { host: injectDefHost(), def };
+  registration.registerColumnDef(handle);
+  inject(DestroyRef).onDestroy(() => registration.unregisterColumnDef(handle));
+}
+
+/**
+ * Registers a `[forRowDef]` with the surrounding registry for the def's
+ * lifetime, type-erased over the def's row type — the same erasure the
+ * `contentChildren(ForRowDef)` query performed implicitly before defs registered
+ * themselves. The body only ever matches a def against data from the same `rows`
+ * input, so the erasure is sound.
+ */
+export function registerTableRowDef<T>(def: ForRowDef<T>): void {
+  const registration = injectTableDefRegistration('ForRowDef');
+  const handle: TableDefHandle<ForRowDef<unknown>> = {
+    host: injectDefHost(),
+    def: def as unknown as ForRowDef<unknown>,
+  };
+  registration.registerRowDef(handle);
+  inject(DestroyRef).onDestroy(() => registration.unregisterRowDef(handle));
+}
+
+/**
+ * Registers a `[forColumnDragPlaceholder]` with the surrounding registry for the
+ * template's lifetime.
+ */
+export function registerTableColumnDragPlaceholder(def: ForColumnDragPlaceholder): void {
+  const registration = injectTableDefRegistration('ForColumnDragPlaceholder');
+  const handle: TableDefHandle<ForColumnDragPlaceholder> = { host: injectDefHost(), def };
+  registration.registerColumnDragPlaceholder(handle);
+  inject(DestroyRef).onDestroy(() => registration.unregisterColumnDragPlaceholder(handle));
+}
+
+/**
+ * Registers a `[forPlaceholderCellDefault]` with the surrounding registry for the
+ * template's lifetime.
+ */
+export function registerTablePlaceholderCellDefault(def: ForPlaceholderCellDefault): void {
+  const registration = injectTableDefRegistration('ForPlaceholderCellDefault');
+  const handle: TableDefHandle<ForPlaceholderCellDefault> = { host: injectDefHost(), def };
+  registration.registerPlaceholderCellDefault(handle);
+  inject(DestroyRef).onDestroy(() => registration.unregisterPlaceholderCellDefault(handle));
+}
+
+/**
+ * Narrows a `[defs]`-bound registry to the library's own implementation. The
+ * registration protocol is not public, so a hand-rolled `ForTableDefRegistry` has
+ * no way to receive registrations — binding one is an authoring error, not a
+ * supported extension point.
+ */
+export function assertTableDefRegistry(registry: ForTableDefRegistry): TableDefRegistry {
+  if (!(registry instanceof TableDefRegistry)) {
+    throw new Error(
+      `[forty-cdk/table] <for-table-body> [defs] must be a registry provided by ` +
+        `provideForTableDefRegistry(); received a value that is not one.`,
+    );
+  }
+  return registry;
+}

@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 
 import { type ForDataCellContext } from './column-def';
+import { registerTableRowDef } from './def-registry';
 
 /**
  * Marks the content template of a full-span row variant. Place on an
@@ -87,6 +88,12 @@ export class ForRowCell<T, V extends T = T> {
  * When several `[forRowDef]`s match a datum, the first in DOM order wins. A datum
  * matched by no `[forRowDef]` renders the standard per-column row.
  *
+ * Like `[forColumnDef]`, the def **registers itself** with the surrounding body
+ * through DI at construction (and unregisters when destroyed), so a preset
+ * component may declare it in its own view and a scaffold wrapper may project it
+ * into a body it owns — see {@link ForTableDefRegistry}. A def with no reachable
+ * registry throws.
+ *
  * @example
  * ```html
  * <for-table-body [rows]="rows()">
@@ -142,4 +149,8 @@ export class ForRowDef<T> {
    * error.
    */
   readonly placeholderCells = input(false, { transform: booleanAttribute });
+
+  constructor() {
+    registerTableRowDef(this);
+  }
 }
