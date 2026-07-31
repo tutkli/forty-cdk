@@ -77,6 +77,7 @@ test.describe('Slider (pointer drag)', () => {
     // browser sub-pixel rounding; we explicitly avoid a tight equality
     // assertion since Chromium vs WebKit can disagree by a pixel).
     await dragOnTrack(page, el(page, 'track'), 0.5, 0.75, { axis: 'x' });
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const text = await el(page, 'last-value').textContent();
     const v = Number(text);
@@ -129,6 +130,7 @@ test.describe('Slider (pointer drag)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
     const countAfterRelease = Number(await el(page, 'value-change-count').textContent());
     expect(countAfterRelease).toBeGreaterThan(0);
 
@@ -171,6 +173,7 @@ test.describe('Slider (track click)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.4, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
     expect(lo).toBeGreaterThanOrEqual(38);
@@ -195,6 +198,7 @@ test.describe('Slider (track press focus)', () => {
     await gotoFixture(page, 'slider');
     const trackBox = await el(page, 'track').boundingBox();
     expect(trackBox).not.toBeNull();
+    const before = await el(page, 'last-value').textContent();
 
     // No `mouse.move` between down and up: the un-armed, no-commit path that
     // previously left the slider without a focused thumb.
@@ -203,6 +207,7 @@ test.describe('Slider (track press focus)', () => {
     await page.mouse.up();
 
     await expectFocused(el(page, 'thumb-0'));
+    await expect.poll(() => el(page, 'last-value').textContent()).not.toBe(before);
 
     const pressed = Number(await el(page, 'last-value').textContent());
     await page.keyboard.press('ArrowRight');
@@ -265,6 +270,7 @@ test.describe('Slider (coincident thumbs)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.95, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
     expect(lo).toBe(80);
@@ -288,6 +294,7 @@ test.describe('Slider (coincident thumbs)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.6, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
     expect(hi).toBe(80);
@@ -311,6 +318,7 @@ test.describe('Slider (coincident thumbs)', () => {
     await page.mouse.move(trackBox!.x - 500, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const [lo, hi] = (await el(page, 'last-value').textContent())!.split(',').map(Number);
     // Upper thumb stayed active and clamped down to its lower neighbour; the
@@ -567,6 +575,7 @@ test.describe('Slider (step granularity)', () => {
     );
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const v = Number(await el(page, 'last-value').textContent());
     expect(v % 10).toBe(0);
@@ -588,6 +597,7 @@ test.describe('Slider (step granularity)', () => {
     await page.mouse.move(trackBox!.x + trackBox!.width * 0.75, trackBox!.y + trackBox!.height / 2);
     await page.waitForTimeout(POINTER_MOVE_SETTLE_MS);
     await page.mouse.up();
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const v = Number(await el(page, 'last-value').textContent());
     expect(v % 10).toBe(0);
@@ -619,6 +629,7 @@ test.describe('Slider (@mobile touch drag)', () => {
     // to roughly +25 value (allowing for the 5 px arming step and
     // browser sub-pixel rounding).
     await dragFrom(page, el(page, 'thumb-0'), { dx: 50, dy: 0 }, { testInfo });
+    await expect(el(page, 'touched')).toHaveText('true');
 
     const v = Number(await el(page, 'last-value').textContent());
     // Same tolerance as the desktop "dragging the thumb to mid-track"
