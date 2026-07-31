@@ -8,11 +8,19 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
  * control the picker exposes for `[formField]`. Apply on a `<button>` so
  * Space / Enter dispatch native clicks that toggle via `(click)`.
  *
- * Wires APG Date Picker Dialog attributes: `aria-haspopup="dialog"`,
- * `aria-expanded` reflecting `open()`, and `aria-controls` pointing to the
- * content while open. It also reflects the root's form-control state
- * (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) so the
- * focusable element advertises validity to assistive tech.
+ * Wires APG Date Picker Dialog attributes: `role="combobox"`,
+ * `aria-haspopup="dialog"`, `aria-expanded` reflecting `open()`, and
+ * `aria-controls` pointing to the content while open. It also reflects the
+ * root's form-control state (`aria-readonly` / `aria-required` /
+ * `aria-invalid` / `aria-busy`) so the focusable element advertises validity to
+ * assistive tech, plus the `data-readonly` styling hook.
+ *
+ * The role is what makes that reflection legal: `role="button"` — the implicit
+ * role of the `<button>` host — supports neither `aria-readonly` nor
+ * `aria-required`, so emitting them there was an `aria-allowed-attr` violation
+ * that conveyed nothing. `combobox` supports both, and it is the same shape
+ * `[forSelectTrigger]` and `[forTimePickerTrigger]` already ship, with
+ * `dialog` as the popup token ARIA 1.2 allows for a combobox surface.
  *
  * Disabling: the native `disabled` attribute is the single reflection channel
  * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
@@ -36,6 +44,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
   exportAs: 'forDatePickerTrigger',
   host: {
     '[attr.type]': 'buttonType()',
+    role: 'combobox',
     '[id]': 'ctx().triggerId()',
     '[attr.aria-haspopup]': '"dialog"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
@@ -46,6 +55,7 @@ import { type ForDatePickerContext, injectDatePickerTriggerContext } from './dat
     '[attr.aria-busy]': 'ctx().pending() ? "true" : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx().effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'ctx().readonly() ? "" : null',
     '(click)': 'onClick()',
     '(focusout)': 'onFocusOut($event)',
   },
