@@ -171,7 +171,10 @@ export class ForMenubar implements ForMenubarContext {
    * Fires just before focus returns to the trigger on unmount. Call
    * `preventDefault()` on the veto to suppress the return-focus. Not fired
    * when the close already moved focus on purpose (Tab, or an outside
-   * pointer-down / focus).
+   * pointer-down / focus), and not fired when the outgoing menu is replaced by a
+   * sibling's — a switch is not a close, so the outgoing surface makes no
+   * return-focus move to veto and focus goes straight to wherever the incoming
+   * open puts it.
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
