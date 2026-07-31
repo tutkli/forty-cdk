@@ -204,6 +204,15 @@ column, so the handle keeps driving it.
 consulted). It is _not_ gated on `resizable`: a non-`resizable` column with no `[width]` resolves through
 the same var, which `[(columnWidths)]` can publish, so a weighted fluid track is equally useful there.
 
+Both inputs are **dev-mode-guarded**, the same way a column name is. Any open track vocabulary is
+accepted (`minmax()`, `fit-content()`, `calc()`, `clamp()`, `var()`), but a fragment that would escape the
+derived `grid-template-columns` string throws a `[forty-cdk/table]` error instead of silently collapsing
+the layout: an empty fragment (pass `null` — or omit the input — to leave the track unset), a `;` / `{` /
+`}` / quote / comment opener, or unbalanced parentheses. That last one is the reason the guard exists at
+all for `[fallbackWidth]`: a stray `)` closes the enclosing `var(` early and swallows every column after
+it, which reads as "the whole table lost its layout" rather than "one column has a typo". Production
+builds skip the check.
+
 ## Column reordering (`reorderable` + `columnReorder`)
 
 Mark a column `reorderable` and `<for-table-body>` makes its header cell a drag-reorder handle. With at

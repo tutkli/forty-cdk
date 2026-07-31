@@ -25,7 +25,12 @@ import { ForTableColumnLabel } from './table-column-label';
 import { type TableResizeDescriptor } from './table-column-resizer';
 import { type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableRowSelector } from './table-row-selector';
-import { assertColumnName, type TableMode, type TableSelectionMode } from './table-context';
+import {
+  assertColumnName,
+  assertColumnTrack,
+  type TableMode,
+  type TableSelectionMode,
+} from './table-context';
 import { type TableSortDescriptor } from './table-sort-header';
 
 interface Row {
@@ -644,6 +649,40 @@ class NeitherConfigHost {
   `,
 })
 class BadColumnNameHost {
+  readonly rows = [{ name: 'Ada' }];
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable>
+      <for-table-body [rows]="rows">
+        <ng-container forColumnDef="name" fallbackWidth="minmax(120px, 2.5fr))">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell let-row>{{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class BadFallbackWidthHost {
+  readonly rows = [{ name: 'Ada' }];
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable>
+      <for-table-body [rows]="rows">
+        <ng-container forColumnDef="name" width="160px; z-index: 9">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell let-row>{{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class BadWidthHost {
   readonly rows = [{ name: 'Ada' }];
 }
 
@@ -2054,6 +2093,67 @@ describe('ForTableBody', () => {
         '48px ' +
           'var(--for-table-col-name-width, minmax(64px, 3fr)) ' +
           'var(--for-table-col-role-width, minmax(64px, 3fr))',
+      );
+    });
+  });
+
+  describe('column track validation (#1370)', () => {
+    it('throws a prefixed error naming the input for a fragment carrying a semicolon', () => {
+      expect(() =>
+        assertColumnTrack('160px; z-index: 9', 'width', 'forColumnDef="name"'),
+      ).toThrowError(/\[forty-cdk\/table\][\s\S]*width[\s\S]*forColumnDef="name"/);
+    });
+
+    it('throws for unbalanced parentheses in either direction', () => {
+      expect(() =>
+        assertColumnTrack('minmax(120px, 2.5fr))', 'fallbackWidth', 'forColumnDef="a"'),
+      ).toThrowError(/\[forty-cdk\/table\][\s\S]*unbalanced/);
+      expect(() =>
+        assertColumnTrack('minmax(120px, 2.5fr', 'fallbackWidth', 'forColumnDef="a"'),
+      ).toThrowError(/\[forty-cdk\/table\][\s\S]*unbalanced/);
+    });
+
+    it('throws for an empty or whitespace-only fragment', () => {
+      expect(() => assertColumnTrack('', 'width', 'forColumnDef="a"')).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*empty/,
+      );
+      expect(() => assertColumnTrack('   ', 'fallbackWidth', 'forColumnDef="a"')).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*empty/,
+      );
+    });
+
+    it('throws for braces, quotes, and a comment opener', () => {
+      for (const bad of ['1fr}', '{1fr', `"1fr"`, `'1fr'`, '1fr /* rest']) {
+        expect(() => assertColumnTrack(bad, 'width', 'forColumnDef="a"')).toThrowError(
+          /\[forty-cdk\/table\]/,
+        );
+      }
+    });
+
+    it('accepts the open track vocabulary', () => {
+      for (const good of [
+        '160px',
+        'minmax(0, 1fr)',
+        'minmax(120px, 2.5fr)',
+        'fit-content(20ch)',
+        'calc(100% / 3)',
+        'clamp(4rem, 20%, 30rem)',
+        'var(--col, minmax(64px, 1fr))',
+        'minmax(min-content, max-content)',
+      ]) {
+        expect(() => assertColumnTrack(good, 'width', 'forColumnDef="a"')).not.toThrow();
+      }
+    });
+
+    it('throws from a forColumnDef declaring an unbalanced fallbackWidth', () => {
+      expect(() => renderHost(BadFallbackWidthHost)).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*fallbackWidth[\s\S]*unbalanced/,
+      );
+    });
+
+    it('throws from a forColumnDef declaring a width that escapes the declaration', () => {
+      expect(() => renderHost(BadWidthHost)).toThrowError(
+        /\[forty-cdk\/table\][\s\S]*width[\s\S]*terminates the declaration/,
       );
     });
   });

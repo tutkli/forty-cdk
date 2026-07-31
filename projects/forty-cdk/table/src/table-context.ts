@@ -186,6 +186,53 @@ export function assertColumnName(name: string, piece: string): void {
   }
 }
 
+const TRACK_BREAKOUT_PATTERN = /[;{}"']|\/\*/;
+
+/**
+ * Dev-mode guard for a `grid-template-columns` track fragment before it is
+ * interpolated into the derived track string. Unlike a column name a track
+ * fragment has an open vocabulary (`minmax()`, `fit-content()`, `calc()`,
+ * `clamp()`, `var()`), so this rejects only the shapes that **escape** the value
+ * they are written into and collapse the whole track with no error: an empty
+ * fragment (which contributes a missing entry and shifts every later column —
+ * omit the input, or pass `null`, to mean "unset"), a `;` / `{` / `}` / quote /
+ * `/*` that terminates the declaration, and unbalanced parentheses (a stray `)`
+ * in a `fallbackWidth` closes its enclosing `var(` early and swallows the rest
+ * of the track). No-op in production builds.
+ */
+export function assertColumnTrack(track: string, input: string, piece: string): void {
+  if (!isDevMode()) {
+    return;
+  }
+  const reason = columnTrackDefect(track);
+  if (reason) {
+    throw new Error(
+      `[forty-cdk/table] Invalid ${input} ${JSON.stringify(track)} declared on ${piece}: ` +
+        `${reason}. A track fragment is interpolated into the grid-template-columns string ` +
+        `derived by ForTableBody, where it would silently produce an invalid declaration and ` +
+        `collapse the layout with no error.`,
+    );
+  }
+}
+
+function columnTrackDefect(track: string): string | null {
+  if (track.trim() === '') {
+    return 'the fragment is empty — omit the input (or pass null) to leave the track unset';
+  }
+  if (TRACK_BREAKOUT_PATTERN.test(track)) {
+    return 'it contains a ";", "{", "}", quote, or "/*" that terminates the declaration';
+  }
+  let depth = 0;
+  for (const char of track) {
+    if (char === '(') {
+      depth++;
+    } else if (char === ')' && --depth < 0) {
+      return 'its parentheses are unbalanced';
+    }
+  }
+  return depth === 0 ? null : 'its parentheses are unbalanced';
+}
+
 /**
  * Whether a header-cell host carries a drag-drop reorder affordance
  * (`[forDraggable]` or `[forFreeDrag]`). Detected by DOM marker rather than a
