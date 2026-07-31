@@ -1,5 +1,6 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { disabled, form, FormField, required } from '@angular/forms/signals';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
@@ -949,6 +950,33 @@ describe('ForTimePicker', () => {
       expect(() => fixture.detectChanges()).toThrow(
         /\[forty-cdk\/time-picker\] Multiple \[forTimePickerAnchor\]/,
       );
+    });
+  });
+
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the trigger, not the wrapper host', async () => {
+      const r = renderHost(TimePickerHost);
+      await r.flush();
+      const picker = r.fixture.debugElement
+        .query(By.directive(ForTimePicker))
+        .injector.get(ForTimePicker);
+
+      picker.focus();
+
+      expect(document.activeElement).toBe(getTrigger());
+    });
+
+    it('is a no-op while disabled', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.disabled.set(true);
+      await r.flush();
+      const picker = r.fixture.debugElement
+        .query(By.directive(ForTimePicker))
+        .injector.get(ForTimePicker);
+
+      picker.focus();
+
+      expect(document.activeElement).not.toBe(getTrigger());
     });
   });
 

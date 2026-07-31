@@ -361,6 +361,20 @@ export class ForTimePicker<D>
     return this.#controller.triggerId();
   }
 
+  /**
+   * Move focus to the trigger, implementing `FormValueControl.focus` from
+   * `@angular/forms/signals`. Without this override Signal Forms would focus the
+   * host `[forTimePicker]` wrapper — which carries no focusable role — so
+   * focus-on-error would silently go nowhere. No-op when disabled or before the
+   * trigger has registered.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#controller.trigger()?.focus(options);
+  }
+
   constructor() {
     super();
     injectHiddenInput({

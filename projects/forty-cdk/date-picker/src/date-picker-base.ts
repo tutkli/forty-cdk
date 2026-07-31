@@ -287,6 +287,28 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
     }
   }
 
+  protected override fieldLabelledElement(): HTMLElement | null {
+    return this.#triggerEl();
+  }
+
+  protected override fieldLabelledElementId(): string {
+    return this.triggerId();
+  }
+
+  /**
+   * Move focus to the trigger, implementing `FormValueControl.focus` from
+   * `@angular/forms/signals`. Without this override Signal Forms would focus the
+   * host `[forDatePicker]` / `[forDateRangePicker]` wrapper — which carries no
+   * focusable role — so focus-on-error would silently go nowhere. No-op when
+   * disabled or before the trigger has registered.
+   */
+  focus(options?: FocusOptions): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#triggerEl()?.focus(options);
+  }
+
   toggle(): void {
     if (this.effectiveDisabled()) {
       return;
