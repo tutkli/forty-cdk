@@ -13,6 +13,7 @@ import {
   ForDataCell,
   ForHeaderCell,
   ForPlaceholderCell,
+  ForPlaceholderCellDefault,
 } from './column-def';
 import { ForRowCell, ForRowDef } from './row-def';
 import { ForTable } from './table';
@@ -896,6 +897,57 @@ class LoadingSkeletonHost {
 }
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableBody,
+    ForColumnDef,
+    ForHeaderCell,
+    ForDataCell,
+    ForPlaceholderCell,
+    ForPlaceholderCellDefault,
+    ForRowDef,
+  ],
+  template: `
+    <div forTable mode="grid" ariaLabel="Default skeleton">
+      <for-table-body
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [loading]="loading()"
+        [placeholderRows]="2"
+        [displayedColumns]="displayed()"
+      >
+        <ng-template forPlaceholderCellDefault>
+          <span class="skeleton-default">shared</span>
+        </ng-template>
+
+        <ng-container forColumnDef="icon">
+          <ng-template forHeaderCell></ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.id }}</ng-template>
+          <ng-template forPlaceholderCell><span class="skeleton-own">own</span></ng-template>
+        </ng-container>
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="role">
+          <ng-template forHeaderCell>Role</ng-template>
+          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        </ng-container>
+
+        <ng-container forRowDef [when]="isPending" placeholderCells />
+      </for-table-body>
+    </div>
+  `,
+})
+class DefaultPlaceholderHost {
+  readonly rows = signal<FeedRow[]>(buildFeedRows());
+  readonly rowKey = (row: FeedRow): number => row.id;
+  readonly loading = signal(false);
+  readonly displayed = signal<readonly string[] | null>(null);
+  readonly isPending = (row: FeedRow): boolean => row.pending === true;
+}
+
+@Component({
   imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
   template: `
     <div forTable mode="grid" ariaLabel="Mixed apply">
@@ -1130,6 +1182,78 @@ describe('ForTableBody', () => {
       expect(query('[forTableRow] [data-column="name"]')?.hasAttribute('aria-disabled')).toBe(
         false,
       );
+    });
+  });
+
+  describe('body-level default placeholder cell (#1371)', () => {
+    it('stamps the default in every loading column lacking its own forPlaceholderCell', () => {
+      const { instance, queryAll, fixture } = renderHost(DefaultPlaceholderHost);
+      instance.loading.set(true);
+      fixture.detectChanges();
+      const rows = queryAll('[forTableRow]');
+      expect(rows).toHaveLength(2);
+      for (const row of rows) {
+        expect(row.querySelector('[data-column="name"] .skeleton-default')?.textContent).toContain(
+          'shared',
+        );
+        expect(row.querySelector('[data-column="role"] .skeleton-default')?.textContent).toContain(
+          'shared',
+        );
+      }
+    });
+
+    it("lets a column's own forPlaceholderCell win over the default while loading", () => {
+      const { instance, query, fixture } = renderHost(DefaultPlaceholderHost);
+      instance.loading.set(true);
+      fixture.detectChanges();
+      const icon = query('[forTableRow] [data-column="icon"]')!;
+      expect(icon.querySelector('.skeleton-own')?.textContent).toContain('own');
+      expect(icon.querySelector('.skeleton-default')).toBeNull();
+    });
+
+    it('leaves a loading cell empty when neither template exists', () => {
+      const { query } = renderHost(LoadingSkeletonHost);
+      const role = query('[forTableRow] [data-column="role"]')!;
+      expect(role.childElementCount).toBe(0);
+      expect(role.textContent?.trim()).toBe('');
+    });
+
+    it('resolves placeholderCells variant rows through the same three steps', () => {
+      const { queryAll } = renderHost(DefaultPlaceholderHost);
+      const variant = queryAll('[forTableRow]')[1]!;
+      expect(variant.querySelector('[data-column="icon"] .skeleton-own')?.textContent).toContain(
+        'own',
+      );
+      expect(variant.querySelector('[data-column="icon"] .skeleton-default')).toBeNull();
+      expect(
+        variant.querySelector('[data-column="name"] .skeleton-default')?.textContent,
+      ).toContain('shared');
+      expect(
+        variant.querySelector('[data-column="role"] .skeleton-default')?.textContent,
+      ).toContain('shared');
+    });
+
+    it('skips a column dropped from displayedColumns', () => {
+      const { instance, query, fixture } = renderHost(DefaultPlaceholderHost);
+      instance.displayed.set(['icon', 'name']);
+      instance.loading.set(true);
+      fixture.detectChanges();
+      expect(query('[forTableRow] [data-column="role"]')).toBeNull();
+      expect(query('[forTableRow] [data-column="name"] .skeleton-default')).not.toBeNull();
+    });
+
+    it('mounts and unmounts the default as loading toggles without Zone.js (zoneless)', () => {
+      const { instance, queryAll, fixture } = renderHost(DefaultPlaceholderHost);
+      const firstRow = (): HTMLElement => queryAll('[forTableRow]')[0]!;
+      expect(firstRow().querySelector('[data-column="name"] .skeleton-default')).toBeNull();
+      expect(firstRow().querySelector('[data-column="name"]')?.textContent).toContain('Ada');
+      instance.loading.set(true);
+      fixture.detectChanges();
+      expect(firstRow().querySelector('[data-column="name"] .skeleton-default')).not.toBeNull();
+      instance.loading.set(false);
+      fixture.detectChanges();
+      expect(firstRow().querySelector('[data-column="name"] .skeleton-default')).toBeNull();
+      expect(firstRow().querySelector('[data-column="name"]')?.textContent).toContain('Ada');
     });
   });
 
