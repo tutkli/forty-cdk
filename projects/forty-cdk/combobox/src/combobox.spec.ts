@@ -3200,7 +3200,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       });
     }
 
-    it('seeds the committed selection without NG0950 when a static option precedes the @for list', async () => {
+    it('seeds the committed selection when a static option precedes the @for list', async () => {
       const r = renderHost(StaticPickerHost);
       r.instance.value.set(['banana']);
 
@@ -3314,8 +3314,8 @@ describe('ForCombobox static option (issue #674)', () => {
   // directly inside `@if (open())`, above the `@for` list. The static option
   // registers during the content view's creation pass but its `[value]`
   // binding only lands on the update pass; the label-cache fold (primed by the
-  // host's bridge effect in between) used to read its `value()` early and
-  // throw NG0950. The fold is now tolerant and re-folds once the binding lands.
+  // host's bridge effect in between) reads its `value()` early. The fold skips
+  // the unwritten binding and re-folds once it lands.
   @Component({
     imports: BASE_IMPORTS,
     template: `
@@ -3360,11 +3360,11 @@ describe('ForCombobox static option (issue #674)', () => {
   const selText = (root: HTMLElement) =>
     root.querySelector<HTMLElement>('[data-testid="sel"]')!.textContent;
 
-  it('opens without NG0950 and renders both the static option and the @for list', async () => {
+  it('opens without throwing and renders both the static option and the @for list', async () => {
     const r = renderHost(StaticOptionHost);
     r.instance.open.set(true);
-    // A throw here is the NG0950 regression — the fold reading the static
-    // option's `value()` before its binding was written.
+    // A throw here is the regression — the fold reading the static option's
+    // `value()` before its binding was written.
     await flush(r.fixture);
 
     expect(getOption('add')).toBeTruthy();
@@ -3428,7 +3428,7 @@ describe('ForCombobox static option (issue #674)', () => {
     r.instance.open.set(true);
     await flush(r.fixture);
     // The static option registered, its `[value]` binding landed, and the
-    // NG0950-tolerant fold re-ran — the cache now resolves the real label,
+    // fold re-ran — the cache now resolves the real label,
     // all without Zone.js (renderHost configures zoneless change detection).
     expect(selText(r.el)).toBe('Add new…');
   });

@@ -10,11 +10,14 @@ import {
 } from '@angular/core';
 
 import {
+  assertInputBound,
   hostButtonType,
   accessibleTextContent,
+  isUnset,
   registerHandle,
   hostId,
   resolveListNavigation,
+  unsetInput,
 } from 'forty-cdk/core';
 import { injectSelectContext } from './select-context';
 
@@ -91,8 +94,12 @@ export class ForSelectOption<T = string> {
    * parent `[forSelect]` over a richer `T`. The parent's
    * `[compareWith]` decides how options are matched against the
    * committed selection.
+   *
+   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
+   * `input.required` so the parent can skip an option that has registered but
+   * not been bound yet, and an unbound option throws in dev mode.
    */
-  readonly value = input.required<T>();
+  readonly value = input(unsetInput<T>());
   readonly disabled = input(false, { transform: booleanAttribute });
   /**
    * Zero-based absolute position of this option in the full source data.
@@ -103,7 +110,10 @@ export class ForSelectOption<T = string> {
 
   readonly id = hostId('for-select-option');
 
-  readonly selected = computed(() => this.#ctx.isSelected(this.value()));
+  readonly selected = computed(() => {
+    const value = this.value();
+    return isUnset(value) ? false : this.#ctx.isSelected(value);
+  });
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
   protected readonly ariaSetSize = computed<string | null>(() => {
@@ -144,6 +154,7 @@ export class ForSelectOption<T = string> {
   readonly #effectiveLabel = computed(() => accessibleTextContent(this.#host.nativeElement).trim());
 
   constructor() {
+    assertInputBound(this.value, 'select', '[forSelectOption]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,

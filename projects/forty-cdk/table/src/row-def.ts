@@ -7,6 +7,8 @@ import {
   TemplateRef,
 } from '@angular/core';
 
+import { assertInputBound, unsetInput } from 'forty-cdk/core';
+
 import { type ForDataCellContext } from './column-def';
 import { registerTableRowDef } from './def-registry';
 
@@ -122,8 +124,12 @@ export class ForRowDef<T> {
    * the row's rendered position; under `[forTableVirtualized]` it is the
    * **absolute** index into the full dataset. Evaluated for every datum on each
    * change-detection pass, so keep it cheap and free of side effects.
+   *
+   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
+   * `input.required` so the registry can skip a def that has registered but not
+   * been bound yet, and an unbound def throws in dev mode.
    */
-  readonly when = input.required<(row: T, index: number) => boolean>();
+  readonly when = input(unsetInput<(row: T, index: number) => boolean>());
 
   /**
    * The variant's full-span content template. Present for a full-span def; absent
@@ -151,6 +157,7 @@ export class ForRowDef<T> {
   readonly placeholderCells = input(false, { transform: booleanAttribute });
 
   constructor() {
+    assertInputBound(this.when, 'table', '[forRowDef]', 'when');
     registerTableRowDef(this);
   }
 }

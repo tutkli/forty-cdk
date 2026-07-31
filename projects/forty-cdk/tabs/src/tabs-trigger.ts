@@ -1,11 +1,13 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import {
+  assertInputBound,
   hostButtonType,
   registerHandle,
   hostId,
   resolveListNavigation,
   rovingTabStop,
+  unsetInput,
 } from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
@@ -48,7 +50,14 @@ export class ForTabsTrigger {
   protected readonly group = injectTabsContext('ForTabsTrigger');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  readonly value = input.required<string>();
+  /**
+   * Value this trigger selects, paired with the `[forTabsContent]` carrying the
+   * same value. Mandatory: it is seeded with the `unsetInput` sentinel rather
+   * than declared `input.required` so the root can skip a trigger that has
+   * registered but not been bound yet, and an unbound trigger throws in dev
+   * mode.
+   */
+  readonly value = input(unsetInput<string>());
   readonly disabled = input(false, { transform: booleanAttribute });
 
   readonly id = hostId('for-tabs-trigger');
@@ -74,6 +83,7 @@ export class ForTabsTrigger {
   );
 
   constructor() {
+    assertInputBound(this.value, 'tabs', '[forTabsTrigger]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       id: this.id,

@@ -1,5 +1,12 @@
-import { provideZonelessChangeDetection, signal, type WritableSignal } from '@angular/core';
+import {
+  computed,
+  provideZonelessChangeDetection,
+  signal,
+  type WritableSignal,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+
+import { unsetInput } from 'forty-cdk/core';
 
 import { createActiveIdSignal, resolveAutoHighlightSeed } from './combobox-auto-highlight';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
@@ -133,6 +140,48 @@ describe('resolveAutoHighlightSeed', () => {
       equals: byPrefix,
     });
     expect(seed).toBe('a');
+  });
+
+  it('holds the seed back while an option value binding is unwritten, then resolves it', () => {
+    const bound = signal<string | null>(null);
+    const pending = makeHandle({ id: 'pending', value: 'x', label: 'Pending' });
+    const handle: ForComboboxOptionHandle<string> = {
+      ...pending.handle,
+      value: computed(() => bound() ?? unsetInput<string>()),
+    };
+    const later = makeHandle({ id: 'later', value: 'cherry', label: 'Cherry' });
+    const seedInput = {
+      items: [handle, later.handle],
+      initialFocus: 'selected' as ForComboboxInitialFocus,
+      value: ['cherry'],
+      equals,
+    };
+
+    expect(resolveAutoHighlightSeed(seedInput)).toBeNull();
+
+    bound.set('apple');
+    expect(resolveAutoHighlightSeed(seedInput)).toBe('later');
+  });
+
+  it('never hands an unwritten value to the consumer equality fn', () => {
+    const seen: unknown[] = [];
+    const pending = makeHandle({ id: 'pending', value: 'x', label: 'Pending' });
+    const handle: ForComboboxOptionHandle<string> = {
+      ...pending.handle,
+      value: computed(() => unsetInput<string>()),
+    };
+
+    resolveAutoHighlightSeed({
+      items: [handle],
+      initialFocus: 'selected',
+      value: ['cherry'],
+      equals: (a, b) => {
+        seen.push(a, b);
+        return a === b;
+      },
+    });
+
+    expect(seen).toEqual([]);
   });
 });
 

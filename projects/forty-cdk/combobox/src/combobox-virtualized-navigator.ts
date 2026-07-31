@@ -1,8 +1,8 @@
 import { type Signal } from '@angular/core';
 
 import {
+  isUnset,
   type LabelCacheEntry,
-  tryReadHandle,
   VirtualizedNavigator as VirtualizedNavigatorCore,
 } from 'forty-cdk/core';
 import type { ForComboboxOptionHandle } from './combobox-context';
@@ -46,10 +46,11 @@ export interface VirtualizedNavigatorDeps<T> {
 /**
  * Virtualization navigation engine for `ForCombobox`. A thin adapter over the
  * shared `_internal/virtualized-navigator` engine. Maps the combobox option
- * handle (whose `posInSet` is optional) onto the engine's accessors, reads the
- * option through the single NG0950 read guard, and overrides scroll-into-view
- * with the host's pointer-suppression wrapper. Adds the combobox-only
- * auto-highlight seed that stays passive (never scrolls the window).
+ * handle (whose `posInSet` is optional) onto the engine's accessors, skips an
+ * option whose `[value]` binding is not written yet, and overrides
+ * scroll-into-view with the host's pointer-suppression wrapper. Adds the
+ * combobox-only auto-highlight seed that stays passive (never scrolls the
+ * window).
  *
  * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
  */
@@ -66,13 +67,11 @@ export class VirtualizedNavigator<T> {
         posOf: (o) => o.posInSet?.() ?? null,
         idOf: (o) => o.id(),
         hostOf: (o) => o.host,
-        readEntry: (o) =>
-          tryReadHandle(() => ({
-            id: o.id(),
-            value: o.value(),
-            label: o.label(),
-            disabled: o.disabled(),
-          })),
+        readEntry: (o) => {
+          const id = o.id();
+          const value = o.value();
+          return isUnset(value) ? null : { id, value, label: o.label(), disabled: o.disabled() };
+        },
         scrollIntoView: (host) => deps.scrollActiveIntoView(host),
       },
       { deferFoldOnTotalTransition: true },

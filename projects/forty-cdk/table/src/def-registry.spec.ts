@@ -1,8 +1,17 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  input,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { ForDragPlaceholder } from 'forty-cdk/drag-drop';
+import { unsetInput } from 'forty-cdk/core';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 
@@ -14,7 +23,11 @@ import {
   ForPlaceholderCell,
   ForPlaceholderCellDefault,
 } from './column-def';
-import { FOR_TABLE_DEF_REGISTRY, provideForTableDefRegistry } from './def-registry';
+import {
+  FOR_TABLE_DEF_REGISTRY,
+  provideForTableDefRegistry,
+  TableDefRegistry,
+} from './def-registry';
 import { ForRowCell, ForRowDef } from './row-def';
 import { ForTable } from './table';
 import { ForTableBody } from './table-body';
@@ -483,6 +496,44 @@ describe('ForTableBody def registration seam (#1372)', () => {
       expect(() => renderHost(OrphanPlaceholderDefaultHost)).toThrow(
         /\[forty-cdk\/table\] ForPlaceholderCellDefault must be used inside a <for-table-body>/,
       );
+    });
+  });
+
+  describe('unwritten def bindings', () => {
+    function registry(): TableDefRegistry {
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection(), TableDefRegistry],
+      });
+      return TestBed.inject(TableDefRegistry);
+    }
+
+    it('holds a column def back until its name binding lands', () => {
+      const bound = signal<string | null>(null);
+      const def = { name: () => bound() ?? unsetInput<string>() } as unknown as ForColumnDef;
+      const target = registry();
+      target.registerColumnDef({ host: document.createElement('div'), def });
+
+      expect(target.columnDefs()).toEqual([]);
+      expect(target.columnNames()).toEqual([]);
+
+      bound.set('name');
+      expect(target.columnDefs()).toEqual([def]);
+      expect(target.columnNames()).toEqual(['name']);
+    });
+
+    it('holds a row variant def back until its when binding lands', () => {
+      const predicate = () => true;
+      const bound = signal<(() => boolean) | null>(null);
+      const def = {
+        when: () => bound() ?? unsetInput<() => boolean>(),
+      } as unknown as ForRowDef<unknown>;
+      const target = registry();
+      target.registerRowDef({ host: document.createElement('div'), def });
+
+      expect(target.rowDefs()).toEqual([]);
+
+      bound.set(predicate);
+      expect(target.rowDefs()).toEqual([def]);
     });
   });
 });

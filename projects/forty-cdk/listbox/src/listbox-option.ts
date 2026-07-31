@@ -8,7 +8,15 @@ import {
   input,
 } from '@angular/core';
 
-import { hostButtonType, registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import {
+  assertInputBound,
+  hostButtonType,
+  isUnset,
+  registerHandle,
+  hostId,
+  resolveListNavigation,
+  unsetInput,
+} from 'forty-cdk/core';
 import { injectListboxContext } from './listbox-context';
 
 /**
@@ -67,8 +75,12 @@ export class ForListboxOption<T = string> {
    * parent `[forListbox]` over a richer `T`. The parent's
    * `[compareWith]` decides how options are matched against the
    * committed selection.
+   *
+   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
+   * `input.required` so the parent can skip an option that has registered but
+   * not been bound yet, and an unbound option throws in dev mode.
    */
-  readonly value = input.required<T>();
+  readonly value = input(unsetInput<T>());
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
@@ -81,7 +93,10 @@ export class ForListboxOption<T = string> {
 
   readonly id = hostId('for-listbox-option');
 
-  readonly selected = computed(() => this.#group.isSelected(this.value()));
+  readonly selected = computed(() => {
+    const value = this.value();
+    return isUnset(value) ? false : this.#group.isSelected(value);
+  });
 
   /**
    * True when this option is the keyboard-focused / active candidate.
@@ -125,6 +140,7 @@ export class ForListboxOption<T = string> {
   });
 
   constructor() {
+    assertInputBound(this.value, 'listbox', '[forListboxOption]', 'value');
     const handle = {
       host: this.#host.nativeElement,
       value: this.value,

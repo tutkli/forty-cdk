@@ -1,6 +1,7 @@
-import { provideZonelessChangeDetection, signal, type Signal } from '@angular/core';
+import { computed, provideZonelessChangeDetection, signal, type Signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { unsetInput } from '../unset-input/unset-input';
 import { LabelCache, type LabelCacheHandle } from './label-cache';
 
 function makeHandle(opts: {
@@ -229,23 +230,15 @@ describe('LabelCache', () => {
     });
   });
 
-  describe('unwritten required inputs', () => {
-    it('skips a handle whose required input is not written yet, reading it on the re-run', () => {
+  describe('unwritten bindings', () => {
+    it('skips a handle whose value binding is not written yet, reading it on the re-run', () => {
       const h = createCache();
       const value = signal<string | null>(null);
       const pending: LabelCacheHandle<string> = {
         id: signal('p'),
         label: signal('Pending'),
         disabled: signal(false),
-        value: (() => {
-          const read = value();
-          if (read === null) {
-            const error = new Error('NG0950') as Error & { code?: number };
-            error.code = -950;
-            throw error;
-          }
-          return read;
-        }) as unknown as Signal<string>,
+        value: computed(() => value() ?? unsetInput<string>()),
       };
       h.setItems([pending]);
       expect(h.cache.windowEntries()).toEqual([]);
@@ -256,7 +249,26 @@ describe('LabelCache', () => {
       ]);
     });
 
-    it('propagates a non-NG0950 throw out of the read', () => {
+    it('never reads the label of a handle whose value binding is unwritten', () => {
+      const h = createCache();
+      const value = signal<string | null>(null);
+      const resolveLabel = vi.fn(() => 'Pending');
+      const pending: LabelCacheHandle<string> = {
+        id: signal('p'),
+        label: computed(resolveLabel),
+        disabled: signal(false),
+        value: computed(() => value() ?? unsetInput<string>()),
+      };
+      h.setItems([pending]);
+      h.cache.windowEntries();
+      expect(resolveLabel).not.toHaveBeenCalled();
+
+      value.set('pear');
+      h.cache.windowEntries();
+      expect(resolveLabel).toHaveBeenCalled();
+    });
+
+    it('propagates a throw out of the read', () => {
       const h = createCache();
       const broken: LabelCacheHandle<string> = {
         id: signal('x'),

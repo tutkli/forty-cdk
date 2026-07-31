@@ -8,6 +8,8 @@ import {
   TemplateRef,
 } from '@angular/core';
 
+import { assertInputBound, isUnset, unsetInput } from 'forty-cdk/core';
+
 import {
   registerTableColumnDef,
   registerTableColumnDragPlaceholder,
@@ -184,8 +186,14 @@ export class ForColumnDragPlaceholder {
  */
 @Directive({ selector: '[forColumnDef]' })
 export class ForColumnDef {
-  /** Column identifier — reflected as `data-column` on the stamped cells and used to key the resize width var. */
-  readonly name = input.required<string>({ alias: 'forColumnDef' });
+  /**
+   * Column identifier — reflected as `data-column` on the stamped cells and used
+   * to key the resize width var. Mandatory: it is seeded with the `unsetInput`
+   * sentinel rather than declared `input.required` so the registry can skip a def
+   * that has registered but not been bound yet, and an unbound def throws in dev
+   * mode.
+   */
+  readonly name = input(unsetInput<string>(), { alias: 'forColumnDef' });
 
   /**
    * Sticky placement forwarded to both the header cell and every data cell:
@@ -326,8 +334,14 @@ export class ForColumnDef {
   readonly placeholderCell = contentChild(ForPlaceholderCell);
 
   constructor() {
+    assertInputBound(this.name, 'table', '[forColumnDef]', 'forColumnDef');
     registerTableColumnDef(this);
-    effect(() => assertColumnName(this.name(), 'ForColumnDef'));
+    effect(() => {
+      const name = this.name();
+      if (!isUnset(name)) {
+        assertColumnName(name, 'ForColumnDef');
+      }
+    });
     effect(() => {
       const width = this.width();
       if (width !== null) {

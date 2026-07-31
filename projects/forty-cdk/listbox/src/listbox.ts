@@ -35,7 +35,7 @@ import {
   toggleInArray,
   injectTextDirection,
   injectTypeahead,
-  tryReadHandle,
+  isUnset,
   hostAriaLabel,
 } from 'forty-cdk/core';
 import {
@@ -264,8 +264,11 @@ export class ForListbox<T = string>
       if (option.disabled()) {
         continue;
       }
-      const matchesSelection = tryReadHandle(() => selected.some((v) => equals(v, option.value())));
-      if (matchesSelection) {
+      const value = option.value();
+      if (isUnset(value)) {
+        continue;
+      }
+      if (selected.some((v) => equals(v, value))) {
         return option.host;
       }
     }

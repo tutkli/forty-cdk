@@ -8,7 +8,6 @@ import {
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { isRequiredInputUnset } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import {
@@ -387,7 +386,7 @@ describe('ForListbox', () => {
       readonly options = signal(['apple', 'banana', 'cherry']);
     }
 
-    it('mounts a non-empty selection without throwing NG0950, and seeds the roving tab stop', async () => {
+    it('mounts a non-empty selection without throwing, and seeds the roving tab stop', async () => {
       const captured: unknown[] = [];
       class CapturingHandler implements ErrorHandler {
         handleError(err: unknown): void {
@@ -412,7 +411,7 @@ describe('ForListbox', () => {
       }
 
       const errors = thrown === null ? captured : [...captured, thrown];
-      expect(errors.some(isRequiredInputUnset)).toBe(false);
+      expect(errors).toEqual([]);
 
       const el = fixture.nativeElement as HTMLElement;
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');

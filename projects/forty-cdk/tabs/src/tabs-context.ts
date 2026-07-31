@@ -55,9 +55,9 @@ export interface ForTabsContext {
    * pairing resolves during the first change-detection pass — including a real
    * server render, where `afterNextRender` never fires and a deferred
    * registration would leave the pre-hydration DOM without its
-   * `aria-labelledby` / `aria-controls` linkage. A handle whose
-   * `input.required` `value` binding has not been written yet is skipped
-   * rather than read (see `tryReadHandle`), and the tracked dependency re-runs
+   * `aria-labelledby` / `aria-controls` linkage. A handle whose `value` binding
+   * has not been written yet reads the `unsetInput` sentinel and is skipped —
+   * it can never pair with a lookup value — and the tracked dependency re-runs
    * the lookup once that binding lands.
    */
   triggerIdFor(value: string): string | null;
