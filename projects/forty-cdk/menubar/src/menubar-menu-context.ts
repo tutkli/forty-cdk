@@ -108,11 +108,13 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * `(focusOutside)`, `(interactOutside)`, `(autoFocusOnOpen)` and
  * `(autoFocusOnClose)` — so the same `[forMenuContent]` / `[forMenuItem]`
  * markup keeps the full shell contract, and its vetoes, under a menubar. The
- * one exception is the hover-switch, which parks focus on the hovered trigger
- * itself and therefore arms a one-shot suppression of the incoming surface's
- * `(autoFocusOnOpen)` move — see {@link MenubarMenuContext.prepareOpen}. Only
- * trigger register / unregister stay inert here: triggers register with the bar
- * directly.
+ * one exception is a switch between sibling triggers: it is not a close, so the
+ * outgoing surface's `(autoFocusOnClose)` and its return-focus are suppressed
+ * outright (see {@link MenubarMenuContext.emitAutoFocusOnClose}), and the
+ * hover-switch flavour — which parks focus on the hovered trigger — additionally
+ * arms a one-shot suppression of the incoming surface's `(autoFocusOnOpen)` move
+ * (see {@link MenubarMenuContext.prepareOpen}). Only trigger register /
+ * unregister stay inert here: triggers register with the bar directly.
  */
 export class MenubarMenuContext implements ForMenuContext {
   readonly #host: MenubarMenuHost;
@@ -355,7 +357,30 @@ export class MenubarMenuContext implements ForMenuContext {
     }
     return emitVetoableEvent(this.#host.autoFocusOnOpen);
   }
+
+  /**
+   * `(autoFocusOnClose)` is a close hook, and a switch between sibling triggers
+   * is not a close — the bar unmounts the outgoing surface while `value` already
+   * names the incoming trigger, so nothing was dismissed and focus never leaves
+   * the widget. Emitting there would announce a close that did not happen and
+   * hand the consumer a veto over a focus move that is redundant anyway: the
+   * target resolves through `lastTrigger`, which the incoming `value` has
+   * already advanced, so it lands on the trigger the user is switching *to*.
+   * Returning `true` therefore vetoes the whole return-focus without consulting
+   * the consumer whenever a menu is still open, and the emission is reserved for
+   * a real close, where `value` is already `null` by the time the surface is
+   * destroyed.
+   *
+   * Derived from the open state rather than from a marker armed on the switching
+   * path: every switch modality (hover, cross-menu arrows, a click on a sibling
+   * trigger while another menu is open) is covered by construction, and no armed
+   * flag can go stale on a composition whose surface outlives the switch instead
+   * of unmounting.
+   */
   emitAutoFocusOnClose(): boolean {
+    if (this.open()) {
+      return true;
+    }
     return emitVetoableEvent(this.#host.autoFocusOnClose);
   }
 }

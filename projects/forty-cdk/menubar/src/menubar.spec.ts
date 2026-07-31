@@ -1592,9 +1592,10 @@ describe('ForMenubar', () => {
       expect(r.instance.open()).toBeNull();
     });
 
-    it('a hover-switch to a sibling trigger fires no (autoFocusOnOpen) and parks focus on the hovered trigger', async () => {
+    it('a hover-switch to a sibling trigger fires neither auto-focus output and parks focus on the hovered trigger', async () => {
       const r = await openFile();
       expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
       expect(document.activeElement).toBe(document.getElementById('file-new'));
 
       const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
@@ -1604,10 +1605,11 @@ describe('ForMenubar', () => {
       expect(r.instance.open()).toBe('edit');
       expect(document.getElementById('edit-undo')).not.toBeNull();
       expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
       expect(document.activeElement).toBe(edit);
     });
 
-    it('the hover-switch focus move is independent of the outgoing menu (autoFocusOnClose)', async () => {
+    it('the hover-switch never consults the (autoFocusOnClose) veto and leaves focus parked', async () => {
       const r = await openFile();
       r.instance.veto.set('autoFocusOnClose');
 
@@ -1616,8 +1618,31 @@ describe('ForMenubar', () => {
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe('edit');
-      expect(r.instance.autoFocusOnCloseCount).toBe(1);
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
       expect(document.activeElement).toBe(edit);
+    });
+
+    it('a cross-menu keyboard switch fires no (autoFocusOnClose) and enters the incoming menu', async () => {
+      const r = await openFile();
+
+      pressKey(document.getElementById('file-new')!, 'ArrowRight');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+      expect(r.instance.autoFocusOnCloseCount).toBe(0);
+      expect(r.instance.autoFocusOnOpenCount).toBe(2);
+      expect(document.activeElement).toBe(document.getElementById('edit-undo'));
+    });
+
+    it('a consumer close through [(value)] still fires (autoFocusOnClose) and returns focus to the trigger', async () => {
+      const r = await openFile();
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+
+      r.instance.open.set(null);
+      await flush(r.fixture);
+
+      expect(r.instance.autoFocusOnCloseCount).toBe(1);
+      expect(document.activeElement).toBe(file);
     });
 
     it('a keyboard open after a hover-switch still fires (autoFocusOnOpen) and enters the menu', async () => {
