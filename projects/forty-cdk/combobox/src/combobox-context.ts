@@ -270,21 +270,23 @@ export interface ForComboboxContext<T = unknown> {
    */
   scrollActiveOptionIntoView(): void;
   /**
-   * Read-only access to the full accumulated label snapshot. Consumed by the
-   * chip label resolution and `ForCombobox.selected` fallback, both of which
-   * must keep resolving a value's label after its option leaves the rendered
-   * set.
+   * Cached entries for the currently selected values, in selection order.
+   * Consumed by the chip label resolution and `ForCombobox.selected` fallback,
+   * both of which must keep resolving a selected value's label after its option
+   * leaves the rendered set — including across a query rebuild that no longer
+   * contains it. A selected value whose option was never observed is absent
+   * rather than represented; the caller falls back to `itemToStringLabel`.
    */
-  cachedOptions(): readonly { id: string; value: T; label: string }[];
+  selectedEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[];
   /**
-   * Read-only access to the snapshot consumed by inline-autocomplete in the
-   * input directive. Non-virtualized: a purge-aware, live-only projection so an
-   * option removed from the source stops being offered as a completion.
-   * Virtualized: the full merged snapshot, so completion still matches options
-   * scrolled out of view. Entries carry `disabled` so completion skips disabled
-   * options.
+   * Cached entries inline-autocomplete matches against in the input directive.
+   * Non-virtualized: the most recent non-empty option window, so an option
+   * removed from the source stops being offered as a completion. Virtualized:
+   * that window overlaid with the navigator's position map, so completion still
+   * matches options scrolled out of view. Entries carry `disabled` so completion
+   * skips disabled options.
    */
-  inlineCompletionOptions(): readonly { id: string; value: T; label: string; disabled: boolean }[];
+  completionEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[];
 
   /**
    * Total number of options in the consumer's source array. Used for

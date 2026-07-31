@@ -24,8 +24,8 @@ import {
   injectHiddenInput,
   IdGenerator,
   isRangeSelectShortcut,
-  LabelSnapshot,
-  type LabelSnapshotEntry,
+  LabelCache,
+  type LabelCacheEntry,
   resolveListNavigation,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
@@ -493,54 +493,44 @@ export class ForSelect<T = string>
   }
 
   /**
-   * Persisted snapshot of the registered options, keyed by serialized form
-   * value. Drives closed-state typeahead and `[forSelectValue]` label rendering
-   * — the live `options` registry is empty whenever `[forSelectContent]` is
-   * unmounted, so the snapshot carries the last non-empty option set across
-   * close → re-open cycles.
+   * Bounded option-label cache, shared with `[forCombobox]` through
+   * `forty-cdk/core` so the two can't drift. The live `options` registry is empty
+   * whenever `[forSelectContent]` is unmounted, so both label consumers read it
+   * instead: {@link selectedLabels} takes the selection-keyed projection (bounded
+   * by the selection) and {@link handleClosedTypeahead} the last-window
+   * projection (bounded by one window).
    *
-   * The value-keyed fold itself lives in `forty-cdk/core`, shared with
-   * `[forCombobox]` so the two can't drift. When the listbox unmounts
-   * (`items().length === 0`) the previous accumulator is returned unchanged so
-   * labels stay resolvable while closed. When mounted, the fold is
-   * virtualization-aware through `carryOver`: the non-virtualized path renders
-   * the full option set, so the snapshot is rebuilt from the live options alone
-   * — an option the consumer removes *while the listbox is open* is purged on
-   * that fold rather than lingering forever. This purge only runs while the
-   * content is mounted: under the documented `@if (open())` pattern the options
-   * unregister on close, so a data refresh performed *while the listbox is
-   * closed* cannot re-run the fold and the removed option stays in the snapshot
-   * until the next open. Closed-state typeahead reads that snapshot, so after a
-   * while-closed removal it can still commit a value that no longer exists;
-   * re-open the listbox (or keep the content mounted) to refresh the snapshot
-   * before relying on the purge. The virtualized path renders one window at a
-   * time, so it carries the previous accumulator forward and merges the window
-   * in, keeping off-window labels resolvable — until `totalCount` transitions,
-   * the consumer's own "the source was rebuilt" signal, which restarts the
-   * accumulator so labels from the previous dataset can't survive a query
-   * change.
+   * Two behaviours follow from the window store being *replaced* rather than
+   * merged. An option the consumer removes while the listbox is open is purged
+   * on the next window, so closed-state typeahead stops offering it — but only
+   * while the content is mounted: under the documented `@if (open())` pattern the
+   * options unregister on close, so a removal performed *while the listbox is
+   * closed* cannot refresh the window and typeahead can still commit a value that
+   * no longer exists until the next open. And when virtualizing, the window is
+   * the rendered slice, so a closed-state typeahead match is scoped to the last
+   * slice the consumer rendered rather than to every slice scrolled through.
+   * Selected labels are unaffected there — they live in the selection-keyed
+   * projection, which carries an off-window value's label for as long as it stays
+   * selected.
    *
    * Each option's `label` is itself a `Signal<string>`, so this never reads
-   * `textContent` from inside the fold — the canonical replacement for the
-   * previous `afterEveryRender(() => signal.set(...))` snapshot (no
-   * state-propagation inside an `effect`). A statically-rendered option that
-   * registers before its `[value]` binding is written is skipped this fold and
-   * folded in on the re-run the binding triggers.
+   * `textContent` — the canonical replacement for the previous
+   * `afterEveryRender(() => signal.set(...))` snapshot (no state-propagation
+   * inside an `effect`).
    */
-  readonly #labelSnapshot = new LabelSnapshot<T>({
+  readonly #labelCache = new LabelCache<T>({
     items: this.#controller.options,
-    totalCount: this.totalCount,
+    value: this.value,
     itemToFormValue: this.itemToFormValue,
-    carryOver: this.#virtualized,
   });
 
   /**
    * Trimmed display labels of the selected values, in selection order. Pure
    * derivation: when `[itemToLabel]` is supplied it is authoritative; otherwise
-   * resolve from the persisted option snapshot, then the serialized form value
+   * resolve from the selection-keyed label cache, then the serialized form value
    * so non-string items still render meaningfully on a cold cache.
    *
-   * The snapshot's labels come from each option's reactive `label` signal,
+   * The cache's labels come from each option's reactive `label` signal,
    * which reads the rendered `textContent`. `textContent` is not a signal, so a
    * label whose rendered text changes without a value change does not self-heal
    * here — supply `[itemToLabel]` for a pure signal derivation that observes
@@ -559,9 +549,9 @@ export class ForSelect<T = string>
     if (itemToLabel) {
       return values.map(itemToLabel);
     }
-    const cached = this.#labelSnapshot.entries();
+    const cached = this.#labelCache.selectedEntries();
     const toFormValue = this.itemToFormValue();
-    const cachedByKey = new Map<string, LabelSnapshotEntry<T>>();
+    const cachedByKey = new Map<string, LabelCacheEntry<T>>();
     for (const o of cached) {
       cachedByKey.set(toFormValue(o.value), o);
     }
@@ -625,15 +615,15 @@ export class ForSelect<T = string>
       disabled: this.effectiveDisabled,
     });
 
-    // Prime the snapshot fold while the listbox is open so its `linkedSignal`
-    // `prev` slot is seeded with the live options before they unmount — closed-
-    // state typeahead and `[forSelectValue]` then resolve labels even when no
-    // `[forSelectValue]` pulls the cache during the open cycle. A read, not a
-    // write: this is a legitimate side effect (forcing the lazy fold to run),
-    // not state propagation inside an `effect`.
+    // Pull the label cache while the listbox is open so its window store
+    // observes the mounted options before they unmount. `selectedLabels` is
+    // pulled by whatever renders the selected label, but the window store the
+    // closed-state typeahead reads has no reader during the open cycle. A read,
+    // not a write: forcing a lazy derivation to run is a side effect, not state
+    // propagation inside an `effect`.
     effect(() => {
       if (this.open()) {
-        this.#labelSnapshot.prime();
+        this.#labelCache.prime();
       }
     });
 
@@ -715,7 +705,7 @@ export class ForSelect<T = string>
     if (!this.#closedTypeahead.handle(event)) {
       return false;
     }
-    const cached = this.#labelSnapshot.entries();
+    const cached = this.#labelCache.windowEntries();
     const selected = this.selected();
     const equals = this.compareWith();
     const anchorIndex = selected === null ? -1 : cached.findIndex((o) => equals(o.value, selected));

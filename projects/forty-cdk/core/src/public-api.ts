@@ -54,13 +54,12 @@ export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';
 export { resolveConfigClass } from './class-list/resolve-config-class';
 export { Collection, type CollectionHandle } from './collection/collection';
 export { firstEnabledHost, nextEnabledHandle } from './collection/enabled-handle-navigation';
-export { foldSnapshotOnTotalCountTransition } from './collection/fold-snapshot';
 export {
-  LabelSnapshot,
-  type LabelSnapshotDeps,
-  type LabelSnapshotEntry,
-  type LabelSnapshotHandle,
-} from './collection/label-snapshot';
+  LabelCache,
+  type LabelCacheDeps,
+  type LabelCacheEntry,
+  type LabelCacheHandle,
+} from './collection/label-cache';
 export {
   registerA11yDescription,
   registerA11yName,

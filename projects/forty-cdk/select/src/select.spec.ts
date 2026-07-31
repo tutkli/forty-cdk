@@ -2118,10 +2118,10 @@ describe('ForSelect', () => {
     });
 
     it('renders the option label for a pre-set object value before the listbox is ever opened', async () => {
-      // Cold cache: the listbox is never opened, so the `afterEveryRender`
-      // snapshot that warms `#cachedOptions` never runs. With the options
-      // mounted, `selectedLabels` must resolve the label from the live option
-      // registry instead of falling back to the serialized id (`toId` → "2").
+      // Cold cache: the listbox is never opened, so the open-gated pull that
+      // warms the label cache never runs. With the options mounted,
+      // `selectedLabels` must resolve the label from the live option registry
+      // instead of falling back to the serialized id (`toId` → "2").
       @Component({
         imports: [...BASE_IMPORTS, ForSelectValue],
         template: `
@@ -3433,7 +3433,9 @@ describe('ForSelectIndicator', () => {
               <div forSelectContent>
                 @if (window() === 'first') {
                   <button forSelectOption value="apple" [posInSet]="0">Apple</button>
-                  <button forSelectOption value="banana" [posInSet]="1">Banana</button>
+                  <button forSelectOption value="banana" [posInSet]="1">
+                    {{ firstWindowBananaLabel() }}
+                  </button>
                 } @else {
                   <button forSelectOption value="cherry" [posInSet]="2">Cherry</button>
                   <button forSelectOption value="date" [posInSet]="3">Date</button>
@@ -3448,6 +3450,7 @@ describe('ForSelectIndicator', () => {
         readonly value = signal<readonly string[]>(['banana']);
         readonly total = signal<number | undefined>(50);
         readonly window = signal<'first' | 'second'>('first');
+        readonly firstWindowBananaLabel = signal('Banana');
       }
 
       const valueEl = () => document.querySelector<HTMLElement>('[forSelectValue]')!;
@@ -3463,7 +3466,7 @@ describe('ForSelectIndicator', () => {
         expect(valueEl().textContent).toBe('Banana');
       });
 
-      it('restarts the snapshot when totalCount transitions (source rebuild)', async () => {
+      it('keeps the selected label across a source rebuild and re-reads it on remount', async () => {
         const r = renderHost(VirtualLabelHost);
         r.instance.open.set(true);
         await flush(r.fixture);
@@ -3471,16 +3474,18 @@ describe('ForSelectIndicator', () => {
         await flush(r.fixture);
         expect(valueEl().textContent).toBe('Banana');
 
-        // A `totalCount` transition is the consumer's "the source was rebuilt"
-        // signal, so a label folded from the previous dataset must not survive
-        // it — the serialized form value is shown until the fold catches up.
+        // The label cache is keyed by the selection, not by the dataset, so a
+        // `totalCount` transition does not drop it: `banana` is still selected,
+        // and falling back to the serialized form value would flicker the
+        // trigger on every refresh without making the label any more accurate.
         r.instance.total.set(30);
         await flush(r.fixture);
-        expect(valueEl().textContent).toBe('banana');
+        expect(valueEl().textContent).toBe('Banana');
 
+        r.instance.firstWindowBananaLabel.set('Plátano');
         r.instance.window.set('first');
         await flush(r.fixture);
-        expect(valueEl().textContent).toBe('Banana');
+        expect(valueEl().textContent).toBe('Plátano');
       });
     });
 

@@ -1,6 +1,6 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { type LabelSnapshot, tryReadHandle } from 'forty-cdk/core';
+import { type LabelCache, tryReadHandle } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
 import type { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -197,8 +197,8 @@ function findSelectedEnabled<T>(
  * writes them through these accessors so it can stay outside the directive.
  */
 export interface AutoHighlightBridgeDeps<T> {
-  /** Eagerly pull the label cache so its `prev` slot is seeded while open. */
-  readonly labelCache: Pick<LabelSnapshot<T>, 'prime'>;
+  /** Eagerly pull the label cache so its window store is observed while open. */
+  readonly labelCache: Pick<LabelCache<T>, 'prime'>;
   /** Lazily build the virtualization navigator (only when `totalCount` is set). */
   readonly requireNavigator: () => VirtualizedNavigator<T>;
   /** Live registered options in DOM order. */
@@ -225,12 +225,13 @@ export interface AutoHighlightBridgeDeps<T> {
  * {@link createActiveIdSignal}; this only performs the side effects that escape
  * the reactive graph. It reacts to `items()`, `autoHighlight()` and `open()`:
  *
- * 1. Primes the label cache so its `linkedSignal` `prev` slot gets seeded while
- *    the listbox is open — without an eager pull the lazy cache never runs
- *    during the open cycle in non-virtualized usage and persistence across
- *    close → re-open would start from an empty `prev`. The virtualization
- *    navigator (and its position-map) is primed only when the consumer set
- *    `totalCount()`, so a plain combobox never builds it.
+ * 1. Pulls the label cache so its window store observes the mounted options
+ *    while the listbox is open — a lazy derivation only sees the source as it
+ *    stands when something reads it, and the window store has no other reader
+ *    during the open cycle, so inline completion would have nothing to match
+ *    against after close. The virtualization navigator (and its position-map) is
+ *    primed only when the consumer set `totalCount()`, so a plain combobox never
+ *    builds it.
  * 2. Virtualized only: resolves a pending `(scrollToIndex)` navigation — once
  *    the option for the requested posInSet mounts, `tryResolvePending` seeds
  *    activedescendant to its id and scrolls it into view. This is the single

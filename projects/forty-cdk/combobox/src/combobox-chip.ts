@@ -63,7 +63,7 @@ export class ForComboboxChip<T = string> {
   readonly label = computed(() => {
     const v = this.value();
     const equals = this.ctx.compareWith();
-    const cached = this.ctx.cachedOptions().find((o) => equals(o.value, v));
+    const cached = this.ctx.selectedEntries().find((o) => equals(o.value, v));
     if (cached) {
       return cached.label;
     }

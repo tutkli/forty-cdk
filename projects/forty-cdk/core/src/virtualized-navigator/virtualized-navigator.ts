@@ -1,6 +1,5 @@
-import { computed, signal, type Signal, untracked } from '@angular/core';
+import { computed, linkedSignal, signal, type Signal, untracked } from '@angular/core';
 
-import { foldSnapshotOnTotalCountTransition } from '../collection/fold-snapshot';
 import { type ListNavigationAction, moveIndex } from '../keyboard-navigation/keyboard-navigation';
 
 /**
@@ -99,6 +98,19 @@ export interface VirtualizedNavigatorDeps<H> {
 }
 
 /**
+ * Tracked source of the position-snapshot fold: the live window, its total, and
+ * the merged data version (the consumer's `dataVersion` plus the imperative
+ * {@link VirtualizedNavigator.invalidateSnapshot} counter). A change to the
+ * version rebuilds from empty and folds the current window; a change to `total`
+ * rebuilds from empty and folds or defers per `deferFoldOnTotalTransition`.
+ */
+interface SnapshotSource<H> {
+  readonly total: number | undefined;
+  readonly items: readonly H[];
+  readonly version: unknown;
+}
+
+/**
  * The single activedescendant-over-absolute-index navigation engine shared by
  * every virtualized collection primitive (Select, Listbox, Combobox, Tree).
  * Constructed lazily by each primitive's thin adapter — only once the consumer
@@ -173,26 +185,31 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
       { equal: (a, b) => a.invalidation === b.invalidation && a.consumer === b.consumer },
     );
 
-    this.#snapshotByPos = foldSnapshotOnTotalCountTransition<H, Map<number, E>>(
-      deps.items,
-      deps.totalCount,
-      () => new Map<number, E>(),
-      (prev, window) => {
-        const next = new Map(prev);
-        for (const item of window) {
-          const pos = accessors.posOf(item);
-          if (pos === null) continue;
-          const entry = accessors.readEntry(item);
-          if (entry === null) continue;
-          next.set(pos, entry);
+    const defer = options.deferFoldOnTotalTransition === true;
+    const fold = (prev: ReadonlyMap<number, E>, window: readonly H[]): Map<number, E> => {
+      const next = new Map(prev);
+      for (const item of window) {
+        const pos = accessors.posOf(item);
+        if (pos === null) continue;
+        const entry = accessors.readEntry(item);
+        if (entry === null) continue;
+        next.set(pos, entry);
+      }
+      return next;
+    };
+
+    this.#snapshotByPos = linkedSignal<SnapshotSource<H>, Map<number, E>>({
+      source: () => ({ total: deps.totalCount(), items: deps.items(), version: version() }),
+      computation: ({ total, items: window, version: currentVersion }, prev) => {
+        if (prev !== undefined && prev.source.version !== currentVersion) {
+          return fold(new Map<number, E>(), window);
         }
-        return next;
+        if (prev !== undefined && prev.source.total !== total) {
+          return defer ? new Map<number, E>() : fold(new Map<number, E>(), window);
+        }
+        return fold(prev?.value ?? new Map<number, E>(), window);
       },
-      {
-        deferOnTotalTransition: options.deferFoldOnTotalTransition === true,
-        dataVersion: version,
-      },
-    );
+    });
   }
 
   /**

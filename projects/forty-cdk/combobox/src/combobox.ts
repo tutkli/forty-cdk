@@ -33,7 +33,8 @@ import {
   InitialFocusState,
   emitVetoableEvent,
   emitVetoableNativeEvent,
-  LabelSnapshot,
+  LabelCache,
+  type LabelCacheEntry,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -50,6 +51,7 @@ import {
   type ForComboboxOptionHandle,
 } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
+import { mergeOffWindowEntries } from './combobox-off-window-merge';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
@@ -421,14 +423,18 @@ export class ForCombobox<T = string>
   readonly #pointerSuppression: PointerSuppression = createPointerSuppression();
 
   /**
-   * Always-on label snapshot — keeps `{ id, value, label }` tuples across
-   * close/open and scroll-out-of-view to drive inline autocomplete matching
-   * and the `selected` label fallback. The value-keyed fold itself lives in
-   * `forty-cdk/core`, shared with `[forSelect]`.
+   * Bounded option-label cache, shared with `[forSelect]` through
+   * `forty-cdk/core`. Keeps `{ id, value, label, disabled }` tuples across
+   * close/open in two projections: the selection-keyed one backs
+   * {@link selected}'s chip labels (bounded by the selection, so a long-lived
+   * remote-search combobox retains the labels of what is selected and nothing
+   * else), and the last-window one backs {@link completionEntries} for inline
+   * autocomplete. Off-window matching while virtualizing comes from the
+   * navigator's position map instead — see {@link completionEntries}.
    */
-  readonly #labelCache = new LabelSnapshot<T>({
+  readonly #labelCache = new LabelCache<T>({
     items: this.#items.items,
-    totalCount: this.totalCount,
+    value: this.value,
     itemToFormValue: this.itemToFormValue,
   });
 
@@ -473,10 +479,7 @@ export class ForCombobox<T = string>
     if (values.length === 0) {
       return [];
     }
-    // `cachedOptions()` already merges off-window entries from the indexed
-    // snapshot when virtualizing, so a selected option scrolled out of view
-    // still resolves here without a separate position-map lookup.
-    const cached = this.cachedOptions();
+    const cached = this.selectedEntries();
     const equals = this.compareWith();
     const toLabel = this.itemToStringLabel();
     return values.map((v) => {
@@ -816,28 +819,24 @@ export class ForCombobox<T = string>
     this.#lastPositionedId = id;
   }
 
-  readonly #cachedOptionsMemo = computed<readonly { id: string; value: T; label: string }[]>(() => {
-    if (this.totalCount() === undefined) {
-      return this.#labelCache.entries();
-    }
-    return this.#labelCache.mergedEntries(this.#requireNavigator().snapshotByPos());
-  });
-
-  cachedOptions(): readonly { id: string; value: T; label: string }[] {
-    return this.#cachedOptionsMemo();
+  selectedEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
+    return this.#labelCache.selectedEntries();
   }
 
-  readonly #inlineCompletionOptionsMemo = computed<
-    readonly { id: string; value: T; label: string; disabled: boolean }[]
-  >(() => {
+  readonly #completionEntriesMemo = computed<readonly LabelCacheEntry<T>[]>(() => {
+    const liveWindow = this.#labelCache.windowEntries();
     if (this.totalCount() === undefined) {
-      return this.#labelCache.liveEntries();
+      return liveWindow;
     }
-    return this.#labelCache.mergedEntries(this.#requireNavigator().snapshotByPos());
+    return mergeOffWindowEntries(
+      liveWindow,
+      this.#requireNavigator().snapshotByPos(),
+      this.itemToFormValue(),
+    );
   });
 
-  inlineCompletionOptions(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
-    return this.#inlineCompletionOptionsMemo();
+  completionEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
+    return this.#completionEntriesMemo();
   }
 
   clear(clearQuery: boolean = true): void {
