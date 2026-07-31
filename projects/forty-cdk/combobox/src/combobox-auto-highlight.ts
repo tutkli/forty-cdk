@@ -1,6 +1,6 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { type LabelSnapshot, tryReadHandle } from 'forty-cdk/core';
+import { tryReadHandle } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
 import type { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -197,8 +197,6 @@ function findSelectedEnabled<T>(
  * writes them through these accessors so it can stay outside the directive.
  */
 export interface AutoHighlightBridgeDeps<T> {
-  /** Eagerly pull the label cache so its `prev` slot is seeded while open. */
-  readonly labelCache: Pick<LabelSnapshot<T>, 'prime'>;
   /** Lazily build the virtualization navigator (only when `totalCount` is set). */
   readonly requireNavigator: () => VirtualizedNavigator<T>;
   /** Live registered options in DOM order. */
@@ -225,13 +223,14 @@ export interface AutoHighlightBridgeDeps<T> {
  * {@link createActiveIdSignal}; this only performs the side effects that escape
  * the reactive graph. It reacts to `items()`, `autoHighlight()` and `open()`:
  *
- * 1. Primes the label cache so its `linkedSignal` `prev` slot gets seeded while
- *    the listbox is open — without an eager pull the lazy cache never runs
- *    during the open cycle in non-virtualized usage and persistence across
- *    close → re-open would start from an empty `prev`. The virtualization
- *    navigator (and its position-map) is primed only when the consumer set
- *    `totalCount()`, so a plain combobox never builds it.
- * 2. Virtualized only: resolves a pending `(scrollToIndex)` navigation — once
+ * The label cache is deliberately **not** pulled here: pulling it tracks the
+ * selection, and this effect writes activedescendant and scrolls, so it would
+ * re-run those writes on every commit of `value`. The root owns a separate
+ * read-only effect for that pull. The virtualization navigator (and its
+ * position-map) is primed here, but only when the consumer set `totalCount()`, so
+ * a plain combobox never builds it.
+ *
+ * 1. Virtualized only: resolves a pending `(scrollToIndex)` navigation — once
  *    the option for the requested posInSet mounts, `tryResolvePending` seeds
  *    activedescendant to its id and scrolls it into view. This is the single
  *    sanctioned activedescendant write from an effect, and it is a legitimate
@@ -241,7 +240,7 @@ export interface AutoHighlightBridgeDeps<T> {
  *    linkedSignal. `seedFromIndexedSnapshot` then seeds the topmost / bottommost
  *    *rendered* enabled option (ordered by absolute `posInSet`) deliberately
  *    passively — it only moves the pointer, never the consumer's scroll position.
- * 3. Non-virtualized: scrolls the auto-highlight-seeded option into view so a
+ * 2. Non-virtualized: scrolls the auto-highlight-seeded option into view so a
  *    seed that lands below the fold is visible, for parity with `navigate()`.
  *    The seed itself comes from the linkedSignal; this is its imperative tail.
  *    The activedescendant is read `untracked` so the scroll never re-triggers
@@ -257,7 +256,6 @@ export interface AutoHighlightBridgeDeps<T> {
  * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
  */
 export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): void {
-  deps.labelCache.prime();
   const items = deps.items();
   const open = deps.open();
   const autoHighlight = deps.autoHighlight();

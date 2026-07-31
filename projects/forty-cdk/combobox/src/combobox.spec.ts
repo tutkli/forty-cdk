@@ -4236,13 +4236,13 @@ describe('ForCombobox virtualization', () => {
     expect(r.instance.scrollToIndexCalls).toEqual([]);
   });
 
-  // Off-window snapshot merging and totalCount-based reset are covered by
-  // `combobox-snapshot.spec.ts` directly against `ComboboxSnapshot` (see
-  // `cachedOptions persistence` / `snapshotByPos and merged cachedOptions`).
-  // Re-asserting via `directive.cachedOptions()` from this spec would
-  // duplicate that coverage AND reach into a directive-internal signal —
-  // the headless contract is the DOM (`aria-activedescendant`, inline
-  // autocomplete completion, etc.), not the snapshot cache shape.
+  // Off-window entry merging and the label cache's bounds are covered by
+  // `combobox-snapshot.spec.ts` directly against `LabelCache` and
+  // `mergeOffWindowEntries` (see `completionEntries` / `snapshotByPos and merged
+  // label resolution`). Re-asserting via `directive.completionEntries()` from
+  // this spec would duplicate that coverage AND reach into a directive-internal
+  // signal — the headless contract is the DOM (`aria-activedescendant`, inline
+  // autocomplete completion, etc.), not the cache shape.
 
   describe('inline autocomplete against off-window options (#1389 item 3)', () => {
     interface WItem {

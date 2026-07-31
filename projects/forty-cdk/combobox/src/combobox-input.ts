@@ -209,7 +209,7 @@ export class ForComboboxInput {
       }
     }
     const match = this.ctx
-      .inlineCompletionOptions()
+      .completionEntries()
       .find((o) => !o.disabled && foldTypeaheadText(o.label).startsWith(folded));
     return match ? match.label : null;
   }

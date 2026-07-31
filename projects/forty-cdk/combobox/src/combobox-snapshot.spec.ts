@@ -1,10 +1,11 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { LabelSnapshot, type LabelSnapshotEntry } from 'forty-cdk/core';
+import { LabelCache, type LabelCacheEntry } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup } from '../../src/test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
+import { mergeOffWindowEntries } from './combobox-off-window-merge';
 import { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
 interface FakeOption {
@@ -44,48 +45,26 @@ function makeHandle(opts: {
   };
 }
 
-/**
- * Replicates the host's `cachedOptions()` merge: the live label cache, plus
- * any off-window entries from the navigator's position-map (sorted by absolute
- * position, live entries winning by id).
- */
-function mergedCachedOptions(
-  live: readonly LabelSnapshotEntry<string>[],
-  indexed: ReadonlyMap<number, LabelSnapshotEntry<string>>,
-): readonly LabelSnapshotEntry<string>[] {
-  if (indexed.size === 0) {
-    return live;
-  }
-  const seen = new Set(live.map((o) => o.id));
-  const merged: LabelSnapshotEntry<string>[] = [...live];
-  for (const pos of [...indexed.keys()].sort((a, b) => a - b)) {
-    const entry = indexed.get(pos)!;
-    if (seen.has(entry.id)) continue;
-    merged.push({ id: entry.id, value: entry.value, label: entry.label, disabled: entry.disabled });
-  }
-  return merged;
-}
+const toFormValue = (value: string): string => value;
 
 interface LabelCacheHarness {
-  readonly cache: LabelSnapshot<string>;
+  readonly cache: LabelCache<string>;
   readonly setItems: (items: readonly ForComboboxOptionHandle<string>[]) => void;
-  readonly setTotal: (n: number | undefined) => void;
-  readonly entries: () => readonly LabelSnapshotEntry<string>[];
+  readonly setValue: (value: readonly string[]) => void;
 }
 
-function createLabelCache(initialTotal?: number): LabelCacheHarness {
+function createLabelCache(): LabelCacheHarness {
   const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
-  const total = signal<number | undefined>(initialTotal);
-  const cache = new LabelSnapshot<string>({
+  const value = signal<readonly string[]>([]);
+  const cache = new LabelCache<string>({
     items,
-    totalCount: total,
-    itemToFormValue: signal((value: string) => value),
+    value,
+    itemToFormValue: signal(toFormValue),
   });
   return {
     cache,
     setItems: (next) => items.set(next),
-    setTotal: (n) => total.set(n),
-    entries: () => cache.entries(),
+    setValue: (next) => value.set(next),
   };
 }
 
@@ -141,12 +120,12 @@ function createNavigator(
   };
 }
 
-describe('LabelSnapshot', () => {
+describe('completionEntries', () => {
   afterEachOverlayCleanup();
 
   it('starts empty', () => {
     const h = createLabelCache();
-    expect(h.entries()).toEqual([]);
+    expect(h.cache.windowEntries()).toEqual([]);
   });
 
   it('captures registered options on prime', () => {
@@ -155,12 +134,12 @@ describe('LabelSnapshot', () => {
     const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
     h.setItems([a.handle, b.handle]);
     h.cache.prime();
-    const cache = h.entries();
-    expect(cache.map((e) => e.id)).toEqual(['a', 'b']);
-    expect(cache.map((e) => e.label)).toEqual(['Apple', 'Banana']);
+    const entries = h.cache.windowEntries();
+    expect(entries.map((e) => e.id)).toEqual(['a', 'b']);
+    expect(entries.map((e) => e.label)).toEqual(['Apple', 'Banana']);
   });
 
-  it('carries entries across an unmount (close → reopen)', () => {
+  it('carries the window across an unmount so completion survives close', () => {
     const h = createLabelCache();
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
@@ -168,85 +147,83 @@ describe('LabelSnapshot', () => {
     h.cache.prime();
     // Listbox closes → consumer's @if unmounts the @for; items() goes to [].
     h.setItems([]);
-    expect(h.entries().map((e) => e.id)).toEqual(['a', 'b']);
+    expect(h.cache.windowEntries().map((e) => e.id)).toEqual(['a', 'b']);
   });
 
-  it('heals a relabeled option on reopen with a fresh id but same value (#1389)', () => {
-    const h = createLabelCache();
-    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
-    h.setItems([a.handle]);
-    h.cache.prime();
-    h.setItems([]);
-    const relabeled = makeHandle({ id: 'a2', value: 'apple', label: 'Green Apple' });
-    h.setItems([relabeled.handle]);
-    h.cache.prime();
-
-    const entries = h.entries();
-    expect(entries.map((e) => e.value)).toEqual(['apple']);
-    expect(entries.map((e) => e.label)).toEqual(['Green Apple']);
-  });
-
-  it('dedups mergedEntries by value across an off-window id churn (#1389)', () => {
-    const h = createLabelCache(100);
-    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
-    h.setItems([a.handle]);
-    h.cache.prime();
-    const offWindow = new Map<number, LabelSnapshotEntry<string>>([
-      [50, { id: 'a-remount', value: 'apple', label: 'Apple', disabled: false }],
-    ]);
-    expect(h.cache.mergedEntries(offWindow).map((e) => e.value)).toEqual(['apple']);
-  });
-
-  it('carries the disabled flag through the fold and mergedEntries (#1389)', () => {
-    const h = createLabelCache(100);
-    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple', disabled: true });
-    h.setItems([a.handle]);
-    h.cache.prime();
-    expect(h.entries().find((e) => e.value === 'apple')?.disabled).toBe(true);
-
-    const offWindow = new Map<number, LabelSnapshotEntry<string>>([
-      [50, { id: 'b', value: 'banana', label: 'Banana', disabled: true }],
-    ]);
-    const merged = h.cache.mergedEntries(offWindow);
-    expect(merged.find((e) => e.value === 'banana')?.disabled).toBe(true);
-  });
-
-  it('purges a live-window removal from liveEntries but keeps it in entries (#1196)', () => {
+  it('purges a live-window removal so completion stops offering it (#1196)', () => {
     const h = createLabelCache();
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
     h.setItems([a.handle, b.handle]);
     h.cache.prime();
-    expect(h.cache.liveEntries().map((e) => e.id)).toEqual(['a', 'b']);
+    expect(h.cache.windowEntries().map((e) => e.id)).toEqual(['a', 'b']);
 
     h.setItems([a.handle]);
     h.cache.prime();
-
-    expect(h.entries().map((e) => e.id)).toContain('b');
-    expect(h.cache.liveEntries().map((e) => e.id)).toEqual(['a']);
+    expect(h.cache.windowEntries().map((e) => e.id)).toEqual(['a']);
   });
 
-  it('carries liveEntries across an unmount so inline completion survives close', () => {
+  it('keeps a selected label across a query rebuild that drops its option', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    h.setItems([a.handle]);
+    h.setValue(['apple']);
+    h.cache.prime();
+
+    const fresh = makeHandle({ id: 'z', value: 'zucchini', label: 'Zucchini' });
+    h.setItems([fresh.handle]);
+    h.cache.prime();
+
+    expect(h.cache.selectedEntries().map((e) => e.label)).toEqual(['Apple']);
+    expect(h.cache.windowEntries().map((e) => e.id)).toEqual(['z']);
+  });
+
+  it('returns the window unchanged for an empty position map (non-virtualized)', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
+    h.setItems([a.handle]);
+    const window = h.cache.windowEntries();
+    expect(mergeOffWindowEntries(window, new Map(), toFormValue)).toBe(window);
+  });
+
+  it('overlays off-window entries sorted by absolute position', () => {
     const h = createLabelCache();
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     h.setItems([a.handle]);
     h.cache.prime();
-    h.setItems([]);
-    expect(h.cache.liveEntries().map((e) => e.id)).toEqual(['a']);
+    const offWindow = new Map<number, LabelCacheEntry<string>>([
+      [40, { id: 'z', value: 'zucchini', label: 'Zucchini', disabled: false }],
+      [10, { id: 'm', value: 'mango', label: 'Mango', disabled: true }],
+    ]);
+    const merged = mergeOffWindowEntries(h.cache.windowEntries(), offWindow, toFormValue);
+    expect(merged.map((e) => e.id)).toEqual(['a', 'm', 'z']);
   });
 
-  it('resets when totalCount transitions', () => {
-    const h = createLabelCache(100);
-    const a = makeHandle({ id: 'r-50', value: 'fifty', label: 'Row 50', posInSet: 50 });
+  it('dedups by value across an off-window id churn (#1389)', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     h.setItems([a.handle]);
     h.cache.prime();
-    expect(h.entries().some((e) => e.label === 'Row 50')).toBe(true);
+    const offWindow = new Map<number, LabelCacheEntry<string>>([
+      [50, { id: 'a-remount', value: 'apple', label: 'Apple', disabled: false }],
+    ]);
+    const merged = mergeOffWindowEntries(h.cache.windowEntries(), offWindow, toFormValue);
+    expect(merged.map((e) => e.value)).toEqual(['apple']);
+    expect(merged.map((e) => e.id)).toEqual(['a']);
+  });
 
-    // Consumer rebuilds the source array (e.g. query change) → totalCount flips.
-    h.setTotal(20);
+  it('carries the disabled flag through the window read and the overlay (#1389)', () => {
+    const h = createLabelCache();
+    const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple', disabled: true });
+    h.setItems([a.handle]);
     h.cache.prime();
-    // Old entries are gone — the cache resets on totalCount transition.
-    expect(h.entries().some((e) => e.label === 'Row 50')).toBe(false);
+    expect(h.cache.windowEntries().find((e) => e.value === 'apple')?.disabled).toBe(true);
+
+    const offWindow = new Map<number, LabelCacheEntry<string>>([
+      [50, { id: 'b', value: 'banana', label: 'Banana', disabled: true }],
+    ]);
+    const merged = mergeOffWindowEntries(h.cache.windowEntries(), offWindow, toFormValue);
+    expect(merged.find((e) => e.value === 'banana')?.disabled).toBe(true);
   });
 });
 
@@ -285,8 +262,8 @@ describe('VirtualizedNavigator', () => {
       expect(snap.get(0)?.id).toBe('r-0b');
     });
 
-    it('merges off-window entries when resolving labels (host merge replicated)', () => {
-      const label = createLabelCache(100);
+    it('supplies the off-window labels the replaced window no longer carries', () => {
+      const label = createLabelCache();
       const nav = createNavigator({ range: [0, 2] });
       const a = makeHandle({ id: 'r-0', value: 'a', label: 'Row 0', posInSet: 0 });
       const b = makeHandle({ id: 'r-1', value: 'b', label: 'Row 1', posInSet: 1 });
@@ -295,21 +272,24 @@ describe('VirtualizedNavigator', () => {
       label.cache.prime();
       nav.navigator.prime();
 
-      // Scroll to a different window — previously-rendered options unmount but
-      // the indexed snapshot remembers them.
+      // Scroll to a different window — previously-rendered options unmount, so
+      // the label cache's window is replaced and only the position map still
+      // remembers them.
       const c = makeHandle({ id: 'r-50', value: 'c', label: 'Row 50', posInSet: 50 });
       label.setItems([c.handle]);
-      label.setTotal(100);
       nav.setItems([c.handle]);
       nav.setRange([50, 51]);
       label.cache.prime();
       nav.navigator.prime();
 
-      const merged = mergedCachedOptions(label.entries(), nav.navigator.snapshotByPos());
-      const labels = merged.map((e) => e.label);
-      expect(labels).toContain('Row 50');
-      expect(labels).toContain('Row 0');
-      expect(labels).toContain('Row 1');
+      expect(label.cache.windowEntries().map((e) => e.label)).toEqual(['Row 50']);
+
+      const merged = mergeOffWindowEntries(
+        label.cache.windowEntries(),
+        nav.navigator.snapshotByPos(),
+        toFormValue,
+      );
+      expect(merged.map((e) => e.label)).toEqual(['Row 50', 'Row 0', 'Row 1']);
     });
   });
 
@@ -485,21 +465,24 @@ describe('combobox-snapshot zoneless reactivity', () => {
     TestBed.createComponent(ZonelessHost);
 
     const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);
-    const total = signal<number | undefined>(undefined);
-    const cache = new LabelSnapshot<string>({
+    const value = signal<readonly string[]>([]);
+    const cache = new LabelCache<string>({
       items,
-      totalCount: total,
-      itemToFormValue: signal((value: string) => value),
+      value,
+      itemToFormValue: signal(toFormValue),
     });
 
     const a = makeHandle({ id: 'a', value: 'apple', label: 'Apple' });
     items.set([a.handle]);
     cache.prime();
-    expect(cache.entries().map((e) => e.id)).toEqual(['a']);
+    expect(cache.windowEntries().map((e) => e.id)).toEqual(['a']);
 
     const b = makeHandle({ id: 'b', value: 'banana', label: 'Banana' });
     items.set([a.handle, b.handle]);
     cache.prime();
-    expect(cache.entries().map((e) => e.id)).toEqual(['a', 'b']);
+    expect(cache.windowEntries().map((e) => e.id)).toEqual(['a', 'b']);
+
+    value.set(['banana']);
+    expect(cache.selectedEntries().map((e) => e.label)).toEqual(['Banana']);
   });
 });
