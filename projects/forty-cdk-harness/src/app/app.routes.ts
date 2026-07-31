@@ -64,6 +64,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/menu-sub.fixture').then((m) => m.MenuSubFixture),
   },
   {
+    path: 'menu-shared-openers',
+    loadComponent: () =>
+      import('./fixtures/menu-shared-openers.fixture').then((m) => m.MenuSharedOpenersFixture),
+  },
+  {
     path: 'context-menu',
     loadComponent: () =>
       import('./fixtures/context-menu.fixture').then((m) => m.ContextMenuFixture),

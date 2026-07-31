@@ -1,4 +1,5 @@
 import { inject, type ModelSignal, type OutputEmitterRef, type Signal } from '@angular/core';
+import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import { CloseReasonState } from '../overlay-controller/close-reason-state';
@@ -7,6 +8,7 @@ import {
   type IdentifiedElementSlot,
 } from '../overlay-controller/element-registry';
 import { InitialFocusState } from '../overlay-controller/initial-focus-state';
+import { MenuOpenerRegistry, type MenuOpenerOptions } from './menu-opener-registry';
 import {
   emitVetoableEvent,
   emitVetoableNativeEvent,
@@ -103,12 +105,18 @@ export interface MenuOverlayHooks {
  *   The shared `#pendingOutsideVeto` reuse between the specific outside
  *   listeners and the composite `interactOutside` lives in
  *   `injectOverlayShell`, not here,
- * - the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto pass-throughs.
+ * - the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto pass-throughs,
+ * - the opener registry (`MenuOpenerRegistry`): every trigger that can open this
+ *   menu, which of them is driving the current open, and the per-opener id /
+ *   anchor that resolve against it. `[forMenu]` is the root that registers more
+ *   than one; the presets register exactly one and keep their previous
+ *   behaviour through the registry's sole-opener fallback.
  *
  * It deliberately does NOT own:
  *
- * - the `anchor` signal — DropdownMenu derives it from the trigger element,
- *   ContextMenu drives it via a `VirtualElement`,
+ * - the resolved `anchor` signal — DropdownMenu derives it from the trigger
+ *   element, ContextMenu from the virtual anchor alone, `[forMenu]` from the
+ *   active opener (virtual anchor, else its element),
  * - `dismissibleExemptions` — DropdownMenu exempts the trigger button so the
  *   trigger's click toggle doesn't double-fire as a pointer-down-outside;
  *   ContextMenu exempts nothing,
@@ -138,10 +146,15 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   readonly #itemList: MenuItemList<H>;
   readonly #hooks: MenuOverlayHooks;
 
-  readonly #triggerSlot: IdentifiedElementSlot;
+  readonly #openers: MenuOpenerRegistry;
   readonly #contentSlot: IdentifiedElementSlot;
 
-  /** Unique id for the trigger element. Stable across the menu's lifetime. */
+  /**
+   * Id of the opener driving the current open — the active opener's own id when
+   * it owns one, else the seeded `<idPrefix>-trigger-*` fallback. Non-empty from
+   * construction, so `[forMenuContent]`'s `aria-labelledby` fallback keeps the
+   * shape it had when a single id lived on the root.
+   */
   readonly triggerId: Signal<string>;
 
   /** Unique id for the content element. Stable across the menu's lifetime. */
@@ -162,21 +175,46 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    */
   readonly lastCloseReason = this.#closeReasonState.reason;
 
-  /** The focusable element the menu should return focus to on close. */
+  /**
+   * The focusable element the menu should return focus to on close — the opener
+   * that actually opened this instance, so a menu shared by several openers
+   * hands focus back to the one the user used.
+   */
   readonly trigger: Signal<HTMLElement | null>;
 
   /** The mounted `[forMenuContent]` element, or `null` while the menu is closed. */
   readonly content: Signal<HTMLElement | null>;
 
+  /**
+   * The active opener's floating-ui anchor: its virtual anchor when it recorded
+   * one, else its own element. `[forMenu]` resolves its `anchor` through this so
+   * the surface follows whichever opener fired.
+   */
+  readonly openerAnchor: Signal<ReferenceElement | null>;
+
+  /**
+   * The active opener's virtual anchor only, `null` until one is recorded.
+   * `[forContextMenu]` resolves its `anchor` through this so a menu with no
+   * recorded pointer position stays unanchored rather than falling back to its
+   * whole right-click region.
+   */
+  readonly openerVirtualAnchor: Signal<ReferenceElement | null>;
+
+  /** Registered openers that count as "inside" for outside-dismissal. */
+  readonly openerExemptions: Signal<readonly HTMLElement[]>;
+
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
-    this.#triggerSlot = this.#registry.identifiedSlot(idPrefix, 'trigger');
+    this.#openers = new MenuOpenerRegistry(this.#registry.id(idPrefix, 'trigger'));
     this.#contentSlot = this.#registry.identifiedSlot(idPrefix, 'content');
-    this.triggerId = this.#triggerSlot.id.asReadonly();
+    this.triggerId = this.#openers.id;
     this.contentId = this.#contentSlot.id.asReadonly();
-    this.trigger = this.#triggerSlot.element;
+    this.trigger = this.#openers.element;
     this.content = this.#contentSlot.element;
+    this.openerAnchor = this.#openers.anchor;
+    this.openerVirtualAnchor = this.#openers.virtualAnchor;
+    this.openerExemptions = this.#openers.dismissibleExemptions;
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
@@ -184,11 +222,31 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   }
 
   registerTrigger(el: HTMLElement): void {
-    this.#triggerSlot.register(el);
+    this.#openers.register(el);
   }
 
   unregisterTrigger(el: HTMLElement): void {
-    this.#triggerSlot.unregister(el);
+    this.#openers.unregister(el);
+  }
+
+  registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
+    this.#openers.register(element, options);
+  }
+
+  unregisterOpener(element: HTMLElement): void {
+    this.#openers.unregister(element);
+  }
+
+  activateOpener(element: HTMLElement): void {
+    this.#openers.activate(element);
+  }
+
+  setVirtualAnchor(x: number, y: number): void {
+    this.#openers.setVirtualAnchor(x, y);
+  }
+
+  setVirtualAnchorFromRect(rect: DOMRect): void {
+    this.#openers.setVirtualAnchorFromRect(rect);
   }
 
   registerContent(el: HTMLElement): void {

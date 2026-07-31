@@ -95,6 +95,20 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 </ng-template>
 ```
 
+### Sharing one menu with a second opener
+
+`[forContextMenu]` is a **single-opener preset**: one root, one right-click region. When the same actions must also be reachable another way — the canonical case being a table row with a right-click region _and_ a kebab button — bind the trigger to a `[forMenu]` root instead, which drives one `[forMenuContent]` block from any number of openers. See [Shared openers](../menu/README.md#shared-openers-formenu).
+
+The same explicit-reference input carries it, and here the binding is **required** rather than optional: the trigger resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`).
+
+```html
+<tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+  <td [forContextMenuTrigger]="row">…cells…</td>
+  <td><button [forDropdownMenuTrigger]="row">⋮</button></td>
+  <!-- one content block, no duplication -->
+</tr>
+```
+
 ## API
 
 ### `ForContextMenu`

@@ -22,67 +22,87 @@ import {
   FOR_MENU_CONTEXT,
   type ForMenuContext,
 } from 'forty-cdk/core';
-import { FOR_CONTEXT_MENU_CONTEXT, type ForContextMenuContext } from './context-menu-context';
-import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
+import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
 /**
- * Headless implementation of a right-click / `Shift+F10` menu (variant of
- * the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/)).
- * Apply on a wrapper that contains a `[forContextMenuTrigger]` and an
- * `@if`-mounted `[forMenuContent]`.
+ * Opener-agnostic menu root: one `[forMenuContent]` definition that any number
+ * of heterogeneous openers can drive. Implements the same
+ * [WAI-ARIA Menu Button / Menu semantics](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/)
+ * as `[forDropdownMenu]` and `[forContextMenu]`, which stay as its single-opener
+ * presets.
  *
- * The menu is positioned at the pointer location at the time of the
- * `contextmenu` event — implemented via floating-ui's virtual element so
- * placement / flip / shift middleware still apply normally. Selecting an
- * item, Escape, or any outside interaction closes.
+ * Reach for it when the same actions must be reachable two ways — the canonical
+ * case being a table row with a kebab button *and* a right-click region, where
+ * the two presets would each need their own root and therefore their own copy of
+ * every item:
  *
  * ```html
- * <div forContextMenu [(open)]="open">
- *   <div forContextMenuTrigger class="region">Right-click here</div>
+ * <tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
+ *   <td [forContextMenuTrigger]="row">…cells…</td>
+ *   <td><button [forDropdownMenuTrigger]="row">⋮</button></td>
+ *
  *   @if (open()) {
- *     <div forMenuContent>…</div>
+ *     <div forMenuContent>
+ *       <button forMenuItem (activate)="edit()">Edit</button>
+ *       <button forMenuItem (activate)="remove()">Delete</button>
+ *     </div>
  *   }
- * </div>
+ * </tr>
  * ```
  *
- * Most of the directive's body (id generation, item collection, typeahead,
- * navigate / focus helpers, escape / outside-click veto plumbing) is owned
- * by the shared `_internal/menu-overlay` helper. The directive contributes
- * the inputs / outputs / model that make up the public surface, the
- * pointer-driven `VirtualElement` anchor (`setVirtualAnchor` /
- * `setVirtualAnchorFromRect`), and the contextmenu-specific dismissible
- * semantics (no exemption — a left-click on the right-click region while
- * the menu is open should close it).
+ * Exactly one instance is open at a time, and everything the mounted surface
+ * resolves follows the **active opener** — the one that fired: return-focus lands
+ * on it, and the floating-ui anchor is its element for a button opener or its
+ * recorded pointer / rect position for a right-click opener. Each opener carries
+ * its own `id`, so two of them never emit the same one.
+ *
+ * `[forDropdownMenuTrigger]` resolves this root through DI like any menu piece.
+ * `[forContextMenuTrigger]` resolves `FOR_CONTEXT_MENU_CONTEXT`, which this root
+ * deliberately does not provide (`forty-cdk/menu` must not depend on
+ * `forty-cdk/context-menu`), so bind it explicitly —
+ * `[forContextMenuTrigger]="row"` with `#row="forMenu"`.
+ *
+ * Accessible name: with heterogeneous openers the root cannot know whether the
+ * active one is a labelling control, and pointing `aria-labelledby` at a whole
+ * right-click region would announce the entire row as the menu's name. So — like
+ * `[forContextMenu]` — it opts out of the trigger-id fallback entirely and
+ * `[ariaLabel]` is the way to name a shared menu.
+ *
+ * Positioning is shared by every opener (per-opener overrides are out of scope
+ * for now), and seeded from `provideForMenuDefaults` — `sideOffset` defaults to
+ * `0`, flush against the anchor, which is what a pointer-anchored open wants. A
+ * button-only shared menu typically sets `[sideOffset]="4"` to match
+ * `[forDropdownMenu]`.
  */
 @Directive({
-  selector: '[forContextMenu]',
-  exportAs: 'forContextMenu',
+  selector: '[forMenu]',
+  exportAs: 'forMenu',
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'disabled() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: [
-    { provide: FOR_MENU_CONTEXT, useExisting: ForContextMenu },
-    { provide: FOR_CONTEXT_MENU_CONTEXT, useExisting: ForContextMenu },
-  ],
+  providers: [{ provide: FOR_MENU_CONTEXT, useExisting: ForMenu }],
 })
-export class ForContextMenu
-  extends MenuOverlayHost
-  implements ForMenuContext, ForContextMenuContext
-{
-  readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
+export class ForMenu extends MenuOverlayHost implements ForMenuContext {
+  readonly #defaults = inject(FOR_MENU_DEFAULTS);
 
+  /**
+   * Two-way bindable. Whether the menu is currently shown. The `model()`
+   * change emitter (`(openChange)`) fires only on internal transitions
+   * (an opener activating, Escape, outside dismissal, item selection), never on
+   * consumer writes via `[(open)]`.
+   */
   readonly open = model<boolean>(false);
 
   /**
-   * Side the menu is anchored to relative to the pointer. Defaults to
-   * `'bottom'`. Pair with `align` for the full positioning API.
+   * Side the menu is anchored to. Defaults to `'bottom'`. Pair with
+   * `align` for the full positioning API.
    *
    * One of the floating-ui positioning inputs shared verbatim across the
-   * three menu roots — their non-seed defaults come from the single
+   * menu roots — their non-seed defaults come from the single
    * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
-   * guards the three roots against drift.
+   * guards the roots against drift.
    */
   readonly side = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side);
 
@@ -90,8 +110,9 @@ export class ForContextMenu
   readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
 
   /**
-   * Gap (px) along the main axis. Default `0`. The default is read from
-   * `provideForContextMenuDefaults` for the surrounding scope.
+   * Gap (px) between the active opener's anchor and the menu along the main
+   * axis. Default `0`. The default is read from `provideForMenuDefaults` for the
+   * surrounding scope.
    */
   readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
 
@@ -118,8 +139,7 @@ export class ForContextMenu
 
   /**
    * Padding (px) applied uniformly to flip / shift / size. Default `8`.
-   * The default is read from `provideForContextMenuDefaults` for the
-   * surrounding scope.
+   * The default is read from `provideForMenuDefaults` for the surrounding scope.
    */
   readonly collisionPadding = input(this.#defaults.collisionPadding, {
     transform: numberAttribute,
@@ -133,7 +153,7 @@ export class ForContextMenu
   /** Stickiness behaviour for `shift`. Default `'partial'`. */
   readonly sticky = input<'partial' | 'always' | false>(MENU_POSITIONING_DEFAULTS.sticky);
 
-  /** When `true`, sets `data-detached=""` while the virtual anchor is off-screen. */
+  /** When `true`, sets `data-detached=""` while the active anchor is scrolled off-screen. */
   readonly hideWhenDetached = input(MENU_POSITIONING_DEFAULTS.hideWhenDetached, {
     transform: booleanAttribute,
   });
@@ -167,24 +187,25 @@ export class ForContextMenu
   readonly dir = injectTextDirection(this._dirInput);
 
   /**
-   * When true, the contextmenu event is allowed to fall through to the
-   * native browser menu. Useful for letting the OS-provided context menu
-   * appear on certain regions while keeping the directive mounted.
+   * When true, every opener is ignored and any open menu stays open until the
+   * consumer flips `open` themselves. Each opener reflects `data-disabled`; the
+   * items keep their per-item disabled semantics.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /** When true (default), Escape, pointer-down outside, and focus outside close the menu. */
   readonly dismissible = input(true, { transform: booleanAttribute });
 
-  /** When true (default), focus returns to the right-click target on close. */
+  /** When true (default), focus returns to the opener that opened the menu on close. */
   readonly returnFocus = input(true, { transform: booleanAttribute });
 
   /**
-   * Accessible name reflected as `aria-label` on `[forMenuContent]`. This is
-   * the only name hook the root exposes for a context menu: the right-click
-   * region is never used as an `aria-labelledby` target, so with no
-   * `ariaLabel` (and no consumer-set static `aria-labelledby` on the content)
-   * the surface exposes no accessible name at all.
+   * Accessible name reflected as `aria-label` on `[forMenuContent]`. This is the
+   * only name hook a shared menu exposes: its openers may be right-click regions
+   * rather than labelling controls, so the surface never falls back to
+   * `aria-labelledby="<openerId>"`. With no `ariaLabel` (and no consumer-set
+   * static `aria-labelledby` on the content) the surface exposes no accessible
+   * name at all.
    */
   readonly ariaLabel = input<string | null>(null);
 
@@ -196,8 +217,9 @@ export class ForContextMenu
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
 
   /**
-   * Fires on a pointer-down outside the menu, just before it closes. Call
-   * `preventDefault()` on the veto to keep the menu open.
+   * Fires on a pointer-down outside the menu (and outside any exempt opener),
+   * just before it closes. Call `preventDefault()` on the veto to keep the menu
+   * open.
    */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
 
@@ -223,12 +245,12 @@ export class ForContextMenu
   readonly autoFocusOnOpen = output<VetoableEvent>();
 
   /**
-   * Fires just before focus returns to the trigger on unmount. Call
+   * Fires just before focus returns to the active opener on unmount. Call
    * `preventDefault()` on the veto to suppress the return-focus.
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  protected readonly _overlay = createMenuOverlay('for-context-menu', {
+  protected readonly _overlay = createMenuOverlay('for-menu', {
     open: this.open,
     disabled: this.disabled,
     dismissible: this.dismissible,
@@ -242,24 +264,21 @@ export class ForContextMenu
   });
 
   /**
-   * Virtual-anchor only: a context menu with no recorded pointer / rect position
-   * stays unanchored rather than falling back to its whole right-click region.
+   * The active opener's anchor: its recorded pointer / rect position when it set
+   * one, otherwise its own element.
    */
-  readonly anchor = this._overlay.openerVirtualAnchor;
+  readonly anchor = this._overlay.openerAnchor;
 
   /**
-   * ContextMenu exempts nothing — a left-click on the right-click region
-   * while the menu is open should close it like any other outside click. The
-   * right-click region registers without asking for an exemption, so the shared
-   * opener registry resolves this to an empty list rather than a second source.
+   * Only the openers that asked to count as "inside" — a toggle-style button
+   * opener, whose own click already toggles and would otherwise double-close. A
+   * right-click region opts out, so a left-click on it closes the menu.
    */
   readonly dismissibleExemptions = this._overlay.openerExemptions;
 
   /**
-   * The right-click region is not a labelling element, so `[forMenuContent]`
-   * emits no `aria-labelledby` fallback for this flavor — pointing the menu's
-   * name at the region would announce its entire text. Name the menu with
-   * `[ariaLabel]` instead.
+   * A shared menu never names itself after an opener: see the `ariaLabel`
+   * contract above.
    */
   readonly triggerLabelsMenu = false;
 
@@ -267,19 +286,18 @@ export class ForContextMenu
   readonly parentMenu = null;
 
   /**
-   * Updates the virtual anchor to a 0×0 rect at (`x`, `y`) in viewport
-   * coordinates. Widens the shared base's protected pass-through to the public
-   * `ForContextMenuContext` member `[forContextMenuTrigger]` calls.
+   * Anchors the active opener's next open at a 0×0 rect at (`x`, `y`) in viewport
+   * coordinates. Widens the shared base's protected pass-through so a
+   * pointer-driven opener can reach it through this root's exported reference.
    */
   override setVirtualAnchor(x: number, y: number): void {
     super.setVirtualAnchor(x, y);
   }
 
   /**
-   * Updates the virtual anchor to a snapshot of `rect`. Used by the keyboard
-   * activators (`Shift+F10`, `ContextMenu` key) so the menu floats off the
-   * focused element instead of the pointer position. The rect is captured
-   * by value, so subsequent layout changes don't shift the anchor.
+   * Anchors the active opener's next open at a by-value snapshot of `rect`, so
+   * later layout changes don't shift it. Used by the keyboard activators of a
+   * pointer-driven opener (`Shift+F10`, the `ContextMenu` key).
    */
   override setVirtualAnchorFromRect(rect: DOMRect): void {
     super.setVirtualAnchorFromRect(rect);

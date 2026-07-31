@@ -168,7 +168,17 @@ export class ElementRegistry {
     idPrefix: string,
     suffix: string,
   ): IdentifiedElementSlot<E> {
-    return new IdentifiedElementSlot<E>(signal(this.#idGen.next(`${idPrefix}-${suffix}`)));
+    return new IdentifiedElementSlot<E>(this.id(idPrefix, suffix));
+  }
+
+  /**
+   * A writable `<idPrefix>-<suffix>` id signal off the shared generator, for a
+   * controller that owns the element side itself — the menu overlay's opener
+   * registry keeps one seed id across many openers, so it needs the id without
+   * a slot's single-element storage.
+   */
+  id(idPrefix: string, suffix: string): WritableSignal<string> {
+    return signal(this.#idGen.next(`${idPrefix}-${suffix}`));
   }
 
   /** A slot for an element that carries no aria-wiring id of its own. */

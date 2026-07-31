@@ -161,6 +161,18 @@ describe('MenuOverlay', () => {
       expect(overlay.trigger()).toBe(b);
     });
 
+    it('leaves trigger unresolved while two openers compete and none is active', () => {
+      const { overlay } = build();
+      const a = document.createElement('button');
+      const b = document.createElement('button');
+      overlay.registerOpener(a);
+      overlay.registerOpener(b);
+      expect(overlay.trigger()).toBeNull();
+
+      overlay.activateOpener(b);
+      expect(overlay.trigger()).toBe(b);
+    });
+
     it('registers content the same way', () => {
       const { overlay } = build();
       const el = document.createElement('div');
@@ -181,6 +193,90 @@ describe('MenuOverlay', () => {
       expect(overlay.items().map((i) => i.id)).toEqual(['a', 'b', 'c']);
       overlay.unregisterItem(b);
       expect(overlay.items().map((i) => i.id)).toEqual(['a', 'c']);
+    });
+  });
+
+  describe('opener registry', () => {
+    it('reports each opener own id, falling back to the seed with none resolvable', () => {
+      const { overlay } = build('for-test-menu');
+      const seed = overlay.triggerId();
+      const a = document.createElement('button');
+      const b = document.createElement('div');
+
+      overlay.registerOpener(a, { id: signal('opener-a') });
+      expect(overlay.triggerId()).toBe('opener-a');
+
+      overlay.registerOpener(b, { id: signal('opener-b') });
+      expect(overlay.triggerId()).toBe(seed);
+
+      overlay.activateOpener(b);
+      expect(overlay.triggerId()).toBe('opener-b');
+    });
+
+    it('anchors per opener, so switching back restores the element anchor with no clearing step', () => {
+      const { overlay } = build();
+      const button = document.createElement('button');
+      const region = document.createElement('div');
+      overlay.registerOpener(button);
+      overlay.registerOpener(region);
+
+      overlay.activateOpener(button);
+      expect(overlay.openerAnchor()).toBe(button);
+      expect(overlay.openerVirtualAnchor()).toBeNull();
+
+      overlay.activateOpener(region);
+      overlay.setVirtualAnchor(12, 34);
+      const virtual = overlay.openerVirtualAnchor();
+      expect(virtual).not.toBe(region);
+      expect(virtual?.getBoundingClientRect().left).toBe(12);
+      expect(virtual?.getBoundingClientRect().top).toBe(34);
+      expect(overlay.openerAnchor()).toBe(virtual);
+
+      overlay.activateOpener(button);
+      expect(overlay.openerAnchor()).toBe(button);
+      expect(overlay.openerVirtualAnchor()).toBeNull();
+    });
+
+    it('snapshots a rect anchor by value', () => {
+      const { overlay } = build();
+      const region = document.createElement('div');
+      overlay.registerOpener(region);
+      overlay.setVirtualAnchorFromRect({
+        x: 5,
+        y: 6,
+        width: 20,
+        height: 10,
+      } as DOMRect);
+
+      const rect = overlay.openerVirtualAnchor()?.getBoundingClientRect();
+      expect(rect?.right).toBe(25);
+      expect(rect?.bottom).toBe(16);
+    });
+
+    it('exempts only the openers that asked for it', () => {
+      const { overlay } = build();
+      const button = document.createElement('button');
+      const region = document.createElement('div');
+      overlay.registerOpener(button, { dismissibleExempt: true });
+      overlay.registerOpener(region);
+
+      expect(overlay.openerExemptions()).toEqual([button]);
+
+      overlay.unregisterOpener(button);
+      expect(overlay.openerExemptions()).toEqual([]);
+    });
+
+    it('clears the active opener when it unregisters', () => {
+      const { overlay } = build();
+      const button = document.createElement('button');
+      const region = document.createElement('div');
+      overlay.registerOpener(button);
+      overlay.registerOpener(region);
+      overlay.activateOpener(button);
+      expect(overlay.trigger()).toBe(button);
+
+      overlay.unregisterOpener(button);
+      expect(overlay.trigger()).toBe(region);
     });
   });
 

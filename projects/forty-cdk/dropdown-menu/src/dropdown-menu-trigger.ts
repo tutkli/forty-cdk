@@ -10,7 +10,9 @@ import {
 } from '@angular/core';
 
 import {
+  asMenuOpenerRegistration,
   hostButtonType,
+  hostId,
   reflectDisabled,
   type MenuActivationModality,
   FOR_MENU_CONTEXT,
@@ -85,7 +87,7 @@ function injectDropdownMenuTriggerContext(
   exportAs: 'forDropdownMenuTrigger',
   host: {
     '[attr.type]': 'buttonType()',
-    '[id]': 'ctx().triggerId()',
+    '[id]': 'id()',
     '[attr.aria-haspopup]': '"menu"',
     '[attr.aria-expanded]': 'ctx().open() ? "true" : "false"',
     '[attr.aria-controls]': 'ctx().open() ? ctx().contentId() : null',
@@ -103,6 +105,14 @@ export class ForDropdownMenuTrigger {
   #pointerActivation = false;
 
   /**
+   * The trigger's own aria-wiring id, adopting a consumer-set static `id`. It is
+   * per-opener rather than per-root so a menu shared by several openers
+   * (`[forMenu]`) never emits the same `id` twice; the surface names itself after
+   * whichever opener is active.
+   */
+  readonly id = hostId('for-dropdown-menu-trigger');
+
+  /**
    * Optional explicit reference to the `[forDropdownMenu]` root, named after
    * the selector `routerLink`-style. The bare valueless attribute keeps
    * resolving the enclosing root via DI; pass the root explicitly
@@ -115,6 +125,8 @@ export class ForDropdownMenuTrigger {
   readonly forDropdownMenuTrigger = input<ForMenuContext | ''>('');
 
   protected readonly ctx = injectDropdownMenuTriggerContext(this.forDropdownMenuTrigger);
+
+  readonly #openerRegistration = computed(() => asMenuOpenerRegistration(this.ctx()));
 
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -129,8 +141,14 @@ export class ForDropdownMenuTrigger {
     // resolved root changes (explicit reference swapped at runtime).
     effect((onCleanup) => {
       const ctx = this.ctx();
-      ctx.registerTrigger(el);
-      onCleanup(() => ctx.unregisterTrigger(el));
+      const openers = this.#openerRegistration();
+      if (openers === null) {
+        ctx.registerTrigger(el);
+        onCleanup(() => ctx.unregisterTrigger(el));
+        return;
+      }
+      openers.registerOpener(el, { id: this.id, dismissibleExempt: true });
+      onCleanup(() => openers.unregisterOpener(el));
     });
     reflectDisabled(this.effectiveDisabled);
   }
@@ -145,6 +163,7 @@ export class ForDropdownMenuTrigger {
     if (this.effectiveDisabled()) {
       return;
     }
+    this.#activate();
     this.ctx().toggle('first', modality);
   }
 
@@ -155,10 +174,16 @@ export class ForDropdownMenuTrigger {
     }
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
       event.preventDefault();
+      this.#activate();
       this.ctx().openMenu('first');
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
+      this.#activate();
       this.ctx().openMenu('last');
     }
+  }
+
+  #activate(): void {
+    this.#openerRegistration()?.activateOpener(this.#host.nativeElement);
   }
 }
