@@ -167,7 +167,7 @@ rather than the whole width map.
 ### `[width]` vs. a resized / seeded width (column track precedence)
 
 `<for-table-body>` resolves each column's `grid-template-columns` track as
-`[width]() ?? var(--for-table-col-<name>-width, minmax(0, 1fr))`, so a **static `[width]` on the def
+`[width]() ?? var(--for-table-col-<name>-width, [fallbackWidth]() ?? minmax(0, 1fr))`, so a **static `[width]` on the def
 takes precedence** over the published resize var — a seeded or resized width would never reach the
 track. A column you resize (or seed through `[(columnWidths)]`) must therefore **leave `[width]`
 unset**: it then flexes as `minmax(0, 1fr)`, sharing the free space with the other unsized columns,
@@ -176,6 +176,42 @@ remaining `1fr` columns re-split what's left. Reserve `[width]` for columns you 
 `48px` selection column, an `80px` id column); combining it with `resizable` on the same column pins the
 track and makes the handle's width purely advisory (`aria-valuenow` and `(resizeCommit)` still fire, but
 the column does not visually resize).
+
+### `[fallbackWidth]` — a weighted fluid track before the first resize
+
+`minmax(0, 1fr)` is a fine default but it is the _only_ track an unsized column could take, so a column
+that should fill proportionally **and** keep a floor had to choose between a fluid track and a resizable
+one. `[fallbackWidth]` supplies the track fragment used as the **resize var's fallback** instead:
+
+```html
+<ng-container
+  forColumnDef="description"
+  resizable
+  resizeAriaLabel="Resize description"
+  fallbackWidth="minmax(120px, 2.5fr)"
+>
+  <ng-template forHeaderCell>Description</ng-template>
+  <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.description }}</ng-template>
+</ng-container>
+```
+
+The column renders as `minmax(120px, 2.5fr)` — 2.5× the weight of a plain `1fr` sibling, never below
+`120px` — until a width is seeded or committed, at which point `--for-table-col-description-width`
+resolves and the fallback stops applying, exactly as with the default. Unlike `[width]` it never pins the
+column, so the handle keeps driving it.
+
+`[fallbackWidth]` is **ignored when `[width]` is set** (the static track wins before the var is ever
+consulted). It is _not_ gated on `resizable`: a non-`resizable` column with no `[width]` resolves through
+the same var, which `[(columnWidths)]` can publish, so a weighted fluid track is equally useful there.
+
+Both inputs are **dev-mode-guarded**, the same way a column name is. Any open track vocabulary is
+accepted (`minmax()`, `fit-content()`, `calc()`, `clamp()`, `var()`), but a fragment that would escape the
+derived `grid-template-columns` string throws a `[forty-cdk/table]` error instead of silently collapsing
+the layout: an empty fragment (pass `null` — or omit the input — to leave the track unset), a `;` / `{` /
+`}` / quote / comment opener, or unbalanced parentheses. That last one is the reason the guard exists at
+all for `[fallbackWidth]`: a stray `)` closes the enclosing `var(` early and swallows every column after
+it, which reads as "the whole table lost its layout" rather than "one column has a typo". Production
+builds skip the check.
 
 ## Column reordering (`reorderable` + `columnReorder`)
 

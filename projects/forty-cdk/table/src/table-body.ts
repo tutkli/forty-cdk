@@ -590,11 +590,16 @@ export class ForTableBody<T = unknown> {
   /**
    * The derived `grid-template-columns` track, applied to the header row and every
    * data row and exposed for consumers who want to bind it elsewhere. Each column
-   * contributes its `width`, or the published resize var with a `minmax(0, 1fr)` fallback.
+   * contributes its `width`, or the published resize var falling back to the column's
+   * `fallbackWidth` (`minmax(0, 1fr)` when that is unset too).
    */
   readonly track: Signal<string> = computed(() =>
     this.orderedColumns()
-      .map((col) => col.width() ?? `var(--for-table-col-${col.name()}-width, minmax(0, 1fr))`)
+      .map(
+        (col) =>
+          col.width() ??
+          `var(--for-table-col-${col.name()}-width, ${col.fallbackWidth() ?? 'minmax(0, 1fr)'})`,
+      )
       .join(' '),
   );
 

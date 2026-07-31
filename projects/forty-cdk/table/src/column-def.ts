@@ -8,7 +8,12 @@ import {
   TemplateRef,
 } from '@angular/core';
 
-import { assertColumnName, coerceSticky, type TableStickyValue } from './table-context';
+import {
+  assertColumnName,
+  assertColumnTrack,
+  coerceSticky,
+  type TableStickyValue,
+} from './table-context';
 
 /**
  * Template context handed to each `[forDataCell]` stamped by `ForTableBody`:
@@ -213,14 +218,35 @@ export class ForColumnDef {
   /**
    * `grid-template-columns` track fragment for this column (e.g. `'160px'`,
    * `'minmax(160px, 1fr)'`). When unset, `ForTableBody` falls back to the
-   * published `--for-table-col-<name>-width` resize var with a `minmax(0, 1fr)`
-   * default, so a resized column drives its own track. A static `width`
-   * **takes precedence** over that resize var — so leave it unset on a
-   * `resizable` column whose width you drive through `resizeCommit` or the
-   * body's `[(columnWidths)]`, otherwise the pinned track ignores the resized
-   * width (the handle still reports `aria-valuenow` but the column won't move).
+   * published `--for-table-col-<name>-width` resize var with `fallbackWidth`
+   * (or `minmax(0, 1fr)`) as the var's default, so a resized column drives its
+   * own track. A static `width` **takes precedence** over that resize var — so
+   * leave it unset on a `resizable` column whose width you drive through
+   * `resizeCommit` or the body's `[(columnWidths)]`, otherwise the pinned track
+   * ignores the resized width (the handle still reports `aria-valuenow` but the
+   * column won't move). Dev-mode-guarded against fragments that would escape the
+   * derived track string (see `fallbackWidth`).
    */
   readonly width = input<string | null>(null);
+
+  /**
+   * `grid-template-columns` track fragment used as the resize-var **fallback**
+   * for a column with no explicit `width` — the track the column renders before
+   * a width is committed or seeded (e.g. `'minmax(120px, 2.5fr)'` for a
+   * weighted, floor-bounded fluid column). Unlike `width` it does not pin the
+   * column, so the resizer (and the body's `[(columnWidths)]`) still drives it
+   * and the first published width snaps the column to px. Ignored when `width`
+   * is set. Defaults to `minmax(0, 1fr)`.
+   *
+   * Any open track vocabulary is accepted (`minmax()`, `fit-content()`,
+   * `calc()`, `clamp()`, `var()`), but in dev mode a fragment that would escape
+   * the derived `grid-template-columns` string throws instead of silently
+   * collapsing the layout: an empty fragment (pass `null` to leave the track
+   * unset), a `;` / `{` / `}` / quote / comment opener, or unbalanced
+   * parentheses — a stray `)` here would close the enclosing `var(` early and
+   * swallow the rest of the track.
+   */
+  readonly fallbackWidth = input<string | null>(null);
 
   /**
    * Static class(es) applied to this column's stamped `[forTableHeaderCell]`.
@@ -248,5 +274,15 @@ export class ForColumnDef {
 
   constructor() {
     effect(() => assertColumnName(this.name(), 'ForColumnDef'));
+    effect(() => {
+      const width = this.width();
+      if (width !== null) {
+        assertColumnTrack(width, 'width', `forColumnDef="${this.name()}"`);
+      }
+      const fallbackWidth = this.fallbackWidth();
+      if (fallbackWidth !== null) {
+        assertColumnTrack(fallbackWidth, 'fallbackWidth', `forColumnDef="${this.name()}"`);
+      }
+    });
   }
 }
