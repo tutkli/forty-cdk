@@ -813,4 +813,8 @@ Three rules for the scaffold shape:
   `[displayedColumns]`); the registration protocol behind it is internal, so only the registry
   `provideForTableDefRegistry()` installs is accepted by `[defs]`.
 - **Compose the body, don't subclass it.** A component subclass replaces its base's `providers`
-  wholesale, which would strip the registry the defs resolve.
+  wholesale, which strips the registry the defs resolve — the body throws a `[forty-cdk/table]`
+  error naming `provideForTableDefRegistry()` rather than a bare `NG0201` naming a class you
+  cannot import. Spreading the helper in is not the fix, though: a subclass inherits neither
+  `template` nor `imports` either, so it constructs and then renders none of the body. Composition
+  is the whole wrapping story here.

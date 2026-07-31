@@ -239,6 +239,31 @@ export function provideForTableDefRegistry(): Provider[] {
   ];
 }
 
+/**
+ * Resolves the registry `<for-table-body>`'s own `providers` install.
+ *
+ * The lookup is optional only so the failure can be reported in the library's own
+ * vocabulary: {@link TableDefRegistry} is deliberately absent from every barrel, so
+ * a bare `NG0201: No provider found for _TableDefRegistry` names a symbol the
+ * consumer cannot import and suggests no repair. The only shape that reaches it is
+ * a subclass declaring its own `@Component` — Angular replaces the inherited
+ * `providers` array wholesale — which is not a supported way to wrap the body.
+ */
+export function injectOwnTableDefRegistry(): TableDefRegistry {
+  const registry = inject(TableDefRegistry, { optional: true });
+  if (!registry) {
+    throw new Error(
+      `[forty-cdk/table] <for-table-body> found no def registry of its own. A subclass ` +
+        `declaring its own @Component replaces the providers it would have inherited, so it ` +
+        `must spread provideForTableDefRegistry() into them — but subclassing the body is not ` +
+        `a supported wrapping shape either, because a subclass inherits no template. Compose ` +
+        `<for-table-body> inside a wrapper's template instead, and give the wrapper its own ` +
+        `provideForTableDefRegistry() bound to the body's [defs].`,
+    );
+  }
+  return registry;
+}
+
 function injectTableDefRegistration(piece: string): TableDefRegistration {
   const registration = inject(TABLE_DEF_REGISTRATION, { optional: true });
   if (!registration) {

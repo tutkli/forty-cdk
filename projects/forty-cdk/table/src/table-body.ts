@@ -22,8 +22,9 @@ import { type ForColumnDef } from './column-def';
 import {
   assertTableDefRegistry,
   type ForTableDefRegistry,
+  injectOwnTableDefRegistry,
   provideForTableDefRegistry,
-  TableDefRegistry,
+  type TableDefRegistry,
 } from './def-registry';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
 import { type ForRowDef } from './row-def';
@@ -123,8 +124,15 @@ interface RenderRow<T> {
  * exposed in **document order** — identical to the DOM order the content queries
  * resolved, including a def mounted later by `@if` and a `@for`-reordered set of
  * defs — and `displayedColumns` still pins an explicit render order on top.
- * Subclassing this component is not a supported wrapping shape; compose it in a
- * wrapper's template instead.
+ *
+ * **Subclassing this component is not a supported wrapping shape.** A subclass
+ * must declare its own `@Component`, and Angular inherits neither `template` nor
+ * `imports` — so the subclass renders nothing of the body unless it copies the
+ * inline template the library refactors freely, and its own `providers` array
+ * replaces the one installing the def registry (a subclass missing
+ * `provideForTableDefRegistry()` throws a `[forty-cdk/table]` error naming it).
+ * Compose the body in a wrapper's template instead: the preset column component
+ * and the scaffold wrapper above are the two supported shapes.
  *
  * Sort and resize affordances are auto-wired from the per-column `sortable` /
  * `resizable` flags. Sort stays consumer-applied (BYO-data): the body derives each
@@ -590,7 +598,7 @@ export class ForTableBody<T = unknown> {
    */
   readonly defs = input<ForTableDefRegistry | null>(null);
 
-  readonly #ownDefs = inject(TableDefRegistry);
+  readonly #ownDefs = injectOwnTableDefRegistry();
 
   readonly #defs = computed<TableDefRegistry>(() => {
     const external = this.defs();
