@@ -31,24 +31,15 @@ export interface LabelCacheEntry<T> {
   readonly disabled: boolean;
 }
 
-/**
- * Cache state. Two bounded stores, both rebuilt by the same computation:
- *
- * - `windowByKey` — the most recent **non-empty** option window, keyed by
- *   serialized form value. Replaced wholesale on every non-empty window, so it
- *   is bounded by the size of one window and an option the consumer removed from
- *   the source is purged on the next window rather than lingering.
- * - `selected` — the entries whose serialized value is currently selected.
- *   Bounded by the selection size.
- */
-interface LabelCacheState<T> {
-  readonly windowByKey: ReadonlyMap<string, LabelCacheEntry<T>>;
-  readonly selected: ReadonlyMap<string, LabelCacheEntry<T>>;
+/** Tracked source of the window store: the live handles and the key fn. */
+interface WindowSource<T> {
+  readonly items: readonly LabelCacheHandle<T>[];
+  readonly toFormValue: (item: T) => string;
 }
 
-/** Tracked source of the cache: the live window, the selection, and the key fn. */
-interface LabelCacheSource<T> {
-  readonly items: readonly LabelCacheHandle<T>[];
+/** Tracked source of the selection store: the window store, the selection, and the key fn. */
+interface SelectionSource<T> {
+  readonly window: ReadonlyMap<string, LabelCacheEntry<T>>;
   readonly value: readonly T[];
   readonly toFormValue: (item: T) => string;
 }
@@ -67,7 +58,7 @@ export interface LabelCacheDeps<T> {
   readonly itemToFormValue: Signal<(item: T) => string>;
 }
 
-const EMPTY_STATE: LabelCacheState<never> = { windowByKey: new Map(), selected: new Map() };
+const EMPTY_WINDOW = new Map<string, LabelCacheEntry<never>>();
 
 /**
  * Bounded option-label cache shared by `[forSelect]` and `[forCombobox]`. Both
@@ -89,6 +80,13 @@ const EMPTY_STATE: LabelCacheState<never> = { windowByKey: new Map(), selected: 
  *   one window, and purge-aware for free: an option the consumer removed while
  *   the listbox is open is gone from the next window.
  *
+ * They are two separate `linkedSignal`s rather than one holding both stores, so
+ * the selection is not a dependency of the window read: a commit of `value`
+ * rebuilds the selection map alone (bounded by the selection) instead of
+ * re-reading every handle in the window, and — because {@link prime} is the
+ * cache's only eager reader — the roots' pull effect does not drag the selection
+ * into the tracked set of anything else that shares it.
+ *
  * The replace semantics are what remove the reset machinery a merging
  * accumulator needed. There is no `totalCount` transition to detect, no
  * data-version bump to honour and no stale-window race to document: a window
@@ -97,8 +95,13 @@ const EMPTY_STATE: LabelCacheState<never> = { windowByKey: new Map(), selected: 
  * The virtualized consequence is deliberate — with one window in the store at a
  * time, `windowEntries` covers the rendered slice rather than every slice
  * scrolled through, so a virtualized closed-state match is scoped to the last
- * window. Selected labels are unaffected: they live in the other projection,
- * keyed by the selection.
+ * window. A label that is already selected is unaffected — it lives in the other
+ * projection and is carried for as long as the value stays selected — but neither
+ * projection consults a virtualized position map, so a value that *enters* the
+ * selection while its option sits outside the current window resolves only if it
+ * was cached on an earlier window. The caller owns that fallback, and
+ * `[forCombobox]` overlays the position map onto `windowEntries` for its
+ * completion matcher only.
  *
  * A statically-rendered option registers during the content view's *creation*
  * pass, before its `input.required` `[value]` binding is written in that view's
@@ -110,41 +113,49 @@ const EMPTY_STATE: LabelCacheState<never> = { windowByKey: new Map(), selected: 
  * primitive's public context. Constructed once per root.
  */
 export class LabelCache<T> {
-  readonly #state: Signal<LabelCacheState<T>>;
+  readonly #windowByKey: Signal<ReadonlyMap<string, LabelCacheEntry<T>>>;
+
+  readonly #selectedByKey: Signal<ReadonlyMap<string, LabelCacheEntry<T>>>;
 
   readonly #selectedEntries: Signal<readonly LabelCacheEntry<T>[]>;
 
   readonly #windowEntries: Signal<readonly LabelCacheEntry<T>[]>;
 
   constructor(deps: LabelCacheDeps<T>) {
-    this.#state = linkedSignal<LabelCacheSource<T>, LabelCacheState<T>>({
-      source: () => ({
-        items: deps.items(),
-        value: deps.value(),
-        toFormValue: deps.itemToFormValue(),
-      }),
-      computation: ({ items, value, toFormValue }, prev) => {
-        const previous: LabelCacheState<T> = prev?.value ?? EMPTY_STATE;
-        const windowByKey =
-          items.length === 0 ? previous.windowByKey : readWindow(items, toFormValue);
-        const selected = new Map<string, LabelCacheEntry<T>>();
-        for (const item of value) {
-          const key = toFormValue(item);
-          const entry = windowByKey.get(key) ?? previous.selected.get(key);
-          if (entry !== undefined) {
-            selected.set(key, entry);
-          }
-        }
-        return { windowByKey, selected };
-      },
+    this.#windowByKey = linkedSignal<WindowSource<T>, ReadonlyMap<string, LabelCacheEntry<T>>>({
+      source: () => ({ items: deps.items(), toFormValue: deps.itemToFormValue() }),
+      computation: ({ items, toFormValue }, prev) =>
+        items.length === 0 ? (prev?.value ?? EMPTY_WINDOW) : readWindow(items, toFormValue),
     });
-    this.#selectedEntries = computed(() => [...this.#state().selected.values()]);
-    this.#windowEntries = computed(() => [...this.#state().windowByKey.values()]);
+    this.#selectedByKey = linkedSignal<SelectionSource<T>, ReadonlyMap<string, LabelCacheEntry<T>>>(
+      {
+        source: () => ({
+          window: this.#windowByKey(),
+          value: deps.value(),
+          toFormValue: deps.itemToFormValue(),
+        }),
+        computation: ({ window, value, toFormValue }, prev) => {
+          const selected = new Map<string, LabelCacheEntry<T>>();
+          for (const item of value) {
+            const key = toFormValue(item);
+            const entry = window.get(key) ?? prev?.value.get(key);
+            if (entry !== undefined) {
+              selected.set(key, entry);
+            }
+          }
+          return selected;
+        },
+      },
+    );
+    this.#selectedEntries = computed(() => [...this.#selectedByKey().values()]);
+    this.#windowEntries = computed(() => [...this.#windowByKey().values()]);
   }
 
   /**
-   * Pull the cache so the window store observes the mounted options. Called from
-   * the root's bridge effect while the listbox is open.
+   * Pull both stores so they observe the mounted options. Called from a
+   * dedicated read-only effect on the root, never from one that also writes:
+   * pulling the cache tracks the selection, and an effect that writes
+   * activedescendant must not re-run on every commit of `value`.
    *
    * This read is the one thing the cache cannot derive for itself: the option
    * window is transient, and a lazy computation only ever sees the source as it
@@ -152,11 +163,14 @@ export class LabelCache<T> {
    * whatever renders the selected label — but the window store has no such
    * reader during the open cycle, so a consumer who renders no selected label
    * (or none yet) would leave it empty and the closed-state matchers with
-   * nothing to match against. A read, not a write: forcing a lazy derivation to
-   * run is a side effect, not state propagation.
+   * nothing to match against. The selection store is pulled here too so its
+   * carried-over entries are captured while the option that owns each selected
+   * value is still in the window. A read, not a write: forcing a lazy derivation
+   * to run is a side effect, not state propagation.
    */
   prime(): void {
-    this.#state();
+    this.#windowByKey();
+    this.#selectedByKey();
   }
 
   /**

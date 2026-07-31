@@ -536,14 +536,20 @@ export class ForCombobox<T = string>
       disabled: this.effectiveDisabled,
     });
 
+    // Pull the label cache from its own read-only effect. Sharing the bridge's
+    // effect below would put the selection in that effect's tracked set — the
+    // cache reads `value` — and the bridge writes activedescendant and scrolls,
+    // so every commit of `value` would re-run those writes.
+    effect(() => {
+      this.#labelCache.prime();
+    });
+
     // The activedescendant *decision* is a pure derivation in `#activeId`; this
-    // effect runs only its imperative tail (label-cache priming, virtualized
-    // pending-nav resolution + passive seed, non-virtualized scroll-into-view).
-    // Full rationale lives with `runAutoHighlightBridge` in
-    // `combobox-auto-highlight.ts`.
+    // effect runs only its imperative tail (virtualized pending-nav resolution +
+    // passive seed, non-virtualized scroll-into-view). Full rationale lives with
+    // `runAutoHighlightBridge` in `combobox-auto-highlight.ts`.
     effect(() => {
       runAutoHighlightBridge<T>({
-        labelCache: this.#labelCache,
         requireNavigator: () => this.#requireNavigator(),
         items: this.#items.items,
         open: this.open,

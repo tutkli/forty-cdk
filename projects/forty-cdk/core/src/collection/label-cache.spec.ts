@@ -172,6 +172,31 @@ describe('LabelCache', () => {
       h.setItems([makeHandle({ id: 'a', value: 'apple', label: 'Apple' })]);
       expect(h.cache.selectedEntries()).toEqual([]);
     });
+
+    it('does not re-read the window when only the selection changes', () => {
+      const h = createCache();
+      let reads = 0;
+      const label = signal('Apple');
+      const counting: LabelCacheHandle<string> = {
+        id: signal('a'),
+        value: signal('apple'),
+        disabled: signal(false),
+        label: (() => {
+          reads++;
+          return label();
+        }) as unknown as Signal<string>,
+      };
+      h.setItems([counting]);
+      h.cache.prime();
+      const afterFirstWindow = reads;
+      expect(afterFirstWindow).toBeGreaterThan(0);
+
+      h.setValue(['apple']);
+      h.cache.prime();
+
+      expect(h.selectedLabels()).toEqual(['Apple']);
+      expect(reads).toBe(afterFirstWindow);
+    });
   });
 
   describe('boundedness', () => {

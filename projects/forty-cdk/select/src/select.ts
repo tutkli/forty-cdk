@@ -620,7 +620,9 @@ export class ForSelect<T = string>
     // pulled by whatever renders the selected label, but the window store the
     // closed-state typeahead reads has no reader during the open cycle. A read,
     // not a write: forcing a lazy derivation to run is a side effect, not state
-    // propagation inside an `effect`.
+    // propagation inside an `effect`. It keeps its own effect on purpose — the
+    // pull tracks `value`, so sharing one with the navigator effect below would
+    // re-run that effect's activedescendant writes on every selection commit.
     effect(() => {
       if (this.open()) {
         this.#labelCache.prime();

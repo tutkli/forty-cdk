@@ -518,7 +518,7 @@ How navigation flows when virtualizing:
 3. Your virtualizer scrolls; the directive's `@for` mounts the option for index 999.
 4. As soon as that option registers (at the matching `posInSet`), the directive seeds `aria-activedescendant` to its id.
 
-Typeahead, inline autocomplete, and `selected().label` all read from a merged snapshot that retains entries for options scrolled out of view, so completion against off-screen labels still works.
+Inline autocomplete matches against the most recently rendered window overlaid with the position snapshot, so completion against off-screen labels still works. `selected().label` reads a separate, selection-keyed cache instead — bounded by the selection, so the label of a selected option survives close / re-open and any number of query rebuilds, but it is **not** resolved from the position snapshot: a value that enters the selection while its option is outside the rendered window (a `[(value)]` write restoring a saved selection, say) falls back to `[itemToStringLabel]` until that option renders once. Supply `[itemToStringLabel]` whenever the selection can be seeded from outside the list.
 
 ```html
 <div
