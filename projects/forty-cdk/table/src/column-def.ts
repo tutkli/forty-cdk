@@ -213,14 +213,26 @@ export class ForColumnDef {
   /**
    * `grid-template-columns` track fragment for this column (e.g. `'160px'`,
    * `'minmax(160px, 1fr)'`). When unset, `ForTableBody` falls back to the
-   * published `--for-table-col-<name>-width` resize var with a `minmax(0, 1fr)`
-   * default, so a resized column drives its own track. A static `width`
-   * **takes precedence** over that resize var — so leave it unset on a
-   * `resizable` column whose width you drive through `resizeCommit` or the
-   * body's `[(columnWidths)]`, otherwise the pinned track ignores the resized
-   * width (the handle still reports `aria-valuenow` but the column won't move).
+   * published `--for-table-col-<name>-width` resize var with `fallbackWidth`
+   * (or `minmax(0, 1fr)`) as the var's default, so a resized column drives its
+   * own track. A static `width` **takes precedence** over that resize var — so
+   * leave it unset on a `resizable` column whose width you drive through
+   * `resizeCommit` or the body's `[(columnWidths)]`, otherwise the pinned track
+   * ignores the resized width (the handle still reports `aria-valuenow` but the
+   * column won't move).
    */
   readonly width = input<string | null>(null);
+
+  /**
+   * `grid-template-columns` track fragment used as the resize-var **fallback**
+   * for a column with no explicit `width` — the track the column renders before
+   * a width is committed or seeded (e.g. `'minmax(120px, 2.5fr)'` for a
+   * weighted, floor-bounded fluid column). Unlike `width` it does not pin the
+   * column, so the resizer (and the body's `[(columnWidths)]`) still drives it
+   * and the first published width snaps the column to px. Ignored when `width`
+   * is set. Defaults to `minmax(0, 1fr)`.
+   */
+  readonly fallbackWidth = input<string | null>(null);
 
   /**
    * Static class(es) applied to this column's stamped `[forTableHeaderCell]`.
