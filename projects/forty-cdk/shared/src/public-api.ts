@@ -17,6 +17,7 @@ export type {
   ListboxOverlayContext,
   ListNavigationAction,
   MenuActivationModality,
+  MenuOpenerPositioning,
   MenuSiblingNavigator,
   Point,
   RovingTabindex,

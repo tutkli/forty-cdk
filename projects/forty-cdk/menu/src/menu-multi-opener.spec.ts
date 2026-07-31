@@ -1,10 +1,18 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 
 import { ForContextMenuTrigger } from 'forty-cdk/context-menu';
-import { ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
+import type { MenuOpenerPositioning } from 'forty-cdk/core';
+import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
-import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import {
+  afterEachOverlayCleanup,
+  flush,
+  flushPositioning,
+  pressKey,
+  renderHost,
+} from '../../src/test-utils';
 import { ForMenu } from './menu';
 import { ForMenuContent } from './menu-content';
 import { ForMenuItem } from './menu-item';
@@ -127,6 +135,70 @@ class AlwaysMountedSharedMenuHost {
   `,
 })
 class StaticLabelledSharedMenuHost {
+  readonly open = signal(false);
+}
+
+@Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div
+      forMenu
+      #row="forMenu"
+      [(open)]="open"
+      [avoidCollisions]="false"
+      side="bottom"
+      align="start"
+      [sideOffset]="2"
+      [alignOffset]="3"
+      ariaLabel="Row actions"
+    >
+      <div data-testid="region" [forContextMenuTrigger]="row">Row</div>
+      <button
+        data-testid="kebab"
+        [forDropdownMenuTrigger]="row"
+        [menuPositioning]="kebabPositioning()"
+      >
+        ⋮
+      </button>
+
+      @if (open()) {
+        <div data-testid="surface" forMenuContent>
+          <button id="edit" forMenuItem>Edit</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class PerOpenerPositioningHost {
+  readonly open = signal(false);
+  readonly kebabPositioning = signal<MenuOpenerPositioning | null>({
+    side: 'top',
+    align: 'end',
+    sideOffset: 12,
+    alignOffset: 24,
+  });
+}
+
+@Component({
+  imports: [ForDropdownMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forDropdownMenu [(open)]="open" [avoidCollisions]="false" side="bottom" align="start">
+      <button
+        data-testid="kebab"
+        forDropdownMenuTrigger
+        [menuPositioning]="{ side: 'top', align: 'end' }"
+      >
+        ⋮
+      </button>
+      @if (open()) {
+        <div data-testid="surface" forMenuContent>
+          <button id="edit" forMenuItem>Edit</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class PresetOverrideHost {
   readonly open = signal(false);
 }
 
@@ -358,6 +430,133 @@ describe('ForMenu (multiple openers, one content block)', () => {
       expect(document.querySelector('[role="menu"]')!.getAttribute('aria-labelledby')).toBe(
         'external-heading',
       );
+    });
+  });
+
+  describe('per-opener positioning overrides', () => {
+    function menuRoot(fixture: ComponentFixture<unknown>): ForMenu {
+      return fixture.debugElement.query(By.directive(ForMenu)).injector.get(ForMenu);
+    }
+
+    it('places the surface per the overriding opener', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await flushPositioning(r.fixture);
+
+      const surface = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(surface.dataset['side']).toBe('top');
+      expect(surface.dataset['align']).toBe('end');
+    });
+
+    it('places the surface per the root for an opener with no override', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+
+      rightClick(r.query('[data-testid="region"]')!, 40, 60);
+      await flushPositioning(r.fixture);
+
+      const surface = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(surface.dataset['side']).toBe('bottom');
+      expect(surface.dataset['align']).toBe('start');
+    });
+
+    it('switches placement as the active opener changes, with no leakage', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+      const kebab = r.query<HTMLButtonElement>('[data-testid="kebab"]')!;
+      const region = r.query('[data-testid="region"]')!;
+
+      kebab.click();
+      await flushPositioning(r.fixture);
+      expect(document.querySelector<HTMLElement>('[role="menu"]')!.dataset['side']).toBe('top');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      rightClick(region, 40, 60);
+      await flushPositioning(r.fixture);
+      expect(document.querySelector<HTMLElement>('[role="menu"]')!.dataset['side']).toBe('bottom');
+
+      pressKey(document, 'Escape');
+      await flush(r.fixture);
+      kebab.click();
+      await flushPositioning(r.fixture);
+      expect(document.querySelector<HTMLElement>('[role="menu"]')!.dataset['side']).toBe('top');
+    });
+
+    it('resolves the offsets the surface reads per active opener', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+      const root = menuRoot(r.fixture);
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await r.flush();
+      expect(root.sideOffset()).toBe(12);
+      expect(root.alignOffset()).toBe(24);
+
+      pressKey(document, 'Escape');
+      await r.flush();
+      rightClick(r.query('[data-testid="region"]')!, 40, 60);
+      await r.flush();
+      expect(root.sideOffset()).toBe(2);
+      expect(root.alignOffset()).toBe(3);
+    });
+
+    it('falls back per key, so a partial override keeps the root values', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+      r.instance.kebabPositioning.set({ sideOffset: 12 });
+      await r.flush();
+      const root = menuRoot(r.fixture);
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await flushPositioning(r.fixture);
+
+      const surface = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(surface.dataset['side']).toBe('bottom');
+      expect(surface.dataset['align']).toBe('start');
+      expect(root.sideOffset()).toBe(12);
+      expect(root.alignOffset()).toBe(3);
+    });
+
+    it('positions like today when the opener overrides nothing', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+      r.instance.kebabPositioning.set(null);
+      await r.flush();
+      const root = menuRoot(r.fixture);
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await flushPositioning(r.fixture);
+
+      const surface = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(surface.dataset['side']).toBe('bottom');
+      expect(surface.dataset['align']).toBe('start');
+      expect(root.sideOffset()).toBe(2);
+      expect(root.alignOffset()).toBe(3);
+    });
+
+    it('honours the same override under a [forDropdownMenu] preset root', async () => {
+      const r = renderHost(PresetOverrideHost);
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await flushPositioning(r.fixture);
+
+      const surface = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(surface.dataset['side']).toBe('top');
+      expect(surface.dataset['align']).toBe('end');
+    });
+
+    it('re-positions the mounted surface when the override changes, without zone.js', async () => {
+      const r = renderHost(PerOpenerPositioningHost);
+      r.instance.kebabPositioning.set(null);
+      await r.flush();
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await flushPositioning(r.fixture);
+      const surface = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(surface.dataset['align']).toBe('start');
+
+      r.instance.kebabPositioning.set({ align: 'end' });
+      await flushPositioning(r.fixture);
+
+      expect(document.querySelector('[role="menu"]')).toBe(surface);
+      expect(surface.dataset['align']).toBe('end');
     });
   });
 

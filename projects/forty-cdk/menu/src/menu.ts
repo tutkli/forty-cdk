@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   Directive,
   inject,
   input,
@@ -69,11 +70,16 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  * emitted for that one. `[ariaLabel]` wins over both, and a shared menu with any
  * region opener still wants it.
  *
- * Positioning is shared by every opener (per-opener overrides are out of scope
- * for now), and seeded from `provideForMenuDefaults` — `sideOffset` defaults to
- * `0`, flush against the anchor, which is what a pointer-anchored open wants. A
- * button-only shared menu typically sets `[sideOffset]="4"` to match
- * `[forDropdownMenu]`.
+ * Positioning is seeded from `provideForMenuDefaults` — `sideOffset` defaults to
+ * `0`, flush against the anchor, which is what a pointer-anchored open wants —
+ * and every opener may override the four placement values for the opens it
+ * drives through its trigger's `[menuPositioning]`, falling back to the root's
+ * inputs for whatever it leaves out:
+ *
+ * ```html
+ * <td [forContextMenuTrigger]="row">…cells…</td>
+ * <td><button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button></td>
+ * ```
  */
 @Directive({
   selector: '[forMenu]',
@@ -97,29 +103,37 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
   readonly open = model<boolean>(false);
 
   /**
-   * Side the menu is anchored to. Defaults to `'bottom'`. Pair with
-   * `align` for the full positioning API.
+   * Side the menu is anchored to, for every opener that does not override it.
+   * Defaults to `'bottom'`. Pair with `align` for the full positioning API.
    *
    * One of the floating-ui positioning inputs shared verbatim across the
    * menu roots — their non-seed defaults come from the single
    * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
    * guards the roots against drift.
    */
-  readonly side = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side);
+  readonly _sideInput = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side, {
+    alias: 'side',
+  });
 
-  /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
+  /** Alignment along the chosen `side`, for every opener that does not override it. Defaults to `'start'`. */
+  readonly _alignInput = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align, {
+    alias: 'align',
+  });
 
   /**
    * Gap (px) between the active opener's anchor and the menu along the main
-   * axis. Default `0`. The default is read from `provideForMenuDefaults` for the
-   * surrounding scope.
+   * axis, for every opener that does not override it. Default `0`. The default
+   * is read from `provideForMenuDefaults` for the surrounding scope.
    */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+  readonly _sideOffsetInput = input(this.#defaults.sideOffset, {
     transform: numberAttribute,
+    alias: 'sideOffset',
+  });
+
+  /** Gap (px) along the cross axis, for every opener that does not override it. Default `0`. */
+  readonly _alignOffsetInput = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+    transform: numberAttribute,
+    alias: 'alignOffset',
   });
 
   /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
@@ -272,6 +286,28 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
    * one, otherwise its own element.
    */
   readonly anchor = this._overlay.openerAnchor;
+
+  /**
+   * Side the surface is anchored to for the current open: the active opener's
+   * own override when it declared one, else the root's `[side]`. The four
+   * placement values resolve per opener because a shared menu's openers are
+   * heterogeneous — a button opener wants the clearance `[forDropdownMenu]`
+   * seeds, a pointer-anchored region wants to sit flush at the cursor (#1574).
+   */
+  readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());
+
+  /** Alignment for the current open: the active opener's override, else the root's `[align]`. */
+  readonly align = computed(() => this._overlay.openerPositioning()?.align ?? this._alignInput());
+
+  /** Main-axis gap for the current open: the active opener's override, else the root's `[sideOffset]`. */
+  readonly sideOffset = computed(
+    () => this._overlay.openerPositioning()?.sideOffset ?? this._sideOffsetInput(),
+  );
+
+  /** Cross-axis gap for the current open: the active opener's override, else the root's `[alignOffset]`. */
+  readonly alignOffset = computed(
+    () => this._overlay.openerPositioning()?.alignOffset ?? this._alignOffsetInput(),
+  );
 
   /**
    * Only the openers that asked to count as "inside" — a toggle-style button

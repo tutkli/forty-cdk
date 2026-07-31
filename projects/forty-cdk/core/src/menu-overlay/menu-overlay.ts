@@ -8,7 +8,11 @@ import {
   type IdentifiedElementSlot,
 } from '../overlay-controller/element-registry';
 import { InitialFocusState } from '../overlay-controller/initial-focus-state';
-import { MenuOpenerRegistry, type MenuOpenerOptions } from './menu-opener-registry';
+import {
+  MenuOpenerRegistry,
+  type MenuOpenerOptions,
+  type MenuOpenerPositioning,
+} from './menu-opener-registry';
 import {
   emitVetoableEvent,
   emitVetoableNativeEvent,
@@ -211,6 +215,14 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    */
   readonly openerLabelsMenu: Signal<boolean>;
 
+  /**
+   * The active opener's placement override, `null` when it declared none. Each
+   * root resolves its `side` / `align` / `sideOffset` / `alignOffset` against
+   * its own input through this, so a shared menu positions per the opener that
+   * fired while an opener with no override keeps the root's values.
+   */
+  readonly openerPositioning: Signal<MenuOpenerPositioning | null>;
+
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
@@ -224,6 +236,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     this.openerVirtualAnchor = this.#openers.virtualAnchor;
     this.openerExemptions = this.#openers.dismissibleExemptions;
     this.openerLabelsMenu = this.#openers.labelsMenu;
+    this.openerPositioning = this.#openers.positioning;
   }
 
   setInitialFocus(target: 'first' | 'last'): void {

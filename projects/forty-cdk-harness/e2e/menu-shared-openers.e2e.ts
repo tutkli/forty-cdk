@@ -62,6 +62,31 @@ test.describe('Menu shared across openers', () => {
     expect(Math.abs(menu.x - kebab.x)).toBeGreaterThan(8);
   });
 
+  test('each opener applies its own sideOffset in the same shared menu', async ({ page }) => {
+    await gotoFixture(page, 'menu-shared-openers');
+
+    const kebab = await el(page, 'kebab').boundingBox();
+    if (!kebab) throw new Error('kebab has no box');
+
+    await el(page, 'kebab').click();
+    await expect(el(page, 'menu')).toBeVisible();
+    const buttonOpened = await box(el(page, 'menu'));
+    expect(Math.abs(buttonOpened.y - (kebab.y + kebab.height) - 4)).toBeLessThan(2);
+
+    await page.keyboard.press('Escape');
+    await expect(el(page, 'menu')).toHaveCount(0);
+
+    const region = await el(page, 'region').boundingBox();
+    if (!region) throw new Error('region has no box');
+    const cursor = { x: Math.round(region.x + 30), y: Math.round(region.y + 20) };
+    await page.mouse.move(cursor.x, cursor.y);
+    await page.mouse.click(cursor.x, cursor.y, { button: 'right' });
+    await expect(el(page, 'menu')).toBeVisible();
+    const regionOpened = await box(el(page, 'menu'));
+
+    expect(Math.abs(regionOpened.y - cursor.y)).toBeLessThan(2);
+  });
+
   test('Shift+F10 anchors at the focused region rect, aligned to its left edge', async ({
     page,
   }) => {

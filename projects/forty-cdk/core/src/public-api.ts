@@ -204,6 +204,7 @@ export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-ite
 export {
   asMenuOpenerRegistration,
   type MenuOpenerOptions,
+  type MenuOpenerPositioning,
   type MenuOpenerRegistration,
 } from './menu-overlay/menu-opener-registry';
 export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';

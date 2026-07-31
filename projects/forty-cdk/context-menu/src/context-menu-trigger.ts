@@ -15,6 +15,7 @@ import {
   createDebouncedAction,
   hostId,
   type DebouncedAction,
+  type MenuOpenerPositioning,
 } from 'forty-cdk/core';
 import { type ForContextMenuContext, injectContextMenuContext } from './context-menu-context';
 
@@ -136,6 +137,26 @@ export class ForContextMenuTrigger {
   /** Disables this trigger only, in addition to the root's `disabled`. */
   readonly disabled = input(false, { transform: booleanAttribute });
 
+  /**
+   * Placement override for the opens this region drives, falling back to the
+   * root's inputs for every key it leaves out. Only the four placement values
+   * are overridable (`side`, `align`, `sideOffset`, `alignOffset`); the rest of
+   * the positioning surface is collision policy the root owns.
+   *
+   * It exists for a menu shared by heterogeneous openers, where one root cannot
+   * pick offsets that suit them all — a pointer-anchored region wants to sit
+   * flush at the cursor, where a sibling button opener wants a few pixels of
+   * clearance:
+   *
+   * ```html
+   * <td [forContextMenuTrigger]="row" [menuPositioning]="{ sideOffset: 0 }">…</td>
+   * ```
+   *
+   * It resolves identically under a `[forContextMenu]` root, where it is simply
+   * a per-trigger spelling of the root's own inputs.
+   */
+  readonly menuPositioning = input<MenuOpenerPositioning | null>(null);
+
   /** Whether the trigger is disabled — its own `disabled` input OR the root's. */
   readonly effectiveDisabled = computed(() => this.disabled() || this.ctx().disabled());
 
@@ -152,7 +173,11 @@ export class ForContextMenuTrigger {
         onCleanup(() => ctx.unregisterTrigger(el));
         return;
       }
-      openers.registerOpener(el, { id: this.id, labelsMenu: false });
+      openers.registerOpener(el, {
+        id: this.id,
+        labelsMenu: false,
+        positioning: this.menuPositioning,
+      });
       onCleanup(() => openers.unregisterOpener(el));
     });
     inject(DestroyRef).onDestroy(() => this.#longPress.cancel());
