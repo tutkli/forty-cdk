@@ -55,10 +55,11 @@ import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
  * immediately (no delay) — "first open is intentional, subsequent
  * are hover". Keyboard focus alone never opens a menu.
  *
- * Pointer-driven opens (click — detected by the `pointerdown` preceding it —
- * and hover-after-open) move focus to the menu's first item without
- * highlighting it; keyboard activation (Enter / Space / ArrowDown / ArrowUp)
- * highlights the focused item.
+ * A click open (detected by the `pointerdown` preceding it) moves focus to the
+ * menu's first item without highlighting it; keyboard activation (Enter /
+ * Space / ArrowDown / ArrowUp) highlights the focused item. A hover-switch
+ * moves focus to this trigger instead of into the menu it opens, so the pointer
+ * sweeping across the bar leaves focus on the bar.
  */
 @Directive({
   selector: '[forMenubarTrigger]',

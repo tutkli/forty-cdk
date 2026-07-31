@@ -107,7 +107,10 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * on `[forMenubar]` — `(escapeKeyDown)`, `(pointerDownOutside)`,
  * `(focusOutside)`, `(interactOutside)`, `(autoFocusOnOpen)` and
  * `(autoFocusOnClose)` — so the same `[forMenuContent]` / `[forMenuItem]`
- * markup keeps the full shell contract, and its vetoes, under a menubar. Only
+ * markup keeps the full shell contract, and its vetoes, under a menubar. The
+ * one exception is the hover-switch, which parks focus on the hovered trigger
+ * itself and therefore arms a one-shot suppression of the incoming surface's
+ * `(autoFocusOnOpen)` move — see {@link MenubarMenuContext.prepareOpen}. Only
  * trigger register / unregister stay inert here: triggers register with the bar
  * directly.
  */
@@ -120,6 +123,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #contentOwner = signal<ForMenubarTriggerHandle | null>(null);
   readonly #initialFocusState = new InitialFocusState();
   readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
+  #suppressOpenFocus = false;
 
   readonly open = computed(() => this.#host.value() !== null);
   readonly disabled: Signal<boolean>;
@@ -240,10 +244,21 @@ export class MenubarMenuContext implements ForMenuContext {
    * initial-focus target and clears the prior close reason. A `'pointer'`
    * `modality` keeps the upcoming programmatic initial focus from reflecting
    * `data-highlighted` on the focused item.
+   *
+   * `suppressOpenFocus` arms a one-shot veto of the incoming surface's
+   * `(autoFocusOnOpen)` focus move — the hover-switch path, where the bar has
+   * already placed DOM focus on the hovered trigger and the menu must not pull
+   * it back in. Every call re-arms the flag (defaulting it to `false`), so a
+   * suppression that no surface ever consumed cannot leak into the next open.
    */
-  prepareOpen(initialFocus: 'first' | 'last', modality: MenuActivationModality = 'keyboard'): void {
+  prepareOpen(
+    initialFocus: 'first' | 'last',
+    modality: MenuActivationModality = 'keyboard',
+    { suppressOpenFocus = false }: { readonly suppressOpenFocus?: boolean } = {},
+  ): void {
     this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
     this.#closeReasonState.reset();
+    this.#suppressOpenFocus = suppressOpenFocus;
   }
 
   registerTrigger(): void {
@@ -334,6 +349,10 @@ export class MenubarMenuContext implements ForMenuContext {
   }
 
   emitAutoFocusOnOpen(): boolean {
+    if (this.#suppressOpenFocus) {
+      this.#suppressOpenFocus = false;
+      return true;
+    }
     return emitVetoableEvent(this.#host.autoFocusOnOpen);
   }
   emitAutoFocusOnClose(): boolean {

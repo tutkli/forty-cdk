@@ -161,6 +161,27 @@ test.describe('Menubar', () => {
     await expect(el(page, 'menu-view')).toBeVisible();
   });
 
+  test('a hover-switch leaves focus on the hovered trigger, and the open key enters from there', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'menubar');
+
+    await el(page, 'trigger-file').focus();
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'item-file-1'));
+
+    await el(page, 'trigger-edit').hover();
+    await expect(el(page, 'menu-edit')).toBeVisible();
+    await expectFocused(el(page, 'trigger-edit'));
+
+    await el(page, 'trigger-view').hover();
+    await expect(el(page, 'menu-view')).toBeVisible();
+    await expectFocused(el(page, 'trigger-view'));
+
+    await page.keyboard.press('ArrowDown');
+    await expectFocused(el(page, 'item-view-1'));
+  });
+
   test('moving the pointer off the bar keeps the open menu mounted and focused', async ({
     page,
   }) => {
