@@ -97,6 +97,25 @@ Requires a time-capable adapter:
 Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invalid`,
 `errors`, `touched`, `name`, `pending`) for `[formField]` auto-wiring.
 
+### Data attributes
+
+| Piece                    | Attribute          | Values                     |
+| ------------------------ | ------------------ | -------------------------- |
+| `[forTimePicker]`        | `data-state`       | `open` \| `closed`         |
+| `[forTimePicker]`        | `data-disabled`    | present \| absent          |
+| `[forTimePickerTrigger]` | `data-state`       | `open` \| `closed`         |
+| `[forTimePickerTrigger]` | `data-disabled`    | present \| absent          |
+| `[forTimePickerTrigger]` | `data-readonly`    | present \| absent          |
+| `[forTimePickerValue]`   | `data-placeholder` | present \| absent          |
+| `[forTimePickerContent]` | `data-state`       | `open` \| `closed`         |
+| `[forTimePickerContent]` | `data-orientation` | `vertical` \| `horizontal` |
+| `[forTimePickerContent]` | `data-modal`       | present \| absent          |
+| `[forTimePickerOption]`  | `data-state`       | `checked` \| `unchecked`   |
+| `[forTimePickerOption]`  | `data-disabled`    | present \| absent          |
+| `[forTimePickerOption]`  | `data-highlighted` | present \| absent          |
+
+`data-highlighted` marks the keyboard-focused slot (shared vocabulary with the listbox / menu / select primitives). `[forTimePickerContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active) — see [Styling floating content](../../../docs/styling-floating-content.md).
+
 ## Anchoring to a field box
 
 By default the listbox is positioned against `[forTimePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel offset from the visible field's edge. Wrap the field box in `[forTimePickerAnchor]` so floating-ui positions (and sizes, via `--for-anchor-width`) the listbox against the box instead:

@@ -149,7 +149,13 @@ function getContent(): HTMLElement | null {
   imports: [ForTimePicker, ForTimePickerTrigger],
   providers: [...provideNativeDateAdapter()],
   template: `
-    <div forTimePicker [(value)]="value" [disabled]="isDisabled()" [required]="isRequired()">
+    <div
+      forTimePicker
+      [(value)]="value"
+      [disabled]="isDisabled()"
+      [readonly]="isReadonly()"
+      [required]="isRequired()"
+    >
       <button forTimePickerTrigger>Open</button>
     </div>
   `,
@@ -157,6 +163,7 @@ function getContent(): HTMLElement | null {
 class TimePickerFormControlHost {
   readonly value = signal<Date | null>(null);
   readonly isDisabled = signal(false);
+  readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
 }
 
@@ -201,6 +208,9 @@ describe('ForTimePicker', () => {
             case 'disabled':
               r.instance.isDisabled.set(flagValue);
               return;
+            case 'readonly':
+              r.instance.isReadonly.set(flagValue);
+              return;
             case 'required':
               r.instance.isRequired.set(flagValue);
               return;
@@ -209,7 +219,7 @@ describe('ForTimePicker', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'readonly', 'required'] },
   );
 
   assertOverlayTriggerAriaContract(

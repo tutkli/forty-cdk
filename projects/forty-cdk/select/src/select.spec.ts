@@ -158,13 +158,14 @@ class SelectDismissContractHost {
 @Component({
   imports: [ForSelect, ForSelectTrigger],
   template: `
-    <div forSelect [disabled]="disabled()" [required]="required()">
+    <div forSelect [disabled]="disabled()" [readonly]="isReadonly()" [required]="required()">
       <button forSelectTrigger>Trigger</button>
     </div>
   `,
 })
 class SelectFormControlHost {
   readonly disabled = signal(false);
+  readonly isReadonly = signal(false);
   readonly required = signal(false);
 }
 
@@ -1457,6 +1458,9 @@ describe('ForSelect', () => {
             case 'disabled':
               r.instance.disabled.set(value);
               return;
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
             case 'required':
               r.instance.required.set(value);
               return;
@@ -1465,7 +1469,7 @@ describe('ForSelect', () => {
       };
       return result;
     },
-    { flags: ['disabled', 'required'] },
+    { flags: ['disabled', 'readonly', 'required'] },
   );
 
   assertOverlayTriggerAriaContract(
