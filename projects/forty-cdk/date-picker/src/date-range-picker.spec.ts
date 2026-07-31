@@ -1,4 +1,5 @@
 import { Component, signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { form, FormField, required as requiredRule } from '@angular/forms/signals';
 
 import {
@@ -20,6 +21,7 @@ import {
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
 import { type DateRange } from 'forty-cdk/shared';
+import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 
 import { ForDatePickerContent } from './date-picker-content';
 import { ForDatePickerTrigger } from './date-picker-trigger';
@@ -527,6 +529,127 @@ describe('ForDateRangePicker', () => {
       expect(adapter.isSameDay(stay!.start, new Date(2026, 5, 10))).toBe(true);
       expect(adapter.isSameDay(stay!.end, new Date(2026, 5, 15))).toBe(true);
       expect(r.instance.open()).toBe(false);
+    });
+  });
+
+  describe('[forField] integration', () => {
+    @Component({
+      imports: [
+        ForDateRangePicker,
+        ForDatePickerTrigger,
+        ForDatePickerValue,
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForFieldError,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forField>
+          <label forLabel data-testid="label">Stay</label>
+          <div forDateRangePicker [(value)]="value" [invalid]="invalid()">
+            <button forDatePickerTrigger data-testid="trigger">
+              <span forDatePickerValue [placeholder]="'Pick a range'"></span>
+            </button>
+          </div>
+          <p forFieldDescription data-testid="desc">Check-in and check-out.</p>
+          <p forFieldError data-testid="error">Required.</p>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly value = signal<DateRange<Date> | null>(null);
+      readonly invalid = signal(false);
+    }
+
+    @Component({
+      imports: [ForDateRangePicker, ForDatePickerTrigger, ForField, ForLabel],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <div forField>
+          <span forLabel data-testid="label">Stay</span>
+          <div forDateRangePicker>
+            <button forDatePickerTrigger data-testid="trigger">Open</button>
+          </div>
+        </div>
+      `,
+    })
+    class SpanLabelHost {}
+
+    const wrapper = (el: HTMLElement) => el.querySelector<HTMLElement>('[forDateRangePicker]')!;
+    const fieldTrigger = (el: HTMLElement) =>
+      el.querySelector<HTMLButtonElement>('[data-testid="trigger"]')!;
+    const fieldLabel = (el: HTMLElement) => el.querySelector<HTMLElement>('[data-testid="label"]')!;
+
+    it('lands aria-labelledby/aria-describedby on the trigger, not the wrapper', async () => {
+      const r = renderHost(FieldHost);
+      await r.flush();
+      const t = fieldTrigger(r.el);
+      const w = wrapper(r.el);
+
+      expect(t.getAttribute('aria-labelledby')).toBe(fieldLabel(r.el).id);
+      expect(t.getAttribute('aria-describedby')).toBe(
+        r.el.querySelector('[data-testid="desc"]')!.id,
+      );
+      expect(w.hasAttribute('aria-labelledby')).toBe(false);
+      expect(w.hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    it('points the label `for` at the trigger id', async () => {
+      const r = renderHost(FieldHost);
+      await r.flush();
+      expect(fieldLabel(r.el).getAttribute('for')).toBe(fieldTrigger(r.el).id);
+    });
+
+    it('clicks and focuses the trigger when a non-label [forLabel] is clicked', async () => {
+      const r = renderHost(SpanLabelHost);
+      const t = fieldTrigger(r.el);
+
+      fieldLabel(r.el).click();
+      await r.flush();
+
+      expect(document.activeElement).toBe(t);
+      expect(t.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('targets aria-errormessage at the error on the trigger while invalid', async () => {
+      const r = renderHost(FieldHost);
+      const t = fieldTrigger(r.el);
+      const error = r.el.querySelector<HTMLElement>('[data-testid="error"]')!;
+
+      expect(t.hasAttribute('aria-errormessage')).toBe(false);
+      r.instance.invalid.set(true);
+      await r.flush();
+
+      expect(t.getAttribute('aria-errormessage')).toBe(error.id);
+      expect(t.getAttribute('aria-describedby')).toContain(error.id);
+    });
+  });
+
+  describe('focus (focus-on-error)', () => {
+    it('moves focus to the trigger, not the wrapper host', async () => {
+      const r = renderHost(Host);
+      await r.flush();
+      const picker = r.fixture.debugElement
+        .query(By.directive(ForDateRangePicker))
+        .injector.get(ForDateRangePicker);
+
+      picker.focus();
+
+      expect(document.activeElement).toBe(trigger(r));
+    });
+
+    it('is a no-op while disabled', async () => {
+      const r = renderHost(Host);
+      r.instance.disabled.set(true);
+      await r.flush();
+      const picker = r.fixture.debugElement
+        .query(By.directive(ForDateRangePicker))
+        .injector.get(ForDateRangePicker);
+
+      picker.focus();
+
+      expect(document.activeElement).not.toBe(trigger(r));
     });
   });
 
