@@ -32,10 +32,12 @@ import {
  * Accessible name: a consumer-set **static** `aria-labelledby` on the surface
  * always wins and is preserved. Otherwise an explicit `ariaLabel` on the root
  * is reflected as `aria-label`, and with neither the surface falls back to
- * `aria-labelledby="<triggerId>"` — but only when the root's trigger is a
- * labelling control (`[forDropdownMenu]`, `[forMenubar]`, `[forMenuSub]`).
+ * `aria-labelledby="<triggerId>"` — but only when the trigger that opened it is
+ * a labelling control (`[forDropdownMenu]`, `[forMenubar]`, `[forMenuSub]`).
  * `[forContextMenu]` opts out of that fallback (its trigger is the whole
- * right-click region), so name a context menu with `[ariaLabel]`.
+ * right-click region), so name a context menu with `[ariaLabel]`. `[forMenu]`
+ * answers per **active opener**, so a shared menu names itself after the button
+ * that opened it and emits nothing when a right-click region did.
  *
  * Both `id` and `aria-labelledby` are emitted truthy-only: a surface the
  * context has not associated with a trigger yet — only reachable under
@@ -72,7 +74,7 @@ export class ForMenuContent {
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel() || null);
 
   protected readonly labelledBy = hostLabelledBy(() => {
-    if (this.resolvedAriaLabel() || this.ctx.triggerLabelsMenu === false) {
+    if (this.resolvedAriaLabel() || this.ctx.triggerLabelsMenu?.() === false) {
       return null;
     }
     return this.ctx.triggerId() || null;

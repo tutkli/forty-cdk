@@ -69,8 +69,9 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * even though nothing consumes it for ARIA wiring: unlike the discrete
  * labelling controls of the other menu flavours, this trigger is the whole
  * right-click region, so `[forMenuContent]` deliberately never points
- * `aria-labelledby` at it and the menu is named with `ariaLabel` instead. The
- * id stays because it is a stable consumer / test hook — a decision recorded
+ * `aria-labelledby` at it and the menu is named with `ariaLabel` instead — under
+ * a shared `[forMenu]` too, where a sibling button opener does get the fallback.
+ * The id stays because it is a stable consumer / test hook — a decision recorded
  * on `ForContextMenuContext.triggerId` rather than removed pre-1.0.
  *
  * Disabling merges the trigger's own `disabled` input OR the root's
@@ -109,7 +110,10 @@ export class ForContextMenuTrigger {
   /**
    * The region's own aria-wiring id, adopting a consumer-set static `id`. It is
    * per-opener rather than per-root so a menu shared by several openers
-   * (`[forMenu]`) never emits the same `id` twice.
+   * (`[forMenu]`) never emits the same `id` twice. The region is not a labelling
+   * control, so the trigger registers as one that must not name the surface — a
+   * menu it opened emits no `aria-labelledby` even when a sibling button opener
+   * would have.
    */
   readonly id = hostId('for-context-menu-trigger');
 
@@ -148,7 +152,7 @@ export class ForContextMenuTrigger {
         onCleanup(() => ctx.unregisterTrigger(el));
         return;
       }
-      openers.registerOpener(el, { id: this.id });
+      openers.registerOpener(el, { id: this.id, labelsMenu: false });
       onCleanup(() => openers.unregisterOpener(el));
     });
     inject(DestroyRef).onDestroy(() => this.#longPress.cancel());

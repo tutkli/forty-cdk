@@ -108,7 +108,9 @@ export class ForDropdownMenuTrigger {
    * The trigger's own aria-wiring id, adopting a consumer-set static `id`. It is
    * per-opener rather than per-root so a menu shared by several openers
    * (`[forMenu]`) never emits the same `id` twice; the surface names itself after
-   * whichever opener is active.
+   * whichever opener is active. A button is a discrete labelling control, so the
+   * trigger registers as one and an unnamed surface it opened falls back to
+   * `aria-labelledby` pointing here.
    */
   readonly id = hostId('for-dropdown-menu-trigger');
 
@@ -147,7 +149,7 @@ export class ForDropdownMenuTrigger {
         onCleanup(() => ctx.unregisterTrigger(el));
         return;
       }
-      openers.registerOpener(el, { id: this.id, dismissibleExempt: true });
+      openers.registerOpener(el, { id: this.id, dismissibleExempt: true, labelsMenu: true });
       onCleanup(() => openers.unregisterOpener(el));
     });
     reflectDisabled(this.effectiveDisabled);

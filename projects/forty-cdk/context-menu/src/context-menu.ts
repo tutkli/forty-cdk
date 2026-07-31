@@ -6,6 +6,7 @@ import {
   model,
   numberAttribute,
   output,
+  signal,
 } from '@angular/core';
 
 import {
@@ -260,8 +261,11 @@ export class ForContextMenu
    * emits no `aria-labelledby` fallback for this flavor — pointing the menu's
    * name at the region would announce its entire text. Name the menu with
    * `[ariaLabel]` instead.
+   *
+   * Constant: this root's only opener flavour is the region, so unlike
+   * `[forMenu]` it has nothing to resolve per opener.
    */
-  readonly triggerLabelsMenu = false;
+  readonly triggerLabelsMenu = signal(false).asReadonly();
 
   /** Top-level: no parent menu. */
   readonly parentMenu = null;

@@ -108,7 +108,7 @@ export interface MenuOverlayHooks {
  * - the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto pass-throughs,
  * - the opener registry (`MenuOpenerRegistry`): every trigger that can open this
  *   menu, which of them is driving the current open, and the per-opener id /
- *   anchor that resolve against it. `[forMenu]` is the root that registers more
+ *   anchor / labelling policy resolving against it. `[forMenu]` is the root that registers more
  *   than one; the presets register exactly one and keep their previous
  *   behaviour through the registry's sole-opener fallback.
  *
@@ -203,6 +203,14 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   /** Registered openers that count as "inside" for outside-dismissal. */
   readonly openerExemptions: Signal<readonly HTMLElement[]>;
 
+  /**
+   * Whether the active opener is a discrete labelling control, so
+   * `[forMenuContent]` may name itself `aria-labelledby="<triggerId>"`.
+   * `[forMenu]` exposes this as its `ForMenuContext.triggerLabelsMenu` so a
+   * shared menu's name follows whichever opener fired.
+   */
+  readonly openerLabelsMenu: Signal<boolean>;
+
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
@@ -215,6 +223,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     this.openerAnchor = this.#openers.anchor;
     this.openerVirtualAnchor = this.#openers.virtualAnchor;
     this.openerExemptions = this.#openers.dismissibleExemptions;
+    this.openerLabelsMenu = this.#openers.labelsMenu;
   }
 
   setInitialFocus(target: 'first' | 'last'): void {

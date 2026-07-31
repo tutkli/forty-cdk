@@ -147,17 +147,23 @@ export interface ForMenuContext {
 
   /**
    * Whether the trigger's own accessible name is a valid name for the menu
-   * surface. `true` — the default when a root omits it — lets
+   * surface. `true` — the default when a root omits the member entirely — lets
    * `[forMenuContent]` fall back to `aria-labelledby="<triggerId>"` when no
    * `ariaLabel` is set, which is correct for a discrete labelling control (a
    * `[forDropdownMenuTrigger]` button, a `[forMenubarTrigger]` or
-   * `[forMenuSubTrigger]` menuitem). `[forContextMenu]` sets it to `false`:
-   * its trigger is the whole right-click region, so an `aria-labelledby`
-   * pointing at it would make screen readers announce the entire row / card
-   * text as the menu's name. A root that sets it to `false` must expose
-   * `ariaLabel` as the way to name the menu.
+   * `[forMenuSubTrigger]` menuitem). `[forContextMenu]` reports `false`: its
+   * trigger is the whole right-click region, so an `aria-labelledby` pointing at
+   * it would make screen readers announce the entire row / card text as the
+   * menu's name. A root that reports `false` must expose `ariaLabel` as the way
+   * to name the menu.
+   *
+   * A `Signal` rather than a plain `boolean` because a multi-opener root
+   * (`[forMenu]`) has heterogeneous openers: a button opener *is* a labelling
+   * control while a right-click region is not, so the answer is a property of
+   * the **active** opener and changes as the menu is opened from a different one
+   * (#1573). Roots with a single fixed trigger flavour report a constant signal.
    */
-  readonly triggerLabelsMenu?: boolean;
+  readonly triggerLabelsMenu?: Signal<boolean>;
 
   /** Anchor passed to floating-ui — `HTMLElement` (Dropdown) or `VirtualElement` (Context). */
   readonly anchor: Signal<ReferenceElement | null>;

@@ -59,6 +59,77 @@ class VetoingSharedMenuHost {
   }
 }
 
+@Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forMenu #row="forMenu" [(open)]="open" [ariaLabel]="ariaLabel()">
+      <div data-testid="region" [forContextMenuTrigger]="row">Row</div>
+      <button data-testid="kebab" [forDropdownMenuTrigger]="row">⋮</button>
+
+      @if (open()) {
+        <div data-testid="surface" forMenuContent>
+          <button id="edit" forMenuItem>Edit</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class UnnamedSharedMenuHost {
+  readonly open = signal(false);
+  readonly ariaLabel = signal<string | null>(null);
+}
+
+@Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forMenu [(open)]="open">
+      <button data-testid="kebab" forDropdownMenuTrigger>⋮</button>
+      @if (open()) {
+        <div data-testid="surface" forMenuContent>
+          <button id="edit" forMenuItem>Edit</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class UnnamedButtonOnlySharedMenuHost {
+  readonly open = signal(false);
+}
+
+@Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forMenu #row="forMenu" [(open)]="open">
+      <div data-testid="region" [forContextMenuTrigger]="row">Row</div>
+      <button data-testid="kebab" [forDropdownMenuTrigger]="row">⋮</button>
+
+      <div data-testid="surface" forMenuContent>
+        <button id="edit" forMenuItem>Edit</button>
+      </div>
+    </div>
+  `,
+})
+class AlwaysMountedSharedMenuHost {
+  readonly open = signal(false);
+}
+
+@Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div forMenu [(open)]="open">
+      <button data-testid="kebab" forDropdownMenuTrigger>⋮</button>
+      @if (open()) {
+        <div data-testid="surface" forMenuContent aria-labelledby="external-heading">
+          <button id="edit" forMenuItem>Edit</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class StaticLabelledSharedMenuHost {
+  readonly open = signal(false);
+}
+
 function rightClick(el: HTMLElement, x: number, y: number): MouseEvent {
   el.dispatchEvent(
     new PointerEvent('pointerdown', { bubbles: true, button: 2, clientX: x, clientY: y }),
@@ -165,15 +236,128 @@ describe('ForMenu (multiple openers, one content block)', () => {
       expect(kebab.getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('names the shared surface with ariaLabel and never with an opener id', async () => {
+    it('lets an explicit ariaLabel name the shared surface for either opener', async () => {
       const r = renderHost(SharedMenuHost);
 
       rightClick(r.query('[data-testid="region"]')!, 40, 60);
       await r.flush();
 
+      let surface = document.querySelector('[role="menu"]')!;
+      expect(surface.getAttribute('aria-label')).toBe('Row actions');
+      expect(surface.getAttribute('aria-labelledby')).toBeNull();
+
+      pressKey(document, 'Escape');
+      await r.flush();
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await r.flush();
+
+      surface = document.querySelector('[role="menu"]')!;
+      expect(surface.getAttribute('aria-label')).toBe('Row actions');
+      expect(surface.getAttribute('aria-labelledby')).toBeNull();
+    });
+  });
+
+  describe('per-opener accessible name', () => {
+    it('names the surface after a button opener when no ariaLabel is set', async () => {
+      const r = renderHost(UnnamedSharedMenuHost);
+      const kebab = r.query<HTMLButtonElement>('[data-testid="kebab"]')!;
+
+      kebab.click();
+      await r.flush();
+
+      const surface = document.querySelector('[role="menu"]')!;
+      expect(surface.getAttribute('aria-labelledby')).toBe(kebab.getAttribute('id'));
+      expect(surface.getAttribute('aria-label')).toBeNull();
+    });
+
+    it('emits no name at all for a region-opened instance', async () => {
+      const r = renderHost(UnnamedSharedMenuHost);
+
+      rightClick(r.query('[data-testid="region"]')!, 40, 60);
+      await r.flush();
+
+      const surface = document.querySelector('[role="menu"]')!;
+      expect(surface.getAttribute('aria-labelledby')).toBeNull();
+      expect(surface.getAttribute('aria-label')).toBeNull();
+    });
+
+    it('flips the fallback in both directions as the active opener changes', async () => {
+      const r = renderHost(UnnamedSharedMenuHost);
+      const kebab = r.query<HTMLButtonElement>('[data-testid="kebab"]')!;
+      const region = r.query('[data-testid="region"]')!;
+
+      kebab.click();
+      await r.flush();
+      expect(document.querySelector('[role="menu"]')!.getAttribute('aria-labelledby')).toBe(
+        kebab.getAttribute('id'),
+      );
+
+      pressKey(document, 'Escape');
+      await r.flush();
+      rightClick(region, 40, 60);
+      await r.flush();
+      expect(document.querySelector('[role="menu"]')!.getAttribute('aria-labelledby')).toBeNull();
+
+      pressKey(document, 'Escape');
+      await r.flush();
+      kebab.click();
+      await r.flush();
+      expect(document.querySelector('[role="menu"]')!.getAttribute('aria-labelledby')).toBe(
+        kebab.getAttribute('id'),
+      );
+    });
+
+    it('re-evaluates the fallback on the very same mounted surface', async () => {
+      const r = renderHost(AlwaysMountedSharedMenuHost);
+      const kebab = r.query<HTMLButtonElement>('[data-testid="kebab"]')!;
+      const region = r.query('[data-testid="region"]')!;
+      const surface = document.querySelector('[role="menu"]')!;
+
+      kebab.click();
+      await r.flush();
+      expect(surface.getAttribute('aria-labelledby')).toBe(kebab.getAttribute('id'));
+
+      rightClick(region, 40, 60);
+      await r.flush();
+
+      expect(document.querySelector('[role="menu"]')).toBe(surface);
+      expect(surface.getAttribute('aria-labelledby')).toBeNull();
+    });
+
+    it('lets an explicit ariaLabel win over the button-opener fallback', async () => {
+      const r = renderHost(UnnamedSharedMenuHost);
+      r.instance.ariaLabel.set('Row actions');
+      await r.flush();
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await r.flush();
+
       const surface = document.querySelector('[role="menu"]')!;
       expect(surface.getAttribute('aria-label')).toBe('Row actions');
       expect(surface.getAttribute('aria-labelledby')).toBeNull();
+    });
+
+    it('names a button-only shared menu without any consumer setup', async () => {
+      const r = renderHost(UnnamedButtonOnlySharedMenuHost);
+      const kebab = r.query<HTMLButtonElement>('[data-testid="kebab"]')!;
+
+      kebab.click();
+      await r.flush();
+
+      expect(document.querySelector('[role="menu"]')!.getAttribute('aria-labelledby')).toBe(
+        kebab.getAttribute('id'),
+      );
+    });
+
+    it('preserves a consumer-set static aria-labelledby over the fallback', async () => {
+      const r = renderHost(StaticLabelledSharedMenuHost);
+
+      r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
+      await r.flush();
+
+      expect(document.querySelector('[role="menu"]')!.getAttribute('aria-labelledby')).toBe(
+        'external-heading',
+      );
     });
   });
 
