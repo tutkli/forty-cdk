@@ -104,10 +104,14 @@ The same explicit-reference input carries it, and here the binding is **required
 ```html
 <tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
   <td [forContextMenuTrigger]="row">…cells…</td>
-  <td><button [forDropdownMenuTrigger]="row">⋮</button></td>
+  <td>
+    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
+  </td>
   <!-- one content block, no duplication -->
 </tr>
 ```
+
+Both triggers carry `[menuPositioning]`, a partial `{ side, align, sideOffset, alignOffset }` override applied only to the opens that trigger drives, with each omitted key falling back to the root's input. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the region above keeps the root's `sideOffset` of `0` — flush at the cursor, which is what a pointer-anchored menu wants — while the sibling button opener asks for the 4px of clearance a menu button wants. Under a `[forContextMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
 
 ## API
 

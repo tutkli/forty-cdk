@@ -25,6 +25,7 @@ export const CORE_PUBLISHERS = {
     'ListboxOverlayContext',
     'ListNavigationAction',
     'MenuActivationModality',
+    'MenuOpenerPositioning',
     'MenuSiblingNavigator',
     'Point',
     'provideForIdSalt',

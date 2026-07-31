@@ -187,13 +187,35 @@ Exactly one instance is open at a time, and everything the mounted surface resol
 - **Ids** are per opener, so two openers never emit the same `id`. The button opener's `aria-controls` still points at the shared surface.
 - **The accessible name** follows the opener's own nature. A `[forDropdownMenuTrigger]` button is a discrete labelling control, so an unnamed surface it opened falls back to `aria-labelledby="<that button's id>"`; a `[forContextMenuTrigger]` region is not — pointing the menu's name at a whole row would announce the row's entire text — so a region-opened surface emits no fallback. Reopening from the other opener flips it.
 - **Outside-dismissal** exempts the button opener only (its own click toggles, so without the exemption the same pointer-down would double-close). A left-click on the right-click region closes the menu like any other outside click.
+- **Placement** is the root's, unless the opener overrides it (see below).
 
 Two boundaries worth knowing:
 
 - **`[forContextMenuTrigger]` must be bound explicitly** — `[forContextMenuTrigger]="row"` with `#row="forMenu"`. It resolves `FOR_CONTEXT_MENU_CONTEXT`, which `[forMenu]` deliberately does not provide (`forty-cdk/menu` must not depend on `forty-cdk/context-menu`). `[forDropdownMenuTrigger]` resolves this root through DI like any other menu piece, so binding it is optional.
 - **A shared menu with any region opener still wants `[ariaLabel]`.** The per-opener fallback covers the button openers for free, so a button-only shared menu needs no name hook at all; but a right-click region cannot name the surface, so an instance it opened has no accessible name unless `[ariaLabel]` (or your own static `aria-labelledby` on the content) supplies one. `[ariaLabel]` wins over the fallback for every opener, giving the menu one name regardless of how it was opened.
 
-Positioning inputs are shared by every opener (per-opener overrides are not supported yet) and seeded from `provideForMenuDefaults`: `sideOffset` defaults to `0`, flush against the anchor, which is what a pointer-anchored open wants. A button-only shared menu typically sets `[sideOffset]="4"` to match `[forDropdownMenu]`.
+### Per-opener positioning
+
+The root's positioning inputs are seeded from `provideForMenuDefaults`: `sideOffset` defaults to `0`, flush against the anchor, which is what a pointer-anchored open wants. That is the wrong answer for a button opener, which wants the few pixels of clearance `[forDropdownMenu]` seeds — so an individual opener can override the placement for the opens **it** drives, through its trigger's `[menuPositioning]`:
+
+```html
+<tr forMenu #row="forMenu" ariaLabel="Row actions">
+  <td [forContextMenuTrigger]="row">…cells…</td>
+  <td>
+    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
+  </td>
+  …
+</tr>
+```
+
+The button-opened menu now clears the button by 4px while a right-click still opens flush at the cursor.
+
+- The override carries the four **placement** values — `side`, `align`, `sideOffset`, `alignOffset` — and every key is optional. An omitted key resolves the root's own input, so an opener that overrides nothing (or binds `null`) positions exactly as the root does.
+- It applies only while that opener is the active one, and switches with the opener — nothing leaks from the previously active one.
+- The rest of the positioning surface (`avoidCollisions`, `fallbackAxisSideDirection`, `collisionPadding`, `arrowPadding`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`) stays root-only: it is collision / viewport policy for the surface, not a property of the opener that fired.
+- Both trigger directives carry the input, and it resolves the same way under their own preset root (`[forDropdownMenu]` / `[forContextMenu]`), where it is simply a per-trigger spelling of the root's inputs. Bind an object literal or a signal-returned object; a new identity re-positions the mounted surface.
+
+A shared menu whose openers all want the same placement needs none of this — set the root's inputs.
 
 ## API
 
@@ -204,10 +226,10 @@ Selector `[forMenu]`, `exportAs: 'forMenu'`.
 | Input                       | Type                                | Default          | Notes                                                      |
 | --------------------------- | ----------------------------------- | ---------------- | ---------------------------------------------------------- |
 | `open`                      | `model<boolean>`                    | `false`          | Two-way. `(openChange)` fires on internal transitions only |
-| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | Shared by every opener                                     |
-| `align`                     | `FloatingAlign \| undefined`        | `'start'`        |                                                            |
-| `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`                              |
-| `alignOffset`               | `number`                            | `0`              |                                                            |
+| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | Overridable per opener via `[menuPositioning]`             |
+| `align`                     | `FloatingAlign \| undefined`        | `'start'`        | Overridable per opener via `[menuPositioning]`             |
+| `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`; overridable per opener      |
+| `alignOffset`               | `number`                            | `0`              | Overridable per opener via `[menuPositioning]`             |
 | `avoidCollisions`           | `boolean`                           | `true`           |                                                            |
 | `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         |                                                            |
 | `collisionPadding`          | `number`                            | `8`              | From `provideForMenuDefaults`                              |

@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   Directive,
   inject,
   input,
@@ -85,21 +86,29 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
    * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
    * guards the three roots against drift.
    */
-  readonly side = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side);
+  readonly _sideInput = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side, {
+    alias: 'side',
+  });
 
   /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
+  readonly _alignInput = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align, {
+    alias: 'align',
+  });
 
   /**
    * Gap (px) between trigger and menu along the main axis. Default `4`.
    * The default is read from
    * `provideForDropdownMenuDefaults` for the surrounding scope.
    */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
+  readonly _sideOffsetInput = input(this.#defaults.sideOffset, {
+    transform: numberAttribute,
+    alias: 'sideOffset',
+  });
 
   /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+  readonly _alignOffsetInput = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
     transform: numberAttribute,
+    alias: 'alignOffset',
   });
 
   /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
@@ -241,6 +250,28 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
 
   /** Trigger-anchored: the single registered opener's element. */
   readonly anchor = this._overlay.openerAnchor;
+
+  /**
+   * Side the surface is anchored to: the trigger's own `[menuPositioning]`
+   * override when it declared one, else this root's `[side]`. The four
+   * placement values resolve through the opener registry so a trigger carries
+   * the same override here as it does under a shared `[forMenu]` root (#1574);
+   * with no override the value is this root's input verbatim.
+   */
+  readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());
+
+  /** Alignment: the trigger's `[menuPositioning]` override, else this root's `[align]`. */
+  readonly align = computed(() => this._overlay.openerPositioning()?.align ?? this._alignInput());
+
+  /** Main-axis gap: the trigger's `[menuPositioning]` override, else this root's `[sideOffset]`. */
+  readonly sideOffset = computed(
+    () => this._overlay.openerPositioning()?.sideOffset ?? this._sideOffsetInput(),
+  );
+
+  /** Cross-axis gap: the trigger's `[menuPositioning]` override, else this root's `[alignOffset]`. */
+  readonly alignOffset = computed(
+    () => this._overlay.openerPositioning()?.alignOffset ?? this._alignOffsetInput(),
+  );
 
   /**
    * The trigger button is exempt — its own click handler toggles, so without the

@@ -120,10 +120,14 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 ```html
 <tr forMenu #row="forMenu" [(open)]="open" ariaLabel="Row actions">
   <td [forContextMenuTrigger]="row">…cells…</td>
-  <td><button [forDropdownMenuTrigger]="row">⋮</button></td>
+  <td>
+    <button [forDropdownMenuTrigger]="row" [menuPositioning]="{ sideOffset: 4 }">⋮</button>
+  </td>
   <!-- one content block, no duplication -->
 </tr>
 ```
+
+`[menuPositioning]` is the trigger's own placement override — a partial `{ side, align, sideOffset, alignOffset }`, each key falling back to the root's input when omitted. It exists because a shared root cannot pick offsets that suit heterogeneous openers: the `sideOffset: 4` above keeps the button-opened menu clear of the button while a sibling right-click region still opens flush at the cursor. Under a `[forDropdownMenu]` root it resolves the same way, where it is simply a per-trigger spelling of the root's inputs. See [Per-opener positioning](../menu/README.md#per-opener-positioning).
 
 ## API
 

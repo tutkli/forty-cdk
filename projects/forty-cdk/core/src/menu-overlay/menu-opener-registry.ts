@@ -1,6 +1,7 @@
 import { computed, signal, type Signal, type WritableSignal } from '@angular/core';
 import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 
+import type { FloatingAlign, FloatingSide } from '../floating/floating';
 import { adoptHostId } from '../host-id/host-id';
 
 /**
@@ -25,6 +26,32 @@ function menuVirtualAnchor(x: number, y: number, width: number, height: number):
       },
     }),
   };
+}
+
+/**
+ * Per-opener override of a menu root's **placement** inputs, applied only while
+ * that opener is the active one. Every key is optional and an omitted one
+ * resolves the root's own input, so an opener that overrides nothing positions
+ * exactly as the root does.
+ *
+ * It carries the four values an opener's own geometry can legitimately decide.
+ * The root keeps the rest of the positioning surface (`avoidCollisions`,
+ * `collisionPadding`, `sticky`, …), which is collision / viewport policy for the
+ * surface rather than a property of the opener that fired.
+ *
+ * The canonical case is a `[forMenu]` shared by heterogeneous openers: a button
+ * opener wants the few pixels of clearance `[forDropdownMenu]` seeds, while a
+ * pointer-anchored right-click region wants to sit flush at the cursor.
+ */
+export interface MenuOpenerPositioning {
+  /** Side the menu is anchored to for this opener's opens. */
+  readonly side?: FloatingSide;
+  /** Alignment along the chosen side for this opener's opens. */
+  readonly align?: FloatingAlign;
+  /** Gap (px) between this opener's anchor and the menu along the main axis. */
+  readonly sideOffset?: number;
+  /** Gap (px) along the cross axis for this opener's opens. */
+  readonly alignOffset?: number;
 }
 
 /** What an opener declares about itself when it registers with a menu root. */
@@ -55,6 +82,13 @@ export interface MenuOpenerOptions {
    * opener reports.
    */
   readonly labelsMenu?: boolean;
+  /**
+   * This opener's placement override, read while it is the active one. Passed as
+   * a signal so a bound `[menuPositioning]` flows through without
+   * re-registering the element. Omitting it (and emitting `null`) resolves the
+   * root's own positioning inputs.
+   */
+  readonly positioning?: Signal<MenuOpenerPositioning | null>;
 }
 
 /**
@@ -103,6 +137,7 @@ interface MenuOpenerEntry {
   readonly virtualAnchor: WritableSignal<ReferenceElement | null>;
   readonly dismissibleExempt: boolean;
   readonly labelsMenu: boolean;
+  readonly positioning: Signal<MenuOpenerPositioning | null> | null;
 }
 
 /**
@@ -114,7 +149,8 @@ interface MenuOpenerEntry {
  *
  * Everything the mounted surface reads resolves against the **active** opener:
  * the element return-focus lands on, the id the surface names itself after,
- * whether that id is a valid name at all, and the floating-ui anchor. "Active"
+ * whether that id is a valid name at all, the floating-ui anchor, and the
+ * placement override that anchor is measured with. "Active"
  * is whichever opener last called
  * {@link activate}, falling back to the sole registered opener so a
  * single-opener root (every preset) and a programmatic open both behave exactly
@@ -196,6 +232,18 @@ export class MenuOpenerRegistry {
    */
   readonly labelsMenu = computed<boolean>(() => this.#active()?.labelsMenu ?? false);
 
+  /**
+   * The **active** opener's placement override, or `null` when it declared none
+   * (and while no single opener is resolvable). Per-opener for the same reason
+   * the anchor is: a shared menu's openers are heterogeneous, so the offsets a
+   * button opener wants are not the ones a pointer-anchored region wants
+   * (#1574). A root resolves each key against its own input — `positioning()?.x
+   * ?? xInput()` — so an opener that overrides nothing changes nothing.
+   */
+  readonly positioning = computed<MenuOpenerPositioning | null>(
+    () => this.#active()?.positioning?.() ?? null,
+  );
+
   constructor(seedId: WritableSignal<string>) {
     this.#seedId = seedId;
     this.id = computed(() => this.#active()?.id() ?? this.#seedId());
@@ -220,6 +268,7 @@ export class MenuOpenerRegistry {
       virtualAnchor: signal<ReferenceElement | null>(null),
       dismissibleExempt: options.dismissibleExempt ?? false,
       labelsMenu: options.labelsMenu ?? false,
+      positioning: options.positioning ?? null,
     };
     this.#entries.update((entries) => [
       ...entries.filter((existing) => existing.element !== element),

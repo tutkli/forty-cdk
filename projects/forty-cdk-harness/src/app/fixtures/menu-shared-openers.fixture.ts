@@ -16,7 +16,6 @@ import { ForMenu, ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
           forMenu
           #row="forMenu"
           [(open)]="open"
-          [sideOffset]="4"
           ariaLabel="Row actions"
           (escapeKeyDown)="escapes.set(escapes() + 1)"
         >
@@ -31,6 +30,7 @@ import { ForMenu, ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
             <button
               data-testid="kebab"
               [forDropdownMenuTrigger]="row"
+              [menuPositioning]="{ sideOffset: 4 }"
               style="width: 32px; height: 32px;"
             >
               ⋮

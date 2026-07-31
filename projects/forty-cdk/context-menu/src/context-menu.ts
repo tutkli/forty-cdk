@@ -1,5 +1,6 @@
 import {
   booleanAttribute,
+  computed,
   Directive,
   inject,
   input,
@@ -85,20 +86,28 @@ export class ForContextMenu
    * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
    * guards the three roots against drift.
    */
-  readonly side = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side);
+  readonly _sideInput = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side, {
+    alias: 'side',
+  });
 
   /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
+  readonly _alignInput = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align, {
+    alias: 'align',
+  });
 
   /**
    * Gap (px) along the main axis. Default `0`. The default is read from
    * `provideForContextMenuDefaults` for the surrounding scope.
    */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
+  readonly _sideOffsetInput = input(this.#defaults.sideOffset, {
+    transform: numberAttribute,
+    alias: 'sideOffset',
+  });
 
   /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
+  readonly _alignOffsetInput = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
     transform: numberAttribute,
+    alias: 'alignOffset',
   });
 
   /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
@@ -247,6 +256,28 @@ export class ForContextMenu
    * stays unanchored rather than falling back to its whole right-click region.
    */
   readonly anchor = this._overlay.openerVirtualAnchor;
+
+  /**
+   * Side the surface is anchored to: the region's own `[menuPositioning]`
+   * override when it declared one, else this root's `[side]`. The four
+   * placement values resolve through the opener registry so a trigger carries
+   * the same override here as it does under a shared `[forMenu]` root (#1574);
+   * with no override the value is this root's input verbatim.
+   */
+  readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());
+
+  /** Alignment: the region's `[menuPositioning]` override, else this root's `[align]`. */
+  readonly align = computed(() => this._overlay.openerPositioning()?.align ?? this._alignInput());
+
+  /** Main-axis gap: the region's `[menuPositioning]` override, else this root's `[sideOffset]`. */
+  readonly sideOffset = computed(
+    () => this._overlay.openerPositioning()?.sideOffset ?? this._sideOffsetInput(),
+  );
+
+  /** Cross-axis gap: the region's `[menuPositioning]` override, else this root's `[alignOffset]`. */
+  readonly alignOffset = computed(
+    () => this._overlay.openerPositioning()?.alignOffset ?? this._alignOffsetInput(),
+  );
 
   /**
    * ContextMenu exempts nothing — a left-click on the right-click region
