@@ -847,6 +847,22 @@ describe('ForDatePicker', () => {
     });
   });
 
+  describe('readonly', () => {
+    it('reflects data-readonly on the root while read-only, and clears it', async () => {
+      const r = renderHost(Host);
+      const root = r.query('[forDatePicker]')!;
+      expect(root.hasAttribute('data-readonly')).toBe(false);
+
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+      expect(root.getAttribute('data-readonly')).toBe('');
+
+      r.instance.readonly.set(false);
+      await flush(r.fixture);
+      expect(root.hasAttribute('data-readonly')).toBe(false);
+    });
+  });
+
   describe('modal', () => {
     it('emits aria-modal="true" on the surface in modal mode', async () => {
       const r = renderHost(Host);

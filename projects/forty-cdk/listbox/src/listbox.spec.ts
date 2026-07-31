@@ -91,6 +91,7 @@ const listboxItems = (host: HTMLElement): HTMLElement[] =>
       forListbox
       [(value)]="picked"
       [disabled]="isDisabled()"
+      [readonly]="isReadonly()"
       [required]="isRequired()"
       [invalid]="isInvalid()"
       [pending]="isPending()"
@@ -106,6 +107,7 @@ const listboxItems = (host: HTMLElement): HTMLElement[] =>
 class ListboxFormControlHost {
   readonly picked = signal<readonly string[]>([]);
   readonly isDisabled = signal(false);
+  readonly isReadonly = signal(false);
   readonly isRequired = signal(false);
   readonly isInvalid = signal(false);
   readonly isPending = signal(false);
@@ -189,6 +191,9 @@ describe('ForListbox', () => {
         flush: r.flush,
         setFlag: (flag, value) => {
           switch (flag) {
+            case 'readonly':
+              r.instance.isReadonly.set(value);
+              return;
             case 'required':
               r.instance.isRequired.set(value);
               return;
@@ -209,7 +214,7 @@ describe('ForListbox', () => {
       };
       return result;
     },
-    { flags: ['required', 'invalid', 'pending', 'touched', 'dirty'] },
+    { flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
   );
 
   describe('focus (focus-on-error)', () => {

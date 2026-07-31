@@ -163,6 +163,7 @@ export class DemoOtpField {
 | --------------- | ---------------- |
 | `data-complete` | present / absent |
 | `data-disabled` | present / absent |
+| `data-readonly` | present / absent |
 
 The injected real `<input>` (created inside the `[forOtpInput]` wrapper) additionally carries `data-disabled`, `data-readonly`, `data-touched`, `data-dirty`, `data-pending`, and `data-invalid` (present / absent), mirroring its form-control flags.
 

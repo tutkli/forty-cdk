@@ -118,6 +118,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | ------------------------ | ------------------ | ------------------------------------------------------------------- |
 | `[forCombobox]`          | `data-state`       | `open` \| `closed`                                                  |
 | `[forCombobox]`          | `data-disabled`    | present / absent                                                    |
+| `[forCombobox]`          | `data-readonly`    | present / absent                                                    |
 | `[forComboboxInput]`     | `data-state`       | `open` \| `closed`                                                  |
 | `[forComboboxInput]`     | `data-disabled`    | present / absent                                                    |
 | `[forComboboxContent]`   | `data-state`       | `open` \| `closed`                                                  |

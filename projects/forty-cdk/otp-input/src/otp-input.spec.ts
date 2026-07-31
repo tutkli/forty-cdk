@@ -164,6 +164,19 @@ describe('ForOtpInput', () => {
       expect(group.getAttribute('data-complete')).toBe('');
     });
 
+    it('reflects data-readonly on the group while read-only, and clears it', async () => {
+      const { group, instance, flush } = await mountOtp();
+      expect(group.hasAttribute('data-readonly')).toBe(false);
+
+      instance.isReadonly.set(true);
+      await flush();
+      expect(group.getAttribute('data-readonly')).toBe('');
+
+      instance.isReadonly.set(false);
+      await flush();
+      expect(group.hasAttribute('data-readonly')).toBe(false);
+    });
+
     it('sets maxlength, numeric inputmode, the legacy pattern and one-time-code autofill', async () => {
       const { input } = await mountOtp();
       expect(input.getAttribute('maxlength')).toBe('6');

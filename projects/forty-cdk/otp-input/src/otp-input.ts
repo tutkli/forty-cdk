@@ -60,9 +60,10 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
  * attributes (`maxLength` / `inputmode` / `autocomplete` / `pattern` / `name`)
  * and ARIA on the input itself.
  *
- * The host gets `data-complete` (while every slot is filled) and `data-disabled`
- * for CSS hooks; the real input carries `data-disabled` / `data-readonly` plus
- * `data-touched` / `data-dirty` / `data-pending` / `data-invalid`.
+ * The host gets `data-complete` (while every slot is filled) plus `data-disabled`
+ * and `data-readonly` for CSS hooks, so the whole slot composition is stylable
+ * from the wrapper; the real input carries `data-disabled` / `data-readonly`
+ * plus `data-touched` / `data-dirty` / `data-pending` / `data-invalid`.
  *
  * > **`allowedPattern`, not `pattern`.** The custom allowed-character RegExp is
  * > named `allowedPattern` because `FormUiControl.pattern` is reserved by Signal
@@ -90,6 +91,7 @@ function setAttr(el: HTMLElement, name: string, value: string | null): void {
     '[attr.aria-label]': 'resolvedAriaLabel()',
     '[attr.data-complete]': 'filled() ? "" : null',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
   },
   providers: [{ provide: FOR_OTP_INPUT_CONTEXT, useExisting: ForOtpInput }],
 })
