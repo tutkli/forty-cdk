@@ -1231,6 +1231,53 @@ describe('ForMenubar', () => {
       expect(document.querySelector('[data-highlighted]')).toBeNull();
     });
 
+    it('leaves DOM focus on the hovered trigger instead of entering the menu it opens', async () => {
+      const r = renderHost(MenubarHost);
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
+
+      const view = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[2]!;
+      view.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('view');
+      expect(document.getElementById('view-zoom')).not.toBeNull();
+      expect(document.activeElement).toBe(view);
+    });
+
+    it('ArrowDown on the hovered trigger enters the menu the hover-switch left open', async () => {
+      const r = renderHost(MenubarHost);
+      r.instance.open.set('file');
+      await flush(r.fixture);
+
+      const view = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[2]!;
+      view.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(view);
+
+      pressKey(view, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('view');
+      expect(document.activeElement).toBe(document.getElementById('view-zoom'));
+    });
+
+    it('hovering the already-open trigger is not a switch and leaves focus inside its menu', async () => {
+      const r = renderHost(MenubarHost);
+      const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
+      pressKey(file, 'ArrowDown');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
+
+      file.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true }));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('file');
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
+    });
+
     it('does NOT auto-open on pointerenter while no menu is open', async () => {
       const r = renderHost(MenubarHost);
       const file = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[0]!;
@@ -1545,16 +1592,50 @@ describe('ForMenubar', () => {
       expect(r.instance.open()).toBeNull();
     });
 
-    it('a hover-switch to a sibling trigger re-fires (autoFocusOnOpen) for the remounted content', async () => {
+    it('a hover-switch to a sibling trigger fires no (autoFocusOnOpen) and parks focus on the hovered trigger', async () => {
       const r = await openFile();
       expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(document.activeElement).toBe(document.getElementById('file-new'));
 
       const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
       edit.dispatchEvent(pointerEvent('pointerenter'));
       await flush(r.fixture);
 
       expect(r.instance.open()).toBe('edit');
+      expect(document.getElementById('edit-undo')).not.toBeNull();
+      expect(r.instance.autoFocusOnOpenCount).toBe(1);
+      expect(document.activeElement).toBe(edit);
+    });
+
+    it('the hover-switch focus move is independent of the outgoing menu (autoFocusOnClose)', async () => {
+      const r = await openFile();
+      r.instance.veto.set('autoFocusOnClose');
+
+      const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+      edit.dispatchEvent(pointerEvent('pointerenter'));
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
+      expect(r.instance.autoFocusOnCloseCount).toBe(1);
+      expect(document.activeElement).toBe(edit);
+    });
+
+    it('a keyboard open after a hover-switch still fires (autoFocusOnOpen) and enters the menu', async () => {
+      const r = await openFile();
+      const edit = r.queryAll<HTMLButtonElement>('[forMenubarTrigger]')[1]!;
+      edit.dispatchEvent(pointerEvent('pointerenter'));
+      await flush(r.fixture);
+
+      pressKey(edit, 'Escape');
+      await flush(r.fixture);
+      expect(r.instance.open()).toBeNull();
+
+      pressKey(edit, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(r.instance.open()).toBe('edit');
       expect(r.instance.autoFocusOnOpenCount).toBe(2);
+      expect(document.activeElement).toBe(document.getElementById('edit-undo'));
     });
   });
 

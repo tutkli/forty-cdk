@@ -161,8 +161,9 @@ export class ForMenubar implements ForMenubarContext {
   /**
    * Fires just before an opening menu sends focus to its first / last enabled
    * item on mount. Call `preventDefault()` on the emitted veto to skip the
-   * imperative focus move. Also fires on a hover-switch between sibling
-   * triggers, since that remounts the content.
+   * imperative focus move. A hover-switch between sibling triggers does **not**
+   * fire it: that open leaves DOM focus on the hovered trigger, so the incoming
+   * surface makes no focus move to veto.
    */
   readonly autoFocusOnOpen = output<VetoableEvent>();
 
@@ -374,7 +375,13 @@ export class ForMenubar implements ForMenubarContext {
     if (this.value() === null || this.value() === value) {
       return;
     }
-    this.openTrigger(value, 'first', 'pointer');
+    const handle = this.triggerFor(value);
+    if (!handle || handle.disabled()) {
+      return;
+    }
+    this.menuCtx.prepareOpen('first', 'pointer', { suppressOpenFocus: true });
+    handle.host.focus();
+    this.value.set(value);
   }
 
   handleTriggerTypeahead(event: KeyboardEvent): void {

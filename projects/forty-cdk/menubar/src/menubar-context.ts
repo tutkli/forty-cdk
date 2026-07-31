@@ -139,6 +139,13 @@ export interface ForMenubarContext extends MenuSiblingNavigator {
    * Hover-after-open. When some menu is open and pointer enters a sibling
    * trigger, that sibling's menu opens immediately. No-op while no menu
    * is open (first open requires keyboard / click).
+   *
+   * Unlike every other open path, this one moves DOM focus to the **hovered
+   * trigger** rather than into the opening menu, mirroring the APG menubar
+   * reference implementation's `onMenuitemPointerover`. The incoming surface's
+   * `(autoFocusOnOpen)` move is suppressed accordingly, so sweeping the pointer
+   * across the bar never drags focus through each popup in turn. Hovering the
+   * already-open trigger is not a switch and is left alone.
    */
   pointerEnterTrigger(value: string): void;
 
