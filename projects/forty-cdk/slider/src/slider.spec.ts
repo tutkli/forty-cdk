@@ -271,6 +271,20 @@ describe('ForSlider', () => {
       expect(root(el).getAttribute('dir')).toBe('rtl');
     });
 
+    it('clears both root disabled channels when disabled flips back to false', async () => {
+      const { el, fixture, flush } = renderHost(SliderHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+      expect(root(el).getAttribute('aria-disabled')).toBe('true');
+      expect(root(el).getAttribute('data-disabled')).toBe('');
+
+      fixture.componentInstance.disabled.set(false);
+      await flush();
+      expect(root(el).hasAttribute('aria-disabled')).toBe(false);
+      expect(root(el).hasAttribute('data-disabled')).toBe(false);
+      expect(root(el).hasAttribute('disabled')).toBe(false);
+    });
+
     it('disabled thumb has tabindex=-1 and aria-disabled=true', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.disabled.set(true);

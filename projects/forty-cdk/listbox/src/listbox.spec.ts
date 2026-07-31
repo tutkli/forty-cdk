@@ -1297,12 +1297,28 @@ describe('ForListbox', () => {
       fixture.componentInstance.rootDisabled.set(true);
       await flush();
       expect(listboxOf(el).getAttribute('aria-disabled')).toBe('true');
+      expect(listboxOf(el).getAttribute('data-disabled')).toBe('');
+      expect(listboxOf(el).hasAttribute('disabled')).toBe(false);
 
       optOf(el, 'apple').click();
       await flush();
       expect(fixture.componentInstance.picked()).toEqual([]);
       expect(optOf(el, 'apple').hasAttribute('disabled')).toBe(false);
       expect(optOf(el, 'apple').getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('clears both root disabled channels when disabled flips back to false', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.rootDisabled.set(true);
+      await flush();
+      expect(listboxOf(el).getAttribute('aria-disabled')).toBe('true');
+      expect(listboxOf(el).getAttribute('data-disabled')).toBe('');
+
+      fixture.componentInstance.rootDisabled.set(false);
+      await flush();
+      expect(listboxOf(el).hasAttribute('aria-disabled')).toBe(false);
+      expect(listboxOf(el).hasAttribute('data-disabled')).toBe(false);
+      expect(listboxOf(el).hasAttribute('disabled')).toBe(false);
     });
   });
 
