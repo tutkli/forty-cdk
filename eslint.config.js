@@ -210,6 +210,106 @@ const ROLE_SUPPORTED_ARIA_PROPERTIES = {
 };
 
 /**
+ * The `ClassBody` lexically enclosing `node`, or `null`. Used to resolve a
+ * `this.#helper()` call an `effect()` callback makes against the class the
+ * effect is declared in — arrow callbacks keep the class's `this`.
+ *
+ * @param {import('estree').Node & { parent?: unknown }} node
+ */
+function enclosingClassBody(node) {
+  for (let current = node.parent; current; current = current.parent) {
+    if (current.type === 'ClassBody') return current;
+  }
+  return null;
+}
+
+/**
+ * The body of a function bound to `identifier` in an enclosing scope, or `null`
+ * when the name is not a same-file function (an import, an ambient `declare`,
+ * a plain value). Covers both `function helper() {}` and
+ * `const helper = () => {}`.
+ *
+ * @param {import('estree').Identifier} identifier
+ * @param {import('eslint').SourceCode} sourceCode
+ */
+function localFunctionBody(identifier, sourceCode) {
+  for (let scope = sourceCode.getScope(identifier); scope; scope = scope.upper) {
+    const variable = scope.set.get(identifier.name);
+    if (!variable) continue;
+    for (const def of variable.defs) {
+      const declaration = def.node;
+      if (declaration.type === 'FunctionDeclaration' && declaration.body) {
+        return declaration.body;
+      }
+      if (
+        declaration.type === 'VariableDeclarator' &&
+        declaration.init &&
+        (declaration.init.type === 'ArrowFunctionExpression' ||
+          declaration.init.type === 'FunctionExpression') &&
+        declaration.init.body
+      ) {
+        return declaration.init.body;
+      }
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Resolves a call an `effect()` callback makes to a helper declared in the
+ * **same file**, returning `{ name, body }` — or `null` when the callee is not
+ * a resolvable same-file helper.
+ *
+ * Two shapes resolve: a method or arrow-valued field reached through `this`
+ * (`this.#sync()`, `this.sync()`), and a function bound in an enclosing scope
+ * (`sync()`). Anything else — a method on an injected collaborator, an imported
+ * function — stays opaque by design: see the "one level, same file" note on
+ * `no-effect-state-propagation` for why that boundary is where a lint rule
+ * stops and a type-aware whole-program pass would begin.
+ *
+ * @param {import('estree').CallExpression & { parent?: unknown }} callNode
+ * @param {import('eslint').SourceCode} sourceCode
+ */
+function resolveSameFileHelper(callNode, sourceCode) {
+  const callee = callNode.callee;
+  if (callee.type === 'Identifier') {
+    const body = localFunctionBody(callee, sourceCode);
+    return body ? { name: `${callee.name}()`, body } : null;
+  }
+  if (
+    callee.type !== 'MemberExpression' ||
+    callee.computed ||
+    callee.object.type !== 'ThisExpression' ||
+    (callee.property.type !== 'Identifier' && callee.property.type !== 'PrivateIdentifier')
+  ) {
+    return null;
+  }
+  const classBody = enclosingClassBody(callNode);
+  if (!classBody) return null;
+  const name = `${sourceCode.getText(callee)}()`;
+  for (const member of classBody.body) {
+    if (member.computed || member.static || !member.key) continue;
+    if (member.key.type !== callee.property.type || member.key.name !== callee.property.name) {
+      continue;
+    }
+    if (member.type === 'MethodDefinition' && member.value && member.value.body) {
+      return { name, body: member.value.body };
+    }
+    if (
+      member.type === 'PropertyDefinition' &&
+      member.value &&
+      (member.value.type === 'ArrowFunctionExpression' ||
+        member.value.type === 'FunctionExpression') &&
+      member.value.body
+    ) {
+      return { name, body: member.value.body };
+    }
+  }
+  return null;
+}
+
+/**
  * Tiny inline plugin holding rules that don't fit the off-the-shelf
  * AST-selector / no-restricted-imports machinery.
  *
@@ -1638,6 +1738,25 @@ const fortyCdkPlugin = {
     //     a write only fires the rule when `<base>` is also read as `<base>()`
     //     in a tracked position in the same callback.
     //
+    // Helper resolution is **same-file and one level deep** (#1575). A cycle
+    // assembled across a helper call used to be entirely invisible: not just the
+    // write, but the *read* too, and therefore the pairing the rule keys on — an
+    // `effect(() => this.#sync())` looked like an effect touching no signal at
+    // all, which is how #1572 shipped a synchronous self-retriggering effect
+    // through a green `pnpm lint`. So when the callback calls a helper whose
+    // declaration is resolvable in the same file — a method or arrow-valued
+    // field on `this`, or a function bound in an enclosing scope — that body is
+    // analyzed too (with the same nested-scope and `untracked()` treatment) and
+    // its reads / writes merged into the effect's sets before pairing.
+    //
+    // The residual gap is deliberate and worth stating rather than assuming
+    // closed: resolution does **not** follow a call into another file, so a
+    // method on an injected collaborator stays opaque — the #1572 cycle itself
+    // lived in `core/menu-overlay/menu-opener-registry.ts`, one file away from
+    // the trigger's effect, and would still slip through. Same-file, one level
+    // is the version that stays a lint rule instead of becoming a type-aware
+    // whole-program pass, and it catches the far more common in-file shape.
+    //
     // The synthetic violation in the acceptance criteria —
     // `effect(() => { s.set(s() + 1) })` — is exactly the read-and-write the
     // rule flags. Fixture: `projects/forty-cdk/eslint-rules-fixtures/no-effect-state-propagation.fixture.ts`.
@@ -1654,6 +1773,8 @@ const fortyCdkPlugin = {
         messages: {
           forbidden:
             'Do not propagate state inside `effect()`: the same signal (`{{ signal }}`) is read reactively and written via `.set`/`.update` in this effect. This creates implicit cycles, double change-detection, and ordering bugs. Derive it with `computed()` / `linkedSignal()` instead, or wrap the read in `untracked()` if you genuinely need the current value (CLAUDE.md § "Never propagate state inside `effect()`").',
+          forbiddenViaHelper:
+            'Do not propagate state inside `effect()`: the same signal (`{{ signal }}`) is read reactively and written via `.set`/`.update` once `{{ helper }}` is followed. The effect therefore depends on the signal it writes and re-triggers itself — a synchronous cycle that hangs the caller with no stack trace. Derive it with `computed()` / `linkedSignal()` instead, or wrap the read in `untracked()` if you genuinely need the current value (CLAUDE.md § "Never propagate state inside `effect()`").',
         },
       },
       create(context) {
@@ -1665,12 +1786,15 @@ const fortyCdkPlugin = {
         function exprKey(node) {
           return sourceCode.getText(node);
         }
-        // Walk a callback's *own* body, collecting tracked reads and writes
-        // without descending into nested function scopes or `untracked(…)`.
-        function analyzeCallback(fnNode) {
+        // Walk one function body, collecting tracked reads, writes, and the
+        // same-file helper calls worth following, without descending into
+        // nested function scopes or `untracked(…)`. `followHelpers` is false
+        // for a helper's own body, which is what bounds resolution to one level.
+        function collect(bodyNode, followHelpers) {
           const trackedReads = new Map(); // key -> first read node
           const writes = []; // { key, node }
-          const stack = [fnNode.body];
+          const helperCalls = []; // { name, body, node }
+          const stack = [bodyNode];
           while (stack.length) {
             const node = stack.pop();
             if (!node || typeof node !== 'object') continue;
@@ -1682,10 +1806,9 @@ const fortyCdkPlugin = {
             // Do not descend into nested function scopes — their reads / writes
             // run outside this effect's reactive run (observer callbacks, etc.).
             if (
-              node !== fnNode &&
-              (node.type === 'FunctionExpression' ||
-                node.type === 'ArrowFunctionExpression' ||
-                node.type === 'FunctionDeclaration')
+              node.type === 'FunctionExpression' ||
+              node.type === 'ArrowFunctionExpression' ||
+              node.type === 'FunctionDeclaration'
             ) {
               continue;
             }
@@ -1708,6 +1831,16 @@ const fortyCdkPlugin = {
                 for (const arg of node.arguments) stack.push(arg);
                 continue;
               }
+              // A same-file helper the effect delegates to. Resolved before the
+              // read branch below, because a zero-argument helper call is
+              // syntactically indistinguishable from a signal read — a name that
+              // resolves to a function declaration is the helper, not a signal.
+              const helper = followHelpers ? resolveSameFileHelper(node, sourceCode) : null;
+              if (helper) {
+                helperCalls.push({ ...helper, node });
+                for (const arg of node.arguments) stack.push(arg);
+                continue;
+              }
               // Tracked read: a zero-argument call `<sig>()` whose callee is an
               // identifier or member access (`count()`, `this.#activeId()`).
               if (
@@ -1727,6 +1860,33 @@ const fortyCdkPlugin = {
               stack.push(node[key]);
             }
           }
+          return { trackedReads, writes, helperCalls };
+        }
+        // The effect's own reads / writes, merged with those of every same-file
+        // helper it calls. A merged entry remembers the helper it came from and
+        // is anchored on the call site, so the report lands on the effect the
+        // reader has to fix and names the helper that completes the cycle.
+        function analyzeCallback(fnNode) {
+          const own = collect(fnNode.body, true);
+          const trackedReads = new Map();
+          for (const [key, node] of own.trackedReads) {
+            trackedReads.set(key, { node, helper: null });
+          }
+          const writes = own.writes.map((write) => ({ ...write, helper: null }));
+          const analyzed = new Set();
+          for (const call of own.helperCalls) {
+            if (analyzed.has(call.body)) continue;
+            analyzed.add(call.body);
+            const inner = collect(call.body, false);
+            for (const key of inner.trackedReads.keys()) {
+              if (!trackedReads.has(key)) {
+                trackedReads.set(key, { node: call.node, helper: call.name });
+              }
+            }
+            for (const write of inner.writes) {
+              writes.push({ key: write.key, node: call.node, helper: call.name });
+            }
+          }
           return { trackedReads, writes };
         }
         return {
@@ -1743,14 +1903,15 @@ const fortyCdkPlugin = {
             const { trackedReads, writes } = analyzeCallback(cb);
             const reported = new Set();
             for (const write of writes) {
-              if (trackedReads.has(write.key) && !reported.has(write.key)) {
-                reported.add(write.key);
-                context.report({
-                  node: write.node,
-                  messageId: 'forbidden',
-                  data: { signal: write.key },
-                });
-              }
+              const read = trackedReads.get(write.key);
+              if (!read || reported.has(write.key)) continue;
+              reported.add(write.key);
+              const helper = write.helper ?? read.helper;
+              context.report({
+                node: write.node,
+                messageId: helper ? 'forbiddenViaHelper' : 'forbidden',
+                data: { signal: write.key, helper },
+              });
             }
           },
         };
@@ -1788,10 +1949,14 @@ const fortyCdkPlugin = {
     //     never match.
     //   - Does not descend into nested function scopes, matching
     //     `no-effect-state-propagation`: a write inside an observer callback
-    //     runs outside the effect's reactive run. The consequence is that a
-    //     write one hoisted-helper call away (as in `element-size`) is invisible
-    //     to the lint — the marker is still required there by convention so the
-    //     grep ledger stays complete.
+    //     runs outside the effect's reactive run.
+    //   - Follows a call to a helper declared in the **same file**, one level
+    //     deep, exactly as `no-effect-state-propagation` does (#1575), so the
+    //     write one hoisted-helper call away that `element-size` makes is now
+    //     covered by the lint rather than by convention alone. The residual gap
+    //     is the same one: a call into another file is not followed, so the
+    //     marker is still required by convention there for `grep
+    //     @sanctioned-effect` to stay the complete ledger.
     //   - A marker licenses only the effect it sits on. A bare
     //     `@sanctioned-effect` with no invariant / no rationale is reported as
     //     malformed rather than accepted.
@@ -1809,6 +1974,8 @@ const fortyCdkPlugin = {
         messages: {
           missingMarker:
             'Unmarked signal write inside `effect()`: `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (CLAUDE.md § "The sanctioned-effect marker".)',
+          missingMarkerViaHelper:
+            'Unmarked signal write inside `effect()`: `{{ helper }}` writes `{{ signal }}.{{ method }}(…)`. `effect()` is for side effects that escape the reactive graph — derive state with `computed()` / `linkedSignal()` / `resource()` / `toSignal()` instead. If the write is genuinely sanctioned, license it with a marker comment directly above the `effect(` call: `// @sanctioned-effect(<invariant>): <why the write cannot cycle>`. (CLAUDE.md § "The sanctioned-effect marker".)',
           malformedMarker:
             'Malformed `@sanctioned-effect` marker. The shape is `// @sanctioned-effect(<invariant>): <why the write cannot cycle>` — a kebab-case invariant name in parentheses (e.g. `external-source`, `untracked-read`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (CLAUDE.md § "The sanctioned-effect marker".)',
         },
@@ -1822,10 +1989,15 @@ const fortyCdkPlugin = {
         // than "the previous line" exactly.
         const MARKER_WINDOW = 6;
 
-        /** Collects `.set(…)` / `.update(…)` calls in the callback's own scope. */
-        function writesIn(fnNode) {
+        /**
+         * Collects `.set(…)` / `.update(…)` calls in one function body, plus the
+         * same-file helper calls worth following. `followHelpers` is false for a
+         * helper's own body, which is what bounds resolution to one level.
+         */
+        function collect(bodyNode, followHelpers) {
           const writes = [];
-          const stack = [fnNode.body];
+          const helperCalls = [];
+          const stack = [bodyNode];
           while (stack.length) {
             const node = stack.pop();
             if (!node || typeof node !== 'object') continue;
@@ -1835,29 +2007,52 @@ const fortyCdkPlugin = {
             }
             if (!node.type) continue;
             if (
-              node !== fnNode &&
-              (node.type === 'FunctionExpression' ||
-                node.type === 'ArrowFunctionExpression' ||
-                node.type === 'FunctionDeclaration')
+              node.type === 'FunctionExpression' ||
+              node.type === 'ArrowFunctionExpression' ||
+              node.type === 'FunctionDeclaration'
             ) {
               continue;
             }
-            if (
-              node.type === 'CallExpression' &&
-              node.callee.type === 'MemberExpression' &&
-              !node.callee.computed &&
-              node.callee.property.type === 'Identifier' &&
-              (node.callee.property.name === 'set' || node.callee.property.name === 'update')
-            ) {
-              writes.push({
-                node,
-                signal: sourceCode.getText(node.callee.object),
-                method: node.callee.property.name,
-              });
+            if (node.type === 'CallExpression') {
+              if (
+                node.callee.type === 'MemberExpression' &&
+                !node.callee.computed &&
+                node.callee.property.type === 'Identifier' &&
+                (node.callee.property.name === 'set' || node.callee.property.name === 'update')
+              ) {
+                writes.push({
+                  node,
+                  signal: sourceCode.getText(node.callee.object),
+                  method: node.callee.property.name,
+                });
+              } else if (followHelpers) {
+                const helper = resolveSameFileHelper(node, sourceCode);
+                if (helper) helperCalls.push({ ...helper, node });
+              }
             }
             for (const key in node) {
               if (key === 'parent' || key === 'loc' || key === 'range') continue;
               stack.push(node[key]);
+            }
+          }
+          return { writes, helperCalls };
+        }
+
+        /**
+         * The effect's own signal writes, merged with those of every same-file
+         * helper it calls. A helper's write is anchored on the call site, so the
+         * report lands on the effect the marker would license and names the
+         * helper that performs the write.
+         */
+        function writesIn(fnNode) {
+          const own = collect(fnNode.body, true);
+          const writes = own.writes.map((write) => ({ ...write, helper: null }));
+          const analyzed = new Set();
+          for (const call of own.helperCalls) {
+            if (analyzed.has(call.body)) continue;
+            analyzed.add(call.body);
+            for (const write of collect(call.body, false).writes) {
+              writes.push({ ...write, node: call.node, helper: call.name });
             }
           }
           return writes;
@@ -1902,11 +2097,15 @@ const fortyCdkPlugin = {
               context.report({ node: marker, messageId: 'malformedMarker' });
               return;
             }
+            const reported = new Set();
             for (const write of writes) {
+              const key = `${write.node.range[0]}:${write.signal}.${write.method}`;
+              if (reported.has(key)) continue;
+              reported.add(key);
               context.report({
                 node: write.node,
-                messageId: 'missingMarker',
-                data: { signal: write.signal, method: write.method },
+                messageId: write.helper ? 'missingMarkerViaHelper' : 'missingMarker',
+                data: { signal: write.signal, method: write.method, helper: write.helper },
               });
             }
           },

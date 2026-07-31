@@ -21,6 +21,8 @@ declare const out: WritableSignal<number>;
 declare const open: WritableSignal<boolean>;
 declare const disabled: () => boolean;
 declare const host: HTMLElement;
+declare const mirrored: WritableSignal<number>;
+declare const measured: { width: number };
 declare function observe(cb: () => void): void;
 
 // Expected: 1× forty-cdk/require-sanctioned-effect-marker
@@ -62,11 +64,43 @@ effect(() => {
 });
 
 // Allowed: the write lives in a nested callback that fires outside the effect's
-// reactive run, matching `no-effect-state-propagation`'s scoping. The marker is
-// still the convention for a write one hoisted helper away, but the syntactic
-// rule cannot see it.
+// reactive run, matching `no-effect-state-propagation`'s scoping.
 effect(() => {
   observe(() => {
     out.set(3);
   });
+});
+
+function syncMirrored(): void {
+  mirrored.set(measured.width);
+}
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// A write one same-file helper call away. Before #1575 this effect looked like a
+// side-effect-only bridge, so the marker `core/element-size` carries by
+// convention was unenforceable; the report now names the helper.
+effect(() => {
+  syncMirrored();
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// The class-method flavour, resolved through `this` in the same class body.
+class MirrorsInAMethod {
+  constructor() {
+    effect(() => {
+      this.#sync();
+    });
+  }
+
+  #sync(): void {
+    mirrored.set(measured.width);
+  }
+}
+
+// Allowed: the very same helper-call shape, licensed by a well-formed marker —
+// which is the whole point of following the call one level deep.
+// @sanctioned-effect(external-source): mirrors an imperative measurement, so no
+// read in this effect can depend on the written signal.
+effect(() => {
+  syncMirrored();
 });
