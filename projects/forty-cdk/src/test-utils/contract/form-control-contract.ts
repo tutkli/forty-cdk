@@ -25,9 +25,7 @@
  *     host: they drop out of the tab order when disabled (focus lives on a
  *     roving child / segment), so they omit the `disabled` flag — its
  *     "stays focusable" assertion does not apply to a container.
- *   - Controls that reflect `aria-readonly` but not `data-readonly`
- *     (`Listbox`) omit `readonly`; controls with no `aria-busy` (the date/time
- *     fields) omit `pending`.
+ *   - Controls with no `aria-busy` (the date/time fields) omit `pending`.
  *   - Controls whose role does not support `aria-readonly` (`role="group"` on
  *     `Slider` / `ToggleGroup` / the date/time fields, `role="button"` on
  *     `Toggle`) pass `roleSupportsAriaReadonly: false`: they reflect

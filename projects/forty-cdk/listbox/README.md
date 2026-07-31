@@ -387,6 +387,7 @@ export class DemoVirtualizedListbox {
 | ------------------ | -------------------------- |
 | `data-orientation` | `horizontal` \| `vertical` |
 | `data-disabled`    | present \| absent          |
+| `data-readonly`    | present \| absent          |
 
 ### `ForListboxOption`
 

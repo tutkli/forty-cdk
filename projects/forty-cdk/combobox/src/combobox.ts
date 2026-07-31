@@ -87,6 +87,7 @@ import { VirtualizedNavigator } from './combobox-virtualized-navigator';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(focusout)': 'onFocusOut($event)',
   },

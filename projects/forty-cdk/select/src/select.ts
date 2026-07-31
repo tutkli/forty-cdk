@@ -86,6 +86,7 @@ import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
   },
   providers: provideForSelect(ForSelect),

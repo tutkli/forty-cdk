@@ -103,6 +103,7 @@ Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invali
 | ------------------------ | ------------------ | -------------------------- |
 | `[forTimePicker]`        | `data-state`       | `open` \| `closed`         |
 | `[forTimePicker]`        | `data-disabled`    | present \| absent          |
+| `[forTimePicker]`        | `data-readonly`    | present \| absent          |
 | `[forTimePickerTrigger]` | `data-state`       | `open` \| `closed`         |
 | `[forTimePickerTrigger]` | `data-disabled`    | present \| absent          |
 | `[forTimePickerTrigger]` | `data-readonly`    | present \| absent          |

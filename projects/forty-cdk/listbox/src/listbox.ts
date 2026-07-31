@@ -88,6 +88,7 @@ import { ListboxVirtualizedNavigator } from './listbox-virtualized-navigator';
     '[attr.tabindex]': 'hostTabindex()',
     '[attr.data-orientation]': 'orientation()',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
     '(keydown)': 'onHostKeyDown($event)',
     '(focusin)': 'onHostFocusIn()',

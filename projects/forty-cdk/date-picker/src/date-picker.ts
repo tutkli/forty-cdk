@@ -109,6 +109,7 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
     '[attr.dir]': 'dir()',
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
   },
   providers: [{ provide: FOR_DATE_PICKER_CONTEXT, useExisting: ForDatePicker }],
 })

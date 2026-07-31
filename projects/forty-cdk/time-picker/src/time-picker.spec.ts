@@ -291,6 +291,20 @@ describe('ForTimePicker', () => {
       expect(content.getAttribute('data-state')).toBe('open');
     });
 
+    it('reflects data-readonly on the root while read-only, and clears it', async () => {
+      const r = renderHost(TimePickerHost);
+      const root = r.query<HTMLElement>('[forTimePicker]')!;
+      expect(root.hasAttribute('data-readonly')).toBe(false);
+
+      r.instance.readonly.set(true);
+      await flush(r.fixture);
+      expect(root.getAttribute('data-readonly')).toBe('');
+
+      r.instance.readonly.set(false);
+      await flush(r.fixture);
+      expect(root.hasAttribute('data-readonly')).toBe(false);
+    });
+
     it('portals the listbox content directly under document.body', async () => {
       const r = renderHost(TimePickerHost);
       r.instance.open.set(true);

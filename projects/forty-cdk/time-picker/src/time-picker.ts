@@ -63,6 +63,7 @@ import { FOR_TIME_PICKER_DEFAULTS } from './time-picker-defaults';
   host: {
     '[attr.data-state]': 'open() ? "open" : "closed"',
     '[attr.data-disabled]': 'effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
   },
   providers: [

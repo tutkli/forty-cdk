@@ -171,6 +171,7 @@ Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `r
 | ------------------------ | ------------------ | ------------------ |
 | `[forDatePicker]`        | `data-state`       | `open` \| `closed` |
 | `[forDatePicker]`        | `data-disabled`    | present \| absent  |
+| `[forDatePicker]`        | `data-readonly`    | present \| absent  |
 | `[forDatePickerTrigger]` | `data-state`       | `open` \| `closed` |
 | `[forDatePickerTrigger]` | `data-disabled`    | present \| absent  |
 | `[forDatePickerTrigger]` | `data-readonly`    | present \| absent  |
