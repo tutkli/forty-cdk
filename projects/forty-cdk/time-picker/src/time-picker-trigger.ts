@@ -21,7 +21,9 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
  * reflected non-destructively — the directive only removes the attribute when
  * it set it itself — and `data-disabled=""` stays as the styling hook. The
  * remaining form-control state (`aria-readonly` / `aria-required` /
- * `aria-invalid` / `aria-busy`) is unaffected.
+ * `aria-invalid` / `aria-busy`) is unaffected, and the read-only state carries
+ * its own `data-readonly=""` styling hook — `readonly` is not a valid attribute
+ * of `<button>`, so a `data-*` channel is the only one available there.
  *
  * Keyboard:
  * - **Click / Enter / Space** — toggle (open focuses the selected slot, or first).
@@ -44,6 +46,7 @@ import { type ForTimePickerContext, injectTimePickerTriggerContext } from './tim
     '[attr.aria-busy]': 'ctx().pending() ? "true" : null',
     '[attr.data-state]': 'ctx().open() ? "open" : "closed"',
     '[attr.data-disabled]': 'ctx().effectiveDisabled() ? "" : null',
+    '[attr.data-readonly]': 'ctx().readonly() ? "" : null',
     '(click)': 'onClick()',
     '(keydown)': 'onKeyDown($event)',
     '(focusout)': 'onFocusOut($event)',

@@ -109,6 +109,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forSelect]`          | `data-disabled`    | present \| absent          |
 | `[forSelectTrigger]`   | `data-state`       | `open` \| `closed`         |
 | `[forSelectTrigger]`   | `data-disabled`    | present \| absent          |
+| `[forSelectTrigger]`   | `data-readonly`    | present \| absent          |
 | `[forSelectValue]`     | `data-placeholder` | present \| absent          |
 | `[forSelectContent]`   | `data-state`       | `open` \| `closed`         |
 | `[forSelectContent]`   | `data-orientation` | `vertical` \| `horizontal` |
