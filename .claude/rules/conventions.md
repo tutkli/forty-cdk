@@ -609,7 +609,9 @@ The per-file adopter rosters behind both rows are generated at the end of this f
 library source and `pnpm postbuild` fails when the two disagree. Regenerate with
 `pnpm check:matrices --write`. Every roster the prose above used to spell out by hand lives here,
 because a hand-maintained roster is how [#1401](https://github.com/tutkli/forty-cdk/issues/1401)
-found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`.
+found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`; the
+sanctioned-pull ledger additionally covers `forty-cdk/core`, whose ids carry the concern
+directory (`core/<concern>/<file>`).
 
 <!-- prettier-ignore -->
 | Matrix | # | Members |

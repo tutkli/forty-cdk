@@ -4,40 +4,68 @@ import { join } from 'node:path';
 import { repoRoot } from './repo-path.mjs';
 
 const LIB_DIR = join(repoRoot, 'projects', 'forty-cdk');
+const CORE_ENTRY_POINT = 'core';
 
 /**
  * Every secondary entry point (a folder carrying its own `ng-package.json`),
  * excluding `core` — the internal tier is not part of the consumer-facing
- * conventions these matrices govern.
+ * conventions these matrices govern. The one matrix that tracks an *internal*
+ * authoring convention reads `coreSourceFiles()` on top of this set.
  */
 export function entryPoints() {
   return readdirSync(LIB_DIR, { withFileTypes: true })
     .filter((e) => e.isDirectory() && existsSync(join(LIB_DIR, e.name, 'ng-package.json')))
     .map((e) => e.name)
-    .filter((name) => name !== 'core')
+    .filter((name) => name !== CORE_ENTRY_POINT)
     .sort();
+}
+
+/**
+ * Non-spec `.ts` files under one directory, as `{ entry, file, id, text }`.
+ * Recurses only when asked: every consumer-facing entry point is flat, and
+ * widening their walk would silently change the file set fifteen matrices see.
+ */
+function collect(entry, dir, prefix, recursive) {
+  if (!existsSync(dir)) {
+    return [];
+  }
+  return readdirSync(dir, { withFileTypes: true })
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .flatMap((e) => {
+      if (e.isDirectory()) {
+        return recursive ? collect(entry, join(dir, e.name), `${prefix}${e.name}/`, true) : [];
+      }
+      if (!e.name.endsWith('.ts') || e.name.endsWith('.spec.ts')) {
+        return [];
+      }
+      return [
+        {
+          entry,
+          file: `${prefix}${e.name}`,
+          id: `${entry}/${prefix}${e.name.replace(/\.ts$/, '')}`,
+          text: readFileSync(join(dir, e.name), 'utf8'),
+        },
+      ];
+    });
 }
 
 /** Non-spec `.ts` files of one entry point's `src/`, as `{ entry, file, id, text }`. */
 function sourceFiles(entry) {
-  const dir = join(LIB_DIR, entry, 'src');
-  if (!existsSync(dir)) {
-    return [];
-  }
-  return readdirSync(dir)
-    .filter((f) => f.endsWith('.ts') && !f.endsWith('.spec.ts'))
-    .sort()
-    .map((f) => ({
-      entry,
-      file: f,
-      id: `${entry}/${f.replace(/\.ts$/, '')}`,
-      text: readFileSync(join(dir, f), 'utf8'),
-    }));
+  return collect(entry, join(LIB_DIR, entry, 'src'), '', false);
 }
 
-/** Every non-spec source file across every entry point, in a stable order. */
+/** Every non-spec source file across every consumer-facing entry point, in a stable order. */
 export function allSourceFiles() {
   return entryPoints().flatMap(sourceFiles);
+}
+
+/**
+ * The same, for `forty-cdk/core`. Walked **recursively** because core's `src/`
+ * is one directory per concern rather than flat, so ids carry it
+ * (`core/<concern>/<file>`) and stay greppable like every other row.
+ */
+export function coreSourceFiles() {
+  return collect(CORE_ENTRY_POINT, join(LIB_DIR, CORE_ENTRY_POINT, 'src'), '', true);
 }
 
 /**
@@ -249,6 +277,14 @@ function closedInertPanels(files) {
  * Anchored to a line comment: the marker's own phrase appears in prose too (a
  * JSDoc block explaining the convention), and counting that as a pull would
  * inflate the ledger the roster exists to keep honest.
+ *
+ * **This is the one extractor that sees `forty-cdk/core`, deliberately.** The
+ * other matrices govern consumer-facing contracts, and core has no consumers —
+ * hence the entry-point filter. A pull is the opposite: an internal authoring
+ * convention, lint-enforced in core with no carve-out, and the shared runner
+ * every position-map pull calls lives there. Excluding core would leave the
+ * "complete ledger" blind to the file the convention is about, so do not
+ * "fix" the inconsistency by putting core back behind the filter.
  */
 function sanctionedPulls(files) {
   const byStore = new Map();
@@ -270,20 +306,30 @@ function sanctionedPulls(files) {
     }));
 }
 
+/**
+ * Which file set each extractor reads. `includeCore` is a per-extractor
+ * decision rather than a global one: the internal tier stays out of the
+ * consumer-facing matrices and inside the internal one (see `sanctionedPulls`).
+ */
 const EXTRACTORS = [
-  writingDirection,
-  ariaLabelDefaults,
-  defaultsProviders,
-  autoFocusHooks,
-  dataStateVocabularies,
-  closedInertPanels,
-  sanctionedPulls,
+  { extract: writingDirection },
+  { extract: ariaLabelDefaults },
+  { extract: defaultsProviders },
+  { extract: autoFocusHooks },
+  { extract: dataStateVocabularies },
+  { extract: closedInertPanels },
+  { extract: sanctionedPulls, includeCore: true },
 ];
 
 /** Every matrix row, derived from library source. */
 export function conventionMatrices() {
-  const files = allSourceFiles();
-  return EXTRACTORS.flatMap((extract) => extract(files));
+  const consumerFacing = allSourceFiles();
+  const withCore = [...consumerFacing, ...coreSourceFiles()].sort((a, b) =>
+    a.id.localeCompare(b.id),
+  );
+  return EXTRACTORS.flatMap(({ extract, includeCore }) =>
+    extract(includeCore ? withCore : consumerFacing),
+  );
 }
 
 /**
@@ -301,7 +347,9 @@ export function renderMatrices(rows = conventionMatrices()) {
     'library source and `pnpm postbuild` fails when the two disagree. Regenerate with',
     '`pnpm check:matrices --write`. Every roster the prose above used to spell out by hand lives here,',
     'because a hand-maintained roster is how [#1401](https://github.com/tutkli/forty-cdk/issues/1401)',
-    'found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`.',
+    'found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`; the',
+    'sanctioned-pull ledger additionally covers `forty-cdk/core`, whose ids carry the concern',
+    'directory (`core/<concern>/<file>`).',
     '',
     '<!-- prettier-ignore -->',
     '| Matrix | # | Members |',
