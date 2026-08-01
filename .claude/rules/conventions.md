@@ -76,6 +76,28 @@ effect(() => {
 
 **The four position-map pulls share one core helper.** Select, Listbox, Tree and Combobox all ran the identical four lines (`items(); if (!virtualized) return; prime(); tryResolvePending();`) in four entry points. `runVirtualizedNavigatorBridge` in `forty-cdk/core` is the single definition; it returns whether a pending navigation resolved, which is the one thing the Combobox bridge needs on top. Add a fifth virtualized collection by calling it, not by copying it.
 
+## Assertions are dev-gated and live at the point of use
+
+The third thing an `effect()` gets misused for, after the write and the pull, is **validation** — an effect whose whole body is a `throw` or an `assert*` call, watching a pair of inputs so it can object to their combination. It reads like the loudest possible failure and is close to the quietest one, so `forty-cdk/no-assertion-only-effect` (`eslint.config.js`) fails `pnpm lint` on the shape.
+
+**A throw inside an `effect` never reaches the code that caused it.** Angular routes it to the application `ErrorHandler`: the stack names the effect scheduler rather than the binding at fault, the effect re-throws on every subsequent run, and an app with its own `ErrorHandler` — which most non-trivial apps have — swallows it entirely. Five sites shipped that way, and the one [#1583](https://github.com/tutkli/forty-cdk/issues/1583) was opened over had reached production as _silently degraded keyboard behaviour_: with `selectionFollowsFocus` set on a virtualized Select / Listbox / Tree, focus stopped carrying selection and nobody was told. A spec asserting `expect(() => fixture.detectChanges()).toThrow(…)` passed the whole time, because `ComponentFixture.detectChanges()` re-raises what `ApplicationRef.tick()` hands to the handler — the test proved the throw happened, never that a consumer would see it.
+
+**So an invariant is asserted from its point of use: the call the invalid state degrades.** That call is the one with a stack a consumer can read, it fires on the interaction that is actually broken rather than on every re-run, and it needs no reactive node of its own. The three shapes in use:
+
+| Where the invariant is checked                                           | Because that is where the invalid value…                                                                                                                          |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The **keyboard handler** (`selectionFollowsFocus`)                       | …changes nothing. `throwUnsupportedVirtualizedSelectionFollowsFocus` is called from each root's virtualized navigation branch, beside its `…RangeSelect` sibling. |
+| The **derivation that consumes it** (column name / track, `granularity`) | …is interpolated into CSS (`ForTableBody.track`) or turns into segments an adapter cannot fill (`DateFieldEngine.specs`).                                         |
+| The **narrowing accessor** (`assertTimeCapable`)                         | …is about to be used: the assert returns the narrowed type, so it cannot be skipped.                                                                              |
+
+Three rules follow, and the second is the one that keeps the ledger from growing:
+
+- **Every assertion whose only audience is the developer is gated on `isDevMode()`** — inside the `assert*` helper itself, so the gate travels with the check and no call site can forget it (`assertColumnName`, `assertColumnTrack`, `throwUnsupportedVirtualizedRangeSelect`, `assertInputBound`). `assertTimeCapable` is the deliberate exception: it _narrows_ a type rather than reporting, so a production build that skipped it would carry on into a `getHours` that does not exist.
+- **An assertion beside real work is not this rule's business.** `[forTableColumnResizer]` asserts its column name inside the effect that publishes the width var — the assert sits at the point of use and the effect exists for the DOM write. Only an effect that does _nothing but_ validate is reported.
+- **The one sanctioned assertion-only effect is `assertInputBound`, and the exemption is a condition rather than a path list**: an `effect()` inside a function whose own name starts with `assert` is a reusable assertion _scheduler_. That check has no point of use to move to — it asserts that a piece's binding was ever written, which is observable only _after_ the update pass, so the effect is the earliest possible read rather than a stand-in for one (see the `unsetInput` section above). Anything with a point of use must use it; naming a helper `assert*` to quiet the lint is the same defect as a marker written to quiet its sibling.
+
+**One message, one definition.** The `selectionFollowsFocus` copy was pasted across three roots and had already drifted in two places by the time it moved. It now lives once in `core/list-typeahead`, parameterised by the primitive name and the two hint fragments, exactly like the range-select throw it sits beside — add a fourth virtualized collection by calling it, not by copying it.
+
 ## Form primitives use Signal Forms, never `ControlValueAccessor`
 
 **Form primitives use Signal Forms, never `ControlValueAccessor`.** Any primitive that represents a form value (Switch, Checkbox, RadioGroup, Slider, Combobox, DatePicker, etc.) must implement the appropriate `@angular/forms/signals` interface so it auto-wires with the `[formField]` directive (selector `[formField]`, alias `formField`) — Angular detects the interface and binds everything, no provider/token registration:

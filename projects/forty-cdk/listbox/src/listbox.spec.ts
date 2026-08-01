@@ -2287,54 +2287,136 @@ describe('ForListbox', () => {
     });
   });
 
-  describe('selectionFollowsFocus + virtualization guard', () => {
+  describe('selectionFollowsFocus + virtualization guard (#1583)', () => {
     @Component({
       imports: [ForListbox, ForListboxOption],
       template: `
         <div
           forListbox
+          data-test-lb
           [(value)]="picked"
           [totalCount]="total()"
+          [visibleRange]="range"
           [selectionFollowsFocus]="followsFocus()"
         >
-          <button type="button" forListboxOption value="a" [posInSet]="0" data-test-id="opt-a">
-            A
-          </button>
+          @for (i of indices; track i) {
+            <button
+              type="button"
+              forListboxOption
+              [value]="'item-' + i"
+              [posInSet]="i"
+              [attr.data-test-id]="'opt-' + i"
+            >
+              Item {{ i }}
+            </button>
+          }
         </div>
       `,
     })
     class GuardHost {
       readonly picked = signal<readonly string[]>([]);
       readonly total = signal<number | undefined>(undefined);
+      readonly range: readonly [number, number] = [0, 3];
       readonly followsFocus = signal(false);
+      readonly indices = [0, 1, 2];
     }
 
-    it('throws in dev mode when selectionFollowsFocus is combined with totalCount', () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    async function setupGuard(captured: unknown[]) {
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
       const fixture = TestBed.createComponent(GuardHost);
-      fixture.componentInstance.total.set(50);
+      fixture.componentInstance.total.set(3);
       fixture.componentInstance.followsFocus.set(true);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported together with virtualization/,
+      fixture.detectChanges();
+      await flush(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const lb = el.querySelector<HTMLElement>('[data-test-lb]')!;
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      return { fixture, lb };
+    }
+
+    const throwsUnsupported = (captured: readonly unknown[]) =>
+      captured.some(
+        (e) =>
+          e instanceof Error &&
+          /\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported together with virtualization/.test(
+            e.message,
+          ),
       );
+
+    it('reports nothing while the unsupported combination is merely configured', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupGuard(captured);
+      expect(captured).toEqual([]);
+      expect(lb.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('throws in dev mode from the navigation the combination degrades', async () => {
+      const captured: unknown[] = [];
+      const { lb } = await setupGuard(captured);
+      pressKey(lb, 'ArrowDown');
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('does not move the activedescendant past the guard', async () => {
+      const captured: unknown[] = [];
+      const { lb, fixture } = await setupGuard(captured);
+      const seeded = lb.getAttribute('aria-activedescendant');
+      pressKey(lb, 'ArrowDown');
+      await flush(fixture);
+      expect(lb.getAttribute('aria-activedescendant')).toBe(seeded);
     });
 
     it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
       const r = renderHost(GuardHost);
       r.instance.followsFocus.set(true);
       await flush(r.fixture);
-      const lb = r.el.querySelector<HTMLElement>('[forListbox]')!;
-      const optA = r.el.querySelector<HTMLElement>('[data-test-id="opt-a"]')!;
+      const lb = r.el.querySelector<HTMLElement>('[data-test-lb]')!;
+      const optA = r.el.querySelector<HTMLElement>('[data-test-id="opt-0"]')!;
       expect(lb.hasAttribute('aria-activedescendant')).toBe(false);
       expect(optA.getAttribute('tabindex')).toBe('0');
     });
 
-    it('does not throw when virtualized without selectionFollowsFocus', async () => {
-      const r = renderHost(GuardHost);
-      r.instance.total.set(50);
-      await flush(r.fixture);
-      const lb = r.el.querySelector<HTMLElement>('[forListbox]')!;
-      expect(lb.getAttribute('tabindex')).toBe('0');
+    it('does not throw when navigating a virtualized listbox without selectionFollowsFocus', async () => {
+      const captured: unknown[] = [];
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
+      const fixture = TestBed.createComponent(GuardHost);
+      fixture.componentInstance.total.set(3);
+      fixture.detectChanges();
+      await flush(fixture);
+      const lb = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+        '[data-test-lb]',
+      )!;
+      lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      pressKey(lb, 'ArrowDown');
+      await flush(fixture);
+      expect(captured).toEqual([]);
+      expect(lb.getAttribute('aria-activedescendant')).toBe(
+        (fixture.nativeElement as HTMLElement).querySelector('[data-test-id="opt-1"]')!.id,
+      );
     });
   });
 

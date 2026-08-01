@@ -18,7 +18,7 @@ import {
 
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
-import { type ForColumnDef } from './column-def';
+import { assertColumnDefConfig, type ForColumnDef } from './column-def';
 import {
   assertTableDefRegistry,
   type ForTableDefRegistry,
@@ -670,11 +670,13 @@ export class ForTableBody<T = unknown> {
    */
   readonly track: Signal<string> = computed(() =>
     this.orderedColumns()
-      .map(
-        (col) =>
+      .map((col) => {
+        assertColumnDefConfig(col);
+        return (
           col.width() ??
-          `var(--for-table-col-${col.name()}-width, ${col.fallbackWidth() ?? 'minmax(0, 1fr)'})`,
-      )
+          `var(--for-table-col-${col.name()}-width, ${col.fallbackWidth() ?? 'minmax(0, 1fr)'})`
+        );
+      })
       .join(' '),
   );
 

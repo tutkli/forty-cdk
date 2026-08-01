@@ -21,6 +21,7 @@ import {
   resolveListNavigation,
   resolveTreeExpandCollapse,
   runVirtualizedNavigatorBridge,
+  throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
@@ -210,8 +211,9 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * Not supported together with virtualization (`totalCount` set): the
    * virtualized `aria-activedescendant` focus model resolves off-window
    * navigation targets asynchronously, so selection cannot follow focus there
-   * without deriving the committed value from a render side effect. Combining
-   * the two throws in dev mode.
+   * without deriving the committed value from a render side effect.
+   * Arrow-navigating a virtualized tree with it set throws in dev mode, from
+   * the keyboard handler the combination degrades.
    */
   readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
     transform: booleanAttribute,
@@ -388,19 +390,6 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
         requireNavigator: () => this.#requireActiveDescendantModel(),
       });
     });
-
-    if (isDevMode()) {
-      effect(() => {
-        if (this.selectionFollowsFocus() && this.#virtualized()) {
-          throw new Error(
-            '[forty-cdk/tree] `selectionFollowsFocus` is not supported together with virtualization ' +
-              '(`totalCount` set). The virtualized activedescendant focus model resolves off-window ' +
-              'navigation targets asynchronously, so selection cannot follow focus there. Remove one of ' +
-              'the two: use `selectionFollowsFocus` only with the non-virtualized roving-tabindex tree.',
-          );
-        }
-      });
-    }
   }
 
   isExpanded(value: string): boolean {
@@ -558,6 +547,13 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     });
     if (action === 'next' || action === 'prev' || action === 'first' || action === 'last') {
       event.preventDefault();
+      if (this.selectionFollowsFocus()) {
+        throwUnsupportedVirtualizedSelectionFollowsFocus({
+          primitive: 'tree',
+          focusModel: 'roving-tabindex',
+          collection: 'tree',
+        });
+      }
       this.navigate(host, action);
       return;
     }

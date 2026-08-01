@@ -881,8 +881,8 @@ describe('ForDateRangeField', () => {
       })
       class DayOnlyHost {}
 
-      // The eager-validation effect raises during change detection — observed,
-      // never swallowed.
+      // The segment-spec derivation raises while building the time segments the
+      // granularity asks for (#1583) — observed, never swallowed.
       expect(() => renderHost(DayOnlyHost)).toThrow(
         /\[forty-cdk\/date-adapter\] ForDateRangeField requires a time-capable DateAdapter/,
       );

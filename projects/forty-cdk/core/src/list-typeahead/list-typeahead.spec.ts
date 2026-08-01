@@ -3,6 +3,7 @@ import {
   isRangeSelectShortcut,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
+  throwUnsupportedVirtualizedSelectionFollowsFocus,
 } from './list-typeahead';
 
 function key(init: KeyboardEventInit): KeyboardEvent {
@@ -63,6 +64,32 @@ describe('throwUnsupportedVirtualizedRangeSelect', () => {
     expect(() =>
       throwUnsupportedVirtualizedRangeSelect({ primitive: 'select', focusModel: 'DOM-focus' }),
     ).toThrow(/non-virtualized DOM-focus listbox/);
+  });
+});
+
+describe('throwUnsupportedVirtualizedSelectionFollowsFocus', () => {
+  it('throws in dev mode with the primitive prefix and the per-collection hint', () => {
+    expect(() =>
+      throwUnsupportedVirtualizedSelectionFollowsFocus({
+        primitive: 'listbox',
+        focusModel: 'roving-tabindex',
+        collection: 'listbox',
+      }),
+    ).toThrow(/^\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported/);
+    expect(() =>
+      throwUnsupportedVirtualizedSelectionFollowsFocus({
+        primitive: 'select',
+        focusModel: 'DOM-focus',
+        collection: 'listbox',
+      }),
+    ).toThrow(/non-virtualized DOM-focus listbox\.$/);
+    expect(() =>
+      throwUnsupportedVirtualizedSelectionFollowsFocus({
+        primitive: 'tree',
+        focusModel: 'roving-tabindex',
+        collection: 'tree',
+      }),
+    ).toThrow(/^\[forty-cdk\/tree\][\s\S]*non-virtualized roving-tabindex tree\.$/);
   });
 });
 

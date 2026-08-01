@@ -1421,28 +1421,31 @@ describe('ForTree', () => {
     });
   });
 
-  describe('selectionFollowsFocus + virtualization guard', () => {
+  describe('selectionFollowsFocus + virtualization guard (#1583)', () => {
     @Component({
       imports: [ForTree, ForTreeItem, ForTreeItemLabel],
       template: `
         <ul
           forTree
+          data-test-tree
           [(value)]="picked"
           [totalCount]="total()"
           [selectionFollowsFocus]="followsFocus()"
           aria-label="Guard"
         >
-          <li
-            forTreeItem
-            value="a"
-            [itemIndex]="0"
-            [level]="1"
-            [setSize]="1"
-            [posInSet]="1"
-            data-test-id="node-a"
-          >
-            <div forTreeItemLabel>A</div>
-          </li>
+          @for (i of indices; track i) {
+            <li
+              forTreeItem
+              [value]="'n-' + i"
+              [itemIndex]="i"
+              [level]="1"
+              [setSize]="3"
+              [posInSet]="i + 1"
+              [attr.data-test-id]="'n-' + i"
+            >
+              <div forTreeItemLabel>Node {{ i }}</div>
+            </li>
+          }
         </ul>
       `,
     })
@@ -1450,33 +1453,85 @@ describe('ForTree', () => {
       readonly picked = signal<readonly string[]>([]);
       readonly total = signal<number | undefined>(undefined);
       readonly followsFocus = signal(false);
+      readonly indices = [0, 1, 2];
     }
 
-    it('throws in dev mode when selectionFollowsFocus is combined with totalCount', () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    async function setupGuard(captured: unknown[], followsFocus: boolean) {
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
       const fixture = TestBed.createComponent(GuardHost);
-      fixture.componentInstance.total.set(50);
-      fixture.componentInstance.followsFocus.set(true);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/tree\] `selectionFollowsFocus` is not supported together with virtualization/,
+      fixture.componentInstance.total.set(3);
+      fixture.componentInstance.followsFocus.set(followsFocus);
+      fixture.detectChanges();
+      await flush(fixture);
+      const tree = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+        '[data-test-tree]',
+      )!;
+      tree.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      return { fixture, tree };
+    }
+
+    const throwsUnsupported = (captured: readonly unknown[]) =>
+      captured.some(
+        (e) =>
+          e instanceof Error &&
+          /\[forty-cdk\/tree\] `selectionFollowsFocus` is not supported together with virtualization/.test(
+            e.message,
+          ),
       );
+
+    it('reports nothing while the unsupported combination is merely configured', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupGuard(captured, true);
+      expect(captured).toEqual([]);
+      expect(tree.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('throws in dev mode from the navigation the combination degrades', async () => {
+      const captured: unknown[] = [];
+      const { tree } = await setupGuard(captured, true);
+      pressKey(tree, 'ArrowDown');
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('does not move the activedescendant past the guard', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, true);
+      const seeded = tree.getAttribute('aria-activedescendant');
+      pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(seeded);
     });
 
     it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
       const r = renderHost(GuardHost);
       r.instance.followsFocus.set(true);
       await flush(r.fixture);
-      const tree = r.el.querySelector<HTMLElement>('[forTree]')!;
+      const tree = r.el.querySelector<HTMLElement>('[data-test-tree]')!;
       expect(tree.hasAttribute('aria-activedescendant')).toBe(false);
       expect(tree.hasAttribute('tabindex')).toBe(false);
     });
 
-    it('does not throw when virtualized without selectionFollowsFocus', async () => {
-      const r = renderHost(GuardHost);
-      r.instance.total.set(50);
-      await flush(r.fixture);
-      const tree = r.el.querySelector<HTMLElement>('[forTree]')!;
-      expect(tree.getAttribute('tabindex')).toBe('0');
+    it('does not throw when navigating a virtualized tree without selectionFollowsFocus', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, false);
+      pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      expect(captured).toEqual([]);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(
+        (fixture.nativeElement as HTMLElement).querySelector('[data-test-id="n-1"]')!.id,
+      );
     });
   });
 
