@@ -66,7 +66,25 @@ export function provideForIdSalt(salt: string): Provider {
  * created for each Angular application bootstrap (one per SSR request).
  * The IDs are salted with {@link FOR_ID_SALT} (which defaults to the
  * application's `APP_ID`) so the server and the client produce identical
- * strings for the same render order — the property hydration relies on.
+ * strings for the same render order — the property hydration relies on. What
+ * keeps that order the same, and where incremental hydration stops keeping it,
+ * is spelled out below.
+ *
+ * HYDRATION — the counter is monotonic, so that agreement is a property of the
+ * *render order*, not of any single id. Ordinary hydration replays the server's
+ * order exactly, and incremental hydration (`@defer (hydrate …)`) does not:
+ * a dehydrated block's directives construct only when its trigger fires. Two
+ * properties keep the emitted DOM correct anyway — every piece that emits a
+ * generated id adopts the id already on its host (`hostId` / `adoptHostId`),
+ * which during hydration is the server's, and every piece outside all `@defer`
+ * blocks mints before any dehydrated block hydrates on both sides. What neither
+ * covers is an id a root minted for a piece that is **still dehydrated**: no
+ * directive exists there to adopt on its behalf, so the reference keeps the
+ * client counter's value and can resolve to nothing — or to the element the
+ * server gave that value to. The rule that avoids it (keep a primitive's pieces
+ * in one hydration unit) is documented for consumers under "Incremental
+ * hydration" in the `forty-cdk/shared` README, and pinned by
+ * `src/lib/ssr/incremental-hydration.spec.ts` (#1582).
  *
  * IMPORTANT — multiple apps on one page need distinct salts. The default salt
  * is `APP_ID`, and Angular's default `APP_ID` is the literal `'ng'`. Two

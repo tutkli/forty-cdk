@@ -7,6 +7,12 @@
 export { renderHost, type RenderResult } from './render';
 export { flush, flushPositioning, nextMacrotask } from './flush';
 export { pressKey, type PressKeyOptions } from './keyboard';
+export {
+  hydrationHarness,
+  settleHydration,
+  type HydratedRun,
+  type HydrationHarness,
+} from './hydration';
 export { assertA11yLabelledBy } from './a11y';
 export { mountOverlay, type MountOverlayResult } from './overlay';
 export { afterEachOverlayCleanup } from './overlay-cleanup';

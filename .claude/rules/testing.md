@@ -49,6 +49,17 @@ When you add a primitive, add its SSR fixture in the same PR:
 
 If a new fixture throws on the server, or mutates `document.body` in its open state, that is a genuine SSR bug in the primitive — fix the primitive (gate the offending access behind `isPlatformBrowser` / move it into `afterNextRender`), not the test. Same for the sweeps: a fixture that schedules a timer, installs a listener, or resolves a position server-side is a missing gate, never a sweep to relax.
 
+#### Hydration is a second suite, not a fixture in this one
+
+`projects/forty-cdk/src/lib/ssr/incremental-hydration.spec.ts` ([#1582](https://github.com/tutkli/forty-cdk/issues/1582)) covers what a server render alone cannot: whether the markup the server emitted still means the same thing **after the client claims it**. It runs a real round trip — `renderApplication` from `@angular/platform-server`, the emitted HTML installed into the live jsdom document, then `bootstrapApplication` with `provideClientHydration(withIncrementalHydration())` — so `@defer (hydrate …)` blocks are genuinely dehydrated and genuinely hydrate on their trigger. The harness is `src/test-utils/hydration.ts`.
+
+It has to be its own file because the smoke suite's profile is the exact opposite: that one pins `ngServerMode = true` and stubs the browser globals to `undefined` for the whole file, which is precisely what a client hydration must not see. Two conventions keep the new suite honest:
+
+- **`hydrate never` for any assertion about the dehydrated state, `hydrate when` for the one trigger a test fires.** Both are deterministic — a timer or viewport trigger would race the assertion instead of the DOM. The `hydrate when` expression reads a signal on the fixture, which `renderThenHydrate` hands back as `instance`.
+- **`settleHydration(appRef)` is the drain, and it must be awaited** (`forty-cdk/no-floating-flush` covers the name). It is the `ApplicationRef` counterpart of `flush(fixture)` — there is no `ComponentFixture` here — and `hydration.ts` joins `flush.ts` as the second file exempt from `forty-cdk/no-bare-whenstable`.
+
+A primitive does **not** owe this suite a fixture the way it owes the smoke suite one: what the four disclosure cases and the virtualized listbox case pin is the library-wide id-adoption contract, not per-primitive markup. Add a case here when a primitive introduces a _new kind_ of cross-piece reference (a registry-resolved id, an id cached outside the handle it names), because that is what the contract in `.claude/rules/conventions.md` is stated over.
+
 ### Test isolation — non-negotiables
 
 These invariants are the rationale behind the mechanical enforcement (ESLint rules, Vitest setup file). They exist because each one was, at some point, a bug that bled state across specs or a contract leak that made a refactor harder than it needed to be. A new spec must clear them all.

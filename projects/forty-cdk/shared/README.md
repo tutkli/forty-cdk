@@ -67,6 +67,60 @@ Two constraints:
 
 A single app — the common case, including SSR — needs no provider at all.
 
+## Incremental hydration
+
+`@defer (hydrate on interaction | viewport | timer | …)` renders a block on the server and leaves it **dehydrated** on the client: the markup sits in the DOM, but no directive inside it constructs until the trigger fires. That interacts with generated ids, so there is one rule to know before cutting a `@defer` through a primitive.
+
+**Keep a primitive's pieces in the same hydration unit.** Put the whole primitive inside the `@defer` block, or leave all of it outside — never split one across the boundary:
+
+```html
+<!-- Don't: the panel's id is owned by a root that hydrates without it. -->
+<div forDisclosure [(open)]="open">
+  <button forDisclosureTrigger>Details</button>
+  @defer (hydrate on interaction) {
+  <section forDisclosureContent>…</section>
+  }
+</div>
+
+<!-- Do: the whole primitive hydrates as one unit. -->
+@defer (hydrate on interaction) {
+<div forDisclosure [(open)]="open">
+  <button forDisclosureTrigger>Details</button>
+  <section forDisclosureContent>…</section>
+</div>
+}
+```
+
+The ids behind `aria-controls`, `aria-labelledby`, `aria-describedby` and `aria-activedescendant` come from a per-application counter, so the server and the client agree only while they mint in the same order. Two properties normally guarantee that, and both survive incremental hydration:
+
+- **Every piece that emits a generated `id` adopts the id already on its host element** — the same seam that preserves a consumer's static `id` — and during hydration that value is the one the server wrote. A hydrated piece therefore keeps the server's id even when the client counter has drifted.
+- **Every piece outside all `@defer` blocks mints before any dehydrated block hydrates**, on both sides: the server renders a deferred block's content after the view that contains it, and the client hydrates no block until the initial pass is done. Ids at that level are byte-identical.
+
+Neither covers an id a root minted **for a piece that is still dehydrated**. Nothing constructs there, so nothing adopts on that piece's behalf, and the reference keeps whatever the client counter produced. Two symptoms follow, both invisible on screen:
+
+- **A reference that resolves to nothing.** A screen reader announces no name — or no controlled region — for a control that looks correctly wired in devtools.
+- **A reference that resolves to the wrong element.** The client-minted value can equal an id the server minted for a _different_ element, which is still sitting in another dehydrated block. That one does not heal when the blocks hydrate: each element keeps the id the server gave it, so the reference stays pointed at the wrong panel.
+
+### A static `id` is not the workaround
+
+Pinning the ids yourself is the natural first idea and it makes this shape _worse_. The library adopts a consumer-set static `id` when the piece's directive constructs; a dehydrated piece never constructs, so the server render adopts your id and the client render cannot. The referring attribute then points at the generated fallback, and nothing in the document carries it:
+
+```html
+<div forDisclosure [open]="true">
+  <button forDisclosureTrigger>Details</button>
+  @defer (hydrate on interaction) {
+  <!-- Server: aria-controls="panel". Client: a generated id, resolving to nothing. -->
+  <section forDisclosureContent id="panel">…</section>
+  }
+</div>
+```
+
+`provideForIdSalt` does not help either — it changes the salt, not the counter.
+
+Both behaviours are pinned by [`incremental-hydration.spec.ts`](../src/lib/ssr/incremental-hydration.spec.ts), which drives a real `@angular/platform-server` render through a real client hydration rather than simulating one.
+
+`aria-activedescendant` is the one id relationship that needs no rule: it always names a **mounted** option, whose directive has therefore adopted the server's id, and while the options are dehydrated the attribute is simply absent rather than stale.
+
 ## Migration
 
 Before this entry point existed, each of these symbols was re-exported by every primitive barrel whose API referenced it — 37 barrels, `WritingDirection` alone in 29 of them. Those re-exports are gone: import from `forty-cdk/shared` instead. The symbols, their shapes and their runtime identity are unchanged, so the migration is a specifier rewrite.

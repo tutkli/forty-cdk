@@ -393,9 +393,15 @@ const fortyCdkPlugin = {
       },
       create(context) {
         const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
-        // The canonical waiter itself is the only place where `whenStable()`
-        // may be invoked directly.
-        if (filename.endsWith('/projects/forty-cdk/src/test-utils/flush.ts')) {
+        // The canonical waiters are the only places where `whenStable()` may be
+        // invoked directly: `flush.ts` owns the `ComponentFixture` drain, and
+        // `hydration.ts` owns the `ApplicationRef` one (a real SSR → hydration
+        // round trip bootstraps an application, so there is no fixture to flush
+        // — see tutkli/forty-cdk#1582).
+        if (
+          filename.endsWith('/projects/forty-cdk/src/test-utils/flush.ts') ||
+          filename.endsWith('/projects/forty-cdk/src/test-utils/hydration.ts')
+        ) {
           return {};
         }
         return {
@@ -929,10 +935,12 @@ const fortyCdkPlugin = {
     // Rule 6 — `forty-cdk/no-floating-flush`.
     //
     // Forbids a *floating* (un-awaited) call to one of the async render
-    // waiters — `flush(fixture)`, `flushPositioning(fixture)`, or
-    // `nextMacrotask()` — whether the free function imported from
+    // waiters — `flush(fixture)`, `flushPositioning(fixture)`,
+    // `nextMacrotask()`, or `settleHydration(appRef)` (the `ApplicationRef`
+    // drain a real SSR → hydration round trip needs, `test-utils/hydration.ts`)
+    // — whether the free function imported from
     // `test-utils/flush.ts` or the `flush` method destructured from
-    // `renderHost()`. All three are `() => Promise<void>`: a bare `flush();`
+    // `renderHost()`. All are `() => Promise<void>`: a bare `flush();`
     // statement runs only the initial synchronous `detectChanges()` and lets
     // the async drain (`whenStable` → macrotask → second `detectChanges`, plus
     // `afterNextRender` / floating-ui positioning side effects) escape the test
@@ -975,7 +983,7 @@ const fortyCdkPlugin = {
         if (!isSpec && !isOwnFixture) {
           return {};
         }
-        const WAITERS = new Set(['flush', 'flushPositioning', 'nextMacrotask']);
+        const WAITERS = new Set(['flush', 'flushPositioning', 'nextMacrotask', 'settleHydration']);
         function calleeName(callee) {
           if (callee.type === 'Identifier') {
             return callee.name;
