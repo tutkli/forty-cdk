@@ -6,8 +6,11 @@
  * routes the throw to the application `ErrorHandler`, so the stack names the
  * scheduler rather than the binding at fault, the effect re-throws on every
  * re-run, and an app with its own `ErrorHandler` swallows it. The invariant
- * belongs at its point of use. See CLAUDE.md > conventions > "Assertions are
- * dev-gated and live at the point of use".
+ * belongs at its point of use — at every one of them, and with the gain stated
+ * accurately: attributable and one-shot everywhere, catchable by the consumer
+ * only where the point of use is a render-time derivation rather than an event
+ * handler. See CLAUDE.md > conventions > "Assertions are dev-gated and live at
+ * the point of use".
  */
 
 declare function effect(fn: () => void): void;

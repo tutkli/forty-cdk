@@ -3653,14 +3653,14 @@ describe('ForSelectIndicator', () => {
           <button forSelectTrigger>T</button>
           @if (open()) {
             <div forSelectContent data-test-id="content">
-              @for (i of indices; track i) {
+              @for (opt of options; track opt.index) {
                 <button
                   forSelectOption
-                  [value]="'item-' + i"
-                  [posInSet]="i"
-                  [attr.data-test-id]="'opt-' + i"
+                  [value]="'item-' + opt.index"
+                  [posInSet]="opt.index"
+                  [attr.data-test-id]="'opt-' + opt.index"
                 >
-                  Item {{ i }}
+                  {{ opt.label }}
                 </button>
               }
             </div>
@@ -3673,7 +3673,11 @@ describe('ForSelectIndicator', () => {
       readonly total = signal<number | undefined>(undefined);
       readonly range: readonly [number, number] = [0, 3];
       readonly followsFocus = signal(false);
-      readonly indices = [0, 1, 2];
+      readonly options = [
+        { index: 0, label: 'Alpha' },
+        { index: 1, label: 'Bravo' },
+        { index: 2, label: 'Charlie' },
+      ];
     }
 
     async function setupGuard(captured: unknown[], followsFocus: boolean) {
@@ -3731,6 +3735,23 @@ describe('ForSelectIndicator', () => {
       pressKey(content, 'ArrowDown');
       await flush(fixture);
       expect(content.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('throws from a typeahead match too, not only from the arrow branch', async () => {
+      const captured: unknown[] = [];
+      const { content, fixture } = await setupGuard(captured, true);
+      const seeded = content.getAttribute('aria-activedescendant');
+      pressKey(content, 'b');
+      await flush(fixture);
+      expect(throwsUnsupported(captured)).toBe(true);
+      expect(content.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('reports nothing for a typeahead keystroke that matches nothing', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupGuard(captured, true);
+      pressKey(content, 'z');
+      expect(captured).toEqual([]);
     });
 
     it('does not throw when selectionFollowsFocus is set without virtualization', async () => {

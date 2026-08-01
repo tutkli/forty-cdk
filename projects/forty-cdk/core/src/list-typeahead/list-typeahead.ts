@@ -100,9 +100,17 @@ export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
  * the activedescendant path resolves off-window navigation targets
  * asynchronously and so cannot carry selection with focus.
  *
- * Call it from the **virtualized navigation handler** rather than from a
- * config-watching `effect`: the combination degrades a keyboard move, so the
- * move is the point at which a throw carries a stack the consumer can act on.
+ * Call it from **every keyboard move of the virtualized activedescendant**
+ * rather than from a config-watching `effect`: the combination degrades a
+ * keyboard move, so the move is the point at which a throw carries a stack the
+ * consumer can act on. "Every" is load-bearing — arrow navigation is only one
+ * of the moves, and a guard on that branch alone leaves a consumer who
+ * navigates by typeahead (or, in a tree, by entering a child) with the same
+ * silent degradation and no report. Each root routes its moves through one
+ * private `#assertSelectionFollowsFocusSupported()` for that reason. Seeding
+ * the activedescendant on focus / open is not a move and is deliberately
+ * uncovered.
+ *
  * Shared by Listbox, Select and Tree; the primitive name and the two hint
  * fragments are the only per-primitive differences.
  */

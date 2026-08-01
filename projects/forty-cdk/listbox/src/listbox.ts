@@ -233,9 +233,9 @@ export class ForListbox<T = string>
    * Not supported together with virtualization (`totalCount` set): the
    * virtualized `aria-activedescendant` path resolves off-window navigation
    * targets asynchronously, so selection cannot follow focus there without
-   * deriving the committed value from a render side effect. Arrow-navigating a
-   * virtualized listbox with it set throws in dev mode, from the keyboard
-   * handler the combination degrades.
+   * deriving the committed value from a render side effect. Keyboard-navigating
+   * a virtualized listbox with it set throws in dev mode, from the move the
+   * combination degrades.
    */
   readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
     transform: booleanAttribute,
@@ -528,17 +528,28 @@ export class ForListbox<T = string>
     });
     if (action) {
       event.preventDefault();
-      if (this.selectionFollowsFocus()) {
-        throwUnsupportedVirtualizedSelectionFollowsFocus({
-          primitive: 'listbox',
-          focusModel: 'roving-tabindex',
-          collection: 'listbox',
-        });
-      }
+      this.#assertSelectionFollowsFocusSupported();
       this.#requireNavigator().navigate(action);
       return;
     }
     this.#typeaheadVirtualized(event);
+  }
+
+  /**
+   * Guards the `selectionFollowsFocus` + virtualization invariant at every
+   * keyboard move of the virtualized activedescendant — arrow / Home / End /
+   * Page navigation and a typeahead match alike, since both move focus without
+   * carrying selection. Seeding on `focusin` and a click are deliberately not
+   * covered: neither is a navigation the combination degrades.
+   */
+  #assertSelectionFollowsFocusSupported(): void {
+    if (this.#virtualized() && this.selectionFollowsFocus()) {
+      throwUnsupportedVirtualizedSelectionFollowsFocus({
+        primitive: 'listbox',
+        focusModel: 'roving-tabindex',
+        collection: 'listbox',
+      });
+    }
   }
 
   #activateActiveDescendant(): void {
@@ -563,6 +574,7 @@ export class ForListbox<T = string>
       isDisabled: (o) => o.disabled(),
     });
     if (match) {
+      this.#assertSelectionFollowsFocusSupported();
       this.#activeId.set(match.id());
       match.host.scrollIntoView?.({ block: 'nearest' });
     }

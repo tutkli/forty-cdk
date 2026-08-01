@@ -2439,10 +2439,24 @@ const fortyCdkPlugin = {
     //   // before: unattributable, re-throws forever
     //   effect(() => { if (a() && b()) throw new Error('[forty-cdk/x] …'); });
     //
-    //   // after: thrown from the handler the combination degrades
+    //   // after: thrown from the move the combination degrades
     //   protected onHostKeyDown(event: KeyboardEvent): void {
-    //     if (action) { if (a()) throwUnsupportedX({ … }); … }
+    //     if (action) { this.#assertXSupported(); … }
     //   }
+    //
+    // Be precise about what the move buys, because it is not all three faults.
+    // The attributable stack and the end of the perpetual re-throw are
+    // unconditional. Whether the consumer can *catch* the error depends on the
+    // shape of the point of use: a derivation read during the render (a
+    // `computed`, as in `ForTableBody.track` / `DateFieldEngine.specs`) aborts
+    // the render, so `detectChanges()` re-raises it and a consumer `try` sees
+    // it; an **event handler** does not, because Angular wraps host listeners
+    // and routes their throws to the same `ErrorHandler` an effect's go to —
+    // which is exactly why the Select / Listbox / Tree specs capture through a
+    // real `ErrorHandler` rather than asserting `.toThrow()`. Do not read this
+    // rule as "the point of use makes the throw reach the consumer"; read it as
+    // "the point of use makes the throw attributable and one-shot, and reaches
+    // the consumer wherever the point of use is a render-time derivation".
     //
     // Deliberate design notes:
     //   - "Assertion-only" is a body made of nothing but `throw`s, calls to an
@@ -2482,7 +2496,7 @@ const fortyCdkPlugin = {
         schema: [],
         messages: {
           assertionOnly:
-            'This `effect()` is a validation channel: its whole body is `{{ what }}`. A throw inside an `effect` never reaches the code that caused it — Angular routes it to the application `ErrorHandler`, so the stack names the scheduler rather than the binding at fault, the effect re-throws on every re-run, and a consumer with their own `ErrorHandler` sees nothing. Move the invariant to its point of use (the handler / derivation that the invalid combination degrades) and throw from a dev-gated `assert*` helper there. (CLAUDE.md § "Assertions are dev-gated and live at the point of use".)',
+            'This `effect()` is a validation channel: its whole body is `{{ what }}`. A throw inside an `effect` never reaches the code that caused it — Angular routes it to the application `ErrorHandler`, so the stack names the scheduler rather than the binding at fault, the effect re-throws on every re-run, and a consumer with their own `ErrorHandler` sees nothing. Move the invariant to its point of use (the move / derivation that the invalid combination degrades) and throw from a dev-gated `assert*` helper there — from **every** such point, not just the first one you find. A render-time derivation additionally aborts the render, so the consumer can catch it; an event handler still routes to the `ErrorHandler`, and what you gain there is the attributable stack and the end of the re-throw. (CLAUDE.md § "Assertions are dev-gated and live at the point of use".)',
         },
       },
       create(context) {

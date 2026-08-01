@@ -1423,27 +1423,31 @@ describe('ForTree', () => {
 
   describe('selectionFollowsFocus + virtualization guard (#1583)', () => {
     @Component({
-      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle],
       template: `
         <ul
           forTree
           data-test-tree
           [(value)]="picked"
+          [(expanded)]="open"
           [totalCount]="total()"
           [selectionFollowsFocus]="followsFocus()"
           aria-label="Guard"
         >
-          @for (i of indices; track i) {
+          @for (node of nodes; track node.value) {
             <li
               forTreeItem
-              [value]="'n-' + i"
-              [itemIndex]="i"
-              [level]="1"
-              [setSize]="3"
-              [posInSet]="i + 1"
-              [attr.data-test-id]="'n-' + i"
+              [value]="node.value"
+              [itemIndex]="node.itemIndex"
+              [level]="node.level"
+              [setSize]="node.setSize"
+              [posInSet]="node.posInSet"
+              [attr.data-test-id]="node.value"
             >
-              <div forTreeItemLabel>Node {{ i }}</div>
+              @if (node.expandable) {
+                <span forTreeItemToggle>+</span>
+              }
+              <div forTreeItemLabel>{{ node.label }}</div>
             </li>
           }
         </ul>
@@ -1451,9 +1455,38 @@ describe('ForTree', () => {
     })
     class GuardHost {
       readonly picked = signal<readonly string[]>([]);
+      readonly open = signal<readonly string[]>(['n-0']);
       readonly total = signal<number | undefined>(undefined);
       readonly followsFocus = signal(false);
-      readonly indices = [0, 1, 2];
+      readonly nodes = [
+        {
+          value: 'n-0',
+          label: 'Alpha',
+          level: 1,
+          setSize: 2,
+          posInSet: 1,
+          itemIndex: 0,
+          expandable: true,
+        },
+        {
+          value: 'n-1',
+          label: 'Bravo',
+          level: 2,
+          setSize: 1,
+          posInSet: 1,
+          itemIndex: 1,
+          expandable: false,
+        },
+        {
+          value: 'n-2',
+          label: 'Charlie',
+          level: 1,
+          setSize: 2,
+          posInSet: 2,
+          itemIndex: 2,
+          expandable: true,
+        },
+      ];
     }
 
     async function setupGuard(captured: unknown[], followsFocus: boolean) {
@@ -1512,6 +1545,58 @@ describe('ForTree', () => {
       pressKey(tree, 'ArrowDown');
       await flush(fixture);
       expect(tree.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('throws from a typeahead match too, not only from the arrow branch', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, true);
+      const seeded = tree.getAttribute('aria-activedescendant');
+      pressKey(tree, 'b');
+      await flush(fixture);
+      expect(throwsUnsupported(captured)).toBe(true);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('throws when entering a child, the other move a tree can make', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, true);
+      const seeded = tree.getAttribute('aria-activedescendant');
+      pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      expect(throwsUnsupported(captured)).toBe(true);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('throws when leaving to a parent', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, false);
+      pressKey(tree, 'ArrowDown');
+      await flush(fixture);
+      const onChild = (fixture.nativeElement as HTMLElement).querySelector('[data-test-id="n-1"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(onChild.id);
+
+      fixture.componentInstance.followsFocus.set(true);
+      await flush(fixture);
+      pressKey(tree, 'ArrowLeft');
+      await flush(fixture);
+      expect(throwsUnsupported(captured)).toBe(true);
+      expect(tree.getAttribute('aria-activedescendant')).toBe(onChild.id);
+    });
+
+    it('reports nothing for an expand that moves no focus', async () => {
+      const captured: unknown[] = [];
+      const { tree, fixture } = await setupGuard(captured, false);
+      pressKey(tree, 'End');
+      await flush(fixture);
+      const onLast = (fixture.nativeElement as HTMLElement).querySelector('[data-test-id="n-2"]')!;
+      expect(tree.getAttribute('aria-activedescendant')).toBe(onLast.id);
+
+      fixture.componentInstance.followsFocus.set(true);
+      await flush(fixture);
+      pressKey(tree, 'ArrowRight');
+      await flush(fixture);
+      expect(captured).toEqual([]);
+      expect(fixture.componentInstance.open()).toContain('n-2');
     });
 
     it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
