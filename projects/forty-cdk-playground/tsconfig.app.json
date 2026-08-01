@@ -9,7 +9,6 @@
       "forty-cdk/tree": ["../forty-cdk/tree/src/public-api.ts"],
       "forty-cdk/carousel": ["../forty-cdk/carousel/src/public-api.ts"],
       "forty-cdk/stepper": ["../forty-cdk/stepper/src/public-api.ts"],
-      "forty-cdk/signal-forms": ["../forty-cdk/signal-forms/src/public-api.ts"],
       "forty-cdk/calendar": ["../forty-cdk/calendar/src/public-api.ts"],
       "forty-cdk/date-field": ["../forty-cdk/date-field/src/public-api.ts"],
       "forty-cdk/date-range-field": ["../forty-cdk/date-range-field/src/public-api.ts"],

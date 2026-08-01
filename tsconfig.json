@@ -19,10 +19,6 @@
         "./dist/forty-cdk/stepper",
         "./projects/forty-cdk/stepper/src/public-api.ts"
       ],
-      "forty-cdk/signal-forms": [
-        "./dist/forty-cdk/signal-forms",
-        "./projects/forty-cdk/signal-forms/src/public-api.ts"
-      ],
       "forty-cdk/calendar": [
         "./dist/forty-cdk/calendar",
         "./projects/forty-cdk/calendar/src/public-api.ts"

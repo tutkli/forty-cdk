@@ -106,7 +106,7 @@ Static and `@for`-rendered options share the same registry, navigation order (DO
 
 For a legacy `<form action="…">` flow, set `[name]` — the directive mirrors `[(value)]` into N `<input type="hidden">` siblings (one per array entry; zero when empty). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
 
-When the consumer models a single-select field as `T | null` (not `readonly T[]`), bridge it with `forSingleValueField` so the same `[formField]` wiring works unchanged: `[formField]="forSingleValueField(form.country)"`. See [Signal Forms helpers](../signal-forms/README.md).
+A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 ## API
 

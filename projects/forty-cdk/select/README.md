@@ -95,7 +95,7 @@ In the default (non-virtualized) path the full APG range keyboard works while th
 
 For a legacy `<form action="…">` flow, set `[name]` — `[forSelect]` mirrors `[(value)]` into one `<input type="hidden">` per selected value (single produces 0–1 inputs, multi produces N). String values land verbatim in the hidden input; object values default to `JSON.stringify` (override via `[itemToFormValue]`, see below).
 
-A single-select consumer usually models the field as `T | null` rather than `readonly T[]`. Bridge it with `forSingleValueField` so the same `[formField]` wiring works unchanged: `[formField]="forSingleValueField(form.color)"`. See [Signal Forms helpers](../signal-forms/README.md).
+A single-select field is modeled as the same `readonly T[]`, kept at length ≤ 1, and bound with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>` cannot bind here; map to that shape at the edge that needs it. See [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 ## API
 

@@ -23,9 +23,17 @@ Each primitive exposes a read-only, single-mode view derived with `computed()`:
 
 It returns the sole element when the array holds exactly one entry, otherwise `null` (empty, or multiple in multi mode). This is a convenience accessor, not a second source of truth — writes still go through `[(value)]`.
 
-## Bridging a `T | null` form field
+## A single-select form field is modeled as the same array
 
-A single-select consumer usually models their domain field as `T | null`, which cannot bind to a `readonly T[]` control directly. The `forSingleValueField` bridge in [`forty-cdk/signal-forms`](../projects/forty-cdk/signal-forms/README.md) adapts a `FieldTree<T | null>` to the array view the control expects, so the standard `[formField]` wiring works unchanged.
+Bind `[formField]` to a field you model as `readonly T[]` and keep at length ≤ 1 — in single mode exactly as in multi mode. There is no adapter to insert: `[formField]` pushes `disabled`, `readonly`, `required`, `invalid`, `errors` and `touched` into the control and routes `focus()` to the primitive's real focus target (the listbox option, the select trigger, the combobox input) on its own.
+
+```ts
+readonly model = signal({ country: [] as readonly string[] });
+readonly profile = form(this.model);
+// <div forSelect [formField]="profile.country">
+```
+
+A `FieldTree<T | null>` cannot bind to these controls, and it is deliberately not bridged. Angular's template type-checker adds a two-way `[value]` binding between the field and every directive on the host owning a `value` model, so the value type has to match in both directions; a hand-written `FieldTree` view that mapped `null ⇄ []` was only expressible as reflection over `@angular/forms/signals` internals and was retired in [#1579](https://github.com/tutkli/forty-cdk/issues/1579). Map to a `T | null` shape at the edge that needs it — a request payload, a persisted record — rather than in the binding, and read the picked value for display off `selected` / `selectedItem`.
 
 ## What is out of this contract
 
