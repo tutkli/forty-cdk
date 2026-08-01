@@ -23,11 +23,12 @@ Requires a time-capable adapter:
     <span forTimePickerValue placeholder="Pick a time"></span>
   </button>
 
-  <!-- rendered while open() -->
+  <!-- @if (picker.open()) { -->
   <div forTimePickerContent>
     <!-- @for slot of picker.slots() -->
     <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
   </div>
+  <!-- } -->
 </div>
 ```
 

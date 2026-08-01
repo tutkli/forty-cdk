@@ -39,6 +39,27 @@ class ProbeHost {
   readonly open = signal(false);
 }
 
+@Directive({ selector: '[probeLateSurface]' })
+class ProbeLateSurface {
+  readonly panel = input.required<string>();
+
+  constructor() {
+    warnIfMountedWhileClosed({
+      primitive: 'probe',
+      piece: '[probeLateSurface]',
+      condition: () => `open() === '${this.panel()}'`,
+      open: () => false,
+    });
+  }
+}
+
+@Component({
+  imports: [ProbeLateSurface],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div probeLateSurface panel="products">Surface</div>`,
+})
+class ProbeLateHost {}
+
 describe('warnIfMountedWhileClosed', () => {
   let warned: string[];
 
@@ -65,6 +86,15 @@ describe('warnIfMountedWhileClosed', () => {
     expect(warned[0]).toContain('[forty-cdk/probe] [probeSurface] is mounted while the surface');
     expect(warned[0]).toContain('@if (probe.open())');
     expect(warned[0]).toContain('probe README');
+  });
+
+  it('resolves a thunk condition in the render hook, so the fix can quote a bound input', async () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(ProbeLateHost);
+    await flush(fixture);
+
+    expect(warned).toHaveLength(1);
+    expect(warned[0]).toContain("@if (open() === 'products')");
   });
 
   it('stays silent when the piece mounts open', async () => {

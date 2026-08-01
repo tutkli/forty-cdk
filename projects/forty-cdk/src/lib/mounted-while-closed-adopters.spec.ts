@@ -23,7 +23,7 @@ import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty
 import { ForDisclosure, ForDisclosureContent, ForDisclosureTrigger } from 'forty-cdk/disclosure';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 import { ForHoverCard, ForHoverCardContent, ForHoverCardTrigger } from 'forty-cdk/hover-card';
-import { ForMenuContent, ForMenuItem } from 'forty-cdk/menu';
+import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import {
   ForNavigationMenu,
@@ -81,6 +81,34 @@ class ComboboxHost {}
   </div>`,
 })
 class DropdownMenuHost {}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuItem,
+    ForMenuSub,
+    ForMenuSubTrigger,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<div forDropdownMenu [(open)]="open">
+    <button forDropdownMenuTrigger>Options</button>
+    @if (open()) {
+      <div forMenuContent>
+        <div forMenuSub>
+          <button forMenuSubTrigger>More tools</button>
+          <div forMenuSubContent>
+            <button forMenuItem>Developer tools</button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>`,
+})
+class SubmenuHost {
+  readonly open = signal(true);
+}
 
 @Component({
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
@@ -145,32 +173,73 @@ class NavigationMenuHost {}
 interface Adopter {
   readonly primitive: string;
   readonly piece: string;
+  /**
+   * The `@if` expression the report quotes back. Asserted per adopter because
+   * a report that names the piece but not a copy-pasteable fix is half a
+   * diagnostic — and the two adopters whose fix is not a plain `open()` (the
+   * navigation menu's per-value compare, the submenu alias below) are exactly
+   * the ones a shared assertion on the prefix alone would miss.
+   */
+  readonly condition: string;
   readonly host: Type<unknown>;
   readonly providers?: readonly Provider[];
 }
 
 const ADOPTERS: readonly Adopter[] = [
-  { primitive: 'popover', piece: '[forPopoverContent]', host: PopoverHost },
-  { primitive: 'select', piece: '[forSelectContent]', host: SelectHost },
-  { primitive: 'combobox', piece: '[forComboboxContent]', host: ComboboxHost },
-  { primitive: 'menu', piece: '[forMenuContent]', host: DropdownMenuHost },
-  { primitive: 'tooltip', piece: '[forTooltipContent]', host: TooltipHost },
-  { primitive: 'hover-card', piece: '[forHoverCardContent]', host: HoverCardHost },
+  {
+    primitive: 'popover',
+    piece: '[forPopoverContent]',
+    condition: 'popover.open()',
+    host: PopoverHost,
+  },
+  {
+    primitive: 'select',
+    piece: '[forSelectContent]',
+    condition: 'select.open()',
+    host: SelectHost,
+  },
+  {
+    primitive: 'combobox',
+    piece: '[forComboboxContent]',
+    condition: 'combobox.open()',
+    host: ComboboxHost,
+  },
+  {
+    primitive: 'menu',
+    piece: '[forMenuContent]',
+    condition: 'menu.open()',
+    host: DropdownMenuHost,
+  },
+  {
+    primitive: 'tooltip',
+    piece: '[forTooltipContent]',
+    condition: 'tip.open()',
+    host: TooltipHost,
+  },
+  {
+    primitive: 'hover-card',
+    piece: '[forHoverCardContent]',
+    condition: 'card.open()',
+    host: HoverCardHost,
+  },
   {
     primitive: 'date-picker',
     piece: '[forDatePickerContent]',
+    condition: 'picker.open()',
     host: DatePickerHost,
     providers: provideNativeDateAdapter(),
   },
   {
     primitive: 'time-picker',
     piece: '[forTimePickerContent]',
+    condition: 'picker.open()',
     host: TimePickerHost,
     providers: provideNativeDateAdapter(),
   },
   {
     primitive: 'navigation-menu',
     piece: '[forNavigationMenuContent]',
+    condition: "open() === 'products'",
     host: NavigationMenuHost,
   },
 ];
@@ -199,16 +268,27 @@ describe('mounted-while-closed warning adopters (#1591)', () => {
   }
 
   describe('every overlay surface whose mount is its open state', () => {
-    for (const { primitive, piece, host, providers } of ADOPTERS) {
-      it(`${piece} reports a surface mounted while closed`, async () => {
+    for (const { primitive, piece, condition, host, providers } of ADOPTERS) {
+      it(`${piece} reports a surface mounted while closed, quoting its own fix`, async () => {
         const fixture = mount(host, providers);
         await flush(fixture);
 
         const reported = mountWarnings();
         expect(reported).toHaveLength(1);
         expect(reported[0]).toContain(`[forty-cdk/${primitive}] ${piece} ${MOUNT_WARNING}`);
+        expect(reported[0]).toContain(`@if (${condition})`);
       });
     }
+  });
+
+  it('a submenu surface reports under its own alias and its own open state', async () => {
+    const fixture = mount(SubmenuHost);
+    await flush(fixture);
+
+    const reported = mountWarnings();
+    expect(reported).toHaveLength(1);
+    expect(reported[0]).toContain(`[forty-cdk/menu] [forMenuSubContent] ${MOUNT_WARNING}`);
+    expect(reported[0]).toContain('@if (sub.open())');
   });
 
   describe('the shapes that are legitimately mounted while closed', () => {

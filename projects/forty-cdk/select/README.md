@@ -16,7 +16,7 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
     <span forSelectValue></span>
   </button>
 
-  <!-- @if (select.open()) -->
+  <!-- @if (select.open()) { -->
   <div forSelectContent>
     <div forSelectGroup>
       <div forSelectGroupLabel>Fruit</div>
@@ -31,6 +31,7 @@ It implements the select-only combobox pattern (`role="combobox"` on the trigger
 
     <button forSelectOption value="other">Other</button>
   </div>
+  <!-- } -->
 </div>
 ```
 

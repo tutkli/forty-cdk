@@ -11,12 +11,13 @@ Use it for profile snapshots, link previews, definition cards — any complement
 ```html
 <span forHoverCard #card="forHoverCard" side="top">
   <a forHoverCardTrigger href="/users/ada">Ada Lovelace</a>
-  <!-- rendered only when card.open() is true -->
+  <!-- @if (card.open()) { -->
   <div forHoverCardContent animate.enter="card-in" animate.leave="card-out">
     <h3>Ada Lovelace</h3>
     <p>Mathematician — designed the first algorithm.</p>
     <span forHoverCardArrow></span>
   </div>
+  <!-- } -->
 </span>
 ```
 

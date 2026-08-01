@@ -33,10 +33,11 @@ Shared surface and item directives consumed by `[forDropdownMenu]` (button trigg
 
   <div forMenuSub #sub="forMenuSub">
     <button forMenuSubTrigger>More tools</button>
-    <!-- @if (sub.open()) -->
+    <!-- @if (sub.open()) { -->
     <div forMenuSubContent>
       <button forMenuItem>Developer tools</button>
     </div>
+    <!-- } -->
   </div>
 </div>
 ```

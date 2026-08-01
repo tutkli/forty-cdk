@@ -20,11 +20,11 @@ Two anatomies share the same core:
 The editable (default) anatomy — an `<input>` that filters a portaled listbox in place:
 
 ```html
-<div forCombobox [(query)]="query" [(value)]="value">
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
   <input forComboboxInput placeholder="Search…" />
   <button forComboboxClear>×</button>
 
-  <!-- @if (open()) { -->
+  <!-- @if (combobox.open()) { -->
   <div forComboboxContent>
     <div forComboboxOption [value]="item.id" [label]="item.label">
       <span forComboboxIndicator>✓</span>

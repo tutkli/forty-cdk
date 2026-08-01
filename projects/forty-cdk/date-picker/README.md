@@ -18,18 +18,19 @@ All date math and formatting go through a `DateAdapter<D>`, shared with `ForCale
 ## Anatomy
 
 ```html
-<div forDatePicker [(value)]="date" [(open)]="open" name="dob">
+<div forDatePicker #picker="forDatePicker" [(value)]="date" [(open)]="open" name="dob">
   <!-- optional: wrap a decorated field box in [forDatePickerAnchor] to position against it -->
   <button forDatePickerTrigger>
     <span forDatePickerValue placeholder="Pick a date"></span>
   </button>
 
-  <!-- present in the DOM only while open -->
+  <!-- @if (picker.open()) { -->
   <div forDatePickerContent>
     <div forCalendar [(value)]="date">
       <!-- …calendar header + grid… -->
     </div>
   </div>
+  <!-- } -->
 </div>
 ```
 

@@ -106,7 +106,10 @@ export class ForNavigationMenuContent {
     warnIfMountedWhileClosed({
       primitive: 'navigation-menu',
       piece: '[forNavigationMenuContent]',
-      condition: "open() === '<value>'",
+      // A thunk, so the quoted fix carries this panel's own value rather than a
+      // placeholder — `value` is the owning item's `input.required`, readable
+      // only once the helper's render hook runs.
+      condition: () => `open() === '${this.value()}'`,
       open: () => this.menu.isOpen(this.value()),
     });
 

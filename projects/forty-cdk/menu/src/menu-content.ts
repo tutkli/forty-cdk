@@ -57,7 +57,9 @@ import {
 @Directive({
   // The same directive serves submenu content too — the behavior is identical
   // (the injected ctx is the [forMenuSub] in that case). The extra selector is
-  // an alias for template readability.
+  // an alias for template readability, so the one place that has to tell them
+  // apart is the mounted-while-closed report, which names the alias the
+  // consumer wrote and the root that owns its open state.
   selector: '[forMenuContent], [forMenuSubContent]',
   exportAs: 'forMenuContent',
   host: {
@@ -92,10 +94,15 @@ export class ForMenuContent {
     );
 
     if (!this.ctx.allowsUnconditionalMount) {
+      // Report the selector the consumer actually wrote: the two aliases sit on
+      // different roots (`[forMenuSub]` owns its own open state), so a submenu
+      // reported as `[forMenuContent]` with `@if (menu.open())` names a piece
+      // and a condition that are nowhere in their template.
+      const isSub = this.#host.nativeElement.hasAttribute('forMenuSubContent');
       warnIfMountedWhileClosed({
         primitive: 'menu',
-        piece: '[forMenuContent]',
-        condition: 'menu.open()',
+        piece: isSub ? '[forMenuSubContent]' : '[forMenuContent]',
+        condition: isSub ? 'sub.open()' : 'menu.open()',
         open: this.ctx.open,
       });
     }

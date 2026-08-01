@@ -276,6 +276,12 @@ function closedInertPanels(files) {
  * the split between them is a judgement per piece: a roster spelled out in prose
  * would let a new overlay ship silent, or let an always-mounted family adopt a
  * warning that fires on markup its own README recommends.
+ *
+ * The row is *presence of the call*, not unconditional adoption: `menu-content`
+ * gates its own on `ForMenuContext.allowsUnconditionalMount`, so the surface is
+ * silent under `[forMenubar]` and reports under every other menu root. A row
+ * cannot carry that condition and should not try to — the conventions prose the
+ * matrices sit under is where the per-root carve-out is stated.
  */
 function mountedWhileClosedAdopters(files) {
   const members = files

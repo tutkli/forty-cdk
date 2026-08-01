@@ -2,20 +2,28 @@ import { afterNextRender, isDevMode } from '@angular/core';
 
 /**
  * Identifies the piece in the dev-mode mounted-while-closed warning and tells
- * the helper how to read its surface's open state. Every string field is a
- * literal from the adopting primitive, never a runtime value.
+ * the helper how to read its surface's open state.
  */
 export interface MountedWhileClosedConfig {
   /** Entry-point name used in the `[forty-cdk/<primitive>]` prefix (e.g. `'select'`). */
   readonly primitive: string;
-  /** Selector of the mounted piece (e.g. `'[forSelectContent]'`). */
+  /**
+   * Selector of the mounted piece (e.g. `'[forSelectContent]'`). A directive
+   * with more than one selector resolves the one the consumer actually wrote,
+   * so the report names a piece they can find in their template —
+   * `[forMenuContent]` serves `[forMenuSubContent]` too.
+   */
   readonly piece: string;
   /**
    * The `@if` condition the primitive's README uses, quoted back as the fix
    * (e.g. `'select.open()'`). Keep the two in sync — a consumer following the
    * link should read the same expression there.
+   *
+   * A thunk is resolved inside the render hook, which is what lets a condition
+   * interpolate a bound input: `[forNavigationMenuContent]` quotes its owning
+   * item's value, unreadable at construction (see below).
    */
-  readonly condition: string;
+  readonly condition: string | (() => string);
   /** The surface's open state, read once after the first render. */
   readonly open: () => boolean;
 }
@@ -51,7 +59,10 @@ export interface MountedWhileClosedConfig {
  *   constructor may derive its open state from an input the consumer has not
  *   written yet — `[forNavigationMenuContent]` reads its owning item's value,
  *   which is `input.required` — so a construction-time read would throw
- *   NG0950 rather than answer.
+ *   NG0950 rather than answer. `condition` accepts a thunk for the same
+ *   reason: that value is also what the panel's `@if` compares against, so the
+ *   quoted fix is only copy-pasteable if it is built where the input is
+ *   readable.
  * - **It is inert on the server.** `afterNextRender` never fires there, so a
  *   prerender emits no diagnostics.
  *
@@ -71,9 +82,11 @@ export function warnIfMountedWhileClosed(config: MountedWhileClosedConfig): void
     if (config.open()) {
       return;
     }
+    const condition =
+      typeof config.condition === 'function' ? config.condition() : config.condition;
     console.warn(
       `[forty-cdk/${config.primitive}] ${config.piece} is mounted while the surface is closed. ` +
-        `Presence in the DOM is the consumer's job: wrap it with \`@if (${config.condition})\` so it ` +
+        `Presence in the DOM is the consumer's job: wrap it with \`@if (${condition})\` so it ` +
         `unmounts on close. There is no forceMount input — a surface kept mounted while closed never ` +
         `runs \`animate.enter\` / \`animate.leave\`, and the lifecycle it sets up on mount stays live ` +
         `while closed. See the ${config.primitive} README.`,

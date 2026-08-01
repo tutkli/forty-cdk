@@ -11,11 +11,12 @@ A `<nav>` of disclosures, **not** an ARIA `menu`. Triggers are buttons with `ari
   <ul forNavigationMenuList>
     <li forNavigationMenuItem value="products">
       <button forNavigationMenuTrigger>Products</button>
-      <!-- mounted via @if (open() === 'products') -->
+      <!-- @if (open() === 'products') { -->
       <div forNavigationMenuContent>
         <a href="/p/web" forNavigationMenuLink>Web</a>
         <a href="/p/mobile" forNavigationMenuLink active>Mobile</a>
       </div>
+      <!-- } -->
     </li>
 
     <span forNavigationMenuIndicator></span>
