@@ -2212,7 +2212,11 @@ const fortyCdkPlugin = {
     //     directive from carrying the marker requirement off with it. The write
     //     branch reports *without returning*, so a suppressed misread still
     //     leaves the marker check to run; while it returned, silencing the one
-    //     silenced the other, which is the missing ledger entry #1606 names. And
+    //     silenced the other, which is the missing ledger entry #1606 names. The
+    //     visible cost is that an unmarked pull beside a genuine write now names
+    //     both faults at once. That is not two minds about the same effect: the
+    //     advice is sequential — split it, and the read-only half keeping the
+    //     pull is what then takes the marker. And
     //     the write branch anchors on the write **itself** — inside the helper
     //     body when a same-file helper is what brought it in, never on the call
     //     site, which is the node the marker branches use. Fold a helper's

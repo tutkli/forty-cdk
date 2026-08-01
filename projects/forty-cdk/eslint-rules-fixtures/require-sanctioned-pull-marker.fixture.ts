@@ -60,6 +60,18 @@ effect(() => {
   activeId.set(labelCache.windowEntries()[0] ?? null);
 });
 
+// Expected: 2× forty-cdk/require-sanctioned-pull-marker — `pullWithWrite` on the
+// write, `missingMarker` on the pull.
+// The unlicensed twin of the shape above, and the one case that proves the write
+// branch reports without returning against a report rather than a directive: an
+// effect with both faults names both. The two messages are sequential, not
+// contradictory — split the effect, and the read-only half keeping the pull is
+// what then takes the marker. Restoring the early return drops this to 1.
+effect(() => {
+  labelCache.prime();
+  activeId.set(labelCache.windowEntries()[0] ?? null);
+});
+
 // Allowed: the write channel is arity-checked (#1606), so a two-argument
 // `Map.set(k, v)` on a scratch collection is not read as a signal write —
 // `WritableSignal.set(v)` takes one argument, `Map.set` takes two, and the
