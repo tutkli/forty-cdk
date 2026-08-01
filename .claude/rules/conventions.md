@@ -98,7 +98,7 @@ The third thing an `effect()` gets misused for, after the write and the pull, is
 
 Three rules follow, and the second is the one that keeps the ledger from growing:
 
-- **Every assertion whose only audience is the developer is gated on `isDevMode()`** — inside the `assert*` helper itself, so the gate travels with the check and no call site can forget it (`assertColumnName`, `assertColumnTrack`, `throwUnsupportedVirtualizedRangeSelect`, `assertInputBound`). `assertTimeCapable` is the deliberate exception: it _narrows_ a type rather than reporting, so a production build that skipped it would carry on into a `getHours` that does not exist.
+- **Every assertion whose only audience is the developer is gated on `isDevMode()`** — inside the `assert*` helper itself, so the gate travels with the check and no call site can forget it. **The roster is generated**, both halves of it, in the matrices at the end of this file: which helpers gate themselves, and which do not. Do not re-spell either here — the prose version went stale inside the very PR that wrote it ([#1583](https://github.com/tutkli/forty-cdk/issues/1583) added two gated helpers and named neither) and had only ever recorded one of the two ungated ones. The **second row is the one to read**: an ungated assertion helper is legal only when it _narrows a type_, because the assert returns the narrow type and a production build that skipped it would carry on into a member that does not exist — `assertTimeCapable` into a `getHours` the adapter lacks, `assertTableDefRegistry` into a registration protocol the bound object does not implement. Any other name in that row is a policy violation, and `pnpm check:matrices --write` puts it in front of a reviewer rather than letting it accumulate. A directive's own `#assert*` method is a grouped call site delegating to one of these helpers, not a helper, and is deliberately absent from both rows.
 - **An assertion beside real work is not this rule's business.** `[forTableColumnResizer]` asserts its column name inside the effect that publishes the width var — the assert sits at the point of use and the effect exists for the DOM write. Only an effect that does _nothing but_ validate is reported.
 - **The one sanctioned assertion-only effect is `assertInputBound`, and the exemption is a condition rather than a path list**: an `effect()` inside a function whose own name starts with `assert` is a reusable assertion _scheduler_. That check has no point of use to move to — it asserts that a piece's binding was ever written, which is observable only _after_ the update pass, so the effect is the earliest possible read rather than a stand-in for one (see the `unsetInput` section above). Anything with a point of use must use it; naming a helper `assert*` to quiet the lint is the same defect as a marker written to quiet its sibling.
 
@@ -654,9 +654,9 @@ The per-file adopter rosters behind both rows are generated at the end of this f
 library source and `pnpm postbuild` fails when the two disagree. Regenerate with
 `pnpm check:matrices --write`. Every roster the prose above used to spell out by hand lives here,
 because a hand-maintained roster is how [#1401](https://github.com/tutkli/forty-cdk/issues/1401)
-found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`; the
-sanctioned-pull ledger additionally covers `forty-cdk/core`, whose ids carry the concern
-directory (`core/<concern>/<file>`).
+found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`; the two
+internal-convention ledgers (sanctioned pulls, assertion helpers) additionally cover
+`forty-cdk/core`, whose ids carry the concern directory (`core/<concern>/<file>`).
 
 <!-- prettier-ignore -->
 | Matrix | # | Members |
@@ -677,5 +677,7 @@ directory (`core/<concern>/<file>`).
 | `aria-hidden` + `inert` while closed | 6 | `accordion/accordion-content`, `carousel/carousel-slide`, `disclosure/disclosure-content`, `stepper/stepper-completed-content`, `stepper/stepper-content`, `tabs/tabs-content` |
 | `@sanctioned-pull(label-cache-window)` | 2 | `combobox/combobox`, `select/select` |
 | `@sanctioned-pull(navigator-position-map)` | 4 | `combobox/combobox`, `listbox/listbox`, `select/select`, `tree/tree` |
+| assertion helpers, dev-gated inside the helper | 6 | assertColumnDefConfig (`table/column-def`), assertColumnName (`table/table-context`), assertColumnTrack (`table/table-context`), assertInputBound (`core/unset-input/unset-input`), throwUnsupportedVirtualizedRangeSelect (`core/list-typeahead/list-typeahead`), throwUnsupportedVirtualizedSelectionFollowsFocus (`core/list-typeahead/list-typeahead`) |
+| assertion helpers with no dev gate — they narrow a type | 2 | assertTableDefRegistry (`table/def-registry`), assertTimeCapable (`core/date-adapter/date-adapter`) |
 
 <!-- END GENERATED: convention-matrices -->
