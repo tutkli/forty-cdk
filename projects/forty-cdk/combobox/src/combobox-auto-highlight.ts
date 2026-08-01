@@ -228,8 +228,13 @@ export interface AutoHighlightBridgeDeps<T> {
  * re-run those writes on every commit of `value`. The root owns a separate
  * read-only effect for that pull, and `require-sanctioned-pull-marker` now
  * enforces the split. The position-map pull runs through the shared
- * {@link runVirtualizedNavigatorBridge}, but only when the consumer set
- * `totalCount()`, so a plain combobox never builds the navigator.
+ * {@link runVirtualizedNavigatorBridge} and **does** share this effect with
+ * those writes — the one place in the library where a pull and a write live
+ * together. It is the asymmetry that makes it safe: the position map's sources
+ * (`items` / `totalCount` / the data version) are the ones this bridge already
+ * tracks through its own `items()` read, so priming it widens nothing, whereas
+ * the label cache would have added the selection. It runs only when the consumer
+ * set `totalCount()`, so a plain combobox never builds the navigator.
  *
  * 1. Virtualized only: resolves a pending `(scrollToIndex)` navigation — once
  *    the option for the requested posInSet mounts, `tryResolvePending` seeds

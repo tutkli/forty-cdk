@@ -245,11 +245,15 @@ function closedInertPanels(files) {
  * source to run; deleting one fails silently and downstream, so the roster is
  * generated rather than trusted to prose. A file carrying several markers for
  * one store appears once — the store is the unit a reviewer verifies.
+ *
+ * Anchored to a line comment: the marker's own phrase appears in prose too (a
+ * JSDoc block explaining the convention), and counting that as a pull would
+ * inflate the ledger the roster exists to keep honest.
  */
 function sanctionedPulls(files) {
   const byStore = new Map();
   for (const { id, text } of files) {
-    for (const match of text.matchAll(/@sanctioned-pull\(([a-z][a-z0-9-]*)\)/g)) {
+    for (const match of text.matchAll(/^[ \t]*\/\/[ \t]*@sanctioned-pull\(([a-z][a-z0-9-]*)\)/gm)) {
       const store = match[1];
       if (!byStore.has(store)) {
         byStore.set(store, new Set());

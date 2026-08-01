@@ -43,10 +43,12 @@ export interface VirtualizedNavigatorBridgeDeps<N extends VirtualizedNavigatorBr
  * the snapshot, and returns early when nothing is pending. Without the pull the
  * snapshot is a lazy derivation over a transient source, so the positions of
  * every window the user scrolls past never enter the map and off-window
- * navigation stops resolving. The effect that runs this therefore carries a
- * `@sanctioned-pull(navigator-position-map)` marker, and must not also write a
- * signal — the pull drags `items` / `totalCount` / the data version into
- * whatever else shares the effect.
+ * navigation stops resolving. The effect that runs this therefore carries the
+ * sanctioned-pull marker naming `navigator-position-map` (spelled out only at
+ * the marker itself, so the library's grep ledger stays exact), and any write
+ * sharing that effect must already track `items` / `totalCount` / the data
+ * version — the pull drags those in. The lint bans the pair outright rather
+ * than judging that overlap; Combobox's bridge is the one place it holds.
  *
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.

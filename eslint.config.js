@@ -2139,14 +2139,25 @@ const fortyCdkPlugin = {
     // the library's complete pull ledger, mirrored into the generated matrices
     // in `.claude/rules/conventions.md`.
     //
-    // The second half of the rule encodes the invariant #1600 had to discover by
-    // hand: **an effect that pulls must not write.** A pull shares its tracked
-    // set with everything else in its effect, so pulling the label cache — which
-    // reads the selection — inside the auto-highlight bridge made every commit
-    // of `value` re-run that bridge's activedescendant write and
-    // `scrollIntoView`; a hover-then-click could scroll the listbox to the
-    // hovered option. A `.set(` / `.update(` in the same effect body as a pull is
-    // therefore an error outright, not something a marker can license.
+    // The second half of the rule is a conservative proxy for the invariant
+    // #1600 had to discover by hand: **a pull must not widen the tracked set of
+    // a write that shares its effect.** A pull drags the store's own sources into
+    // the effect, so pulling the label cache — which reads the selection —
+    // inside the auto-highlight bridge made every commit of `value` re-run that
+    // bridge's activedescendant write and `scrollIntoView`; a hover-then-click
+    // could scroll the listbox to the hovered option. Judging that overlap is
+    // beyond a syntactic rule, so what it enforces instead is the stricter shape:
+    // a `.set(` / `.update(` in the same effect body as a pull is an error
+    // outright, not something a marker can license. Split the effect; do not
+    // widen the rule.
+    //
+    // The one shipped pull that does share its effect with writes is Combobox's
+    // (`runAutoHighlightBridge` primes the position map, then writes
+    // activedescendant through `tryResolvePending` / `seedFromIndexedSnapshot`),
+    // and it passes only because those writes are cross-file. It is safe for the
+    // reason the proxy cannot check: the position map's sources are the ones that
+    // bridge already tracks through its own `items()` read, so the pull widens
+    // nothing. See the conventions section for the argument a new instance owes.
     //
     // Deliberate design notes:
     //   - A pull is a zero-or-more-argument call to a `PULL_METHODS` member
@@ -2162,8 +2173,9 @@ const fortyCdkPlugin = {
     //     (method name `set` / `update`, no descent into nested function
     //     scopes, same-file helpers followed one level deep), so the residual
     //     gap is the same: a write behind a cross-file collaborator call is
-    //     invisible. `tryResolvePending` is that shape on purpose — its write is
-    //     the pull's own settled result, not foreign state riding along.
+    //     invisible. That gap is what the Combobox bridge above sits in, and
+    //     `tryResolvePending` is built for it on purpose — its write is the
+    //     pull's own settled result, not foreign state riding along.
     //   - A marker licenses only the effect it sits on, and a bare
     //     `@sanctioned-pull` with no store / no rationale is malformed.
     //
