@@ -343,13 +343,17 @@ export class ForColumnDef {
       }
     });
     effect(() => {
+      const context = (): string => {
+        const name = this.name();
+        return isUnset(name) ? '[forColumnDef]' : `forColumnDef="${name}"`;
+      };
       const width = this.width();
       if (width !== null) {
-        assertColumnTrack(width, 'width', `forColumnDef="${this.name()}"`);
+        assertColumnTrack(width, 'width', context());
       }
       const fallbackWidth = this.fallbackWidth();
       if (fallbackWidth !== null) {
-        assertColumnTrack(fallbackWidth, 'fallbackWidth', `forColumnDef="${this.name()}"`);
+        assertColumnTrack(fallbackWidth, 'fallbackWidth', context());
       }
     });
   }

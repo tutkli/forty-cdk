@@ -1,6 +1,7 @@
 import { provideZonelessChangeDetection, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { isUnset, unsetInput } from '../unset-input/unset-input';
 import { RangeSelectionEngine, type RangeSelectionOptionHandle } from './range-selection-engine';
 
 interface FakeHandle extends RangeSelectionOptionHandle<string> {
@@ -15,6 +16,7 @@ interface Harness {
   readonly disabled: WritableSignal<boolean>;
   readonly readonly: WritableSignal<boolean>;
   readonly setValue: ReturnType<typeof vi.fn>;
+  readonly compareWith: ReturnType<typeof vi.fn>;
   readonly parent: HTMLElement;
   handle(value: string, opts?: { disabled?: boolean }): FakeHandle;
 }
@@ -30,12 +32,13 @@ function createHarness(): Harness {
   const disabled = signal(false);
   const readonly = signal(false);
   const setValue = vi.fn((v: readonly string[]) => value.set(v));
+  const compareWith = vi.fn((a: string, b: string) => a === b);
 
   const engine = new RangeSelectionEngine<string, FakeHandle>({
     options,
     value,
     setValue,
-    compareWith: signal((a: string, b: string) => a === b),
+    compareWith: signal(compareWith),
     multiple,
     effectiveDisabled: disabled,
     readonly,
@@ -50,7 +53,7 @@ function createHarness(): Harness {
     return item;
   };
 
-  return { engine, value, multiple, disabled, readonly, setValue, parent, handle };
+  return { engine, value, multiple, disabled, readonly, setValue, compareWith, parent, handle };
 }
 
 describe('RangeSelectionEngine', () => {
@@ -187,6 +190,56 @@ describe('RangeSelectionEngine', () => {
       h.engine.selectAll();
       h.engine.extendByArrow(a.host, 'next');
       expect(h.value()).toEqual([]);
+    });
+  });
+
+  describe('unwritten value bindings', () => {
+    it('leaves an option whose value binding is unwritten out of selectAll', () => {
+      h.handle('a');
+      h.handle(unsetInput<string>());
+      h.handle('c');
+      h.engine.selectAll();
+      expect(h.value()).toEqual(['a', 'c']);
+    });
+
+    it('moves focus onto an unwritten option but does not select it', () => {
+      const first = h.handle('a');
+      const pending = h.handle(unsetInput<string>());
+      h.engine.extendByArrow(first.host, 'next');
+      expect(document.activeElement).toBe(pending.host);
+      expect(h.setValue).not.toHaveBeenCalled();
+    });
+
+    it('leaves an unwritten option out of a Shift+Space range', () => {
+      h.handle('a');
+      h.handle(unsetInput<string>());
+      const last = h.handle('c');
+      h.engine.setAnchor('a');
+      h.engine.selectRangeToFocused(last.host);
+      expect(h.value()).toEqual(['a', 'c']);
+    });
+
+    it('leaves an unwritten option out of a Ctrl+Shift+End range', () => {
+      const first = h.handle('a');
+      h.handle(unsetInput<string>());
+      h.handle('c');
+      h.engine.selectFromCurrentToEdge(first.host, 'last');
+      expect(h.value()).toEqual(['a', 'c']);
+    });
+
+    it('never hands the unwritten sentinel to compareWith', () => {
+      h.handle('a');
+      h.handle(unsetInput<string>());
+      const last = h.handle('c');
+      h.engine.setAnchor('a');
+      h.compareWith.mockClear();
+
+      h.engine.selectRangeToFocused(last.host);
+      h.engine.selectAll();
+      h.engine.selectFromCurrentToEdge(last.host, 'first');
+
+      expect(h.compareWith).toHaveBeenCalled();
+      expect(h.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
     });
   });
 });

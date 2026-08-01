@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { isUnset, unsetInput, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -4555,5 +4555,110 @@ describe('late [forComboboxTrigger] dev-mode warning (#1389 item 10)', () => {
     r.instance.showTrigger.set(true);
     await flush(r.fixture);
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ForCombobox unwritten option value (issue #1601)', () => {
+  afterEachOverlayCleanup();
+
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div
+        forCombobox
+        [(open)]="open"
+        [(value)]="value"
+        [multiple]="true"
+        [compareWith]="compareWith"
+        [itemToStringLabel]="itemToStringLabel"
+      >
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div forComboboxOption value="apple" data-test-id="apple">apple</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class BoundHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>(['apple']);
+    readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    readonly itemToStringLabel = vi.fn((v: string) => v);
+  }
+
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div
+        forCombobox
+        [(open)]="open"
+        [(value)]="value"
+        [multiple]="true"
+        [compareWith]="compareWith"
+        [itemToStringLabel]="itemToStringLabel"
+      >
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div forComboboxOption value="apple" data-test-id="apple">apple</div>
+            <div forComboboxOption data-test-id="pending">pending</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class UnboundOptionHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>(['apple']);
+    readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    readonly itemToStringLabel = vi.fn((v: string) => v);
+  }
+
+  it('fails loudly when an option carries no value binding at all', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(UnboundOptionHost);
+
+    expect(() => fixture.detectChanges()).toThrowError(
+      /\[forty-cdk\/combobox\] \[forComboboxOption\] has no \[value\] binding/,
+    );
+  });
+
+  it('hands the sentinel to neither compareWith nor itemToStringLabel once the dev assert is gone', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(UnboundOptionHost);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    const { compareWith, itemToStringLabel } = fixture.componentInstance;
+    expect(compareWith).toHaveBeenCalled();
+    expect(compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    expect(itemToStringLabel.mock.calls.flat().some(isUnset)).toBe(false);
+  });
+
+  it('ignores a handle whose value is the sentinel instead of committing it', async () => {
+    const r = renderHost(BoundHost);
+    await flush(r.fixture);
+    const combobox = r.fixture.debugElement
+      .query(By.directive(ForCombobox))
+      .injector.get(ForCombobox);
+    r.instance.compareWith.mockClear();
+    r.instance.itemToStringLabel.mockClear();
+
+    combobox.activate({
+      host: document.createElement('div'),
+      id: signal('pending'),
+      value: computed(() => unsetInput<string>()),
+      label: signal('pending'),
+      disabled: signal(false),
+      posInSet: signal<number | null>(null),
+    });
+    await flush(r.fixture);
+
+    expect(r.instance.value()).toEqual(['apple']);
+    expect(r.instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    expect(r.instance.itemToStringLabel.mock.calls.flat().some(isUnset)).toBe(false);
   });
 });

@@ -138,6 +138,31 @@ Narrowing, not deleting, is the fallback: a member a consumer genuinely needs st
 
 The **tab-stop read-backs** are the other members the rule's "read-backs that exist only to serve them" clause reaches, and they stayed public deliberately: `ForRadioGroupContext.hasSelectedRadio` / `isFirstEnabledRadio`, `ForTabsContext.hasSelectedTrigger` / `isFirstEnabledTrigger`, and `ForCarouselContext.hasCurrentIndicator` / `isFirstEnabledIndicator` all answer "does this item own the group's single tab stop?", which is exactly the question a consumer's hand-written item piece has to answer to participate in the roving group at all. They are typed with `HTMLElement` / `boolean` only, so none of them surfaces a name the consumer cannot import. `[forAccordionItem]`'s `adoptTriggerId` / `adoptContentId` stay for the same reason plus one more: they are not registry membership but the library-wide static-id adoption seam (the `adopt…Id(el)` shape documented above), with a signature shared by every primitive whose id lives on the context — hiding accordion's alone would fork the seam without removing anything from the surface.
 
+### A registered piece seeds `unsetInput`, never `input.required` ([#1601](https://github.com/tutkli/forty-cdk/issues/1601))
+
+A piece registers with its parent from its **constructor**, during the content view's _creation_ pass, and has its bindings written in that view's _update_ pass. Any parent lookup that runs in between — a label-cache fold primed by a bridge effect, a virtualized navigator's position snapshot, an ARIA pairing resolved synchronously so the pre-hydration DOM carries it, a def registry read from a preset component's view whose two passes straddle the body's own render — reads an input the consumer has not supplied yet. `input.required` answers that read by **throwing** NG0950, which is why ten lookups across five entry points were once wrapped in a `try` / `catch` keyed on an Angular error code, with the exception used as control flow.
+
+**So a mandatory input the parent may read early is declared optional and seeded with the sentinel instead:**
+
+```ts
+readonly value = input(unsetInput<T>());
+
+constructor() {
+  assertInputBound(this.value, 'listbox', '[forListboxOption]', 'value');
+  // …register
+}
+```
+
+The parent's lookup becomes an identity comparison (`isUnset(value)`), the piece is skipped for that run, and — because Angular's input signal registers itself as a producer _before_ it resolves a value — the read is still tracked, so the binding's write marks the reader dirty and folds the piece in on the run that follows. All three symbols live in `core/src/unset-input/`.
+
+Five rules govern it, and each one is a bug that was live at some point:
+
+- **Never `undefined` as the sentinel.** `ForListbox<T>` / `ForSelect<T>` / `ForCombobox<T>` are generic over an unconstrained `T`, so `undefined` is a legitimate consumer value and an `=== undefined` guard would silently drop such an option from the snapshot — an out-of-band sentinel swapped for an in-band one. A module-private `unique symbol` cannot collide with anything.
+- **`unsetInput<T>()` casts to the input's own `T`, so the compiler will not help you.** That cast is the one place the library lies about an input's type, and it is deliberately confined to that function: nothing downstream widens to `T | undefined`, and in exchange every read site must guard by hand. Grepping `unsetInput` is the complete ledger of pieces on this shape; do not keep a roster here, it rots.
+- **Guard before the value leaves the read site, and mind the read order.** A convenience destructure (`const { id, value, label } = …`) leaks the sentinel: `ForComboboxOption`'s label resolution calls the consumer's `itemToStringLabel` for a non-string value, so every fold reads `value` first and `continue`s before it touches `label`. The same care applies to the three options' `selected` computeds (they call `compareWith`) and to any lookup handing the value to a consumer callback.
+- **Write channels guard too, not just folds.** Activation commits the value to `[(value)]` and hands it to `compareWith` / `toggleInArray`, so `activate` / `commitOnTab` on each root and every `RangeSelectionEngine` action bail on the sentinel. Otherwise a piece that is never bound corrupts the value model instead of failing.
+- **`assertInputBound` is the replacement for the lost compile-time error, and it only covers dev.** Seeding the sentinel makes the input optional to the template type checker _and_ to Angular's `hostDirectives` required-input validation, so both channels that used to reject a missing binding now accept it. The assert runs in an `isDevMode()`-gated `effect` — a production build creates no reactive node per piece — and, because it is a view effect running inside `refreshView`, a throw **aborts the render** rather than degrading to a reported error. That makes dev loud; production has no net, which is why the guards above are load-bearing rather than defensive.
+
 ### The core tier — blessed vs internal ([#1398](https://github.com/tutkli/forty-cdk/issues/1398))
 
 `forty-cdk/core` is a ~220-symbol barrel where consumer-grade contracts (`WritingDirection`, `VetoableEvent`, `DateAdapter`) sit next to the engines the library refactors freely (`MenuOverlay`, `OverlayManagerCore`, `DateFieldEngine`, `RangeFieldComposer`, the drag-session suite). A barrel can only promise semver all-or-nothing, so the promise is made **per symbol** instead, and the boundary is mechanical:

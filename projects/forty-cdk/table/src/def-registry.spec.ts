@@ -535,5 +535,37 @@ describe('ForTableBody def registration seam (#1372)', () => {
       bound.set(predicate);
       expect(target.rowDefs()).toEqual([def]);
     });
+
+    @Component({
+      selector: 'width-only-def',
+      template: '',
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      providers: [...provideForTableDefRegistry()],
+      hostDirectives: [{ directive: ForColumnDef, inputs: ['width'] }],
+    })
+    class WidthOnlyDef {}
+
+    @Component({
+      imports: [WidthOnlyDef],
+      template: `<width-only-def width="120px"></width-only-def>`,
+    })
+    class WidthOnlyDefHost {}
+
+    it('validates a width track without stringifying an unwritten name', () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(WidthOnlyDefHost);
+
+      expect(() => fixture.detectChanges()).not.toThrow();
+    });
+
+    it('names the unbound def in dev mode instead of failing on the name', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(WidthOnlyDefHost);
+
+      expect(() => fixture.detectChanges()).toThrowError(
+        /\[forty-cdk\/table\] \[forColumnDef\] has no \[forColumnDef\] binding/,
+      );
+    });
   });
 });

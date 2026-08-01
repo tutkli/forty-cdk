@@ -410,7 +410,7 @@ export class ForListbox<T = string>
   }
 
   activate(v: T): void {
-    if (this.effectiveDisabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }
     if (this.multiple()) {

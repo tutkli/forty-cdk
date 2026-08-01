@@ -25,6 +25,7 @@ import {
   type PointerSuppression,
   defaultItemToFormValue,
   isInArray,
+  isUnset,
   singleSelected,
   toggleInArray,
   injectTextDirection,
@@ -675,6 +676,9 @@ export class ForCombobox<T = string>
       return;
     }
     const v = handle.value();
+    if (isUnset(v)) {
+      return;
+    }
     if (this.multiple()) {
       // Toggle in/out of the array. Stay open so the user can keep picking.
       this.value.set(toggleInArray(this.value(), v, this.compareWith()));

@@ -2,6 +2,7 @@ import { signal, type Signal } from '@angular/core';
 
 import { nextEnabledHandle } from '../collection/enabled-handle-navigation';
 import { isInArray, toggleInArray } from '../selection/selection';
+import { isUnset } from '../unset-input/unset-input';
 
 /**
  * Minimal option-handle shape the range-selection algorithm needs: a host
@@ -51,6 +52,10 @@ export interface RangeSelectionEngineDeps<T, H extends RangeSelectionOptionHandl
  * verbatim. The option source and value model differ between the two roots, so
  * they are threaded in through {@link RangeSelectionEngineDeps}.
  *
+ * Every action skips an option seeded with the `unsetInput` sentinel: its
+ * `[value]` binding has not been written yet, so there is no value to select and
+ * handing the sentinel to `compareWith` would leak it to the consumer.
+ *
  * Internal — lives in `forty-cdk/core`, consumed only by the primitives that
  * compose it; carries no semver guarantees.
  *
@@ -99,7 +104,9 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
    * APG "Shift+ArrowDown / Shift+ArrowUp": move focus to the next / previous
    * enabled option and toggle its selected state, without moving the range
    * anchor. Non-wrapping. No-op in single mode or when disabled. Focus still
-   * moves under `readonly`; only the selection mutation is blocked.
+   * moves under `readonly`; only the selection mutation is blocked. Focus also
+   * still moves onto an option whose `[value]` binding has not landed yet; only
+   * its selection is skipped, since the value is not knowable.
    */
   extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
     if (this.#deps.effectiveDisabled() || !this.#deps.multiple()) {
@@ -114,9 +121,11 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     if (this.#deps.readonly()) {
       return;
     }
-    this.#deps.setValue(
-      toggleInArray(this.#deps.value(), target.value(), this.#deps.compareWith()),
-    );
+    const targetValue = target.value();
+    if (isUnset(targetValue)) {
+      return;
+    }
+    this.#deps.setValue(toggleInArray(this.#deps.value(), targetValue, this.#deps.compareWith()));
   }
 
   /**
@@ -138,7 +147,12 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
     const anchorValue = this.#anchorValue();
     const equals = this.#deps.compareWith();
     const anchorIndex =
-      anchorValue === null ? -1 : options.findIndex((o) => equals(o.value(), anchorValue));
+      anchorValue === null
+        ? -1
+        : options.findIndex((o) => {
+            const v = o.value();
+            return !isUnset(v) && equals(v, anchorValue);
+          });
     const start = anchorIndex < 0 ? currentIndex : anchorIndex;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
@@ -149,7 +163,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
         continue;
       }
       const v = opt.value();
-      if (!next.some((x) => equals(x, v))) {
+      if (!isUnset(v) && !next.some((x) => equals(x, v))) {
         next.push(v);
       }
     }
@@ -158,8 +172,8 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
 
   /**
    * APG "Ctrl/Cmd+A": select every enabled option, or clear the selection when
-   * they are all already selected (toggle). No-op in single mode, disabled, or
-   * readonly.
+   * they are all already selected (toggle). An option whose `[value]` binding
+   * has not landed yet is left out. No-op in single mode, disabled, or readonly.
    */
   selectAll(): void {
     if (this.#deps.effectiveDisabled() || this.#deps.readonly() || !this.#deps.multiple()) {
@@ -170,7 +184,11 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
       if (opt.disabled()) {
         continue;
       }
-      enabled.push(opt.value());
+      const v = opt.value();
+      if (isUnset(v)) {
+        continue;
+      }
+      enabled.push(v);
     }
     if (enabled.length === 0) {
       return;
@@ -209,7 +227,7 @@ export class RangeSelectionEngine<T, H extends RangeSelectionOptionHandle<T>> {
         continue;
       }
       const v = opt.value();
-      if (!next.some((x) => equals(x, v))) {
+      if (!isUnset(v) && !next.some((x) => equals(x, v))) {
         next.push(v);
       }
       if (firstEnabled === null) {
