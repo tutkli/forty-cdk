@@ -24,6 +24,7 @@ import {
   type ListNavigationAction,
   resolveListNavigation,
   resolveListTypeahead,
+  runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
   type WritingDirection,
   nextEnabledHandle,
@@ -360,14 +361,14 @@ export class ForListbox<T = string>
       serialize: (item) => this.itemToFormValue()(item),
       disabled: this.effectiveDisabled,
     });
+    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
+    // so a window nothing reads during is lost to the lazy fold.
     effect(() => {
-      this.#options.items();
-      if (!this.#virtualized()) {
-        return;
-      }
-      const navigator = this.#requireNavigator();
-      navigator.prime();
-      navigator.tryResolvePending();
+      runVirtualizedNavigatorBridge({
+        items: this.#options.items,
+        virtualized: this.#virtualized,
+        requireNavigator: () => this.#requireNavigator(),
+      });
     });
 
     if (isDevMode()) {

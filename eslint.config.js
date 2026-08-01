@@ -2113,6 +2113,248 @@ const fortyCdkPlugin = {
       },
     },
 
+    // `forty-cdk/require-sanctioned-pull-marker`.
+    //
+    // The third rule of the `effect()` family, and the one that governs the
+    // *other* thing an effect is used for when it should not be: a **pull** —
+    // reading a lazy store purely so that its computation runs while a transient
+    // source is observable. `#1580` AC3 asked for a library with no such effect
+    // at all, which a fold over a transient source cannot give: the mounted
+    // option / item window only exists while the consumer's `@if` keeps it
+    // rendered, and a lazy derivation only ever observes its source at the
+    // moment something reads it, so a window that mounts and unmounts with no
+    // reader is lost with no trace (#1518 is the same mechanism seen from the
+    // `previous` slot). The pull is therefore load-bearing, and the resolution
+    // is the one this repo already uses for the other unavoidable-effect family:
+    // one canonical marker, mechanically enforced.
+    //
+    //   // @sanctioned-pull(navigator-position-map): the rendered window is
+    //   // transient, so a window nothing reads during is lost to the lazy fold.
+    //   effect(() => { runVirtualizedNavigatorBridge({ … }); });
+    //
+    // The store name in parentheses is what a reviewer verifies — deleting the
+    // pull breaks nothing any type or signature can see, and the failure is
+    // silent and downstream (a label falls back to its serialized form value,
+    // off-window navigation stops resolving) — and `grep @sanctioned-pull` is
+    // the library's complete pull ledger, mirrored into the generated matrices
+    // in `.claude/rules/conventions.md`.
+    //
+    // The second half of the rule is a conservative proxy for the invariant
+    // #1600 had to discover by hand: **a pull must not widen the tracked set of
+    // a write that shares its effect.** A pull drags the store's own sources into
+    // the effect, so pulling the label cache — which reads the selection —
+    // inside the auto-highlight bridge made every commit of `value` re-run that
+    // bridge's activedescendant write and `scrollIntoView`; a hover-then-click
+    // could scroll the listbox to the hovered option. Judging that overlap is
+    // beyond a syntactic rule, so what it enforces instead is the stricter shape:
+    // a `.set(` / `.update(` in the same effect body as a pull is an error
+    // outright, not something a marker can license. Split the effect; do not
+    // widen the rule.
+    //
+    // The one shipped pull that does share its effect with writes is Combobox's
+    // (`runAutoHighlightBridge` primes the position map, then writes
+    // activedescendant through `tryResolvePending` / `seedFromIndexedSnapshot`),
+    // and it passes only because those writes are cross-file. It is safe for the
+    // reason the proxy cannot check: the position map's sources are the ones that
+    // bridge already tracks through its own `items()` read, so the pull widens
+    // nothing. See the conventions section for the argument a new instance owes.
+    //
+    // Deliberate design notes:
+    //   - A pull is a zero-or-more-argument call to a `PULL_METHODS` member
+    //     (`prime`) or to one of the `PULL_RUNNERS` free functions. The runners
+    //     exist because #1602 collapsed the four identical position-map effects
+    //     into `runVirtualizedNavigatorBridge` in `forty-cdk/core`: the pull is
+    //     then one file away, and cross-file resolution is precisely the gap the
+    //     sibling rules leave open. Naming the runners keeps those four sites
+    //     mechanically enforced instead of convention-only, and the list is
+    //     short by construction — a helper earns a place on it only by existing
+    //     to run a pull.
+    //   - Write detection matches `require-sanctioned-effect-marker` exactly
+    //     (method name `set` / `update`, no descent into nested function
+    //     scopes, same-file helpers followed one level deep), so the residual
+    //     gap is the same: a write behind a cross-file collaborator call is
+    //     invisible. That gap is what the Combobox bridge above sits in, and
+    //     `tryResolvePending` is built for it on purpose — its write is the
+    //     pull's own settled result, not foreign state riding along.
+    //   - A marker licenses only the effect it sits on, and a bare
+    //     `@sanctioned-pull` with no store / no rationale is malformed.
+    //
+    // See: CLAUDE.md > conventions > "The sanctioned-pull marker".
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#1602, #1580, #1600
+    'require-sanctioned-pull-marker': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Every pull of a lazy store inside an `effect()` must carry the canonical `@sanctioned-pull(<store>): <why>` marker, and must not share the effect with a signal write (CLAUDE.md § "The sanctioned-pull marker").',
+        },
+        schema: [],
+        messages: {
+          missingMarker:
+            'Unmarked pull inside `effect()`: `{{ store }}`. An effect that exists to force a lazy store to run is load-bearing in a way nothing else can see — deleting it fails silently and downstream. License it with a marker comment directly above the `effect(` call: `// @sanctioned-pull(<store>): <why the source is transient>`, and keep the effect read-only. (CLAUDE.md § "The sanctioned-pull marker".)',
+          missingMarkerViaHelper:
+            'Unmarked pull inside `effect()`: `{{ helper }}` pulls `{{ store }}`. An effect that exists to force a lazy store to run is load-bearing in a way nothing else can see — deleting it fails silently and downstream. License it with a marker comment directly above the `effect(` call: `// @sanctioned-pull(<store>): <why the source is transient>`, and keep the effect read-only. (CLAUDE.md § "The sanctioned-pull marker".)',
+          malformedMarker:
+            'Malformed `@sanctioned-pull` marker. The shape is `// @sanctioned-pull(<store>): <why the source is transient>` — a kebab-case store name in parentheses (e.g. `label-cache-window`, `navigator-position-map`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (CLAUDE.md § "The sanctioned-pull marker".)',
+          pullWithWrite:
+            'A pull (`{{ store }}`) shares this `effect()` with the signal write `{{ signal }}.{{ method }}(…)`. The pull drags its own tracked set into the effect, so the write re-runs on every change the *store* depends on — which is how a hover-then-click came to scroll a listbox (#1600). Split the pull into its own read-only effect; no marker licenses this. (CLAUDE.md § "The sanctioned-pull marker".)',
+        },
+      },
+      create(context) {
+        const sourceCode = context.sourceCode || context.getSourceCode();
+        // Members whose call *is* the pull, and the free functions that exist to
+        // run one on the caller's behalf. See the design notes above for why the
+        // second list is named rather than resolved.
+        const PULL_METHODS = new Set(['prime']);
+        const PULL_RUNNERS = new Set(['runAutoHighlightBridge', 'runVirtualizedNavigatorBridge']);
+        const MARKER = /@sanctioned-pull/;
+        const WELL_FORMED = /@sanctioned-pull\([a-z][a-z0-9-]*\)\s*:\s*\S/;
+        const MARKER_WINDOW = 6;
+
+        /**
+         * Collects the pulls and signal writes of one function body, plus the
+         * same-file helper calls worth following. `followHelpers` is false for a
+         * helper's own body, which is what bounds resolution to one level.
+         */
+        function collect(bodyNode, followHelpers) {
+          const pulls = [];
+          const writes = [];
+          const helperCalls = [];
+          const stack = [bodyNode];
+          while (stack.length) {
+            const node = stack.pop();
+            if (!node || typeof node !== 'object') continue;
+            if (Array.isArray(node)) {
+              for (const item of node) stack.push(item);
+              continue;
+            }
+            if (!node.type) continue;
+            if (
+              node.type === 'FunctionExpression' ||
+              node.type === 'ArrowFunctionExpression' ||
+              node.type === 'FunctionDeclaration'
+            ) {
+              continue;
+            }
+            if (node.type === 'CallExpression') {
+              const callee = node.callee;
+              const member =
+                callee.type === 'MemberExpression' &&
+                !callee.computed &&
+                callee.property.type === 'Identifier'
+                  ? callee.property.name
+                  : null;
+              if (member !== null && PULL_METHODS.has(member)) {
+                pulls.push({ node, store: `${sourceCode.getText(callee.object)}.${member}()` });
+              } else if (callee.type === 'Identifier' && PULL_RUNNERS.has(callee.name)) {
+                pulls.push({ node, store: `${callee.name}()` });
+              } else if (member === 'set' || member === 'update') {
+                writes.push({
+                  node,
+                  signal: sourceCode.getText(callee.object),
+                  method: member,
+                });
+              } else if (followHelpers) {
+                const helper = resolveSameFileHelper(node, sourceCode);
+                if (helper) helperCalls.push({ ...helper, node });
+              }
+            }
+            for (const key in node) {
+              if (key === 'parent' || key === 'loc' || key === 'range') continue;
+              stack.push(node[key]);
+            }
+          }
+          return { pulls, writes, helperCalls };
+        }
+
+        /**
+         * The effect's own pulls / writes, merged with those of every same-file
+         * helper it calls, each anchored on the call site so the report lands on
+         * the effect a marker would license.
+         */
+        function analyzeCallback(fnNode) {
+          const own = collect(fnNode.body, true);
+          const pulls = own.pulls.map((pull) => ({ ...pull, helper: null }));
+          const writes = [...own.writes];
+          const analyzed = new Set();
+          for (const call of own.helperCalls) {
+            if (analyzed.has(call.body)) continue;
+            analyzed.add(call.body);
+            const inner = collect(call.body, false);
+            for (const pull of inner.pulls) {
+              pulls.push({ store: pull.store, node: call.node, helper: call.name });
+            }
+            for (const write of inner.writes) {
+              writes.push({ ...write, node: call.node });
+            }
+          }
+          return { pulls, writes };
+        }
+
+        /**
+         * The `@sanctioned-pull` comment covering `node`, or `null`. Matched by
+         * proximity rather than AST attachment, mirroring the sanctioned-effect
+         * marker so both read the same way at a call site.
+         */
+        function markerFor(node) {
+          const line = node.loc.start.line;
+          for (const comment of sourceCode.getAllComments()) {
+            if (!MARKER.test(comment.value)) continue;
+            const end = comment.loc.end.line;
+            if (end <= line && line - end <= MARKER_WINDOW) {
+              return comment;
+            }
+          }
+          return null;
+        }
+
+        return {
+          CallExpression(node) {
+            if (node.callee.type !== 'Identifier' || node.callee.name !== 'effect') return;
+            const callback = node.arguments[0];
+            if (
+              !callback ||
+              (callback.type !== 'ArrowFunctionExpression' &&
+                callback.type !== 'FunctionExpression')
+            ) {
+              return;
+            }
+            const { pulls, writes } = analyzeCallback(callback);
+            if (pulls.length === 0) return;
+
+            if (writes.length > 0) {
+              const write = writes[0];
+              context.report({
+                node: write.node,
+                messageId: 'pullWithWrite',
+                data: { store: pulls[0].store, signal: write.signal, method: write.method },
+              });
+              return;
+            }
+
+            const marker = markerFor(node);
+            if (marker && WELL_FORMED.test(marker.value)) return;
+            if (marker) {
+              context.report({ node: marker, messageId: 'malformedMarker' });
+              return;
+            }
+            const reported = new Set();
+            for (const pull of pulls) {
+              if (reported.has(pull.store)) continue;
+              reported.add(pull.store);
+              context.report({
+                node: pull.node,
+                messageId: pull.helper ? 'missingMarkerViaHelper' : 'missingMarker',
+                data: { store: pull.store, helper: pull.helper },
+              });
+            }
+          },
+        };
+      },
+    },
+
     // Mechanizes the #695 footgun: any control wiring `injectHiddenInput` is a
     // form-value control that can sit inside a disabled `[forFieldset]`, so the
     // hidden `<input>` it spawns must reflect `effectiveDisabled` — the signal
@@ -2674,6 +2916,10 @@ module.exports = tseslint.config(
       // marker naming the invariant that makes it safe (tutkli/forty-cdk#1401
       // item 3; CLAUDE.md § "The sanctioned-effect marker"). ----
       'forty-cdk/require-sanctioned-effect-marker': 'error',
+      // ---- …and the pull half: an effect that exists to force a lazy store to
+      // run names the store it primes and stays read-only
+      // (tutkli/forty-cdk#1602; CLAUDE.md § "The sanctioned-pull marker"). ----
+      'forty-cdk/require-sanctioned-pull-marker': 'error',
 
       // ---- injectHiddenInput must pass `effectiveDisabled`, not raw
       // `disabled`, when the control folds in fieldset-disabled
@@ -2772,6 +3018,9 @@ module.exports = tseslint.config(
       // test utility that drives an `effect()` writing a signal is exercising
       // the reactive graph, not shipping a carve-out consumers inherit.
       'forty-cdk/require-sanctioned-effect-marker': 'off',
+      // Same for the pull ledger: a spec that primes a store from an `effect()`
+      // is asserting the pull's behaviour, not shipping one.
+      'forty-cdk/require-sanctioned-pull-marker': 'off',
     },
   },
 
@@ -2791,6 +3040,7 @@ module.exports = tseslint.config(
       '@angular-eslint/template/elements-content': 'off',
       // Dev/CI-only app: nothing here ships, so it owes no carve-out ledger.
       'forty-cdk/require-sanctioned-effect-marker': 'off',
+      'forty-cdk/require-sanctioned-pull-marker': 'off',
     },
   },
 
@@ -2801,6 +3051,7 @@ module.exports = tseslint.config(
       '@angular-eslint/directive-selector': 'off',
       '@angular-eslint/template/elements-content': 'off',
       'forty-cdk/require-sanctioned-effect-marker': 'off',
+      'forty-cdk/require-sanctioned-pull-marker': 'off',
     },
   },
 
@@ -2862,6 +3113,10 @@ module.exports = tseslint.config(
       // fixture" invariant this directory documents would break if a second
       // rule fired on it. Re-enabled below for this rule's own fixture.
       'forty-cdk/require-sanctioned-effect-marker': 'off',
+      // Same treatment for the pull marker: its own fixture pulls a store from
+      // an unmarked `effect()` on purpose, and the sanctioned-effect fixture
+      // would otherwise be a second rule's target too.
+      'forty-cdk/require-sanctioned-pull-marker': 'off',
     },
   },
 
@@ -2869,6 +3124,13 @@ module.exports = tseslint.config(
     files: ['projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-effect-marker.fixture.ts'],
     rules: {
       'forty-cdk/require-sanctioned-effect-marker': 'error',
+    },
+  },
+
+  {
+    files: ['projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts'],
+    rules: {
+      'forty-cdk/require-sanctioned-pull-marker': 'error',
     },
   },
 

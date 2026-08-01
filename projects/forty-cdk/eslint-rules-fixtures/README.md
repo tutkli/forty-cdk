@@ -6,8 +6,9 @@ Each `*.fixture.ts` file in this directory intentionally violates exactly one
 plus `no-effect-state-propagation`, `require-defaults-sibling`,
 `no-unused-defaults-sibling`, `require-host-directive-sibling`,
 `hidden-input-effective-disabled`, `aria-attr-allowed-on-role`,
-`no-doubled-disabled-reflection`, and
-`require-sanctioned-effect-marker`). They
+`no-doubled-disabled-reflection`,
+`require-sanctioned-effect-marker`, and
+`require-sanctioned-pull-marker`). They
 are documentation-as-code: by linting them with the rule _enabled_ you can
 verify it fires.
 
@@ -39,6 +40,7 @@ signal the rules are wired up. The expected violation breakdown is:
 - `require-overlay-cleanup.fixture.ts` — 1 error (imports a portaling overlay content directive with no `afterEachOverlayCleanup()` call in the file; the rule is file-level, so the compliant shape can't be shown in the same fixture).
 - `no-effect-state-propagation.fixture.ts` — 4 errors (the `.set` and `.update` read-and-write forms, plus the two one-level helper-call shapes added in #1575: a module-level function and a `this.#sync()` method, each assembling the cycle entirely inside the helper. The `untracked()` helper, the write-only helper — the `core/element-size` carve-out shape — and a method on an injected collaborator are all allowed, the last one being the documented cross-file residual gap).
 - `require-sanctioned-effect-marker.fixture.ts` — 5 errors (the two unmarked signal writes, a bare `@sanctioned-effect` reported as malformed, plus the two one-level helper-call shapes added in #1575 — a module-level function and a `this.#sync()` method; the well-formed marker, the DOM-only effect, the nested-callback write, and the same helper call carrying a marker are all allowed). This rule is turned **off** for the rest of this directory and re-enabled for this file alone: `no-effect-state-propagation.fixture.ts` writes signals inside `effect()` on purpose, so leaving it on would break the one-rule-per-fixture invariant above.
+- `require-sanctioned-pull-marker.fixture.ts` — 6 errors (an unmarked bare pull, an unmarked pull behind a named cross-file runner, a bare `@sanctioned-pull` reported as malformed, a pull sharing its effect with a signal write — the #1600 shape, which no marker licenses — plus the two one-level helper-call shapes, a module-level function and a `this.#pull()` method; the two well-formed markers, the write-only effect, the DOM-only effect, the nested-callback pull, and the marked helper call are all allowed). Enabled for this file alone, for the same one-rule-per-fixture reason as its sanctioned-effect sibling.
 - `require-defaults-sibling.fixture.ts` — 1 error (no `require-defaults-sibling.fixture-defaults.ts` sibling exists next to it).
 - `no-unused-defaults-sibling.fixture.ts` — 1 error (exports a defaults token no non-defaults, non-spec sibling injects; the reverse direction of `require-defaults-sibling`). A co-located support file [`public-api.ts`](public-api.ts) re-exports that token by name, modelling the entry barrel every real primitive has — the fixture must still fire despite it, proving the rule treats a barrel re-export as _not_ a consumer (re-exporting ≠ injecting).
 - `require-host-directive-sibling.fixture.ts` — 3 errors (direct `FormValueControl`, the `Omit<FormValueControl<…>, …>` slider shape, and `FormCheckboxControl`; the abstract base is allowed).

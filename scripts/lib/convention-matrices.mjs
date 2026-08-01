@@ -239,6 +239,37 @@ function closedInertPanels(files) {
   return [{ key: '`aria-hidden` + `inert` while closed', count: members.length, members }];
 }
 
+/**
+ * The `@sanctioned-pull` ledger, grouped by the store each marked effect primes.
+ * A pull is an `effect()` that exists to force a lazy fold over a transient
+ * source to run; deleting one fails silently and downstream, so the roster is
+ * generated rather than trusted to prose. A file carrying several markers for
+ * one store appears once — the store is the unit a reviewer verifies.
+ *
+ * Anchored to a line comment: the marker's own phrase appears in prose too (a
+ * JSDoc block explaining the convention), and counting that as a pull would
+ * inflate the ledger the roster exists to keep honest.
+ */
+function sanctionedPulls(files) {
+  const byStore = new Map();
+  for (const { id, text } of files) {
+    for (const match of text.matchAll(/^[ \t]*\/\/[ \t]*@sanctioned-pull\(([a-z][a-z0-9-]*)\)/gm)) {
+      const store = match[1];
+      if (!byStore.has(store)) {
+        byStore.set(store, new Set());
+      }
+      byStore.get(store).add(id);
+    }
+  }
+  return [...byStore.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([store, members]) => ({
+      key: `\`@sanctioned-pull(${store})\``,
+      count: members.size,
+      members: [...members].sort(),
+    }));
+}
+
 const EXTRACTORS = [
   writingDirection,
   ariaLabelDefaults,
@@ -246,6 +277,7 @@ const EXTRACTORS = [
   autoFocusHooks,
   dataStateVocabularies,
   closedInertPanels,
+  sanctionedPulls,
 ];
 
 /** Every matrix row, derived from library source. */

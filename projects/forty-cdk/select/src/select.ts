@@ -28,6 +28,7 @@ import {
   type LabelCacheEntry,
   resolveListNavigation,
   resolveListTypeahead,
+  runVirtualizedNavigatorBridge,
   throwUnsupportedVirtualizedRangeSelect,
   type WritingDirection,
   ListboxOverlayController,
@@ -616,28 +617,23 @@ export class ForSelect<T = string>
       disabled: this.effectiveDisabled,
     });
 
-    // Pull the label cache while the listbox is open so its window store
-    // observes the mounted options before they unmount. `selectedLabels` is
-    // pulled by whatever renders the selected label, but the window store the
-    // closed-state typeahead reads has no reader during the open cycle. A read,
-    // not a write: forcing a lazy derivation to run is a side effect, not state
-    // propagation inside an `effect`. It keeps its own effect on purpose — the
-    // pull tracks `value`, so sharing one with the navigator effect below would
-    // re-run that effect's activedescendant writes on every selection commit.
+    // @sanctioned-pull(label-cache-window): the option window exists only while
+    // the listbox is open, and the closed-state typeahead reading it has no
+    // reader during that cycle.
     effect(() => {
       if (this.open()) {
         this.#labelCache.prime();
       }
     });
 
+    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
+    // so a window nothing reads during is lost to the lazy fold.
     effect(() => {
-      this.#controller.options();
-      if (!this.#virtualized()) {
-        return;
-      }
-      const navigator = this.#requireNavigator();
-      navigator.prime();
-      navigator.tryResolvePending();
+      runVirtualizedNavigatorBridge({
+        items: this.#controller.options,
+        virtualized: this.#virtualized,
+        requireNavigator: () => this.#requireNavigator(),
+      });
     });
 
     if (isDevMode()) {

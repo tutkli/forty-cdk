@@ -537,18 +537,21 @@ export class ForCombobox<T = string>
       disabled: this.effectiveDisabled,
     });
 
-    // Pull the label cache from its own read-only effect. Sharing the bridge's
-    // effect below would put the selection in that effect's tracked set — the
-    // cache reads `value` — and the bridge writes activedescendant and scrolls,
-    // so every commit of `value` would re-run those writes.
+    // @sanctioned-pull(label-cache-window): the option window exists only while
+    // the listbox is open, and the closed-state fallback reading it has no
+    // reader during that cycle.
     effect(() => {
       this.#labelCache.prime();
     });
 
     // The activedescendant *decision* is a pure derivation in `#activeId`; this
     // effect runs only its imperative tail (virtualized pending-nav resolution +
-    // passive seed, non-virtualized scroll-into-view). Full rationale lives with
-    // `runAutoHighlightBridge` in `combobox-auto-highlight.ts`.
+    // passive seed, non-virtualized scroll-into-view). It is the library's one
+    // pull sharing an effect with writes: the position map's sources are the ones
+    // the bridge already tracks, so priming it widens nothing. Full rationale
+    // lives with `runAutoHighlightBridge` in `combobox-auto-highlight.ts`.
+    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
+    // so a window nothing reads during is lost to the lazy fold.
     effect(() => {
       runAutoHighlightBridge<T>({
         requireNavigator: () => this.#requireNavigator(),
