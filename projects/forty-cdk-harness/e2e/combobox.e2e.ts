@@ -238,6 +238,39 @@ test.describe('Combobox', () => {
     });
   });
 
+  // #1581 — the anatomy is a `computed` over the registered trigger rather than
+  // a construction-time snapshot, so a trigger that registers after
+  // `[forComboboxContent]` still owns the focus hand-off. `?lateTrigger=1`
+  // declares the trigger's embedded view after the content's; `?deferTrigger=1`
+  // pushes it into a `@defer` block so it arrives with the surface already open.
+  test.describe('late [forComboboxTrigger] (picker anatomy)', () => {
+    test('focus still moves into the inner input when the content mounts first', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { lateTrigger: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+      await expect(el(page, 'trigger')).toBeVisible();
+
+      await expectFocused(el(page, 'combo-input'));
+    });
+
+    test('a trigger deferred past the open surface still receives return focus', async ({
+      page,
+    }) => {
+      await gotoFixture(page, 'combobox', { lateTrigger: '1', deferTrigger: '1', open: '1' });
+      await expect(el(page, 'content')).toBeVisible();
+      // The @defer block resolves on its timer, after the surface mounted.
+      const trigger = el(page, 'trigger');
+      await expect(trigger).toBeVisible();
+
+      await el(page, 'opt-banana').click();
+
+      await expect(el(page, 'content')).toHaveCount(0);
+      await expectFocused(trigger);
+      await expect(trigger).toHaveText('banana');
+    });
+  });
+
   // #1325 — a pinned, non-selecting `[forComboboxAction]` reachable by Tab
   // (model A). Focus moves are real DOM moves inside the body-portaled panel,
   // which jsdom mis-models, so the ring / dismissal contract lives here.

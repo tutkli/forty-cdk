@@ -1,4 +1,4 @@
-import { Directive, effect, ElementRef, inject, isDevMode } from '@angular/core';
+import { computed, Directive, ElementRef, inject } from '@angular/core';
 
 import {
   registerHandle,
@@ -47,6 +47,18 @@ import { injectComboboxContext } from './combobox-context';
  *   the input directive; the shell's fallback channel covers presses that land on
  *   the surface or list instead.
  *
+ * Which anatomy is in force is a `computed` over the registered trigger,
+ * consulted at each decision point rather than snapshotted at construction
+ * ([#1581](https://github.com/tutkli/forty-cdk/issues/1581)) — so a trigger
+ * declared after this content, projected through `<ng-content>`, or gated by a
+ * `@defer` / data-driven `@if` upgrades the surface instead of leaving it with
+ * no focus management at all. Initial focus stays a mount-time event (the shell
+ * decides it in `afterNextRender`, by which point a trigger constructed in the
+ * same pass has registered), so a trigger arriving in a later pass while the
+ * surface is already open does not retroactively pull focus out of wherever the
+ * user left it — it takes over the return focus, `(autoFocusOnClose)` and the
+ * Escape fallback from there on.
+ *
  * The lifecycle (positioner + dismissible layer, plus the picker anatomy's
  * focus bundles) is owned by the shared `injectOverlayShell` helper.
  */
@@ -86,30 +98,13 @@ export class ForComboboxContent {
       (el) => ctx.unregisterContent(el),
     );
 
-    // The picker anatomy opts back into the shell's focus bundles. `trigger()`
-    // is read once on construction: the trigger renders outside the `@if (open())`
-    // that gates this content, so it has already registered by the time the
-    // surface mounts. Without a trigger (editable anatomy) the bundles are
-    // omitted entirely and focus stays in the input — byte-for-byte unchanged.
-    // That assumption is dev-verified: a trigger that registers late (after this
-    // content was constructed) trips a dev-mode `console.warn`.
-    const hasTrigger = ctx.trigger() !== null;
-
-    if (isDevMode() && !hasTrigger) {
-      let warned = false;
-      effect(() => {
-        if (!warned && ctx.trigger() !== null) {
-          warned = true;
-          console.warn(
-            '[forty-cdk/combobox] [forComboboxTrigger] registered after [forComboboxContent] was constructed, ' +
-              'so the picker focus behavior was not wired for this content: focus will not move into ' +
-              '[forComboboxInput] on open, will not return to the trigger on close, and (autoFocusOnOpen) / ' +
-              '(autoFocusOnClose) will not fire. Declare [forComboboxTrigger] before (and outside) the ' +
-              '@if (open()) block that gates [forComboboxContent] so it registers first.',
-          );
-        }
-      });
-    }
+    // Both focus bundles are always handed to the shell; the anatomy gates them
+    // from inside their own callbacks, which the shell runs after construction
+    // (`initialFocus` in `afterNextRender`, `returnFocus` on destroy). So the
+    // gate reads a fresh `trigger()` at each decision point instead of a
+    // construction-time snapshot, and the editable anatomy still performs no
+    // imperative move and fires neither hook.
+    const hasTrigger = computed(() => ctx.trigger() !== null);
 
     const config: OverlayShellConfig = {
       positioner: {
@@ -133,7 +128,7 @@ export class ForComboboxContent {
         requestClose: (reason) => ctx.requestClose(reason),
         emitEscapeKeyDown: (event) => {
           ctx.emitEscapeKeyDown(event);
-          if (!hasTrigger && !ctx.open()) {
+          if (!hasTrigger() && !ctx.open()) {
             ctx.input()?.focus();
           }
         },
@@ -155,38 +150,36 @@ export class ForComboboxContent {
         },
       },
       // Picker anatomy only: move focus into the input on open, return it to the
-      // trigger on close. Editable anatomy keeps focus in the input throughout,
-      // so both bundles stay absent (no imperative move, no hooks).
-      ...(hasTrigger
-        ? {
-            initialFocus: {
-              move: () => {
-                const input = ctx.input();
-                if (input) {
-                  input.focus();
-                  return true;
-                }
-                return false;
-              },
-              veto: () => ctx.emitAutoFocusOnOpen(),
-            },
-            returnFocus: {
-              enabled: ctx.returnFocus,
-              target: () => ctx.trigger(),
-              veto: () => ctx.emitAutoFocusOnClose(),
-              // On Tab and on outside dismissal (pointer-down-outside /
-              // focus-outside) focus already landed where the user tabbed or
-              // clicked; re-focusing the trigger would steal it back (native
-              // <select> parity, mirroring popover #1310).
-              skip: () => {
-                const reason = ctx.lastCloseReason();
-                return (
-                  reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside'
-                );
-              },
-            },
+      // trigger on close. The editable anatomy keeps focus in the input
+      // throughout, so its gate vetoes / skips before either hook is emitted.
+      initialFocus: {
+        move: () => {
+          const input = ctx.input();
+          if (input) {
+            input.focus();
+            return true;
           }
-        : {}),
+          return false;
+        },
+        veto: () => !hasTrigger() || ctx.emitAutoFocusOnOpen(),
+      },
+      returnFocus: {
+        enabled: ctx.returnFocus,
+        target: () => ctx.trigger(),
+        veto: () => ctx.emitAutoFocusOnClose(),
+        // The anatomy gate comes first: the editable anatomy never reaches
+        // `veto`, so it never emits. Then, on Tab and on outside dismissal
+        // (pointer-down-outside / focus-outside) focus already landed where the
+        // user tabbed or clicked; re-focusing the trigger would steal it back
+        // (native <select> parity, mirroring popover #1310).
+        skip: () => {
+          if (!hasTrigger()) {
+            return true;
+          }
+          const reason = ctx.lastCloseReason();
+          return reason === 'tab' || reason === 'pointerDownOutside' || reason === 'focusOutside';
+        },
+      },
     };
 
     injectOverlayShell(config);

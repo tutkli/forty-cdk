@@ -4438,7 +4438,11 @@ describe('ForCombobox virtualization', () => {
   });
 });
 
-describe('late [forComboboxTrigger] dev-mode warning (#1389 item 10)', () => {
+describe('picker anatomy is reactive, not a construction-time snapshot (#1581)', () => {
+  // Both pieces are gated so a test can decide, per pass, which of them exists.
+  // The content is declared FIRST, so flipping both flags together mounts it
+  // before the trigger registers — the ordering the picker anatomy used to be
+  // frozen against.
   @Component({
     imports: [
       ForCombobox,
@@ -4448,53 +4452,49 @@ describe('late [forComboboxTrigger] dev-mode warning (#1389 item 10)', () => {
       ForComboboxTrigger,
     ],
     template: `
-      <div forCombobox [(open)]="open">
+      <div
+        forCombobox
+        [(open)]="open"
+        (autoFocusOnOpen)="onAutoFocusOnOpen()"
+        (autoFocusOnClose)="onAutoFocusOnClose()"
+      >
         @if (open()) {
           <div forComboboxContent>
-            <input forComboboxInput />
+            <input forComboboxInput data-test-id="picker-input" />
             <div forComboboxList></div>
           </div>
         }
         @if (showTrigger()) {
-          <button forComboboxTrigger></button>
+          <button forComboboxTrigger data-test-id="trigger"></button>
         }
       </div>
     `,
   })
-  class LateTriggerHost {
-    readonly open = signal(true);
-    readonly showTrigger = signal(false);
-  }
-
-  @Component({
-    imports: [
-      ForCombobox,
-      ForComboboxInput,
-      ForComboboxContent,
-      ForComboboxList,
-      ForComboboxTrigger,
-    ],
-    template: `
-      <div forCombobox [(open)]="open">
-        <button forComboboxTrigger></button>
-        @if (open()) {
-          <div forComboboxContent>
-            <input forComboboxInput />
-            <div forComboboxList></div>
-          </div>
-        }
-      </div>
-    `,
-  })
-  class EarlyTriggerHost {
+  class PickerOrderHost {
     readonly open = signal(false);
+    readonly showTrigger = signal(false);
+    autoFocusOnOpenCount = 0;
+    autoFocusOnCloseCount = 0;
+
+    onAutoFocusOnOpen(): void {
+      this.autoFocusOnOpenCount++;
+    }
+
+    onAutoFocusOnClose(): void {
+      this.autoFocusOnCloseCount++;
+    }
   }
 
   @Component({
     imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
     template: `
-      <div forCombobox [(open)]="open">
-        <input forComboboxInput />
+      <div
+        forCombobox
+        [(open)]="open"
+        (autoFocusOnOpen)="onAutoFocusOnOpen()"
+        (autoFocusOnClose)="onAutoFocusOnClose()"
+      >
+        <input forComboboxInput data-test-id="editable-input" />
         @if (open()) {
           <div forComboboxContent>
             <div forComboboxOption value="apple" label="Apple">Apple</div>
@@ -4505,56 +4505,112 @@ describe('late [forComboboxTrigger] dev-mode warning (#1389 item 10)', () => {
   })
   class EditableHost {
     readonly open = signal(true);
+    autoFocusOnOpenCount = 0;
+    autoFocusOnCloseCount = 0;
+
+    onAutoFocusOnOpen(): void {
+      this.autoFocusOnOpenCount++;
+    }
+
+    onAutoFocusOnClose(): void {
+      this.autoFocusOnCloseCount++;
+    }
+  }
+
+  function pickerInput(): HTMLInputElement {
+    return document.querySelector<HTMLInputElement>('[data-test-id="picker-input"]')!;
+  }
+  function pickerTrigger(): HTMLButtonElement {
+    return document.querySelector<HTMLButtonElement>('[data-test-id="trigger"]')!;
   }
 
   afterEachOverlayCleanup();
 
-  it('warns when a trigger registers after the content mounted', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const r = renderHost(LateTriggerHost);
-    await flush(r.fixture);
-    expect(warn).not.toHaveBeenCalled();
-
-    r.instance.showTrigger.set(true);
-    await flush(r.fixture);
-
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn.mock.calls[0]?.[0]).toContain('[forty-cdk/combobox]');
-  });
-
-  it('does not warn when the trigger is present before the content mounts', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const r = renderHost(EarlyTriggerHost);
+  it('wires the whole focus bundle when the trigger registers after the content', async () => {
+    const r = renderHost(PickerOrderHost);
     await flush(r.fixture);
 
     r.instance.open.set(true);
+    r.instance.showTrigger.set(true);
     await flush(r.fixture);
-    expect(warn).not.toHaveBeenCalled();
+
+    expect(document.activeElement).toBe(pickerInput());
+    expect(r.instance.autoFocusOnOpenCount).toBe(1);
 
     r.instance.open.set(false);
     await flush(r.fixture);
+
+    expect(document.activeElement).toBe(pickerTrigger());
+    expect(r.instance.autoFocusOnCloseCount).toBe(1);
+  });
+
+  it('does not report the registration order as an authoring error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(PickerOrderHost);
     r.instance.open.set(true);
     await flush(r.fixture);
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  it('does not warn in the editable anatomy', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const r = renderHost(EditableHost);
-    await flush(r.fixture);
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  it('zoneless: warns on a late trigger without zone.js', async () => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const r = renderHost(LateTriggerHost);
-    await flush(r.fixture);
-    expect(warn).not.toHaveBeenCalled();
 
     r.instance.showTrigger.set(true);
     await flush(r.fixture);
-    expect(warn).toHaveBeenCalledTimes(1);
+
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('upgrades an already-open surface when the trigger arrives late', async () => {
+    const r = renderHost(PickerOrderHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    const input = pickerInput();
+    input.focus();
+    expect(r.instance.autoFocusOnOpenCount).toBe(0);
+    const inputFocus = vi.spyOn(input, 'focus');
+
+    r.instance.showTrigger.set(true);
+    await flush(r.fixture);
+
+    // The mount-time focus move is spent: a trigger arriving in a later pass
+    // must not re-run it on a surface the user is already interacting with.
+    expect(r.instance.open()).toBe(true);
+    expect(inputFocus).not.toHaveBeenCalled();
+    expect(r.instance.autoFocusOnOpenCount).toBe(0);
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+
+    expect(document.activeElement).toBe(pickerTrigger());
+    expect(r.instance.autoFocusOnCloseCount).toBe(1);
+  });
+
+  it('moves focus into the input on the next open after a late trigger', async () => {
+    const r = renderHost(PickerOrderHost);
+    r.instance.open.set(true);
+    await flush(r.fixture);
+    r.instance.showTrigger.set(true);
+    await flush(r.fixture);
+    r.instance.open.set(false);
+    await flush(r.fixture);
+
+    r.instance.open.set(true);
+    await flush(r.fixture);
+
+    expect(document.activeElement).toBe(pickerInput());
+    expect(r.instance.autoFocusOnOpenCount).toBe(1);
+  });
+
+  it('leaves the editable anatomy with no imperative move and no hooks', async () => {
+    const r = renderHost(EditableHost);
+    await flush(r.fixture);
+
+    const input = r.query<HTMLInputElement>('[data-test-id="editable-input"]')!;
+    input.focus();
+
+    r.instance.open.set(false);
+    await flush(r.fixture);
+
+    expect(document.activeElement).toBe(input);
+    expect(r.instance.autoFocusOnOpenCount).toBe(0);
+    expect(r.instance.autoFocusOnCloseCount).toBe(0);
   });
 });
 
