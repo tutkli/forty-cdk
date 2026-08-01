@@ -268,6 +268,29 @@ function closedInertPanels(files) {
 }
 
 /**
+ * Surfaces adopting the dev-mode mounted-while-closed warning — the pieces whose
+ * mount *is* their open state, so a consumer's missing `@if` is a wiring bug
+ * rather than a shape the library supports.
+ *
+ * Generated because it is the exact complement of `closedInertPanels` above and
+ * the split between them is a judgement per piece: a roster spelled out in prose
+ * would let a new overlay ship silent, or let an always-mounted family adopt a
+ * warning that fires on markup its own README recommends.
+ *
+ * The row is *presence of the call*, not unconditional adoption: `menu-content`
+ * gates its own on `ForMenuContext.allowsUnconditionalMount`, so the surface is
+ * silent under `[forMenubar]` and reports under every other menu root. A row
+ * cannot carry that condition and should not try to — the conventions prose the
+ * matrices sit under is where the per-root carve-out is stated.
+ */
+function mountedWhileClosedAdopters(files) {
+  const members = files
+    .filter(({ text }) => text.includes('warnIfMountedWhileClosed('))
+    .map(({ id }) => id);
+  return [{ key: 'dev-mode mounted-while-closed warning', count: members.length, members }];
+}
+
+/**
  * The `@sanctioned-pull` ledger, grouped by the store each marked effect primes.
  * A pull is an `effect()` that exists to force a lazy fold over a transient
  * source to run; deleting one fails silently and downstream, so the roster is
@@ -388,6 +411,7 @@ const EXTRACTORS = [
   { extract: autoFocusHooks },
   { extract: dataStateVocabularies },
   { extract: closedInertPanels },
+  { extract: mountedWhileClosedAdopters },
   { extract: sanctionedPulls, includeCore: true },
   { extract: assertionHelpers, includeCore: true },
 ];

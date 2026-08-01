@@ -165,6 +165,22 @@ export interface ForMenuContext {
    */
   readonly triggerLabelsMenu?: Signal<boolean>;
 
+  /**
+   * Whether this root supports a `[forMenuContent]` that outlives its open
+   * state — a surface the consumer leaves mounted while no menu is open.
+   * `false`, the default when a root omits the member, is the structural
+   * mount-equals-open contract every other menu root has, so the surface opts
+   * into the dev-mode mounted-while-closed warning
+   * ([#1591](https://github.com/tutkli/forty-cdk/issues/1591)).
+   *
+   * Only `[forMenubar]` reports `true`: its README documents an unconditionally
+   * mounted surface as one of three supported mount shapes, because the bar
+   * multiplexes one context over every trigger. A plain `boolean` rather than a
+   * `Signal` — unlike {@link ForMenuContext.triggerLabelsMenu} this is a
+   * property of the root's composition, not of whichever opener is active.
+   */
+  readonly allowsUnconditionalMount?: boolean;
+
   /** Anchor passed to floating-ui — `HTMLElement` (Dropdown) or `VirtualElement` (Context). */
   readonly anchor: Signal<ReferenceElement | null>;
 

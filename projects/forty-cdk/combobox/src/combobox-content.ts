@@ -6,6 +6,7 @@ import {
   hostLabelledBy,
   injectOverlayShell,
   type OverlayShellConfig,
+  warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
@@ -99,6 +100,13 @@ export class ForComboboxContent {
       (el) => ctx.registerContent(el),
       (el) => ctx.unregisterContent(el),
     );
+
+    warnIfMountedWhileClosed({
+      primitive: 'combobox',
+      piece: '[forComboboxContent]',
+      condition: 'combobox.open()',
+      open: ctx.open,
+    });
 
     // Both focus bundles are always handed to the shell; the anatomy gates them
     // from inside their own callbacks, which the shell runs after construction

@@ -46,7 +46,7 @@ A Popover wraps both the trigger button and the floating content in a single roo
 </div>
 ```
 
-At this point the popover has no open/close wiring. The content is always mounted and the button does nothing. The next step fixes that.
+At this point the popover has no open/close wiring. The content is always mounted and the button does nothing. The next step fixes that — and until it does, `[forPopoverContent]` warns in your console that it is mounted while the popover is closed, because for these surfaces mount **is** the open state and there is no input that turns that into a supported shape.
 
 ---
 
@@ -73,6 +73,8 @@ At this point the popover has no open/close wiring. The content is always mounte
 That is the complete working overlay. Click the button to open, click it again (or press Escape, or click outside) to close. No component class changes needed.
 
 **Why `@if` and not `[hidden]`?** forty-cdk never toggles `[hidden]` on content pieces. Presence in the DOM is the consumer's job — `@if` is both the lifecycle gate and what makes Angular's `animate.enter` / `animate.leave` transitions fire. The directive's job is reactive state, ARIA, focus management, and keyboard behavior.
+
+**Forget the `@if` and the surface says so.** Without it nothing visibly breaks — the popover still opens, closes, and reflects `data-state="closed"` on a permanently visible element — so it reads as a styling bug. Every overlay surface therefore logs a dev-mode warning naming itself and the fix when it is still mounted after its first render while closed. It fires once per instance, never in a production build, and never during an exit animation (a surface `animate.leave` is still holding is legitimately mounted and closed). The always-mounted families are exempt because keeping _them_ mounted is supported: Tabs / Stepper / Carousel panels, Accordion and Disclosure content, and a `[forMenuContent]` under `[forMenubar]`.
 
 ### The `[(open)]` alternative
 

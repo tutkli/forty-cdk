@@ -32,7 +32,9 @@ import { ForTooltipTrigger } from './tooltip-trigger';
       [hoverableContent]="false"
     >
       <button type="button" forTooltipTrigger>Hover me</button>
-      <div forTooltipContent>Helpful hint</div>
+      @if (isOpen() || leaving()) {
+        <div forTooltipContent>Helpful hint</div>
+      }
     </div>
   `,
 })
@@ -41,6 +43,14 @@ class TooltipHost {
   readonly isDisabled = signal(false);
   readonly openDelay = signal(700);
   readonly closeDelay = signal(300);
+  /**
+   * Stands in for an `animate.leave` still holding the surface: set it beside
+   * the initial `isOpen` write and the content survives the close, which is the
+   * only window in which `data-state="closed"` is observable on a content
+   * piece at all. Off by default, so every other case mounts and unmounts with
+   * the open state like the README's anatomy does.
+   */
+  readonly leaving = signal(false);
 }
 
 @Component({
@@ -48,10 +58,12 @@ class TooltipHost {
   template: `
     <div forTooltip [(open)]="isOpen" [openDelay]="0" [closeDelay]="0">
       <button type="button" forTooltipTrigger>Trigger</button>
-      <div forTooltipContent>
-        Content
-        <span forTooltipArrow></span>
-      </div>
+      @if (isOpen()) {
+        <div forTooltipContent>
+          Content
+          <span forTooltipArrow></span>
+        </div>
+      }
     </div>
   `,
 })
@@ -62,17 +74,24 @@ class TooltipWithArrowHost {
 @Component({
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
   template: `
-    <div forTooltip>
+    <div forTooltip [(open)]="aOpen">
       <button type="button" forTooltipTrigger>A</button>
-      <div forTooltipContent>A</div>
+      @if (aOpen()) {
+        <div forTooltipContent>A</div>
+      }
     </div>
-    <div forTooltip>
+    <div forTooltip [(open)]="bOpen">
       <button type="button" forTooltipTrigger>B</button>
-      <div forTooltipContent>B</div>
+      @if (bOpen()) {
+        <div forTooltipContent>B</div>
+      }
     </div>
   `,
 })
-class TwoTooltipHost {}
+class TwoTooltipHost {
+  readonly aOpen = signal(false);
+  readonly bOpen = signal(false);
+}
 
 @Component({
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
@@ -85,7 +104,9 @@ class TwoTooltipHost {}
       [hoverableContent]="hoverable()"
     >
       <button type="button" forTooltipTrigger>Hover me</button>
-      <div forTooltipContent>Helpful hint</div>
+      @if (isOpen()) {
+        <div forTooltipContent>Helpful hint</div>
+      }
     </div>
   `,
 })
@@ -120,15 +141,16 @@ describe('ForTooltip', () => {
       await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('button')!;
-      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
 
-      expect(content).toBeTruthy();
-      expect(content.getAttribute('role')).toBe('tooltip');
-      // Closed initially → no aria-describedby.
+      // Closed initially → the surface is not mounted, so no aria-describedby.
+      expect(document.querySelector('[role="tooltip"]')).toBeNull();
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
 
       r.instance.isOpen.set(true);
       await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+      expect(content.getAttribute('role')).toBe('tooltip');
 
       expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
 
@@ -152,7 +174,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="isOpen">
             <button type="button" id="save-action" forTooltipTrigger>Save</button>
-            <div forTooltipContent>Save changes</div>
+            @if (isOpen()) {
+              <div forTooltipContent>Save changes</div>
+            }
           </div>
         `,
       })
@@ -182,6 +206,8 @@ describe('ForTooltip', () => {
 
     it('produces unique ids across instances', async () => {
       const r = renderHost(TwoTooltipHost);
+      r.instance.aOpen.set(true);
+      r.instance.bOpen.set(true);
       await flush(r.fixture);
 
       const triggers = r.queryAll<HTMLButtonElement>('button');
@@ -199,6 +225,7 @@ describe('ForTooltip', () => {
 
     it('moves content out of its declared parent into document.body', async () => {
       const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
       await flush(r.fixture);
 
       const wrapper = r.query<HTMLElement>('[forTooltip]')!;
@@ -210,6 +237,7 @@ describe('ForTooltip', () => {
 
     it('removes the portaled content on destroy', async () => {
       const r = renderHost(TooltipHost);
+      r.instance.isOpen.set(true);
       await flush(r.fixture);
 
       expect(document.querySelectorAll('[role="tooltip"]')).toHaveLength(1);
@@ -423,6 +451,7 @@ describe('ForTooltip', () => {
     it('reflects the press dismiss through data-state without Zone.js', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
+      r.instance.leaving.set(true);
       r.instance.closeDelay.set(0);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
@@ -593,6 +622,7 @@ describe('ForTooltip', () => {
     it('reflects the Escape close through data-state without Zone.js', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
+      r.instance.leaving.set(true);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
@@ -706,11 +736,12 @@ describe('ForTooltip', () => {
       const r = renderHost(HoverableTooltipHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
-      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
 
       trigger.dispatchEvent(new PointerEvent('pointerenter'));
       await flush(r.fixture);
       expect(r.instance.isOpen()).toBe(true);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
 
       // Leaving the trigger arms the grace bridge rather than closing.
       trigger.dispatchEvent(new PointerEvent('pointerleave', { clientX: 0, clientY: 0 }));
@@ -732,9 +763,12 @@ describe('ForTooltip', () => {
       const r = renderHost(HoverableTooltipHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
-      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
 
+      // Focus opens it, which is what mounts the surface the pointer then holds.
       trigger.dispatchEvent(new FocusEvent('focus'));
+      await flush(r.fixture);
+
+      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
       content.dispatchEvent(new PointerEvent('pointerenter'));
       await flush(r.fixture);
       expect(r.instance.isOpen()).toBe(true);
@@ -769,6 +803,7 @@ describe('ForTooltip', () => {
     it('reflects pointer-events on the content only while hoverableContent is set', async () => {
       const r = renderHost(HoverableTooltipHost);
       r.instance.hoverable.set(false);
+      r.instance.isOpen.set(true);
       await flush(r.fixture);
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
       expect(content.style.pointerEvents).toBe('none');
@@ -812,6 +847,7 @@ describe('ForTooltip', () => {
     it('force-closes an already-open tooltip when disabled flips to true', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
+      r.instance.leaving.set(true);
       await flush(r.fixture);
 
       const trigger = r.query<HTMLButtonElement>('button')!;
@@ -896,7 +932,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open" [openDelay]="0" [closeDelay]="0" showOnOverflow>
             <button type="button" forTooltipTrigger>Fits</button>
-            <div forTooltipContent>Fits</div>
+            @if (open()) {
+              <div forTooltipContent>Fits</div>
+            }
           </div>
         `,
       })
@@ -920,9 +958,11 @@ describe('ForTooltip', () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         template: `
-          <div forTooltip [openDelay]="0" [closeDelay]="0">
+          <div forTooltip #tip="forTooltip" [openDelay]="0" [closeDelay]="0">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (tip.open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1057,7 +1097,9 @@ describe('ForTooltip', () => {
             (openChange)="emitted.push($event)"
           >
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (isOpen()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1083,13 +1125,16 @@ describe('ForTooltip', () => {
         template: `
           <div
             forTooltip
+            #tip="forTooltip"
             [openDelay]="0"
             [closeDelay]="0"
             [hoverableContent]="false"
             (openChange)="emitted.push($event)"
           >
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (tip.open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1117,7 +1162,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="isOpen" (openChange)="emitted.push($event)">
             <button type="button" forTooltipTrigger></button>
-            <div forTooltipContent></div>
+            @if (isOpen()) {
+              <div forTooltipContent></div>
+            }
           </div>
         `,
       })
@@ -1152,7 +1199,9 @@ describe('ForTooltip', () => {
           [hoverableContent]="false"
         >
           <button type="button" forTooltipTrigger>A</button>
-          <div forTooltipContent>A</div>
+          @if (aOpen()) {
+            <div forTooltipContent>A</div>
+          }
         </div>
         <div
           forTooltip
@@ -1162,7 +1211,9 @@ describe('ForTooltip', () => {
           [hoverableContent]="false"
         >
           <button type="button" forTooltipTrigger>B</button>
-          <div forTooltipContent>B</div>
+          @if (bOpen()) {
+            <div forTooltipContent>B</div>
+          }
         </div>
       `,
     })
@@ -1215,7 +1266,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1241,7 +1294,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open" [hoverableContent]="false">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1269,7 +1324,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open" [openDelay]="0">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1298,7 +1355,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1322,7 +1381,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open" side="left">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1345,7 +1406,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1369,7 +1432,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open" align="end">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1390,9 +1455,11 @@ describe('ForTooltip', () => {
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         providers: [provideForTooltipDefaults({ sideOffset: 12, collisionPadding: 16 })],
         template: `
-          <div forTooltip>
+          <div forTooltip #tip="forTooltip">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (tip.open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1413,9 +1480,11 @@ describe('ForTooltip', () => {
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         providers: [provideForTooltipDefaults({ sideOffset: 12, collisionPadding: 16 })],
         template: `
-          <div forTooltip [sideOffset]="20" [collisionPadding]="24">
+          <div forTooltip #tip="forTooltip" [sideOffset]="20" [collisionPadding]="24">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (tip.open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1437,7 +1506,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1472,9 +1543,11 @@ describe('ForTooltip', () => {
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         providers: [provideForTooltipDefaults({ showOnOverflow: true, hoverableContent: true })],
         template: `
-          <div forTooltip>
+          <div forTooltip #tip="forTooltip">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (tip.open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1495,9 +1568,11 @@ describe('ForTooltip', () => {
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         providers: [provideForTooltipDefaults({ showOnOverflow: true, hoverableContent: true })],
         template: `
-          <div forTooltip [showOnOverflow]="false" [hoverableContent]="false">
+          <div forTooltip #tip="forTooltip" [showOnOverflow]="false" [hoverableContent]="false">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (tip.open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1519,7 +1594,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1543,7 +1620,9 @@ describe('ForTooltip', () => {
         template: `
           <div forTooltip [(open)]="open">
             <button type="button" forTooltipTrigger>T</button>
-            <div forTooltipContent>C</div>
+            @if (open()) {
+              <div forTooltipContent>C</div>
+            }
           </div>
         `,
       })
@@ -1730,6 +1809,7 @@ describe('ForTooltip', () => {
     it('reflects the scroll close through data-state without Zone.js', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
+      r.instance.leaving.set(true);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
@@ -1775,7 +1855,9 @@ describe('ForTooltip', () => {
 
         <div forTooltip [(open)]="open" [openDelay]="0" [closeDelay]="0" #root="forTooltip">
           <ng-container [ngTemplateOutlet]="trig" [ngTemplateOutletContext]="{ root }" />
-          <div forTooltipContent>Hint</div>
+          @if (root.open()) {
+            <div forTooltipContent>Hint</div>
+          }
         </div>
       `,
     })

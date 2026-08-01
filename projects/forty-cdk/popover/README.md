@@ -12,13 +12,14 @@ A popover is a non-modal dialog: focus moves into the surface on open and return
 <div forPopover #popover="forPopover" side="bottom" align="center">
   <button forPopoverTrigger>Settings</button>
 
-  <!-- rendered only when popover.open() is true -->
+  <!-- @if (popover.open()) { -->
   <div forPopoverContent>
     <h3 forPopoverTitle>Display</h3>
     <p forPopoverDescription>Adjust theme and density.</p>
     <button forPopoverClose>Done</button>
     <span forPopoverArrow></span>
   </div>
+  <!-- } -->
 </div>
 ```
 

@@ -6,6 +6,7 @@ import {
   hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
+  warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
 import { injectTimePickerContext } from './time-picker-context';
 
@@ -62,6 +63,13 @@ export class ForTimePickerContent {
       (el) => ctx.overlay.registerContent(el),
       (el) => ctx.overlay.unregisterContent(el),
     );
+
+    warnIfMountedWhileClosed({
+      primitive: 'time-picker',
+      piece: '[forTimePickerContent]',
+      condition: 'picker.open()',
+      open: ctx.open,
+    });
 
     const focusInitial = (): boolean => {
       const target = ctx.overlay.initialFocus();

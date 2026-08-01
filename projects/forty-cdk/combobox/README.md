@@ -20,11 +20,11 @@ Two anatomies share the same core:
 The editable (default) anatomy — an `<input>` that filters a portaled listbox in place:
 
 ```html
-<div forCombobox [(query)]="query" [(value)]="value">
+<div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
   <input forComboboxInput placeholder="Search…" />
   <button forComboboxClear>×</button>
 
-  <!-- @if (open()) { -->
+  <!-- @if (combobox.open()) { -->
   <div forComboboxContent>
     <div forComboboxOption [value]="item.id" [label]="item.label">
       <span forComboboxIndicator>✓</span>
@@ -417,7 +417,7 @@ The `autocompleteMode` input mirrors the WAI-ARIA `aria-autocomplete` property:
 
 Inline completion preserves the user's typed prefix as unselected and selects the appended remainder, so the next keystroke replaces the selection (matching native browser autofill behavior). Backspace deletes the selection without re-completing, so the user can always shorten the query.
 
-> **Pure `'inline'` needs a warm cache.** `'inline'` never opens the popup (per APG — `aria-autocomplete="inline"` has no listbox), so in the default `@if (open())` anatomy no `[forComboboxOption]` ever renders and the label cache starts cold. A first keystroke into a combobox that has never been opened completes against nothing; inline completion only works once the options have rendered at least once (the user opened the popup via ArrowDown or `[openOnFocus]`, warming the cache). If completion must work from the very first keystroke, use `'both'` (which opens the popup) or keep the options mounted rather than gating them behind `@if (open())`.
+> **Pure `'inline'` needs a warm cache.** `'inline'` never opens the popup (per APG — `aria-autocomplete="inline"` has no listbox), so in the default `@if (open())` anatomy no `[forComboboxOption]` ever renders and the label cache starts cold. A first keystroke into a combobox that has never been opened completes against nothing; inline completion only works once the options have rendered at least once (the user opened the popup via ArrowDown or `[openOnFocus]`, warming the cache). If completion must work from the very first keystroke, use `'both'` — it opens the popup, so the options render and the cache warms. Leaving `[forComboboxContent]` permanently mounted instead is not a supported shape and warns in dev mode: mount **is** the open state for this surface, so it never runs `animate.enter` / `animate.leave`, and its dismissible layer stays active while closed.
 
 ## Dismiss events
 

@@ -213,6 +213,10 @@ export { MENU_POSITIONING_DEFAULTS } from './menu-overlay/menu-positioning-input
 export { injectModalShell } from './modal-shell/modal-shell';
 export { ModalSurfaceBase } from './modal-surface-base/modal-surface-base';
 export {
+  type MountedWhileClosedConfig,
+  warnIfMountedWhileClosed,
+} from './mounted-while-closed/mounted-while-closed';
+export {
   clamp,
   decimalPlaces,
   roundToDecimals,

@@ -9,7 +9,13 @@ import {
   signal,
 } from '@angular/core';
 
-import { registerHandle, hostId, hostLabelledBy, isHoverCapablePointer } from 'forty-cdk/core';
+import {
+  registerHandle,
+  hostId,
+  hostLabelledBy,
+  isHoverCapablePointer,
+  warnIfMountedWhileClosed,
+} from 'forty-cdk/core';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,
@@ -96,6 +102,16 @@ export class ForNavigationMenuContent {
       (h) => this.menu.unregisterContent(h),
       'afterNextRender',
     );
+
+    warnIfMountedWhileClosed({
+      primitive: 'navigation-menu',
+      piece: '[forNavigationMenuContent]',
+      // A thunk, so the quoted fix carries this panel's own value rather than a
+      // placeholder — `value` is the owning item's `input.required`, readable
+      // only once the helper's render hook runs.
+      condition: () => `open() === '${this.value()}'`,
+      open: () => this.menu.isOpen(this.value()),
+    });
 
     // Defer the re-parent until after the embedded view is attached to its
     // template anchor — Angular inserts root nodes AFTER directive

@@ -6,6 +6,7 @@ import {
   hostDescribedBy,
   hostLabelledBy,
   injectOverlayShell,
+  warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
 import { injectPopoverContext } from './popover-context';
 
@@ -54,6 +55,12 @@ export class ForPopoverContent {
 
   constructor() {
     this.ctx.adoptContentId(inject<ElementRef<HTMLElement>>(ElementRef).nativeElement);
+    warnIfMountedWhileClosed({
+      primitive: 'popover',
+      piece: '[forPopoverContent]',
+      condition: 'popover.open()',
+      open: this.ctx.open,
+    });
     injectOverlayShell({
       positioner: toFloatingPositioner(this.ctx, this.ctx.reference),
       dismiss: {

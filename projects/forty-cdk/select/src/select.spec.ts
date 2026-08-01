@@ -2122,6 +2122,12 @@ describe('ForSelect', () => {
       // warms the label cache never runs. With the options mounted,
       // `selectedLabels` must resolve the label from the live option registry
       // instead of falling back to the serialized id (`toId` → "2").
+      //
+      // The un-gated `[forSelectContent]` is deliberate and is the shape the
+      // dev-mode mounted-while-closed warning reports (#1591) — the README
+      // points consumers at `[itemToLabel]` instead. What this pins is the
+      // registry fallback itself, which must keep working for the window in
+      // which a surface is legitimately mounted and closed.
       @Component({
         imports: [...BASE_IMPORTS, ForSelectValue],
         template: `

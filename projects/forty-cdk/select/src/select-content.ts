@@ -7,6 +7,7 @@ import {
   injectModalShell,
   injectOverlayShell,
   type OverlayShellPositionerConfig,
+  warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
 import { type ForSelectContext, injectSelectContext } from './select-context';
 
@@ -89,6 +90,13 @@ export class ForSelectContent {
       (el) => ctx.overlay.registerContent(el),
       (el) => ctx.overlay.unregisterContent(el),
     );
+
+    warnIfMountedWhileClosed({
+      primitive: 'select',
+      piece: '[forSelectContent]',
+      condition: 'select.open()',
+      open: ctx.open,
+    });
 
     // Primitive-owned initial-focus algorithm shared by both shells.
     // `'selected'` falls back to the first enabled option when nothing is
