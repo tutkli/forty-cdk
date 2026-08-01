@@ -299,5 +299,10 @@ export {
   type VetoableNativeEvent,
 } from './vetoable-event/vetoable-event';
 export { VirtualizedNavigator } from './virtualized-navigator/virtualized-navigator';
+export {
+  runVirtualizedNavigatorBridge,
+  type VirtualizedNavigatorBridgeDeps,
+  type VirtualizedNavigatorBridgeTarget,
+} from './virtualized-navigator/virtualized-navigator-bridge';
 export { ForVisuallyHidden } from './visually-hidden/visually-hidden';
 export { resolveScrubReorder, translateWindowReorder } from './window-index-map/window-index-map';

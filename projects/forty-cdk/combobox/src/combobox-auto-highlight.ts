@@ -1,6 +1,6 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { isUnset } from 'forty-cdk/core';
+import { isUnset, runVirtualizedNavigatorBridge } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
 import type { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -226,9 +226,10 @@ export interface AutoHighlightBridgeDeps<T> {
  * The label cache is deliberately **not** pulled here: pulling it tracks the
  * selection, and this effect writes activedescendant and scrolls, so it would
  * re-run those writes on every commit of `value`. The root owns a separate
- * read-only effect for that pull. The virtualization navigator (and its
- * position-map) is primed here, but only when the consumer set `totalCount()`, so
- * a plain combobox never builds it.
+ * read-only effect for that pull, and `require-sanctioned-pull-marker` now
+ * enforces the split. The position-map pull runs through the shared
+ * {@link runVirtualizedNavigatorBridge}, but only when the consumer set
+ * `totalCount()`, so a plain combobox never builds the navigator.
  *
  * 1. Virtualized only: resolves a pending `(scrollToIndex)` navigation — once
  *    the option for the requested posInSet mounts, `tryResolvePending` seeds
@@ -263,8 +264,12 @@ export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): voi
 
   if (virtualized) {
     const navigator = deps.requireNavigator();
-    navigator.prime();
-    if (navigator.tryResolvePending()) {
+    const resolved = runVirtualizedNavigatorBridge({
+      items: deps.items,
+      virtualized: deps.virtualized,
+      requireNavigator: () => navigator,
+    });
+    if (resolved) {
       return;
     }
     if (autoHighlight && open && untracked(() => deps.getActiveId()) === null && items.length > 0) {

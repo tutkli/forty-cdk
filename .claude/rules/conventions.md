@@ -51,6 +51,29 @@ The lint is deliberately syntactic, with two consequences worth knowing before y
 
 **The residual gap is cross-file, and it is known rather than closed.** Resolution stops at the file boundary, so a method on an injected collaborator stays opaque — the #1572 cycle itself lived in `core/menu-overlay/menu-opener-registry.ts`, one file away from the trigger's effect, and would still slip through. Same-file and one level is the version that stays a lint rule instead of becoming a type-aware whole-program pass. **The marker is therefore still required by convention for a cross-file write**, so `grep @sanctioned-effect` stays the complete ledger — which is the whole point of having one phrase.
 
+### The sanctioned-pull marker
+
+An `effect()` can break the rule above in a second way that writes nothing at all: a **pull** — a read of a lazy store performed purely so the store's computation runs. Everything in the section above is about the write channel; this is the read one, and it needs its own marker because the shape it licenses is genuinely unavoidable.
+
+**Why it cannot be derived away.** The stores behind every pull in the library are folds over a **transient** source: the set of mounted option / item handles, which is non-empty only while the consumer's `@if` keeps the collection rendered. A lazy derivation observes its source at the moment something reads it and at no other time, so a window that mounts and unmounts with no reader is lost with no trace (the `linkedSignal` mechanism is the one [#1518](https://github.com/tutkli/forty-cdk/issues/1518) documents: `previous` is only ever populated on a read). `prime()` is an `effect` used as a scheduler to guarantee that read — and [#1580](https://github.com/tutkli/forty-cdk/issues/1580) AC3's "no effect exists solely to force a lazy `computed` to run" is therefore unreachable for a fold over a transient source, which is what [#1602](https://github.com/tutkli/forty-cdk/issues/1602) resolved by sanctioning the shape instead of pretending it away. Deleting a pull breaks nothing a type, a signature or a review diff can see; the failure is silent and downstream (a selected label falls back to its serialized form value, off-window navigation stops resolving, `aria-activedescendant` lands on the wrong option).
+
+The marker sits on the line(s) immediately above the `effect(` call, exactly like its sibling, and `forty-cdk/require-sanctioned-pull-marker` (`eslint.config.js`) fails `pnpm lint` on an unmarked one:
+
+```ts
+// @sanctioned-pull(navigator-position-map): the rendered window is transient, so
+// a window nothing reads during is lost to the lazy fold.
+effect(() => {
+  runVirtualizedNavigatorBridge({ items, virtualized, requireNavigator });
+});
+```
+
+- **`<store>`** is a short kebab-case name for the store being primed — the thing whose emptiness is the bug. Two values ship today: `label-cache-window` (Select / Combobox) and `navigator-position-map` (Select / Listbox / Tree / Combobox). **`<why>`** names, in one sentence, what makes the source transient.
+- **An effect that pulls must not write, and this half is not licensable.** A `.set(` / `.update(` in the same effect body as a pull is an error no marker clears. The reason is the cost already paid: a pull shares its tracked set with everything else in its effect, so pulling the label cache — which reads the selection — inside the auto-highlight bridge made every commit of `value` re-run that bridge's activedescendant write and `scrollIntoView`, and a hover-then-click could scroll the listbox to the hovered option ([#1600](https://github.com/tutkli/forty-cdk/pull/1600) split the pull into its own read-only effect to fix it). One effect, one reason: the pull's tracked set is the store's, and nothing else may ride on it.
+- **The rule names its cross-file runners rather than resolving them.** A pull is a call to `prime()` or to one of the free functions that exist to run one — `runVirtualizedNavigatorBridge` (`forty-cdk/core`) and `runAutoHighlightBridge` (`combobox/`). Write detection and same-file one-level helper resolution are identical to `require-sanctioned-effect-marker`, so the residual gap is the same: a write behind a cross-file collaborator call is invisible. `VirtualizedNavigator.tryResolvePending` is deliberately that shape — its write is the pull's own settled result, not foreign state riding along, and it reads its pending slot `untracked` precisely so the write cannot re-invalidate the calling effect.
+- The complete ledger is `grep @sanctioned-pull`, mirrored row-by-row into the generated matrices at the end of this file. Six effects qualify today; a seventh needs a reason a reviewer can check against the two bullets above.
+
+**The four position-map pulls share one core helper.** Select, Listbox, Tree and Combobox all ran the identical four lines (`items(); if (!virtualized) return; prime(); tryResolvePending();`) in four entry points. `runVirtualizedNavigatorBridge` in `forty-cdk/core` is the single definition; it returns whether a pending navigation resolved, which is the one thing the Combobox bridge needs on top. Add a fifth virtualized collection by calling it, not by copying it.
+
 ## Form primitives use Signal Forms, never `ControlValueAccessor`
 
 **Form primitives use Signal Forms, never `ControlValueAccessor`.** Any primitive that represents a form value (Switch, Checkbox, RadioGroup, Slider, Combobox, DatePicker, etc.) must implement the appropriate `@angular/forms/signals` interface so it auto-wires with the `[formField]` directive (selector `[formField]`, alias `formField`) — Angular detects the interface and binds everything, no provider/token registration:
@@ -604,5 +627,7 @@ found seven stale enumerations at once. Ids are `<entry-point>/<source-file>`.
 | `data-state` = "open" | 1 | `toast/toast` |
 | `data-state` computed by a signal / method | 18 | `checkbox/checkbox-indicator`, `checkbox/checkbox`, `drawer/drawer-wrapper`, `navigation-menu/navigation-menu-indicator`, `navigation-menu/navigation-menu-item`, `navigation-menu/navigation-menu-viewport`, `progress/progress-indicator`, `progress/progress`, `scroll-area/scroll-area-scrollbar`, `scroll-area/scroll-area-thumb`, `stepper/stepper-indicator`, `stepper/stepper-item`, `stepper/stepper-trigger`, `table/table-row-selector`, `table/table-row`, `table/table-select-all`, `tree/tree-item-checkbox-indicator`, `tree/tree-item-checkbox` |
 | `aria-hidden` + `inert` while closed | 6 | `accordion/accordion-content`, `carousel/carousel-slide`, `disclosure/disclosure-content`, `stepper/stepper-completed-content`, `stepper/stepper-content`, `tabs/tabs-content` |
+| `@sanctioned-pull(label-cache-window)` | 2 | `combobox/combobox`, `select/select` |
+| `@sanctioned-pull(navigator-position-map)` | 4 | `combobox/combobox`, `listbox/listbox`, `select/select`, `tree/tree` |
 
 <!-- END GENERATED: convention-matrices -->

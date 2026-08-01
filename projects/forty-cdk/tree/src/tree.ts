@@ -20,6 +20,7 @@ import {
   type ListNavigationAction,
   resolveListNavigation,
   resolveTreeExpandCollapse,
+  runVirtualizedNavigatorBridge,
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
@@ -378,12 +379,14 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   }
 
   constructor() {
+    // @sanctioned-pull(navigator-position-map): the rendered window is transient,
+    // so a window nothing reads during is lost to the lazy fold.
     effect(() => {
-      this.#items.items();
-      if (!this.#virtualized()) return;
-      const model = this.#requireActiveDescendantModel();
-      model.prime();
-      model.tryResolvePending();
+      runVirtualizedNavigatorBridge({
+        items: this.#items.items,
+        virtualized: this.#virtualized,
+        requireNavigator: () => this.#requireActiveDescendantModel(),
+      });
     });
 
     if (isDevMode()) {
