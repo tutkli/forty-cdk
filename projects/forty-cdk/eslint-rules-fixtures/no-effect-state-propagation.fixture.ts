@@ -24,6 +24,7 @@ declare const box: WritableSignal<number>;
 declare const measured: { width: number };
 declare const registry: { bump(): void };
 declare function observe(cb: () => void): void;
+declare const slots: { (): readonly string[]; set(index: number, value: string): void };
 
 // Expected: 1× forty-cdk/no-effect-state-propagation
 // The synthetic violation from issue #509's acceptance criteria: the same
@@ -45,6 +46,15 @@ effect(() => {
 // not flag; CLAUDE.md targets the same-signal read-and-write case.)
 effect(() => {
   other.set(s() + 1);
+});
+
+// Allowed: a two-argument `.set(k, v)` is not a signal write (#1606), so the
+// pairing never forms. The receiver is deliberately contrived — both callable and
+// carrying a two-argument `set` — because that is the only shape this rule's
+// same-receiver pairing could ever have misread; a plain `Map` is never read as
+// `map()` and was already spared.
+effect(() => {
+  slots.set(0, slots()[0] ?? '');
 });
 
 // Allowed: the read is wrapped in `untracked()` — the documented escape
