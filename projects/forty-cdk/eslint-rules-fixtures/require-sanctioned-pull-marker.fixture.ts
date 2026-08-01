@@ -171,3 +171,34 @@ class PrimesInAMethod {
 effect(() => {
   primeViaHelper();
 });
+
+function pullAndTouchBuilder(): void {
+  labelCache.prime();
+  builder.update('pending');
+}
+
+// Expected: 2× forty-cdk/require-sanctioned-pull-marker — `pullWithWrite` on the
+// write inside the helper, `missingMarkerViaHelper` on the call site below.
+// Both halves reach the effect through one helper call and still report on
+// different lines, because the write branch anchors on the write itself rather
+// than on the call. Anchoring it on the call collapses the two onto one line,
+// where the disable the message prescribes silences both (#1606).
+effect(() => {
+  pullAndTouchBuilder();
+});
+
+function pullAndTouchSilencedBuilder(): void {
+  labelCache.prime();
+  // `builder` is a plain string builder, not a signal.
+  // eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker
+  builder.update('pending');
+}
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (missingMarkerViaHelper)
+// The hatch reached through a helper: the disable sits on the write's own line
+// inside the helper body — the only line it can sit on — and the unmarked pull
+// is still reported at the call site. The directive is not flagged unused, which
+// is the executable half of the pair above.
+effect(() => {
+  pullAndTouchSilencedBuilder();
+});

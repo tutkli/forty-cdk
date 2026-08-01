@@ -2208,13 +2208,18 @@ const fortyCdkPlugin = {
     //   - The residual false positive is a one-argument `.set(` / `.update(` on
     //     a non-signal receiver, and its sanctioned resolution is an
     //     `eslint-disable-next-line` on the **write** line — not above the
-    //     `effect(` — plus a comment naming the receiver. The two branches
-    //     anchor their reports on different nodes (this one on the write, the
-    //     marker ones on the pull), so scoping the directive to the write line
-    //     silences the misread and nothing else. The write branch reports
-    //     *without returning* for the same reason: while it returned, any
-    //     directive that silenced it took the unrun marker check along too,
-    //     turning a false positive into the missing ledger entry #1606 names.
+    //     `effect(` — plus a comment naming the receiver. Two things keep that
+    //     directive from carrying the marker requirement off with it. The write
+    //     branch reports *without returning*, so a suppressed misread still
+    //     leaves the marker check to run; while it returned, silencing the one
+    //     silenced the other, which is the missing ledger entry #1606 names. And
+    //     the write branch anchors on the write **itself** — inside the helper
+    //     body when a same-file helper is what brought it in, never on the call
+    //     site, which is the node the marker branches use. Fold a helper's
+    //     writes onto its call site instead and the two branches collapse onto
+    //     one line, where the documented directive silences both and reports no
+    //     unused-directive warning to say so; the author has no other move
+    //     either, because a disable inside the helper would suppress nothing.
     //   - A marker licenses only the effect it sits on, and a bare
     //     `@sanctioned-pull` with no store / no rationale is malformed. As with
     //     the sibling, only a line comment whose text starts with the phrase
@@ -2315,8 +2320,10 @@ const fortyCdkPlugin = {
 
         /**
          * The effect's own pulls / writes, merged with those of every same-file
-         * helper it calls, each anchored on the call site so the report lands on
-         * the effect a marker would license.
+         * helper it calls. A helper's pulls are anchored on the call site, so the
+         * report lands on the effect a marker would license; its writes keep the
+         * node they were found on, so the two branches never share a line and the
+         * documented disable stays scoped to the misread write.
          */
         function analyzeCallback(fnNode) {
           const own = collect(fnNode.body, true);
@@ -2331,7 +2338,7 @@ const fortyCdkPlugin = {
               pulls.push({ store: pull.store, node: call.node, helper: call.name });
             }
             for (const write of inner.writes) {
-              writes.push({ ...write, node: call.node });
+              writes.push(write);
             }
           }
           return { pulls, writes };
