@@ -94,6 +94,17 @@ effect(() => {
   builder.update('pending');
 });
 
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker
+// The same anchoring rule as the sibling: a JSDoc block quoting the marker is
+// documentation of the ledger, not an entry in it, so it licenses nothing.
+/**
+ * The label cache is primed by `@sanctioned-pull(label-cache-window)` in Select
+ * and Combobox; this fixture models the shape.
+ */
+effect(() => {
+  labelCache.prime();
+});
+
 // Allowed: a well-formed marker licenses a read-only pull.
 // @sanctioned-pull(label-cache-window): the option window exists only while the
 // listbox is open, and the closed-state matchers reading it have no reader then.

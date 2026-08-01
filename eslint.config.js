@@ -1734,8 +1734,13 @@ const fortyCdkPlugin = {
     //     hatch for genuinely needing the current value without subscribing —
     //     such reads are ignored, so pairing `untracked()` reads with writes
     //     does not trip the rule.
-    //   - Writes are matched by callee shape (`<base>.set` / `<base>.update`);
-    //     a write only fires the rule when `<base>` is also read as `<base>()`
+    //   - Writes are matched by callee shape (`<base>.set` / `<base>.update`)
+    //     and by arity — one argument only, since `WritableSignal.set(v)` takes
+    //     one and `Map.set(k, v)` takes two (#1606). Here that condition is
+    //     defence in depth rather than a fix: the pairing below already spares a
+    //     plain collection, which is never read as `<base>()`. It is shared with
+    //     the two marker rules so "signal write" means one thing family-wide.
+    //   - A write only fires the rule when `<base>` is also read as `<base>()`
     //     in a tracked position in the same callback.
     //
     // Helper resolution is **same-file and one level deep** (#1575). A cycle
@@ -1826,7 +1831,9 @@ const fortyCdkPlugin = {
                 callee.property.type === 'Identifier' &&
                 (callee.property.name === 'set' || callee.property.name === 'update')
               ) {
-                writes.push({ key: exprKey(callee.object), node });
+                if (node.arguments.length === 1) {
+                  writes.push({ key: exprKey(callee.object), node });
+                }
                 // Still descend into the arguments — a read may live there.
                 for (const arg of node.arguments) stack.push(arg);
                 continue;
@@ -1941,12 +1948,16 @@ const fortyCdkPlugin = {
     // carve-out ledger (two sites today).
     //
     // Deliberate design notes:
-    //   - Keyed on the method *name* (`set` / `update`), so a `Map.set` inside
-    //     an effect trips it too. That false positive is loud and cheap to
-    //     resolve; a rule that tried to prove signal-ness would miss the real
-    //     thing. DOM writes (`setAttribute`, `toggleAttribute`,
-    //     `style.setProperty`, `el.value = …`) are what `effect()` is for and
-    //     never match.
+    //   - Keyed on the method *name* (`set` / `update`) plus its **arity**: only
+    //     a one-argument call counts, because `WritableSignal.set(v)` takes one
+    //     and `Map.set(k, v)` takes two (#1606). Arity is the whole of the
+    //     signal-ness test the family performs — a rule that tried to *prove*
+    //     signal-ness would need type information and would miss the real thing —
+    //     so a one-argument `.set(…)` on a plain receiver still trips it. That
+    //     residual false positive is loud and cheap to resolve here: the marker
+    //     the author was already writing clears it. DOM writes (`setAttribute`,
+    //     `toggleAttribute`, `style.setProperty`, `el.value = …`) are what
+    //     `effect()` is for and never match.
     //   - Does not descend into nested function scopes, matching
     //     `no-effect-state-propagation`: a write inside an observer callback
     //     runs outside the effect's reactive run.
@@ -1960,6 +1971,12 @@ const fortyCdkPlugin = {
     //   - A marker licenses only the effect it sits on. A bare
     //     `@sanctioned-effect` with no invariant / no rationale is reported as
     //     malformed rather than accepted.
+    //   - Only a **line comment whose text starts with the phrase** is a marker.
+    //     The window is proximity-based, so without that anchor a JSDoc block
+    //     quoting `@sanctioned-effect(<invariant>)` — the shape conventions.md
+    //     asks prose to avoid precisely so the `grep` ledger stays honest — would
+    //     silently license the next effect within six lines. Documenting the
+    //     ledger must not join it.
     //
     // See: CLAUDE.md > conventions > "The sanctioned-effect marker".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-effect-marker.fixture.ts`.
@@ -1982,7 +1999,7 @@ const fortyCdkPlugin = {
       },
       create(context) {
         const sourceCode = context.sourceCode || context.getSourceCode();
-        const MARKER = /@sanctioned-effect/;
+        const MARKER = /^\s*@sanctioned-effect/;
         const WELL_FORMED = /@sanctioned-effect\([a-z][a-z0-9-]*\)\s*:\s*\S/;
         // How many lines above the `effect(` call the marker may sit. A
         // multi-line rationale is normal, so this is a small window rather
@@ -2020,11 +2037,13 @@ const fortyCdkPlugin = {
                 node.callee.property.type === 'Identifier' &&
                 (node.callee.property.name === 'set' || node.callee.property.name === 'update')
               ) {
-                writes.push({
-                  node,
-                  signal: sourceCode.getText(node.callee.object),
-                  method: node.callee.property.name,
-                });
+                if (node.arguments.length === 1) {
+                  writes.push({
+                    node,
+                    signal: sourceCode.getText(node.callee.object),
+                    method: node.callee.property.name,
+                  });
+                }
               } else if (followHelpers) {
                 const helper = resolveSameFileHelper(node, sourceCode);
                 if (helper) helperCalls.push({ ...helper, node });
@@ -2060,15 +2079,18 @@ const fortyCdkPlugin = {
 
         /**
          * The `@sanctioned-effect` comment covering `node`, or `null`. Matched
-         * by proximity (any comment ending within `MARKER_WINDOW` lines above
-         * the call) rather than by AST attachment, so it works whether the
+         * by proximity (any line comment ending within `MARKER_WINDOW` lines
+         * above the call) rather than by AST attachment, so it works whether the
          * `effect(` call is a bare statement, an assignment, or nested in a
-         * constructor body.
+         * constructor body. Only a line comment whose text *starts* with the
+         * phrase counts: a block comment quoting the marker, or prose mentioning
+         * it mid-sentence, documents the ledger rather than joining it, and must
+         * not license a nearby effect.
          */
         function markerFor(node) {
           const line = node.loc.start.line;
           for (const comment of sourceCode.getAllComments()) {
-            if (!MARKER.test(comment.value)) continue;
+            if (comment.type !== 'Line' || !MARKER.test(comment.value)) continue;
             const end = comment.loc.end.line;
             if (end <= line && line - end <= MARKER_WINDOW) {
               return comment;
@@ -2169,24 +2191,20 @@ const fortyCdkPlugin = {
     //     mechanically enforced instead of convention-only, and the list is
     //     short by construction — a helper earns a place on it only by existing
     //     to run a pull.
-    //   - Write detection shares its scoping with
-    //     `require-sanctioned-effect-marker` (method name `set` / `update`, no
-    //     descent into nested function scopes, same-file helpers followed one
-    //     level deep), so the residual gap is the same: a write behind a
-    //     cross-file collaborator call is invisible. That gap is what the
-    //     Combobox bridge above sits in, and `tryResolvePending` is built for it
-    //     on purpose — its write is the pull's own settled result, not foreign
-    //     state riding along.
-    //   - It diverges from the sibling in one deliberate way: only a
-    //     **one-argument** `set` / `update` call counts (#1606).
-    //     `WritableSignal.set(v)` takes one argument and `Map.set(k, v)` takes
-    //     two, so arity is a free signal on the commonest false positive, and the
-    //     `signal.set(a, b)` typo the narrowing misses is a compile error anyway.
-    //     The sibling keeps the name-only check because a false positive there is
-    //     cleared by the very marker its author was already writing; here nothing
-    //     clears one, which is the asymmetry that earns the extra condition. Do
-    //     not reach for type information to go further — that would make the
-    //     whole family type-aware.
+    //   - Write detection matches `require-sanctioned-effect-marker` exactly
+    //     (method name `set` / `update`, one-argument calls only, no descent into
+    //     nested function scopes, same-file helpers followed one level deep), so
+    //     the residual gap is the same: a write behind a cross-file collaborator
+    //     call is invisible. That gap is what the Combobox bridge above sits in,
+    //     and `tryResolvePending` is built for it on purpose — its write is the
+    //     pull's own settled result, not foreign state riding along.
+    //   - The arity condition arrived here first (#1606) and is now the family's,
+    //     because "what counts as a signal write" has to mean one thing across
+    //     the three rules. `WritableSignal.set(v)` takes one argument and
+    //     `Map.set(k, v)` takes two, so arity is a free signal on the commonest
+    //     false positive, and the `signal.set(a, b)` typo it misses is a compile
+    //     error anyway. Do not push further with type information — that would
+    //     make the whole family type-aware.
     //   - The residual false positive is a one-argument `.set(` / `.update(` on
     //     a non-signal receiver, and its sanctioned resolution is an
     //     `eslint-disable-next-line` on the **write** line — not above the
@@ -2198,7 +2216,10 @@ const fortyCdkPlugin = {
     //     directive that silenced it took the unrun marker check along too,
     //     turning a false positive into the missing ledger entry #1606 names.
     //   - A marker licenses only the effect it sits on, and a bare
-    //     `@sanctioned-pull` with no store / no rationale is malformed.
+    //     `@sanctioned-pull` with no store / no rationale is malformed. As with
+    //     the sibling, only a line comment whose text starts with the phrase
+    //     counts, so a JSDoc block quoting the marker cannot license the next
+    //     effect within the window.
     //
     // See: CLAUDE.md > conventions > "The sanctioned-pull marker".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts`.
@@ -2230,7 +2251,7 @@ const fortyCdkPlugin = {
         // second list is named rather than resolved.
         const PULL_METHODS = new Set(['prime']);
         const PULL_RUNNERS = new Set(['runAutoHighlightBridge', 'runVirtualizedNavigatorBridge']);
-        const MARKER = /@sanctioned-pull/;
+        const MARKER = /^\s*@sanctioned-pull/;
         const WELL_FORMED = /@sanctioned-pull\([a-z][a-z0-9-]*\)\s*:\s*\S/;
         const MARKER_WINDOW = 6;
 
@@ -2318,13 +2339,14 @@ const fortyCdkPlugin = {
 
         /**
          * The `@sanctioned-pull` comment covering `node`, or `null`. Matched by
-         * proximity rather than AST attachment, mirroring the sanctioned-effect
+         * proximity rather than AST attachment, and restricted to a line comment
+         * whose text starts with the phrase, mirroring the sanctioned-effect
          * marker so both read the same way at a call site.
          */
         function markerFor(node) {
           const line = node.loc.start.line;
           for (const comment of sourceCode.getAllComments()) {
-            if (!MARKER.test(comment.value)) continue;
+            if (comment.type !== 'Line' || !MARKER.test(comment.value)) continue;
             const end = comment.loc.end.line;
             if (end <= line && line - end <= MARKER_WINDOW) {
               return comment;

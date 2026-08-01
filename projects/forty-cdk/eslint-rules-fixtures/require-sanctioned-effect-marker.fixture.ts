@@ -24,6 +24,7 @@ declare const host: HTMLElement;
 declare const mirrored: WritableSignal<number>;
 declare const measured: { width: number };
 declare function observe(cb: () => void): void;
+declare const scratch: Map<string, number>;
 
 // Expected: 1× forty-cdk/require-sanctioned-effect-marker
 // An unmarked write to a different signal — invisible to
@@ -54,6 +55,25 @@ effect(() => {
   if (disabled() && untracked(open)) {
     open.set(false);
   }
+});
+
+// Allowed: a two-argument `Map.set(k, v)` is not a signal write — arity is the
+// whole of the family's signal-ness test, and `WritableSignal.set(v)` takes one
+// argument. Unmarked on purpose: nothing here needs licensing.
+effect(() => {
+  scratch.set('width', measured.width);
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-effect-marker
+// A JSDoc block quoting the marker documents the ledger; it must not join it. The
+// window is proximity-based, so without the line-comment anchor this block would
+// license the unmarked write below.
+/**
+ * Historical note: this write used to carry
+ * `@sanctioned-effect(external-source)` before it was derived away.
+ */
+effect(() => {
+  out.set(4);
 });
 
 // Allowed: writing the DOM is what `effect()` is for — no signal write, no
