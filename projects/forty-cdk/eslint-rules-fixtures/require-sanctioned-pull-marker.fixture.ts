@@ -60,6 +60,18 @@ effect(() => {
   activeId.set(labelCache.windowEntries()[0] ?? null);
 });
 
+// Expected: 2× forty-cdk/require-sanctioned-pull-marker — `pullWithWrite` on the
+// write, `missingMarker` on the pull.
+// The unlicensed twin of the shape above, and the one case that proves the write
+// branch reports without returning against a report rather than a directive: an
+// effect with both faults names both. The two messages are sequential, not
+// contradictory — split the effect, and the read-only half keeping the pull is
+// what then takes the marker. Restoring the early return drops this to 1.
+effect(() => {
+  labelCache.prime();
+  activeId.set(labelCache.windowEntries()[0] ?? null);
+});
+
 // Allowed: the write channel is arity-checked (#1606), so a two-argument
 // `Map.set(k, v)` on a scratch collection is not read as a signal write —
 // `WritableSignal.set(v)` takes one argument, `Map.set` takes two, and the
@@ -170,4 +182,35 @@ class PrimesInAMethod {
 // fold only ever sees a window something reads it during.
 effect(() => {
   primeViaHelper();
+});
+
+function pullAndTouchBuilder(): void {
+  labelCache.prime();
+  builder.update('pending');
+}
+
+// Expected: 2× forty-cdk/require-sanctioned-pull-marker — `pullWithWrite` on the
+// write inside the helper, `missingMarkerViaHelper` on the call site below.
+// Both halves reach the effect through one helper call and still report on
+// different lines, because the write branch anchors on the write itself rather
+// than on the call. Anchoring it on the call collapses the two onto one line,
+// where the disable the message prescribes silences both (#1606).
+effect(() => {
+  pullAndTouchBuilder();
+});
+
+function pullAndTouchSilencedBuilder(): void {
+  labelCache.prime();
+  // `builder` is a plain string builder, not a signal.
+  // eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker
+  builder.update('pending');
+}
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (missingMarkerViaHelper)
+// The hatch reached through a helper: the disable sits on the write's own line
+// inside the helper body — the only line it can sit on — and the unmarked pull
+// is still reported at the call site. The directive is not flagged unused, which
+// is the executable half of the pair above.
+effect(() => {
+  pullAndTouchSilencedBuilder();
 });
