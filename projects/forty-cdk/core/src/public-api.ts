@@ -179,6 +179,7 @@ export {
   isRangeSelectShortcut,
   resolveListTypeahead,
   throwUnsupportedVirtualizedRangeSelect,
+  throwUnsupportedVirtualizedSelectionFollowsFocus,
 } from './list-typeahead/list-typeahead';
 export {
   type ListboxOverlayContext,

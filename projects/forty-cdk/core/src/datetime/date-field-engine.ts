@@ -75,13 +75,22 @@ const RESOLVER_YEAR = 2000;
 export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts> {
   readonly #config: DateFieldEngineConfig<D>;
 
-  protected readonly specs = computed<readonly FieldSpec[]>(() =>
-    buildDateTimeSegments(
-      this.#config.locale() ?? undefined,
-      this.#config.granularity(),
-      this.cycle(),
-    ),
-  );
+  /**
+   * The locale-ordered segment specs. A granularity coarser than a day builds
+   * hour / minute / second segments, so this derivation is where a day-only
+   * adapter first becomes a contradiction — and therefore where the assertion
+   * belongs. Both fields on this engine used to run the same check from an
+   * `effect` watching `granularity`, which routed the throw to the application
+   * `ErrorHandler` with the scheduler as its stack instead of the field that
+   * asked for a time segment ([#1583](https://github.com/tutkli/forty-cdk/issues/1583)).
+   */
+  protected readonly specs = computed<readonly FieldSpec[]>(() => {
+    const granularity = this.#config.granularity();
+    if (granularity !== 'day') {
+      assertTimeCapable(this.#config.adapter, this.#config.piece);
+    }
+    return buildDateTimeSegments(this.#config.locale() ?? undefined, granularity, this.cycle());
+  });
 
   /**
    * The entered parts. A `linkedSignal` keyed on `source`: a non-null write

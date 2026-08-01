@@ -81,6 +81,53 @@ export function throwUnsupportedVirtualizedRangeSelect(
   }
 }
 
+/**
+ * Identity of the primitive throwing
+ * {@link throwUnsupportedVirtualizedSelectionFollowsFocus}.
+ */
+export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
+  /** Primitive name for the `[forty-cdk/<primitive>]` error prefix (e.g. `'listbox'`). */
+  readonly primitive: string;
+  /** Non-virtualized focus model named in the remediation hint (e.g. `'roving-tabindex'`). */
+  readonly focusModel: string;
+  /** Collection the hint names after the focus model (e.g. `'listbox'`, `'tree'`). */
+  readonly collection: string;
+}
+
+/**
+ * Throws (in dev mode only) the standard error explaining that
+ * `selectionFollowsFocus` is unsupported together with virtualization, because
+ * the activedescendant path resolves off-window navigation targets
+ * asynchronously and so cannot carry selection with focus.
+ *
+ * Call it from **every keyboard move of the virtualized activedescendant**
+ * rather than from a config-watching `effect`: the combination degrades a
+ * keyboard move, so the move is the point at which a throw carries a stack the
+ * consumer can act on. "Every" is load-bearing — arrow navigation is only one
+ * of the moves, and a guard on that branch alone leaves a consumer who
+ * navigates by typeahead (or, in a tree, by entering a child) with the same
+ * silent degradation and no report. Each root routes its moves through one
+ * private `#assertSelectionFollowsFocusSupported()` for that reason. Seeding
+ * the activedescendant on focus / open is not a move and is deliberately
+ * uncovered.
+ *
+ * Shared by Listbox, Select and Tree; the primitive name and the two hint
+ * fragments are the only per-primitive differences.
+ */
+export function throwUnsupportedVirtualizedSelectionFollowsFocus(
+  context: UnsupportedVirtualizedSelectionFollowsFocusContext,
+): void {
+  if (isDevMode()) {
+    throw new Error(
+      `[forty-cdk/${context.primitive}] \`selectionFollowsFocus\` is not supported together with ` +
+        'virtualization (`totalCount` set). The virtualized activedescendant path resolves ' +
+        'off-window navigation targets asynchronously, so selection cannot follow focus there. ' +
+        'Remove one of the two: use `selectionFollowsFocus` only with the non-virtualized ' +
+        `${context.focusModel} ${context.collection}.`,
+    );
+  }
+}
+
 /** Per-call inputs {@link resolveListTypeahead} needs to run a match. */
 export interface ListTypeaheadConfig<H> {
   /** Live options to scan, in document order. */

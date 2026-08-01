@@ -657,6 +657,28 @@ class BadColumnNameHost {
   imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
   template: `
     <div forTable>
+      <for-table-body [rows]="rows" [displayedColumns]="displayed">
+        <ng-container forColumnDef="name">
+          <ng-template forHeaderCell>Name</ng-template>
+          <ng-template forDataCell let-row>{{ row.name }}</ng-template>
+        </ng-container>
+        <ng-container forColumnDef="first name" width="1fr}">
+          <ng-template forHeaderCell>Bad</ng-template>
+          <ng-template forDataCell let-row>{{ row.name }}</ng-template>
+        </ng-container>
+      </for-table-body>
+    </div>
+  `,
+})
+class UndisplayedBadColumnHost {
+  readonly rows = [{ name: 'Ada' }];
+  readonly displayed: readonly string[] = ['name'];
+}
+
+@Component({
+  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  template: `
+    <div forTable>
       <for-table-body [rows]="rows">
         <ng-container forColumnDef="name" fallbackWidth="minmax(120px, 2.5fr))">
           <ng-template forHeaderCell>Name</ng-template>
@@ -2278,6 +2300,13 @@ describe('ForTableBody', () => {
     it('throws from a forColumnDef declaring a width that escapes the declaration', () => {
       expect(() => renderHost(BadWidthHost)).toThrowError(
         /\[forty-cdk\/table\][\s\S]*width[\s\S]*terminates the declaration/,
+      );
+    });
+
+    it('leaves a def out of displayedColumns unchecked, since nothing interpolates it (#1583)', () => {
+      const { query } = renderHost(UndisplayedBadColumnHost);
+      expect((query('[forTableHeaderRow]') as HTMLElement).style.gridTemplateColumns).toBe(
+        'var(--for-table-col-name-width, minmax(0, 1fr))',
       );
     });
   });

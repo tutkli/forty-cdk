@@ -1,17 +1,7 @@
-import {
-  computed,
-  Directive,
-  effect,
-  ElementRef,
-  inject,
-  input,
-  model,
-  type Signal,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, model, type Signal } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  assertTimeCapable,
   type DateAdapter,
   injectDateAdapter,
   DateFieldEngine,
@@ -241,17 +231,6 @@ export class ForDateField<D>
         return [serializeISODate(this.adapter, current, this.granularity(), 'ForDateField')];
       }),
       disabled: this.effectiveDisabled,
-    });
-
-    // Eager validation: a date-time field needs a time-capable adapter. Fail
-    // loudly as soon as the granularity input settles. The throw is raised
-    // during change detection (inside this `effect`) and propagates through
-    // Angular's error handling, so a day-only adapter misconfiguration is
-    // surfaced — never silently swallowed.
-    effect(() => {
-      if (this.granularity() !== 'day') {
-        assertTimeCapable(this.adapter, 'ForDateField');
-      }
     });
   }
 

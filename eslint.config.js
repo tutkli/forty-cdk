@@ -2418,6 +2418,215 @@ const fortyCdkPlugin = {
       },
     },
 
+    // `forty-cdk/no-assertion-only-effect`.
+    //
+    // The fourth rule of the `effect()` family, and the one about an effect that
+    // neither writes nor pulls: an `effect()` whose whole body is a `throw` or an
+    // `assert*` call — `effect()` used as a **validation channel**.
+    //
+    // It does not work, and the way it fails is silent. A throw inside an effect
+    // never reaches the code that caused it: Angular routes it to the
+    // application `ErrorHandler`, so the consumer gets a console entry whose
+    // stack is the effect scheduler rather than the binding at fault, the effect
+    // re-throws on every re-run, and an app with its own `ErrorHandler` swallows
+    // it entirely. That is how `selectionFollowsFocus` + virtualization reached
+    // production on Select / Listbox / Tree as *silently degraded keyboard
+    // behaviour*: focus stopped carrying selection and nobody was told (#1583).
+    //
+    // The resolution is always the same shape — move the invariant to its
+    // **point of use**, where a throw is attributable to a real call:
+    //
+    //   // before: unattributable, re-throws forever
+    //   effect(() => { if (a() && b()) throw new Error('[forty-cdk/x] …'); });
+    //
+    //   // after: thrown from the move the combination degrades
+    //   protected onHostKeyDown(event: KeyboardEvent): void {
+    //     if (action) { this.#assertXSupported(); … }
+    //   }
+    //
+    // Be precise about what the move buys, because it is not all three faults.
+    // The attributable stack and the end of the perpetual re-throw are
+    // unconditional. Whether the consumer can *catch* the error depends on the
+    // shape of the point of use: a derivation read during the render (a
+    // `computed`, as in `ForTableBody.track` / `DateFieldEngine.specs`) aborts
+    // the render, so `detectChanges()` re-raises it and a consumer `try` sees
+    // it; an **event handler** does not, because Angular wraps host listeners
+    // and routes their throws to the same `ErrorHandler` an effect's go to —
+    // which is exactly why the Select / Listbox / Tree specs capture through a
+    // real `ErrorHandler` rather than asserting `.toThrow()`. Do not read this
+    // rule as "the point of use makes the throw reach the consumer"; read it as
+    // "the point of use makes the throw attributable and one-shot, and reaches
+    // the consumer wherever the point of use is a render-time derivation".
+    //
+    // Deliberate design notes:
+    //   - "Assertion-only" is a body made of nothing but `throw`s, calls to an
+    //     `assert*` / `throw*` function (bare, `this.`-qualified, or private),
+    //     the `if` / block scaffolding around them, bare early `return`s, and the
+    //     `const` reads that gather the values being asserted. One statement of
+    //     real work — a DOM write, a signal read fed to something else — and the
+    //     effect is a side-effect effect the rule leaves alone. `assert*` beside
+    //     real work is therefore fine: `[forTableColumnResizer]` asserts its
+    //     column name inside the effect that publishes the width var, which *is*
+    //     the point of use.
+    //   - **The exemption is a condition, not a path list**: an `effect()` inside
+    //     a function whose own name starts with `assert` is a reusable assertion
+    //     *scheduler*, and the naming is the contract. `assertInputBound`
+    //     (`forty-cdk/core`) is the one instance and the shape #1601 sanctioned:
+    //     it asserts that a piece's binding was ever written, which is
+    //     observable only *after* the update pass, so it has no point of use to
+    //     move to — the effect is the earliest read, not a stand-in for one.
+    //     Anything else with a point of use must use it.
+    //   - Like its siblings the rule is syntactic and does not resolve helpers
+    //     across files: an effect whose body is one call to a collaborator's
+    //     `validate()` is invisible to it. Naming assertion helpers `assert*` /
+    //     `throw*` is what keeps that gap small.
+    //
+    // See: CLAUDE.md > conventions > "Assertions are dev-gated and live at the
+    // point of use".
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/no-assertion-only-effect.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#1583, #1601
+    'no-assertion-only-effect': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'An `effect()` must not be used as a validation channel: a body that only throws or calls `assert*` belongs at the invariant\'s point of use (CLAUDE.md § "Assertions are dev-gated and live at the point of use").',
+        },
+        schema: [],
+        messages: {
+          assertionOnly:
+            'This `effect()` is a validation channel: its whole body is `{{ what }}`. A throw inside an `effect` never reaches the code that caused it — Angular routes it to the application `ErrorHandler`, so the stack names the scheduler rather than the binding at fault, the effect re-throws on every re-run, and a consumer with their own `ErrorHandler` sees nothing. Move the invariant to its point of use (the move / derivation that the invalid combination degrades) and throw from a dev-gated `assert*` helper there — from **every** such point, not just the first one you find. A render-time derivation additionally aborts the render, so the consumer can catch it; an event handler still routes to the `ErrorHandler`, and what you gain there is the attributable stack and the end of the re-throw. (CLAUDE.md § "Assertions are dev-gated and live at the point of use".)',
+        },
+      },
+      create(context) {
+        const ASSERT_CALLEE = /^[#]?(assert|throw)[A-Z]/;
+
+        /** The callee's name for an `assert*` / `throw*` call, else `null`. */
+        function assertionCallName(expression) {
+          if (expression.type !== 'CallExpression') {
+            return null;
+          }
+          const callee = expression.callee;
+          if (callee.type === 'Identifier') {
+            return ASSERT_CALLEE.test(callee.name) ? callee.name : null;
+          }
+          if (callee.type === 'MemberExpression' && !callee.computed) {
+            const property = callee.property;
+            const name =
+              property.type === 'PrivateIdentifier'
+                ? `#${property.name}`
+                : property.type === 'Identifier'
+                  ? property.name
+                  : null;
+            return name && ASSERT_CALLEE.test(name) ? name : null;
+          }
+          return null;
+        }
+
+        /**
+         * Classifies a statement list into one of three outcomes, kept distinct
+         * because conflating the last two is how a `{ return; }` dev guard reads
+         * as real work: `false` — the body does work that is not assertion;
+         * `null` — assertion-free but inert (guards, reads); a string naming
+         * what was asserted (`'a throw'`, `'assertX(…)'`) otherwise.
+         */
+        function classify(statements) {
+          let found = null;
+          for (const statement of statements) {
+            switch (statement.type) {
+              case 'ThrowStatement':
+                found ??= 'a throw';
+                break;
+              case 'EmptyStatement':
+                break;
+              case 'ReturnStatement':
+                if (statement.argument) return false;
+                break;
+              case 'VariableDeclaration':
+                break;
+              case 'BlockStatement': {
+                const inner = classify(statement.body);
+                if (inner === false) return false;
+                found ??= inner;
+                break;
+              }
+              case 'IfStatement': {
+                const branches = [statement.consequent, statement.alternate].filter(Boolean);
+                for (const branch of branches) {
+                  const inner = classify([branch]);
+                  if (inner === false) return false;
+                  found ??= inner;
+                }
+                break;
+              }
+              case 'ExpressionStatement': {
+                const name = assertionCallName(statement.expression);
+                if (name === null) return false;
+                found ??= `${name}(…)`;
+                break;
+              }
+              default:
+                return false;
+            }
+          }
+          return found;
+        }
+
+        /**
+         * Whether the `effect(` sits inside a function whose own name starts with
+         * `assert` — a reusable assertion scheduler rather than a primitive's
+         * inline validation channel. See the design notes above.
+         */
+        function insideAssertionHelper(node) {
+          for (let current = node.parent; current; current = current.parent) {
+            let name = null;
+            if (current.type === 'FunctionDeclaration' || current.type === 'FunctionExpression') {
+              name = current.id?.name ?? null;
+            } else if (current.type !== 'ArrowFunctionExpression') {
+              continue;
+            }
+            const parent = current.parent;
+            if (name === null && parent) {
+              if (parent.type === 'VariableDeclarator' && parent.id.type === 'Identifier') {
+                name = parent.id.name;
+              } else if (
+                (parent.type === 'MethodDefinition' || parent.type === 'PropertyDefinition') &&
+                !parent.computed
+              ) {
+                name = parent.key.type === 'Identifier' ? parent.key.name : null;
+              }
+            }
+            if (name !== null && /^assert[A-Z]/.test(name)) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        return {
+          CallExpression(node) {
+            if (node.callee.type !== 'Identifier' || node.callee.name !== 'effect') return;
+            const callback = node.arguments[0];
+            if (
+              !callback ||
+              (callback.type !== 'ArrowFunctionExpression' &&
+                callback.type !== 'FunctionExpression')
+            ) {
+              return;
+            }
+            const statements =
+              callback.body.type === 'BlockStatement'
+                ? callback.body.body
+                : [{ type: 'ExpressionStatement', expression: callback.body }];
+            const what = classify(statements);
+            if (typeof what !== 'string' || insideAssertionHelper(node)) return;
+            context.report({ node, messageId: 'assertionOnly', data: { what } });
+          },
+        };
+      },
+    },
+
     // Mechanizes the #695 footgun: any control wiring `injectHiddenInput` is a
     // form-value control that can sit inside a disabled `[forFieldset]`, so the
     // hidden `<input>` it spawns must reflect `effectiveDisabled` — the signal
@@ -2983,6 +3192,11 @@ module.exports = tseslint.config(
       // run names the store it primes and stays read-only
       // (tutkli/forty-cdk#1602; CLAUDE.md § "The sanctioned-pull marker"). ----
       'forty-cdk/require-sanctioned-pull-marker': 'error',
+      // ---- …and the third thing an effect gets misused for: validation. A
+      // throw inside an effect reaches the `ErrorHandler`, never the consumer
+      // (tutkli/forty-cdk#1583; CLAUDE.md § "Assertions are dev-gated and live
+      // at the point of use"). ----
+      'forty-cdk/no-assertion-only-effect': 'error',
 
       // ---- injectHiddenInput must pass `effectiveDisabled`, not raw
       // `disabled`, when the control folds in fieldset-disabled
@@ -3084,6 +3298,10 @@ module.exports = tseslint.config(
       // Same for the pull ledger: a spec that primes a store from an `effect()`
       // is asserting the pull's behaviour, not shipping one.
       'forty-cdk/require-sanctioned-pull-marker': 'off',
+      // A spec that throws from an `effect()` is *modelling* the anti-pattern
+      // (or a consumer's own code) to assert how it surfaces; it ships no
+      // validation channel a consumer inherits.
+      'forty-cdk/no-assertion-only-effect': 'off',
     },
   },
 
@@ -3104,6 +3322,7 @@ module.exports = tseslint.config(
       // Dev/CI-only app: nothing here ships, so it owes no carve-out ledger.
       'forty-cdk/require-sanctioned-effect-marker': 'off',
       'forty-cdk/require-sanctioned-pull-marker': 'off',
+      'forty-cdk/no-assertion-only-effect': 'off',
     },
   },
 
@@ -3115,6 +3334,7 @@ module.exports = tseslint.config(
       '@angular-eslint/template/elements-content': 'off',
       'forty-cdk/require-sanctioned-effect-marker': 'off',
       'forty-cdk/require-sanctioned-pull-marker': 'off',
+      'forty-cdk/no-assertion-only-effect': 'off',
     },
   },
 
@@ -3180,6 +3400,9 @@ module.exports = tseslint.config(
       // an unmarked `effect()` on purpose, and the sanctioned-effect fixture
       // would otherwise be a second rule's target too.
       'forty-cdk/require-sanctioned-pull-marker': 'off',
+      // And the validation-channel rule: the sanctioned-effect / pull fixtures
+      // both contain bare `effect()` bodies it would classify.
+      'forty-cdk/no-assertion-only-effect': 'off',
     },
   },
 
@@ -3187,6 +3410,13 @@ module.exports = tseslint.config(
     files: ['projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-effect-marker.fixture.ts'],
     rules: {
       'forty-cdk/require-sanctioned-effect-marker': 'error',
+    },
+  },
+
+  {
+    files: ['projects/forty-cdk/eslint-rules-fixtures/no-assertion-only-effect.fixture.ts'],
+    rules: {
+      'forty-cdk/no-assertion-only-effect': 'error',
     },
   },
 

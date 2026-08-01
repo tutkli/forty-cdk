@@ -1,17 +1,7 @@
-import {
-  computed,
-  Directive,
-  effect,
-  ElementRef,
-  inject,
-  input,
-  model,
-  type Signal,
-} from '@angular/core';
+import { computed, Directive, ElementRef, inject, input, model, type Signal } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  assertTimeCapable,
   type DateAdapter,
   type DateRange,
   DateFieldEngine,
@@ -305,12 +295,6 @@ export class ForDateRangeField<D>
           : [serializeISODate(this.adapter, range.end, this.granularity(), 'ForDateRangeField')];
       }),
       disabled: this.effectiveDisabled,
-    });
-
-    effect(() => {
-      if (this.granularity() !== 'day') {
-        assertTimeCapable(this.adapter, 'ForDateRangeField');
-      }
     });
   }
 

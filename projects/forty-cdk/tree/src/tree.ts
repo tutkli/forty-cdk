@@ -21,6 +21,7 @@ import {
   resolveListNavigation,
   resolveTreeExpandCollapse,
   runVirtualizedNavigatorBridge,
+  throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RovingTabindex,
   injectTextDirection,
@@ -210,8 +211,9 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * Not supported together with virtualization (`totalCount` set): the
    * virtualized `aria-activedescendant` focus model resolves off-window
    * navigation targets asynchronously, so selection cannot follow focus there
-   * without deriving the committed value from a render side effect. Combining
-   * the two throws in dev mode.
+   * without deriving the committed value from a render side effect.
+   * Keyboard-navigating a virtualized tree with it set throws in dev mode, from
+   * the move the combination degrades.
    */
   readonly selectionFollowsFocus = input(this.#defaults.selectionFollowsFocus, {
     transform: booleanAttribute,
@@ -388,19 +390,6 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
         requireNavigator: () => this.#requireActiveDescendantModel(),
       });
     });
-
-    if (isDevMode()) {
-      effect(() => {
-        if (this.selectionFollowsFocus() && this.#virtualized()) {
-          throw new Error(
-            '[forty-cdk/tree] `selectionFollowsFocus` is not supported together with virtualization ' +
-              '(`totalCount` set). The virtualized activedescendant focus model resolves off-window ' +
-              'navigation targets asynchronously, so selection cannot follow focus there. Remove one of ' +
-              'the two: use `selectionFollowsFocus` only with the non-virtualized roving-tabindex tree.',
-          );
-        }
-      });
-    }
   }
 
   isExpanded(value: string): boolean {
@@ -456,6 +445,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     if (this.disabled()) {
       return;
     }
+    this.#assertSelectionFollowsFocusSupported();
     this.#focusModel().navigate(action);
   }
 
@@ -472,6 +462,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       this.setExpanded(cur.value, true);
       return;
     }
+    this.#assertSelectionFollowsFocusSupported();
     model.enterChild();
   }
 
@@ -488,6 +479,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       this.setExpanded(cur.value, false);
       return;
     }
+    this.#assertSelectionFollowsFocusSupported();
     model.moveToParent();
   }
 
@@ -526,6 +518,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       return text.startsWith(buffer);
     });
     if (match) {
+      this.#assertSelectionFollowsFocusSupported();
       this.#focusModel().typeaheadTo(match);
     }
     return true;
@@ -620,6 +613,26 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
       return action === 'next' || action === 'prev';
     }
     return false;
+  }
+
+  /**
+   * Guards the `selectionFollowsFocus` + virtualization invariant at every
+   * keyboard move of the virtualized activedescendant: arrow / Home / End
+   * navigation, entering a child or leaving to a parent, and a typeahead match
+   * all move focus without carrying selection. It sits inside those four
+   * methods rather than in {@link onHostKeyDown} because each is shared with
+   * the non-virtualized path (where `[forTreeItem]` handles its own keys), and
+   * because expanding or collapsing in place moves no focus and so degrades
+   * nothing — the `#virtualized()` gate makes the roving path inert.
+   */
+  #assertSelectionFollowsFocusSupported(): void {
+    if (this.#virtualized() && this.selectionFollowsFocus()) {
+      throwUnsupportedVirtualizedSelectionFollowsFocus({
+        primitive: 'tree',
+        focusModel: 'roving-tabindex',
+        collection: 'tree',
+      });
+    }
   }
 
   #throwUnsupportedVirtualizedMultiSelect(): void {

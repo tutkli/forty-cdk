@@ -3639,7 +3639,7 @@ describe('ForSelectIndicator', () => {
     });
   });
 
-  describe('selectionFollowsFocus + virtualization guard (#1145)', () => {
+  describe('selectionFollowsFocus + virtualization guard (#1145, #1583)', () => {
     @Component({
       imports: BASE_IMPORTS,
       template: `
@@ -3647,12 +3647,22 @@ describe('ForSelectIndicator', () => {
           forSelect
           [(open)]="open"
           [totalCount]="total()"
+          [visibleRange]="range"
           [selectionFollowsFocus]="followsFocus()"
         >
           <button forSelectTrigger>T</button>
           @if (open()) {
-            <div forSelectContent>
-              <button forSelectOption value="a" [posInSet]="0">A</button>
+            <div forSelectContent data-test-id="content">
+              @for (opt of options; track opt.index) {
+                <button
+                  forSelectOption
+                  [value]="'item-' + opt.index"
+                  [posInSet]="opt.index"
+                  [attr.data-test-id]="'opt-' + opt.index"
+                >
+                  {{ opt.label }}
+                </button>
+              }
             </div>
           }
         </div>
@@ -3661,17 +3671,87 @@ describe('ForSelectIndicator', () => {
     class GuardHost {
       readonly open = signal(false);
       readonly total = signal<number | undefined>(undefined);
+      readonly range: readonly [number, number] = [0, 3];
       readonly followsFocus = signal(false);
+      readonly options = [
+        { index: 0, label: 'Alpha' },
+        { index: 1, label: 'Bravo' },
+        { index: 2, label: 'Charlie' },
+      ];
     }
 
-    it('throws in dev mode when selectionFollowsFocus is combined with totalCount', () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    async function setupGuard(captured: unknown[], followsFocus: boolean) {
+      class CapturingHandler implements ErrorHandler {
+        handleError(err: unknown): void {
+          captured.push(err);
+        }
+      }
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          provideZonelessChangeDetection(),
+          { provide: ErrorHandler, useClass: CapturingHandler },
+        ],
+      });
       const fixture = TestBed.createComponent(GuardHost);
-      fixture.componentInstance.total.set(50);
-      fixture.componentInstance.followsFocus.set(true);
-      expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/select\] `selectionFollowsFocus` is not supported together with virtualization/,
+      fixture.componentInstance.total.set(3);
+      fixture.componentInstance.followsFocus.set(followsFocus);
+      fixture.componentInstance.open.set(true);
+      fixture.detectChanges();
+      await flush(fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="content"]')!;
+      content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+      await flush(fixture);
+      return { fixture, content };
+    }
+
+    const throwsUnsupported = (captured: readonly unknown[]) =>
+      captured.some(
+        (e) =>
+          e instanceof Error &&
+          /\[forty-cdk\/select\] `selectionFollowsFocus` is not supported together with virtualization/.test(
+            e.message,
+          ),
       );
+
+    it('reports nothing while the unsupported combination is merely configured', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupGuard(captured, true);
+      expect(captured).toEqual([]);
+      expect(content.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('throws in dev mode from the navigation the combination degrades', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupGuard(captured, true);
+      pressKey(content, 'ArrowDown');
+      expect(throwsUnsupported(captured)).toBe(true);
+    });
+
+    it('does not move the activedescendant past the guard', async () => {
+      const captured: unknown[] = [];
+      const { content, fixture } = await setupGuard(captured, true);
+      const seeded = content.getAttribute('aria-activedescendant');
+      pressKey(content, 'ArrowDown');
+      await flush(fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('throws from a typeahead match too, not only from the arrow branch', async () => {
+      const captured: unknown[] = [];
+      const { content, fixture } = await setupGuard(captured, true);
+      const seeded = content.getAttribute('aria-activedescendant');
+      pressKey(content, 'b');
+      await flush(fixture);
+      expect(throwsUnsupported(captured)).toBe(true);
+      expect(content.getAttribute('aria-activedescendant')).toBe(seeded);
+    });
+
+    it('reports nothing for a typeahead keystroke that matches nothing', async () => {
+      const captured: unknown[] = [];
+      const { content } = await setupGuard(captured, true);
+      pressKey(content, 'z');
+      expect(captured).toEqual([]);
     });
 
     it('does not throw when selectionFollowsFocus is set without virtualization', async () => {
@@ -3683,13 +3763,15 @@ describe('ForSelectIndicator', () => {
       expect(content.getAttribute('tabindex')).toBe('-1');
     });
 
-    it('does not throw when virtualized without selectionFollowsFocus', async () => {
-      const r = renderHost(GuardHost);
-      r.instance.total.set(50);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
-      expect(content.getAttribute('tabindex')).toBe('0');
+    it('does not throw when navigating a virtualized select without selectionFollowsFocus', async () => {
+      const captured: unknown[] = [];
+      const { content, fixture } = await setupGuard(captured, false);
+      pressKey(content, 'ArrowDown');
+      await flush(fixture);
+      expect(captured).toEqual([]);
+      expect(content.getAttribute('aria-activedescendant')).toBe(
+        document.querySelector('[data-test-id="opt-1"]')!.id,
+      );
     });
   });
 
