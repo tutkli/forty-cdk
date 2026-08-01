@@ -8,7 +8,14 @@ import {
   input,
 } from '@angular/core';
 
-import { accessibleTextContent, registerHandle, hostId } from 'forty-cdk/core';
+import {
+  accessibleTextContent,
+  assertInputBound,
+  isUnset,
+  registerHandle,
+  hostId,
+  unsetInput,
+} from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -76,8 +83,12 @@ export class ForComboboxOption<T = string> {
    * the parent `[forCombobox]` over a richer `T`. The parent's
    * `[compareWith]` decides how options are matched against the
    * committed selection.
+   *
+   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
+   * `input.required` so the parent can skip an option that has registered but
+   * not been bound yet, and an unbound option throws in dev mode.
    */
-  readonly value = input.required<T>();
+  readonly value = input(unsetInput<T>());
 
   /**
    * Visible label used by `[forComboboxInput]` for inline autocomplete
@@ -101,7 +112,10 @@ export class ForComboboxOption<T = string> {
 
   readonly id = hostId('for-combobox-option');
 
-  readonly selected = computed(() => this.#ctx.isSelected(this.value()));
+  readonly selected = computed(() => {
+    const value = this.value();
+    return isUnset(value) ? false : this.#ctx.isSelected(value);
+  });
   /** True when this option is the current activedescendant. Reflected as `data-highlighted`. */
   readonly highlighted = computed(() => this.#ctx.isActive(this.id()));
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
@@ -134,6 +148,9 @@ export class ForComboboxOption<T = string> {
       return explicit;
     }
     const v = this.value();
+    if (isUnset(v)) {
+      return '';
+    }
     if (typeof v === 'string') {
       // String mode: the trimmed `textContent` is the canonical fallback,
       // identical to the pre-generic behaviour. Lets consumers omit
@@ -155,6 +172,7 @@ export class ForComboboxOption<T = string> {
   };
 
   constructor() {
+    assertInputBound(this.value, 'combobox', '[forComboboxOption]', 'value');
     registerHandle(
       this.#handle,
       (h) => this.#ctx.registerOption(h),

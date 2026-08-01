@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { type VetoableNativeEvent } from 'forty-cdk/core';
+import { isUnset, unsetInput, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -3862,5 +3862,75 @@ describe('ForSelectIndicator', () => {
       pressKey(content, 'a', { ctrlKey: true });
       expect(throwsUnsupported(captured)).toBe(false);
     });
+  });
+});
+
+describe('ForSelect unwritten option value (issue #1601)', () => {
+  afterEachOverlayCleanup();
+
+  @Component({
+    imports: BASE_IMPORTS,
+    template: `
+      <div
+        forSelect
+        [(open)]="open"
+        [(value)]="value"
+        [multiple]="true"
+        [compareWith]="compareWith"
+      >
+        <button forSelectTrigger>trigger</button>
+        @if (open()) {
+          <div forSelectContent>
+            <div forSelectOption value="apple" data-test-id="apple">apple</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class BoundHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>(['apple']);
+    readonly compareWith = vi.fn((a: string, b: string) => a === b);
+  }
+
+  @Component({
+    imports: BASE_IMPORTS,
+    template: `
+      <div forSelect [(open)]="open" [(value)]="value">
+        <button forSelectTrigger>trigger</button>
+        @if (open()) {
+          <div forSelectContent>
+            <div forSelectOption data-test-id="pending">pending</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class UnboundOptionHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>([]);
+  }
+
+  it('fails loudly when an option carries no value binding at all', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(UnboundOptionHost);
+
+    expect(() => fixture.detectChanges()).toThrowError(
+      /\[forty-cdk\/select\] \[forSelectOption\] has no \[value\] binding/,
+    );
+  });
+
+  it('ignores a sentinel handed to activate() or commitOnTab() instead of committing it', async () => {
+    const r = renderHost(BoundHost);
+    await flush(r.fixture);
+    const select = r.fixture.debugElement.query(By.directive(ForSelect)).injector.get(ForSelect);
+    r.instance.compareWith.mockClear();
+
+    select.activate(unsetInput<string>());
+    select.commitOnTab(unsetInput<string>());
+    await flush(r.fixture);
+
+    expect(r.instance.value()).toEqual(['apple']);
+    expect(r.instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
   });
 });

@@ -30,10 +30,10 @@ export interface VirtualizedNavigatorAccessors<H, E extends VirtualizedNavigator
   readonly hostOf: (item: H) => HTMLElement;
   /**
    * Build the position-snapshot entry for a live handle, or `null` to skip it
-   * this fold. The single NG0950 read guard (`tryReadHandle`) is injected
-   * here: a statically-rendered option that registers before its
-   * `input.required` binding is written returns `null` and is folded in on the
-   * binding's re-run.
+   * this fold. The unwritten-binding guard is injected here: a
+   * statically-rendered option that registers before its `[value]` binding is
+   * written reads the `unsetInput` sentinel, returns `null`, and is folded in
+   * on the binding's re-run.
    */
   readonly readEntry: (item: H) => E | null;
   /**

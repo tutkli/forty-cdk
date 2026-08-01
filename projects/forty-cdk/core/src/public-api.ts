@@ -261,7 +261,6 @@ export {
   singleSelected,
   toggleInArray,
 } from './selection/selection';
-export { isRequiredInputUnset, tryReadHandle } from './signal-graph/read-handle';
 export { createSingleSlot } from './single-slot/single-slot';
 export {
   attachSwipeDismiss,
@@ -290,6 +289,7 @@ export {
 export { injectTextDirection } from './text-direction/text-direction';
 export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
 export { injectTypeahead } from './typeahead/typeahead';
+export { assertInputBound, isUnset, unsetInput } from './unset-input/unset-input';
 export {
   createVetoableEvent,
   createVetoableNativeEvent,

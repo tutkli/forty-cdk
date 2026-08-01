@@ -34,6 +34,7 @@ import {
   RangeSelectionEngine,
   defaultItemToFormValue,
   isInArray,
+  isUnset,
   singleSelected,
   toggleInArray,
   injectTextDirection,
@@ -658,7 +659,7 @@ export class ForSelect<T = string>
   }
 
   activate(v: T): void {
-    if (this.effectiveDisabled() || this.readonly()) {
+    if (this.effectiveDisabled() || this.readonly() || isUnset(v)) {
       return;
     }
     if (this.multiple()) {
@@ -752,7 +753,7 @@ export class ForSelect<T = string>
   }
 
   commitOnTab(value: T): void {
-    if (this.effectiveDisabled()) {
+    if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
     if (!this.multiple() && !this.readonly()) {

@@ -3050,7 +3050,7 @@ describe('SSR smoke tests', () => {
       expect(trigger.getAttribute('aria-controls')).toBe('static-panel-b');
     });
 
-    it('pairs triggers and panels rendered by sibling @for blocks server-side, without NG0950', () => {
+    it('pairs triggers and panels rendered by sibling @for blocks server-side, without throwing', () => {
       const f = TestBed.createComponent(TabsServerRepeatFixture);
       expect(() => f.detectChanges()).not.toThrow();
       const root = f.nativeElement as HTMLElement;

@@ -1,7 +1,7 @@
 import { ApplicationRef, effect, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { tryReadHandle } from '../signal-graph/read-handle';
+import { isUnset, unsetInput } from '../unset-input/unset-input';
 import { VirtualizedNavigator } from './virtualized-navigator';
 
 interface FakeHandle {
@@ -79,8 +79,11 @@ function createNavigator(
       posOf: (h) => h.pos(),
       idOf: (h) => h.id(),
       hostOf: (h) => h.host,
-      readEntry: (h) =>
-        tryReadHandle(() => ({ id: h.id(), disabled: h.disabled(), value: h.value() })),
+      readEntry: (h) => {
+        const id = h.id();
+        const value = h.value();
+        return isUnset(value) ? null : { id, value, disabled: h.disabled() };
+      },
       scrollIntoView: initial.scrollIntoView,
     },
     { deferFoldOnTotalTransition: initial.deferFold ?? false },
@@ -202,11 +205,9 @@ describe('VirtualizedNavigator', () => {
       expect(snap.get(0)?.id).toBe('b-0');
     });
 
-    it('skips an option whose value read throws NG0950, folding it in on the re-run', () => {
+    it('skips an option whose value binding is unwritten, folding it in on the re-run', () => {
       const h = createNavigator();
-      const bound = signal(false);
-      const ng0950 = new Error('required input not set') as Error & { code?: number };
-      ng0950.code = -950;
+      const bound = signal<string | null>(null);
       const id = signal('r-0');
       const pos = signal<number | null>(0);
       const disabled = signal(false);
@@ -215,18 +216,14 @@ describe('VirtualizedNavigator', () => {
         id,
         pos,
         disabled,
-        value: () => {
-          if (!bound()) throw ng0950;
-          return 'apple';
-        },
+        value: () => bound() ?? unsetInput<string>(),
         host,
       };
       h.setItems([handle]);
       h.navigator.prime();
-      // Skipped this fold — the binding is not written yet.
       expect(h.navigator.snapshotByPos().has(0)).toBe(false);
 
-      bound.set(true);
+      bound.set('apple');
       h.navigator.prime();
       expect(h.navigator.snapshotByPos().get(0)?.value).toBe('apple');
     });

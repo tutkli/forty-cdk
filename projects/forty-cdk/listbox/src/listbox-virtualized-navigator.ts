@@ -39,8 +39,8 @@ export interface ListboxVirtualizedNavigatorDeps<T> {
 /**
  * Virtualization navigation engine for `ForListbox`. A thin adapter over the
  * shared `_internal/virtualized-navigator` engine: the listbox snapshot needs
- * only the id + disabled flag (it never reads option values), so no NG0950 read
- * guard is required.
+ * only the id + disabled flag (it never reads option values), so no
+ * unwritten-binding guard is required.
  *
  * Internal — not re-exported from `listbox/index.ts` or `public-api.ts`.
  */

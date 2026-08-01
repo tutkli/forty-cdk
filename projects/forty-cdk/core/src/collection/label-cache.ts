@@ -1,6 +1,6 @@
 import { computed, linkedSignal, type Signal } from '@angular/core';
 
-import { tryReadHandle } from '../signal-graph/read-handle';
+import { isUnset } from '../unset-input/unset-input';
 
 /**
  * Minimal option-handle shape a {@link LabelCache} reads. Every member is a
@@ -104,10 +104,10 @@ const EMPTY_WINDOW = new Map<string, LabelCacheEntry<never>>();
  * completion matcher only.
  *
  * A statically-rendered option registers during the content view's *creation*
- * pass, before its `input.required` `[value]` binding is written in that view's
- * *update* pass, and {@link prime} pulls the cache inside that gap. Such a
- * handle is skipped for that run and folded in on the re-run the binding
- * triggers, via `tryReadHandle`.
+ * pass, before its `[value]` binding is written in that view's *update* pass,
+ * and {@link prime} pulls the cache inside that gap. Such a handle reads the
+ * `unsetInput` sentinel, is skipped for that run, and folds in on the re-run
+ * the binding triggers.
  *
  * Internal helper — not part of the blessed core tier and never surfaced on a
  * primitive's public context. Constructed once per root.
@@ -199,16 +199,12 @@ function readWindow<T>(
 ): ReadonlyMap<string, LabelCacheEntry<T>> {
   const byKey = new Map<string, LabelCacheEntry<T>>();
   for (const item of items) {
-    const entry = tryReadHandle(() => ({
-      id: item.id(),
-      value: item.value(),
-      label: item.label(),
-      disabled: item.disabled(),
-    }));
-    if (entry === null) {
+    const id = item.id();
+    const value = item.value();
+    if (isUnset(value)) {
       continue;
     }
-    byKey.set(toFormValue(entry.value), entry);
+    byKey.set(toFormValue(value), { id, value, label: item.label(), disabled: item.disabled() });
   }
   return byKey;
 }

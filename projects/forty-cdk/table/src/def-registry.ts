@@ -9,7 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { Collection, tryReadHandle } from 'forty-cdk/core';
+import { Collection, isUnset } from 'forty-cdk/core';
 
 import type {
   ForColumnDef,
@@ -50,9 +50,10 @@ export interface ForTableDefRegistry {
    * its own `[displayedColumns]` from it (say, to move a fixed action column to
    * the end) without knowing which defs its consumer projected.
    *
-   * Reading it resolves each def's required `name` input, so read it from a
-   * template, a `computed`, or an `afterNextRender` — not from a constructor,
-   * where the projected defs' inputs are not bound yet.
+   * Reading it resolves each def's `name` input, and a def whose binding is not
+   * written yet is left out, so read it from a template, a `computed`, or an
+   * `afterNextRender` — not from a constructor, where the projected defs' inputs
+   * are not bound yet and the list would come back short.
    */
   readonly columnNames: Signal<readonly string[]>;
 }
@@ -131,29 +132,29 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
   /**
    * Registered column defs, in document order.
    *
-   * A def registers in its view's **creation** pass but has its required `name`
-   * bound in that view's **update** pass, and for a def declared in a preset
-   * component's view those two passes straddle the body's own render — so a def
-   * is held back until its name can be read, and `tryReadHandle` tracks the
-   * unset signal so the binding's write folds it in. See `tryReadHandle`.
+   * A def registers in its view's **creation** pass but has its `name` bound in
+   * that view's **update** pass, and for a def declared in a preset component's
+   * view those two passes straddle the body's own render — so a def is held back
+   * until its name can be read. Reading the unwritten input tracks it, so the
+   * binding's write folds the def in. See `unsetInput`.
    */
   readonly columnDefs: Signal<readonly ForColumnDef[]> = computed(() =>
     this.#columns
       .items()
       .map((handle) => handle.def)
-      .filter((def) => tryReadHandle(() => def.name()) !== null),
+      .filter((def) => !isUnset(def.name())),
   );
 
   /**
    * Registered row variant defs, in document order (first match wins per datum).
-   * Held back until the def's required `when` predicate can be read, exactly like
+   * Held back until the def's `when` predicate can be read, exactly like
    * {@link columnDefs}.
    */
   readonly rowDefs: Signal<readonly ForRowDef<unknown>[]> = computed(() =>
     this.#rowDefs
       .items()
       .map((handle) => handle.def)
-      .filter((def) => tryReadHandle(() => def.when()) !== null),
+      .filter((def) => !isUnset(def.when())),
   );
 
   /** The shared column drag placeholder (the first in document order), or `null`. */

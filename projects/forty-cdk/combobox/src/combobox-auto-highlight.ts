@@ -1,6 +1,6 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { tryReadHandle } from 'forty-cdk/core';
+import { isUnset } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
 import type { VirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -117,7 +117,7 @@ export function createActiveIdSignal<T>(source: ActiveIdSource<T>): WritableSign
  * Resolve the auto-highlight seed for the **non-virtualized** combobox: the id
  * of the option `aria-activedescendant` should fall on when the listbox is open
  * and no pointer survives. Returns `null` when no enabled option qualifies (or
- * when a `'selected'` seed can't yet read its options — see `tryReadHandle`).
+ * when a `'selected'` seed can't yet read its options — see `isUnset`).
  *
  * Pure over its inputs — no signal reads, no DOM access — so the host can call
  * it from inside its `#activeId` linkedSignal computation without leaking the
@@ -179,11 +179,11 @@ function findSelectedEnabled<T>(
     if (item.disabled()) {
       continue;
     }
-    const read = tryReadHandle(() => ({ value: item.value() }));
-    if (read === null) {
+    const value = item.value();
+    if (isUnset(value)) {
       return NOT_READY;
     }
-    if (values.some((sel) => equals(read.value, sel))) {
+    if (values.some((sel) => equals(value, sel))) {
       return item;
     }
   }

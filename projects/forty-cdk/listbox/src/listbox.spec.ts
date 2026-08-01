@@ -8,7 +8,8 @@ import {
 import { form, FormField, required, requiredError, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { isRequiredInputUnset } from 'forty-cdk/core';
+
+import { isUnset, unsetInput } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import {
@@ -387,7 +388,7 @@ describe('ForListbox', () => {
       readonly options = signal(['apple', 'banana', 'cherry']);
     }
 
-    it('mounts a non-empty selection without throwing NG0950, and seeds the roving tab stop', async () => {
+    it('mounts a non-empty selection without throwing, and seeds the roving tab stop', async () => {
       const captured: unknown[] = [];
       class CapturingHandler implements ErrorHandler {
         handleError(err: unknown): void {
@@ -412,7 +413,7 @@ describe('ForListbox', () => {
       }
 
       const errors = thrown === null ? captured : [...captured, thrown];
-      expect(errors.some(isRequiredInputUnset)).toBe(false);
+      expect(errors).toEqual([]);
 
       const el = fixture.nativeElement as HTMLElement;
       expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('0');
@@ -2515,6 +2516,89 @@ describe('ForListbox', () => {
       expect(() => pressKey(first, 'ArrowDown', { shiftKey: true })).not.toThrow();
       await flush(r.fixture);
       expect(r.instance.picked()).toContain('item-1');
+    });
+  });
+
+  describe('unwritten option value (issue #1601)', () => {
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul forListbox [(value)]="picked" [multiple]="true" [compareWith]="compareWith">
+          <li>
+            <button type="button" forListboxOption value="apple" data-test-id="apple">apple</button>
+          </li>
+        </ul>
+      `,
+    })
+    class BoundHost {
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    }
+
+    @Component({
+      imports: [...LISTBOX_IMPORTS],
+      template: `
+        <ul forListbox [(value)]="picked" [multiple]="true" [compareWith]="compareWith">
+          <li>
+            <button type="button" forListboxOption value="apple" data-test-id="apple">apple</button>
+          </li>
+          <li><button type="button" forListboxOption data-test-id="pending">pending</button></li>
+        </ul>
+      `,
+    })
+    class UnboundOptionHost {
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    }
+
+    it('fails loudly when an option carries no value binding at all', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundOptionHost);
+
+      expect(() => fixture.detectChanges()).toThrowError(
+        /\[forty-cdk\/listbox\] \[forListboxOption\] has no \[value\] binding/,
+      );
+    });
+
+    it('never hands the sentinel to compareWith once the dev assert is gone', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundOptionHost);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      const spy = fixture.componentInstance.compareWith;
+      expect(spy).toHaveBeenCalled();
+      expect(spy.mock.calls.flat().some(isUnset)).toBe(false);
+    });
+
+    it('does not commit the sentinel when an unbound option is clicked in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundOptionHost);
+      fixture.detectChanges();
+      await flush(fixture);
+
+      optOf(fixture.nativeElement as HTMLElement, 'pending').click();
+      await flush(fixture);
+
+      expect(fixture.componentInstance.picked()).toEqual(['apple']);
+      expect(fixture.componentInstance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    });
+
+    it('ignores a sentinel handed to activate() instead of committing it', async () => {
+      const r = renderHost(BoundHost);
+      await flush(r.fixture);
+      const listbox = r.fixture.debugElement
+        .query(By.directive(ForListbox))
+        .injector.get(ForListbox);
+      r.instance.compareWith.mockClear();
+
+      listbox.activate(unsetInput<string>());
+      await flush(r.fixture);
+
+      expect(r.instance.picked()).toEqual(['apple']);
+      expect(r.instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
     });
   });
 });

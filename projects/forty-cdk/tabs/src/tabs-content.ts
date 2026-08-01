@@ -1,6 +1,13 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { registerHandle, injectHasFocusableContent, hostId, hostLabelledBy } from 'forty-cdk/core';
+import {
+  assertInputBound,
+  registerHandle,
+  injectHasFocusableContent,
+  hostId,
+  hostLabelledBy,
+  unsetInput,
+} from 'forty-cdk/core';
 import { injectTabsContext } from './tabs-context';
 
 /**
@@ -36,7 +43,14 @@ import { injectTabsContext } from './tabs-context';
 export class ForTabsContent {
   protected readonly group = injectTabsContext('ForTabsContent');
 
-  readonly value = input.required<string>();
+  /**
+   * Value of the tab this panel belongs to, paired with the `[forTabsTrigger]`
+   * carrying the same value. Mandatory: it is seeded with the `unsetInput`
+   * sentinel rather than declared `input.required` so the root can skip a panel
+   * that has registered but not been bound yet, and an unbound panel throws in
+   * dev mode.
+   */
+  readonly value = input(unsetInput<string>());
 
   /**
    * Overrides the automatic focusable-content detection that drives the
@@ -71,6 +85,7 @@ export class ForTabsContent {
   });
 
   constructor() {
+    assertInputBound(this.value, 'tabs', '[forTabsContent]', 'value');
     const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     const handle = { host, id: this.id, value: this.value };
     registerHandle(

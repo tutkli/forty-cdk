@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { isUnset, unsetInput, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   afterEachOverlayCleanup,
   flush,
@@ -3200,7 +3200,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       });
     }
 
-    it('seeds the committed selection without NG0950 when a static option precedes the @for list', async () => {
+    it('seeds the committed selection when a static option precedes the @for list', async () => {
       const r = renderHost(StaticPickerHost);
       r.instance.value.set(['banana']);
 
@@ -3314,8 +3314,8 @@ describe('ForCombobox static option (issue #674)', () => {
   // directly inside `@if (open())`, above the `@for` list. The static option
   // registers during the content view's creation pass but its `[value]`
   // binding only lands on the update pass; the label-cache fold (primed by the
-  // host's bridge effect in between) used to read its `value()` early and
-  // throw NG0950. The fold is now tolerant and re-folds once the binding lands.
+  // host's bridge effect in between) reads its `value()` early. The fold skips
+  // the unwritten binding and re-folds once it lands.
   @Component({
     imports: BASE_IMPORTS,
     template: `
@@ -3360,11 +3360,11 @@ describe('ForCombobox static option (issue #674)', () => {
   const selText = (root: HTMLElement) =>
     root.querySelector<HTMLElement>('[data-testid="sel"]')!.textContent;
 
-  it('opens without NG0950 and renders both the static option and the @for list', async () => {
+  it('opens without throwing and renders both the static option and the @for list', async () => {
     const r = renderHost(StaticOptionHost);
     r.instance.open.set(true);
-    // A throw here is the NG0950 regression — the fold reading the static
-    // option's `value()` before its binding was written.
+    // A throw here is the regression — the fold reading the static option's
+    // `value()` before its binding was written.
     await flush(r.fixture);
 
     expect(getOption('add')).toBeTruthy();
@@ -3428,7 +3428,7 @@ describe('ForCombobox static option (issue #674)', () => {
     r.instance.open.set(true);
     await flush(r.fixture);
     // The static option registered, its `[value]` binding landed, and the
-    // NG0950-tolerant fold re-ran — the cache now resolves the real label,
+    // fold re-ran — the cache now resolves the real label,
     // all without Zone.js (renderHost configures zoneless change detection).
     expect(selText(r.el)).toBe('Add new…');
   });
@@ -4555,5 +4555,110 @@ describe('late [forComboboxTrigger] dev-mode warning (#1389 item 10)', () => {
     r.instance.showTrigger.set(true);
     await flush(r.fixture);
     expect(warn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ForCombobox unwritten option value (issue #1601)', () => {
+  afterEachOverlayCleanup();
+
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div
+        forCombobox
+        [(open)]="open"
+        [(value)]="value"
+        [multiple]="true"
+        [compareWith]="compareWith"
+        [itemToStringLabel]="itemToStringLabel"
+      >
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div forComboboxOption value="apple" data-test-id="apple">apple</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class BoundHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>(['apple']);
+    readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    readonly itemToStringLabel = vi.fn((v: string) => v);
+  }
+
+  @Component({
+    imports: [ForCombobox, ForComboboxInput, ForComboboxContent, ForComboboxOption],
+    template: `
+      <div
+        forCombobox
+        [(open)]="open"
+        [(value)]="value"
+        [multiple]="true"
+        [compareWith]="compareWith"
+        [itemToStringLabel]="itemToStringLabel"
+      >
+        <input forComboboxInput />
+        @if (open()) {
+          <div forComboboxContent>
+            <div forComboboxOption value="apple" data-test-id="apple">apple</div>
+            <div forComboboxOption data-test-id="pending">pending</div>
+          </div>
+        }
+      </div>
+    `,
+  })
+  class UnboundOptionHost {
+    readonly open = signal(true);
+    readonly value = signal<readonly string[]>(['apple']);
+    readonly compareWith = vi.fn((a: string, b: string) => a === b);
+    readonly itemToStringLabel = vi.fn((v: string) => v);
+  }
+
+  it('fails loudly when an option carries no value binding at all', () => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(UnboundOptionHost);
+
+    expect(() => fixture.detectChanges()).toThrowError(
+      /\[forty-cdk\/combobox\] \[forComboboxOption\] has no \[value\] binding/,
+    );
+  });
+
+  it('hands the sentinel to neither compareWith nor itemToStringLabel once the dev assert is gone', async () => {
+    vi.stubGlobal('ngDevMode', false);
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+    const fixture = TestBed.createComponent(UnboundOptionHost);
+    fixture.detectChanges();
+    await flush(fixture);
+
+    const { compareWith, itemToStringLabel } = fixture.componentInstance;
+    expect(compareWith).toHaveBeenCalled();
+    expect(compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    expect(itemToStringLabel.mock.calls.flat().some(isUnset)).toBe(false);
+  });
+
+  it('ignores a handle whose value is the sentinel instead of committing it', async () => {
+    const r = renderHost(BoundHost);
+    await flush(r.fixture);
+    const combobox = r.fixture.debugElement
+      .query(By.directive(ForCombobox))
+      .injector.get(ForCombobox);
+    r.instance.compareWith.mockClear();
+    r.instance.itemToStringLabel.mockClear();
+
+    combobox.activate({
+      host: document.createElement('div'),
+      id: signal('pending'),
+      value: computed(() => unsetInput<string>()),
+      label: signal('pending'),
+      disabled: signal(false),
+      posInSet: signal<number | null>(null),
+    });
+    await flush(r.fixture);
+
+    expect(r.instance.value()).toEqual(['apple']);
+    expect(r.instance.compareWith.mock.calls.flat().some(isUnset)).toBe(false);
+    expect(r.instance.itemToStringLabel.mock.calls.flat().some(isUnset)).toBe(false);
   });
 });

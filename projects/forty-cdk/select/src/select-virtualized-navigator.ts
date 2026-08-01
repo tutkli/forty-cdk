@@ -1,6 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { tryReadHandle, VirtualizedNavigator } from 'forty-cdk/core';
+import { isUnset, VirtualizedNavigator } from 'forty-cdk/core';
 import type { ForSelectOptionHandle } from './select-context';
 
 interface PositionEntry<T> {
@@ -41,8 +41,8 @@ export interface SelectVirtualizedNavigatorDeps<T> {
  * Virtualization navigation engine for `ForSelect`. A thin adapter over the
  * shared `_internal/virtualized-navigator` engine: it maps the select option
  * handle onto the engine's accessors (the option carries its raw `value` so the
- * root can resolve the committed option's index on open) and reads the option's
- * `value` through the single NG0950 read guard.
+ * root can resolve the committed option's index on open) and skips an option
+ * whose `[value]` binding is not written yet.
  *
  * Internal — not re-exported from `select/index.ts` or `public-api.ts`.
  */
@@ -56,8 +56,11 @@ export class SelectVirtualizedNavigator<T> {
         posOf: (o) => o.posInSet(),
         idOf: (o) => o.id(),
         hostOf: (o) => o.host,
-        readEntry: (o) =>
-          tryReadHandle(() => ({ id: o.id(), value: o.value(), disabled: o.disabled() })),
+        readEntry: (o) => {
+          const id = o.id();
+          const value = o.value();
+          return isUnset(value) ? null : { id, value, disabled: o.disabled() };
+        },
       },
     );
   }
