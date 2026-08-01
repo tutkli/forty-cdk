@@ -57,12 +57,13 @@ interface FruitModel {
 interface FruitFlags {
   readonly disable: WritableSignal<boolean>;
   readonly makeReadonly: WritableSignal<boolean>;
+  readonly makeRequired: WritableSignal<boolean>;
 }
 
 function applyFruitSchema(path: SchemaPathTree<FruitModel>, flags: FruitFlags): void {
-  required(path.fruit);
-  readonlyField(path.fruit, () => flags.makeReadonly());
-  disabled(path.fruit, () => flags.disable());
+  required(path.fruit, { when: () => flags.makeRequired() });
+  readonlyField(path.fruit, { when: () => flags.makeReadonly() });
+  disabled(path.fruit, { when: () => flags.disable() });
   validate(path.fruit, ({ value }) =>
     value().length === 0 ? requiredError({ message: 'Pick a fruit' }) : undefined,
   );
@@ -101,6 +102,7 @@ class ListboxFieldHost implements FruitFieldHost {
   readonly model = signal<FruitModel>({ fruit: [] });
   readonly disable = signal(false);
   readonly makeReadonly = signal(false);
+  readonly makeRequired = signal(false);
   readonly showError = signal(false);
   readonly open = signal(false);
   readonly tree = form(this.model, (path) => applyFruitSchema(path, this));
@@ -139,6 +141,7 @@ class SelectFieldHost implements FruitFieldHost {
   readonly model = signal<FruitModel>({ fruit: [] });
   readonly disable = signal(false);
   readonly makeReadonly = signal(false);
+  readonly makeRequired = signal(false);
   readonly showError = signal(false);
   readonly open = signal(false);
   readonly tree = form(this.model, (path) => applyFruitSchema(path, this));
@@ -177,6 +180,7 @@ class ComboboxFieldHost implements FruitFieldHost {
   readonly model = signal<FruitModel>({ fruit: [] });
   readonly disable = signal(false);
   readonly makeReadonly = signal(false);
+  readonly makeRequired = signal(false);
   readonly showError = signal(false);
   readonly open = signal(false);
   readonly tree = form(this.model, (path) => applyFruitSchema(path, this));
@@ -284,15 +288,22 @@ describe('single-select form field binds directly through [formField]', () => {
 
       it('reflects schema `readonly` on the root and the widget host', async () => {
         const { el, instance, fixture } = renderHost(c.host);
+        await flush(fixture);
+        expect(rootOf(el).hasAttribute('data-readonly')).toBe(false);
+        expect(widgetOf(el).getAttribute('aria-readonly')).toBeNull();
+
         instance.makeReadonly.set(true);
         await flush(fixture);
-
         expect(rootOf(el).hasAttribute('data-readonly')).toBe(true);
         expect(widgetOf(el).getAttribute('aria-readonly')).toBe('true');
       });
 
       it('reflects schema `required` on the widget host', async () => {
-        const { el, fixture } = renderHost(c.host);
+        const { el, instance, fixture } = renderHost(c.host);
+        await flush(fixture);
+        expect(widgetOf(el).getAttribute('aria-required')).toBeNull();
+
+        instance.makeRequired.set(true);
         await flush(fixture);
         expect(widgetOf(el).getAttribute('aria-required')).toBe('true');
       });
