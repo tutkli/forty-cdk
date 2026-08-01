@@ -326,7 +326,9 @@ Supply `[itemToLabel]` to resolve the label directly from the value, independent
 readonly toName = (c: City) => c.name;
 ```
 
-When `[itemToLabel]` is set it is authoritative for every selected value (single and multi mode), so the rendered label is identical whether or not the listbox has been opened. String-value selects render the value verbatim and never need it. Consumers who instead keep `[forSelectContent]` mounted (drop the `@if`) get the option `textContent` for free and don't need `[itemToLabel]`.
+When `[itemToLabel]` is set it is authoritative for every selected value (single and multi mode), so the rendered label is identical whether or not the listbox has been opened. String-value selects render the value verbatim and never need it.
+
+Keeping `[forSelectContent]` mounted (dropping the `@if`) also gets the option `textContent` for free, but it is not a supported shape and it warns in dev mode: mount **is** the open state for this surface, so a permanently mounted listbox never runs `animate.enter` / `animate.leave`, and its dismissible layer stays active while closed — it keeps claiming Escape and outside pointer-downs from whatever is actually open. Use `[itemToLabel]`.
 
 ```html
 <div

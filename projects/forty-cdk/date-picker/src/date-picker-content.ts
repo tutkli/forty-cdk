@@ -6,6 +6,7 @@ import {
   hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
+  warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
 import { injectDatePickerContext } from './date-picker-context';
 
@@ -62,6 +63,13 @@ export class ForDatePickerContent {
       (el) => ctx.registerContent(el),
       (el) => ctx.unregisterContent(el),
     );
+
+    warnIfMountedWhileClosed({
+      primitive: 'date-picker',
+      piece: '[forDatePickerContent]',
+      condition: 'picker.open()',
+      open: ctx.open,
+    });
 
     if (ctx.modal()) {
       injectModalShell({

@@ -11,13 +11,14 @@ Hover / focus delays, Escape-to-dismiss, portal rendering, and `@floating-ui/dom
 ## Anatomy
 
 ```html
-<span forTooltip side="top" [openDelay]="400">
+<span forTooltip #tip="forTooltip" side="top" [openDelay]="400">
   <button forTooltipTrigger type="button" aria-label="Save">💾</button>
-  <!-- rendered only when tip.open() is true; grab the root with #tip="forTooltip" -->
+  <!-- @if (tip.open()) { -->
   <div forTooltipContent class="my-tooltip">
     Save changes
     <span forTooltipArrow class="my-tooltip-arrow"></span>
   </div>
+  <!-- } -->
 </span>
 ```
 
@@ -36,12 +37,14 @@ import {
   selector: 'demo-save',
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent, ForTooltipArrow],
   template: `
-    <span forTooltip side="top" [openDelay]="400">
+    <span forTooltip #tip="forTooltip" side="top" [openDelay]="400">
       <button type="button" forTooltipTrigger aria-label="Save">💾</button>
-      <div forTooltipContent class="my-tooltip">
-        Save changes
-        <span forTooltipArrow class="my-tooltip-arrow"></span>
-      </div>
+      @if (tip.open()) {
+        <div forTooltipContent class="my-tooltip">
+          Save changes
+          <span forTooltipArrow class="my-tooltip-arrow"></span>
+        </div>
+      }
     </span>
   `,
   styles: `
@@ -71,7 +74,9 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 ```html
 <span forTooltip #root="forTooltip">
   <ng-container *ngTemplateOutlet="trig; context: { root }" />
+  @if (root.open()) {
   <div forTooltipContent>Save changes</div>
+  }
 </span>
 
 <ng-template #trig let-root="root">
@@ -172,7 +177,9 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
   template: `
     <span forTooltip #tip="forTooltip">
       <button type="button" forTooltipTrigger>Save</button>
-      <div forTooltipContent class="my-tooltip">Save changes</div>
+      @if (tip.open()) {
+        <div forTooltipContent class="my-tooltip">Save changes</div>
+      }
     </span>
 
     <button type="button" (click)="tip.show()">Show</button>
@@ -281,9 +288,11 @@ import { ForTooltip, ForTooltipContent, ForTooltipTrigger } from 'forty-cdk/tool
   selector: 'my-tooltip-button',
   imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
   template: `
-    <span forTooltip [disabled]="!message()">
+    <span forTooltip #tip="forTooltip" [disabled]="!message()">
       <button type="button" forTooltipTrigger><ng-content /></button>
-      <div forTooltipContent class="my-tooltip">{{ message() }}</div>
+      @if (tip.open()) {
+        <div forTooltipContent class="my-tooltip">{{ message() }}</div>
+      }
     </span>
   `,
 })

@@ -128,6 +128,7 @@ export class MenubarMenuContext implements ForMenuContext {
   #suppressOpenFocus = false;
 
   readonly open = computed(() => this.#host.value() !== null);
+  readonly allowsUnconditionalMount = true;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly returnFocus = signal(true).asReadonly();

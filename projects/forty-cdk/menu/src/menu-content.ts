@@ -8,6 +8,7 @@ import {
   injectMenuContext,
   isHoverCapablePointer,
   menuLayerNesting,
+  warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
 
 /**
@@ -43,7 +44,10 @@ import {
  * context has not associated with a trigger yet — only reachable under
  * `[forMenubar]`, where one surface may be mounted unconditionally while no
  * menu is open — carries neither attribute rather than an invalid `id=""` and
- * an `aria-labelledby` pointing at nothing.
+ * an `aria-labelledby` pointing at nothing. That same menubar shape is why the
+ * dev-mode mounted-while-closed warning is gated on
+ * `ForMenuContext.allowsUnconditionalMount`: under every other root mount
+ * equals open, so a surface still mounted while closed is a missing `@if`.
  *
  * Navigation is vertical-only (Up / Down between items, per the APG Menu
  * pattern), so the surface reflects `aria-orientation="vertical"` explicitly.
@@ -86,6 +90,15 @@ export class ForMenuContent {
       (el) => this.ctx.registerContent(el),
       (el) => this.ctx.unregisterContent(el),
     );
+
+    if (!this.ctx.allowsUnconditionalMount) {
+      warnIfMountedWhileClosed({
+        primitive: 'menu',
+        piece: '[forMenuContent]',
+        condition: 'menu.open()',
+        open: this.ctx.open,
+      });
+    }
 
     injectOverlayShell({
       positioner: {

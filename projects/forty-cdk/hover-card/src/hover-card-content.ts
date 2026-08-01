@@ -1,6 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { toFloatingPositioner, injectOverlayShell } from 'forty-cdk/core';
+import { toFloatingPositioner, injectOverlayShell, warnIfMountedWhileClosed } from 'forty-cdk/core';
 import { injectHoverCardContext } from './hover-card-context';
 
 /**
@@ -41,6 +41,13 @@ export class ForHoverCardContent {
     const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     this.ctx.registerContent(el);
     inject(DestroyRef).onDestroy(() => this.ctx.unregisterContent(el));
+
+    warnIfMountedWhileClosed({
+      primitive: 'hover-card',
+      piece: '[forHoverCardContent]',
+      condition: 'card.open()',
+      open: this.ctx.open,
+    });
 
     injectOverlayShell({
       positioner: toFloatingPositioner(this.ctx, this.ctx.trigger),
