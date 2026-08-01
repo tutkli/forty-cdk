@@ -2147,9 +2147,9 @@ const fortyCdkPlugin = {
     // bridge's activedescendant write and `scrollIntoView`; a hover-then-click
     // could scroll the listbox to the hovered option. Judging that overlap is
     // beyond a syntactic rule, so what it enforces instead is the stricter shape:
-    // a `.set(` / `.update(` in the same effect body as a pull is an error
-    // outright, not something a marker can license. Split the effect; do not
-    // widen the rule.
+    // a one-argument `.set(` / `.update(` in the same effect body as a pull is an
+    // error outright, not something a marker can license. Split the effect; do
+    // not widen the rule.
     //
     // The one shipped pull that does share its effect with writes is Combobox's
     // (`runAutoHighlightBridge` primes the position map, then writes
@@ -2169,20 +2169,41 @@ const fortyCdkPlugin = {
     //     mechanically enforced instead of convention-only, and the list is
     //     short by construction — a helper earns a place on it only by existing
     //     to run a pull.
-    //   - Write detection matches `require-sanctioned-effect-marker` exactly
-    //     (method name `set` / `update`, no descent into nested function
-    //     scopes, same-file helpers followed one level deep), so the residual
-    //     gap is the same: a write behind a cross-file collaborator call is
-    //     invisible. That gap is what the Combobox bridge above sits in, and
-    //     `tryResolvePending` is built for it on purpose — its write is the
-    //     pull's own settled result, not foreign state riding along.
+    //   - Write detection shares its scoping with
+    //     `require-sanctioned-effect-marker` (method name `set` / `update`, no
+    //     descent into nested function scopes, same-file helpers followed one
+    //     level deep), so the residual gap is the same: a write behind a
+    //     cross-file collaborator call is invisible. That gap is what the
+    //     Combobox bridge above sits in, and `tryResolvePending` is built for it
+    //     on purpose — its write is the pull's own settled result, not foreign
+    //     state riding along.
+    //   - It diverges from the sibling in one deliberate way: only a
+    //     **one-argument** `set` / `update` call counts (#1606).
+    //     `WritableSignal.set(v)` takes one argument and `Map.set(k, v)` takes
+    //     two, so arity is a free signal on the commonest false positive, and the
+    //     `signal.set(a, b)` typo the narrowing misses is a compile error anyway.
+    //     The sibling keeps the name-only check because a false positive there is
+    //     cleared by the very marker its author was already writing; here nothing
+    //     clears one, which is the asymmetry that earns the extra condition. Do
+    //     not reach for type information to go further — that would make the
+    //     whole family type-aware.
+    //   - The residual false positive is a one-argument `.set(` / `.update(` on
+    //     a non-signal receiver, and its sanctioned resolution is an
+    //     `eslint-disable-next-line` on the **write** line — not above the
+    //     `effect(` — plus a comment naming the receiver. The two branches
+    //     anchor their reports on different nodes (this one on the write, the
+    //     marker ones on the pull), so scoping the directive to the write line
+    //     silences the misread and nothing else. The write branch reports
+    //     *without returning* for the same reason: while it returned, any
+    //     directive that silenced it took the unrun marker check along too,
+    //     turning a false positive into the missing ledger entry #1606 names.
     //   - A marker licenses only the effect it sits on, and a bare
     //     `@sanctioned-pull` with no store / no rationale is malformed.
     //
     // See: CLAUDE.md > conventions > "The sanctioned-pull marker".
     // Fixture: `projects/forty-cdk/eslint-rules-fixtures/require-sanctioned-pull-marker.fixture.ts`.
     //
-    // Refs: tutkli/forty-cdk#1602, #1580, #1600
+    // Refs: tutkli/forty-cdk#1602, #1580, #1600, #1606
     'require-sanctioned-pull-marker': {
       meta: {
         type: 'problem',
@@ -2199,7 +2220,7 @@ const fortyCdkPlugin = {
           malformedMarker:
             'Malformed `@sanctioned-pull` marker. The shape is `// @sanctioned-pull(<store>): <why the source is transient>` — a kebab-case store name in parentheses (e.g. `label-cache-window`, `navigator-position-map`) and a one-sentence rationale after the colon. The name is what a reviewer verifies and what a refactor must preserve. (CLAUDE.md § "The sanctioned-pull marker".)',
           pullWithWrite:
-            'A pull (`{{ store }}`) shares this `effect()` with the signal write `{{ signal }}.{{ method }}(…)`. The pull drags its own tracked set into the effect, so the write re-runs on every change the *store* depends on — which is how a hover-then-click came to scroll a listbox (#1600). Split the pull into its own read-only effect; no marker licenses this. (CLAUDE.md § "The sanctioned-pull marker".)',
+            'A pull (`{{ store }}`) shares this `effect()` with the signal write `{{ signal }}.{{ method }}(…)`. The pull drags its own tracked set into the effect, so the write re-runs on every change the *store* depends on — which is how a hover-then-click came to scroll a listbox (#1600). If `{{ signal }}` is a signal, split the pull into its own read-only effect; no marker licenses this. If `{{ signal }}` is *not* a signal — a scratch `Map`, a `WeakMap` cache, any plain object with a one-argument `{{ method }}(…)` — the rule has misread it: it cannot tell the two apart without type information, so keep the `@sanctioned-pull` marker and silence this line alone with `// eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker`, naming the receiver in a comment. (CLAUDE.md § "The sanctioned-pull marker".)',
         },
       },
       create(context) {
@@ -2251,11 +2272,13 @@ const fortyCdkPlugin = {
               } else if (callee.type === 'Identifier' && PULL_RUNNERS.has(callee.name)) {
                 pulls.push({ node, store: `${callee.name}()` });
               } else if (member === 'set' || member === 'update') {
-                writes.push({
-                  node,
-                  signal: sourceCode.getText(callee.object),
-                  method: member,
-                });
+                if (node.arguments.length === 1) {
+                  writes.push({
+                    node,
+                    signal: sourceCode.getText(callee.object),
+                    method: member,
+                  });
+                }
               } else if (followHelpers) {
                 const helper = resolveSameFileHelper(node, sourceCode);
                 if (helper) helperCalls.push({ ...helper, node });
@@ -2331,7 +2354,6 @@ const fortyCdkPlugin = {
                 messageId: 'pullWithWrite',
                 data: { store: pulls[0].store, signal: write.signal, method: write.method },
               });
-              return;
             }
 
             const marker = markerFor(node);

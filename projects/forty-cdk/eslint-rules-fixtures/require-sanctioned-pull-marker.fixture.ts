@@ -26,6 +26,8 @@ declare const host: HTMLElement;
 declare function runVirtualizedNavigatorBridge(deps: { items: () => unknown }): boolean;
 declare const items: () => readonly string[];
 declare function observe(cb: () => void): void;
+declare const scratch: Map<string, number>;
+declare const builder: { update(patch: string): void };
 
 // Expected: 1× forty-cdk/require-sanctioned-pull-marker
 // The bare shape #1580 AC3 names: an effect whose entire body is a pull.
@@ -56,6 +58,40 @@ effect(() => {
 effect(() => {
   labelCache.prime();
   activeId.set(labelCache.windowEntries()[0] ?? null);
+});
+
+// Allowed: the write channel is arity-checked (#1606), so a two-argument
+// `Map.set(k, v)` on a scratch collection is not read as a signal write —
+// `WritableSignal.set(v)` takes one argument, `Map.set` takes two, and the
+// commonest false positive of the branch above disappears with no disable.
+// @sanctioned-pull(label-cache-window): the option window is transient.
+effect(() => {
+  labelCache.prime();
+  scratch.set(labelCache.windowEntries()[0] ?? '', 1);
+});
+
+// Allowed: the residual false positive and its sanctioned resolution. A
+// one-argument `.update(…)` on a plain builder is indistinguishable from a
+// signal write without type information, so the disable goes on the write line
+// alone — where it silences the misread and nothing else — and names the
+// receiver.
+// @sanctioned-pull(label-cache-window): the option window is transient.
+effect(() => {
+  labelCache.prime();
+  // `builder` is a plain string builder, not a signal.
+  // eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker
+  builder.update(labelCache.windowEntries()[0] ?? '');
+});
+
+// Expected: 1× forty-cdk/require-sanctioned-pull-marker (missingMarker)
+// The hatch above costs no ledger entry: the write branch reports without
+// returning, so silencing the misread write leaves the marker check live and the
+// unmarked pull is still reported on its own line.
+effect(() => {
+  labelCache.prime();
+  // `builder` is a plain string builder, not a signal.
+  // eslint-disable-next-line forty-cdk/require-sanctioned-pull-marker
+  builder.update('pending');
 });
 
 // Allowed: a well-formed marker licenses a read-only pull.
