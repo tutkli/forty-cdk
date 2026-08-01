@@ -14,7 +14,8 @@ import { injectComboboxContext } from './combobox-context';
  * `@floating-ui/dom` against the anchor (explicit `[forComboboxAnchor]` →
  * `[forComboboxTrigger]` → input).
  *
- * Two anatomies, picked by whether an inner `[forComboboxList]` is present:
+ * Two anatomies. The **role split** is picked by whether an inner
+ * `[forComboboxList]` is present:
  *
  * - **Editable (no list)** — content itself carries `role="listbox"`,
  *   `tabindex="-1"`, `aria-multiselectable`, and the labelled role
@@ -33,22 +34,23 @@ import { injectComboboxContext } from './combobox-context';
  * trigger are exempt from outside checks.
  *
  * Focus:
- * - **Editable anatomy** — focus normally stays in the input across the whole
- *   open lifecycle and active-option highlighting is `aria-activedescendant`-
- *   driven, so the directive exposes no focus hooks. The surface itself is
- *   focusable (`tabindex="-1"`), so a click on non-option padding can move focus
- *   onto it; the input's inline Escape handler then never sees the key, so the
- *   shell wires a fallback Escape channel that closes the popup and returns focus
- *   to the input.
- * - **Picker anatomy** — on open, focus moves into the input (the search field
- *   inside the panel); on close it returns to the trigger. Both moves are
- *   vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`,
- *   and the return is gated by `[returnFocus]`. Escape from the input is owned by
- *   the input directive; the shell's fallback channel covers presses that land on
- *   the surface or list instead.
+ * - **Editable anatomy (no trigger)** — focus normally stays in the input
+ *   across the whole open lifecycle and active-option highlighting is
+ *   `aria-activedescendant`-driven, so the directive exposes no focus hooks. The
+ *   surface itself is focusable (`tabindex="-1"`), so a click on non-option
+ *   padding can move focus onto it; the input's inline Escape handler then never
+ *   sees the key, so the shell wires a fallback Escape channel that closes the
+ *   popup and returns focus to the input.
+ * - **Picker anatomy (trigger present)** — on open, focus moves into the input
+ *   (the search field inside the panel); on close it returns to the trigger.
+ *   Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on
+ *   `[forCombobox]`, and the return is gated by `[returnFocus]`. Escape from the
+ *   input is owned by the input directive; the shell's fallback channel covers
+ *   presses that land on the surface or list instead.
  *
- * Which anatomy is in force is a `computed` over the registered trigger,
- * consulted at each decision point rather than snapshotted at construction
+ * So the two splits are keyed independently — roles off `hasList`, focus off
+ * the trigger — and the trigger check is a `computed`, consulted at each
+ * decision point rather than snapshotted at construction
  * ([#1581](https://github.com/tutkli/forty-cdk/issues/1581)) — so a trigger
  * declared after this content, projected through `<ng-content>`, or gated by a
  * `@defer` / data-driven `@if` upgrades the surface instead of leaving it with

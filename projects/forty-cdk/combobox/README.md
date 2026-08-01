@@ -191,6 +191,8 @@ Why the list part is required, not optional: a `role="listbox"` may only own `op
 
 **Focus hand-off.** Registering a trigger opts the combobox into the standard trigger-anchored focus model: on open, focus moves into the input (the search field inside the panel); on close, focus returns to the trigger. Both moves are vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)` on `[forCombobox]`, and the return is gated by `[returnFocus]` (default `true`). Escape stays owned by the input. See [Focus & the `(autoFocusOnOpen)` / `(autoFocusOnClose)` hooks](#focus--the-autofocusonopen--autofocusonclose-hooks).
 
+**A trigger that registers late still owns the hand-off.** The trigger does not have to be declared before `[forComboboxContent]`, and does not have to exist when the panel first mounts — project it through `<ng-content>` from a wrapper, put it under a `@defer`, or gate it on an `@if` over loaded data. One caveat: focus moving _into_ the panel is a mount-time event, so a trigger that arrives while the panel is **already open** does not retroactively pull focus out of wherever you left it. From that moment on it does own the return focus, `(autoFocusOnClose)` and the Escape fallback, and the next open moves focus into the input as usual.
+
 **Trigger keyboard.** Click / Enter / Space toggle (open moves focus into the input). ArrowDown opens with the first enabled option highlighted; ArrowUp opens with the last.
 
 **Anchor preference.** With a trigger present the panel anchors to it by default. An explicit `[forComboboxAnchor]` still wins (explicit anchor → trigger → input), so you can wrap a decorated trigger box and anchor against it.
