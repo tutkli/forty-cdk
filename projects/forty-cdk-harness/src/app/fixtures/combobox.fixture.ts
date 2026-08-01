@@ -132,6 +132,40 @@ const LONG_FRUITS = Array.from({ length: 60 }, (_, i) => `item-${i}`);
           </div>
         }
       </div>
+    } @else if (lateTrigger) {
+      <div
+        forCombobox
+        [(query)]="query"
+        [(value)]="value"
+        [(open)]="open"
+        ariaLabel="Fruit search"
+        (autoFocusOnOpen)="onAutoFocusOnOpen($event)"
+        (autoFocusOnClose)="onAutoFocusOnClose($event)"
+      >
+        @if (open()) {
+          <div forComboboxContent data-testid="content">
+            <input data-testid="combo-input" forComboboxInput placeholder="Search fruits…" />
+            <div data-testid="list" forComboboxList>
+              @for (opt of filtered(); track opt) {
+                <div forComboboxOption [attr.data-testid]="'opt-' + opt" [value]="opt">
+                  {{ opt }}
+                </div>
+              }
+            </div>
+          </div>
+        }
+        @if (deferTrigger) {
+          @defer (on timer(250ms)) {
+            <button data-testid="trigger" forComboboxTrigger>
+              {{ value().at(0) ?? 'Pick a fruit' }}
+            </button>
+          }
+        } @else {
+          <button data-testid="trigger" forComboboxTrigger>
+            {{ value().at(0) ?? 'Pick a fruit' }}
+          </button>
+        }
+      </div>
     } @else {
       <div
         forCombobox
@@ -235,6 +269,13 @@ export class ComboboxFixture {
   // `[forComboboxList]` inside `[forComboboxContent]`. Drives the focus hand-off
   // specs (focus → input on open, → trigger on close).
   protected readonly picker = queryFlag('picker');
+  // `?lateTrigger=1` puts the picker's trigger in an embedded view declared
+  // AFTER `[forComboboxContent]`, so with `?open=1` the surface is constructed
+  // before the trigger registers (#1581). `?deferTrigger=1` pushes the trigger
+  // into a `@defer (on timer)` block instead, so it arrives in a later pass with
+  // the surface already open.
+  protected readonly lateTrigger = queryFlag('lateTrigger');
+  protected readonly deferTrigger = queryFlag('deferTrigger');
   // `?vetoOpen=1` / `?vetoClose=1` preventDefault the picker focus hooks so the
   // veto path (focus stays put) is observable in a real browser.
   protected readonly vetoOpen = queryFlag('vetoOpen');
