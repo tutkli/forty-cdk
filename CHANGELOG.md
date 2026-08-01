@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Signal Forms (breaking)** — `forSingleValueField` and the `forty-cdk/signal-forms` entry point are
+  both gone, with no deprecated alias ([#1579](https://github.com/tutkli/forty-cdk/issues/1579)). The
+  helper adapted a `FieldTree<T | null>` into the `FieldTree<readonly T[]>` view `ForSelect` /
+  `ForListbox` / `ForCombobox` accept, and could only do it by reflecting over `@angular/forms/signals`
+  internals — a `Proxy` standing in for `FieldState`, with `.set` / `.update` / `.asReadonly` glued onto a
+  `computed`, both holes erased by `as unknown as`. Each of those bets would have failed silently on a
+  dependency bump rather than at compile time, in a consumer's form. A single-select form field is now
+  modeled as the same `readonly T[]` the control exposes, kept at length ≤ 1. **Migration:** change the
+  model field's type from `T | null` to `readonly T[]`, then drop the `forSingleValueField(…)` call and its
+  import — the `[formField]` binding itself is unchanged, and `disabled` / `readonly` / `required` /
+  `invalid` / `errors` / `touched` and focus still flow through it. Read the picked value off the
+  primitive's `selected` / `selectedItem` accessor for display, and map to a `T | null` shape at the edge
+  that needs it (a request payload, a persisted record) rather than in the binding. See
+  [the selection value-type contract](docs/selection-value-type-contract.md) and
+  [Wrapping form primitives](docs/wrapping-form-primitives.md).
+
 ## [0.18.0] - 2026-07-31
 
 A composition release. The menu family stops assuming one menu has one opener: a new `[forMenu]` root

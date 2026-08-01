@@ -310,38 +310,41 @@ contract). That uniform array shape is the `FormValueControl<readonly T[]>` back
 `[formField]` directive auto-wires to, and it is deliberately the same for single and multi
 selection.
 
-A single-select consumer, however, models their domain field as `T | null` — so a
-`FieldTree<T | null>` cannot bind to the control through `[formField]` directly: the value
-types don't line up, and the read-only `selected` / `selectedItem` accessors only help the
-read direction. Rather than hand-roll the `T | null` ⇄ `readonly T[]` mapping in every
-wrapper (and re-plumb `disabled` / `invalid` / `errors` / `touched` / `required` alongside
-it — exactly the glue `[formField]` exists to delete), use the `forSingleValueField` helper:
+**Model the form field with the same shape, and bind it directly.** A single-select field is a
+`readonly T[]` you keep at length ≤ 1 — there is no adapter, no wrapper directive, and nothing
+to re-plumb: `[formField]` pushes `disabled` / `readonly` / `required` / `invalid` / `errors` /
+`touched` into the control and routes `focus()` to the primitive's real focus target, exactly
+as it does for a multi-select field.
 
 ```ts
 import { Component, signal } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { ForSelect } from 'forty-cdk/select';
-import { forSingleValueField } from 'forty-cdk/signal-forms';
 
 @Component({
   selector: 'app-country-picker',
   imports: [ForSelect, FormField],
-  template: `<div forSelect [formField]="country">…</div>`,
+  template: `<div forSelect [formField]="profile.country">…</div>`,
 })
 export class CountryPicker {
-  private readonly model = signal({ country: null as string | null });
+  // Single-select: the array never exceeds one entry, `[]` means nothing picked.
+  private readonly model = signal({ country: [] as readonly string[] });
   protected readonly profile = form(this.model);
-
-  // FieldTree<string | null> → FieldTree<readonly string[]>; bind the result.
-  protected readonly country = forSingleValueField(this.profile.country);
 }
 ```
 
-`forSingleValueField` returns a derived `FieldTree<readonly T[]>` view: the value maps both
-directions (`null` ↔ `[]`, `v` ↔ `[v]`, last entry wins for a longer write), and every other
-field-state member delegates to the original field, so `[formField]` pushes the same UI state
-into the control it would for any other field. The value is `computed`, never copied — there
-is no second source of truth. Multi-select fields are already `readonly T[]`; bind those (and
-any field you model as `readonly T[]` yourself) with `[formField]` directly. See
-[the helper's README](../projects/forty-cdk/signal-forms/README.md) for the full
-behaviour table.
+Read the picked value off the primitive's `selected` / `selectedItem` accessor for display, and
+map to a `T | null` shape at the edge that needs it (a request payload, a persisted record)
+rather than in the binding. A `FieldTree<T | null>` cannot bind to these controls: Angular's
+template type-checker adds a two-way `[value]` binding between the field and **every** directive
+on the host that owns a `value` model, so the value types have to line up exactly, in both
+directions.
+
+Do not reach for a hand-written `FieldTree` view to bridge the gap. The library shipped one
+(`forSingleValueField`, retired in
+[#1579](https://github.com/tutkli/forty-cdk/issues/1579)) and it could only be expressed as
+reflection over `@angular/forms/signals` internals — Angular exposes no writable-computed
+primitive, so a two-way mapped value signal means mutating a `computed` after creation, and
+`FieldTree<readonly T[]>` is additionally an array-like of per-element subfield trees that no
+hand-built view carries. Every one of those bets fails silently on a dependency bump, which is
+why the shipped answer is to match the shape instead.

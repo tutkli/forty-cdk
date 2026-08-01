@@ -109,10 +109,10 @@ export class DemoPriorities {
 > Enforce "at least one" with the explicit `validate(...)` length rule above, or with Angular's
 > `minLength(s.priorities, 1)` (which emits a `minLengthError` instead of a `requiredError`).
 
-> **Single-select fields.** When you model the field as `T | null` rather than `readonly T[]`,
-> bridge it with `forSingleValueField` so the standard `[formField]` wiring still works:
-> `[formField]="forSingleValueField(prefs.fruit)"`. See
-> [Signal Forms helpers](../signal-forms/README.md).
+> **Single-select fields.** Model the field as a `readonly string[]` you keep at length ≤ 1 and
+> bind it with `[formField]` directly — single mode needs no adapter. A `FieldTree<T | null>`
+> cannot bind here; map to that shape at the edge that needs it. See
+> [the selection value-type contract](../../../docs/selection-value-type-contract.md).
 
 ## Object values
 

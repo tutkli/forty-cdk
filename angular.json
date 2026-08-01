@@ -37,7 +37,6 @@
               "../tree/src/**/*.spec.ts",
               "../carousel/src/**/*.spec.ts",
               "../stepper/src/**/*.spec.ts",
-              "../signal-forms/src/**/*.spec.ts",
               "../calendar/src/**/*.spec.ts",
               "../date-field/src/**/*.spec.ts",
               "../date-range-field/src/**/*.spec.ts",
