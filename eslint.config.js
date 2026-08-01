@@ -963,7 +963,7 @@ const fortyCdkPlugin = {
         type: 'problem',
         docs: {
           description:
-            'Forbid floating (un-awaited) `flush()` / `flushPositioning()` / `nextMacrotask()` calls in specs — the returned Promise must be awaited.',
+            'Forbid floating (un-awaited) `flush()` / `flushPositioning()` / `nextMacrotask()` / `settleHydration()` calls in specs — the returned Promise must be awaited.',
         },
         schema: [],
         messages: {

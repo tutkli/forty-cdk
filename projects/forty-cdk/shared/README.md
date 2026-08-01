@@ -71,16 +71,19 @@ A single app — the common case, including SSR — needs no provider at all.
 
 `@defer (hydrate on interaction | viewport | timer | …)` renders a block on the server and leaves it **dehydrated** on the client: the markup sits in the DOM, but no directive inside it constructs until the trigger fires. That interacts with generated ids, so there is one rule to know before cutting a `@defer` through a primitive.
 
-**Keep a primitive's pieces in the same hydration unit.** Put the whole primitive inside the `@defer` block, or leave all of it outside — never split one across the boundary:
+**Keep a primitive's pieces in the same hydration unit.** Put the whole primitive inside the `@defer` block, or leave all of it outside — never split one across a boundary the root itself sits behind:
 
 ```html
-<!-- Don't: the panel's id is owned by a root that hydrates without it. -->
+<!-- Don't: the root hydrates on its own trigger, so it re-mints the panel's id
+     off a drifted counter — and the panel is not there to correct it. -->
+@defer (hydrate on viewport) {
 <div forDisclosure [(open)]="open">
   <button forDisclosureTrigger>Details</button>
   @defer (hydrate on interaction) {
   <section forDisclosureContent>…</section>
   }
 </div>
+}
 
 <!-- Do: the whole primitive hydrates as one unit. -->
 @defer (hydrate on interaction) {
@@ -96,14 +99,16 @@ The ids behind `aria-controls`, `aria-labelledby`, `aria-describedby` and `aria-
 - **Every piece that emits a generated `id` adopts the id already on its host element** — the same seam that preserves a consumer's static `id` — and during hydration that value is the one the server wrote. A hydrated piece therefore keeps the server's id even when the client counter has drifted.
 - **Every piece outside all `@defer` blocks mints before any dehydrated block hydrates**, on both sides: the server renders a deferred block's content after the view that contains it, and the client hydrates no block until the initial pass is done. Ids at that level are byte-identical.
 
-Neither covers an id a root minted **for a piece that is still dehydrated**. Nothing constructs there, so nothing adopts on that piece's behalf, and the reference keeps whatever the client counter produced. Two symptoms follow, both invisible on screen:
+Neither covers an id a **deferred** root minted for a piece that is still dehydrated. The root hydrated late, so its counter has drifted from the server's; nothing constructs inside the still-dehydrated piece, so nothing adopts on its behalf; and the reference keeps whatever the drifted counter produced. Two symptoms follow, both invisible on screen:
 
 - **A reference that resolves to nothing.** A screen reader announces no name — or no controlled region — for a control that looks correctly wired in devtools.
 - **A reference that resolves to the wrong element.** The client-minted value can equal an id the server minted for a _different_ element, which is still sitting in another dehydrated block. That one does not heal when the blocks hydrate: each element keeps the id the server gave it, so the reference stays pointed at the wrong panel.
 
+**A root outside every `@defer` is the one split that survives**, and it survives on the second property rather than on adoption: the root minted the panel's id during the initial pass, where the two counters are byte-identical, so the reference still matches the id the server left on the dehydrated panel. The suite below pins that. Treat it as a shape that happens to hold rather than one to reach for — two ordinary edits end it, and neither looks like it touches ids: moving the root behind a `@defer` of its own (the case above), and pinning the panel with a static `id` (the case below).
+
 ### A static `id` is not the workaround
 
-Pinning the ids yourself is the natural first idea and it makes this shape _worse_. The library adopts a consumer-set static `id` when the piece's directive constructs; a dehydrated piece never constructs, so the server render adopts your id and the client render cannot. The referring attribute then points at the generated fallback, and nothing in the document carries it:
+Pinning the ids yourself is the natural first idea and it makes this shape _worse_ — it is the one split that breaks even with the root outside every `@defer`, where a generated id would have resolved. The library adopts a consumer-set static `id` when the piece's directive constructs; a dehydrated piece never constructs, so the server render adopts your id and the client render cannot. The referring attribute then points at the generated fallback, and nothing in the document carries it:
 
 ```html
 <div forDisclosure [open]="true">
@@ -117,7 +122,7 @@ Pinning the ids yourself is the natural first idea and it makes this shape _wors
 
 `provideForIdSalt` does not help either — it changes the salt, not the counter.
 
-Both behaviours are pinned by [`incremental-hydration.spec.ts`](../src/lib/ssr/incremental-hydration.spec.ts), which drives a real `@angular/platform-server` render through a real client hydration rather than simulating one.
+Every behaviour on this page — the split that survives, the static `id` that dangles, and the deferred root that re-points at a foreign element — is pinned by [`incremental-hydration.spec.ts`](../src/lib/ssr/incremental-hydration.spec.ts), which drives a real `@angular/platform-server` render through a real client hydration rather than simulating one.
 
 `aria-activedescendant` is the one id relationship that needs no rule: it always names a **mounted** option, whose directive has therefore adopted the server's id, and while the options are dehydrated the attribute is simply absent rather than stale.
 

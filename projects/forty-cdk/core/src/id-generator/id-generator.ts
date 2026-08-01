@@ -78,13 +78,15 @@ export function provideForIdSalt(salt: string): Provider {
  * generated id adopts the id already on its host (`hostId` / `adoptHostId`),
  * which during hydration is the server's, and every piece outside all `@defer`
  * blocks mints before any dehydrated block hydrates on both sides. What neither
- * covers is an id a root minted for a piece that is **still dehydrated**: no
- * directive exists there to adopt on its behalf, so the reference keeps the
- * client counter's value and can resolve to nothing — or to the element the
- * server gave that value to. The rule that avoids it (keep a primitive's pieces
- * in one hydration unit) is documented for consumers under "Incremental
- * hydration" in the `forty-cdk/shared` README, and pinned by
- * `src/lib/ssr/incremental-hydration.spec.ts` (#1582).
+ * covers is an id a **deferred** root minted for a piece that is **still
+ * dehydrated**: the root's counter drifted while it waited, no directive exists
+ * in the piece to adopt on its behalf, and so the reference keeps the drifted
+ * value and can resolve to nothing — or to the element the server gave that
+ * value to. A root outside every `@defer` minting for a dehydrated piece is the
+ * split that survives, on the byte-identical guarantee above. The rule that
+ * avoids both (keep a primitive's pieces in one hydration unit) is documented
+ * for consumers under "Incremental hydration" in the `forty-cdk/shared` README,
+ * and pinned by `src/lib/ssr/incremental-hydration.spec.ts` (#1582).
  *
  * IMPORTANT — multiple apps on one page need distinct salts. The default salt
  * is `APP_ID`, and Angular's default `APP_ID` is the literal `'ng'`. Two
