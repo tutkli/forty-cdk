@@ -7,6 +7,11 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/dialog.fixture').then((m) => m.DialogFixture),
   },
   {
+    path: 'dialog-shadow',
+    loadComponent: () =>
+      import('./fixtures/dialog-shadow.fixture').then((m) => m.DialogShadowFixture),
+  },
+  {
     path: 'dialog-programmatic',
     loadComponent: () =>
       import('./fixtures/dialog-programmatic.fixture').then((m) => m.DialogProgrammaticFixture),

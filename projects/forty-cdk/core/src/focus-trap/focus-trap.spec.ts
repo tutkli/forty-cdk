@@ -640,6 +640,110 @@ describe('FocusTrap', () => {
     });
   });
 
+  describe('open shadow roots inside the trap', () => {
+    let shadow: ShadowRoot;
+
+    beforeEach(() => {
+      container.innerHTML = `
+        <button id="light-first">light first</button>
+        <shadow-widget id="host"></shadow-widget>
+      `;
+      const host = container.querySelector<HTMLElement>('#host')!;
+      shadow = host.attachShadow({ mode: 'open' });
+      shadow.innerHTML = `
+        <button id="shadow-a">shadow a</button>
+        <button id="shadow-b">shadow b</button>
+      `;
+    });
+
+    function shadowButton(id: string): HTMLElement {
+      return shadow.querySelector<HTMLElement>(`#${id}`)!;
+    }
+
+    it('wraps forward from a shadow-nested last tabbable instead of letting focus escape', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      shadowButton('shadow-b').focus();
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(document.activeElement?.id).toBe('light-first');
+    });
+
+    it('wraps backward from the first tabbable into the shadow root', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector<HTMLElement>('#light-first')!.focus();
+
+      const event = tab(true);
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(shadow.activeElement?.id).toBe('shadow-b');
+    });
+
+    it('lets the browser move focus between two shadow-nested tabbables', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      shadowButton('shadow-a').focus();
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('cycles a trap whose only tabbables live inside the shadow root', () => {
+      container.querySelector('#light-first')!.remove();
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      shadowButton('shadow-b').focus();
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(shadow.activeElement?.id).toBe('shadow-a');
+    });
+
+    it('focuses the first shadow-nested focusable on activate', () => {
+      container.querySelector('#light-first')!.remove();
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(shadow.activeElement?.id).toBe('shadow-a');
+      expect(container.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('skips a shadow-nested candidate whose host is inert', () => {
+      container.querySelector('#light-first')!.remove();
+      container.querySelector('#host')!.setAttribute('inert', '');
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(shadow.activeElement).toBeNull();
+      expect(document.activeElement).toBe(container);
+    });
+
+    it('returns focus to a shadow-nested element captured at activation', () => {
+      const outerHost = document.createElement('shadow-widget');
+      document.body.appendChild(outerHost);
+      const outerShadow = outerHost.attachShadow({ mode: 'open' });
+      outerShadow.innerHTML = '<button id="outer-inner">outer</button>';
+      outerShadow.querySelector<HTMLElement>('#outer-inner')!.focus();
+
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      expect(document.activeElement?.id).toBe('light-first');
+
+      trap.deactivate();
+
+      expect(outerShadow.activeElement?.id).toBe('outer-inner');
+    });
+  });
+
   describe('focusable selector includes iframe and summary', () => {
     it('includes an <iframe> in the focusable set', () => {
       container.innerHTML = `<iframe id="frame" title="embedded"></iframe>`;

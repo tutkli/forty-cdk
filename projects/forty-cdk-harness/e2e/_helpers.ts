@@ -379,6 +379,30 @@ export function expectFocused(locator: Locator): Promise<void> {
 }
 
 /**
+ * Assert that the element carrying `data-testid="<testid>"` holds focus,
+ * resolving through open shadow roots.
+ *
+ * `document.activeElement` — and therefore `toBeFocused()` — reports the shadow
+ * **host** while focus sits inside a web component, so a spec covering the
+ * library's composed-tree focus posture (#1586) cannot tell "focus is on the
+ * widget's first button" from "focus is on its second". Polls, so it retries
+ * like a locator assertion instead of reading once.
+ */
+export function expectDeepFocused(page: Page, testid: string): Promise<void> {
+  return expect
+    .poll(() =>
+      page.evaluate(() => {
+        let active: Element | null = document.activeElement;
+        while (active?.shadowRoot?.activeElement) {
+          active = active.shadowRoot.activeElement;
+        }
+        return active?.getAttribute('data-testid') ?? null;
+      }),
+    )
+    .toBe(testid);
+}
+
+/**
  * Drive an IME composition sequence on `input` entirely from script. Playwright
  * has no real IME engine, so these mirror what the browser emits during a
  * `compositionstart → insertCompositionText → compositionend` cycle — the path

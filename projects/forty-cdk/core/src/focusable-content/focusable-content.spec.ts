@@ -55,6 +55,7 @@ class Host {
 function setup(platformId: unknown = 'browser'): {
   has: Signal<boolean>;
   instance: Host;
+  panel: HTMLElement;
   flush: () => Promise<void>;
 } {
   TestBed.configureTestingModule({
@@ -68,6 +69,7 @@ function setup(platformId: unknown = 'browser'): {
       return instance.probe().has;
     },
     instance,
+    panel: (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('[probe]')!,
     flush: () => flush(fixture),
   };
 }
@@ -132,6 +134,30 @@ describe('injectHasFocusableContent', () => {
     const { has, instance, flush } = setup();
     instance.showCssHiddenAncestorButton.set(true);
     await flush();
+    expect(has()).toBe(false);
+  });
+
+  it('reports content rendered inside an open shadow root (#1586)', async () => {
+    const { has, panel, flush } = setup();
+    await flush();
+    expect(has()).toBe(false);
+
+    const widget = document.createElement('shadow-widget');
+    widget.attachShadow({ mode: 'open' }).innerHTML = '<button type="button">Inside</button>';
+    panel.appendChild(widget);
+    await flush();
+
+    expect(has()).toBe(true);
+  });
+
+  it('ignores content inside a shadow root whose host is [inert]', async () => {
+    const { has, panel, flush } = setup();
+    const widget = document.createElement('shadow-widget');
+    widget.setAttribute('inert', '');
+    widget.attachShadow({ mode: 'open' }).innerHTML = '<button type="button">Inside</button>';
+    panel.appendChild(widget);
+    await flush();
+
     expect(has()).toBe(false);
   });
 

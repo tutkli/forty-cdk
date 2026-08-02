@@ -1,6 +1,8 @@
 import { DOCUMENT, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
+import { composedContains, composedParentElement } from '../composed-tree/composed-tree';
+
 /**
  * Marks every direct child of a **root element** (default `document.body`,
  * or a positioned container when a region-scoped modal passes one — #819)
@@ -34,7 +36,12 @@ import { isPlatformBrowser } from '@angular/common';
  * Portal compatibility: the owner does not need to be a direct child of the
  * root. We resolve the *root-level child* that is an ancestor of the owner
  * and exclude that subtree, so an in-place (non-portaled) dialog still keeps
- * its enclosing app shell interactive while everything else is inerted.
+ * its enclosing app shell interactive while everything else is inerted. That
+ * walk climbs the composed tree: an owner rendered inside a consumer's shadow
+ * root still resolves to the root-level child hosting it, where a
+ * `parentElement` walk would stop at the boundary, find no root-level child,
+ * and fall back to inerting the very subtree the modal lives in
+ * ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)).
  *
  * Peers: any element carrying the `data-for-modal-peer` attribute is
  * excluded from the snapshot (e.g. a dialog backdrop portaled to body
@@ -187,7 +194,7 @@ export class InertSiblingsStack {
   ownsAnchor(anchor: Element): boolean {
     for (const state of this.#roots.values()) {
       const protectedRoot = this.#currentProtectedRoot(state);
-      if (protectedRoot !== null && protectedRoot.contains(anchor)) {
+      if (protectedRoot !== null && composedContains(protectedRoot, anchor)) {
         return true;
       }
     }
@@ -287,10 +294,12 @@ export class InertSiblingsStack {
   }
 
   #rootLevelChild(el: HTMLElement, root: HTMLElement): HTMLElement | null {
-    let cur: HTMLElement | null = el;
-    while (cur && cur.parentElement && cur.parentElement !== root) {
-      cur = cur.parentElement;
+    let cur: HTMLElement = el;
+    let parent = composedParentElement(cur);
+    while (parent && parent !== root) {
+      cur = parent;
+      parent = composedParentElement(cur);
     }
-    return cur && cur.parentElement === root ? cur : null;
+    return parent === root ? cur : null;
   }
 }

@@ -1,3 +1,5 @@
+import { composedParentElement } from '../composed-tree/composed-tree';
+
 /**
  * Shared CSS selector for focusable elements. Single source of truth for the
  * library — primitives that need their own focus-finding logic (e.g. the
@@ -29,6 +31,30 @@ export const FOCUSABLE_SELECTOR = [
 ].join(',');
 
 /**
+ * Every element under `container` matching {@link FOCUSABLE_SELECTOR}, in
+ * composed-tree order, descending into open shadow roots.
+ *
+ * `querySelectorAll` answers within a single node tree, so a plain query stops
+ * at a shadow boundary and never sees the controls a consumer's web component
+ * renders inside its own shadow root — the focus trap then computes a first /
+ * last pair that excludes them, and Tab escapes the surface. The walk
+ * enumerates every element and filters in JS rather than handing the selector
+ * to the engine, because a shadow host is not expressible in CSS; the cost is
+ * one `matches` call per element in the subtree, paid on activation and on each
+ * Tab.
+ *
+ * A closed shadow root exposes no `shadowRoot`, so its contents stay invisible
+ * here — the library descends through open shadow roots only. Order follows the
+ * light tree with each host's shadow contents inlined at the host, which is the
+ * flattened order unless the consumer's slots reorder their assigned nodes.
+ */
+export function queryFocusableCandidates(container: HTMLElement): HTMLElement[] {
+  const found: HTMLElement[] = [];
+  collectFocusableCandidates(container, found);
+  return found;
+}
+
+/**
  * Reports whether `el` can currently *receive* focus, applying the library's
  * single focusable-candidate filter. An element is excluded when it:
  *
@@ -40,7 +66,11 @@ export const FOCUSABLE_SELECTOR = [
  *
  * `root` bounds the ancestor walk so the container's own state (and anything
  * above it in the document) is never consulted — the caller has already
- * decided the container is in play.
+ * decided the container is in play. Both walks climb the **composed** tree, so
+ * an `[inert]` or `display: none` shadow host disqualifies the controls inside
+ * its shadow root; a `parentElement` walk would have stopped at the boundary
+ * and reported them focusable, which is the answer
+ * {@link queryFocusableCandidates} now hands them to be filtered from.
  *
  * This is the one predicate `FocusTrap` and `injectHasFocusableContent` both
  * consume; keeping it here is what stops their answers from drifting (the CSS
@@ -66,13 +96,25 @@ export function isTabbableCandidate(el: HTMLElement, root: HTMLElement): boolean
   return el.tabIndex >= 0 && isFocusableCandidate(el, root);
 }
 
+function collectFocusableCandidates(root: ParentNode, found: HTMLElement[]): void {
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>('*'))) {
+    if (el.matches(FOCUSABLE_SELECTOR)) {
+      found.push(el);
+    }
+    const shadow = el.shadowRoot;
+    if (shadow) {
+      collectFocusableCandidates(shadow, found);
+    }
+  }
+}
+
 function hasInertAncestor(el: HTMLElement, root: HTMLElement): boolean {
   let cur: HTMLElement | null = el;
   while (cur && cur !== root) {
     if (cur.hasAttribute('inert')) {
       return true;
     }
-    cur = cur.parentElement;
+    cur = composedParentElement(cur);
   }
   return false;
 }
@@ -91,7 +133,7 @@ function isCssHidden(el: HTMLElement, root: HTMLElement): boolean {
     if (cur === el && (style.visibility === 'hidden' || style.visibility === 'collapse')) {
       return true;
     }
-    cur = cur.parentElement;
+    cur = composedParentElement(cur);
   }
   return false;
 }
