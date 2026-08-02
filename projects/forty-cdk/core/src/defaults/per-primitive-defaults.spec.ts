@@ -17,6 +17,11 @@ import {
   provideForBreadcrumbsDefaults,
 } from '../../../breadcrumbs/src/breadcrumbs-defaults';
 import {
+  FOR_BREAKPOINTS_DEFAULTS,
+  FOR_BREAKPOINTS_FALLBACK_DEFAULTS,
+  provideForBreakpointsDefaults,
+} from '../../../breakpoints/src/breakpoints-defaults';
+import {
   FOR_CALENDAR_DEFAULTS,
   FOR_CALENDAR_FALLBACK_DEFAULTS,
   provideForCalendarDefaults,
@@ -37,6 +42,11 @@ import {
   provideForContextMenuDefaults,
 } from '../../../context-menu/src/context-menu-defaults';
 import {
+  FOR_DATE_FIELD_DEFAULTS,
+  FOR_DATE_FIELD_FALLBACK_DEFAULTS,
+  provideForDateFieldDefaults,
+} from '../../../date-field/src/date-field-defaults';
+import {
   FOR_DATE_PICKER_DEFAULTS,
   FOR_DATE_PICKER_FALLBACK_DEFAULTS,
   provideForDatePickerDefaults,
@@ -46,6 +56,21 @@ import {
   FOR_DATE_RANGE_PICKER_FALLBACK_DEFAULTS,
   provideForDateRangePickerDefaults,
 } from '../../../date-picker/src/date-range-picker-defaults';
+import {
+  FOR_DATE_RANGE_FIELD_DEFAULTS,
+  FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS,
+  provideForDateRangeFieldDefaults,
+} from '../../../date-range-field/src/date-range-field-defaults';
+import {
+  FOR_DIALOG_DEFAULTS,
+  FOR_DIALOG_FALLBACK_DEFAULTS,
+  provideForDialogDefaults,
+} from '../../../dialog/src/dialog-defaults';
+import {
+  FOR_DRAWER_DEFAULTS,
+  FOR_DRAWER_FALLBACK_DEFAULTS,
+  provideForDrawerDefaults,
+} from '../../../drawer/src/drawer-defaults';
 import {
   FOR_DROPDOWN_MENU_DEFAULTS,
   FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS,
@@ -122,6 +147,21 @@ import {
   provideForTabsDefaults,
 } from '../../../tabs/src/tabs-defaults';
 import {
+  FOR_TIME_FIELD_DEFAULTS,
+  FOR_TIME_FIELD_FALLBACK_DEFAULTS,
+  provideForTimeFieldDefaults,
+} from '../../../time-field/src/time-field-defaults';
+import {
+  FOR_TIME_RANGE_FIELD_DEFAULTS,
+  FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS,
+  provideForTimeRangeFieldDefaults,
+} from '../../../time-range-field/src/time-range-field-defaults';
+import {
+  FOR_TOAST_DEFAULTS,
+  FOR_TOAST_FALLBACK_DEFAULTS,
+  provideForToastDefaults,
+} from '../../../toast/src/toast-defaults';
+import {
   FOR_TOGGLE_DEFAULTS,
   FOR_TOGGLE_FALLBACK_DEFAULTS,
   provideForToggleDefaults,
@@ -169,7 +209,12 @@ interface DefaultsCase<D extends object> {
   readonly token: InjectionToken<D>;
   /** The production fallback exported from the primitive's `*-defaults.ts`. */
   readonly fallback: D;
-  /** Provider factory under test. */
+  /**
+   * Provider factory under test. Almost every helper takes `Partial<D>` and
+   * drops in directly; a helper whose signature is not the partial shape
+   * (`provideForBreakpointsDefaults(breakpoints)`) is adapted by a lambda here,
+   * so the three assertions below stay identical across every case.
+   */
   readonly provide: (overrides: Partial<D>) => Provider[];
   /** A single key whose override value differs from the fallback. */
   readonly override: Partial<D>;
@@ -397,9 +442,110 @@ const CASES: readonly DefaultsCase<object>[] = [
     provide: provideForBreadcrumbsDefaults,
     override: { label: 'Ruta' },
   }),
+  defaultsCase({
+    name: 'provideForDialogDefaults',
+    token: FOR_DIALOG_DEFAULTS,
+    fallback: FOR_DIALOG_FALLBACK_DEFAULTS,
+    provide: provideForDialogDefaults,
+    override: { modal: false },
+  }),
+  defaultsCase({
+    name: 'provideForDrawerDefaults',
+    token: FOR_DRAWER_DEFAULTS,
+    fallback: FOR_DRAWER_FALLBACK_DEFAULTS,
+    provide: provideForDrawerDefaults,
+    override: { side: 'top' },
+  }),
+  defaultsCase({
+    name: 'provideForToastDefaults',
+    token: FOR_TOAST_DEFAULTS,
+    fallback: FOR_TOAST_FALLBACK_DEFAULTS,
+    provide: provideForToastDefaults,
+    override: { viewportAriaLabel: 'Notificaciones' },
+  }),
+  defaultsCase({
+    name: 'provideForDateFieldDefaults',
+    token: FOR_DATE_FIELD_DEFAULTS,
+    fallback: FOR_DATE_FIELD_FALLBACK_DEFAULTS,
+    provide: provideForDateFieldDefaults,
+    override: { emptySegmentText: 'Vacío' },
+  }),
+  defaultsCase({
+    name: 'provideForDateRangeFieldDefaults',
+    token: FOR_DATE_RANGE_FIELD_DEFAULTS,
+    fallback: FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS,
+    provide: provideForDateRangeFieldDefaults,
+    override: { startLabel: 'Fecha de inicio' },
+  }),
+  defaultsCase({
+    name: 'provideForTimeFieldDefaults',
+    token: FOR_TIME_FIELD_DEFAULTS,
+    fallback: FOR_TIME_FIELD_FALLBACK_DEFAULTS,
+    provide: provideForTimeFieldDefaults,
+    override: { emptySegmentText: 'Vacío' },
+  }),
+  defaultsCase({
+    name: 'provideForTimeRangeFieldDefaults',
+    token: FOR_TIME_RANGE_FIELD_DEFAULTS,
+    fallback: FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS,
+    provide: provideForTimeRangeFieldDefaults,
+    override: { startLabel: 'Hora de inicio' },
+  }),
+  defaultsCase({
+    name: 'provideForBreakpointsDefaults',
+    token: FOR_BREAKPOINTS_DEFAULTS,
+    fallback: FOR_BREAKPOINTS_FALLBACK_DEFAULTS,
+    provide: ({ breakpoints }) => provideForBreakpointsDefaults(breakpoints!),
+    override: { breakpoints: { mobile: 0, tablet: 768, desktop: 1280 } },
+  }),
 ];
 
+/**
+ * Every `<primitive>-defaults.ts` in the library, read as source so the case
+ * table above can be checked against the providers that actually ship.
+ *
+ * The eight primitives [#1627](https://github.com/tutkli/forty-cdk/issues/1627)
+ * added went uncovered for as long as they did because a missing case is
+ * *invisible*: the suite reports 31 green primitives whether the table lists 31
+ * or 39, and nothing turns red when a fortieth joins them. Deriving the
+ * expected set from source is what makes the gap loud — the same "the list
+ * cannot rot" property the core-tier and registration-surface gates have.
+ *
+ * A source scan rather than a runtime one because there is nothing to reflect:
+ * `createDefaults` returns a plain `{ token, provideDefaults }` pair, and a
+ * primitive that never exported its fallback is exactly the primitive this spec
+ * cannot import.
+ */
+const DEFAULTS_SOURCES = import.meta.glob('../../../*/src/*-defaults.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+/**
+ * The `provideFor<Primitive>Defaults` helpers the library ships, sorted. Same
+ * regex as the generated `defaults providers` matrix in
+ * `scripts/lib/convention-matrices.mjs`, so the two rosters read the same 39
+ * providers today; the glob above is the narrower half of the pair, keyed on
+ * the `<primitive>-defaults.ts` file name the conventions require and the
+ * `forty-cdk/require-defaults-sibling` lint enforces.
+ */
+function shippedDefaultsProviders(): string[] {
+  const names: string[] = [];
+  for (const source of Object.values(DEFAULTS_SOURCES)) {
+    const match = source.match(/^export function (provideFor[A-Za-z]+Defaults)/m);
+    if (match) {
+      names.push(match[1]!);
+    }
+  }
+  return names.sort();
+}
+
 describe('per-primitive defaults providers', () => {
+  it('covers every defaults provider the library ships, and no retired one', () => {
+    expect(CASES.map((c) => c.name).sort()).toEqual(shippedDefaultsProviders());
+  });
+
   for (const c of CASES) {
     describe(c.name, () => {
       it('exposes the exported library fallback at the root injector', () => {

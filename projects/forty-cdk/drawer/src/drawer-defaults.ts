@@ -110,7 +110,12 @@ export interface ForDrawerDefaults {
   backdropAnimateLeave?: string;
 }
 
-const FALLBACK: ForDrawerDefaults = {
+/**
+ * Library fallback for drawer defaults, read at the root injector when no
+ * consumer has called `provideForDrawerDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_DRAWER_FALLBACK_DEFAULTS: ForDrawerDefaults = {
   side: 'bottom',
   modal: true,
   dismissible: true,
@@ -131,7 +136,7 @@ const FALLBACK: ForDrawerDefaults = {
 
 const { token, provideDefaults } = createDefaults<ForDrawerDefaults>(
   'FOR_DRAWER_DEFAULTS',
-  FALLBACK,
+  FOR_DRAWER_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved drawer defaults for the current scope. */

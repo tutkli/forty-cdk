@@ -44,14 +44,19 @@ export const DEFAULT_TIME_FIELD_SEGMENT_LABELS: Readonly<Record<TimeSegmentType,
   dayPeriod: 'AM/PM',
 };
 
-const FALLBACK: ForTimeFieldDefaults = {
+/**
+ * Library fallback for time-field defaults, read at the root injector when no
+ * consumer has called `provideForTimeFieldDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TIME_FIELD_FALLBACK_DEFAULTS: ForTimeFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_TIME_FIELD_SEGMENT_LABELS,
 };
 
 const { token, provideDefaults } = createDefaults<ForTimeFieldDefaults>(
   'FOR_TIME_FIELD_DEFAULTS',
-  FALLBACK,
+  FOR_TIME_FIELD_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved time-field defaults for the current scope. */

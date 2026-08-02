@@ -3,21 +3,25 @@ import { type Provider } from '@angular/core';
 import { createDefaults } from 'forty-cdk/core';
 
 /**
- * Optional global defaults. Provide via
+ * Defaults inherited by toasts in the surrounding injector scope. Provide via
  * `provideForToastDefaults({ duration: 4000, hotkey: 'F6' })` in your app
- * config to override library defaults. Every key is optional — unspecified
- * keys inherit from the parent scope (or library defaults at the root).
+ * config to override library defaults; the token always resolves to a
+ * fully-populated value, so every key is required here and the provider takes
+ * a `Partial`.
  */
 export interface ForToastDefaults {
-  duration?: number;
-  hotkey?: string;
-  maxVisible?: number;
+  /** Default `5000`. How long a toast stays up before auto-dismissing, in ms. */
+  duration: number;
+  /** Default `'F6'`. Key that moves focus to the toast viewport. */
+  hotkey: string;
+  /** Default `Infinity`. How many toasts one viewport renders at a time. */
+  maxVisible: number;
   /**
    * Accessible name for the viewport region (`[forToastViewport]`,
    * `role="region"`), for viewports that don't set `[ariaLabel]` locally.
    * Localize it here to translate every toast viewport in the scope.
    */
-  viewportAriaLabel?: string;
+  viewportAriaLabel: string;
   /**
    * How toast viewports in this scope behave over an open modal `ForDialog` /
    * `ForDrawer`. Default `'peer'`.
@@ -31,19 +35,15 @@ export interface ForToastDefaults {
    *   Use it for low-priority / system toasts that should sit behind a
    *   critical dialog rather than steal attention from it.
    */
-  overModal?: 'peer' | 'inert';
-}
-
-/** @internal Concrete shape stored against the defaults token. */
-interface ResolvedToastDefaults {
-  duration: number;
-  hotkey: string;
-  maxVisible: number;
-  viewportAriaLabel: string;
   overModal: 'peer' | 'inert';
 }
 
-const FALLBACK: ResolvedToastDefaults = {
+/**
+ * Library fallback for toast defaults, read at the root injector when no
+ * consumer has called `provideForToastDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_TOAST_FALLBACK_DEFAULTS: ForToastDefaults = {
   duration: 5000,
   hotkey: 'F6',
   maxVisible: Infinity,
@@ -51,9 +51,9 @@ const FALLBACK: ResolvedToastDefaults = {
   overModal: 'peer',
 };
 
-const { token, provideDefaults } = createDefaults<ResolvedToastDefaults>(
+const { token, provideDefaults } = createDefaults<ForToastDefaults>(
   'FOR_TOAST_DEFAULTS',
-  FALLBACK,
+  FOR_TOAST_FALLBACK_DEFAULTS,
 );
 
 /**
@@ -68,6 +68,6 @@ export const FOR_TOAST_DEFAULTS = token;
  * overrides inherit unspecified keys from the parent scope (or library
  * defaults at the root).
  */
-export function provideForToastDefaults(defaults: ForToastDefaults): Provider[] {
-  return provideDefaults(defaults as Partial<ResolvedToastDefaults>);
+export function provideForToastDefaults(defaults: Partial<ForToastDefaults> = {}): Provider[] {
+  return provideDefaults(defaults);
 }

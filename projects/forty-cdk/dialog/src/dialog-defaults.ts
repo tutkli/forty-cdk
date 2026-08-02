@@ -52,7 +52,12 @@ export interface ForDialogDefaults {
   backdropAnimateLeave?: string;
 }
 
-const FALLBACK: ForDialogDefaults = {
+/**
+ * Library fallback for dialog defaults, read at the root injector when no
+ * consumer has called `provideForDialogDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_DIALOG_FALLBACK_DEFAULTS: ForDialogDefaults = {
   modal: true,
   dismissible: true,
   returnFocus: true,
@@ -61,7 +66,7 @@ const FALLBACK: ForDialogDefaults = {
 
 const { token, provideDefaults } = createDefaults<ForDialogDefaults>(
   'FOR_DIALOG_DEFAULTS',
-  FALLBACK,
+  FOR_DIALOG_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved dialog defaults for the current scope. */
