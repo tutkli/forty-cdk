@@ -3007,6 +3007,114 @@ const fortyCdkPlugin = {
         };
       },
     },
+
+    // Enforces `.claude/rules/conventions.md` § "A live region declares exactly
+    // one channel": a host carrying a live `role` must not restate the
+    // `aria-live` / `aria-atomic` values that role already implies. The role
+    // and the attribute pair are two spellings of the same semantics, so a
+    // host declaring both leaves a reader with no way to tell which one the
+    // primitive means (tutkli/forty-cdk#1598 item 2, #1626).
+    //
+    // Semantics — the same host-block scan as `aria-attr-allowed-on-role`:
+    //   - Only `@Component` / `@Directive` decorators with an inline `host`
+    //     object literal are considered.
+    //   - The role comes from a static `role: '<name>'` in that block. A
+    //     `'[attr.role]'` binding skips the host: a bound role is a switch,
+    //     not a declaration, which is exactly what exempts `[forToast]` by
+    //     construction — it flips between `status` / `alert` while its bound
+    //     `aria-live` goes to `off` for every variant announced through
+    //     `LiveAnnouncer`.
+    //   - Only a *static* `aria-live` / `aria-atomic` whose literal value
+    //     equals the one the role implies is reported. A bound attribute is a
+    //     switch, and a static value that *differs* from the implied one is a
+    //     deliberate override (`role="log"` + `aria-atomic="true"`), not a
+    //     doubling.
+    //   - A role absent from `ROLE_IMPLIED_LIVE_REGION` is skipped, so a
+    //     primitive reaching for a new live role cannot fail the build before
+    //     its row is transcribed.
+    //
+    // The rule reports only: which channel survives is a judgement call the
+    // JSDoc has to record either way — the role is read reliably when a region
+    // is inserted with its text already present, the attribute pair suits a
+    // region that exists, empty, before its text changes.
+    //
+    // Fixture: `projects/forty-cdk/eslint-rules-fixtures/no-doubled-live-region-channel.fixture.ts`.
+    //
+    // Refs: tutkli/forty-cdk#1626, #1598
+    'no-doubled-live-region-channel': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid a static `aria-live` / `aria-atomic` host attribute that restates what the host’s live `role` already implies.',
+        },
+        schema: [],
+        messages: {
+          doubled:
+            '`{{attr}}="{{value}}"` is what `role="{{role}}"` already implies, so this host declares its live-region semantics twice. ' +
+            'Keep one channel and say why in the JSDoc: the role (read reliably when the region is inserted with its text already present) ' +
+            'or the `aria-live` + `aria-atomic` pair (for a region that exists, empty, before its text changes). (tutkli/forty-cdk#1626.)',
+        },
+      },
+      create(context) {
+        // Implicit `aria-live` / `aria-atomic` values of the ARIA 1.2 live
+        // roles (https://www.w3.org/TR/wai-aria-1.2/#alert, #log, #marquee,
+        // #status, #timer).
+        const ROLE_IMPLIED_LIVE_REGION = {
+          alert: { 'aria-live': 'assertive', 'aria-atomic': 'true' },
+          log: { 'aria-live': 'polite', 'aria-atomic': 'false' },
+          marquee: { 'aria-live': 'off', 'aria-atomic': 'false' },
+          status: { 'aria-live': 'polite', 'aria-atomic': 'true' },
+          timer: { 'aria-live': 'off', 'aria-atomic': 'false' },
+        };
+
+        function staticString(node) {
+          return node && node.type === 'Literal' && typeof node.value === 'string'
+            ? node.value
+            : null;
+        }
+        function keyOf(property) {
+          if (property.type !== 'Property' || property.computed) return null;
+          if (property.key.type === 'Identifier') return property.key.name;
+          if (property.key.type === 'Literal' && typeof property.key.value === 'string') {
+            return property.key.value;
+          }
+          return null;
+        }
+        function findProperty(objectExpression, name) {
+          return objectExpression.properties.find((p) => keyOf(p) === name) ?? null;
+        }
+        return {
+          Decorator(node) {
+            const call = node.expression;
+            if (call.type !== 'CallExpression' || call.callee.type !== 'Identifier') return;
+            if (call.callee.name !== 'Component' && call.callee.name !== 'Directive') return;
+            const metadata = call.arguments[0];
+            if (!metadata || metadata.type !== 'ObjectExpression') return;
+            const hostProperty = findProperty(metadata, 'host');
+            if (!hostProperty || hostProperty.value.type !== 'ObjectExpression') return;
+            const host = hostProperty.value;
+            if (findProperty(host, '[attr.role]')) return;
+
+            const roleProperty = findProperty(host, 'role');
+            const role = roleProperty ? staticString(roleProperty.value)?.trim() : null;
+            if (!role) return;
+            const implied = Object.prototype.hasOwnProperty.call(ROLE_IMPLIED_LIVE_REGION, role)
+              ? ROLE_IMPLIED_LIVE_REGION[role]
+              : null;
+            if (implied === null) return;
+
+            for (const attr of ['aria-live', 'aria-atomic']) {
+              const property = findProperty(host, attr);
+              if (!property) continue;
+              const value = staticString(property.value)?.trim();
+              if (value !== implied[attr]) continue;
+              context.report({ node: property, messageId: 'doubled', data: { attr, value, role } });
+            }
+          },
+        };
+      },
+    },
   },
 };
 
@@ -3217,6 +3325,11 @@ module.exports = tseslint.config(
       // `aria-disabled` for that same state (tutkli/forty-cdk#1550, #1455,
       // #561 D2). ----
       'forty-cdk/no-doubled-disabled-reflection': 'error',
+
+      // ---- A live region declares exactly one channel: a live `role` or the
+      // `aria-live` + `aria-atomic` pair, never both (tutkli/forty-cdk#1626,
+      // #1598 item 2). ----
+      'forty-cdk/no-doubled-live-region-channel': 'error',
 
       // ---- Test isolation invariants (see @forty-cdk-test-isolation-rules
       // block above; CLAUDE.md § "Test isolation — non-negotiables"). ----

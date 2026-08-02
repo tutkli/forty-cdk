@@ -1330,6 +1330,8 @@ describe('ForCombobox', () => {
       await flush(r.fixture);
       expect(empty.hasAttribute('hidden')).toBe(false);
       expect(empty.getAttribute('role')).toBe('status');
+      expect(empty.hasAttribute('aria-live')).toBe(false);
+      expect(empty.hasAttribute('aria-atomic')).toBe(false);
     });
 
     it('enforces inline display:none while hidden so a consumer display class cannot leak through', async () => {
@@ -3773,14 +3775,14 @@ describe('ForComboboxStatus', () => {
     return el;
   }
 
-  it('sets role=status, aria-live=polite, and aria-atomic=true', async () => {
+  it('declares role=status as its only live-region channel', async () => {
     const r = renderHost(StatusHost);
     await flush(r.fixture);
     const el = statusEl();
 
     expect(el.getAttribute('role')).toBe('status');
-    expect(el.getAttribute('aria-live')).toBe('polite');
-    expect(el.getAttribute('aria-atomic')).toBe('true');
+    expect(el.hasAttribute('aria-live')).toBe(false);
+    expect(el.hasAttribute('aria-atomic')).toBe(false);
   });
 
   it('exposes a live count signal that reflects ctx.options().length', async () => {

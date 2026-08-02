@@ -27,15 +27,22 @@ import { injectComboboxContext } from './combobox-context';
  * </div>
  * ```
  *
- * Carries `role="status"` and `aria-live="polite"` so screen readers
- * announce the message when it appears.
+ * Carries `role="status"` as its **single** live-region channel, so screen
+ * readers announce the message when it appears — the role implies
+ * `aria-live="polite"` and `aria-atomic="true"`, so the message is read whole
+ * and neither attribute is emitted beside it. The role rather than the
+ * attribute pair because this host self-hides and comes back with its message
+ * already in the DOM, which is an insertion into the accessibility tree, and a
+ * live *role* is what screen readers read reliably on insertion. That is the
+ * same property that keeps `role="alert"` on `[forToast]`'s bare-error host,
+ * and the reason `LiveAnnouncer` — whose regions are inserted empty and only
+ * ever have their text rewritten — keeps the attribute pair instead.
  */
 @Directive({
   selector: '[forComboboxEmpty]',
   exportAs: 'forComboboxEmpty',
   host: {
     role: 'status',
-    'aria-live': 'polite',
     '[hidden]': '!shouldShow()',
     '[style.display]': 'shouldShow() ? null : "none"',
   },
