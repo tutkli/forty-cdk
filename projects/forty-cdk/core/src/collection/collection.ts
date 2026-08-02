@@ -89,15 +89,15 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
  * already-ordered array, 20 008 `compareDocumentPosition` calls for 22 010
  * registered handles — because registrations complete in the creation pass before
  * any binding reads `items()`, and `sameSequence` absorbs the DOM-epoch bumps that
- * follow. **And one observer
- * per collection is the cheap shape, not the expensive one**: wiring all 2002 of
- * them costs 5.3 ms, linear in count and 0.7% of the mount, because the sync is
- * deferred and coalesced and a settled table delivers no records at all. The
- * alternative — one observer owned by the outermost collection — needs
- * `subtree: true` to see a nested reorder, so it would trade 2002 registrations
- * that each watch one `childList` for a single registration notified by every
- * mutation anywhere inside the primitive. Neither is the bottleneck a large
- * mount actually has; that one lived in the consumers of `items()`.
+ * follow. **And one observer per collection is the cheap shape, not the
+ * expensive one**: wiring all 2002 of them costs 5.3 ms, linear in count and
+ * 0.7% of the mount, because the sync is deferred and coalesced and a settled
+ * table delivers no records at all. The alternative — one observer owned by the
+ * outermost collection — needs `subtree: true` to see a nested reorder, so it
+ * would trade 2002 registrations that each watch one `childList` for a single
+ * registration notified by every mutation anywhere inside the primitive.
+ * Neither is the bottleneck a large mount actually has; that one lived in the
+ * consumers of `items()`.
  */
 export class Collection<H extends CollectionHandle> {
   readonly #membersSet = new Set<H>();

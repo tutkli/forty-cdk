@@ -251,6 +251,11 @@ export class ForTable<T = unknown> implements ForTableContext {
    * during that row's own update pass, so a dependency on the whole grid makes
    * each registration notify every cell mounted so far — the quadratic term
    * measured in [#1584](https://github.com/tutkli/forty-cdk/issues/1584).
+   *
+   * The header branch's fall-through is unreachable: header cells hardcode a
+   * `false` `disabled`, and `#headerParticipates()` already rules out an empty
+   * header row. It is kept so the walk stays equivalent to the `#flatCells`
+   * concatenation if header cells ever gain a real disabled state.
    */
   readonly #firstEnabledCell = computed<HTMLElement | null>(() => {
     if (this.#headerParticipates()) {
