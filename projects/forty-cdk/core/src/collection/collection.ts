@@ -68,7 +68,7 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
  * `register` / `unregister` mutate the set in place (O(1)) and bump the epoch
  * instead of copying the whole set per call — mounting N members stays O(N)
  * rather than O(N²). Document order is computed lazily and memoized: reading
- * `items()` returns the cached (frozen) array reference until membership or DOM
+ * `items()` returns the cached array reference until membership or DOM
  * order actually changes, so reads stay O(1) and a single mutation is
  * O(N log N) (the sort) in the current size. `findByHost` / `indexOfHost`
  * resolve through a companion index derived from that same memo, so a lookup is
@@ -125,15 +125,17 @@ export class Collection<H extends CollectionHandle> {
    * Handles whose host is detached (or shares an exact position with another)
    * keep a stable relative order at the end.
    *
-   * The returned array is frozen — it is shared across reads and is the
-   * memoized cache backing this `computed`, so callers must treat it as
-   * read-only (copy before sorting / splicing).
+   * The contract is type-level: the `readonly H[]` return type is what stops a
+   * caller sorting or splicing in place. It is enforced at compile time rather
+   * than by freezing the array, because the returned reference is the memoized
+   * cache backing this `computed` and freezing it would cost a pass over every
+   * recomputation for a guarantee the type already gives. Copy before sorting.
    */
   readonly items: Signal<readonly H[]> = computed(
     () => {
       this.#membersEpoch();
       this.#domEpoch();
-      return Object.freeze(this.#sortByDomOrder([...this.#membersSet]));
+      return this.#sortByDomOrder([...this.#membersSet]);
     },
     { equal: sameSequence },
   );

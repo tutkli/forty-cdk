@@ -736,12 +736,13 @@ describe('ForTimePicker', () => {
 
     it('shows the formatted value when one is selected', async () => {
       const r = renderHost(TimePickerHost);
+      r.instance.locale.set('en-US');
       r.instance.value.set(new Date(2000, 0, 1, 9, 30, 0));
       await flush(r.fixture);
 
       const valueEl = r.query<HTMLElement>('[forTimePickerValue]')!;
       expect(valueEl.hasAttribute('data-placeholder')).toBe(false);
-      expect(valueEl.textContent?.trim()).toBeTruthy();
+      expect(valueEl.textContent?.trim()).toBe('09:30');
     });
   });
 

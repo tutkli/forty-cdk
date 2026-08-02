@@ -104,7 +104,7 @@ describe('ForDialogManager (programmatic)', () => {
     it('uses role=alertdialog when alert: true', () => {
       const { dialogs } = setup();
       dialogs.open(ConfirmDialog, { data: { message: 'hi' }, alert: true });
-      expect(document.querySelector('[role="alertdialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="alertdialog"]').length).toBe(1);
     });
 
     it('renders the user component (data flows in via FOR_DIALOG_DATA)', () => {
@@ -190,7 +190,7 @@ describe('ForDialogManager (programmatic)', () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -898,7 +898,7 @@ describe('ForDialogManager (programmatic)', () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -926,7 +926,7 @@ describe('ForDialogManager (programmatic)', () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -942,7 +942,7 @@ describe('ForDialogManager (programmatic)', () => {
         animateLeave: 'dialog-out',
       });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
     });
   });
 
@@ -1003,7 +1003,7 @@ describe('ForDialogManager (programmatic)', () => {
         backdropAnimateLeave: 'backdrop-out',
       });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();

@@ -17,6 +17,15 @@ interface LiveRegion {
  * (`polite` and `assertive`) into `document.body` at construction, then
  * writes / clears messages on demand.
  *
+ * Each region declares exactly one channel: `aria-live` plus `aria-atomic`,
+ * never a `role`. The two are redundant — `role="status"` implies
+ * `aria-live="polite"` + `aria-atomic="true"` and `role="alert"` implies
+ * `assertive` — and the attribute pair is the channel to keep, because these
+ * regions are anonymous off-screen text sinks rather than a status or alert
+ * landmark a user should be able to navigate to, and because it states both
+ * properties outright instead of leaving `aria-atomic` to an implicit role
+ * mapping.
+ *
  * The regions are created up front — not on first use — because a live region
  * must already exist in the accessibility tree before its text changes for
  * that change to be announced. Creating the region inside the first
@@ -137,7 +146,6 @@ export class LiveAnnouncer {
     const region = this.#document.createElement('div');
     region.setAttribute('aria-live', politeness);
     region.setAttribute('aria-atomic', 'true');
-    region.setAttribute('role', politeness === 'assertive' ? 'alert' : 'status');
     region.setAttribute(MODAL_EXEMPT_ATTRIBUTE, '');
     // Visually hidden but kept in the accessibility tree.
     region.style.cssText = VISUALLY_HIDDEN_STYLE;

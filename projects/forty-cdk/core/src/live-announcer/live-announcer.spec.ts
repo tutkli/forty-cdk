@@ -39,8 +39,9 @@ describe('LiveAnnouncer', () => {
     expect(polite!.textContent).toBe('');
     expect(assertive!.textContent).toBe('');
     expect(polite!.getAttribute('aria-atomic')).toBe('true');
-    expect(polite!.getAttribute('role')).toBe('status');
-    expect(assertive!.getAttribute('role')).toBe('alert');
+    expect(assertive!.getAttribute('aria-atomic')).toBe('true');
+    expect(polite!.hasAttribute('role')).toBe(false);
+    expect(assertive!.hasAttribute('role')).toBe(false);
   });
 
   it('writes the first announcement into the pre-existing polite region', async () => {
@@ -69,7 +70,7 @@ describe('LiveAnnouncer', () => {
 
     expect(polite!.textContent).toBe('');
     expect(assertive!.textContent).toBe('boom');
-    expect(assertive!.getAttribute('role')).toBe('alert');
+    expect(assertive!.getAttribute('aria-live')).toBe('assertive');
   });
 
   it('flushes identical consecutive messages through an empty state', async () => {

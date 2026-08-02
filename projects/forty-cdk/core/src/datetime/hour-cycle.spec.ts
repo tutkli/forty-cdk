@@ -64,8 +64,8 @@ describe('dayPeriodNames', () => {
 
   it('returns distinct, non-empty strings for a non-English locale', () => {
     const names = dayPeriodNames('ja-JP');
-    expect(names.am).toBeTruthy();
-    expect(names.pm).toBeTruthy();
+    expect(names.am).not.toBe('');
+    expect(names.pm).not.toBe('');
     expect(names.am).not.toBe(names.pm);
   });
 });

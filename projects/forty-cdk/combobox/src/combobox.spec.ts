@@ -1862,9 +1862,10 @@ describe('ForCombobox', () => {
       r.instance.value.set(['apple', 'banana']);
       await flush(r.fixture);
 
-      expect(getChip('apple')).toBeTruthy();
-      expect(getChip('banana')).toBeTruthy();
-      expect(document.querySelector('[data-test-chip="cherry"]')).toBeNull();
+      const rendered = Array.from(document.querySelectorAll('[data-test-chip]')).map((chip) =>
+        chip.getAttribute('data-test-chip'),
+      );
+      expect(rendered).toEqual(['apple', 'banana']);
     });
 
     it('clicking ChipRemove removes that value and focuses the input', async () => {
@@ -3360,6 +3361,11 @@ describe('ForCombobox static option (issue #674)', () => {
   const selText = (root: HTMLElement) =>
     root.querySelector<HTMLElement>('[data-testid="sel"]')!.textContent;
 
+  const renderedOptionIds = () =>
+    Array.from(document.querySelectorAll('[forComboboxContent] [role="option"]')).map((option) =>
+      option.getAttribute('data-test-id'),
+    );
+
   it('opens without throwing and renders both the static option and the @for list', async () => {
     const r = renderHost(StaticOptionHost);
     r.instance.open.set(true);
@@ -3367,9 +3373,7 @@ describe('ForCombobox static option (issue #674)', () => {
     // `value()` before its binding was written.
     await flush(r.fixture);
 
-    expect(getOption('add')).toBeTruthy();
-    expect(getOption('apple')).toBeTruthy();
-    expect(getOption('date')).toBeTruthy();
+    expect(renderedOptionIds()).toEqual(['add', 'apple', 'apricot', 'banana', 'cherry', 'date']);
   });
 
   it('makes the static option part of the navigable collection (index 0)', async () => {
@@ -3412,10 +3416,7 @@ describe('ForCombobox static option (issue #674)', () => {
     typeInto(input, 'ap');
     await flush(r.fixture);
 
-    expect(getOption('add')).toBeTruthy();
-    expect(getOption('apple')).toBeTruthy();
-    expect(getOption('apricot')).toBeTruthy();
-    expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
+    expect(renderedOptionIds()).toEqual(['add', 'apple', 'apricot']);
   });
 
   it('zoneless: re-folds the static option once its binding lands', async () => {

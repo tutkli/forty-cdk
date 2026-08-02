@@ -1013,7 +1013,6 @@ describe('ForTooltip', () => {
       await flushPositioning(r.fixture);
 
       const arrow = document.querySelector<HTMLElement>('[data-tooltip-arrow]')!;
-      expect(arrow).toBeTruthy();
       expect(arrow.getAttribute('aria-hidden')).toBe('true');
       expect(arrow.style.position).toBe('absolute');
       // Arrow's data-placement mirrors the resolved side (default 'top').

@@ -1396,6 +1396,14 @@ describe('ForToastManager (programmatic)', () => {
   });
 });
 
+@Component({
+  imports: [ForToastViewport],
+  template: `<for-toast-viewport [ariaLabel]="ariaLabel()" />`,
+})
+class ViewportAriaLabelHost {
+  readonly ariaLabel = signal<string | null>('Alerts');
+}
+
 describe('ForToastViewport', () => {
   afterEachOverlayCleanup();
 
@@ -1404,6 +1412,28 @@ describe('ForToastViewport', () => {
     const v = r.el.querySelector<HTMLElement>('for-toast-viewport, [forToastViewport]')!;
     expect(v.getAttribute('role')).toBe('region');
     expect(v.getAttribute('aria-label')).toBe('Notifications');
+  });
+
+  it('[ariaLabel] overrides the default and null drops the attribute', async () => {
+    const r = renderHost(ViewportAriaLabelHost);
+    const v = r.el.querySelector<HTMLElement>('for-toast-viewport')!;
+    expect(v.getAttribute('aria-label')).toBe('Alerts');
+
+    r.instance.ariaLabel.set(null);
+    await r.flush();
+    expect(v.hasAttribute('aria-label')).toBe(false);
+  });
+
+  it('a static aria-label on the host wins over the default', () => {
+    @Component({
+      imports: [ForToastViewport],
+      template: `<for-toast-viewport aria-label="Static name" />`,
+    })
+    class StaticAriaLabelHost {}
+
+    const r = renderHost(StaticAriaLabelHost);
+    const v = r.el.querySelector<HTMLElement>('for-toast-viewport')!;
+    expect(v.getAttribute('aria-label')).toBe('Static name');
   });
 
   it('exposes data-toast-count reflecting visible toasts', async () => {
@@ -1605,6 +1635,22 @@ describe('global defaults via provideForToastDefaults', () => {
     vi.advanceTimersByTime(1);
     fixture.detectChanges();
     expect(fixture.componentInstance.toasts.count()).toBe(0);
+  });
+
+  it('viewportAriaLabel names a viewport that leaves [ariaLabel] unset', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideZonelessChangeDetection(),
+        provideForToastDefaults({ viewportAriaLabel: 'Notificaciones' }),
+      ],
+    });
+    const fixture = TestBed.createComponent(ProgrammaticHost);
+    fixture.detectChanges();
+    const v = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      'for-toast-viewport',
+    )!;
+    expect(v.getAttribute('aria-label')).toBe('Notificaciones');
   });
 
   it('default maxVisible caps a viewport that leaves [maxVisible] unset', () => {

@@ -99,7 +99,7 @@ describe('ForDrawerManager (programmatic)', () => {
     it('applies the alert role when alert: true', () => {
       const { drawers } = setup();
       drawers.open(SheetDrawer, { data: { message: 'hi' }, alert: true });
-      expect(document.querySelector('[role="alertdialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="alertdialog"]').length).toBe(1);
     });
 
     it('passes data via FOR_DRAWER_DATA', () => {
@@ -155,7 +155,7 @@ describe('ForDrawerManager (programmatic)', () => {
     it('removes the host element on close', async () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -610,7 +610,7 @@ describe('ForDrawerManager (programmatic)', () => {
         swipeEnd: () => {},
         swipeCancel: () => {},
       });
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -895,7 +895,7 @@ describe('ForDrawerManager (programmatic)', () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -923,7 +923,7 @@ describe('ForDrawerManager (programmatic)', () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
@@ -939,7 +939,7 @@ describe('ForDrawerManager (programmatic)', () => {
         animateLeave: 'drawer-out',
       });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
     });
   });
 
@@ -1000,7 +1000,7 @@ describe('ForDrawerManager (programmatic)', () => {
         backdropAnimateLeave: 'backdrop-out',
       });
 
-      expect(document.querySelector('[role="dialog"]')).toBeTruthy();
+      expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
       ref.close();
       await ref.closed;
       TestBed.tick();
