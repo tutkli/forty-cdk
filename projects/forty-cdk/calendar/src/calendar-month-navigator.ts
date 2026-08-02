@@ -15,9 +15,10 @@ const GRID_COLUMNS = 3;
  * (selected / today / focused / disabled), its table-driven keyboard mover, and
  * the per-view paging / focus the root composes as a {@link CalendarViewStrategy}.
  *
- * Constructed directly by the root (`new CalendarMonthNavigator(host)`);
- * it holds no injection context, mirroring how `SegmentEditor` is lifted out of
- * the date / time fields.
+ * Constructed directly by the root (`new CalendarMonthNavigator(host)`); it
+ * injects nothing of its own, mirroring how `SegmentEditor` is lifted out of the
+ * date / time fields, but its cell `Collection` takes the ambient `DestroyRef`,
+ * so the root builds it from a field initializer.
  *
  * @typeParam D The adapter's immutable date type.
  */

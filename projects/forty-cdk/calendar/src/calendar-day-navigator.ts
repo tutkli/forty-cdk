@@ -13,10 +13,12 @@ import type { CalendarViewStrategy } from './calendar-sub-grid';
  * movers), the start-of-week helper, and the per-view label / disabled / paging
  * / focus the root composes as a {@link CalendarViewStrategy}.
  *
- * Constructed directly by the root (`new CalendarDayNavigator(host)`); it holds
- * no injection context, mirroring how `SegmentEditor` is lifted out of the date
- * / time fields. The intended-day, clamp, and announce machinery stays a single
- * source of truth on the root, reached through {@link CalendarDayNavigatorHost}.
+ * Constructed directly by the root (`new CalendarDayNavigator(host)`); it
+ * injects nothing of its own, mirroring how `SegmentEditor` is lifted out of the
+ * date / time fields, but its cell `Collection` takes the ambient `DestroyRef`,
+ * so the root builds it from a field initializer. The intended-day, clamp, and
+ * announce machinery stays a single source of truth on the root, reached
+ * through {@link CalendarDayNavigatorHost}.
  *
  * @typeParam D The adapter's immutable date type.
  */
