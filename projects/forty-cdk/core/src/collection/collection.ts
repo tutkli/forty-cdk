@@ -55,13 +55,14 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
  * container's own `Collection` reordering deeper down — does not touch any node
  * on this collection's chain and so does not invalidate it.
  *
- * The collection itself is not Angular-aware, but when instantiated inside an
- * Angular injection context (the common case — a field initializer on the
- * host directive) it registers `destroy()` with the ambient `DestroyRef`, so
- * the `MutationObserver` is disconnected when the owner is destroyed without
+ * Must be constructed in an Angular injection context — a field initializer on
+ * the owning directive, or a class the injector itself instantiates. It
+ * registers `destroy()` with the ambient `DestroyRef` there, so the
+ * `MutationObserver` is disconnected when the owner is destroyed without
  * relying on every child unregistering first. Call `register` / `unregister`
- * from each child's constructor / `DestroyRef.onDestroy`; outside an injection
- * context, call `destroy()` manually.
+ * from each child's constructor / `DestroyRef.onDestroy`. A bare
+ * `new Collection()` outside a context raises Angular's NG0203; a spec reaches
+ * one through `TestBed.runInInjectionContext`.
  *
  * Membership is tracked in a mutable `Set` with a companion epoch signal, so
  * `register` / `unregister` mutate the set in place (O(1)) and bump the epoch
@@ -110,12 +111,7 @@ export class Collection<H extends CollectionHandle> {
   #syncScheduled = false;
 
   constructor() {
-    try {
-      inject(DestroyRef).onDestroy(() => this.destroy());
-    } catch {
-      // Constructed outside an injection context (e.g. a bare `new Collection()`
-      // in a unit test); the owner is responsible for calling `destroy()`.
-    }
+    inject(DestroyRef).onDestroy(() => this.destroy());
   }
 
   /**
@@ -197,9 +193,9 @@ export class Collection<H extends CollectionHandle> {
 
   /**
    * Disconnects the `MutationObserver` and clears membership. Idempotent and
-   * safe to call from a `DestroyRef.onDestroy` hook — wired automatically when
-   * the collection is constructed in an injection context. After `destroy()`,
-   * further `register` calls are ignored.
+   * safe to call from a `DestroyRef.onDestroy` hook — which the constructor
+   * wires automatically. After `destroy()`, further `register` calls are
+   * ignored.
    */
   destroy(): void {
     this.#destroyed = true;

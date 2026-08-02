@@ -12,6 +12,10 @@ function handle(id: string, host: HTMLElement): Handle {
   return { id, host };
 }
 
+function createCollection(): Collection<Handle> {
+  return TestBed.runInInjectionContext(() => new Collection<Handle>());
+}
+
 function waitForMutationObserver(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
@@ -44,12 +48,12 @@ describe('Collection', () => {
   });
 
   it('starts empty', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     expect(col.items()).toEqual([]);
   });
 
   it('returns items in DOM document order regardless of registration order', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('c', c));
     col.register(handle('a', a));
     col.register(handle('b', b));
@@ -58,14 +62,14 @@ describe('Collection', () => {
   });
 
   it('returns the sole item when there is fewer than 2', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const single = handle('a', a);
     col.register(single);
     expect(col.items()).toEqual([single]);
   });
 
   it('reflects the new DOM order after the hosts are reordered post-registration', async () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
     col.register(handle('c', c));
@@ -83,7 +87,7 @@ describe('Collection', () => {
   });
 
   it('keeps detached hosts at the end in a stable relative order', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const detached = document.createElement('div');
     col.register(handle('detached', detached));
     col.register(handle('b', b));
@@ -93,7 +97,7 @@ describe('Collection', () => {
   });
 
   it('deduplicates double-registers', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const h = handle('a', a);
     col.register(h);
     col.register(h);
@@ -101,7 +105,7 @@ describe('Collection', () => {
   });
 
   it('removes by reference on unregister', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const ha = handle('a', a);
     const hb = handle('b', b);
     col.register(ha);
@@ -115,7 +119,7 @@ describe('Collection', () => {
   });
 
   it('unregistering an unknown handle is a no-op', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const ha = handle('a', a);
     col.register(ha);
 
@@ -126,7 +130,7 @@ describe('Collection', () => {
   });
 
   it('allows re-registering a handle after it is unregistered', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const ha = handle('a', a);
     col.register(ha);
     col.unregister(ha);
@@ -140,7 +144,7 @@ describe('Collection', () => {
   });
 
   it('returns the same array reference across consecutive reads (no per-read allocation)', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
 
@@ -155,7 +159,7 @@ describe('Collection', () => {
   });
 
   it('findByHost returns the matching handle or undefined', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const ha = handle('a', a);
     col.register(ha);
 
@@ -164,7 +168,7 @@ describe('Collection', () => {
   });
 
   it('indexOfHost returns the DOM document-order index', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('c', c));
     col.register(handle('a', a));
 
@@ -174,7 +178,7 @@ describe('Collection', () => {
   });
 
   it('resolves a host shared by two handles to the first in document order', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const second = handle('a2', a);
     col.register(second);
     col.register(handle('a1', a));
@@ -186,7 +190,7 @@ describe('Collection', () => {
   });
 
   it('re-resolves lookups after an unregister', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     const ha = handle('a', a);
     col.register(ha);
     col.register(handle('b', b));
@@ -201,7 +205,7 @@ describe('Collection', () => {
   });
 
   it('returns a frozen items() array that callers cannot mutate', () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
 
@@ -214,7 +218,7 @@ describe('Collection', () => {
   });
 
   it('observes the parent without subtree, so a nested mutation does not invalidate it', async () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
 
@@ -228,7 +232,7 @@ describe('Collection', () => {
   });
 
   it('returns the same reference across a childList mutation that leaves order unchanged', async () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
     col.register(handle('c', c));
@@ -247,14 +251,14 @@ describe('Collection', () => {
   });
 
   it('invalidates only the owning collection when sibling subtrees mutate', async () => {
-    const outer = new Collection<Handle>();
+    const outer = createCollection();
     const innerHost = document.createElement('div');
     const x = document.createElement('div');
     const y = document.createElement('div');
     innerHost.append(x, y);
     host.appendChild(innerHost);
 
-    const inner = new Collection<Handle>();
+    const inner = createCollection();
     outer.register(handle('a', a));
     outer.register(handle('b', b));
     inner.register(handle('x', x));
@@ -287,7 +291,7 @@ describe('Collection', () => {
     }
     host.appendChild(ul);
 
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', buttons[0]!));
     col.register(handle('b', buttons[1]!));
     col.register(handle('c', buttons[2]!));
@@ -311,7 +315,7 @@ describe('Collection', () => {
     container.append(branch1, branch2);
     host.appendChild(container);
 
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
     col.register(handle('c', c));
@@ -346,7 +350,7 @@ describe('Collection', () => {
     }
     host.appendChild(ul);
 
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', buttons[0]!));
     col.register(handle('b', buttons[1]!));
     await waitForMutationObserver();
@@ -360,7 +364,7 @@ describe('Collection', () => {
   });
 
   it('disconnects the observer and clears membership on destroy', async () => {
-    const col = new Collection<Handle>();
+    const col = createCollection();
     col.register(handle('a', a));
     col.register(handle('b', b));
 
@@ -377,7 +381,7 @@ describe('Collection', () => {
 
   describe('epoch-based membership (#1153)', () => {
     it('resolves DOM order for many handles registered out of order', () => {
-      const col = new Collection<Handle>();
+      const col = createCollection();
       const hosts: HTMLElement[] = [];
       for (let i = 0; i < 50; i++) {
         const el = document.createElement('div');
@@ -393,7 +397,7 @@ describe('Collection', () => {
     });
 
     it('dedups a double-register without copying membership', () => {
-      const col = new Collection<Handle>();
+      const col = createCollection();
       const ha = handle('a', a);
       const before = col.items();
       col.register(ha);
@@ -405,7 +409,7 @@ describe('Collection', () => {
     });
 
     it('unregister removes and reflects synchronously', () => {
-      const col = new Collection<Handle>();
+      const col = createCollection();
       const ha = handle('a', a);
       const hb = handle('b', b);
       col.register(ha);
@@ -417,7 +421,7 @@ describe('Collection', () => {
     });
 
     it('destroy clears membership and ignores later register', () => {
-      const col = new Collection<Handle>();
+      const col = createCollection();
       col.register(handle('a', a));
       col.register(handle('b', b));
 
@@ -429,7 +433,7 @@ describe('Collection', () => {
     });
 
     it('reflects membership synchronously after register (before the microtask flushes)', () => {
-      const col = new Collection<Handle>();
+      const col = createCollection();
       col.register(handle('a', a));
       col.register(handle('b', b));
 
@@ -439,7 +443,7 @@ describe('Collection', () => {
     it('coalesces a burst of same-turn registrations into a single observer resync', async () => {
       const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
       try {
-        const col = new Collection<Handle>();
+        const col = createCollection();
         col.register(handle('a', a));
         col.register(handle('b', b));
         col.register(handle('c', c));
@@ -458,7 +462,7 @@ describe('Collection', () => {
     it('does not resync the observer after destroy cancels the pending microtask', async () => {
       const observeSpy = vi.spyOn(MutationObserver.prototype, 'observe');
       try {
-        const col = new Collection<Handle>();
+        const col = createCollection();
         col.register(handle('a', a));
         col.register(handle('b', b));
         col.destroy();
@@ -501,5 +505,9 @@ describe('Collection', () => {
     host.append(c, a, b);
     await waitForMutationObserver();
     expect(col.items()).toEqual([]);
+  });
+
+  it('rejects construction outside an injection context instead of skipping teardown', () => {
+    expect(() => new Collection<Handle>()).toThrowError(/injection context/);
   });
 });
