@@ -35,17 +35,24 @@ describe('ScrollDismissDispatcher', () => {
     });
 
     it('tears the listener down only with the last unregister (refcounted)', () => {
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
+      const addSpy = vi.spyOn(document, 'addEventListener');
       const dispatcher = TestBed.inject(ScrollDismissDispatcher);
 
       const offA = dispatcher.register(() => undefined);
       const offB = dispatcher.register(() => undefined);
+      expect(scrollListenerCount(addSpy.mock.calls)).toBe(1);
 
       offA();
-      expect(scrollListenerCount(removeSpy.mock.calls)).toBe(0);
+      dispatcher.register(() => undefined)();
+      expect(scrollListenerCount(addSpy.mock.calls)).toBe(1);
 
       offB();
-      expect(scrollListenerCount(removeSpy.mock.calls)).toBe(1);
+      const offAfterTeardown = dispatcher.register(() => undefined);
+      try {
+        expect(scrollListenerCount(addSpy.mock.calls)).toBe(2);
+      } finally {
+        offAfterTeardown();
+      }
     });
 
     it('re-installs the listener after a full teardown when a new subscriber registers', () => {
@@ -106,33 +113,40 @@ describe('ScrollDismissDispatcher', () => {
     });
 
     it('does not tear down the shared listener while a duplicate registration survives', () => {
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
       const dispatcher = TestBed.inject(ScrollDismissDispatcher);
 
-      const fn = () => undefined;
+      let hits = 0;
+      const fn = (): number => (hits += 1);
       const offA = dispatcher.register(fn);
       const offB = dispatcher.register(fn);
 
       offA();
-      expect(scrollListenerCount(removeSpy.mock.calls)).toBe(0);
+      document.dispatchEvent(new Event('scroll'));
+      expect(hits).toBe(1);
 
       offB();
-      expect(scrollListenerCount(removeSpy.mock.calls)).toBe(1);
+      hits = 0;
+      document.dispatchEvent(new Event('scroll'));
+      expect(hits).toBe(0);
     });
 
     it('teardown is idempotent and does not affect a sibling registration', () => {
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
       const dispatcher = TestBed.inject(ScrollDismissDispatcher);
 
-      const offA = dispatcher.register(() => undefined);
-      const offB = dispatcher.register(() => undefined);
+      let a = 0;
+      let b = 0;
+      const offA = dispatcher.register(() => (a += 1));
+      const offB = dispatcher.register(() => (b += 1));
 
       offA();
       offA();
-      expect(scrollListenerCount(removeSpy.mock.calls)).toBe(0);
+      document.dispatchEvent(new Event('scroll'));
+      expect(a).toBe(0);
+      expect(b).toBe(1);
 
       offB();
-      expect(scrollListenerCount(removeSpy.mock.calls)).toBe(1);
+      document.dispatchEvent(new Event('scroll'));
+      expect(b).toBe(1);
     });
   });
 

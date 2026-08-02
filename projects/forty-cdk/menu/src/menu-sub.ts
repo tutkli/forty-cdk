@@ -480,12 +480,11 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
       }
       this.#onContentPointerLeave();
     };
-    el.addEventListener('pointerenter', onEnter);
-    el.addEventListener('pointerleave', onLeave);
-    this.#detachContentPointer = () => {
-      el.removeEventListener('pointerenter', onEnter);
-      el.removeEventListener('pointerleave', onLeave);
-    };
+    const controller = new AbortController();
+    const options = { signal: controller.signal };
+    el.addEventListener('pointerenter', onEnter, options);
+    el.addEventListener('pointerleave', onLeave, options);
+    this.#detachContentPointer = () => controller.abort();
   }
 
   #teardownPointer(): void {

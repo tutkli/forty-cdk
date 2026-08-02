@@ -3782,19 +3782,19 @@ describe('ForTable', () => {
       const { el, flush } = renderHost(VirtualizedReorderTableHost);
       await flush();
       const addSpy = vi.spyOn(document, 'addEventListener');
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
       try {
         const row = el.querySelector<HTMLElement>('[data-testid="row-51"]')!;
         row.dispatchEvent(pointerEvent('pointerdown', { clientY: 100 }));
-        const added = addSpy.mock.calls.filter(([type]) => type === 'pointermove').length;
-        expect(added).toBeGreaterThan(0);
+        const signals = addSpy.mock.calls
+          .filter(([type]) => type === 'pointermove')
+          .map(([, , options]) => (options as AddEventListenerOptions | undefined)?.signal);
+        expect(signals.length).toBeGreaterThan(0);
+        expect(signals.every((s) => s?.aborted === false)).toBe(true);
 
         document.dispatchEvent(pointerEvent('pointerup', { clientY: 100 }));
-        const removed = removeSpy.mock.calls.filter(([type]) => type === 'pointermove').length;
-        expect(removed).toBe(added);
+        expect(signals.every((s) => s?.aborted === true)).toBe(true);
       } finally {
         addSpy.mockRestore();
-        removeSpy.mockRestore();
       }
     });
   });

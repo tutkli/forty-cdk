@@ -230,28 +230,42 @@ export class ForOtpInput
       el.value = this.#clampedValue();
       this.#host.nativeElement.appendChild(el);
 
-      el.addEventListener('input', () => this.#onInput());
-      el.addEventListener('compositionstart', () => this.#onCompositionStart());
-      el.addEventListener('compositionend', () => this.#onCompositionEnd());
-      el.addEventListener('paste', (event) => this.#onPaste(event));
-      el.addEventListener('focus', () => {
-        this.#focused.set(true);
-        this.#syncSelection();
-      });
-      el.addEventListener('blur', () => {
-        this.#focused.set(false);
-        if (el.value !== this.#clampedValue()) {
-          el.value = this.#clampedValue();
-        }
-        this.markTouched();
-      });
-      el.addEventListener('click', () => this.#syncSelection());
-      el.addEventListener('keyup', () => this.#syncSelection());
-      el.addEventListener('select', () => this.#syncSelection());
+      const controller = new AbortController();
+      const options = { signal: controller.signal };
+
+      el.addEventListener('input', () => this.#onInput(), options);
+      el.addEventListener('compositionstart', () => this.#onCompositionStart(), options);
+      el.addEventListener('compositionend', () => this.#onCompositionEnd(), options);
+      el.addEventListener('paste', (event) => this.#onPaste(event), options);
+      el.addEventListener(
+        'focus',
+        () => {
+          this.#focused.set(true);
+          this.#syncSelection();
+        },
+        options,
+      );
+      el.addEventListener(
+        'blur',
+        () => {
+          this.#focused.set(false);
+          if (el.value !== this.#clampedValue()) {
+            el.value = this.#clampedValue();
+          }
+          this.markTouched();
+        },
+        options,
+      );
+      el.addEventListener('click', () => this.#syncSelection(), options);
+      el.addEventListener('keyup', () => this.#syncSelection(), options);
+      el.addEventListener('select', () => this.#syncSelection(), options);
 
       this.#inputEl.set(el);
 
-      this.#destroyRef.onDestroy(() => el.remove());
+      this.#destroyRef.onDestroy(() => {
+        controller.abort();
+        el.remove();
+      });
     });
   }
 

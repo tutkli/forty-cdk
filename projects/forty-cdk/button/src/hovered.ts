@@ -65,13 +65,13 @@ export function injectHovered(opts?: HoveredOptions): Signal<boolean> {
     hovered.set(false);
   };
 
-  el.addEventListener('pointerenter', onPointerEnter);
-  el.addEventListener('pointerleave', onPointerLeave);
+  const controller = new AbortController();
+  const options = { signal: controller.signal };
 
-  inject(DestroyRef).onDestroy(() => {
-    el.removeEventListener('pointerenter', onPointerEnter);
-    el.removeEventListener('pointerleave', onPointerLeave);
-  });
+  el.addEventListener('pointerenter', onPointerEnter, options);
+  el.addEventListener('pointerleave', onPointerLeave, options);
+
+  inject(DestroyRef).onDestroy(() => controller.abort());
 
   return computed(() => (disabled?.() ? false : hovered()));
 }

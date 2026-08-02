@@ -168,6 +168,7 @@ export class ForScrollAreaScrollbar {
   #pressTarget = 0;
   #pressPointerId: number | null = null;
   #repeatTimer: ReturnType<typeof setTimeout> | null = null;
+  #gesture: AbortController | null = null;
 
   constructor() {
     inject(DestroyRef).onDestroy(() => this.#endPress());
@@ -354,10 +355,12 @@ export class ForScrollAreaScrollbar {
     // captured node can be removed mid-gesture when the scrollbar self-hides
     // (`type="hover"` / `"scroll"`). Document-level listeners keep firing after
     // that removal, so the gesture is not silently aborted.
+    this.#gesture = new AbortController();
+    const options = { signal: this.#gesture.signal };
     const doc = this.#document;
-    doc.addEventListener('pointermove', this.#onPressMove);
-    doc.addEventListener('pointerup', this.#onPressUp);
-    doc.addEventListener('pointercancel', this.#onPressUp);
+    doc.addEventListener('pointermove', this.#onPressMove, options);
+    doc.addEventListener('pointerup', this.#onPressUp, options);
+    doc.addEventListener('pointercancel', this.#onPressUp, options);
   }
 
   readonly #onPressMove = (event: PointerEvent): void => {
@@ -411,10 +414,8 @@ export class ForScrollAreaScrollbar {
     }
     this.#pressing.set(false);
     this.#pressDirection = null;
-    const doc = this.#document;
-    doc.removeEventListener('pointermove', this.#onPressMove);
-    doc.removeEventListener('pointerup', this.#onPressUp);
-    doc.removeEventListener('pointercancel', this.#onPressUp);
+    this.#gesture?.abort();
+    this.#gesture = null;
     const pointerId = this.#pressPointerId;
     this.#pressPointerId = null;
     if (pointerId !== null && this.host.hasPointerCapture(pointerId)) {

@@ -643,6 +643,25 @@ describe('ForOtpInput', () => {
     });
   });
 
+  describe('listener teardown', () => {
+    it('drops the injected input listeners on destroy even when the input was re-parented', async () => {
+      const { fixture, input } = await mountOtp();
+      const elsewhere = document.createElement('div');
+      document.body.appendChild(elsewhere);
+      try {
+        elsewhere.appendChild(input);
+        fixture.destroy();
+
+        input.value = 'ab';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect(input.value).toBe('ab');
+      } finally {
+        elsewhere.remove();
+      }
+    });
+  });
+
   describe('native form submission', () => {
     @Component({
       imports: [ForOtpInput, ForOtpInputSlot],

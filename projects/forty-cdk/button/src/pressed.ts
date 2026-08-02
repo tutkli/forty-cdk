@@ -77,21 +77,17 @@ export function injectPressed(opts?: PressedOptions): Signal<boolean> {
     pressed.set(false);
   };
 
-  el.addEventListener('pointerdown', onPointerDown);
-  el.addEventListener('pointerup', onPointerEnd);
-  el.addEventListener('pointerleave', onPointerEnd);
-  el.addEventListener('keydown', onKeyDown);
-  el.addEventListener('keyup', onKeyUp);
-  el.addEventListener('blur', onBlur);
+  const controller = new AbortController();
+  const options = { signal: controller.signal };
 
-  inject(DestroyRef).onDestroy(() => {
-    el.removeEventListener('pointerdown', onPointerDown);
-    el.removeEventListener('pointerup', onPointerEnd);
-    el.removeEventListener('pointerleave', onPointerEnd);
-    el.removeEventListener('keydown', onKeyDown);
-    el.removeEventListener('keyup', onKeyUp);
-    el.removeEventListener('blur', onBlur);
-  });
+  el.addEventListener('pointerdown', onPointerDown, options);
+  el.addEventListener('pointerup', onPointerEnd, options);
+  el.addEventListener('pointerleave', onPointerEnd, options);
+  el.addEventListener('keydown', onKeyDown, options);
+  el.addEventListener('keyup', onKeyUp, options);
+  el.addEventListener('blur', onBlur, options);
+
+  inject(DestroyRef).onDestroy(() => controller.abort());
 
   return computed(() => (disabled?.() ? false : pressed()));
 }
