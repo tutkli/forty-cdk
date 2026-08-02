@@ -1,5 +1,5 @@
 import { isPlatformBrowser } from '@angular/common';
-import { DOCUMENT, ElementRef, Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { DestroyRef, DOCUMENT, ElementRef, Injectable, inject, PLATFORM_ID } from '@angular/core';
 
 import {
   FOCUSABLE_SELECTOR,
@@ -202,9 +202,8 @@ export class FocusTrap {
     if (!this.#active) {
       return;
     }
+    this.releaseKeyboardChannel();
     this.#active = false;
-    this.#document.removeEventListener('keydown', this.#onKeyDown, true);
-    this.#stack.remove(this);
 
     if (this.#containerHadTabindex === false && this.#container.getAttribute('tabindex') === '-1') {
       // We added it on activation; remove it so we don't leak.
@@ -217,6 +216,31 @@ export class FocusTrap {
       this.#returnTo.focus();
     }
     this.#returnTo = null;
+  }
+
+  /**
+   * Removes the `document` keydown listener and the {@link FocusTrapStack}
+   * entry — the half of teardown that is never a judgement call — while
+   * leaving focus and the trap's active state untouched. A no-op on a trap
+   * that is not active.
+   *
+   * Two properties make this callable from a safety-net hook that may run
+   * *before* the owner's own cleanup (`DestroyRef.onDestroy` callbacks fire in
+   * registration order): the trap stays `isActive`, so a later
+   * `deactivate({ returnFocus: true })` still performs its focus move rather
+   * than bailing on an already-torn-down trap; and both removals are
+   * idempotent, so the two may run in either order, or twice.
+   *
+   * The temporary container `tabindex="-1"` is deliberately left alone —
+   * undoing it belongs to `deactivate`, and a container nobody deactivated is
+   * being destroyed along with the attribute.
+   */
+  releaseKeyboardChannel(): void {
+    if (!this.#active) {
+      return;
+    }
+    this.#document.removeEventListener('keydown', this.#onKeyDown, true);
+    this.#stack.remove(this);
   }
 
   #focusContainer(): void {
@@ -276,27 +300,50 @@ export class FocusTrap {
 }
 
 /**
- * Creates a `FocusTrap` for the directive's host element. Activation and
- * deactivation are the consumer's responsibility — call `trap.activate()`
- * when the surface opens and `trap.deactivate({ returnFocus })` from a
- * `DestroyRef.onDestroy` (or equivalent) when it closes.
+ * Creates a `FocusTrap` for the directive's host element. Activation is the
+ * consumer's responsibility, and so is the focus move on teardown — call
+ * `trap.activate()` when the surface opens and
+ * `trap.deactivate({ returnFocus })` from a `DestroyRef.onDestroy` (or
+ * equivalent) when it closes.
  *
- * The helper deliberately does NOT register a safety-net teardown: forcing
- * `returnFocus: false` from the helper would race consumer cleanups that
- * want `returnFocus: true`, and an unconditional `returnFocus: true` could
- * dump focus on a removed element. The consumer always knows the right
- * answer; do the deactivate yourself.
+ * The two halves of teardown have different owners, so only one of them gets a
+ * safety net. **Where focus goes on close** is a decision only the consumer can
+ * make — forcing `returnFocus: false` from here would race a cleanup that wants
+ * `true`, and an unconditional `true` could dump focus on a removed element —
+ * so the helper never moves focus. **Removing the `document` keydown listener
+ * and the {@link FocusTrapStack} entry** is not a decision at all: a keyboard
+ * channel that outlives its container becomes topmost again as soon as the trap
+ * above it deactivates, then `preventDefault()`s Tab and focuses a detached
+ * node, which drops focus on `<body>` and breaks keyboard navigation for the
+ * rest of the session. The helper therefore registers
+ * {@link FocusTrap.releaseKeyboardChannel} unconditionally on injector destroy,
+ * so an owner that never calls `deactivate()` — a new overlay activating a trap
+ * on its own, an early-return path that skips the call — cannot leave one
+ * behind.
+ *
+ * The net is deliberately not a `deactivate({ returnFocus: false })`, which
+ * would only look equivalent: `DestroyRef.onDestroy` callbacks fire in
+ * registration order, so this hook runs *before* the hook of the consumer that
+ * called `injectFocusTrap()`, and a full deactivate here would flip the trap
+ * inactive first and make the consumer's own
+ * `deactivate({ returnFocus: true })` bail. That loses return focus on every
+ * correctly-written surface — the helper would win the race it is not entitled
+ * to arbitrate, rather than avoid it.
  *
  * SSR-safe: the trap is constructed with the resolved platform, so
  * `activate()` is a no-op off-browser (no `document` keydown listener)
  * rather than relying on the caller to gate it behind `afterNextRender`.
+ * The safety net inherits that gate — it bails on an inactive trap, so it
+ * touches no `document` off-browser either.
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
-  return new FocusTrap(
+  const trap = new FocusTrap(
     host.nativeElement,
     inject(FocusTrapStack),
     inject(DOCUMENT),
     isPlatformBrowser(inject(PLATFORM_ID)),
   );
+  inject(DestroyRef).onDestroy(() => trap.releaseKeyboardChannel());
+  return trap;
 }
