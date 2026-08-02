@@ -678,6 +678,25 @@ describe('injectModalShell', () => {
       expect(order).toEqual(['autoFocusOnClose']);
       ctx.destroy();
     });
+
+    it('deactivates the focus trap before the safety net settles, so no dev-mode warning fires', async () => {
+      const warned: string[] = [];
+      vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+        warned.push(args.map(String).join(' '));
+      });
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+      }));
+      await flush(ctx.fixture);
+
+      ctx.close();
+      await Promise.resolve();
+
+      expect(warned).toEqual([]);
+      ctx.destroy();
+    });
   });
 
   describe('destroy before first render', () => {
