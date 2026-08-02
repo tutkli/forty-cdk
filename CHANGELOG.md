@@ -5,7 +5,86 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.19.0] - 2026-08-02
+
+A hardening release for the overlay core. Focus and dismissal now answer every question against the
+composed tree, so an overlay that contains a web component — or lives inside one — traps `Tab` at its own
+edges, keeps a press on a shadow-nested control from dismissing it, and returns focus to the trigger
+rather than to `<body>`; the walk that resolves all of it was measured and pre-filtered, so a dialog over
+a 10k-element table pays roughly half of what it did. Underneath, three habits the library had outgrown
+are retired: a label cache that a long-lived remote-search combobox never stopped filling, an exception
+used as control flow for an unwritten input, and `effect()` used as a validation channel — an assertion
+now fires at its point of use, on the interaction it degrades. And where a diagnosis is all the library
+can offer, it now offers one: two dev-mode warnings name the overlay left mounted while closed and the
+focus trap left active on destroy.
+
+### Added
+
+- **Overlays.** A dev-mode warning for a content surface still mounted, while closed, after its first
+  render ([#1591](https://github.com/tutkli/forty-cdk/issues/1591)). Forgetting the `@if` breaks nothing
+  visible — the surface renders permanently, `data-state="closed"` lands on a visible element, the ARIA
+  stays internally consistent — so it reads as a CSS bug, and the consumer concludes the animation support
+  is broken because `animate.enter` / `animate.leave` never fire on a node that never unmounts. Adopted by
+  the nine trigger-anchored surfaces (popover, select, combobox, menu, tooltip, hover-card, date picker,
+  time picker, navigation menu); the message names the piece and quotes the primitive's own README
+  expression back. Deliberately **not** adopted where the library blesses an always-mounted surface: the
+  `aria-hidden` + `inert` family (tabs, stepper and carousel panels, accordion and disclosure content) and
+  `[forMenuContent]` under `[forMenubar]`. Dialog, drawer and toast have no closed state to observe. If
+  you followed the tooltip README's examples, which mounted the content with no `@if`, expect the warning
+  — those examples are corrected in this release.
+- **Focus trap.** A dev-mode warning when the teardown safety net below actually fires
+  ([#1617](https://github.com/tutkli/forty-cdk/issues/1617)), naming `injectFocusTrap` and the fix: call
+  `trap.deactivate({ returnFocus })` from the owner's own `DestroyRef.onDestroy`. The gate defers past the
+  whole destroy chain with a `queueMicrotask`, so it reports only an owner that never deactivated, on
+  either hook registration order — a synchronous check would warn on every correct dialog and drawer
+  dismissal. A production build and a trap that was never activated schedule nothing at all.
+
+### Changed
+
+- **Combobox — BREAKING.** `ForComboboxContext` renames both label members to say what they now hold:
+  `cachedOptions()` → `selectedEntries()` and `inlineCompletionOptions()` → `completionEntries()`
+  ([#1580](https://github.com/tutkli/forty-cdk/issues/1580)). Pre-1.0, no deprecated aliases; only a
+  consumer injecting the context directly is affected.
+- **Combobox / Select — BREAKING.** Label resolution now reads two bounded stores instead of one
+  accumulated snapshot ([#1580](https://github.com/tutkli/forty-cdk/issues/1580)), and the change is
+  visible in three places. A selected value's label **survives a source rebuild**: the cache is keyed by
+  the selection, not the dataset, so a `totalCount` transition no longer drops the trigger back to the
+  serialized form value mid-refresh. Conversely, a value that _enters_ the selection while its option sits
+  outside the rendered window now falls back to `[itemToStringLabel]` until that option renders once —
+  `selected().label` used to resolve it from the merged snapshot. And under virtualization, a
+  **closed-state** typeahead (`[forSelect]`) or inline completion (`[forComboboxInput]`) matches within the
+  last rendered slice rather than every slice scrolled through; off-window matching while open is
+  unchanged, still served by the navigator's position map. `[dataVersion]` and `invalidateSnapshot()` are
+  unchanged inputs, but they now govern that position map alone — the label cache reads neither, because a
+  window that lands replaces the store outright and leaves no stale accumulation to purge.
+- **Listbox / Select / Combobox / Tabs / Table — BREAKING.** A missing `[value]` on an option, or a missing
+  `[forTabsTrigger]` / `[forTabsContent]` / `[forColumnDef]` / `[forRowDef]` name, is now a **dev-mode
+  runtime error instead of a template type-check error**
+  ([#1601](https://github.com/tutkli/forty-cdk/issues/1601)). Those seven pieces seed an out-of-band
+  sentinel rather than declaring `input.required`, which retires the `try` / `catch` on Angular's NG0950
+  that ten parent lookups had been using as control flow. Both channels that used to reject a missing
+  binding at compile time — `strictTemplates` and Angular's `hostDirectives` required-input validation —
+  now accept it, and `assertInputBound` throws `[forty-cdk/<primitive>] <piece> has no [<input>] binding.`
+  from a view effect, which aborts `detectChanges` rather than degrading to an `ErrorHandler` report. A
+  production build creates no reactive node per piece and no longer writes a symbol into `[(value)]`: an
+  unbound option is skipped by activation, by range selection and by every label callback, while still
+  taking focus.
+- **Listbox / Select / Tree — BREAKING.** `selectionFollowsFocus` combined with virtualization no longer
+  throws at first render; it throws on the keyboard move it degrades
+  ([#1583](https://github.com/tutkli/forty-cdk/issues/1583)) — the arrow navigation **and** the typeahead
+  match, and for `[forTree]` also entering a child or leaving to a parent. Expanding in place moves no
+  focus and reports nothing, and neither does merely configuring the combination. Because Angular routes a
+  host listener's throw to the application `ErrorHandler`, this is a documented degradation rather than an
+  error a consumer can `try` around: an app with its own `ErrorHandler` sees it there. Discovery therefore
+  moves from first paint to first keyboard move — but the render-time throw it replaces was unattributable
+  (its stack named the effect scheduler) and re-thrown on every run.
+- **Table (declarative layer) — BREAKING.** `[forColumnDef]`'s name and width-track validation runs where
+  the values reach CSS — `ForTableBody.track`, the derivation that interpolates them into
+  `--for-table-col-<name>-width` and `grid-template-columns` — instead of from two effects on the def
+  ([#1583](https://github.com/tutkli/forty-cdk/issues/1583)). Only a **displayed** column is checked, which
+  is exactly the set whose values reach CSS: a def left out of `displayedColumns` is no longer validated. A
+  production build carries no reactive node per def, and because the check now sits in a `computed` read
+  during the render, the throw still aborts it and `detectChanges()` still re-raises it.
 
 ### Removed
 
@@ -24,6 +103,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that needs it (a request payload, a persisted record) rather than in the binding. See
   [the selection value-type contract](docs/selection-value-type-contract.md) and
   [Wrapping form primitives](docs/wrapping-form-primitives.md).
+
+### Fixed
+
+- **Overlays / focus (Shadow DOM).** Every question the overlay core asks about focus, or about whether an
+  interaction landed inside a surface, is now answered against the **composed tree**, through open shadow
+  roots ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)). Four consumer-visible defects go with
+  it: `Tab` escaped a focus trap whose first or last focusable lived inside a web component (a WCAG 2.1.2
+  failure) and now wraps at it; a press on a control inside a web component read as _outside_ the open
+  surface and dismissed it; a modal rendered inside a shadowed app shell resolved no root-level child and
+  the fallback inerted the very subtree it lived in; and a trigger inside a `ViewEncapsulation.ShadowDom`
+  wrapper captured its non-focusable host, so return focus dropped to `<body>` on close. The focusable
+  query descends into open shadow roots — including the trap container's own — and the `[inert]` /
+  CSS-hidden ancestor walks cross the boundary, so a hidden or inert host disqualifies its shadow content
+  instead of the walk ending one element short. Closed roots, `<slot>` ordering and `delegatesFocus` stay
+  out of scope, documented rather than half-supported.
+- **Focus trap.** A trap whose owner is destroyed without calling `deactivate()` no longer leaves its
+  `document` keydown listener and its stack entry behind
+  ([#1587](https://github.com/tutkli/forty-cdk/issues/1587)) — the pair that made a stale trap topmost
+  again as soon as the trap above it deactivated, then `preventDefault()`-ed `Tab` and focused a detached
+  node, killing keyboard navigation for the rest of the session with no error. The safety net releases the
+  keyboard channel only: focus, `isActive` and the container's temporary `tabindex` are left alone, so an
+  owner's own `deactivate({ returnFocus: true })` still runs and still returns focus, whichever order the
+  two teardown hooks were registered in.
+- **Combobox.** The picker-vs-editable anatomy is derived reactively instead of from a single constructor
+  read ([#1581](https://github.com/tutkli/forty-cdk/issues/1581)). A `[forComboboxTrigger]` that registered
+  after the content — projected through `<ng-content>`, or declared later in the template — left the
+  overlay with **no focus management at all**: no move into `[forComboboxInput]` on open, no return focus on
+  close, and neither `(autoFocusOnOpen)` nor `(autoFocusOnClose)` firing. A trigger arriving in the same
+  pass is now picked up in time; one arriving later, while the surface is already open, deliberately does
+  not pull focus out of wherever the user left it, but owns return focus, `(autoFocusOnClose)` and the
+  Escape fallback from that moment on. The dev-mode warning that used to ask the consumer to reorder their
+  template is gone — the shape is supported.
+- **Combobox / Select.** The option-label cache no longer accumulates every option window the session ever
+  rendered ([#1580](https://github.com/tutkli/forty-cdk/issues/1580)). A long-lived remote-search combobox
+  retained one entry per option per query; the two stores that replace it are bounded by the selection size
+  and by a single window respectively, so 25 disjoint rebuilds of 20 options leave 21 entries behind
+  instead of 500. Committing `value` also stops re-reading every handle in the window.
+
+### Performance
+
+- **Focus trap.** The composed-tree walk pre-filters its candidates before consulting the selector engine
+  ([#1620](https://github.com/tutkli/forty-cdk/issues/1620)), so a structural `div` / `td` / `span` is
+  rejected by a `Set` lookup and two attribute probes rather than by a `matches()` call against a
+  twelve-clause list. Measured on a modal dialog over a non-virtualized 1000-row grid (~10k elements), the
+  wrapping `Tab` press — the one the trap handles itself — goes from **6.2 ms to 3.5 ms**; the walk in
+  isolation from 4.2 ms to 2.6 ms, against a 1.6 ms floor for merely enumerating the subtree. The selector
+  stays the single source of truth: the pre-filter is a deliberate superset and `matches()` still decides,
+  so candidate order, closed-root opacity and the `[inert]` / CSS-hidden filtering are unchanged.
 
 ## [0.18.0] - 2026-07-31
 
@@ -1399,7 +1526,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...HEAD
+[0.19.0]: https://github.com/tutkli/forty-cdk/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/tutkli/forty-cdk/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...v0.17.0
 [0.16.0]: https://github.com/tutkli/forty-cdk/compare/v0.15.0...v0.16.0
