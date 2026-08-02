@@ -175,8 +175,8 @@ export function buildSubmenuGracePolygon(
  * should re-arm (call the cleanup, then re-attach with a fresh polygon) rather
  * than expecting this handler to track layout.
  *
- * @returns A cleanup that removes the listener. Idempotent-safe to store and
- *   call once from a `DestroyRef` hook.
+ * @returns A cleanup that aborts the listener's `AbortSignal`. Idempotent —
+ *   safe to store and call from a `DestroyRef` hook after an earlier disarm.
  */
 export function attachPointerGrace(
   doc: Document,
@@ -191,6 +191,7 @@ export function attachPointerGrace(
       onExit();
     }
   };
-  doc.addEventListener('pointermove', onMove);
-  return () => doc.removeEventListener('pointermove', onMove);
+  const controller = new AbortController();
+  doc.addEventListener('pointermove', onMove, { signal: controller.signal });
+  return () => controller.abort();
 }

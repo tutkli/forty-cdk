@@ -30,7 +30,8 @@ import {
  * - Bootstrap-safety: `TestBed.resetTestingModule()`, micro-frontend reloads,
  *   and anything else that destroys `ApplicationRef` must not leave stale
  *   `document` listeners behind. The listeners are registered in the
- *   constructor and removed via `DestroyRef`.
+ *   constructor against a single `AbortController` and dropped by one
+ *   `abort()` from `DestroyRef`.
  * - SSR safety: `document` is inaccessible on the server. The service is a
  *   no-op when `PLATFORM_ID` is not the browser; `keyboard` stays `false` and
  *   no listener is installed.
@@ -68,12 +69,11 @@ export class InputModality {
     if (!this.#isBrowser) {
       return;
     }
-    this.#document.addEventListener('keydown', this.#onKeyDown, true);
-    this.#document.addEventListener('pointerdown', this.#onPointerDown, true);
+    const controller = new AbortController();
+    const options = { capture: true, signal: controller.signal };
+    this.#document.addEventListener('keydown', this.#onKeyDown, options);
+    this.#document.addEventListener('pointerdown', this.#onPointerDown, options);
 
-    inject(DestroyRef).onDestroy(() => {
-      this.#document.removeEventListener('keydown', this.#onKeyDown, true);
-      this.#document.removeEventListener('pointerdown', this.#onPointerDown, true);
-    });
+    inject(DestroyRef).onDestroy(() => controller.abort());
   }
 }

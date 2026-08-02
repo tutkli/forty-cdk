@@ -38,12 +38,13 @@ function attachSettle(target: HTMLElement, destroyFn: () => void): DragPreview['
       return;
     }
     let finished = false;
+    const controller = new AbortController();
     const finish = (): void => {
       if (finished) {
         return;
       }
       finished = true;
-      target.removeEventListener('transitionend', onEnd);
+      controller.abort();
       destroyFn();
     };
     const onEnd = (event: TransitionEvent): void => {
@@ -52,7 +53,7 @@ function attachSettle(target: HTMLElement, destroyFn: () => void): DragPreview['
       }
       finish();
     };
-    target.addEventListener('transitionend', onEnd, { once: true });
+    target.addEventListener('transitionend', onEnd, { once: true, signal: controller.signal });
     win.setTimeout(finish, durationMs + SETTLE_TIMEOUT_SAFETY_MS);
     target.style.transform = `translate(${x}px, ${y}px)`;
   };

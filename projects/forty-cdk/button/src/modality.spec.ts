@@ -3,6 +3,9 @@ import { TestBed } from '@angular/core/testing';
 
 import { InputModality } from './modality';
 
+const isCapture = (options: boolean | EventListenerOptions | undefined): boolean =>
+  typeof options === 'boolean' ? options : options?.capture === true;
+
 describe('InputModality', () => {
   afterEach(() => {
     TestBed.resetTestingModule();
@@ -88,30 +91,26 @@ describe('InputModality', () => {
     expect(second).toBe(first);
 
     const captureKeydown = addSpy.mock.calls.filter(
-      ([type, , options]) => type === 'keydown' && options === true,
+      ([type, , options]) => type === 'keydown' && isCapture(options),
     );
     const capturePointerdown = addSpy.mock.calls.filter(
-      ([type, , options]) => type === 'pointerdown' && options === true,
+      ([type, , options]) => type === 'pointerdown' && isCapture(options),
     );
     expect(captureKeydown).toHaveLength(1);
     expect(capturePointerdown).toHaveLength(1);
   });
 
-  it('removes the document listeners when the injector is destroyed', () => {
+  it('stops responding to document events once the injector is destroyed', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const removeSpy = vi.spyOn(document, 'removeEventListener');
-    TestBed.inject(InputModality);
+    const modality = TestBed.inject(InputModality);
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }));
+    expect(modality.keyboard()).toBe(true);
 
     TestBed.resetTestingModule();
 
-    const removedKeydown = removeSpy.mock.calls.filter(
-      ([type, , options]) => type === 'keydown' && options === true,
-    );
-    const removedPointerdown = removeSpy.mock.calls.filter(
-      ([type, , options]) => type === 'pointerdown' && options === true,
-    );
-    expect(removedKeydown).toHaveLength(1);
-    expect(removedPointerdown).toHaveLength(1);
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    expect(modality.keyboard()).toBe(true);
   });
 
   it('is a no-op on the server: stays false and installs no document listener', () => {

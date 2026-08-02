@@ -40,10 +40,11 @@ export interface KeyboardDragMediatorConfig {
  * tabindex / selection, so the coordinator must intercept keys in the **capture phase** —
  * before they reach the focused child — and `stopPropagation` the ones it consumes, leaving
  * untouched keys to fall through. This function owns the error-prone half of that contract:
- * the SSR gate, the symmetric `{ capture: true }` add / remove of the `keydown` listener (a
- * mismatched flag silently leaks the listener), the paired `focusout` listener, the
- * lifted-vs-idle routing decision, and teardown via `DestroyRef`. Domain behavior — what lifts,
- * what each key does, when a `focusout` cancels — stays with the caller through the callbacks.
+ * the SSR gate, the `{ capture: true }` `keydown` listener and its paired `focusout` listener,
+ * the lifted-vs-idle routing decision, and teardown via `DestroyRef`. Both listeners share one
+ * `AbortController`, so a single `abort()` drops them and a `capture` flag can no longer be
+ * mismatched between an add and its removal. Domain behavior — what lifts, what each key does,
+ * when a `focusout` cancels — stays with the caller through the callbacks.
  *
  * The caller keeps ownership of its pointer session and of cancelling an in-flight drag on
  * destroy (those differ per coordinator); this mediator removes only the keyboard / focus
@@ -63,11 +64,9 @@ export function createKeyboardDragMediator(config: KeyboardDragMediatorConfig): 
   };
   const onFocusOut = (event: FocusEvent): void => config.onFocusOut(event);
 
-  host.addEventListener('keydown', onKeydown, { capture: true });
-  host.addEventListener('focusout', onFocusOut);
+  const controller = new AbortController();
+  host.addEventListener('keydown', onKeydown, { capture: true, signal: controller.signal });
+  host.addEventListener('focusout', onFocusOut, { signal: controller.signal });
 
-  config.destroyRef.onDestroy(() => {
-    host.removeEventListener('keydown', onKeydown, { capture: true });
-    host.removeEventListener('focusout', onFocusOut);
-  });
+  config.destroyRef.onDestroy(() => controller.abort());
 }
