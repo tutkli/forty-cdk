@@ -1,4 +1,8 @@
-import { findFirstFocusable, FocusTrap, FocusTrapStack } from './focus-trap';
+import { Component, DestroyRef, Directive, inject, signal } from '@angular/core';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { renderHost } from '../../../src/test-utils';
+import { findFirstFocusable, FocusTrap, FocusTrapStack, injectFocusTrap } from './focus-trap';
 
 function tab(shift = false): KeyboardEvent {
   return new KeyboardEvent('keydown', {
@@ -674,6 +678,133 @@ describe('FocusTrap', () => {
       expect(document.activeElement).not.toBe(returnTarget);
       expect(returnTarget.isConnected).toBe(false);
       expect(document.activeElement?.id).toBe('b1');
+    });
+  });
+
+  describe('injectFocusTrap teardown safety net', () => {
+    let fixture: ComponentFixture<unknown> | null = null;
+
+    afterEach(() => {
+      fixture?.destroy();
+      fixture = null;
+    });
+
+    interface MountTrapOwnerOptions {
+      deactivateOnDestroy?: 'before-trap' | 'after-trap';
+    }
+
+    function mountTrapOwner({ deactivateOnDestroy }: MountTrapOwnerOptions = {}) {
+      let captured: FocusTrap | null = null;
+
+      @Directive({ selector: '[trapOwner]' })
+      class TrapOwner {
+        constructor() {
+          const destroyRef = inject(DestroyRef);
+          if (deactivateOnDestroy === 'before-trap') {
+            destroyRef.onDestroy(() => captured?.deactivate({ returnFocus: true }));
+          }
+          const trap = injectFocusTrap();
+          captured = trap;
+          if (deactivateOnDestroy === 'after-trap') {
+            destroyRef.onDestroy(() => trap.deactivate({ returnFocus: true }));
+          }
+        }
+      }
+
+      @Component({
+        standalone: true,
+        imports: [TrapOwner],
+        template: `
+          @if (mounted()) {
+            <div trapOwner id="owned">
+              <button id="owned-1">one</button>
+              <button id="owned-2">two</button>
+            </div>
+          }
+        `,
+      })
+      class Host {
+        readonly mounted = signal(true);
+      }
+
+      const r = renderHost(Host);
+      fixture = r.fixture;
+
+      return {
+        trap: captured!,
+        unmount: () => {
+          r.instance.mounted.set(false);
+          r.fixture.detectChanges();
+        },
+      };
+    }
+
+    it('removes the document keydown listener when the owner is destroyed without deactivating', () => {
+      const owner = mountTrapOwner();
+      owner.trap.activate();
+
+      owner.unmount();
+
+      outsideBefore.focus();
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(outsideBefore);
+    });
+
+    it('releases the stack entry so a shadowed trap resumes handling Tab', () => {
+      const owner = mountTrapOwner();
+      trap = new FocusTrap(container, TestBed.inject(FocusTrapStack));
+      trap.activate();
+      owner.trap.activate();
+
+      owner.unmount();
+
+      const last = container.querySelector<HTMLElement>('#b3')!;
+      last.focus();
+      document.dispatchEvent(tab());
+
+      expect(document.activeElement?.id).toBe('b1');
+    });
+
+    it('never moves focus itself', () => {
+      outsideBefore.focus();
+      const owner = mountTrapOwner();
+      owner.trap.activate({ preventInitialFocus: true });
+      outsideAfter.focus();
+
+      owner.unmount();
+
+      expect(document.activeElement).toBe(outsideAfter);
+    });
+
+    it("does not swallow the owner's return-focus deactivate registered after it", () => {
+      outsideBefore.focus();
+      const owner = mountTrapOwner({ deactivateOnDestroy: 'after-trap' });
+      owner.trap.activate();
+      expect(document.activeElement?.id).toBe('owned-1');
+
+      owner.unmount();
+
+      expect(document.activeElement).toBe(outsideBefore);
+    });
+
+    it("runs second, harmlessly, after an owner's deactivate registered before it", () => {
+      outsideBefore.focus();
+      const owner = mountTrapOwner({ deactivateOnDestroy: 'before-trap' });
+      owner.trap.activate();
+      expect(document.activeElement?.id).toBe('owned-1');
+
+      owner.unmount();
+
+      expect(document.activeElement).toBe(outsideBefore);
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(document.activeElement).toBe(outsideBefore);
     });
   });
 });
