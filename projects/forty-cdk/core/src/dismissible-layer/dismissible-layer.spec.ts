@@ -186,6 +186,77 @@ describe('DismissibleLayer', () => {
     });
   });
 
+  describe('open shadow roots (#1586)', () => {
+    function attachWidget(parent: HTMLElement): HTMLElement {
+      const widget = document.createElement('shadow-widget');
+      parent.appendChild(widget);
+      const shadow = widget.attachShadow({ mode: 'open' });
+      shadow.innerHTML = '<button id="shadow-control">go</button>';
+      return shadow.querySelector<HTMLElement>('#shadow-control')!;
+    }
+
+    function dispatchPointerDown(node: Node): void {
+      node.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true }),
+      );
+    }
+
+    it('treats a press inside a shadow tree nested in the host as inside', () => {
+      const calls: string[] = [];
+      const control = attachWidget(host);
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['pointer'],
+        onPointerDownOutside: () => calls.push('outside'),
+        onPointerDownInside: () => calls.push('inside'),
+      });
+
+      dispatchPointerDown(control);
+
+      expect(calls).toEqual(['inside']);
+    });
+
+    it('treats focus moving into a shadow tree nested in the host as inside', () => {
+      const calls: string[] = [];
+      const control = attachWidget(host);
+      layer = makeLayer(host);
+      layer.activate({ channels: ['focus'], onFocusOutside: () => calls.push('focus') });
+
+      control.dispatchEvent(new FocusEvent('focusin', { bubbles: true, composed: true }));
+
+      expect(calls).toEqual([]);
+    });
+
+    it('treats a press inside a shadow tree nested in an exempt element as inside', () => {
+      const calls: string[] = [];
+      const control = attachWidget(outside);
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['pointer'],
+        exemptElements: () => [outside],
+        onPointerDownOutside: () => calls.push('outside'),
+      });
+
+      dispatchPointerDown(control);
+
+      expect(calls).toEqual([]);
+    });
+
+    it('still dismisses on a press inside a shadow tree outside the host', () => {
+      const calls: string[] = [];
+      const control = attachWidget(outside);
+      layer = makeLayer(host);
+      layer.activate({
+        channels: ['pointer'],
+        onPointerDownOutside: () => calls.push('outside'),
+      });
+
+      dispatchPointerDown(control);
+
+      expect(calls).toEqual(['outside']);
+    });
+  });
+
   describe('pointer-down inside', () => {
     it('invokes onPointerDownInside instead of the outside handlers for a press on the host', () => {
       const calls: string[] = [];

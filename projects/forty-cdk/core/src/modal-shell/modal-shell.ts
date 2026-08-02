@@ -2,6 +2,7 @@ import { DestroyRef, DOCUMENT, ElementRef, inject, type Signal } from '@angular/
 
 import { afterNextRenderCancellable } from '../after-next-render-cancellable/after-next-render-cancellable';
 import { BodyScrollLock } from '../body-scroll-lock/body-scroll-lock';
+import { resolveActiveElement } from '../composed-tree/composed-tree';
 import { injectDismissibleLayer } from '../dismissible-layer/dismissible-layer';
 import { findFirstFocusable, injectFocusTrap } from '../focus-trap/focus-trap';
 import {
@@ -276,8 +277,16 @@ export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   //    `inert` is applied to an ancestor, so by the time `afterNextRender`
   //    fires the focus trap could no longer read the trigger from
   //    `document.activeElement`. Reading it now locks the trigger in.
-  const returnFocusTarget: HTMLElement | null =
-    document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  //
+  //    Resolved through open shadow roots (#1586): a raw `document.activeElement`
+  //    reports the shadow *host* when the trigger lives inside one — a consumer
+  //    component using `ViewEncapsulation.ShadowDom`, or a design-system web
+  //    component — and that host is typically not focusable, so return-focus
+  //    would silently drop to `<body>` on close. Because this target is always
+  //    passed to `trap.activate()`, the trap's own shadow-aware capture never
+  //    runs for a modal surface; this is the one that has to resolve.
+  const active = resolveActiveElement(document);
+  const returnFocusTarget: HTMLElement | null = active instanceof HTMLElement ? active : null;
 
   // 2. Portal — moves the host to `document.body` after first render and
   //    cleans up on destroy. `DestroyRef.onDestroy` callbacks fire in

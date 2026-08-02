@@ -10,8 +10,8 @@ import {
 } from '@angular/core';
 
 import {
-  FOCUSABLE_SELECTOR,
   isFocusableCandidate,
+  queryFocusableCandidates,
 } from '../focusable-candidate/focusable-candidate';
 
 /**
@@ -23,11 +23,17 @@ import {
  * focusable content of its own; a panel containing buttons / links / form
  * controls must not add a redundant tab stop.
  *
- * Detection runs the shared `isFocusableCandidate` filter over the elements
- * matched by `FOCUSABLE_SELECTOR`, so it stays byte-for-byte aligned with
+ * Detection runs the shared `isFocusableCandidate` filter over
+ * `queryFocusableCandidates`, so it stays byte-for-byte aligned with
  * `FocusTrap`: a candidate is ignored when it is `[hidden]`, carries or is
  * nested under an `[inert]` ancestor below the host, or is hidden via CSS
  * (`display: none` / `visibility: hidden`) — none of which can receive focus.
+ * That query descends into open shadow roots, so a panel whose only control is
+ * rendered inside a web component is correctly reported as having focusable
+ * content and does not take a redundant tab stop of its own. **Boundary:** the
+ * observer below cannot see into a shadow root, so a panel that gains or loses
+ * its focusable content *inside* one keeps the answer measured at the last
+ * light-DOM mutation.
  *
  * A single `MutationObserver` scoped to the host's subtree watches for
  * childList and attribute changes so a panel that gains or loses focusable
@@ -85,7 +91,7 @@ export function injectHasFocusableContent(): Signal<boolean> {
 }
 
 function hasFocusableDescendant(host: HTMLElement): boolean {
-  const candidates = host.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+  const candidates = queryFocusableCandidates(host);
   for (const el of candidates) {
     if (isFocusableCandidate(el, host)) {
       return true;

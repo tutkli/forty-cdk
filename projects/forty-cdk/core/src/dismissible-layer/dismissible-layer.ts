@@ -1,6 +1,8 @@
 import { DOCUMENT, DestroyRef, ElementRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
+import { composedContains, resolveEventTarget } from '../composed-tree/composed-tree';
+
 /**
  * The outside-interaction channels a {@link DismissibleLayer} can own. A layer
  * declares the channels it wants routed to it at {@link DismissibleLayer.activate};
@@ -301,19 +303,6 @@ export class DismissibleLayerStack {
 }
 
 /**
- * Resolves the effective target of an interaction event for the
- * outside-detection containment check. Prefers `composedPath()[0]` so a
- * pointer-down / focus inside a shadow tree reports the real originating node
- * rather than the shadow host the event was retargeted to. Falls back to
- * `event.target` in environments without `composedPath`.
- */
-function resolveEventTarget(event: Event): Node | null {
-  const path = event.composedPath?.();
-  const first = path && path.length > 0 ? path[0] : null;
-  return (first ?? event.target) as Node | null;
-}
-
-/**
  * Coordinates the standard "dismissible surface" interactions used by modal
  * dialogs, popovers, dropdown menus, drawers, and any other transient
  * overlay: Escape, pointer-down outside, focus-outside.
@@ -414,9 +403,16 @@ export class DismissibleLayer {
    * @internal Whether `target` is inside this layer's host or its exempt
    * elements. Read by {@link DismissibleLayerStack} when walking the stack for
    * stack-aware containment. Public only so the stack can read it.
+   *
+   * Containment is composed-tree containment, the counterpart of the deep
+   * target {@link resolveEventTarget} resolves: plain `Node.contains` answers
+   * within one node tree, so a press on a control inside a web component's
+   * shadow root — a target the composed path resolves precisely — would read as
+   * a press outside the surface that renders it
+   * ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)).
    */
   contains(target: Node): boolean {
-    if (this.#host.contains(target)) {
+    if (composedContains(this.#host, target)) {
       return true;
     }
     const exempt = this.#options.exemptElements?.();
@@ -424,7 +420,7 @@ export class DismissibleLayer {
       return false;
     }
     for (const el of exempt) {
-      if (el.contains(target)) {
+      if (composedContains(el, target)) {
         return true;
       }
     }

@@ -1,4 +1,8 @@
-import { isFocusableCandidate, isTabbableCandidate } from './focusable-candidate';
+import {
+  isFocusableCandidate,
+  isTabbableCandidate,
+  queryFocusableCandidates,
+} from './focusable-candidate';
 
 describe('focusable-candidate filter', () => {
   let root: HTMLElement;
@@ -64,6 +68,99 @@ describe('focusable-candidate filter', () => {
       root.style.display = 'none';
       const el = add('<button id="target">go</button>');
       expect(isFocusableCandidate(el, root)).toBe(true);
+    });
+  });
+
+  describe('shadow DOM', () => {
+    function addShadowHost(html: string): { host: HTMLElement; shadow: ShadowRoot } {
+      const host = document.createElement('shadow-widget');
+      root.appendChild(host);
+      const shadow = host.attachShadow({ mode: 'open' });
+      shadow.innerHTML = html;
+      return { host, shadow };
+    }
+
+    it('accepts a candidate inside an open shadow root under root', () => {
+      const { shadow } = addShadowHost('<button id="target">go</button>');
+      const el = shadow.querySelector<HTMLElement>('#target')!;
+
+      expect(isFocusableCandidate(el, root)).toBe(true);
+      expect(isTabbableCandidate(el, root)).toBe(true);
+    });
+
+    it('rejects a candidate whose shadow host carries [inert]', () => {
+      const { host, shadow } = addShadowHost('<button id="target">go</button>');
+      host.setAttribute('inert', '');
+      const el = shadow.querySelector<HTMLElement>('#target')!;
+
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+
+    it('rejects a candidate whose shadow host is display:none', () => {
+      const { host, shadow } = addShadowHost('<button id="target">go</button>');
+      host.style.display = 'none';
+      const el = shadow.querySelector<HTMLElement>('#target')!;
+
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+  });
+
+  describe('queryFocusableCandidates', () => {
+    it('descends into open shadow roots, in composed order', () => {
+      root.innerHTML = `
+        <button id="light-first">one</button>
+        <shadow-widget id="host"></shadow-widget>
+        <button id="light-last">three</button>
+      `;
+      const host = root.querySelector<HTMLElement>('#host')!;
+      host.attachShadow({ mode: 'open' }).innerHTML =
+        '<button id="shadow-a">a</button><button id="shadow-b">b</button>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual([
+        'light-first',
+        'shadow-a',
+        'shadow-b',
+        'light-last',
+      ]);
+    });
+
+    it('does not descend into a closed shadow root', () => {
+      root.innerHTML = '<shadow-widget id="host"></shadow-widget>';
+      const host = root.querySelector<HTMLElement>('#host')!;
+      host.attachShadow({ mode: 'closed' }).innerHTML = '<button id="hidden-away">a</button>';
+
+      expect(queryFocusableCandidates(root)).toEqual([]);
+    });
+
+    it('includes a focusable shadow host before its own shadow content', () => {
+      root.innerHTML = '<shadow-widget id="host" tabindex="0"></shadow-widget>';
+      const host = root.querySelector<HTMLElement>('#host')!;
+      host.attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-a">a</button>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['host', 'shadow-a']);
+    });
+
+    it("descends into the container's own shadow root", () => {
+      const shadowRoot = root.attachShadow({ mode: 'open' });
+      shadowRoot.innerHTML = '<button id="own-a">a</button><button id="own-b">b</button>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['own-a', 'own-b']);
+    });
+
+    it("orders the container's own shadow content before its light children", () => {
+      root.innerHTML = '<button id="light">light</button>';
+      root.attachShadow({ mode: 'open' }).innerHTML = '<button id="own">own</button><slot></slot>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['own', 'light']);
+    });
+
+    it("filters the container's own shadow content through the candidate filter", () => {
+      const shadowRoot = root.attachShadow({ mode: 'open' });
+      shadowRoot.innerHTML = '<div inert><button id="own">a</button></div>';
+      const el = shadowRoot.querySelector<HTMLElement>('#own')!;
+
+      expect(queryFocusableCandidates(root)).toEqual([el]);
+      expect(isFocusableCandidate(el, root)).toBe(false);
     });
   });
 

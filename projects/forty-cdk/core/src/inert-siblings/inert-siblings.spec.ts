@@ -451,6 +451,40 @@ describe('InertSiblingsStack', () => {
     });
   });
 
+  describe('owners inside an open shadow root (#1586)', () => {
+    it('protects the root-level child hosting the owner instead of inerting it', () => {
+      const sibling = appendChild();
+      const shell = appendChild();
+      track(sibling, shell);
+      const shadow = shell.attachShadow({ mode: 'open' });
+      const owner = document.createElement('div');
+      shadow.appendChild(owner);
+
+      const handle = stack.activate(owner);
+
+      expect(shell.hasAttribute('inert')).toBe(false);
+      expect(sibling.hasAttribute('inert')).toBe(true);
+
+      handle.deactivate();
+    });
+
+    it('reports an anchor inside the shadow-hosted protected root as owned', () => {
+      const shell = appendChild();
+      track(shell);
+      const shadow = shell.attachShadow({ mode: 'open' });
+      const owner = document.createElement('div');
+      shadow.appendChild(owner);
+      const anchor = document.createElement('button');
+      owner.appendChild(anchor);
+
+      const handle = stack.activate(owner);
+
+      expect(stack.ownsAnchor(anchor)).toBe(true);
+
+      handle.deactivate();
+    });
+  });
+
   describe('ownsAnchor', () => {
     it('returns false when no owner is active', () => {
       const anchor = appendChild('button');

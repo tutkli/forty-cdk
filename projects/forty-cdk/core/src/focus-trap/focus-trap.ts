@@ -9,10 +9,11 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 
+import { composedContains, resolveActiveElement } from '../composed-tree/composed-tree';
 import {
-  FOCUSABLE_SELECTOR,
   isFocusableCandidate,
   isTabbableCandidate,
+  queryFocusableCandidates,
 } from '../focusable-candidate/focusable-candidate';
 
 /**
@@ -23,9 +24,13 @@ import {
  * hidden`, none of which can receive focus). This is the focusable set — a
  * candidate carrying `tabindex="-1"` is a valid initial-focus target even
  * though it never participates in the Tab cycle.
+ *
+ * Descends into open shadow roots, so a surface whose first control is
+ * rendered inside a consumer's web component focuses that control rather than
+ * skipping past the host.
  */
 export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
-  const candidates = Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+  const candidates = queryFocusableCandidates(container);
   for (const el of candidates) {
     if (isFocusableCandidate(el, container)) {
       return el;
@@ -129,6 +134,14 @@ export class FocusTrapStack {
  * cleanup ordering is preserved) but their keydown handlers are no-ops
  * until the deeper trap deactivates.
  *
+ * Shadow DOM: every question the trap asks is answered against the composed
+ * tree — the tabbable set descends into open shadow roots, and "is focus still
+ * mine?" climbs back out of them instead of reading the `document.activeElement`
+ * host — so controls a consumer's web component renders inside its shadow root
+ * take part in the cycle rather than collapsing onto their host, which is what
+ * let Tab escape the surface ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)).
+ * A closed shadow root stays opaque, by construction.
+ *
  * Out of scope: marking the rest of the page `inert` (focus trap alone is
  * enough for keyboard users; pointer-isolation is the consumer's job via
  * a backdrop).
@@ -185,7 +198,7 @@ export class FocusTrap {
     this.#returnTo =
       options.returnFocus !== undefined
         ? options.returnFocus
-        : ((this.#document.activeElement as HTMLElement | null) ?? null);
+        : (resolveActiveElement(this.#document) as HTMLElement | null);
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
     this.#stack.push(this);
 
@@ -290,18 +303,18 @@ export class FocusTrap {
       return;
     }
     const tabbables = this.#tabbables();
+    const active = resolveActiveElement(this.#document);
     if (tabbables.length === 0) {
       event.preventDefault();
-      if (!this.#container.contains(this.#document.activeElement)) {
+      if (!composedContains(this.#container, active)) {
         this.#focusContainer();
       }
       return;
     }
     const first = tabbables[0]!;
     const last = tabbables[tabbables.length - 1]!;
-    const active = this.#document.activeElement;
 
-    if (!this.#container.contains(active)) {
+    if (!composedContains(this.#container, active)) {
       // Focus jumped outside the trap (e.g. user clicked address bar then
       // tabbed back). Pull it back in.
       event.preventDefault();
@@ -318,12 +331,12 @@ export class FocusTrap {
   }
 
   #focusables(): HTMLElement[] {
-    const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    const all = queryFocusableCandidates(this.#container);
     return all.filter((el) => isFocusableCandidate(el, this.#container));
   }
 
   #tabbables(): HTMLElement[] {
-    const all = Array.from(this.#container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+    const all = queryFocusableCandidates(this.#container);
     return all.filter((el) => isTabbableCandidate(el, this.#container));
   }
 }

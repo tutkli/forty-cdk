@@ -453,6 +453,64 @@ describe('OverlayManagerCore', () => {
         trigger.remove();
       }
     });
+
+    describe('triggers inside an open shadow root (#1586)', () => {
+      it('resolves the trigger itself rather than its (unfocusable) shadow host', () => {
+        const manager = makeManager();
+        const widget = document.createElement('shadow-widget');
+        document.body.appendChild(widget);
+        const trigger = document.createElement('button');
+        widget.attachShadow({ mode: 'open' }).appendChild(trigger);
+        try {
+          trigger.focus();
+          expect(document.activeElement).toBe(widget);
+          expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+        } finally {
+          widget.remove();
+        }
+      });
+
+      it('still classifies a shadow-nested focus inside a live overlay host as inside it', () => {
+        const manager = makeManager();
+        const { id } = manager.openWithLeave('x');
+        const host = document.createElement('div');
+        host.setAttribute('data-test-overlay-id', id);
+        const widget = document.createElement('shadow-widget');
+        host.appendChild(widget);
+        const inner = document.createElement('button');
+        widget.attachShadow({ mode: 'open' }).appendChild(inner);
+        document.body.appendChild(host);
+        try {
+          inner.focus();
+          expect(manager.exposeResolveReturnFocusTarget()).toBe(inner);
+        } finally {
+          host.remove();
+        }
+      });
+
+      it('inherits the chain origin when a shadow-nested focus sits in a dead overlay host', () => {
+        const manager = makeManager();
+        const trigger = document.createElement('button');
+        document.body.appendChild(trigger);
+        const orphanHost = document.createElement('div');
+        orphanHost.setAttribute('data-test-overlay-id', 'gone');
+        const widget = document.createElement('shadow-widget');
+        orphanHost.appendChild(widget);
+        const inner = document.createElement('button');
+        widget.attachShadow({ mode: 'open' }).appendChild(inner);
+        document.body.appendChild(orphanHost);
+        try {
+          trigger.focus();
+          expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+
+          inner.focus();
+          expect(manager.exposeResolveReturnFocusTarget()).toBe(trigger);
+        } finally {
+          orphanHost.remove();
+          trigger.remove();
+        }
+      });
+    });
   });
 
   describe('createInjectorFactory', () => {
