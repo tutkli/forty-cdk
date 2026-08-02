@@ -239,7 +239,39 @@ export class ForTable<T = unknown> implements ForTableContext {
     const dataCols = this.#dataCols();
     return dataCols > 0 ? dataCols : this.#headerCellHosts().length;
   });
-  readonly #firstEnabledCell = computed(() => firstEnabledHost(this.#flatCells()));
+
+  /**
+   * The cell that owns the tab stop while nothing is roving-active — the first
+   * enabled cell of the composite grid.
+   *
+   * It walks the header row and then the data rows one at a time instead of
+   * reading the materialized `#flatCells`, so it stops depending on a row's
+   * `cells()` as soon as an earlier row has answered. Every cell's `tabindex`
+   * binding is a live consumer of this signal and each row registers its cells
+   * during that row's own update pass, so a dependency on the whole grid makes
+   * each registration notify every cell mounted so far — the quadratic term
+   * measured in [#1584](https://github.com/tutkli/forty-cdk/issues/1584).
+   *
+   * The header branch's fall-through is unreachable: header cells hardcode a
+   * `false` `disabled`, and `#headerParticipates()` already rules out an empty
+   * header row. It is kept so the walk stays equivalent to the `#flatCells`
+   * concatenation if header cells ever gain a real disabled state.
+   */
+  readonly #firstEnabledCell = computed<HTMLElement | null>(() => {
+    if (this.#headerParticipates()) {
+      const fromHeader = firstEnabledHost(this.#headerCellHosts());
+      if (fromHeader !== null) {
+        return fromHeader;
+      }
+    }
+    for (const row of this.#registry.rows()) {
+      const fromRow = firstEnabledHost(row.cells());
+      if (fromRow !== null) {
+        return fromRow;
+      }
+    }
+    return null;
+  });
 
   /** Whether the header row participates in the row-index space (a header row is registered, non-table mode). */
   readonly #hasHeaderRowIndex = computed(

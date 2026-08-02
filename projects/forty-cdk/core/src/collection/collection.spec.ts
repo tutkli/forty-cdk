@@ -173,6 +173,33 @@ describe('Collection', () => {
     expect(col.indexOfHost(b)).toBe(-1);
   });
 
+  it('resolves a host shared by two handles to the first in document order', () => {
+    const col = new Collection<Handle>();
+    const second = handle('a2', a);
+    col.register(second);
+    col.register(handle('a1', a));
+    col.register(handle('b', b));
+
+    expect(col.indexOfHost(a)).toBe(0);
+    expect(col.findByHost(a)).toBe(second);
+    expect(col.indexOfHost(b)).toBe(2);
+  });
+
+  it('re-resolves lookups after an unregister', () => {
+    const col = new Collection<Handle>();
+    const ha = handle('a', a);
+    col.register(ha);
+    col.register(handle('b', b));
+    col.register(handle('c', c));
+    expect(col.indexOfHost(c)).toBe(2);
+
+    col.unregister(ha);
+
+    expect(col.indexOfHost(a)).toBe(-1);
+    expect(col.findByHost(a)).toBeUndefined();
+    expect(col.indexOfHost(c)).toBe(1);
+  });
+
   it('returns a frozen items() array that callers cannot mutate', () => {
     const col = new Collection<Handle>();
     col.register(handle('a', a));

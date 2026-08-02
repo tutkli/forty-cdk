@@ -69,7 +69,9 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
  * rather than O(N²). Document order is computed lazily and memoized: reading
  * `items()` returns the cached (frozen) array reference until membership or DOM
  * order actually changes, so reads stay O(1) and a single mutation is
- * O(N log N) (the sort) in the current size. The `MutationObserver` resync is
+ * O(N log N) (the sort) in the current size. `findByHost` / `indexOfHost`
+ * resolve through a companion index derived from that same memo, so a lookup is
+ * O(1) rather than a scan of the ordered array. The `MutationObserver` resync is
  * deferred to a microtask so a burst of same-turn registrations coalesces into
  * one wiring pass rather than one per member. The observer callback both bumps
  * the DOM epoch (recomputing `items()`) and reschedules that resync, so an
@@ -77,6 +79,25 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
  * branch without re-registering — re-anchors the watched ancestor chain to the
  * hosts' new positions on the next microtask; `#sameNodes` keeps this a no-op
  * whenever the chain is unchanged, so steady-state cost stays nil.
+ *
+ * [#1584](https://github.com/tutkli/forty-cdk/issues/1584) measured that
+ * memoization against the library's largest composition — a 2000-row × 10-column
+ * non-virtualized `[forTable]`, which builds 2002 collections — and two of its
+ * findings are worth keeping here, because both contradict a reading the code
+ * invites. **The resort is not re-run per registration**: the whole mount spends
+ * `length - 1` comparisons per collection — the count V8's sort needs for an
+ * already-ordered array, 20 008 `compareDocumentPosition` calls for 22 010
+ * registered handles — because registrations complete in the creation pass before
+ * any binding reads `items()`, and `sameSequence` absorbs the DOM-epoch bumps that
+ * follow. **And one observer per collection is the cheap shape, not the
+ * expensive one**: wiring all 2002 of them costs 5.3 ms, linear in count and
+ * 0.7% of the mount, because the sync is deferred and coalesced and a settled
+ * table delivers no records at all. The alternative — one observer owned by the
+ * outermost collection — needs `subtree: true` to see a nested reorder, so it
+ * would trade 2002 registrations that each watch one `childList` for a single
+ * registration notified by every mutation anywhere inside the primitive.
+ * Neither is the bottleneck a large mount actually has; that one lived in the
+ * consumers of `items()`.
  */
 export class Collection<H extends CollectionHandle> {
   readonly #membersSet = new Set<H>();
@@ -139,14 +160,39 @@ export class Collection<H extends CollectionHandle> {
     this.#scheduleSync();
   }
 
+  /**
+   * Position of each registered host in {@link items}, keyed by element.
+   *
+   * Derived from `items` rather than from the member set so it inherits the
+   * `sameSequence` equality — a DOM-epoch bump that resolves to the same order
+   * does not rebuild it. It is lazy like any `computed`, so a collection whose
+   * consumers never look a host up never pays for the map.
+   *
+   * Two handles may share a host (a piece composed onto the same element
+   * twice); the first in document order wins, matching the `find` /
+   * `findIndex` scan this replaced.
+   */
+  readonly #indexByHost = computed(() => {
+    const index = new Map<HTMLElement, number>();
+    const ordered = this.items();
+    for (let i = 0; i < ordered.length; i++) {
+      const host = ordered[i]!.host;
+      if (!index.has(host)) {
+        index.set(host, i);
+      }
+    }
+    return index;
+  });
+
   /** Lookup by host element. Returns `undefined` if no handle has that host. */
   findByHost(el: HTMLElement): H | undefined {
-    return this.items().find((h) => h.host === el);
+    const index = this.#indexByHost().get(el);
+    return index === undefined ? undefined : this.items()[index];
   }
 
   /** Index in DOM document order, or -1 if not registered. */
   indexOfHost(el: HTMLElement): number {
-    return this.items().findIndex((h) => h.host === el);
+    return this.#indexByHost().get(el) ?? -1;
   }
 
   /**

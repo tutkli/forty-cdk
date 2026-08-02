@@ -488,6 +488,30 @@ class GridLeadingCellLessRowHost {
 }
 
 @Component({
+  imports: [ForTable, ForTableRow, ForTableCell],
+  template: `
+    <table forTable mode="grid">
+      <tbody>
+        @for (row of rows(); track row.id) {
+          <tr forTableRow>
+            @for (col of cols; track col) {
+              <td forTableCell [name]="col" [disabled]="row.id < enabledFromRow()">
+                {{ col }}{{ row.id }}
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  `,
+})
+class GridDisabledLeadingRowsHost {
+  readonly cols = ['a', 'b'] as const;
+  readonly rows = signal([{ id: 0 }, { id: 1 }, { id: 2 }]);
+  readonly enabledFromRow = signal(0);
+}
+
+@Component({
   imports: [...TABLE_IMPORTS],
   template: `
     <table forTable [mode]="mode()">
@@ -1459,6 +1483,27 @@ describe('ForTable', () => {
       for (let i = 1; i < allCells.length; i++) {
         expect(allCells[i]!.getAttribute('tabindex')).toBe('-1');
       }
+    });
+
+    it('single tab stop (initial): skips a leading row that registered no cells (#1340)', () => {
+      const { el } = renderHost(GridLeadingCellLessRowHost);
+      const allCells = cells(el);
+      const zeros = allCells.filter((c) => c.getAttribute('tabindex') === '0');
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(allCells[0]);
+    });
+
+    it('single tab stop (initial): falls through leading rows whose cells are all disabled', async () => {
+      const { el, instance, flush } = renderHost(GridDisabledLeadingRowsHost);
+      const allCells = cells(el);
+      expect(allCells.filter((c) => c.getAttribute('tabindex') === '0')[0]).toBe(allCells[0]);
+
+      instance.enabledFromRow.set(2);
+      await flush();
+
+      const zeros = allCells.filter((c) => c.getAttribute('tabindex') === '0');
+      expect(zeros.length).toBe(1);
+      expect(zeros[0]).toBe(allCells[4]);
     });
 
     it('table mode has no tabindex on data cell', () => {
