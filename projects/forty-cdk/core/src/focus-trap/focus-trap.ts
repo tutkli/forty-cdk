@@ -147,6 +147,20 @@ export class FocusTrap {
     return this.#container;
   }
 
+  /**
+   * Whether the trap has been activated and not yet deactivated.
+   *
+   * This is **not** a reading of the keyboard channel. `injectFocusTrap`'s
+   * safety-net teardown calls {@link releaseKeyboardChannel}, which removes the
+   * `document` listener and the {@link FocusTrapStack} entry while deliberately
+   * leaving this flag set — so a trap whose owner was destroyed without
+   * deactivating still reports `true` forever.
+   *
+   * The corollary is that this is the wrong gate for anything running from a
+   * `DestroyRef.onDestroy` hook: the consumer's own `deactivate()` has not run
+   * yet at that point, so every correctly-closed surface in the library reads
+   * `true` there too.
+   */
   get isActive(): boolean {
     return this.#active;
   }
@@ -234,6 +248,10 @@ export class FocusTrap {
    * The temporary container `tabindex="-1"` is deliberately left alone —
    * undoing it belongs to `deactivate`, and a container nobody deactivated is
    * being destroyed along with the attribute.
+   *
+   * Not a substitute for `deactivate()`: this exists for the safety-net hook,
+   * and calling it on a trap that is still in use leaves one that reports
+   * `isActive` yet cycles nothing, whose `activate()` is a silent no-op.
    */
   releaseKeyboardChannel(): void {
     if (!this.#active) {

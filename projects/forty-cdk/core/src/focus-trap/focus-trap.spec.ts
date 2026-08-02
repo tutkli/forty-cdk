@@ -689,16 +689,24 @@ describe('FocusTrap', () => {
       fixture = null;
     });
 
-    function mountTrapOwner({ deactivateOnDestroy = false } = {}) {
+    interface MountTrapOwnerOptions {
+      deactivateOnDestroy?: 'before-trap' | 'after-trap';
+    }
+
+    function mountTrapOwner({ deactivateOnDestroy }: MountTrapOwnerOptions = {}) {
       let captured: FocusTrap | null = null;
 
       @Directive({ selector: '[trapOwner]' })
       class TrapOwner {
         constructor() {
+          const destroyRef = inject(DestroyRef);
+          if (deactivateOnDestroy === 'before-trap') {
+            destroyRef.onDestroy(() => captured?.deactivate({ returnFocus: true }));
+          }
           const trap = injectFocusTrap();
           captured = trap;
-          if (deactivateOnDestroy) {
-            inject(DestroyRef).onDestroy(() => trap.deactivate({ returnFocus: true }));
+          if (deactivateOnDestroy === 'after-trap') {
+            destroyRef.onDestroy(() => trap.deactivate({ returnFocus: true }));
           }
         }
       }
@@ -773,12 +781,29 @@ describe('FocusTrap', () => {
 
     it("does not swallow the owner's return-focus deactivate registered after it", () => {
       outsideBefore.focus();
-      const owner = mountTrapOwner({ deactivateOnDestroy: true });
+      const owner = mountTrapOwner({ deactivateOnDestroy: 'after-trap' });
       owner.trap.activate();
       expect(document.activeElement?.id).toBe('owned-1');
 
       owner.unmount();
 
+      expect(document.activeElement).toBe(outsideBefore);
+    });
+
+    it("runs second, harmlessly, after an owner's deactivate registered before it", () => {
+      outsideBefore.focus();
+      const owner = mountTrapOwner({ deactivateOnDestroy: 'before-trap' });
+      owner.trap.activate();
+      expect(document.activeElement?.id).toBe('owned-1');
+
+      owner.unmount();
+
+      expect(document.activeElement).toBe(outsideBefore);
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(false);
       expect(document.activeElement).toBe(outsideBefore);
     });
   });
