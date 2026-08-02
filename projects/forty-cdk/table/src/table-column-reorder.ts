@@ -134,10 +134,12 @@ export class ForTableColumnReorder {
 
     if (this.#isBrowser) {
       const onCaptureKeydown = (event: KeyboardEvent): void => this.#onCaptureKeydown(event);
-      this.#host.addEventListener('keydown', onCaptureKeydown, { capture: true });
-      destroyRef.onDestroy(() =>
-        this.#host.removeEventListener('keydown', onCaptureKeydown, { capture: true }),
-      );
+      const controller = new AbortController();
+      this.#host.addEventListener('keydown', onCaptureKeydown, {
+        capture: true,
+        signal: controller.signal,
+      });
+      destroyRef.onDestroy(() => controller.abort());
     }
   }
 

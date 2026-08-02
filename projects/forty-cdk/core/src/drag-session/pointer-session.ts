@@ -162,36 +162,17 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
   let pointerId: number | null = null;
   let downEvent: PointerEvent | null = null;
 
-  let onDocumentMove: ((event: PointerEvent) => void) | null = null;
-  let onDocumentUp: ((event: PointerEvent) => void) | null = null;
-  let onDocumentCancel: ((event: PointerEvent) => void) | null = null;
-  let onDocumentKeydown: ((event: KeyboardEvent) => void) | null = null;
-  let onDocumentClick: ((event: MouseEvent) => void) | null = null;
+  let pressListeners: AbortController | null = null;
+  let clickTrap: AbortController | null = null;
 
   const removeDocumentListeners = (): void => {
-    if (onDocumentMove) {
-      document.removeEventListener('pointermove', onDocumentMove, { capture: true });
-      onDocumentMove = null;
-    }
-    if (onDocumentUp) {
-      document.removeEventListener('pointerup', onDocumentUp, { capture: true });
-      onDocumentUp = null;
-    }
-    if (onDocumentCancel) {
-      document.removeEventListener('pointercancel', onDocumentCancel, { capture: true });
-      onDocumentCancel = null;
-    }
-    if (onDocumentKeydown) {
-      document.removeEventListener('keydown', onDocumentKeydown, { capture: true });
-      onDocumentKeydown = null;
-    }
+    pressListeners?.abort();
+    pressListeners = null;
   };
 
   const removeClickTrap = (): void => {
-    if (onDocumentClick) {
-      document.removeEventListener('click', onDocumentClick, { capture: true });
-      onDocumentClick = null;
-    }
+    clickTrap?.abort();
+    clickTrap = null;
   };
 
   const releaseCapture = (): void => {
@@ -262,10 +243,11 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
       }
       removeClickTrap();
     };
-    onDocumentClick = trap;
-    document.addEventListener('click', trap, { capture: true });
+    const controller = new AbortController();
+    clickTrap = controller;
+    document.addEventListener('click', trap, { capture: true, signal: controller.signal });
     setTimeout(() => {
-      if (onDocumentClick === trap) {
+      if (clickTrap === controller) {
         removeClickTrap();
       }
     }, suppressTimeout);
@@ -311,12 +293,11 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
     pointerId = event.pointerId;
     downEvent = event;
 
-    onDocumentMove = move;
-    onDocumentUp = up;
-    onDocumentCancel = cancel;
-    document.addEventListener('pointermove', move, { capture: true });
-    document.addEventListener('pointerup', up, { capture: true });
-    document.addEventListener('pointercancel', cancel, { capture: true });
+    pressListeners = new AbortController();
+    const options = { capture: true, signal: pressListeners.signal };
+    document.addEventListener('pointermove', move, options);
+    document.addEventListener('pointerup', up, options);
+    document.addEventListener('pointercancel', cancel, options);
 
     if (opts.cancelOnEscape) {
       const escape = (event: KeyboardEvent): void => {
@@ -326,19 +307,19 @@ export function createPointerDragSession(opts: PointerDragSessionOptions): Point
           abort();
         }
       };
-      onDocumentKeydown = escape;
-      document.addEventListener('keydown', escape, { capture: true });
+      document.addEventListener('keydown', escape, options);
     }
   };
 
-  host.addEventListener('pointerdown', down, { capture: true });
+  const hostListener = new AbortController();
+  host.addEventListener('pointerdown', down, { capture: true, signal: hostListener.signal });
 
   return {
     destroy(): void {
       if (opts.cancelOnDestroy && start !== null) {
         abort();
       }
-      host.removeEventListener('pointerdown', down, { capture: true });
+      hostListener.abort();
       releaseCapture();
       removeDocumentListeners();
       removeClickTrap();

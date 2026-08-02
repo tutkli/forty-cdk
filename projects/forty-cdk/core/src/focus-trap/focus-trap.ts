@@ -154,6 +154,7 @@ export class FocusTrap {
   #returnTo: HTMLElement | null = null;
   #active = false;
   #containerHadTabindex = false;
+  #keyboardChannel: AbortController | null = null;
 
   readonly #onKeyDown = (event: KeyboardEvent): void => this.#handleKeyDown(event);
 
@@ -199,7 +200,11 @@ export class FocusTrap {
       options.returnFocus !== undefined
         ? options.returnFocus
         : (resolveActiveElement(this.#document) as HTMLElement | null);
-    this.#document.addEventListener('keydown', this.#onKeyDown, true);
+    this.#keyboardChannel = new AbortController();
+    this.#document.addEventListener('keydown', this.#onKeyDown, {
+      capture: true,
+      signal: this.#keyboardChannel.signal,
+    });
     this.#stack.push(this);
 
     if (options.preventInitialFocus) {
@@ -281,7 +286,8 @@ export class FocusTrap {
     if (!this.#active) {
       return;
     }
-    this.#document.removeEventListener('keydown', this.#onKeyDown, true);
+    this.#keyboardChannel?.abort();
+    this.#keyboardChannel = null;
     this.#stack.remove(this);
   }
 

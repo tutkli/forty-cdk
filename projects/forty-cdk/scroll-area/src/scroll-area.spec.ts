@@ -487,22 +487,20 @@ describe('ForScrollArea', () => {
       stubPointerCapture(vbar);
 
       const addSpy = vi.spyOn(document, 'addEventListener');
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
 
       vbar.dispatchEvent(pointer('pointerdown', { clientY: 100 }));
-      const moveListener = addSpy.mock.calls.find(([type]) => type === 'pointermove')?.[1];
-      expect(moveListener).toBeDefined();
+      const gestureSignals = addSpy.mock.calls
+        .filter(
+          ([type]) => type === 'pointermove' || type === 'pointerup' || type === 'pointercancel',
+        )
+        .map(([, , options]) => (options as AddEventListenerOptions | undefined)?.signal);
+      expect(gestureSignals).toHaveLength(3);
+      expect(gestureSignals.every((s) => s?.aborted === false)).toBe(true);
 
       release();
       await flush();
 
-      expect(
-        removeSpy.mock.calls.some(
-          ([type, listener]) => type === 'pointermove' && listener === moveListener,
-        ),
-      ).toBe(true);
-      expect(removeSpy.mock.calls.some(([type]) => type === 'pointerup')).toBe(true);
-      expect(removeSpy.mock.calls.some(([type]) => type === 'pointercancel')).toBe(true);
+      expect(gestureSignals.every((s) => s?.aborted === true)).toBe(true);
 
       expect(() => document.dispatchEvent(pointer('pointermove', { clientY: 300 }))).not.toThrow();
     });

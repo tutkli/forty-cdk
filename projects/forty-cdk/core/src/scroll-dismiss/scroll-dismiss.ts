@@ -46,7 +46,7 @@ export interface ScrollDismiss {
    * pointer can't flicker overlays open.
    */
   isSuppressed(): boolean;
-  /** Removes the scroll listener. Idempotent-safe; call once from a `DestroyRef` hook. */
+  /** Aborts the scroll listener's signal. Idempotent; call from a `DestroyRef` hook. */
   destroy(): void;
 }
 
@@ -83,9 +83,14 @@ export function attachScrollDismiss(doc: Document, options: ScrollDismissOptions
     suppression.suppress();
     options.dismiss();
   };
-  doc.addEventListener('scroll', onScroll, { capture: true, passive: true });
+  const controller = new AbortController();
+  doc.addEventListener('scroll', onScroll, {
+    capture: true,
+    passive: true,
+    signal: controller.signal,
+  });
   return {
     isSuppressed: () => suppression.isSuppressed(),
-    destroy: () => doc.removeEventListener('scroll', onScroll, { capture: true }),
+    destroy: () => controller.abort(),
   };
 }

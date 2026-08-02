@@ -42,6 +42,7 @@ export class ForScrollAreaThumb {
   readonly #dragging = signal(false);
   #dragStartPointer = 0;
   #dragStartPosition = 0;
+  #gesture: AbortController | null = null;
 
   constructor() {
     this.scrollbar.registerThumb(this.#host);
@@ -85,10 +86,12 @@ export class ForScrollAreaThumb {
     // (`type="hover"` / `"scroll"`). Document-level listeners keep firing after
     // that removal, so the drag is not silently aborted. `lostpointercapture`
     // tears the gesture down if capture is otherwise lost.
+    this.#gesture = new AbortController();
+    const options = { signal: this.#gesture.signal };
     const doc = this.#document;
-    doc.addEventListener('pointermove', this.#onPointerMove);
-    doc.addEventListener('pointerup', this.#onPointerUp);
-    doc.addEventListener('pointercancel', this.#onPointerUp);
+    doc.addEventListener('pointermove', this.#onPointerMove, options);
+    doc.addEventListener('pointerup', this.#onPointerUp, options);
+    doc.addEventListener('pointercancel', this.#onPointerUp, options);
   }
 
   protected onLostPointerCapture(): void {
@@ -118,9 +121,7 @@ export class ForScrollAreaThumb {
   #endDrag(): void {
     this.#dragging.set(false);
     this.scrollbar.setDragging(false);
-    const doc = this.#document;
-    doc.removeEventListener('pointermove', this.#onPointerMove);
-    doc.removeEventListener('pointerup', this.#onPointerUp);
-    doc.removeEventListener('pointercancel', this.#onPointerUp);
+    this.#gesture?.abort();
+    this.#gesture = null;
   }
 }

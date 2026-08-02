@@ -77,6 +77,7 @@ export function playFlip(config: PlayFlipConfig): void {
     el.style.transform = '';
 
     let done = false;
+    const controller = new AbortController();
     const clear = (): void => {
       if (done) {
         return;
@@ -85,7 +86,7 @@ export function playFlip(config: PlayFlipConfig): void {
       el.removeAttribute(FLIP_ANIMATING_ATTR);
       el.style.transform = '';
       el.style.transition = '';
-      el.removeEventListener('transitionend', onEnd);
+      controller.abort();
     };
 
     const onEnd = (event: TransitionEvent): void => {
@@ -95,7 +96,7 @@ export function playFlip(config: PlayFlipConfig): void {
       clear();
     };
 
-    el.addEventListener('transitionend', onEnd, { once: true });
+    el.addEventListener('transitionend', onEnd, { once: true, signal: controller.signal });
     win.setTimeout(clear, fallbackMs);
   }
 }
