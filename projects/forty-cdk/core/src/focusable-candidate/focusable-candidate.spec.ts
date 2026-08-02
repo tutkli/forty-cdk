@@ -139,6 +139,29 @@ describe('focusable-candidate filter', () => {
 
       expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['host', 'shadow-a']);
     });
+
+    it("descends into the container's own shadow root", () => {
+      const shadowRoot = root.attachShadow({ mode: 'open' });
+      shadowRoot.innerHTML = '<button id="own-a">a</button><button id="own-b">b</button>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['own-a', 'own-b']);
+    });
+
+    it("orders the container's own shadow content before its light children", () => {
+      root.innerHTML = '<button id="light">light</button>';
+      root.attachShadow({ mode: 'open' }).innerHTML = '<button id="own">own</button><slot></slot>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['own', 'light']);
+    });
+
+    it("filters the container's own shadow content through the candidate filter", () => {
+      const shadowRoot = root.attachShadow({ mode: 'open' });
+      shadowRoot.innerHTML = '<div inert><button id="own">a</button></div>';
+      const el = shadowRoot.querySelector<HTMLElement>('#own')!;
+
+      expect(queryFocusableCandidates(root)).toEqual([el]);
+      expect(isFocusableCandidate(el, root)).toBe(false);
+    });
   });
 
   describe('isTabbableCandidate', () => {

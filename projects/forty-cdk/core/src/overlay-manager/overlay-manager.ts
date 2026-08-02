@@ -12,6 +12,7 @@ import {
   signal,
 } from '@angular/core';
 
+import { composedClosest, resolveActiveElement } from '../composed-tree/composed-tree';
 import { IdGenerator } from '../id-generator/id-generator';
 import type { OverlayRef } from './overlay-ref';
 
@@ -171,9 +172,16 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    *
    * The resolved origin is remembered so the next swap in the chain can inherit
    * it. Callers may bypass this and thread a caller-chosen element instead.
+   *
+   * Both halves of the resolution read the composed tree (#1586): the capture
+   * descends through open shadow roots, so a trigger inside one is the origin
+   * rather than its (usually unfocusable) host, and the "am I inside a managed
+   * overlay?" walk climbs back out of them. The two go together — resolving the
+   * deep element while classifying it with a plain `closest` would report every
+   * shadow-nested trigger as an outside element.
    */
   protected resolveReturnFocusTarget(): HTMLElement | null {
-    const active = this.#document.activeElement;
+    const active = resolveActiveElement(this.#document);
     const captured = active instanceof HTMLElement ? active : null;
     const origin = this.#computeReturnFocusOrigin(captured);
     this.#lastReturnFocusOrigin = origin;
@@ -186,7 +194,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
       return this.#lastReturnFocusOrigin;
     }
     const { idAttribute, backdropAttribute } = this.#config;
-    const host = captured.closest<HTMLElement>(`[${idAttribute}]:not([${backdropAttribute}])`);
+    const host = composedClosest(captured, `[${idAttribute}]:not([${backdropAttribute}])`);
     if (host === null) {
       return captured;
     }

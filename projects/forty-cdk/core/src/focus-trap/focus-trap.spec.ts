@@ -744,6 +744,43 @@ describe('FocusTrap', () => {
     });
   });
 
+  describe('a trap container that is itself a shadow host', () => {
+    let ownShadow: ShadowRoot;
+
+    beforeEach(() => {
+      container.innerHTML = '';
+      ownShadow = container.attachShadow({ mode: 'open' });
+      ownShadow.innerHTML = `
+        <button id="own-a">own a</button>
+        <button id="own-b">own b</button>
+      `;
+    });
+
+    it("focuses the first control rendered in the container's own shadow root", () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+
+      expect(ownShadow.activeElement?.id).toBe('own-a');
+      expect(container.hasAttribute('tabindex')).toBe(false);
+    });
+
+    it('cycles Tab instead of freezing focus on a dead tabbable set', () => {
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      ownShadow.querySelector<HTMLElement>('#own-b')!.focus();
+
+      const event = tab();
+      document.dispatchEvent(event);
+
+      expect(event.defaultPrevented).toBe(true);
+      expect(ownShadow.activeElement?.id).toBe('own-a');
+    });
+
+    it('finds the shadow content through findFirstFocusable', () => {
+      expect(findFirstFocusable(container)?.id).toBe('own-a');
+    });
+  });
+
   describe('focusable selector includes iframe and summary', () => {
     it('includes an <iframe> in the focusable set', () => {
       container.innerHTML = `<iframe id="frame" title="embedded"></iframe>`;

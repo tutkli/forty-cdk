@@ -1,4 +1,5 @@
 import {
+  composedClosest,
   composedContains,
   composedParentElement,
   resolveActiveElement,
@@ -137,6 +138,51 @@ describe('composed-tree', () => {
       document.body.appendChild(anchor);
 
       expect(composedParentElement(child)).toBe(anchor);
+    });
+  });
+
+  describe('composedClosest', () => {
+    it('finds an ancestor above the shadow boundary', () => {
+      const { container, inner } = mountShadowFixture();
+      container.setAttribute('data-overlay-id', 'a');
+
+      expect(inner.closest('[data-overlay-id]')).toBeNull();
+      expect(composedClosest(inner, '[data-overlay-id]')).toBe(container);
+    });
+
+    it('prefers the nearest match inside the shadow tree', () => {
+      const { container, shadow, inner } = mountShadowFixture();
+      container.setAttribute('data-overlay-id', 'outer');
+      const nearer = document.createElement('div');
+      nearer.setAttribute('data-overlay-id', 'inner');
+      shadow.appendChild(nearer);
+      nearer.appendChild(inner);
+
+      expect(composedClosest(inner, '[data-overlay-id]')).toBe(nearer);
+    });
+
+    it('climbs through nested shadow roots', () => {
+      const { container, shadow } = mountShadowFixture();
+      container.setAttribute('data-overlay-id', 'a');
+      const nestedHost = document.createElement('nested-widget');
+      shadow.appendChild(nestedHost);
+      const deepest = document.createElement('button');
+      nestedHost.attachShadow({ mode: 'open' }).appendChild(deepest);
+
+      expect(composedClosest(deepest, '[data-overlay-id]')).toBe(container);
+    });
+
+    it('returns null when nothing above the node matches', () => {
+      const { inner } = mountShadowFixture();
+
+      expect(composedClosest(inner, '[data-overlay-id]')).toBeNull();
+    });
+
+    it('matches the node itself', () => {
+      const { inner } = mountShadowFixture();
+      inner.setAttribute('data-overlay-id', 'self');
+
+      expect(composedClosest(inner, '[data-overlay-id]')).toBe(inner);
     });
   });
 });

@@ -198,7 +198,7 @@ export class FocusTrap {
     this.#returnTo =
       options.returnFocus !== undefined
         ? options.returnFocus
-        : ((resolveActiveElement(this.#document) as HTMLElement | null) ?? null);
+        : (resolveActiveElement(this.#document) as HTMLElement | null);
     this.#document.addEventListener('keydown', this.#onKeyDown, true);
     this.#stack.push(this);
 

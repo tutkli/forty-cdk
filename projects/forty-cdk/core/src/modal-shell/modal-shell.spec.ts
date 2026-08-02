@@ -742,6 +742,34 @@ describe('injectModalShell', () => {
     });
   });
 
+  describe('return-focus capture through an open shadow root (#1586)', () => {
+    it('captures the shadow-nested trigger rather than its host', async () => {
+      const widget = document.createElement('shadow-widget');
+      document.body.appendChild(widget);
+      const shadow = widget.attachShadow({ mode: 'open' });
+      const trigger = document.createElement('button');
+      shadow.appendChild(trigger);
+
+      trigger.focus();
+      // The raw read this capture used to do resolves to the host, which is not
+      // focusable — restoring to it would drop focus on <body>.
+      expect(document.activeElement).toBe(widget);
+
+      const ctx = mountShell(() => ({
+        modal: signal(true),
+        returnFocus: signal(true),
+        initialFocus: signal('first'),
+      }));
+      await flush(ctx.fixture);
+      expect(document.activeElement?.id).toBe('inside-1');
+
+      ctx.close();
+
+      expect(shadow.activeElement).toBe(trigger);
+      ctx.destroy();
+    });
+  });
+
   describe('returnFocusTarget override', () => {
     it('restores focus to the override target when the construction-time capture is disconnected (close→open swap)', async () => {
       const origin = document.createElement('button');

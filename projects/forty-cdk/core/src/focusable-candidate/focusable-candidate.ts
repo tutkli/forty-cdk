@@ -43,13 +43,33 @@ export const FOCUSABLE_SELECTOR = [
  * one `matches` call per element in the subtree, paid on activation and on each
  * Tab.
  *
+ * `container`'s **own** shadow root is traversed too, before its light
+ * children. Skipping it would leave the query disagreeing with
+ * `composedContains`, which already counts the container's shadow contents as
+ * inside it — and the shape is not exotic: a consumer component using
+ * `ViewEncapsulation.ShadowDom` and composing an overlay primitive through
+ * `hostDirectives` renders its entire surface there, so the trap would find no
+ * tabbable at all and Tab would move nothing.
+ *
  * A closed shadow root exposes no `shadowRoot`, so its contents stay invisible
- * here — the library descends through open shadow roots only. Order follows the
- * light tree with each host's shadow contents inlined at the host, which is the
- * flattened order unless the consumer's slots reorder their assigned nodes.
+ * here — the library descends through open shadow roots only.
+ *
+ * **Order** follows the light tree with each host's shadow contents inlined at
+ * the host. That is the flattened order for a host that renders no `<slot>`,
+ * which is the common case for a widget with its own controls. It is *not* the
+ * flattened order once slotted content is involved: assigned nodes are visited
+ * with the light tree, after the whole shadow tree, whereas the browser
+ * sequences them at the `<slot>`'s position. So a host with focusables after
+ * its `<slot>` yields a first / last pair the Tab cycle disagrees with —
+ * reordering slots is not required, one trailing focusable is enough.
+ * Resolving that needs `assignedElements()` per slot and is deliberately out of
+ * scope here.
  */
 export function queryFocusableCandidates(container: HTMLElement): HTMLElement[] {
   const found: HTMLElement[] = [];
+  if (container.shadowRoot) {
+    collectFocusableCandidates(container.shadowRoot, found);
+  }
   collectFocusableCandidates(container, found);
   return found;
 }

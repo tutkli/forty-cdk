@@ -48,6 +48,40 @@ test.describe('Dialog containing a web component with an open shadow root', () =
     await expect(el(page, 'dialog')).toBeVisible();
   });
 
+  test('a surface that is itself a shadow host still focuses and cycles its own controls', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'dialog-shadow', { shadowSurface: '1' });
+    await el(page, 'trigger').focus();
+    await el(page, 'trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    await expectDeepFocused(page, 'own-a');
+
+    await page.keyboard.press('Tab');
+    await expectDeepFocused(page, 'own-b');
+
+    await page.keyboard.press('Tab');
+    await expectDeepFocused(page, 'own-a');
+
+    await expect(el(page, 'trigger')).not.toBeFocused();
+    await expect(el(page, 'after')).not.toBeFocused();
+  });
+
+  test('return focus lands on the trigger inside the shadow root, not on its host', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'dialog-shadow', { shadowTrigger: '1' });
+    await el(page, 'shadow-trigger').focus();
+    await el(page, 'shadow-trigger').click();
+    await expect(el(page, 'dialog')).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(el(page, 'dialog')).toHaveCount(0);
+    await expectDeepFocused(page, 'shadow-trigger');
+  });
+
   test('pressing a control inside the shadow root does not dismiss the dialog', async ({
     page,
   }) => {

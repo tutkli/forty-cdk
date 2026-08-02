@@ -67,7 +67,35 @@ export function composedParentElement(node: Node): HTMLElement | null {
   return node.parentElement;
 }
 
-function shadowHostOf(node: Node): Node | null {
+/**
+ * The nearest inclusive ancestor of `node` matching `selector`, searching
+ * across every open shadow boundary above it.
+ *
+ * The composed-tree counterpart of `Element.closest`, which — like
+ * `querySelectorAll` and `Node.contains` — answers within a single node tree
+ * and returns `null` for a match that lives above a shadow host. It pairs with
+ * {@link resolveActiveElement}: resolving the deep active element and then
+ * asking plain `closest` about it is the same half-applied posture
+ * {@link composedContains} exists to prevent — the resolution hands over a node
+ * from inside the shadow tree, which is exactly the one the un-composed walk
+ * cannot climb out of.
+ *
+ * Each level delegates to the native `closest`, so the fast path inside a tree
+ * stays the engine's; only the hop to the next host is done here.
+ */
+export function composedClosest(node: Element, selector: string): HTMLElement | null {
+  let current: Element | null = node;
+  while (current) {
+    const match = current.closest<HTMLElement>(selector);
+    if (match) {
+      return match;
+    }
+    current = shadowHostOf(current);
+  }
+  return null;
+}
+
+function shadowHostOf(node: Node): Element | null {
   const root = node.getRootNode();
   return root !== node && isShadowRoot(root) ? root.host : null;
 }
