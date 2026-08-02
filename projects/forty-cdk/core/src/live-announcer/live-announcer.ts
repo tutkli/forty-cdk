@@ -20,10 +20,12 @@ interface LiveRegion {
  * Each region declares exactly one channel: `aria-live` plus `aria-atomic`,
  * never a `role`. The two are redundant — `role="status"` implies
  * `aria-live="polite"` + `aria-atomic="true"` and `role="alert"` implies
- * `assertive` — and the attribute pair is the channel to keep, because these
- * regions are anonymous off-screen text sinks rather than a status or alert
- * landmark a user should be able to navigate to, and because it states both
- * properties outright instead of leaving `aria-atomic` to an implicit role
+ * `assertive` — and the attribute pair is the channel to keep here. The one
+ * behaviour a live role adds is being read reliably when a node is *inserted*
+ * with its text already present, which is why `ForToast`'s bare-error host
+ * keeps `role="alert"`; these regions are inserted empty at construction and
+ * only ever have their text rewritten, so the role buys them nothing. The pair
+ * also states `aria-atomic` outright instead of leaving it to an implicit role
  * mapping.
  *
  * The regions are created up front — not on first use — because a live region

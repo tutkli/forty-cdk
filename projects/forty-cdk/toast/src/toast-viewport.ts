@@ -163,10 +163,11 @@ export class ForToastViewport {
   protected readonly overModal = this.#defaults.overModal;
 
   /**
-   * Accessible name for the viewport region. Defaults to the scope's
-   * `provideForToastDefaults({ viewportAriaLabel })` value (`'Notifications'`
-   * unless configured); a static `aria-label` on the host wins over it, and
-   * `null` drops the attribute entirely.
+   * Accessible name for the viewport region, exposed as `aria-label`. Defaults
+   * to the scope's `viewportAriaLabel` (`'Notifications'` unless overridden via
+   * `provideForToastDefaults`); set `[ariaLabel]` to override per-instance, or
+   * `null` to drop the attribute. A static `aria-label` on the host replaces
+   * both the default and this input.
    */
   readonly ariaLabel = input<string | null>(this.#defaults.viewportAriaLabel);
 
