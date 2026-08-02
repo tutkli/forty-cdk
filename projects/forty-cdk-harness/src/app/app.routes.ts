@@ -12,6 +12,11 @@ export const routes: Routes = [
       import('./fixtures/dialog-shadow.fixture').then((m) => m.DialogShadowFixture),
   },
   {
+    path: 'dialog-large-table',
+    loadComponent: () =>
+      import('./fixtures/dialog-large-table.fixture').then((m) => m.DialogLargeTableFixture),
+  },
+  {
     path: 'dialog-programmatic',
     loadComponent: () =>
       import('./fixtures/dialog-programmatic.fixture').then((m) => m.DialogProgrammaticFixture),

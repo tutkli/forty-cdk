@@ -1,4 +1,5 @@
 import {
+  FOCUSABLE_SELECTOR,
   isFocusableCandidate,
   isTabbableCandidate,
   queryFocusableCandidates,
@@ -161,6 +162,72 @@ describe('focusable-candidate filter', () => {
 
       expect(queryFocusableCandidates(root)).toEqual([el]);
       expect(isFocusableCandidate(el, root)).toBe(false);
+    });
+  });
+
+  describe('candidate pre-filter', () => {
+    const CLAUSE_FIXTURES: Record<string, string> = {
+      'a[href]': '<a href="#x">link</a>',
+      'area[href]': '<map><area href="#x" /></map>',
+      'button:not([disabled])': '<button>go</button>',
+      'input:not([disabled]):not([type="hidden"])': '<input />',
+      'select:not([disabled])': '<select></select>',
+      'textarea:not([disabled])': '<textarea></textarea>',
+      '[tabindex]:not([tabindex="-1"])': '<div tabindex="0"></div>',
+      '[contenteditable="true"]': '<div contenteditable="true"></div>',
+      'audio[controls]': '<audio controls></audio>',
+      'video[controls]': '<video controls></video>',
+      iframe: '<iframe></iframe>',
+      summary: '<details><summary>more</summary></details>',
+    };
+
+    it('has a fixture for every clause of FOCUSABLE_SELECTOR', () => {
+      expect(Object.keys(CLAUSE_FIXTURES).sort()).toEqual(FOCUSABLE_SELECTOR.split(',').sort());
+    });
+
+    for (const [clause, html] of Object.entries(CLAUSE_FIXTURES)) {
+      it(`admits an element matching ${clause}`, () => {
+        root.innerHTML = html;
+        const matching = Array.from(root.querySelectorAll<HTMLElement>('*')).filter((el) =>
+          el.matches(clause),
+        );
+
+        expect(matching.length).toBe(1);
+        expect(queryFocusableCandidates(root)).toContain(matching[0]);
+      });
+    }
+
+    it('returns exactly what an unfiltered matches() walk returns, over a mixed subtree', () => {
+      root.innerHTML = `
+        <div tabindex="-1">
+          <span>cell</span>
+          <button tabindex="-1">roving</button>
+        </div>
+        <table><tr><td><span>text</span></td><td><a href="#x">link</a></td></tr></table>
+        <svg><a href="#x"><rect /></a></svg>
+        <div contenteditable="false">plain</div>
+        <div contenteditable="true">editable</div>
+        <input type="hidden" />
+        <button disabled>off</button>
+      `;
+      const reference = Array.from(root.querySelectorAll<HTMLElement>('*')).filter((el) =>
+        el.matches(FOCUSABLE_SELECTOR),
+      );
+
+      expect(reference.length).toBeGreaterThan(0);
+      expect(queryFocusableCandidates(root)).toEqual(reference);
+    });
+
+    it('keeps a natively-focusable element carrying tabindex="-1"', () => {
+      root.innerHTML = '<div tabindex="-1"><button id="roving" tabindex="-1">go</button></div>';
+
+      expect(queryFocusableCandidates(root).map((el) => el.id)).toEqual(['roving']);
+    });
+
+    it('skips a structural element carrying tabindex="-1"', () => {
+      root.innerHTML = '<div tabindex="-1"><span>cell</span></div>';
+
+      expect(queryFocusableCandidates(root)).toEqual([]);
     });
   });
 
