@@ -2,6 +2,7 @@ import {
   Component,
   provideZonelessChangeDetection,
   signal,
+  TemplateRef,
   viewChild,
   type WritableSignal,
 } from '@angular/core';
@@ -1297,12 +1298,12 @@ describe('ForDropList + ForDraggable', () => {
 
     it('ForDragPreview exposes a defined templateRef', () => {
       const { fixture } = renderHost(StaticTemplatesHost);
-      expect(fixture.componentInstance.previewRef().templateRef).toBeTruthy();
+      expect(fixture.componentInstance.previewRef().templateRef).toBeInstanceOf(TemplateRef);
     });
 
     it('ForDragPlaceholder exposes a defined templateRef', () => {
       const { fixture } = renderHost(StaticTemplatesHost);
-      expect(fixture.componentInstance.placeholderRef().templateRef).toBeTruthy();
+      expect(fixture.componentInstance.placeholderRef().templateRef).toBeInstanceOf(TemplateRef);
     });
 
     it('ForDragPreview outside [forDraggable] throws the orphan error', () => {

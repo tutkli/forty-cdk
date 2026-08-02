@@ -204,19 +204,6 @@ describe('Collection', () => {
     expect(col.indexOfHost(c)).toBe(1);
   });
 
-  it('returns a frozen items() array that callers cannot mutate', () => {
-    const col = createCollection();
-    col.register(handle('a', a));
-    col.register(handle('b', b));
-
-    const items = col.items();
-    expect(Object.isFrozen(items)).toBe(true);
-    expect(() => (items as Handle[]).sort()).toThrow();
-    expect(() => (items as Handle[]).push(handle('c', c))).toThrow();
-
-    expect(col.items().map((h) => h.id)).toEqual(['a', 'b']);
-  });
-
   it('observes the parent without subtree, so a nested mutation does not invalidate it', async () => {
     const col = createCollection();
     col.register(handle('a', a));

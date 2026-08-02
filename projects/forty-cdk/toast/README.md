@@ -362,6 +362,8 @@ bootstrapApplication(App, {
 
 Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" hotkey="F8" />`.
 
+`viewportAriaLabel` (default `'Notifications'`) is the localizable accessible name of every viewport in the scope; `[ariaLabel]` overrides it per viewport.
+
 `overModal` (`'peer'` | `'inert'`, default `'peer'`) is also a defaults key — see [Sitting behind the modal instead](#sitting-behind-the-modal-instead).
 
 ## Keyboard
@@ -377,7 +379,7 @@ Implements the [WAI-ARIA Alert pattern](https://www.w3.org/WAI/ARIA/apg/patterns
 - `aria-atomic="true"` on the toast means that when the host's own `aria-live` region announces — a bare `error` toast, the one variant still announced by its host — the screen reader reads the **whole** toast rather than only the changed node. On every other variant the host `aria-live` is `off` and announcements route through the shared `LiveAnnouncer`, so `aria-atomic` is inert there. Re-announcement on a `ref.update()` text change is driven explicitly — see [Live updates and announcements](#live-updates-and-announcements) below.
 - `aria-labelledby` and `aria-describedby` wire automatically from `[forToastTitle]` / `[forToastDescription]`. Multiple titles / descriptions concatenate ids.
 - `role="alert"` (variant `error`) interrupts the screen reader queue; reserve it for genuinely interrupting messages.
-- The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut.
+- The viewport's `role="region"` with `aria-label` makes it discoverable in landmark navigation; the `F6` hotkey is the standard "jump to notifications" shortcut. Name it with `[ariaLabel]` per viewport, or with `provideForToastDefaults({ viewportAriaLabel: '…' })` to translate every viewport in the scope (default `Notifications`). `[ariaLabel]="null"` drops the attribute; a static `aria-label` on the host replaces both channels, so it wins over a `null` too.
 - Pause on hover / focus is mandated by [WCAG 2.1 SC 2.2.1](https://www.w3.org/WAI/WCAG21/Understanding/timing-adjustable.html) for time-limited content.
 - Action buttons should set `[altText]` whenever the visible label (e.g. `"Undo"`) wouldn't tell a user how to recover the action after the toast disappears. The `altText` is folded into the synthesized announcement (`title. description. altText`) — meeting [WCAG SC 2.2.1](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html) for non-recoverable, time-limited actions. It also switches a bare `error` toast onto the `LiveAnnouncer` path, since the recovery hint is not in the visible DOM the host region would read.
 

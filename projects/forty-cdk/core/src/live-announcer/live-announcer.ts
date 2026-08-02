@@ -17,6 +17,17 @@ interface LiveRegion {
  * (`polite` and `assertive`) into `document.body` at construction, then
  * writes / clears messages on demand.
  *
+ * Each region declares exactly one channel: `aria-live` plus `aria-atomic`,
+ * never a `role`. The two are redundant — `role="status"` implies
+ * `aria-live="polite"` + `aria-atomic="true"` and `role="alert"` implies
+ * `assertive` — and the attribute pair is the channel to keep here. The one
+ * behaviour a live role adds is being read reliably when a node is *inserted*
+ * with its text already present, which is why `ForToast`'s bare-error host
+ * keeps `role="alert"`; these regions are inserted empty at construction and
+ * only ever have their text rewritten, so the role buys them nothing. The pair
+ * also states `aria-atomic` outright instead of leaving it to an implicit role
+ * mapping.
+ *
  * The regions are created up front — not on first use — because a live region
  * must already exist in the accessibility tree before its text changes for
  * that change to be announced. Creating the region inside the first
@@ -137,7 +148,6 @@ export class LiveAnnouncer {
     const region = this.#document.createElement('div');
     region.setAttribute('aria-live', politeness);
     region.setAttribute('aria-atomic', 'true');
-    region.setAttribute('role', politeness === 'assertive' ? 'alert' : 'status');
     region.setAttribute(MODAL_EXEMPT_ATTRIBUTE, '');
     // Visually hidden but kept in the accessibility tree.
     region.style.cssText = VISUALLY_HIDDEN_STYLE;

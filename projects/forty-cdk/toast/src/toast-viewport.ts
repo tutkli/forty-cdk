@@ -65,10 +65,12 @@ import { ForToastTitle } from './toast-title';
  * only the first one mounted renders it (the rest stay dormant and warn in dev
  * mode), so a single `show()` always produces exactly one toast node.
  *
- * Accessibility: the host carries `role="region"` and an `aria-label`
- * (default `Notifications`). Toast nodes themselves carry their own
- * `role` (`status` / `alert`) and `aria-live`, so screen readers
- * announce updates without forcing focus.
+ * Accessibility: the host carries `role="region"` and an `aria-label` — set it
+ * per-viewport with `[ariaLabel]`, or per-scope with
+ * `provideForToastDefaults({ viewportAriaLabel: '…' })` (default
+ * `Notifications`). Toast nodes themselves carry their own `role`
+ * (`status` / `alert`) and `aria-live`, so screen readers announce updates
+ * without forcing focus.
  *
  * Over a modal: by default the host carries `data-for-modal-exempt`, so an open
  * modal `ForDialog` / `ForDrawer` (a) leaves the viewport out of its inert pass
@@ -149,6 +151,7 @@ import { ForToastTitle } from './toast-title';
 export class ForToastViewport {
   readonly #manager = inject(ForToastManager);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+  readonly #defaults = inject(FOR_TOAST_DEFAULTS);
 
   /**
    * How this viewport behaves over an open modal `ForDialog` / `ForDrawer`,
@@ -157,12 +160,18 @@ export class ForToastViewport {
    * stays interactive over the modal; `'inert'` drops the marker so the modal
    * inerts the viewport and a click on a toast dismisses it.
    */
-  protected readonly overModal = inject(FOR_TOAST_DEFAULTS).overModal;
+  protected readonly overModal = this.#defaults.overModal;
 
-  /** Accessible name for the viewport region. Default `'Notifications'`. */
-  readonly label = input<string>('Notifications');
+  /**
+   * Accessible name for the viewport region, exposed as `aria-label`. Defaults
+   * to the scope's `viewportAriaLabel` (`'Notifications'` unless overridden via
+   * `provideForToastDefaults`); set `[ariaLabel]` to override per-instance, or
+   * `null` to drop the attribute. A static `aria-label` on the host replaces
+   * both the default and this input.
+   */
+  readonly ariaLabel = input<string | null>(this.#defaults.viewportAriaLabel);
 
-  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.label() || null);
+  protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
   /**
    * The toast region this viewport renders. Only toasts whose `region` matches

@@ -34,13 +34,13 @@ describe('LiveAnnouncer', () => {
   it('creates both live regions in document.body at construction, before any announce', () => {
     TestBed.inject(LiveAnnouncer);
 
-    const polite = document.querySelector<HTMLElement>('[aria-live="polite"]');
-    const assertive = document.querySelector<HTMLElement>('[aria-live="assertive"]');
-    expect(polite!.textContent).toBe('');
-    expect(assertive!.textContent).toBe('');
-    expect(polite!.getAttribute('aria-atomic')).toBe('true');
-    expect(polite!.getAttribute('role')).toBe('status');
-    expect(assertive!.getAttribute('role')).toBe('alert');
+    const regions = Array.from(
+      document.querySelectorAll<HTMLElement>(`body > [${MODAL_EXEMPT_ATTRIBUTE}]`),
+    );
+    expect(regions.map((r) => r.getAttribute('aria-live'))).toEqual(['polite', 'assertive']);
+    expect(regions.map((r) => r.getAttribute('aria-atomic'))).toEqual(['true', 'true']);
+    expect(regions.map((r) => r.hasAttribute('role'))).toEqual([false, false]);
+    expect(regions.map((r) => r.textContent)).toEqual(['', '']);
   });
 
   it('writes the first announcement into the pre-existing polite region', async () => {
@@ -69,7 +69,6 @@ describe('LiveAnnouncer', () => {
 
     expect(polite!.textContent).toBe('');
     expect(assertive!.textContent).toBe('boom');
-    expect(assertive!.getAttribute('role')).toBe('alert');
   });
 
   it('flushes identical consecutive messages through an empty state', async () => {

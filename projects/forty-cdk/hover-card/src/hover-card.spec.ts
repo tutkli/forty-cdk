@@ -688,7 +688,6 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       const arrow = document.body.querySelector<HTMLElement>('[data-hover-card-arrow]')!;
-      expect(arrow).toBeTruthy();
       expect(arrow.getAttribute('aria-hidden')).toBe('true');
     });
   });

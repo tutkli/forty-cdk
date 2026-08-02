@@ -858,11 +858,12 @@ describe('ForCalendar', () => {
 
       r.query('[data-testid="prev"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await flush(r.fixture);
-      expect(cell(r, new Date(2026, 4, 15))).toBeTruthy();
+      expect(r.queryAll('[data-testid^="cell-2026-5-"]').length).toBe(31);
 
       r.query('[data-testid="next"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       await flush(r.fixture);
-      expect(cell(r, JUN_15)).toBeTruthy();
+      expect(r.queryAll('[data-testid^="cell-2026-6-"]').length).toBe(30);
+      expect(cell(r, JUN_15).getAttribute('aria-selected')).toBe('true');
     });
 
     it('announces the new period via a separate off-screen live region when paging', async () => {
@@ -998,7 +999,6 @@ describe('ForCalendar', () => {
       await flush(r.fixture);
 
       const janCell = cell(r, new Date(2026, 0, 10));
-      expect(janCell).toBeTruthy();
       expect(janCell.getAttribute('aria-selected')).toBe('true');
       expect(tabbableCells(r)[0]).toBe(janCell);
     });
@@ -1399,7 +1399,6 @@ describe('ForCalendar', () => {
         const r = renderHost(CalendarDropdownsHost);
         selectMonth(r, 1);
         await flush(r.fixture);
-        expect(dcell(r, new Date(2026, 0, 15))).toBeTruthy();
         expect(dFocused(r)).toBe(dcell(r, new Date(2026, 0, 15)));
       });
     });
@@ -1476,9 +1475,9 @@ describe('ForCalendar', () => {
       r.instance.maxYear.set(null);
       await flush(r.fixture);
       const cy = new Date().getFullYear();
-      expect(yearOpt(r, cy)).toBeTruthy();
-      expect(yearOpt(r, cy - 100)).toBeTruthy();
-      expect(yearOpt(r, cy + 10)).toBeTruthy();
+      expect(yearOpt(r, cy)?.value).toBe(String(cy));
+      expect(yearOpt(r, cy - 100)?.value).toBe(String(cy - 100));
+      expect(yearOpt(r, cy + 10)?.value).toBe(String(cy + 10));
       expect(yearOpt(r, cy - 101)).toBeNull();
       expect(yearOpt(r, cy + 11)).toBeNull();
     });
@@ -1496,7 +1495,6 @@ describe('ForCalendar', () => {
         const r = renderHost(CalendarSelectDirectivesHost);
         fireMonth(r, 1);
         await flush(r.fixture);
-        expect(dcell(r, new Date(2026, 0, 15))).toBeTruthy();
         expect(r.queryAll('[role="gridcell"][tabindex="0"]')[0]).toBe(
           dcell(r, new Date(2026, 0, 15)),
         );
@@ -2059,7 +2057,7 @@ describe('ForCalendar', () => {
 
       expect(viewRoot(r).getAttribute('data-view')).toBe('day');
       expect(r.instance.value()!.getMonth() + 1).toBe(6);
-      expect(r.query('[data-testid^="cell-2026-3-"]')).toBeTruthy();
+      expect(r.queryAll('[data-testid^="cell-2026-3-"]').length).toBe(31);
     });
 
     it('Enter on a month cell drills to day view', async () => {
@@ -2245,7 +2243,7 @@ describe('ForCalendar', () => {
         fixture.detectChanges();
         await flush(fixture);
 
-        expect(fixture.nativeElement.querySelector('[forCalendarMonthGrid]')).toBeTruthy();
+        expect(fixture.nativeElement.querySelectorAll('[forCalendarMonthCell]').length).toBe(12);
         expect(
           fixture.nativeElement.querySelectorAll('[forCalendarMonthCell][tabindex="0"]').length,
         ).toBe(1);

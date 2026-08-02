@@ -13,6 +13,12 @@ export interface ForToastDefaults {
   hotkey?: string;
   maxVisible?: number;
   /**
+   * Accessible name for the viewport region (`[forToastViewport]`,
+   * `role="region"`), for viewports that don't set `[ariaLabel]` locally.
+   * Localize it here to translate every toast viewport in the scope.
+   */
+  viewportAriaLabel?: string;
+  /**
    * How toast viewports in this scope behave over an open modal `ForDialog` /
    * `ForDrawer`. Default `'peer'`.
    *
@@ -33,6 +39,7 @@ interface ResolvedToastDefaults {
   duration: number;
   hotkey: string;
   maxVisible: number;
+  viewportAriaLabel: string;
   overModal: 'peer' | 'inert';
 }
 
@@ -40,6 +47,7 @@ const FALLBACK: ResolvedToastDefaults = {
   duration: 5000,
   hotkey: 'F6',
   maxVisible: Infinity,
+  viewportAriaLabel: 'Notifications',
   overModal: 'peer',
 };
 
