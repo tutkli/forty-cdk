@@ -47,14 +47,19 @@ export const DEFAULT_DATE_FIELD_SEGMENT_LABELS: Readonly<Record<SegmentType, str
   dayPeriod: 'AM/PM',
 };
 
-const FALLBACK: ForDateFieldDefaults = {
+/**
+ * Library fallback for date-field defaults, read at the root injector when no
+ * consumer has called `provideForDateFieldDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_DATE_FIELD_FALLBACK_DEFAULTS: ForDateFieldDefaults = {
   emptySegmentText: 'Empty',
   segmentLabels: DEFAULT_DATE_FIELD_SEGMENT_LABELS,
 };
 
 const { token, provideDefaults } = createDefaults<ForDateFieldDefaults>(
   'FOR_DATE_FIELD_DEFAULTS',
-  FALLBACK,
+  FOR_DATE_FIELD_FALLBACK_DEFAULTS,
 );
 
 /** Token holding the resolved date-field defaults for the current scope. */

@@ -33,13 +33,18 @@ export interface ForBreakpointsDefaults {
   breakpoints: BreakpointMap;
 }
 
-const FALLBACK: ForBreakpointsDefaults = {
+/**
+ * Library fallback for breakpoints defaults, read at the root injector when no
+ * consumer has called `provideForBreakpointsDefaults`. Exported for the shared
+ * defaults contract spec; not re-exported from the primitive's public entry.
+ */
+export const FOR_BREAKPOINTS_FALLBACK_DEFAULTS: ForBreakpointsDefaults = {
   breakpoints: forBreakpointsTailwind,
 };
 
 const { token, provideDefaults } = createDefaults<ForBreakpointsDefaults>(
   'FOR_BREAKPOINTS_DEFAULTS',
-  FALLBACK,
+  FOR_BREAKPOINTS_FALLBACK_DEFAULTS,
 );
 
 /**
