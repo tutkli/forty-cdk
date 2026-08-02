@@ -1,7 +1,7 @@
 import { Component, DestroyRef, Directive, inject, signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { renderHost } from '../../../src/test-utils';
+import { nextMacrotask, renderHost } from '../../../src/test-utils';
 import { findFirstFocusable, FocusTrap, FocusTrapStack, injectFocusTrap } from './focus-trap';
 
 function tab(shift = false): KeyboardEvent {
@@ -805,6 +805,86 @@ describe('FocusTrap', () => {
 
       expect(event.defaultPrevented).toBe(false);
       expect(document.activeElement).toBe(outsideBefore);
+    });
+
+    describe('dev-mode warning when the net fires', () => {
+      let warned: string[];
+
+      beforeEach(() => {
+        warned = [];
+        vi.spyOn(console, 'warn').mockImplementation((...args: unknown[]) => {
+          warned.push(args.map(String).join(' '));
+        });
+      });
+
+      it('warns when the owner is destroyed without ever deactivating', async () => {
+        const owner = mountTrapOwner();
+        owner.trap.activate();
+
+        owner.unmount();
+        await Promise.resolve();
+
+        expect(warned).toHaveLength(1);
+        expect(warned[0]).toContain('[forty-cdk/core] injectFocusTrap');
+        expect(warned[0]).toContain('`trap.deactivate({ returnFocus })`');
+        expect(warned[0]).toContain('`DestroyRef.onDestroy`');
+      });
+
+      it('stays silent for an owner whose deactivate hook is registered after injectFocusTrap()', async () => {
+        const owner = mountTrapOwner({ deactivateOnDestroy: 'after-trap' });
+        owner.trap.activate();
+
+        owner.unmount();
+        await Promise.resolve();
+
+        expect(warned).toEqual([]);
+      });
+
+      it('stays silent for an owner whose deactivate hook is registered before injectFocusTrap()', async () => {
+        const owner = mountTrapOwner({ deactivateOnDestroy: 'before-trap' });
+        owner.trap.activate();
+
+        owner.unmount();
+        await Promise.resolve();
+
+        expect(warned).toEqual([]);
+      });
+
+      it('schedules nothing for a trap that was never activated', async () => {
+        const owner = mountTrapOwner();
+        const scheduled = vi.spyOn(globalThis, 'queueMicrotask');
+
+        owner.unmount();
+
+        expect(scheduled).not.toHaveBeenCalled();
+        await Promise.resolve();
+        expect(warned).toEqual([]);
+      });
+
+      it('warns once per trap, however many microtask hops follow', async () => {
+        const owner = mountTrapOwner();
+        owner.trap.activate();
+
+        owner.unmount();
+        await Promise.resolve();
+        await Promise.resolve();
+        await nextMacrotask();
+
+        expect(warned).toHaveLength(1);
+      });
+
+      it('registers nothing once `ngDevMode` is cleared, as a production build does', async () => {
+        vi.stubGlobal('ngDevMode', false);
+        const owner = mountTrapOwner();
+        owner.trap.activate();
+        const scheduled = vi.spyOn(globalThis, 'queueMicrotask');
+
+        owner.unmount();
+
+        expect(scheduled).not.toHaveBeenCalled();
+        await Promise.resolve();
+        expect(warned).toEqual([]);
+      });
     });
   });
 });

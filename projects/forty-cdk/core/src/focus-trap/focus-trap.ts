@@ -1,5 +1,13 @@
 import { isPlatformBrowser } from '@angular/common';
-import { DestroyRef, DOCUMENT, ElementRef, Injectable, inject, PLATFORM_ID } from '@angular/core';
+import {
+  DestroyRef,
+  DOCUMENT,
+  ElementRef,
+  Injectable,
+  inject,
+  isDevMode,
+  PLATFORM_ID,
+} from '@angular/core';
 
 import {
   FOCUSABLE_SELECTOR,
@@ -159,7 +167,10 @@ export class FocusTrap {
    * The corollary is that this is the wrong gate for anything running from a
    * `DestroyRef.onDestroy` hook: the consumer's own `deactivate()` has not run
    * yet at that point, so every correctly-closed surface in the library reads
-   * `true` there too.
+   * `true` there too. A check that needs the settled answer defers past the
+   * whole hook chain instead — which is what the helper's dev-mode warning does
+   * with a `queueMicrotask` scheduled from the net, where `true` finally means
+   * "nobody deactivated" ([#1617](https://github.com/tutkli/forty-cdk/issues/1617)).
    */
   get isActive(): boolean {
     return this.#active;
@@ -318,6 +329,46 @@ export class FocusTrap {
 }
 
 /**
+ * Reports an owner that activated a trap and was destroyed without ever calling
+ * `deactivate()` — the defect the teardown net repairs, which would otherwise
+ * leave no trace beyond focus silently not returning.
+ *
+ * Scheduled as a microtask by the net rather than run inside it, because
+ * {@link FocusTrap.isActive} is not yet final there: `DestroyRef.onDestroy`
+ * callbacks fire in registration order, so the consumer's own `deactivate()` —
+ * registered after the `injectFocusTrap()` call that set the net up — has not
+ * run when the net does. Angular runs the whole chain synchronously during view
+ * destruction, so a microtask scheduled from the net observes the settled flag:
+ * `false` for an owner that deactivated (on either hook order), `true` only for
+ * one that never did. The net deliberately leaves the flag set, so no extra
+ * bookkeeping is needed to tell the two apart.
+ *
+ * The residual false positive is an owner that deactivates from something
+ * asynchronous. Nothing in the library does — `injectModalShell` is the only
+ * caller of {@link injectFocusTrap}, and its `deactivate()` is a plain
+ * statement inside its own destroy hook — and a surface that defers its close
+ * focus move past the destroy tick has already lost return focus for the same
+ * reason the warning names.
+ *
+ * Kept module-private: `injectFocusTrap` is the only net in the library today.
+ * `injectDismissibleLayer` and `InertSiblingsStack` share the hook-order
+ * problem and would share this shape, so the second one to want it extracts a
+ * core helper rather than copying this.
+ */
+function warnIfNeverDeactivated(trap: FocusTrap): void {
+  if (!trap.isActive) {
+    return;
+  }
+  console.warn(
+    `[forty-cdk/core] injectFocusTrap: a focus trap was still active when its owner was ` +
+      `destroyed, so the owner never called \`deactivate()\`. The teardown safety net released ` +
+      `the keyboard channel (the \`document\` keydown listener and the stack entry), but focus ` +
+      `was not returned — only the owner can decide where it goes. Call ` +
+      `\`trap.deactivate({ returnFocus })\` from the owner's own \`DestroyRef.onDestroy\`.`,
+  );
+}
+
+/**
  * Creates a `FocusTrap` for the directive's host element. Activation is the
  * consumer's responsibility, and so is the focus move on teardown — call
  * `trap.activate()` when the surface opens and
@@ -348,11 +399,18 @@ export class FocusTrap {
  * correctly-written surface — the helper would win the race it is not entitled
  * to arbitrate, rather than avoid it.
  *
+ * The net repairs the leak and reports nothing, which would leave the missing
+ * `deactivate()` invisible — so in dev mode it also schedules
+ * {@link warnIfNeverDeactivated} to name it. Both halves of the gate are read
+ * in the hook itself: a production build schedules no microtask, and neither
+ * does a trap that was never activated.
+ *
  * SSR-safe: the trap is constructed with the resolved platform, so
  * `activate()` is a no-op off-browser (no `document` keydown listener)
  * rather than relying on the caller to gate it behind `afterNextRender`.
  * The safety net inherits that gate — it bails on an inactive trap, so it
- * touches no `document` off-browser either.
+ * touches no `document` off-browser either, and the warning inherits it in
+ * turn (a trap that never activated reads `false` here).
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -362,6 +420,12 @@ export function injectFocusTrap(): FocusTrap {
     inject(DOCUMENT),
     isPlatformBrowser(inject(PLATFORM_ID)),
   );
-  inject(DestroyRef).onDestroy(() => trap.releaseKeyboardChannel());
+  inject(DestroyRef).onDestroy(() => {
+    const wasActive = trap.isActive;
+    trap.releaseKeyboardChannel();
+    if (isDevMode() && wasActive) {
+      queueMicrotask(() => warnIfNeverDeactivated(trap));
+    }
+  });
   return trap;
 }
