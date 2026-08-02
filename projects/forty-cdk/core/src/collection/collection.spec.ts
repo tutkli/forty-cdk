@@ -508,6 +508,6 @@ describe('Collection', () => {
   });
 
   it('rejects construction outside an injection context instead of skipping teardown', () => {
-    expect(() => new Collection<Handle>()).toThrowError(/injection context/);
+    expect(() => new Collection<Handle>()).toThrowError(/NG0203/);
   });
 });

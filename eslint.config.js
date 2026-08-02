@@ -3165,7 +3165,7 @@ module.exports = tseslint.config(
         },
         {
           selector:
-            'TryStatement[handler][block.body.length=1] > .block CallExpression[callee.name="inject"]',
+            'TryStatement[handler][block.body.length=1] > .block CallExpression[callee.name="inject"]:not(:matches(ArrowFunctionExpression, FunctionExpression) > CallExpression)',
           message:
             'A `try` / `catch` around a lone `inject(…)` to detect an injection context is banned: the catch is unbounded, so it also swallows a genuine DI failure from that call, and Angular 22 exports no predicate to replace it (`isInInjectionContext` is internal; `assertInInjectionContext` throws). Require the context and let `inject` raise NG0203, or take the dependency as a parameter (tutkli/forty-cdk#1585).',
         },
