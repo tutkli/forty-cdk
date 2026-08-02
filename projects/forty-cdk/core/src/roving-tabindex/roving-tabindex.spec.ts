@@ -295,6 +295,32 @@ describe('RovingTabindex', () => {
       });
     });
 
+    it('never reads the item list while nothing is active', () => {
+      const a = document.createElement('button');
+      document.body.append(a);
+      try {
+        const items = signal<readonly HostRovingItemHandle[]>([makeHandle(a)]);
+        let reads = 0;
+        const r = new RovingTabindex(() => {
+          reads++;
+          return items();
+        });
+
+        expect(r.active()).toBe(null);
+        expect(r.hasActive()).toBe(false);
+        items.set([makeHandle(a)]);
+        expect(r.active()).toBe(null);
+        expect(reads).toBe(0);
+
+        r.setActive(a);
+
+        expect(r.active()).toBe(a);
+        expect(reads).toBe(1);
+      } finally {
+        a.remove();
+      }
+    });
+
     it('is a pass-through of the raw pointer with no items producer', () => {
       const r = new RovingTabindex();
       const a = document.createElement('button');

@@ -31,6 +31,18 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * yields a pass-through of the raw pointer for consumers that own no roving
  * collection (date-field / time-field).
  *
+ * The reconciliation reads `items()` **only while something is active**:
+ * with no active pointer there is nothing to reconcile (the computation
+ * returns the `null` raw pointer whatever the list holds), so reading the
+ * list would buy nothing and cost the whole group. Every item's `tabindex`
+ * gate is a live consumer of {@link hasActive}, and a container's item list
+ * is typically a `computed` fold over per-child registries that is
+ * invalidated once per child while the group mounts — so an unconditional
+ * read makes each registration notify every item registered so far, which
+ * is quadratic in group size and dominated the 2000-row `[forTable]` mount
+ * measured in [#1584](https://github.com/tutkli/forty-cdk/issues/1584).
+ * Gating it keeps the mount's tab-stop channel independent of the list.
+ *
  * Construct directly with `new RovingTabindex()` — there is no internal
  * state requiring an injection context or `DestroyRef` cleanup (the
  * reconciliation is a `linkedSignal`, not an `effect`).
@@ -65,7 +77,10 @@ export class RovingTabindex {
   ) {
     const fallback = options.fallback ?? 'none';
     this.#active = linkedSignal({
-      source: () => ({ items: items ? items() : null, raw: this.#rawActive() }),
+      source: () => {
+        const raw = this.#rawActive();
+        return { items: items && raw !== null ? items() : null, raw };
+      },
       computation: ({ items: list, raw }) => {
         if (list === null || raw === null) {
           return raw;
