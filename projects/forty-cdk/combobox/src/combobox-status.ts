@@ -5,9 +5,16 @@ import { injectComboboxContext } from './combobox-context';
 /**
  * Live-region slot for async-filtering feedback (loading, result count,
  * "no matches", error messages). Apply on a `<div>` inside the listbox or
- * next to the input. The directive sets `role="status"` and
- * `aria-live="polite"` so messages projected as content are announced to
- * screen readers when they change.
+ * next to the input. The directive sets `role="status"` so messages projected
+ * as content are announced to screen readers when they change.
+ *
+ * The role is the piece's **single** live-region channel — it already implies
+ * `aria-live="polite"` and `aria-atomic="true"`, so neither attribute is
+ * emitted beside it. This host stays mounted and only rewrites its text, so
+ * the attribute pair would have served it equally well; the role is what its
+ * sibling `[forComboboxEmpty]` needs (that one reappears with its message
+ * already in the DOM, and a live *role* is what is read reliably on
+ * insertion), and one vocabulary across the entry point beats two.
  *
  * The directive is **content-driven** — it does not pick or render a
  * message. Project whatever the consumer wants and use the exposed
@@ -54,8 +61,6 @@ import { injectComboboxContext } from './combobox-context';
   exportAs: 'forComboboxStatus',
   host: {
     role: 'status',
-    'aria-live': 'polite',
-    'aria-atomic': 'true',
   },
 })
 export class ForComboboxStatus {

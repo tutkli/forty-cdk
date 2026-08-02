@@ -47,6 +47,18 @@ type SwipeState = 'start' | 'move' | 'cancel' | 'end';
  * or `role="alert"` (`'error'`), `aria-live`, and the timer / pause
  * machinery.
  *
+ * The `role` / `aria-live` pair is a **switch**, not a doubled channel, and
+ * this is the one host in the library binding both. Every variant except a
+ * bare `error` announces through `LiveAnnouncer` and silences its own host
+ * with `aria-live="off"`, leaving a non-live `role="status"` region behind; a
+ * bare `error` keeps `role="alert"` + `aria-live="assertive"`, because a live
+ * role is what is read reliably when a node is inserted with its text already
+ * present. Both channels are therefore *bound* rather than static, which is
+ * also what exempts this host from `forty-cdk/no-doubled-live-region-channel`
+ * by construction — everywhere else a static live role stands alone
+ * (`[forFieldError]`, `[forComboboxStatus]`, `[forComboboxEmpty]`), since it
+ * already implies its own `aria-live` / `aria-atomic`.
+ *
  * The directive does **not** control its own visibility. The consumer
  * mounts it (typically through `<for-toast-viewport>` for programmatic
  * toasts, or directly with `@if` for declarative ones) and unmounts it
