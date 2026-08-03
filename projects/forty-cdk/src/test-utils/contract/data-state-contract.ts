@@ -21,9 +21,12 @@
  *   - **The declared vocabulary is a documented one.** A fourth family
  *     invented for one primitive is a value set the consumer cannot guess
  *     from any other, so the declaration is checked against
- *     {@link DOCUMENTED_DATA_STATE_VOCABULARIES} — the executable twin of the
- *     canonical families and the _Documented alternative vocabularies_ table
- *     in `.claude/rules/conventions.md`.
+ *     {@link DOCUMENTED_DATA_STATE_VOCABULARIES} — the canonical families plus
+ *     the literal `data-state` rows of the _Documented alternative
+ *     vocabularies_ table in `.claude/rules/conventions.md`. That table's other
+ *     attribute names (`data-status`, `data-quality`, the boolean
+ *     `data-selected`) and its signal-computed value sets are outside this
+ *     contract's scope, so they are outside the array's too.
  *   - **Every piece reflects the same vocabulary.** `data-state` is emitted on
  *     the root *and* the trigger / content / option, and the convention is
  *     that all of them speak the same value set — a piece that drifts onto
@@ -64,10 +67,20 @@
  * declaration can be compared regardless of the order an adopter lists it in.
  *
  * The first three rows are the canonical families; the rest are the documented
- * alternatives. A new family belongs here **and** in the
- * `.claude/rules/conventions.md` vocabulary tables, in the same change — the
- * point of the pair is that neither can be updated alone without turning a
- * gate red.
+ * alternatives.
+ *
+ * The pairing a gate holds is between a **source binding** and two things: the
+ * **generated `data-state` matrix rows** in `.claude/rules/conventions.md`,
+ * where `pnpm check:matrices` fails on the row a new vocabulary would change,
+ * and this array, where `src/lib/data-state-adopters.spec.ts` fails on a family
+ * nothing here documents. Neither can be satisfied alone.
+ *
+ * The prose _Documented alternative vocabularies_ table is under **no** gate:
+ * `scripts/check-convention-matrices.mjs` compares only the text between the
+ * generated markers, so adding a row here and regenerating leaves every gate
+ * green with the prose untouched, and editing the prose alone turns nothing red
+ * either. A new family belongs there too, in the same change — as a convention
+ * a reviewer enforces, not as a build that goes red on its own.
  *
  * Two rows have no adopter today and are deliberately kept. The **tri-state**
  * checkbox family is canonical, and the one control that emits it (Checkbox)
