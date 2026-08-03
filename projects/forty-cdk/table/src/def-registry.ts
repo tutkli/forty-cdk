@@ -71,11 +71,10 @@ export const FOR_TABLE_DEF_REGISTRY = new InjectionToken<ForTableDefRegistry>(
  */
 export interface TableDefHandle<D> {
   /**
-   * The def's host, read only to resolve document order — never for element
-   * APIs, because a def declared on an `<ng-container>` (the documented shape)
-   * or an `<ng-template>` hosts on that anchor's comment node.
+   * The def's host node — the comment anchor of its `<ng-container>` /
+   * `<ng-template>`, or the element it sits on.
    */
-  readonly host: HTMLElement;
+  readonly host: Node;
   /** The registered def instance. */
   readonly def: D;
 }
@@ -276,8 +275,8 @@ function injectTableDefRegistration(piece: string): TableDefRegistration {
   return registration;
 }
 
-function injectDefHost(): HTMLElement {
-  return inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+function injectDefHost(): Node {
+  return inject<ElementRef<Node>>(ElementRef).nativeElement;
 }
 
 /**

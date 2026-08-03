@@ -37,6 +37,11 @@ export type ForSelectInitialFocus = 'first' | 'last' | 'selected';
  * the root can match it against `value()` via `compareWith`.
  */
 export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the root focuses the
+   * option and scrolls it into view.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<T>;
   /**
    * The option's resolved display label as a reactive `Signal<string>` — the

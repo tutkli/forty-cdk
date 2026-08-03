@@ -30,6 +30,11 @@ export type ForTimePickerInitialFocus = 'first' | 'last' | 'selected';
  * Handle every `[forTimePickerOption]` registers with the root.
  */
 export interface ForTimePickerOptionHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the root focuses the
+   * option and scrolls it into view.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<unknown>;
   readonly disabled: Signal<boolean>;
 }

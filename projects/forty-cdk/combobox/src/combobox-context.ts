@@ -48,6 +48,11 @@ export type ForComboboxAutocomplete = 'none' | 'list' | 'inline' | 'both';
 export type ForComboboxInitialFocus = 'first' | 'last' | 'selected';
 
 export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the root scrolls the
+   * highlighted option into view.
+   */
+  readonly host: HTMLElement;
   readonly id: Signal<string>;
   readonly value: Signal<T>;
   readonly label: Signal<string>;
@@ -62,6 +67,11 @@ export interface ForComboboxOptionHandle<T = unknown> extends CollectionHandle {
 }
 
 export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: chip navigation moves DOM
+   * focus between hosts.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<T>;
 }
 
@@ -72,6 +82,11 @@ export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
  * `aria-setsize`.
  */
 export interface ForComboboxActionHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the root scrolls the
+   * highlighted action into view.
+   */
+  readonly host: HTMLElement;
   readonly id: Signal<string>;
   readonly disabled: Signal<boolean>;
 }

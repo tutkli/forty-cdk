@@ -13,6 +13,11 @@ import {
  * roving tabindex, and arrow-key navigation in DOM order.
  */
 export interface ForToggleGroupItemHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the group focuses the item
+   * and queries it against the roving-tabindex tracker.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<string>;
   readonly disabled: Signal<boolean>;
 }

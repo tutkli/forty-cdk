@@ -1,12 +1,25 @@
 import { computed, DestroyRef, inject, signal, type Signal } from '@angular/core';
 
 /**
- * Minimal contract every `Collection` entry must satisfy: it carries the
- * host element so consumers can correlate handles with DOM nodes (e.g.
- * `findByHost`, focus moves, `aria-activedescendant` lookups).
+ * Minimal contract every `Collection` entry must satisfy: it carries the DOM
+ * node that positions the handle, so the collection can order handles by
+ * document position and consumers can correlate a handle with a node
+ * (`findByHost`, `indexOfHost`).
+ *
+ * The node is typed `Node`, not `HTMLElement`, because that is everything the
+ * collection reads on it — `isConnected`, `compareDocumentPosition`,
+ * `parentNode`, and identity. A handle anchored on a comment node therefore
+ * satisfies the contract honestly: a piece declared on an `<ng-container>` or
+ * an `<ng-template>` has a comment node for its `ElementRef.nativeElement`, and
+ * `forty-cdk/table`'s def registry orders exactly those.
+ *
+ * A handle whose host is focused, scrolled or measured declares
+ * `readonly host: HTMLElement` on its own interface rather than inheriting the
+ * assumption from here — `DisableableHandle` and `HostRovingItemHandle` are the
+ * shared ones.
  */
 export interface CollectionHandle {
-  readonly host: HTMLElement;
+  readonly host: Node;
 }
 
 function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
@@ -159,7 +172,7 @@ export class Collection<H extends CollectionHandle> {
   }
 
   /**
-   * Position of each registered host in {@link items}, keyed by element.
+   * Position of each registered host in {@link items}, keyed by node.
    *
    * Derived from `items` rather than from the member set so it inherits the
    * `sameSequence` equality — a DOM-epoch bump that resolves to the same order
@@ -171,7 +184,7 @@ export class Collection<H extends CollectionHandle> {
    * `findIndex` scan this replaced.
    */
   readonly #indexByHost = computed(() => {
-    const index = new Map<HTMLElement, number>();
+    const index = new Map<Node, number>();
     const ordered = this.items();
     for (let i = 0; i < ordered.length; i++) {
       const host = ordered[i]!.host;
@@ -182,15 +195,15 @@ export class Collection<H extends CollectionHandle> {
     return index;
   });
 
-  /** Lookup by host element. Returns `undefined` if no handle has that host. */
-  findByHost(el: HTMLElement): H | undefined {
-    const index = this.#indexByHost().get(el);
+  /** Lookup by host node. Returns `undefined` if no handle has that host. */
+  findByHost(node: Node): H | undefined {
+    const index = this.#indexByHost().get(node);
     return index === undefined ? undefined : this.items()[index];
   }
 
   /** Index in DOM document order, or -1 if not registered. */
-  indexOfHost(el: HTMLElement): number {
-    return this.#indexByHost().get(el) ?? -1;
+  indexOfHost(node: Node): number {
+    return this.#indexByHost().get(node) ?? -1;
   }
 
   /**
@@ -275,7 +288,7 @@ export class Collection<H extends CollectionHandle> {
   }
 
   #resolveObservedNodes(): Set<Node> {
-    const hosts: HTMLElement[] = [];
+    const hosts: Node[] = [];
     for (const member of this.#membersSet) {
       if (member.host.isConnected) {
         hosts.push(member.host);
@@ -304,7 +317,7 @@ export class Collection<H extends CollectionHandle> {
     return nodes;
   }
 
-  #commonAncestor(hosts: HTMLElement[]): Node | null {
+  #commonAncestor(hosts: Node[]): Node | null {
     const chain: Node[] = [];
     const chainIndex = new Map<Node, number>();
     for (let node: Node | null = hosts[0]!; node; node = node.parentNode) {

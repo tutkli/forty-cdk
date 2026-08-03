@@ -17,6 +17,11 @@ import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
  * (#1489).
  */
 export interface MenuItemHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the list focuses its items
+   * and scrolls them into view.
+   */
+  readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
   readonly textValue?: Signal<string>;
   /**

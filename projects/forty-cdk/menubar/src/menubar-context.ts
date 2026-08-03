@@ -19,6 +19,11 @@ import {
  * the matching trigger.
  */
 export interface ForMenubarTriggerHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the menubar focuses the
+   * trigger and anchors the open menu's floating surface to it.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<string>;
   readonly disabled: Signal<boolean>;
   readonly triggerId: Signal<string>;
