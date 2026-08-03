@@ -130,5 +130,5 @@
     "virtualization/src/**/*.ts",
     "visually-hidden/src/**/*.ts"
   ],
-  "exclude": ["**/*.spec.ts", "src/test-utils/**"]
+  "exclude": ["**/*.spec.ts", "src/test-utils/**", "src/lib/ssr/fixtures/**"]
 }

@@ -1186,8 +1186,10 @@ const fortyCdkPlugin = {
         }
         // The SSR smoke suite renders server-side (`PLATFORM_ID` = server), so
         // `afterNextRender` never fires and no overlay portals to the body —
-        // asserting `<body>` is untouched IS its contract. It imports every
-        // overlay piece yet must NOT call the cleanup helper.
+        // asserting `<body>` is untouched IS its contract, so it must NOT call
+        // the cleanup helper. Its overlay imports moved to `ssr/fixtures/*.ts`
+        // with #1594 (not specs, so already out of scope); the exemption stays
+        // as the guard for the day an assertion pulls one back in here.
         if (filename.endsWith('/projects/forty-cdk/src/lib/ssr/ssr.spec.ts')) {
           return {};
         }
@@ -3610,8 +3612,15 @@ module.exports = tseslint.config(
   },
 
   // ---------- Spec / test-utility relaxations ----------
+  // `src/lib/ssr/fixtures/**` holds the SSR smoke suite's fixture components and
+  // its registry — spec support that is not itself a `.spec.ts` (#1594). It is
+  // excluded from `tsconfig.lib.json` for the same reason: nothing there ships.
   {
-    files: ['**/*.spec.ts', '**/test-utils/**/*.ts'],
+    files: [
+      '**/*.spec.ts',
+      '**/test-utils/**/*.ts',
+      'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts',
+    ],
     rules: {
       // Test harness components don't need to follow the public selector convention.
       '@angular-eslint/component-selector': 'off',
@@ -3799,8 +3808,10 @@ module.exports = tseslint.config(
   // mirror the spec relaxations so harness templates that render bare `<button
   // forX>` triggers (no visible text) don't trip a11y rules meant for
   // production HTML.
+  // The SSR smoke suite's fixture modules (#1594) carry the same harness
+  // templates without being `.spec.ts` themselves, so they need the same entry.
   {
-    files: ['**/*.spec.ts/**/*.html'],
+    files: ['**/*.spec.ts/**/*.html', 'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts/**/*.html'],
     rules: {
       '@angular-eslint/template/elements-content': 'off',
       '@angular-eslint/template/click-events-have-key-events': 'off',
