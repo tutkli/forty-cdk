@@ -21,7 +21,13 @@ export interface ForTreeVisibleNode {
 export interface ForTreeItemHandle {
   /** The `role="treeitem"` host element. */
   readonly host: HTMLElement;
-  /** Stable node value. */
+  /**
+   * Stable node value. Reads the `unsetInput` sentinel while the item's
+   * `[value]` binding is still unwritten — the window the synchronous
+   * registration opens, and the reason the item can register at all without
+   * `afterNextRender`. Guard with `isUnset` before the value leaves the read
+   * site (a `descendantsOf` call) or reaches either writable model.
+   */
   readonly value: Signal<string>;
   /** Effective disabled state (own `disabled` OR the root's `disabled`). */
   readonly disabled: Signal<boolean>;
@@ -136,7 +142,9 @@ export interface ForTreeContext {
   isFirstFocusableItem(el: HTMLElement): boolean;
   /**
    * Flattened currently-visible nodes in DOM order, each with its resolved parent host. Exposed for
-   * drag-drop composition (`[forTreeNodeDrag]`). Reflects expansion: collapsed subtrees are absent.
+   * drag-drop composition (`[forTreeNodeDrag]`). Reflects expansion: collapsed subtrees are absent,
+   * and so is an item whose `[value]` binding is not written yet (see
+   * {@link ForTreeItemHandle.value}) — it folds in on the run that writes it.
    */
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]>;
 }

@@ -17,6 +17,7 @@ import {
 import {
   Collection,
   firstEnabledHost,
+  isUnset,
   type ListNavigationAction,
   resolveListNavigation,
   resolveTreeExpandCollapse,
@@ -244,8 +245,12 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     const result: VisibleEntry[] = [];
     const walk = (container: ForTreeContainerContext, parentHost: HTMLElement | null): void => {
       for (const handle of container.items()) {
+        const value = handle.value();
+        if (isUnset(value)) {
+          continue;
+        }
         result.push({ handle, parentHost });
-        if (expanded.includes(handle.value())) {
+        if (expanded.includes(value)) {
           const child = handle.childContainer();
           if (child) {
             walk(child, handle.host);
@@ -259,7 +264,9 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
 
   /**
    * Flattened currently-visible nodes in DOM order, each with its resolved parent host. Exposed for
-   * drag-drop composition (`[forTreeNodeDrag]`). Reflects expansion: collapsed subtrees are absent.
+   * drag-drop composition (`[forTreeNodeDrag]`). Reflects expansion: collapsed subtrees are absent,
+   * and so is an item whose `[value]` binding is not written yet — it folds in on the run that
+   * writes it.
    */
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]> = this.#visibleEntries;
 
@@ -405,12 +412,26 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * cascade (or in `'highlight'` mode) returns `'true'` / `'false'` by direct
    * membership. With cascade a parent returns `'true'` when all its descendants
    * are checked, `'false'` when none are, and `'mixed'` otherwise.
+   *
+   * An item whose `[value]` binding is not written yet reports `'false'`: the
+   * cascade branch hands the value to the consumer's `descendantsOf`, which must
+   * never see the `unsetInput` sentinel.
    */
   checkState(value: string): 'true' | 'false' | 'mixed' {
+    if (isUnset(value)) {
+      return 'false';
+    }
     return this.#selection.checkState(value);
   }
 
+  /**
+   * Open or close a node. Ignores an item whose `[value]` binding is not written
+   * yet, so the `unsetInput` sentinel never enters the `expanded` model.
+   */
   setExpanded(value: string, open: boolean): void {
+    if (isUnset(value)) {
+      return;
+    }
     const current = this.expanded();
     const has = current.includes(value);
     if (open && !has) {
@@ -421,7 +442,16 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     }
   }
 
+  /**
+   * Single mode replaces the selection; multi and checkbox modes toggle the
+   * value. The single write funnel into `value`, so it is where an item whose
+   * `[value]` binding is not written yet is dropped instead of committing the
+   * `unsetInput` sentinel.
+   */
   select(value: string): void {
+    if (isUnset(value)) {
+      return;
+    }
     this.#selection.select(value);
   }
 
