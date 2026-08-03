@@ -18,6 +18,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
@@ -199,6 +200,22 @@ describe('ForSelect', () => {
 
   afterEachOverlayCleanup();
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(SelectHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forSelect]'),
+          trigger: r.query<HTMLElement>('[forSelectTrigger]'),
+          content: document.querySelector<HTMLElement>('[forSelectContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('focusout touched (containment vs. the wrapper)', () => {
     @Component({
       imports: [ForSelect, ForSelectTrigger],
@@ -261,7 +278,7 @@ describe('ForSelect', () => {
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
 
-    it('options carry role=option + aria-selected + data-state', async () => {
+    it('options carry role=option + aria-selected', async () => {
       const r = renderHost(SelectHost);
       r.instance.value.set(['banana']);
       r.instance.open.set(true);
@@ -271,9 +288,7 @@ describe('ForSelect', () => {
       const banana = getOption('banana');
       expect(apple.getAttribute('role')).toBe('option');
       expect(apple.getAttribute('aria-selected')).toBe('false');
-      expect(apple.getAttribute('data-state')).toBe('unchecked');
       expect(banana.getAttribute('aria-selected')).toBe('true');
-      expect(banana.getAttribute('data-state')).toBe('checked');
     });
 
     it('exposes aria-multiselectable when multiple is on', async () => {
@@ -284,21 +299,6 @@ describe('ForSelect', () => {
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.getAttribute('aria-multiselectable')).toBe('true');
-    });
-
-    it('reflects data-state on root, trigger, content, and option', async () => {
-      const r = renderHost(SelectHost);
-      const root = r.query<HTMLElement>('[forSelect]')!;
-      const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
-      expect(root.getAttribute('data-state')).toBe('closed');
-      expect(trigger.getAttribute('data-state')).toBe('closed');
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(trigger.getAttribute('data-state')).toBe('open');
-      const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
-      expect(content.getAttribute('data-state')).toBe('open');
     });
 
     it('reflects data-readonly on the root while read-only, and clears it', async () => {
@@ -2864,18 +2864,31 @@ describe('ForSelectIndicator', () => {
     return el;
   }
 
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(IndicatorHost);
+      return {
+        pieces: () => ({
+          option: document.querySelector<HTMLElement>('[data-test-id="apple"]'),
+          indicator: document.querySelector<HTMLElement>('[data-test-id="apple-ind"]'),
+        }),
+        setState: (state) => r.instance.value.set(state === 'checked' ? ['apple'] : ['banana']),
+        flush: r.flush,
+      };
+    },
+  });
+
   it('hides the indicator when the option is unselected and shows it when selected', async () => {
     const r = renderHost(IndicatorHost);
     await flush(r.fixture);
 
     expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
-    expect(indicator('apple-ind').getAttribute('data-state')).toBe('unchecked');
 
     r.instance.value.set(['apple']);
     await flush(r.fixture);
 
     expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
-    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
   it('enforces inline display:none while unselected so a consumer display class cannot leak through', async () => {

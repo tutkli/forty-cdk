@@ -16,6 +16,7 @@ import {
   withReducedMotion,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
@@ -1759,6 +1760,18 @@ describe('ForDrawerTrigger', () => {
     readonly drawerId = 'my-drawer';
   }
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(TriggerHost);
+      return {
+        pieces: () => ({ trigger: r.query<HTMLElement>('[forDrawerTrigger]') }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   assertOverlayTriggerAriaContract(
     {
       mount: async () => {
@@ -1781,7 +1794,6 @@ describe('ForDrawerTrigger', () => {
     const trigger = r.query<HTMLButtonElement>('[forDrawerTrigger]')!;
 
     expect(trigger.getAttribute('type')).toBe('button');
-    expect(trigger.getAttribute('data-state')).toBe('closed');
     // Disabled-related attributes are absent when not disabled — never
     // emitted as "false". The trigger never emits `aria-disabled` at all: the
     // native attribute is its single reflection channel (#561 D2).

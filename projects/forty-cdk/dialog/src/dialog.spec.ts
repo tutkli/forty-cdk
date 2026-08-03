@@ -10,6 +10,7 @@ import {
   withReducedMotion,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
@@ -1332,6 +1333,18 @@ describe('ForDialogTrigger', () => {
     readonly dialogId = 'my-dialog';
   }
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(TriggerHost);
+      return {
+        pieces: () => ({ trigger: r.query<HTMLElement>('[forDialogTrigger]') }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   assertOverlayTriggerAriaContract(
     {
       mount: async () => {
@@ -1354,7 +1367,6 @@ describe('ForDialogTrigger', () => {
     const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;
 
     expect(trigger.getAttribute('type')).toBe('button');
-    expect(trigger.getAttribute('data-state')).toBe('closed');
     // Disabled-related attributes are absent when not disabled — never
     // emitted as "false". The trigger never emits `aria-disabled` at all: the
     // native attribute is its single reflection channel (#561 D2).

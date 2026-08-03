@@ -11,7 +11,10 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertDismissibleLayerContract,
+} from '../../src/test-utils/contract';
 import { ForHoverCard } from './hover-card';
 import { ForHoverCardArrow } from './hover-card-arrow';
 import { ForHoverCardContent } from './hover-card-content';
@@ -109,6 +112,22 @@ function pointerMoveAway(): void {
 
 describe('ForHoverCard', () => {
   afterEachOverlayCleanup();
+
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(HoverCardHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forHoverCard]'),
+          trigger: r.query<HTMLElement>('[forHoverCardTrigger]'),
+          content: document.querySelector<HTMLElement>('[forHoverCardContent]'),
+        }),
+        setState: (state) => r.instance.isOpen.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
 
   // HoverCard adopts only the Escape half of the dismissible-layer contract:
   // it exposes no `[dismissible]` input, and it has no outside-interaction

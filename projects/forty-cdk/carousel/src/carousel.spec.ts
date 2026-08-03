@@ -7,6 +7,7 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForCarousel } from './carousel';
 import { provideForCarouselDefaults } from './carousel-defaults';
 import { ForCarouselIndicator } from './carousel-indicator';
@@ -181,6 +182,21 @@ describe('ForCarousel', () => {
     restoreObservers = installObserverPolyfills();
   });
   afterAll(() => restoreObservers());
+
+  assertDataStateContract({
+    vocabulary: ['active', 'inactive'],
+    mount: () => {
+      const r = renderHost(CarouselHost);
+      return {
+        pieces: () => ({
+          slide: slide(r.el, 0),
+          indicator: indicator(r.el, 0),
+        }),
+        setState: (state) => r.instance.active.set(state === 'active' ? 0 : 1),
+        flush: r.flush,
+      };
+    },
+  });
 
   describe('static accessibility & wiring', () => {
     it('sets role=group, aria-roledescription=carousel, aria-label on the root', () => {

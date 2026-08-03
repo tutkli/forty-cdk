@@ -4,7 +4,10 @@ import { form, required } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
 
 import { pressKey, renderHost } from '../../src/test-utils';
-import { assertRovingTabindexContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertRovingTabindexContract,
+} from '../../src/test-utils/contract';
 import { ForStepper } from './stepper';
 import { ForStepperContent } from './stepper-content';
 import { ForStepperCompletedContent } from './stepper-completed-content';
@@ -280,12 +283,6 @@ describe('ForStepper', () => {
       expect(contentAt(el, 1).hasAttribute('inert')).toBe(true);
       expect(contentAt(el, 2).getAttribute('aria-hidden')).toBe('true');
     });
-
-    it('content data-state reflects active/inactive', () => {
-      const { el } = renderHost(StepperHost);
-      expect(contentAt(el, 0).getAttribute('data-state')).toBe('active');
-      expect(contentAt(el, 1).getAttribute('data-state')).toBe('inactive');
-    });
   });
 
   describe('static accessibility — progress mode', () => {
@@ -472,20 +469,45 @@ describe('ForStepper', () => {
     });
   });
 
-  describe('separator data-state', () => {
-    it('separator reflects completed state of its item', () => {
-      const { el, instance, fixture } = renderHost(StepperHost);
-      expect(sepAt(el, 0).getAttribute('data-state')).toBe('pending');
-      instance.steps.update((ss) => ss.map((s, i) => (i === 0 ? { ...s, completed: true } : s)));
-      fixture.detectChanges();
-      expect(sepAt(el, 0).getAttribute('data-state')).toBe('completed');
-    });
-
+  describe('indicator', () => {
     it('indicator is aria-hidden', () => {
       const { el } = renderHost(StepperHost);
       expect(indicatorAt(el, 0).getAttribute('aria-hidden')).toBe('true');
     });
   });
+
+  assertDataStateContract(
+    {
+      vocabulary: ['active', 'inactive'],
+      mount: () => {
+        const r = renderHost(StepperHost);
+        return {
+          pieces: () => ({ content: contentAt(r.el, 0) }),
+          setState: (state) => r.instance.selectedIndex.set(state === 'active' ? 0 : 1),
+          flush: r.flush,
+        };
+      },
+    },
+    { label: 'content panels' },
+  );
+
+  assertDataStateContract(
+    {
+      vocabulary: ['completed', 'pending'],
+      mount: () => {
+        const r = renderHost(StepperHost);
+        return {
+          pieces: () => ({ separator: sepAt(r.el, 0) }),
+          setState: (state) =>
+            r.instance.steps.update((ss) =>
+              ss.map((s, i) => (i === 0 ? { ...s, completed: state === 'completed' } : s)),
+            ),
+          flush: r.flush,
+        };
+      },
+    },
+    { label: 'separators' },
+  );
 
   assertRovingTabindexContract({
     mount: async () => {

@@ -5,6 +5,7 @@ import { form, FormField, required } from '@angular/forms/signals';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
@@ -178,6 +179,43 @@ function getSlots(): NodeListOf<HTMLElement> {
 describe('ForTimePicker', () => {
   afterEachOverlayCleanup();
 
+  assertDataStateContract(
+    {
+      vocabulary: ['closed', 'open'],
+      mount: () => {
+        const r = renderHost(TimePickerHost);
+        return {
+          pieces: () => ({
+            root: r.query<HTMLElement>('[forTimePicker]'),
+            trigger: r.query<HTMLElement>('[forTimePickerTrigger]'),
+            content: getContent(),
+          }),
+          setState: (state) => r.instance.open.set(state === 'open'),
+          flush: r.flush,
+        };
+      },
+    },
+    { label: 'overlay' },
+  );
+
+  assertDataStateContract(
+    {
+      vocabulary: ['checked', 'unchecked'],
+      mount: async () => {
+        const r = renderHost(TimePickerHost);
+        r.instance.open.set(true);
+        await r.flush();
+        return {
+          pieces: () => ({ option: getSlot('slot-32400') }),
+          setState: (state) =>
+            r.instance.value.set(new Date(2000, 0, 1, state === 'checked' ? 9 : 0, 0, 0)),
+          flush: r.flush,
+        };
+      },
+    },
+    { label: 'options' },
+  );
+
   assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(TimePickerDismissContractHost);
@@ -259,7 +297,7 @@ describe('ForTimePicker', () => {
       expect(content.getAttribute('aria-labelledby')).toBe(trigger.id);
     });
 
-    it('options carry role=option + aria-selected + data-state', async () => {
+    it('options carry role=option + aria-selected', async () => {
       const r = renderHost(TimePickerHost);
       r.instance.value.set(new Date(2000, 0, 1, 9, 0, 0));
       r.instance.open.set(true);
@@ -269,26 +307,7 @@ describe('ForTimePicker', () => {
       const midnight = document.querySelector<HTMLElement>('[data-testid="slot-slot-0"]');
       expect(nineAm?.getAttribute('role')).toBe('option');
       expect(nineAm?.getAttribute('aria-selected')).toBe('true');
-      expect(nineAm?.getAttribute('data-state')).toBe('checked');
       expect(midnight?.getAttribute('aria-selected')).toBe('false');
-      expect(midnight?.getAttribute('data-state')).toBe('unchecked');
-    });
-
-    it('reflects data-state on root and trigger', async () => {
-      const r = renderHost(TimePickerHost);
-      const root = r.query<HTMLElement>('[forTimePicker]')!;
-      const trigger = getTrigger();
-
-      expect(root.getAttribute('data-state')).toBe('closed');
-      expect(trigger.getAttribute('data-state')).toBe('closed');
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(trigger.getAttribute('data-state')).toBe('open');
-      const content = getContent()!;
-      expect(content.getAttribute('data-state')).toBe('open');
     });
 
     it('reflects data-readonly on the root while read-only, and clears it', async () => {

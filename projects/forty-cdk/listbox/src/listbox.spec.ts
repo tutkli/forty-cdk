@@ -13,6 +13,7 @@ import { isUnset, unsetInput } from 'forty-cdk/core';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertFormControlContract,
   assertRovingTabindexContract,
   type FormControlMountResult,
@@ -1513,6 +1514,21 @@ describe('ForListbox', () => {
       readonly picked = signal<readonly string[]>([]);
     }
 
+    assertDataStateContract({
+      vocabulary: ['checked', 'unchecked'],
+      mount: () => {
+        const r = renderHost(IndicatorHost);
+        return {
+          pieces: () => ({
+            option: r.query<HTMLElement>('[data-test-id="opt-a"]'),
+            indicator: r.query<HTMLElement>('[data-ind="a"]'),
+          }),
+          setState: (state) => r.instance.picked.set(state === 'checked' ? ['a'] : []),
+          flush: r.flush,
+        };
+      },
+    });
+
     it('hides indicators while no option is selected', () => {
       const { el } = renderHost(IndicatorHost);
       const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
@@ -1533,7 +1549,6 @@ describe('ForListbox', () => {
       const a = el.querySelector<HTMLElement>('[data-ind="a"]')!;
       const b = el.querySelector<HTMLElement>('[data-ind="b"]')!;
       expect(a.hasAttribute('hidden')).toBe(false);
-      expect(a.getAttribute('data-state')).toBe('checked');
       expect(b.hasAttribute('hidden')).toBe(true);
     });
 

@@ -1,6 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { renderHost } from '../../src/test-utils/render';
 import { withReducedMotion } from '../../src/test-utils/reduced-motion';
 import { ForDisclosure } from './disclosure';
@@ -52,6 +53,22 @@ class FormDisclosureHost {
 }
 
 describe('ForDisclosure', () => {
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(DisclosureHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forDisclosure]'),
+          trigger: r.query<HTMLElement>('[forDisclosureTrigger]'),
+          content: r.query<HTMLElement>('[forDisclosureContent]'),
+        }),
+        setState: (state) => r.instance.isOpen.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('render & wiring', () => {
     it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', async () => {
       const { fixture, query, flush } = renderHost(FormDisclosureHost);
@@ -110,13 +127,8 @@ describe('ForDisclosure', () => {
       const { query } = renderHost(DisclosureHost);
 
       const trigger = query<HTMLButtonElement>('button')!;
-      const content = query<HTMLElement>('section')!;
-      const root = query<HTMLElement>('[forDisclosure]')!;
 
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(content.getAttribute('data-state')).toBe('closed');
-      expect(trigger.getAttribute('data-state')).toBe('closed');
-      expect(root.getAttribute('data-state')).toBe('closed');
     });
   });
 
@@ -124,20 +136,17 @@ describe('ForDisclosure', () => {
     it('opens on click and closes on a second click', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
-      const content = query<HTMLElement>('section')!;
 
       trigger.click();
       await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(content.getAttribute('data-state')).toBe('open');
       expect(fixture.componentInstance.isOpen()).toBe(true);
 
       trigger.click();
       await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
-      expect(content.getAttribute('data-state')).toBe('closed');
       expect(fixture.componentInstance.isOpen()).toBe(false);
     });
   });
@@ -146,13 +155,11 @@ describe('ForDisclosure', () => {
     it('reflects external open writes into the DOM', async () => {
       const { fixture, query, flush } = renderHost(DisclosureHost);
       const trigger = query<HTMLButtonElement>('button')!;
-      const content = query<HTMLElement>('section')!;
 
       fixture.componentInstance.isOpen.set(true);
       await flush();
 
       expect(trigger.getAttribute('aria-expanded')).toBe('true');
-      expect(content.getAttribute('data-state')).toBe('open');
     });
 
     it('writes back to the host signal when the trigger is clicked', async () => {

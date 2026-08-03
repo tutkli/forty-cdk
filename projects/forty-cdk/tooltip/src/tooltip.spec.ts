@@ -14,6 +14,7 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
@@ -135,6 +136,23 @@ describe('ForTooltip', () => {
 
   describe('a11y baseline', () => {
     afterEachOverlayCleanup();
+
+    assertDataStateContract({
+      vocabulary: ['closed', 'open'],
+      mount: () => {
+        const r = renderHost(TooltipHost);
+        r.instance.leaving.set(true);
+        return {
+          pieces: () => ({
+            root: r.query<HTMLElement>('[forTooltip]'),
+            trigger: r.query<HTMLElement>('[forTooltipTrigger]'),
+            content: document.querySelector<HTMLElement>('[forTooltipContent]'),
+          }),
+          setState: (state) => r.instance.isOpen.set(state === 'open'),
+          flush: r.flush,
+        };
+      },
+    });
 
     it('wires the trigger to content via id and aria-describedby (only while open)', async () => {
       const r = renderHost(TooltipHost);
