@@ -577,8 +577,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   {
     component: OtpInputFixture,
     markup: [
-      { select: '[forOtpInput]', attributes: { role: 'group' } },
-      { select: '[forOtpInputSlot]', attributes: { 'data-empty': '' } },
+      {
+        select: '[forOtpInput]',
+        attributes: { role: 'group', 'data-complete': null, 'aria-label': null },
+      },
+      { select: '[forOtpInputSlot]', attributes: { 'data-empty': '', 'data-active': null } },
     ],
   },
   {
