@@ -214,7 +214,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forTabsContent]', pairs: { 'aria-labelledby': '[forTabsTrigger]' } },
     ],
   },
-  { component: TabsServerFixture },
+  {
+    component: TabsServerFixture,
+    markup: [{ select: '[forTabsTrigger]', attributes: { role: 'tab', 'aria-selected': 'true' } }],
+  },
   { component: TabsServerRepeatFixture },
   {
     component: TableFixture,
@@ -246,7 +249,39 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       },
     ],
   },
-  { component: TableGridFixture },
+  {
+    component: TableGridFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: {
+          role: 'grid',
+          'data-mode': 'grid',
+          'aria-rowcount': '101',
+          'aria-colcount': '2',
+          'aria-multiselectable': 'true',
+        },
+      },
+      {
+        select: '[forTableHeaderRow]',
+        attributes: { role: 'row', 'aria-rowindex': '1', 'data-orientation': 'horizontal' },
+      },
+      {
+        select: '[forTableHeaderCell]',
+        attributes: { role: 'columnheader', 'aria-sort': 'ascending', tabindex: '0' },
+      },
+      { select: '[forTableHeaderCell][forDraggable]', present: ['tabindex'] },
+      {
+        select: '[forTableRow]',
+        attributes: { role: 'row', 'aria-rowindex': '2', 'aria-selected': 'false' },
+      },
+      {
+        select: '[forTableCell]',
+        attributes: { role: 'gridcell', 'data-column': 'name', 'aria-colindex': '1' },
+      },
+      { select: '[forTableRowReorder]', attributes: { 'data-orientation': 'vertical' } },
+    ],
+  },
   {
     component: TableBodyFixture,
     markup: [
@@ -271,12 +306,54 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       },
     ],
   },
-  { component: TableBodyRowVariantFixture },
+  {
+    component: TableBodyRowVariantFixture,
+    markup: [
+      {
+        select: '[data-row-variant]',
+        attributes: { role: 'gridcell', 'aria-colindex': '1', 'aria-colspan': '2' },
+      },
+    ],
+  },
   { component: TableBodyPlaceholderVariantFixture },
-  { component: TableBodyRowInteractionFixture },
-  { component: TableBodyReorderFixture },
-  { component: TableTreegridFixture },
-  { component: TableVirtualizedFixture },
+  {
+    component: TableBodyRowInteractionFixture,
+    markup: [{ select: '[forTableRow]', attributes: { tabindex: '0', 'data-open': '' } }],
+  },
+  {
+    component: TableBodyReorderFixture,
+    markup: [{ select: '[forTableHeaderRow]', attributes: { forTableColumnReorder: '' } }],
+  },
+  {
+    component: TableTreegridFixture,
+    markup: [
+      { select: '[forTable]', attributes: { role: 'treegrid', 'data-mode': 'treegrid' } },
+      {
+        select: '[forTableRow]',
+        attributes: {
+          'aria-expanded': 'true',
+          'data-state': 'open',
+          'aria-level': '1',
+          'aria-posinset': '1',
+          'aria-setsize': '2',
+        },
+      },
+    ],
+  },
+  {
+    component: TableVirtualizedFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: {
+          role: 'grid',
+          'data-mode': 'grid',
+          'aria-rowcount': '1000',
+          'aria-colcount': '-1',
+        },
+      },
+    ],
+  },
   {
     component: TableVirtualizedUnknownTotalFixture,
     markup: [
@@ -292,7 +369,19 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forTableHeaderRow]', attributes: { role: 'row', 'aria-rowindex': '1' } },
     ],
   },
-  { component: TableBodyVirtualizedFixture },
+  {
+    component: TableBodyVirtualizedFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: { role: 'grid', 'data-mode': 'grid', 'aria-rowcount': '1001' },
+      },
+      {
+        select: '[forTableHeaderCell]',
+        attributes: { role: 'columnheader', 'data-column': 'a', 'aria-colindex': '1' },
+      },
+    ],
+  },
   {
     component: TableVirtualizedReorderFixture,
     markup: [
@@ -357,7 +446,15 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forStepperContent]', pairs: { 'aria-labelledby': '[forStepperTrigger]' } },
     ],
   },
-  { component: CarouselFixture },
+  {
+    component: CarouselFixture,
+    markup: [
+      {
+        select: '[forCarousel]',
+        attributes: { 'aria-roledescription': 'carousel', 'aria-label': 'Examples' },
+      },
+    ],
+  },
   {
     component: CarouselAutoplayFixture,
     open: true,
@@ -382,7 +479,16 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: TextareaFixture,
     noWiring: 'a native <textarea>; autosize writes inline style only',
   },
-  { component: SearchFixture },
+  {
+    component: SearchFixture,
+    markup: [
+      { select: '[forSearch]', attributes: { role: 'searchbox' } },
+      {
+        select: '[forSearchClear]',
+        attributes: { 'aria-label': 'Clear search', hidden: '' },
+      },
+    ],
+  },
   {
     component: ButtonFixture,
     markup: [
@@ -1060,8 +1166,24 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: ToolbarFixture,
     markup: [{ select: '[forToolbar]', attributes: { role: 'toolbar' } }],
   },
-  { component: PaginationFixture },
-  { component: BreadcrumbsFixture },
+  {
+    component: PaginationFixture,
+    markup: [
+      {
+        select: '[forPagination]',
+        attributes: { role: 'navigation', 'aria-label': 'Pagination' },
+      },
+    ],
+  },
+  {
+    component: BreadcrumbsFixture,
+    markup: [
+      {
+        select: '[forBreadcrumbs]',
+        attributes: { role: 'navigation', 'aria-label': 'Breadcrumb' },
+      },
+    ],
+  },
   {
     component: MeterFixture,
     markup: [
@@ -1094,7 +1216,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: ToggleFixture,
     markup: [{ select: '[forToggle]', attributes: { 'aria-pressed': 'false' } }],
   },
-  { component: ToggleGroupFixture },
+  {
+    component: ToggleGroupFixture,
+    markup: [{ select: '[forToggleGroup]', attributes: { role: 'group' } }],
+  },
   {
     component: SeparatorFixture,
     markup: [{ select: '[forSeparator]', attributes: { role: 'separator' } }],
@@ -1112,7 +1237,16 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   { component: VirtualReorderFixture, noWiring: 'the sizer is inline style only' },
   { component: BreakpointsFixture, noWiring: 'a composable with no host of its own' },
   { component: VisuallyHiddenFixture, noWiring: 'the clip is inline style only' },
-  { component: FieldFixture },
+  {
+    component: FieldFixture,
+    markup: [
+      { select: '[forLabel]', present: ['id'], pairs: { for: '[forFieldControl]' } },
+      {
+        select: '[forFieldControl]',
+        pairs: { 'aria-labelledby': '[forLabel]', 'aria-errormessage': '[forFieldError]' },
+      },
+    ],
+  },
   {
     component: FieldsetFixture,
     markup: [{ select: '[forFieldControl]', pairs: { 'aria-labelledby': '[forLabel]' } }],
