@@ -33,7 +33,7 @@ export interface ForNavigationMenuTriggerHandle extends CollectionHandle {
 export interface ForNavigationMenuContentHandle extends CollectionHandle {
   /**
    * Narrowed from {@link CollectionHandle}'s `Node`: the active panel's host is
-   * measured for indicator positioning and counted as a dismiss-exempt surface.
+   * measured for viewport sizing and counted as a dismiss-exempt surface.
    */
   readonly host: HTMLElement;
   readonly value: Signal<string>;

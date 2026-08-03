@@ -83,8 +83,8 @@ export interface ForComboboxChipHandle<T = unknown> extends CollectionHandle {
  */
 export interface ForComboboxActionHandle extends CollectionHandle {
   /**
-   * Narrowed from {@link CollectionHandle}'s `Node`: the root scrolls the
-   * highlighted action into view.
+   * Narrowed from {@link CollectionHandle}'s `Node`: the action Tab ring moves
+   * DOM focus onto the host.
    */
   readonly host: HTMLElement;
   readonly id: Signal<string>;

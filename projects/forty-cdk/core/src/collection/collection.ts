@@ -40,8 +40,8 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
 /**
  * Generic, signal-backed registry of handles for a primitive's children
  * (e.g. tab triggers, radios, listbox options, dialog titles). Items are
- * exposed in **DOM document order**, resolved from each handle's `host`
- * element regardless of the order children registered in.
+ * exposed in **DOM document order**, resolved from each handle's `host` node
+ * regardless of the order children registered in.
  *
  * Resolving document order (rather than registration order) keeps
  * `items()` / `indexOfHost` correct under templates that reorder a list at
