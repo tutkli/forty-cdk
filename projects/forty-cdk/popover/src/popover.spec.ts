@@ -1099,7 +1099,7 @@ describe('ForPopover', () => {
       expect(document.querySelector('[forPopoverContent]')).not.toBeNull();
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
 

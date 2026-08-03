@@ -1864,7 +1864,7 @@ describe('ForListbox', () => {
       ]);
     });
 
-    it('keeps object selection reactive without Zone.js', async () => {
+    it('keeps object selection reactive', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
 
       fixture.componentInstance.picked.set([PARIS]);

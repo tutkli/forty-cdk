@@ -891,7 +891,7 @@ describe('ForHoverCard', () => {
       expect(fixture.componentInstance.isOpen()).toBe(true);
     });
 
-    it('reflects the scroll close through data-state without Zone.js', async () => {
+    it('reflects the scroll close through data-state', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       fixture.componentInstance.isOpen.set(true);
       await flush();
@@ -1231,7 +1231,7 @@ describe('ForHoverCard', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('reflects show() / hide() through data-state without Zone.js', async () => {
+    it('reflects show() / hide() through data-state', async () => {
       const r = renderHost(HoverCardHost);
       await r.flush();
       const card = r.fixture.debugElement
@@ -1259,7 +1259,7 @@ describe('ForHoverCard', () => {
     });
 
     it('reflects a pointerenter open in data-state', async () => {
-      const { fixture, query, flush } = renderHost(HoverCardHost);
+      const { query, flush } = renderHost(HoverCardHost);
       await flush();
       const trigger = query<HTMLAnchorElement>('a')!;
 
@@ -1294,7 +1294,7 @@ describe('ForHoverCard', () => {
       readonly open = signal(false);
     }
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const { instance, query, flush } = renderHost(StampedHost);
       await flush();
       const trigger = query<HTMLAnchorElement>('#trigger')!;

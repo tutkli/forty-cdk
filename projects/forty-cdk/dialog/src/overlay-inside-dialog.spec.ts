@@ -135,7 +135,7 @@ describe('overlays opened inside a modal ForDialog (#676)', () => {
     r.fixture.destroy();
   });
 
-  it('runs under provideZonelessChangeDetection', async () => {
+  it('marks a select opened inside the dialog as a modal peer, never inert', async () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 

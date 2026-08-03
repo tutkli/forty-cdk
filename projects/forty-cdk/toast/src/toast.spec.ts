@@ -787,7 +787,7 @@ describe('ForToast (declarative)', () => {
       expect(r.instance.closes).toEqual([]);
     });
 
-    it('zoneless: a swipe past threshold dismisses without Zone.js', () => {
+    it('a swipe past threshold dismisses', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(DeclarativeHost);
@@ -1106,7 +1106,7 @@ describe('ForToastManager (programmatic)', () => {
     expect(r.instance.toasts.count()).toBe(0);
   });
 
-  it('zoneless: dedupe re-show restarts the auto-dismiss timer', () => {
+  it('dedupe re-show restarts the auto-dismiss timer', () => {
     vi.useFakeTimers();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -1148,7 +1148,7 @@ describe('ForToastManager (programmatic)', () => {
     expect(r.instance.toasts.count()).toBe(0);
   });
 
-  it('zoneless: a duration update while paused dismisses on the new duration after resume', () => {
+  it('a duration update while paused dismisses on the new duration after resume', () => {
     vi.useFakeTimers();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
@@ -1365,7 +1365,7 @@ describe('ForToastManager (programmatic)', () => {
       expect(r.instance.toasts.count()).toBe(0);
     });
 
-    it('zoneless: helper directives in a custom template still wire aria-labelledby', () => {
+    it('helper directives in a custom template still wire aria-labelledby', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(ProgrammaticHost);
@@ -1593,7 +1593,7 @@ describe('ForToastViewport regions (multi-viewport)', () => {
     expect(document.activeElement).toBe(toastsIn(r.el, 'vp-a')[0]);
   });
 
-  it('zoneless: region routing works without Zone.js', () => {
+  it('region routing works', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(MultiViewportHost);
@@ -1797,7 +1797,7 @@ describe('exit / enter animation cascade (config → viewport)', () => {
     expect(r.instance.toasts.count()).toBe(0);
   });
 
-  it('zoneless: show + dismiss with animateLeave resolves and works without Zone.js', () => {
+  it('show + dismiss with animateLeave resolves', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(ProgrammaticHost);

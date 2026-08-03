@@ -428,7 +428,7 @@ describe('ForComboboxAction', () => {
     });
   });
 
-  it('works under zoneless change detection', async () => {
+  it('reflects a disabled write, blocks its click, and consumes Tab when enabled', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(ActionHost);
     await flush(fixture);

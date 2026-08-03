@@ -771,7 +771,7 @@ describe('ForSlider', () => {
       }) as DOMRect;
 
     it('reads the track rect once at drag start, never per pointermove', async () => {
-      const { el, fixture, flush } = renderHost(SliderHost);
+      const { el, flush } = renderHost(SliderHost);
       const trackEl = track(el);
       const rectSpy = vi
         .spyOn(trackEl, 'getBoundingClientRect')

@@ -351,7 +351,7 @@ describe('ForPagination directive', () => {
       expect(item('p3').hasAttribute('data-disabled')).toBe(false);
     });
 
-    it('reflects data-disabled on the boundary pieces without Zone.js', async () => {
+    it('reflects data-disabled on the boundary pieces', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TestHost);
       fixture.componentInstance.page.set(1);

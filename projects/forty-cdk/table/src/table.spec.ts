@@ -9,7 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
-import { flush, installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
+import { installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
@@ -1760,7 +1760,7 @@ describe('ForTable', () => {
       expect(headerA.getAttribute('data-highlighted')).toBe('');
     });
 
-    it('reflects the composite tab stop without Zone.js', async () => {
+    it('reflects the composite tab stop', async () => {
       const { el, flush } = renderHost(GridWithHeaderHost);
       const headerA = el.querySelector<HTMLElement>('[data-testid="h-a"]')!;
       press(headerA, 'ArrowRight');
@@ -1846,7 +1846,7 @@ describe('ForTable', () => {
       expect(header.getAttribute('data-dragging')).toBe('');
     });
 
-    it('keeps a single composite tab stop across a draggable header without Zone.js', () => {
+    it('keeps a single composite tab stop across a draggable header', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(ReorderTableHost);
       fixture.detectChanges();
@@ -2097,7 +2097,7 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('aria-multiselectable')).toBe('true');
     });
 
-    it('reactively drops/re-adds aria-multiselectable when mode toggles between grid and table (zoneless) (#1426)', async () => {
+    it('reactively drops/re-adds aria-multiselectable when mode toggles between grid and table (#1426)', async () => {
       @Component({
         imports: [ForTable, ForTableRow, ForTableCell],
         template: `
@@ -2186,7 +2186,7 @@ describe('ForTable', () => {
       expect(row2.hasAttribute('data-selected')).toBe(false);
     });
 
-    it('reactively drops/re-adds aria-selected when mode toggles between grid and table (zoneless)', async () => {
+    it('reactively drops/re-adds aria-selected when mode toggles between grid and table', async () => {
       @Component({
         imports: [ForTable, ForTableRow, ForTableCell],
         template: `
@@ -2572,7 +2572,7 @@ describe('ForTable', () => {
       expect(instance.selection()).toEqual([1]);
     });
 
-    it('keeps the interactive-descendant guard after a reactive selectionMode toggle (zoneless)', async () => {
+    it('keeps the interactive-descendant guard after a reactive selectionMode toggle', async () => {
       const { el, instance, flush } = renderHost(SelectionInteractiveHost);
       instance.selectionMode.set('single');
       await flush();
@@ -2950,7 +2950,7 @@ describe('ForTable', () => {
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'ascending' });
     });
 
-    it('descendant guard holds without Zone.js', () => {
+    it('descendant guard holds', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SortInteractiveHeaderHost);
       fixture.detectChanges();
@@ -2998,7 +2998,7 @@ describe('ForTable', () => {
       expect(instance.lastSort).toEqual({ column: 'name', direction: 'descending' });
     });
 
-    it('yields its tabindex to the draggable without Zone.js', () => {
+    it('yields its tabindex to the draggable', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SortReorderTableHost);
       fixture.detectChanges();
@@ -3088,7 +3088,7 @@ describe('ForTable', () => {
       expect(nameCell.getAttribute('data-dragging')).toBe('');
     });
 
-    it('splits the keys without Zone.js', () => {
+    it('splits the keys', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SortReorderTableHost);
       fixture.detectChanges();
@@ -3596,7 +3596,7 @@ describe('ForTable', () => {
       expect(instance.lastRow).toEqual({ from: 51, to: 52 });
     });
 
-    it('emits absolute indices without Zone.js', () => {
+    it('emits absolute indices', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(VirtualizedReorderTableHost);
       fixture.detectChanges();
@@ -3651,7 +3651,7 @@ describe('ForTable', () => {
       expect(instance.lastRow).toEqual({ from: 51, to: 61 });
     });
 
-    it('End jump emits absolute indices without Zone.js', () => {
+    it('End jump emits absolute indices', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(VirtualizedReorderTableHost);
       fixture.detectChanges();
@@ -3748,7 +3748,7 @@ describe('ForTable', () => {
       expect(dataCell(el, 1, 'a').getAttribute('data-highlighted')).toBe('');
     });
 
-    it('keeps a single tab stop across header + body + rows without Zone.js', () => {
+    it('keeps a single tab stop across header + body + rows', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(RowReorderGridHost);
       fixture.detectChanges();

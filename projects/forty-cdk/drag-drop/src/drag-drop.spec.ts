@@ -877,7 +877,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(1);
     });
 
-    it('zoneless: mixed lift → ArrowDown move → drop commits correct indices', async () => {
+    it('mixed lift → ArrowDown move → drop commits correct indices', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SingleListHost);
       fixture.componentInstance.orientation.set('mixed');
@@ -1097,7 +1097,7 @@ describe('ForDropList + ForDraggable', () => {
       }
     }
 
-    it('pointer lift → move → drop with lockAxis="x" completes under provideZonelessChangeDetection', async () => {
+    it('pointer lift → move → drop with lockAxis="x" completes', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(LockAxisHost);
       fixture.detectChanges();
@@ -1210,7 +1210,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(1);
     });
 
-    it('keyboard lift/drop works under provideZonelessChangeDetection with a handle present', async () => {
+    it('keyboard lift/drop works with a handle present', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(HandleHost);
       fixture.detectChanges();
@@ -1338,7 +1338,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(1);
     });
 
-    it('keyboard lift/drop with templates works under provideZonelessChangeDetection', async () => {
+    it('keyboard lift/drop works with drag templates', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TemplatesHost);
       fixture.detectChanges();
@@ -1376,7 +1376,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(animating.length).toBe(0);
     });
 
-    it('on + zoneless: keyboard reorder commits correct indices and flush completes without error', async () => {
+    it('on: keyboard reorder commits correct indices and flush completes without error', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SingleListHost);
       fixture.componentInstance.animate.set(true);
@@ -1501,7 +1501,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(drop!.currentIndex).toBe(1);
     });
 
-    it('zoneless: keyboard lift → move → drop on liveSort list commits correct indices', async () => {
+    it('keyboard lift → move → drop on liveSort list commits correct indices', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(LiveSortHost);
       fixture.detectChanges();
@@ -1608,7 +1608,7 @@ describe('ForDropList + ForDraggable', () => {
       }
     });
 
-    it('cancels the trailing click under provideZonelessChangeDetection', async () => {
+    it('cancels the trailing click', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SingleListHost);
       fixture.detectChanges();
@@ -1765,7 +1765,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(remove).toHaveBeenCalledTimes(1);
     });
 
-    it('zoneless: removing the lifted item mid-pointer-drag resets the list and drops the preview', async () => {
+    it('removing the lifted item mid-pointer-drag resets the list and drops the preview', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SingleListHost);
       fixture.detectChanges();
@@ -1906,7 +1906,7 @@ describe('ForDropList + ForDraggable', () => {
       expect(document.activeElement).toBe(itemEl(el, 'a-3'));
     });
 
-    it('zoneless: a cross-list keyboard drop focuses the transferred item', async () => {
+    it('a cross-list keyboard drop focuses the transferred item', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(AppliedMoveHost);
       fixture.detectChanges();

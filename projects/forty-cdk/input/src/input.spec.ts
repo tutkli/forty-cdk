@@ -410,7 +410,7 @@ describe('ForTextarea', () => {
 
   describe('blur re-syncs the DOM value', () => {
     it('reconciles a stale element value to the model on blur', async () => {
-      const { el, fixture, flush } = renderHost(TextareaHost);
+      const { el, flush } = renderHost(TextareaHost);
       const textarea = textareaOf(el);
 
       textarea.focus();
@@ -446,7 +446,7 @@ describe('ForTextarea', () => {
       expect(textarea.hasAttribute('data-autosize')).toBe(false);
     });
 
-    it('reflects data-autosize without Zone.js', async () => {
+    it('reflects data-autosize', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(AutosizeTextareaHost);
       await flush(fixture);

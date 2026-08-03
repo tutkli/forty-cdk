@@ -723,7 +723,7 @@ describe('ForTabs', () => {
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('true');
     });
 
-    it('zoneless: arrow-over-disabled reaches the disabled trigger without activating it', async () => {
+    it('arrow-over-disabled reaches the disabled trigger without activating it', async () => {
       const { el, fixture, flush } = await withDisabledB();
       fixture.componentInstance.active.set('a');
       await flush();

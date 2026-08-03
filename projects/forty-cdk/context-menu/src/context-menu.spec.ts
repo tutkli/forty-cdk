@@ -997,7 +997,7 @@ describe('ForContextMenu', () => {
       expect(document.activeElement?.id).toBe('cut');
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const region = r.query<HTMLElement>('#region')!;
 
@@ -1062,7 +1062,7 @@ describe('ForContextMenu', () => {
       expect(document.activeElement?.id).toBe('cut');
     });
 
-    it('open state stays reactive without zone.js in a subclassed root', async () => {
+    it('open state stays reactive in a subclassed root', async () => {
       const r = renderHost(SubclassedHost);
       const region = r.query<HTMLElement>('#region')!;
       region.focus();

@@ -922,7 +922,7 @@ describe('ForDialogManager (programmatic)', () => {
       b.close();
     });
 
-    it('zoneless open + close (provideZonelessChangeDetection)', async () => {
+    it('open() mounts one dialog and close() awaits closed before unmounting', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
 

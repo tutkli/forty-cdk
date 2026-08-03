@@ -644,7 +644,7 @@ describe('SegmentEditor reactive accessors', () => {
     expect(literals.length).toBeGreaterThan(0);
   });
 
-  it('reacts to a cycle change without Zone.js', () => {
+  it('reacts to a cycle change', () => {
     const { host, editor } = setup();
     host.setParts({ hour: 13 });
     expect(editor.segmentValue('hour')).toBe(1);

@@ -1,11 +1,9 @@
-import { Component, inject, provideZonelessChangeDetection, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { Component, inject, signal } from '@angular/core';
 
 import { ForDialog, type ForDialogCloseReason } from 'forty-cdk/dialog';
 import { ForDrawer, type ForDrawerCloseReason } from 'forty-cdk/drawer';
 import { ForToastManager, ForToastViewport, provideForToastDefaults } from 'forty-cdk/toast';
 
-import { flush } from '../test-utils/flush';
 import { pointerDownOn } from '../test-utils/outside-events';
 import { afterEachOverlayCleanup } from '../test-utils/overlay-cleanup';
 import { renderHost } from '../test-utils/render';
@@ -125,22 +123,6 @@ describe('toast over a modal overlay', () => {
     expect(r.instance.open()).toBe(true);
   });
 
-  it('holds under provideZonelessChangeDetection()', async () => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const fixture = TestBed.createComponent(DialogToastHost);
-    fixture.detectChanges();
-    await flush(fixture);
-
-    fixture.componentInstance.manager.show({ title: 'Saved' });
-    await flush(fixture);
-
-    const toast = (fixture.nativeElement as HTMLElement).querySelector('[forToast]')!;
-    pointerDownOn(toast);
-
-    expect(fixture.componentInstance.dismissReasons).toEqual([]);
-    expect(fixture.componentInstance.open()).toBe(true);
-  });
-
   it('with overModal: "inert", clicking a toast dismisses the open modal dialog', async () => {
     const r = renderHost(InertDialogToastHost);
     await r.flush();
@@ -154,21 +136,5 @@ describe('toast over a modal overlay', () => {
 
     expect(r.instance.dismissReasons).toEqual(['pointerDownOutside']);
     expect(r.instance.open()).toBe(false);
-  });
-
-  it('the inert opt-out holds under provideZonelessChangeDetection()', async () => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const fixture = TestBed.createComponent(InertDialogToastHost);
-    fixture.detectChanges();
-    await flush(fixture);
-
-    fixture.componentInstance.manager.show({ title: 'Saved' });
-    await flush(fixture);
-
-    const toast = (fixture.nativeElement as HTMLElement).querySelector('[forToast]')!;
-    pointerDownOn(toast);
-
-    expect(fixture.componentInstance.dismissReasons).toEqual(['pointerDownOutside']);
-    expect(fixture.componentInstance.open()).toBe(false);
   });
 });

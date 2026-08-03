@@ -3398,8 +3398,6 @@ module.exports = tseslint.config(
       '@angular-eslint/directive-selector': 'off',
       // Tests sometimes need explicit `any` for intentionally-broken inputs.
       '@typescript-eslint/no-explicit-any': 'off',
-      // Loosen unused checks — specs frequently destructure for asserts only.
-      '@typescript-eslint/no-unused-vars': 'off',
       // Specs render bare `<button forX>` triggers as harness fixtures; their
       // "content" is the directive being exercised, not user-visible text.
       '@angular-eslint/template/elements-content': 'off',

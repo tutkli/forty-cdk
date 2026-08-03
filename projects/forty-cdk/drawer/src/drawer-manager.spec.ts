@@ -919,7 +919,7 @@ describe('ForDrawerManager (programmatic)', () => {
       b.close();
     });
 
-    it('zoneless open + close (provideZonelessChangeDetection)', async () => {
+    it('open() mounts one drawer and close() awaits closed before unmounting', async () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, { data: { message: 'x' } });
 

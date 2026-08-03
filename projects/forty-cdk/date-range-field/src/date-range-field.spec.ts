@@ -454,7 +454,7 @@ describe('ForDateRangeField', () => {
       expect(range.end.getTime()).toBe(new Date(2026, 5, 2).getTime());
     });
 
-    it('does not rewrite the range value on a transient keystroke under zoneless CD', async () => {
+    it('does not rewrite the range value on a transient keystroke', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);

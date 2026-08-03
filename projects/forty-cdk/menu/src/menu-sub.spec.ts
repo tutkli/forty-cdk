@@ -1342,7 +1342,7 @@ describe('ForMenuSub', () => {
       expect(sub.fallbackAxisSideDirection()).toBe('start');
     });
 
-    it('reacts to a runtime input change without zone.js', async () => {
+    it('reacts to a runtime input change', async () => {
       const r = renderHost(Host);
       await flush(r.fixture);
       const sub = r.fixture.debugElement.query(By.directive(ForMenuSub)).injector.get(ForMenuSub);

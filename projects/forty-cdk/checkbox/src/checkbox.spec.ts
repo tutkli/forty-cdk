@@ -1,7 +1,7 @@
 import { Component, Directive, signal } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 
-import { flush, pressKey } from '../../src/test-utils';
+import { pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import {
   assertFormControlContract,

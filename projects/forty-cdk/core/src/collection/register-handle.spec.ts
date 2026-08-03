@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   Directive,
-  inject,
   Injectable,
   Injector,
   isSignal,
@@ -328,7 +327,7 @@ describe('registerA11yName / registerA11yDescription', () => {
 
   // Demonstrate that the helpers are usable independently of the application's
   // ChangeDetection mode — covers the "must work zoneless" rule explicitly.
-  it('works under provideZonelessChangeDetection', () => {
+  it('registers the a11y name id from a bare injection context', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection(), FakeOwner],

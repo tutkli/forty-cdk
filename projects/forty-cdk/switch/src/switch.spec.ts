@@ -1,11 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import {
-  Field,
-  form,
-  FormField,
-  readonly as fieldReadonly,
-  required,
-} from '@angular/forms/signals';
+import { form, FormField, readonly as fieldReadonly, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey } from '../../src/test-utils';

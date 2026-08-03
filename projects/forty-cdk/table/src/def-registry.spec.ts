@@ -424,7 +424,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
   });
 
   describe('lifecycle and ordering', () => {
-    it('inserts a later-mounted def at its document position, zoneless', () => {
+    it('inserts a later-mounted def at its document position', () => {
       const { instance, queryAll, fixture } = renderHost(MountedDefHost);
       expect(queryAll('[forTableHeaderCell]').map((h) => h.getAttribute('data-column'))).toEqual([
         'name',

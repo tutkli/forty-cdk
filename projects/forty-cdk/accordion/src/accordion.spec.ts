@@ -290,7 +290,7 @@ describe('ForAccordion', () => {
       }
     });
 
-    it('reflects data-disabled after a runtime [disabled] flip without Zone.js', async () => {
+    it('reflects data-disabled after a runtime [disabled] flip', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       expect(triggerOf(el, 'a').hasAttribute('data-disabled')).toBe(false);

@@ -607,7 +607,7 @@ describe('ForStepper', () => {
       expect(instance.selectedIndex()).toBe(2);
     });
 
-    it('zoneless: arrow-over-disabled reaches the disabled step without selecting it', async () => {
+    it('arrow-over-disabled reaches the disabled step without selecting it', async () => {
       const { el, instance, flush } = await withDisabledStep1();
       triggerAt(el, 0).focus();
       await flush();
@@ -694,7 +694,7 @@ describe('ForStepper', () => {
       expect(triggerAt(el, 0).getAttribute('tabindex')).toBe('-1');
     });
 
-    it('zoneless: the tab stop follows the selected step across a hidden trigger', async () => {
+    it('the tab stop follows the selected step across a hidden trigger', async () => {
       const { el, instance, fixture, flush } = await withHiddenMiddleTrigger(2);
       instance.selectedIndex.set(1);
       fixture.detectChanges();
@@ -769,7 +769,7 @@ describe('ForStepper', () => {
       expect(contentAt(el, 0).getAttribute('data-state')).toBe('inactive');
     });
 
-    it('zoneless: a lone mounted panel is active for its own step, not for position 0', async () => {
+    it('a lone mounted panel is active for its own step, not for position 0', async () => {
       const { el, instance, fixture, flush } = await mount((i) => {
         i.onlyCurrentPanel.set(true);
         i.selectedIndex.set(2);
@@ -947,7 +947,7 @@ describe('ForStepper', () => {
       expect(instance.completeCount()).toBe(1);
     });
 
-    it('zoneless: completed panel flips to active and complete fires after detectChanges', () => {
+    it('a completed panel flips to active and complete fires', () => {
       const { el, instance, fixture } = renderHost(StepperHost);
       instance.selectedIndex.set(3);
       fixture.detectChanges();
@@ -1207,7 +1207,7 @@ describe('ForStepper', () => {
       expect(triggerAt(el, 1).hasAttribute('aria-disabled')).toBe(false);
     });
 
-    it('field-driven state updates after markAsTouched without Zone.js', () => {
+    it('field-driven state updates after markAsTouched', () => {
       const { el, instance, fixture } = renderHost(FieldHost);
       expect(itemAt(el, 0).getAttribute('data-state')).toBe('active');
       instance.model.update((m) => ({ ...m, name: 'Alice' }));
@@ -1413,7 +1413,7 @@ describe('ForStepperProgress', () => {
     expect(progressEl(el).hasAttribute('aria-label')).toBe(false);
   });
 
-  it('zoneless: updating selectedIndex updates aria-valuenow after detectChanges', () => {
+  it('updating selectedIndex updates aria-valuenow', () => {
     @Component({
       imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperProgress],
       template: `

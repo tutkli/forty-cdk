@@ -1143,7 +1143,7 @@ describe('ForTableBody', () => {
     expect(query('[forTableRow] [data-column="name"]')?.textContent).not.toContain('Ada');
   });
 
-  it('reacts to row changes without Zone.js (zoneless change detection)', () => {
+  it('reacts to row changes', () => {
     const { instance, queryAll, fixture } = renderHost(BodyHost);
     expect(queryAll('[forTableRow]')).toHaveLength(3);
     instance.rows.set([{ id: 9, name: 'Margaret', role: 'Engineer' }]);
@@ -1192,7 +1192,7 @@ describe('ForTableBody', () => {
       expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('101');
     });
 
-    it('restores the data-row count and drops disabled when loading resolves (zoneless)', () => {
+    it('restores the data-row count and drops disabled when loading resolves', () => {
       const { instance, query, fixture } = renderHost(LoadingSkeletonHost);
       instance.rows.set([
         { id: 1, name: 'Ada', role: 'Engineer' },
@@ -1264,7 +1264,7 @@ describe('ForTableBody', () => {
       expect(query('[forTableRow] [data-column="name"] .skeleton-default')).not.toBeNull();
     });
 
-    it('mounts and unmounts the default as loading toggles without Zone.js (zoneless)', () => {
+    it('mounts and unmounts the default as loading toggles', () => {
       const { instance, queryAll, fixture } = renderHost(DefaultPlaceholderHost);
       const firstRow = (): HTMLElement => queryAll('[forTableRow]')[0]!;
       expect(firstRow().querySelector('[data-column="name"] .skeleton-default')).toBeNull();
@@ -1306,7 +1306,7 @@ describe('ForTableBody', () => {
     });
 
     it('windows under [forTableVirtualized] while keeping table-mode roles', () => {
-      const { instance, query, queryAll, fixture } = renderHost(TableModeVirtualHost);
+      const { query, queryAll, fixture } = renderHost(TableModeVirtualHost);
       publishWindow(fixture, [5, 6, 7], 880);
       fixture.detectChanges();
 
@@ -1324,7 +1324,7 @@ describe('ForTableBody', () => {
 
   describe('virtualized window seam', () => {
     it('renders only the published window slice, indexed into rows', () => {
-      const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
+      const { queryAll, fixture } = renderHost(VirtualBodyHost);
       publishWindow(fixture, [5, 6, 7], 880);
       fixture.detectChanges();
 
@@ -1337,7 +1337,7 @@ describe('ForTableBody', () => {
     });
 
     it('absolutely positions each windowed row at its pixel offset and sizes the rowgroup', () => {
-      const { instance, query, queryAll, fixture } = renderHost(VirtualBodyHost);
+      const { query, queryAll, fixture } = renderHost(VirtualBodyHost);
       publishWindow(fixture, [5, 6], 880);
       fixture.detectChanges();
 
@@ -1352,7 +1352,7 @@ describe('ForTableBody', () => {
     });
 
     it('drives absolute aria-rowindex from the window index (counting the header row)', () => {
-      const { instance, query, fixture } = renderHost(VirtualBodyHost);
+      const { query, fixture } = renderHost(VirtualBodyHost);
       publishWindow(fixture, [5], 880);
       fixture.detectChanges();
       expect(query('[forTableRow]')?.getAttribute('aria-rowindex')).toBe('7');
@@ -1368,7 +1368,7 @@ describe('ForTableBody', () => {
     });
 
     it('falls back to full flow rendering when the window is cleared', () => {
-      const { instance, queryAll, fixture } = renderHost(VirtualBodyHost);
+      const { queryAll, fixture } = renderHost(VirtualBodyHost);
       publishWindow(fixture, [5, 6], 880);
       fixture.detectChanges();
       expect(queryAll('[forTableRow]')).toHaveLength(2);
@@ -1389,7 +1389,7 @@ describe('ForTableBody', () => {
       measureRow.mock.calls.filter((c) => c[0] === null).length;
 
     it('calls the window measureRow once per stamped row (data + variant) when measureRows is set', async () => {
-      const { instance, queryAll, flush, fixture } = renderHost(MeasureRowsHost);
+      const { queryAll, flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
 
@@ -1408,7 +1408,7 @@ describe('ForTableBody', () => {
     });
 
     it('does not re-measure rows whose window index is unchanged across renders (guard)', async () => {
-      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
+      const { flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
       expect(elementCallsOf(measureRow)).toHaveLength(3);
@@ -1417,8 +1417,8 @@ describe('ForTableBody', () => {
       expect(elementCallsOf(measureRow)).toHaveLength(3);
     });
 
-    it('re-measures a row host recycled to a new window index without Zone.js', async () => {
-      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
+    it('re-measures a row host recycled to a new window index', async () => {
+      const { flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = vi.fn();
       const windowRows = signal([5, 6, 7].map((index) => ({ index, start: index * 44 })));
       registrationOf(fixture).registerVirtualWindow({
@@ -1436,7 +1436,7 @@ describe('ForTableBody', () => {
     });
 
     it('sweeps detached rows by calling measureRow(null) after the measure loop', async () => {
-      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
+      const { flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = publishWindow(fixture, [5, 6, 7], 880);
       await flush();
 
@@ -1447,7 +1447,7 @@ describe('ForTableBody', () => {
     });
 
     it('sweeps on every measured render even when no row needs re-measuring (guard render)', async () => {
-      const { instance, flush, fixture } = renderHost(MeasureRowsHost);
+      const { flush, fixture } = renderHost(MeasureRowsHost);
       const measureRow = vi.fn();
       const windowRows = signal([5, 6, 7].map((index) => ({ index, start: index * 44 })));
       registrationOf(fixture).registerVirtualWindow({
@@ -1493,7 +1493,7 @@ describe('ForTableBody', () => {
       expect(instance.virtualized().totalSize()).toBe(500 * 44);
     });
 
-    it('reacts to the body dataset changing without Zone.js', async () => {
+    it('reacts to the body dataset changing', async () => {
       const { instance, query, flush } = renderHost(DerivedRowCountHost);
       await flush();
       expect(query('[forTable]')?.getAttribute('aria-rowcount')).toBe('21');
@@ -1551,7 +1551,7 @@ describe('ForTableBody', () => {
     });
 
     it('renders windowed variant rows full-span under the virtualization seam', () => {
-      const { instance, queryAll, fixture } = renderHost(VirtualVariantHost);
+      const { queryAll, fixture } = renderHost(VirtualVariantHost);
       publishWindow(fixture, [4, 5, 6], 880);
       fixture.detectChanges();
 
@@ -1618,7 +1618,7 @@ describe('ForTableBody', () => {
     });
 
     it('renders windowed placeholder rows as per-column disabled cells, positioned', () => {
-      const { instance, queryAll, fixture } = renderHost(VirtualPlaceholderHost);
+      const { queryAll, fixture } = renderHost(VirtualPlaceholderHost);
       publishWindow(fixture, [4, 5, 6], 880);
       fixture.detectChanges();
 
@@ -1646,7 +1646,7 @@ describe('ForTableBody', () => {
       );
     });
 
-    it('reacts to placeholder rows resolving into real data without Zone.js (zoneless)', () => {
+    it('reacts to placeholder rows resolving into real data', () => {
       const { instance, queryAll, fixture } = renderHost(PlaceholderVariantHost);
       expect(queryAll('[forTableRow]')[1]!.querySelector('.skeleton')).not.toBeNull();
 
@@ -1713,7 +1713,7 @@ describe('ForTableBody', () => {
       expect(nameCell.getAttribute('data-column')).toBe('name');
     });
 
-    it('reacts to a class input change without Zone.js (zoneless change detection)', () => {
+    it('reacts to a class input change', () => {
       const { instance, query, fixture } = renderHost(ClassHost);
       const nameHeader = query('[forTableHeaderCell][data-column="name"]')!;
       expect(nameHeader.classList.contains('name-header')).toBe(true);
@@ -1741,8 +1741,8 @@ describe('ForTableBody', () => {
       const dataCell = null as unknown as ForDataCell<MixedPerson>;
       const ctx: unknown = { $implicit: { kind: 'data', name: 'Ada', salary: 1 }, index: 0 };
       if (ForDataCell.ngTemplateContextGuard(dataCell, ctx)) {
-        const row = ctx.$implicit;
-        const unnarrowed: Equal<typeof row, MixedPerson> = true;
+        const _row = ctx.$implicit;
+        const unnarrowed: Equal<typeof _row, MixedPerson> = true;
         expect(unnarrowed).toBe(true);
       }
     });
@@ -1762,8 +1762,8 @@ describe('ForTableBody', () => {
       const rowCell = null as unknown as ForRowCell<MixedPerson>;
       const ctx: unknown = { $implicit: { kind: 'separator', label: 'A' }, index: 0 };
       if (ForRowCell.ngTemplateContextGuard(rowCell, ctx)) {
-        const row = ctx.$implicit;
-        const unnarrowed: Equal<typeof row, MixedPerson> = true;
+        const _row = ctx.$implicit;
+        const unnarrowed: Equal<typeof _row, MixedPerson> = true;
         expect(unnarrowed).toBe(true);
       }
     });
@@ -1909,7 +1909,7 @@ describe('ForTableBody', () => {
       expect(rows[1]!.getAttribute('data-open')).toBe('');
     });
 
-    it('reacts to a rowClass change without Zone.js (zoneless change detection)', () => {
+    it('reacts to a rowClass change', () => {
       const { instance, queryAll, fixture } = renderHost(RowInteractionHost);
       instance.rowClass.set(() => 'first');
       fixture.detectChanges();
@@ -1971,7 +1971,7 @@ describe('ForTableBody', () => {
       expect(enter.defaultPrevented).toBe(true);
     });
 
-    it('keeps the interactive-descendant guard after a reactive toggle (zoneless)', () => {
+    it('keeps the interactive-descendant guard after a reactive toggle', () => {
       const { instance, queryAll, fixture } = renderHost(InteractiveDescendantHost);
       instance.interactive.set(false);
       fixture.detectChanges();
@@ -2138,7 +2138,7 @@ describe('ForTableBody', () => {
       expect(label?.textContent?.trim()).toBe('Name');
     });
 
-    it('reacts to a columnWidths write without Zone.js (zoneless change detection)', () => {
+    it('reacts to a columnWidths write', () => {
       const { instance, query, fixture } = renderHost(ResizeOptionsHost);
       expect(query('[forTableColumnResizer]')?.getAttribute('aria-valuenow')).toBe('150');
 
@@ -2231,7 +2231,7 @@ describe('ForTableBody', () => {
       );
     });
 
-    it('re-derives the track from a fallbackWidth write without Zone.js (zoneless change detection)', () => {
+    it('re-derives the track from a fallbackWidth write', () => {
       const { instance, query, fixture } = renderHost(FallbackWidthHost);
       instance.fallback.set('minmax(64px, 3fr)');
       fixture.detectChanges();
@@ -2469,7 +2469,7 @@ describe('ForTableBody', () => {
       expect(fixture.debugElement.queryAllNodes(By.directive(ForDragPlaceholder))).toHaveLength(0);
     });
 
-    it('switches the header row to the reorder path when a column becomes reorderable (zoneless)', () => {
+    it('switches the header row to the reorder path when a column becomes reorderable', () => {
       const { instance, query, fixture } = renderHost(ToggleReorderHost);
       expect(query('[forTableColumnReorder]')).toBeNull();
 

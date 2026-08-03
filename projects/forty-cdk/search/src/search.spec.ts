@@ -5,7 +5,7 @@ import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { afterEachOverlayCleanup, flush, pressKey } from '../../src/test-utils';
+import { afterEachOverlayCleanup, pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForField, ForLabel } from 'forty-cdk/field';
@@ -163,7 +163,7 @@ describe('ForSearch', () => {
     });
 
     it('becomes visible once value is non-empty', async () => {
-      const { el, fixture, flush } = renderHost(SearchHost);
+      const { el, flush } = renderHost(SearchHost);
       const input = searchOf(el);
       const clear = clearOf(el);
 

@@ -554,7 +554,7 @@ describe('per-primitive defaults providers', () => {
         expect(resolved).toEqual(c.fallback);
       });
 
-      it('runs under provideZonelessChangeDetection', () => {
+      it('resolves the fallback under an explicit provideZonelessChangeDetection()', () => {
         TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
         const resolved = TestBed.runInInjectionContext(() => inject(c.token));
         expect(resolved).toEqual(c.fallback);

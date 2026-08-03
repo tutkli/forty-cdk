@@ -1302,7 +1302,7 @@ describe('ForSelect', () => {
         expect(r.instance.open()).toBe(false);
       });
 
-      it('open: cycles typeahead without Zone.js', async () => {
+      it('open: cycles typeahead', async () => {
         TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
         const fixture = TestBed.createComponent(TypeaheadSelectHost);
         fixture.componentInstance.open.set(true);
@@ -2275,7 +2275,7 @@ describe('ForSelect', () => {
       expect(inputs[0]!.value).toBe('2');
     });
 
-    it('keeps object selection reactive without Zone.js', async () => {
+    it('keeps object selection reactive', async () => {
       const r = renderHost(ObjectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -2392,7 +2392,7 @@ describe('ForSelect', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('keeps resolving a selected label from the snapshot after the listbox closes, without zone.js', async () => {
+    it('keeps resolving a selected label from the snapshot after the listbox closes', async () => {
       const r = renderHost(SelectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -2781,7 +2781,7 @@ describe('ForSelect', () => {
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 
-    it('reacts to anchor registration without zone.js', async () => {
+    it('reacts to anchor registration', async () => {
       // `renderHost` runs under `provideZonelessChangeDetection()`. Toggling the
       // anchor on and off stays reactive (no throw, listbox keeps painting).
       const r = renderHost(AnchorHost);
@@ -3135,7 +3135,7 @@ describe('ForSelectIndicator', () => {
       expect(document.querySelector('[forSelectContent]')).not.toBeNull();
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
 

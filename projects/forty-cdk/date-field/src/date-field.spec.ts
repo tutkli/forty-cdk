@@ -540,7 +540,7 @@ describe('ForDateField', () => {
       expect(adapter.getDate(value)).toBe(1);
     });
 
-    it('emits no intermediate value under zoneless change detection', async () => {
+    it('emits no intermediate value', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);

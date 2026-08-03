@@ -151,7 +151,7 @@ describe('ForScrollArea', () => {
     expect(() => renderHost(ScrollAreaHostNoContent)).not.toThrow();
   });
 
-  it('zoneless reactivity: changing [type] does not throw', async () => {
+  it('changing [type] does not throw', async () => {
     const { fixture, flush } = renderHost(ScrollAreaHost);
     await flush();
 
@@ -346,7 +346,7 @@ describe('ForScrollArea', () => {
       expect(viewport.hasAttribute('tabindex')).toBe(false);
     });
 
-    it('zoneless: toggling [focusable] reflects the tabindex without Zone.js', async () => {
+    it('toggling [focusable] reflects the tabindex', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });
@@ -524,7 +524,7 @@ describe('ForScrollArea', () => {
       });
     });
 
-    it('zoneless: a track press under provideZonelessChangeDetection does not throw', async () => {
+    it('a track press does not throw', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

@@ -137,7 +137,7 @@ describe('hostId', () => {
     expect(el.id).toMatch(/^for-probe-[A-Za-z0-9]+-\d+$/);
   });
 
-  it('works under provideZonelessChangeDetection', () => {
+  it('adopts a static id from a bare injection context', () => {
     const host = document.createElement('div');
     host.setAttribute('id', 'zoneless-id');
 

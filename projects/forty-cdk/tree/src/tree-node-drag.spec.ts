@@ -733,7 +733,7 @@ describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
     expect(instance.dropped()).toBeNull();
   });
 
-  it('resolves the hostDirective-composed node without Zone.js', async () => {
+  it('resolves the hostDirective-composed node', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(WrappedTreeDragHost);
     await flush(fixture);

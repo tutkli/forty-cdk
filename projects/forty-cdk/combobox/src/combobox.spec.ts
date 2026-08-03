@@ -2631,7 +2631,7 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-controls')).toBe(content.id);
     });
 
-    it('reacts to anchor registration without zone.js', async () => {
+    it('reacts to anchor registration', async () => {
       // `renderHost` runs under `provideZonelessChangeDetection()`. Toggling the
       // anchor on and off stays reactive (no throw, listbox keeps painting).
       const r = renderHost(AnchorHost);
@@ -3137,7 +3137,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
     });
 
-    it('zoneless: seeds the committed selection without zone.js', async () => {
+    it('seeds the committed selection', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const r = renderHost(PickerHost);
       r.instance.value.set(['banana']);
@@ -3293,7 +3293,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(document.querySelector('[forComboboxContent]')).not.toBeNull();
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
@@ -3421,7 +3421,7 @@ describe('ForCombobox static option (issue #674)', () => {
     expect(renderedOptionIds()).toEqual(['add', 'apple', 'apricot']);
   });
 
-  it('zoneless: re-folds the static option once its binding lands', async () => {
+  it('re-folds the static option once its binding lands', async () => {
     const r = renderHost(StaticOptionHost);
     // Pre-select the sentinel before the listbox ever opens — cold cache.
     r.instance.value.set(['__add__']);
@@ -4340,7 +4340,7 @@ describe('ForCombobox virtualization', () => {
     });
   });
 
-  it('zoneless: virtualized navigation works without Zone.js', async () => {
+  it('virtualized navigation works', async () => {
     const r = renderHost(VirtHost);
     r.instance.open.set(true);
     await flush(r.fixture);

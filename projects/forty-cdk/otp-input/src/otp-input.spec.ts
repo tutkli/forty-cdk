@@ -511,7 +511,7 @@ describe('ForOtpInput', () => {
 
   describe('active slot & fake caret', () => {
     it('marks exactly one slot active at the caret and renders a fake caret when empty', async () => {
-      const { group, input, instance, flush } = await mountOtp();
+      const { group, input, flush } = await mountOtp();
       input.dispatchEvent(new FocusEvent('focus'));
       typeInto(input, '12');
       await flush();
