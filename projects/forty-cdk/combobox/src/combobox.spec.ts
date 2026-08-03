@@ -2389,8 +2389,8 @@ describe('ForCombobox', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('open / value / aria stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('open and value writes reach aria-expanded and aria-selected', async () => {
       const r = renderHost(ComboboxHost);
       const input = getInput();
 
@@ -3214,8 +3214,8 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('trigger → open → list role + focus hooks stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('a trigger click opens the list and fires the focus hooks', async () => {
       const r = renderHost(PickerHost);
       const trigger = getTrigger();
 
@@ -3230,7 +3230,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(r.instance.autoFocusOnCloseCount).toBe(1);
     });
 
-    it('picker query resets on close without zone.js', async () => {
+    it('the picker query resets when a selection commits', async () => {
       const r = renderHost(PickerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -3705,8 +3705,8 @@ describe('ForCombobox object values', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('object selection stays reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('an object value write reaches data-state', async () => {
       const r = renderHost(ObjectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -3820,8 +3820,8 @@ describe('ForComboboxStatus', () => {
     );
   });
 
-  describe('zoneless reactivity', () => {
-    it('count tracks options without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('the status count tracks the option list', async () => {
       const r = renderHost(StatusHost);
       await flush(r.fixture);
 
@@ -3959,8 +3959,8 @@ describe('ForComboboxIndicator', () => {
     expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
-  describe('zoneless reactivity', () => {
-    it('flips visibility on value change without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('flips indicator visibility on a value change', async () => {
       const r = renderHost(IndicatorHost);
       await flush(r.fixture);
 

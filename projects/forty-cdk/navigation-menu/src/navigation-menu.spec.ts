@@ -1315,8 +1315,8 @@ describe('ForNavigationMenu', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects an open write in the trigger aria-expanded', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });
@@ -1331,7 +1331,7 @@ describe('ForNavigationMenu', () => {
       expect(triggers[0]!.getAttribute('aria-expanded')).toBe('true');
     });
 
-    it('records per-panel data-motion under overlapping transitions without Zone.js', async () => {
+    it('records per-panel data-motion under overlapping transitions', async () => {
       const { fixture, query, queryAll, flush } = renderHost(OverlappingNavMenuHost);
       const host = fixture.componentInstance;
       await flush();

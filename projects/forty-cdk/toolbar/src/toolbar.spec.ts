@@ -1,5 +1,4 @@
-import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { Component, signal } from '@angular/core';
 import { vi } from 'vitest';
 
 import { flush, pressKey, renderHost } from '../../src/test-utils';
@@ -515,27 +514,6 @@ describe('ForToolbar', () => {
       expect(() => renderHost(Orphan)).toThrowError(
         /\[forty-cdk\/toolbar\] ForToolbarSeparator must be used inside a \[forToolbar\] element\./,
       );
-    });
-  });
-
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(ToolbarHost);
-      await flush(fixture);
-
-      const host = fixture.nativeElement as HTMLElement;
-      const root = host.querySelector('[forToolbar]') as HTMLElement;
-      const buttons = host.querySelectorAll<HTMLButtonElement>('button');
-
-      expect(root.getAttribute('aria-orientation')).toBe('horizontal');
-      expect(buttons[0]!.getAttribute('tabindex')).toBe('0');
-
-      fixture.componentInstance.orientation.set('vertical');
-      await flush(fixture);
-      expect(root.getAttribute('aria-orientation')).toBe('vertical');
     });
   });
 });

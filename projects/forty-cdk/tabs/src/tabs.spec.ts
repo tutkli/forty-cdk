@@ -828,8 +828,8 @@ describe('ForTabs', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external value writes in aria-selected', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('c');
       await flush();

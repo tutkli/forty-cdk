@@ -543,8 +543,8 @@ describe('ForScrollArea', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects type changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects a type change in the scrollbar data-state', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

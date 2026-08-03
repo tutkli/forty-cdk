@@ -631,16 +631,6 @@ describe('ForCarousel', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('clicking next advances data-state without Zone.js', async () => {
-      const { el, flush } = renderHost(CarouselHost);
-      next(el).click();
-      await flush();
-      expect(slide(el, 1).getAttribute('data-state')).toBe('active');
-      expect(slide(el, 0).getAttribute('data-state')).toBe('inactive');
-    });
-  });
-
   describe('slide registration count', () => {
     it('N forCarouselSlide directives → --for-carousel-slide-count is N', () => {
       @Component({
@@ -1280,12 +1270,12 @@ describe('ForCarousel', () => {
     });
   });
 
-  describe('zoneless reactivity (autoplay)', () => {
+  describe('reactive updates (autoplay)', () => {
     afterEach(() => {
       vi.useRealTimers();
     });
 
-    it('setInterval tick advances the slide without Zone.js', async () => {
+    it('an autoplay interval tick advances the slide', async () => {
       vi.useFakeTimers();
       const { el, instance, fixture, flush } = renderHost(CarouselHost);
       instance.autoplay.set(true);

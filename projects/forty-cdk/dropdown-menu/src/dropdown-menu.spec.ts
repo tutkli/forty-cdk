@@ -791,8 +791,8 @@ describe('ForDropdownMenu', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('open / aria-expanded stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects open writes in the trigger aria-expanded', async () => {
       const r = renderHost(DropdownHost);
       const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
 

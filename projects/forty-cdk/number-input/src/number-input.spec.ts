@@ -1155,8 +1155,8 @@ describe('ForNumberInput', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects an external set without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects an external value write in value, aria-valuenow and data-empty', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

@@ -606,8 +606,8 @@ describe('ForTreeNodeDrag — i18n announcements', () => {
   });
 });
 
-describe('ForTreeNodeDrag — zoneless', () => {
-  it('emits nodeDrop in a zoneless TestBed context', async () => {
+describe('ForTreeNodeDrag — keyboard drag', () => {
+  it('emits nodeDrop after a keyboard lift and drop', async () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
     });
@@ -632,7 +632,7 @@ describe('ForTreeNodeDrag — zoneless', () => {
     expect(fixture.componentInstance.dropped()!.node).toBe('docs');
   });
 
-  it('reflects data-drop-position in a zoneless TestBed context', async () => {
+  it('reflects data-drop-position on the sibling after a lift', async () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
     });

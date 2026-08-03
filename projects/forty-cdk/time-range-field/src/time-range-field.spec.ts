@@ -785,8 +785,8 @@ describe('ForTimeRangeField', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('rehydrates both endpoints from an external value write without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('rehydrates both endpoints from an external value write', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);

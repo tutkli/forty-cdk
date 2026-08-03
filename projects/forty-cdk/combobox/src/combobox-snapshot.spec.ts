@@ -451,7 +451,7 @@ describe('VirtualizedNavigator', () => {
   });
 });
 
-describe('combobox-snapshot zoneless reactivity', () => {
+describe('LabelCache reactivity', () => {
   @Component({
     template: '',
   })
@@ -461,7 +461,7 @@ describe('combobox-snapshot zoneless reactivity', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   });
 
-  it('updates the label cache reactively without Zone.js', () => {
+  it('folds newly-mounted handles into the window and resolves selected labels', () => {
     TestBed.createComponent(ZonelessHost);
 
     const items = signal<readonly ForComboboxOptionHandle<string>[]>([]);

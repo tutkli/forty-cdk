@@ -1814,14 +1814,14 @@ describe('exit / enter animation cascade (config → viewport)', () => {
   });
 });
 
-describe('zoneless', () => {
+describe('programmatic auto-dismiss', () => {
   afterEachOverlayCleanup();
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('show() + auto-dismiss work without Zone.js', () => {
+  it('show() mounts a toast and the duration timer closes it', () => {
     vi.useFakeTimers();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({

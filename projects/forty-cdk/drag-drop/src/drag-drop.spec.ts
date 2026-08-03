@@ -1050,8 +1050,8 @@ describe('ForDropList + ForDraggable', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('lift → move → drop round-trip works under provideZonelessChangeDetection', async () => {
+  describe('keyboard round-trip', () => {
+    it('lift → move → drop emits the new index pair', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(SingleListHost);
       fixture.detectChanges();

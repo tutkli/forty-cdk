@@ -1326,8 +1326,8 @@ describe('ForSlider', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('reactivity works without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('ArrowRight increments aria-valuenow', () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],

@@ -991,8 +991,8 @@ describe('ForCalendar', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('re-renders the grid when value changes under provideZonelessChangeDetection', async () => {
+  describe('reactive updates', () => {
+    it('re-renders the grid and moves the tab stop when value changes', async () => {
       const r = renderHost(CalendarHost);
 
       r.instance.value.set(new Date(2026, 0, 10));
@@ -1241,8 +1241,8 @@ describe('ForCalendar', () => {
       expect(rangeCell(r, JUN_10).hasAttribute('data-range-start')).toBe(false);
     });
 
-    describe('zoneless', () => {
-      it('range selection works under provideZonelessChangeDetection', async () => {
+    describe('reactive updates', () => {
+      it('commits a range across two cell clicks', async () => {
         const r = renderHost(CalendarRangeHost);
 
         click(rangeCell(r, JUN_10));
@@ -1394,8 +1394,8 @@ describe('ForCalendar', () => {
       expect(liveRegion()?.textContent ?? '').toBe('');
     });
 
-    describe('zoneless', () => {
-      it('goToMonth renders correctly under provideZonelessChangeDetection', async () => {
+    describe('reactive updates', () => {
+      it('goToMonth re-renders the grid and moves focus', async () => {
         const r = renderHost(CalendarDropdownsHost);
         selectMonth(r, 1);
         await flush(r.fixture);
@@ -1490,8 +1490,8 @@ describe('ForCalendar', () => {
       expect(yearSelect(r).disabled).toBe(true);
     });
 
-    describe('zoneless', () => {
-      it('fireMonth updates the grid under provideZonelessChangeDetection', async () => {
+    describe('reactive updates', () => {
+      it('a month-select change moves the grid tab stop', async () => {
         const r = renderHost(CalendarSelectDirectivesHost);
         fireMonth(r, 1);
         await flush(r.fixture);
@@ -2230,8 +2230,8 @@ describe('ForCalendar', () => {
       expect(document.activeElement).toBe(monthCell(r, 6));
     });
 
-    describe('zoneless', () => {
-      it('cycleView renders month grid and roving cell under provideZonelessChangeDetection', async () => {
+    describe('reactive updates', () => {
+      it('cycleView renders the month grid with a single roving cell', async () => {
         const fixture = TestBed.configureTestingModule({
           providers: [provideZonelessChangeDetection()],
           imports: [CalendarViewsHost],

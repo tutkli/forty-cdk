@@ -1250,7 +1250,7 @@ describe('ForHoverCard', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
+  describe('reactive updates', () => {
     beforeEach(() => {
       vi.useFakeTimers();
     });
@@ -1258,7 +1258,7 @@ describe('ForHoverCard', () => {
       vi.useRealTimers();
     });
 
-    it('reflects open state changes after detectChanges without Zone.js', async () => {
+    it('reflects a pointerenter open in data-state', async () => {
       const { fixture, query, flush } = renderHost(HoverCardHost);
       await flush();
       const trigger = query<HTMLAnchorElement>('a')!;

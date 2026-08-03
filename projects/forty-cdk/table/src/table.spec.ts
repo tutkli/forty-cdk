@@ -3799,101 +3799,8 @@ describe('ForTable', () => {
     });
   });
 
-  describe('column reorder zoneless', () => {
-    afterEach(() => {
-      document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
-    });
-
-    it('lift→move→drop emits the new name order without Zone.js', async () => {
-      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-      const fixture = TestBed.createComponent(ReorderTableHost);
-      fixture.detectChanges();
-      const el = fixture.nativeElement as HTMLElement;
-      const instance = fixture.componentInstance;
-      const header = el.querySelector<HTMLElement>('[data-testid="h-name"]')!;
-      header.focus();
-      header.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
-      fixture.detectChanges();
-      header.dispatchEvent(
-        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
-      );
-      fixture.detectChanges();
-      header.dispatchEvent(
-        new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }),
-      );
-      fixture.detectChanges();
-      expect(instance.lastColumn).toEqual({ from: 0, to: 1, columns: ['role', 'name', 'dept'] });
-    });
-  });
-
-  describe('zoneless reactivity', () => {
-    it('reflects a mode change on the cell role without Zone.js', async () => {
-      const { el, instance, flush } = renderHost(TableHost);
-      expect(cellEl(el).getAttribute('role')).toBe('cell');
-
-      instance.mode.set('grid');
-      await flush();
-
-      expect(cellEl(el).getAttribute('role')).toBe('gridcell');
-    });
-
-    it('reflects an ariaLabel change without Zone.js', async () => {
-      const { el, instance, flush } = renderHost(TableHost);
-      expect(rootEl(el).hasAttribute('aria-label')).toBe(false);
-
-      instance.ariaLabel.set('My Table');
-      await flush();
-
-      expect(rootEl(el).getAttribute('aria-label')).toBe('My Table');
-    });
-
-    it('grid navigation reacts without Zone.js', async () => {
-      const { el, flush } = renderHost(GridTableHost);
-      const allCells = cells(el);
-      press(allCells[0]!, 'ArrowRight');
-      await flush();
-      expect(allCells[1]!.getAttribute('data-highlighted')).toBe('');
-      expect(allCells[1]!.getAttribute('tabindex')).toBe('0');
-    });
-
-    it('toggling a row selector reflects aria-selected and data-selected without Zone.js', async () => {
-      const { el, flush } = renderHost(SelectionTableHost);
-      const row1 = el.querySelector<HTMLElement>('[data-testid="row-1"]')!;
-      const selector1 = el.querySelector<HTMLElement>('[data-testid="selector-1"]')!;
-
-      expect(row1.getAttribute('aria-selected')).toBe('false');
-      expect(row1.hasAttribute('data-selected')).toBe(false);
-
-      selector1.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      await flush();
-
-      expect(row1.getAttribute('aria-selected')).toBe('true');
-      expect(row1.getAttribute('data-selected')).toBe('');
-      expect(selector1.getAttribute('data-state')).toBe('checked');
-    });
-
-    it('total-aware select-all selects the full supplied set without Zone.js', async () => {
-      const { el, instance, flush } = renderHost(TotalSelectionTableHost);
-      const selectAll = el.querySelector<HTMLElement>('[data-testid="select-all"]')!;
-
-      selectAll.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      await flush();
-
-      expect(instance.selection().length).toBe(10);
-      expect(selectAll.getAttribute('aria-checked')).toBe('true');
-    });
-
-    it('clicking the sort header reflects aria-sort without Zone.js', async () => {
-      const { el, flush } = renderHost(SortTableHost);
-      const h = el.querySelector<HTMLElement>('[data-testid="sort-name"]')!;
-      h.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-      await flush();
-      expect(h.getAttribute('aria-sort')).toBe('ascending');
-    });
-
-    it('column resizer ArrowRight updates aria-valuenow and publishes CSS var without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('column resizer ArrowRight updates aria-valuenow and publishes the CSS var', async () => {
       const { el, instance, flush } = renderHost(ResizeTableHost);
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(
@@ -3909,7 +3816,7 @@ describe('ForTable', () => {
       ).toBe('110px');
     });
 
-    it('column resizer reacts under hostDirectives composition without Zone.js', async () => {
+    it('column resizer reacts under hostDirectives composition', async () => {
       const { el, instance, flush } = renderHost(WrappedResizeTableHost);
       const r = el.querySelector<HTMLElement>('[data-testid="resizer"]')!;
       r.dispatchEvent(
@@ -3925,7 +3832,7 @@ describe('ForTable', () => {
       ).toBe('110px');
     });
 
-    it('autoFit dblclick fits the column and publishes the CSS var without Zone.js', async () => {
+    it('autoFit dblclick fits the column and publishes the CSS var', async () => {
       const { el, instance, flush } = renderHost(AutoFitTableHost);
       instance.autoFit.set(true);
       instance.min.set(130);
@@ -3943,7 +3850,7 @@ describe('ForTable', () => {
       ).toBe('130px');
     });
 
-    it('fitIncludesHeader dblclick (with [forTableColumnLabel]) fits and publishes the CSS var without Zone.js', async () => {
+    it('fitIncludesHeader dblclick (with [forTableColumnLabel]) fits and publishes the CSS var', async () => {
       const { el, instance, flush } = renderHost(HeaderAutoFitTableHost);
       instance.autoFit.set(true);
       instance.fitIncludesHeader.set(true);
@@ -3962,7 +3869,7 @@ describe('ForTable', () => {
       ).toBe('135px');
     });
 
-    it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state without Zone.js', async () => {
+    it('expanding a treegrid parent via ArrowRight reflects aria-expanded and data-state', async () => {
       const { el, flush } = renderHost(TreegridTableHost);
       const parentRow = el.querySelector<HTMLElement>('[data-testid="row-a"]')!;
       const parentCell = el.querySelector<HTMLElement>('[data-testid="cell-a"]')!;
@@ -3976,7 +3883,7 @@ describe('ForTable', () => {
       expect(el.querySelector<HTMLElement>('[data-testid="row-a1"]')).not.toBeNull();
     });
 
-    it('virtualIndex change reflects aria-rowindex without Zone.js', async () => {
+    it('virtualIndex change reflects aria-rowindex', async () => {
       const { el, instance, flush } = renderHost(VirtualizedTableHost);
       instance.windowIndices.set([100, 101, 102]);
       await flush();

@@ -710,8 +710,8 @@ describe('ForAccordion', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external value writes in aria-expanded', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       fixture.componentInstance.value.set(['b']);

@@ -831,8 +831,8 @@ describe('ForOtpInput', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects an external value set into the slots without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects an external value write into the slots', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

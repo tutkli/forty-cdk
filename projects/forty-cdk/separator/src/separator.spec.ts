@@ -81,8 +81,8 @@ describe('ForSeparator', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('reflects an orientation flip in data-orientation and aria-orientation', () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

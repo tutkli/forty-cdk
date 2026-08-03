@@ -1823,10 +1823,10 @@ describe('ForTooltip', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
+  describe('reactive updates', () => {
     afterEachOverlayCleanup();
 
-    it('reflects open writes after detectChanges without Zone.js', async () => {
+    it('reflects open writes in the trigger aria-describedby', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;

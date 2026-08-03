@@ -443,7 +443,7 @@ describe('composition matrix (#1387 item 18)', () => {
     });
   });
 
-  describe('real-directive smoke + zoneless', () => {
+  describe('real-directive smoke', () => {
     it('composes [forTableVirtualized] with reorder + resize + variant + measureRows', async () => {
       const { instance, query, flush } = renderHost(RealVirtualMatrixHost);
       await flush();
@@ -452,7 +452,7 @@ describe('composition matrix (#1387 item 18)', () => {
       expect(instance.virtualized().totalSize()).toBe(6 * 44);
     });
 
-    it('reacts to a mode flip without Zone.js (zoneless change detection)', () => {
+    it('reacts to a mode flip on the cell role', () => {
       const { instance, query, fixture } = renderHost(MatrixHost);
       instance.mode.set('grid');
       fixture.detectChanges();

@@ -182,8 +182,8 @@ describe('FormUiControlBase', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('updates data-touched reflection without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('reflects a touched write in data-touched', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
       @Component({

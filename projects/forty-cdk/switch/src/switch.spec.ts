@@ -364,8 +364,8 @@ describe('ForSwitch', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external set without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external checked writes in aria-checked', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.enabled.set(true);
       await flush();

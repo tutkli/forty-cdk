@@ -79,7 +79,7 @@ describe('expandToReveal', () => {
   });
 });
 
-describe('expandToReveal integration (zoneless)', () => {
+describe('expandToReveal integration', () => {
   it('reveals a deep node by expanding its ancestors via [(expanded)]', async () => {
     const { el, fixture, instance } = renderHost(RevealHost);
     await flush(fixture);

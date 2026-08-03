@@ -1102,8 +1102,8 @@ describe('ForStepper', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('aria-selected and data-state update on external selectedIndex writes without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('external selectedIndex writes move aria-selected and drop inert', () => {
       @Component({
         imports: [ForStepper, ForStepperList, ForStepperItem, ForStepperTrigger, ForStepperContent],
         template: `

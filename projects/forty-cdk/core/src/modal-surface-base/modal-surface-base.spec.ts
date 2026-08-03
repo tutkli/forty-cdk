@@ -177,8 +177,8 @@ describe('ModalSurfaceBase', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects host bindings and gates requestClose under provideZonelessChangeDetection', async () => {
+  describe('reactive updates', () => {
+    it('reflects host bindings, gates requestClose and adopts a registered label', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
       const r = renderHost(SurfaceHost);

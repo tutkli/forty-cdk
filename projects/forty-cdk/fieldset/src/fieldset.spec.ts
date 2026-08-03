@@ -272,8 +272,8 @@ describe('ForFieldset', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('updates disabled reflection without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('reflects a disabled write in data-disabled', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
       @Component({

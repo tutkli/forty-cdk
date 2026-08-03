@@ -1507,8 +1507,8 @@ describe('ForDatePicker', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects open + value transitions without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects open and value transitions', async () => {
       const r = renderHost(Host);
       r.instance.open.set(true);
       await flush(r.fixture);

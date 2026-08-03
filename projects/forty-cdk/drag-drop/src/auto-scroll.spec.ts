@@ -1,6 +1,3 @@
-import { TestBed } from '@angular/core/testing';
-import { provideZonelessChangeDetection } from '@angular/core';
-
 import { computeScrollVelocity, createAutoScroller } from './auto-scroll';
 
 describe('computeScrollVelocity', () => {
@@ -187,17 +184,5 @@ describe('createAutoScroller — resolveScrollHost follows the pointer across co
     expect(source.topDelta).toBe(0);
 
     scroller.stop();
-  });
-});
-
-describe('computeScrollVelocity — zoneless guard', () => {
-  it('pure velocity math works under provideZonelessChangeDetection', () => {
-    TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection()],
-    });
-    const rect = { left: 0, top: 0, right: 200, bottom: 200 };
-    const v = computeScrollVelocity(rect, { x: 100, y: 190 }, 50, 20);
-    expect(v.x).toBe(0);
-    expect(v.y).toBeGreaterThan(0);
   });
 });

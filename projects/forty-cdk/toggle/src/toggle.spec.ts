@@ -249,23 +249,6 @@ describe('ForToggle', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external set and click without Zone.js', async () => {
-      const r = renderHost(ToggleHost);
-      const btn = r.query<HTMLButtonElement>('[forToggle]')!;
-
-      r.instance.checked.set(true);
-      await r.flush();
-      expect(btn.getAttribute('aria-pressed')).toBe('true');
-      expect(btn.getAttribute('data-state')).toBe('checked');
-
-      btn.click();
-      await r.flush();
-      expect(btn.getAttribute('aria-pressed')).toBe('false');
-      expect(r.instance.checked()).toBe(false);
-    });
-  });
-
   describe('Signal Forms integration via [formField]', () => {
     interface Prefs {
       bold: boolean;

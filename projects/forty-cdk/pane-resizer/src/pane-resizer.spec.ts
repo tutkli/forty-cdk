@@ -707,8 +707,8 @@ describe('ForPaneResizer', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects aria-value* under provideZonelessChangeDetection', () => {
+  describe('reactive updates', () => {
+    it('reflects a value write in aria-valuenow', () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

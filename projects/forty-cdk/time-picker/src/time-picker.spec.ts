@@ -1005,8 +1005,8 @@ describe('ForTimePicker', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('opens and closes reactively without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('open writes mount and unmount the slot list', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

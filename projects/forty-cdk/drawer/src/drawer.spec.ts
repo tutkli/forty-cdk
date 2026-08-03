@@ -1461,8 +1461,8 @@ describe('ForDrawer (declarative)', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('mounts, traps focus, returns focus on close without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('mounts, traps focus and returns focus on Escape', async () => {
       const r = renderHost(DrawerHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
       trigger.focus();

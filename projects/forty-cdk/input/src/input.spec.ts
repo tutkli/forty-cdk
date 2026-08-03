@@ -351,25 +351,6 @@ describe('ForInput', () => {
       expect(byId(el, 'name').getAttribute('aria-required')).toBe('true');
     });
   });
-
-  describe('zoneless reactivity', () => {
-    it('reflects an external set without Zone.js', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(InputHost);
-      await flush(fixture);
-      const input = inputOf(fixture.nativeElement);
-
-      fixture.componentInstance.text.set('a');
-      await flush(fixture);
-      expect(input.value).toBe('a');
-
-      fixture.componentInstance.text.set('');
-      await flush(fixture);
-      expect(input.getAttribute('data-empty')).toBe('');
-    });
-  });
 });
 
 describe('ForTextarea', () => {

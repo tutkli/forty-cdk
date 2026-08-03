@@ -1079,8 +1079,8 @@ describe('ForContextMenu', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('open state stays reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('a right-click opens and a close write unmounts the content', async () => {
       const r = renderHost(ContextMenuHost);
       rightClick(r.query<HTMLElement>('#region')!, 0, 0);
       await flush(r.fixture);

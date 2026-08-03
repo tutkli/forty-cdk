@@ -440,8 +440,8 @@ describe('ForField', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('updates association state without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('reflects a control invalid flip in data-invalid', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
       @Component({

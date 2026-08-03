@@ -152,8 +152,8 @@ describe('ForBreadcrumbs', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects aria-current and aria-label changes after detectChanges without Zone.js', () => {
+  describe('reactive updates', () => {
+    it('reflects aria-current and aria-label changes', () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

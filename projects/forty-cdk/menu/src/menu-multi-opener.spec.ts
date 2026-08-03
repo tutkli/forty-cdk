@@ -673,8 +673,8 @@ describe('ForMenu (multiple openers, one content block)', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('keeps both openers reactive to the shared open model without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('keeps both openers in sync with the shared open model', async () => {
       const r = renderHost(SharedMenuHost);
       const kebab = r.query<HTMLButtonElement>('[data-testid="kebab"]')!;
       const region = r.query('[data-testid="region"]')!;

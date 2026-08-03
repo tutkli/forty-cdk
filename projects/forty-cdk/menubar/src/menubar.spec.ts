@@ -2056,8 +2056,8 @@ describe('ForMenubar', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('value / aria-expanded / data-state stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects open writes in aria-expanded and data-state', async () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(MenubarHost);

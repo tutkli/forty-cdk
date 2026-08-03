@@ -227,8 +227,8 @@ describe('ForMeter', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects a value write in data-quality', async () => {
       const { fixture, query, flush } = renderHost(MeterHost);
       fixture.componentInstance.low.set(20);
       fixture.componentInstance.high.set(80);

@@ -609,8 +609,8 @@ describe('ForTree', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('updates DOM state without Zone.js after a signal write', async () => {
+  describe('reactive updates', () => {
+    it('reflects an expanded write in aria-expanded and data-state', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TreeHost);
       fixture.detectChanges();
