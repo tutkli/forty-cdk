@@ -12,6 +12,7 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
 import {
   ForNavigationMenu,
   ForNavigationMenuContent,
+  ForNavigationMenuIndicator,
   ForNavigationMenuItem,
   ForNavigationMenuLink,
   ForNavigationMenuList,
@@ -50,6 +51,7 @@ export class NavigationMenuOpenFixture {}
     ForNavigationMenuItem,
     ForNavigationMenuTrigger,
     ForNavigationMenuContent,
+    ForNavigationMenuIndicator,
     ForNavigationMenuLink,
     ForNavigationMenuViewport,
   ],
@@ -62,6 +64,7 @@ export class NavigationMenuOpenFixture {}
             <a href="/web" forNavigationMenuLink>Web</a>
           </div>
         </li>
+        <div forNavigationMenuIndicator></div>
       </ul>
       <div forNavigationMenuViewport></div>
     </nav>

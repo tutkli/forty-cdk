@@ -92,23 +92,29 @@ export class ForNavigationMenuContent {
       value: this.value,
       id: this.id,
     };
-    // Defer registration so the parent's lookups can read `handle.value()`
-    // without hitting the not-yet-bound `input.required` throw on the owning
-    // `[forNavigationMenuItem]`. `unregisterContent` is reference-based, so
-    // destroy-before-register is a safe no-op.
+    // Registered synchronously so the trigger's `contentIdFor` lookup — and this
+    // panel's own `aria-labelledby` — resolve during the same pass that renders
+    // them, including a server render, where `afterNextRender` never fires and a
+    // deferred registration left the pre-hydration DOM unpaired
+    // ([#1409](https://github.com/tutkli/forty-cdk/issues/1409) is the same
+    // failure class in Tabs). The parent's lookups can read `handle.value()`
+    // safely because the owning `[forNavigationMenuItem]`'s `value` is seeded
+    // with the `unsetInput` sentinel instead of being declared `input.required`,
+    // so a lookup running before that binding is written skips the handle rather
+    // than throwing.
     registerHandle(
       handle,
       (h) => this.menu.registerContent(h),
       (h) => this.menu.unregisterContent(h),
-      'afterNextRender',
     );
 
     warnIfMountedWhileClosed({
       primitive: 'navigation-menu',
       piece: '[forNavigationMenuContent]',
       // A thunk, so the quoted fix carries this panel's own value rather than a
-      // placeholder — `value` is the owning item's `input.required`, readable
-      // only once the helper's render hook runs.
+      // placeholder — `value` is the owning item's binding, which the consumer
+      // has written by the time the helper's render hook runs (before that it
+      // reads the `unsetInput` sentinel).
       condition: () => `open() === '${this.value()}'`,
       open: () => this.menu.isOpen(this.value()),
     });
@@ -128,12 +134,13 @@ export class ForNavigationMenuContent {
     // Re-parent (and re-order) the panel reactively once mounted.
     // `triggerHostFor` reads the menu's trigger collection, so this re-runs
     // whenever this panel's trigger registers or unregisters — closing the
-    // race where the trigger registers AFTER the content (both defer to
-    // `afterNextRender`). Until the trigger is known the panel sorts last;
-    // once it registers the viewport re-orders it into trigger document
-    // order. The re-parent is a DOM side effect on the imperative viewport
-    // handle (no signal writes), and it waits for `#mounted` so it never runs
-    // before `afterNextRender` has attached the panel under the viewport.
+    // race where the trigger is not yet resolvable when the content mounts
+    // (its item's `value` binding may still be unwritten, so the lookup skips
+    // it). Until the trigger is known the panel sorts last; once it resolves
+    // the viewport re-orders it into trigger document order. The re-parent is a
+    // DOM side effect on the imperative viewport handle (no signal writes), and
+    // it waits for `#mounted` so it never runs before `afterNextRender` has
+    // attached the panel under the viewport.
     //
     // Note: the trigger collection is backed by a `MutationObserver`, and this
     // very `appendChild` re-parent mutates the observed subtree, so the

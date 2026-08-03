@@ -426,11 +426,16 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     component: NavigationMenuOpenFixture,
     open: true,
     markup: [
-      { select: '[forNavigationMenuTrigger]', attributes: { 'aria-expanded': 'true' } },
+      {
+        select: '[forNavigationMenuTrigger]',
+        attributes: { 'aria-expanded': 'true' },
+        pairs: { 'aria-controls': '[forNavigationMenuContent]' },
+      },
       {
         select: '[forNavigationMenuContent]',
         attributes: { 'data-state': 'open' },
         present: ['id'],
+        pairs: { 'aria-labelledby': '[forNavigationMenuTrigger]' },
       },
     ],
   },
@@ -442,7 +447,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         select: '[forNavigationMenuViewport]',
         attributes: { 'aria-hidden': 'false', 'data-state': 'open' },
       },
-      { select: '[forNavigationMenuContent]', within: '[forNavigationMenuItem]' },
+      {
+        select: '[forNavigationMenuContent]',
+        within: '[forNavigationMenuItem]',
+        pairs: { 'aria-labelledby': '[forNavigationMenuTrigger]' },
+      },
     ],
   },
   {
