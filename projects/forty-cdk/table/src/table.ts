@@ -40,6 +40,16 @@ import { TableRegistry } from './table-registry';
 import { TableRowSelection } from './table-row-selection';
 import { TableExpansion } from './table-expansion';
 
+/**
+ * The value [ARIA reserves](https://www.w3.org/TR/wai-aria-1.2/#aria-rowcount) on
+ * `aria-rowcount` / `aria-colcount` for a total the author cannot determine. It is
+ * what a `grid` / `treegrid` reports when no channel knows the count: a `0` there
+ * would state that a grid claiming rows has no columns at all (or that a windowed
+ * grid has no rows), a contradiction a screen reader cannot reconcile — and `0` is
+ * itself in range, so it reads as a real answer rather than as a missing one.
+ */
+const UNKNOWN_COUNT = -1;
+
 /** Grid actions whose target may lie on a row outside the rendered virtualized window. */
 const ROW_CROSSING_ACTIONS: ReadonlySet<GridNavigationAction> = new Set([
   'next-row',
@@ -112,7 +122,10 @@ export class ForTable<T = unknown> implements ForTableContext {
    * automatically from its `rows` dataset length, so bind `[rowCount]` only for a
    * server-known total larger than the loaded rows; when set it wins over the
    * body-derived count. Defaults to the body count, else the rendered data-row
-   * count. Ignored in `mode="table"`.
+   * count — and when no channel knows the count (no input, no body, no rendered
+   * data row) `aria-rowcount` reports `-1`, the value ARIA reserves for an unknown
+   * total, rather than counting the header row alone. An explicit value is emitted
+   * verbatim, including `0`. Ignored in `mode="table"`.
    */
   readonly _rowCountInput = input<number | undefined>(undefined, { alias: 'rowCount' });
 
@@ -141,8 +154,12 @@ export class ForTable<T = unknown> implements ForTableContext {
 
   /**
    * True total number of columns for `aria-colcount`. Defaults to the rendered
-   * column count (the cells of the first data row that has any). Ignored in
-   * `mode="table"`.
+   * column count (the cells of the first data row that has any, else the registered
+   * header cells) — and when no channel knows the count, `aria-colcount` reports
+   * `-1`, the value ARIA reserves for an unknown total. That is the shape a
+   * virtualized grid with no header row has until its first window resolves: no row
+   * is rendered, so no cell has registered. An explicit value is emitted verbatim,
+   * including `0`. Ignored in `mode="table"`.
    */
   readonly colCount = input<number>();
 
@@ -329,14 +346,28 @@ export class ForTable<T = unknown> implements ForTableContext {
     return this.#rowOfCell(active)?.virtualIndex() ?? null;
   });
 
-  protected readonly rowCountAttr = computed<number | null>(() =>
-    this.mode() === 'table'
-      ? null
-      : (this.rowCount() ?? this.#registry.rows().length) + this.dataRowIndexOffset(),
-  );
-  protected readonly colCountAttr = computed<number | null>(() =>
-    this.mode() === 'table' ? null : (this.colCount() ?? this.#cols()),
-  );
+  protected readonly rowCountAttr = computed<number | null>(() => {
+    if (this.mode() === 'table') {
+      return null;
+    }
+    const total = this.rowCount();
+    if (total !== undefined) {
+      return total + this.dataRowIndexOffset();
+    }
+    const rendered = this.#registry.rows().length;
+    return rendered === 0 ? UNKNOWN_COUNT : rendered + this.dataRowIndexOffset();
+  });
+  protected readonly colCountAttr = computed<number | null>(() => {
+    if (this.mode() === 'table') {
+      return null;
+    }
+    const total = this.colCount();
+    if (total !== undefined) {
+      return total;
+    }
+    const rendered = this.#cols();
+    return rendered === 0 ? UNKNOWN_COUNT : rendered;
+  });
 
   isRowExpanded(value: T): boolean {
     return this.#expansion.isExpanded(value);

@@ -733,6 +733,7 @@ describe('SSR smoke tests', () => {
     const root = f.nativeElement.querySelector('[forTable]') as HTMLElement;
     expect(root.getAttribute('role')).toBe('grid');
     expect(root.getAttribute('aria-rowcount')).toBe('1000');
+    expect(root.getAttribute('aria-colcount')).toBe('-1');
     expect(f.nativeElement.querySelectorAll('[forTableRow]').length).toBe(0);
     const body = f.nativeElement.querySelector('[role="rowgroup"]') as HTMLElement;
     expect(body.style.height).toBe('44000px');
