@@ -1,5 +1,5 @@
 import { ɵPLATFORM_SERVER_ID, isPlatformServer } from '@angular/common';
-import { PLATFORM_ID, provideZonelessChangeDetection } from '@angular/core';
+import { PLATFORM_ID, type Type, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import {
@@ -20,33 +20,13 @@ import * as overlayFixtures from './fixtures/overlay';
 import * as tableFixtures from './fixtures/table';
 
 import {
-  AccordionRtlFixture,
-  DisclosureFixture,
   StepperServerFixture,
   TabsServerFixture,
   TabsServerRepeatFixture,
 } from './fixtures/disclosure';
-import {
-  AvatarFixture,
-  BreadcrumbsFixture,
-  MeterFixture,
-  PaginationFixture,
-  ProgressFixture,
-  SeparatorFixture,
-  VisuallyHiddenFixture,
-} from './fixtures/display';
-import {
-  ButtonFixture,
-  FieldFixture,
-  FileUploadFixture,
-  SearchFixture,
-  ToggleGroupFixture,
-} from './fixtures/form';
-import {
-  MenuMultiOpenerOpenFixture,
-  MenuSubOpenFixture,
-  NavigationMenuViewportOpenFixture,
-} from './fixtures/menu';
+import { BreadcrumbsFixture, PaginationFixture, VisuallyHiddenFixture } from './fixtures/display';
+import { FieldFixture, SearchFixture, ToggleGroupFixture } from './fixtures/form';
+import { MenuMultiOpenerOpenFixture, NavigationMenuViewportOpenFixture } from './fixtures/menu';
 import { CarouselFixture, VirtualViewportFixture, VirtualizerFixture } from './fixtures/motion';
 import { OPEN_STATE_FIXTURES, SSR_FIXTURES, type SsrMarkup } from './fixtures/registry';
 import {
@@ -66,7 +46,7 @@ import {
  * cases below run over that registry, so a new primitive owes a fixture and a
  * registry entry, never a new hand-written `it`.
  *
- * The five sweeps, and what each one alone would miss:
+ * The six sweeps, and what each one alone would miss:
  *
  * - **renders without throwing** — the primitive constructs and paints on the
  *   server at all. Blind to markup that renders but says nothing.
@@ -80,8 +60,13 @@ import {
  *   no trigger↔panel pairing) and #1377 (stepper painted the completed state)
  *   both walked past.
  * - **leaves `<body>` untouched** — no portal appends a node, no scroll lock
- *   writes `style`, no `InertSiblingsStack` marks a sibling. Blind to a side
- *   effect that only subscribes, and to a re-parent *within* the fixture tree.
+ *   writes `style`, and no `InertSiblingsStack` mark on the branch holding the
+ *   fixture (asserted beside the snapshot, which structurally cannot see it —
+ *   see {@link describeBody}). Blind to a side effect that only subscribes, and
+ *   to a re-parent *within* the fixture tree.
+ * - **appends nothing to `<head>`** — the second document-level escape, and the
+ *   one an `open` state does not gate: `[forScrollAreaViewport]` injects its
+ *   global stylesheet from its constructor.
  * - **installs no global listener** / **schedules no timer** — the escapes a
  *   `<body>` snapshot cannot see, since jsdom hands the server render a real
  *   `document` and `window`.
@@ -133,7 +118,9 @@ function configureServer(): void {
 
 /**
  * Every fixture module, so a fixture that was written but never registered is a
- * failing test rather than dead code the sweeps silently skip.
+ * failing test rather than dead code the sweeps silently skip. Only the
+ * components are audited (see `isFixtureComponent`) — a module may export a
+ * shared constant without owing a registry entry.
  */
 const FIXTURE_MODULES = {
   collection: collectionFixtures,
@@ -146,6 +133,16 @@ const FIXTURE_MODULES = {
   overlay: overlayFixtures,
   table: tableFixtures,
 };
+
+/**
+ * Whether a fixture module's export is a component the sweeps could mount.
+ * `ɵcmp` is what `@Component` compiles to, so the audit above keys on being a
+ * component rather than on a name convention — and a shared constant a fixture
+ * module exports is skipped instead of being reported as unregistered.
+ */
+function isFixtureComponent(value: unknown): value is Type<unknown> {
+  return typeof value === 'function' && 'ɵcmp' in value;
+}
 
 /**
  * The attributes hydration matches on — a role, a state, or a relationship.
@@ -200,15 +197,21 @@ function assertMarkup(host: HTMLElement, expectation: SsrMarkup): void {
 
 /**
  * Everything a server render must leave alone on `<body>`: its own attributes,
- * plus the identity and attribute set of each child. One snapshot covers all
- * three escapes — a portal appends a child, the scroll lock writes `style`, and
- * `InertSiblingsStack` marks the portal root's siblings (the fixture host among
- * them) `inert`.
+ * plus the identity and attribute set of each child. That covers two of the
+ * three escapes — a portal appends a child, and the scroll lock writes `style`.
  *
  * `exclude` drops the branch holding the fixture host, which `TestBed` appends
  * itself. That is what lets the baseline be taken _before_ `createComponent`, so
  * a mutation from a directive constructor — which runs in the template's
  * creation pass, before any `detectChanges()` — is inside the window too.
+ *
+ * The exclusion is also this snapshot's blind spot, and it is exactly the third
+ * escape: `InertSiblingsStack` marks the portal root's **siblings**, which in
+ * this suite means either the `TestBed` branch (dropped here) or — for a
+ * `[container]`-scoped modal — a node inside the fixture host, which is not a
+ * `<body>` child at all. So the `inert` channel is asserted separately by
+ * {@link inertAncestry}, and only reaches this snapshot transitively, through
+ * the portal append that would have preceded it.
  */
 function describeBody(exclude?: Element): readonly string[] {
   return [
@@ -223,17 +226,62 @@ function describeBody(exclude?: Element): readonly string[] {
   ];
 }
 
+/**
+ * The fixture host and every ancestor of it carrying `inert` — the channel
+ * {@link describeBody}'s `exclude` drops. A server render must mark none of
+ * them: `InertSiblingsStack` inerts the siblings of the element a modal portals
+ * into, and in this suite the `TestBed` branch holding the host is the sibling
+ * it would reach.
+ *
+ * The walk stops at the ancestry on purpose. `inert` **inside** the host is
+ * legitimate — the always-mounted panel family reflects `aria-hidden` + `inert`
+ * while closed, and an open-state fixture renders it (`CarouselAutoplayFixture`
+ * inerts its off-view slides) — so a blanket `[inert]` count would report the
+ * convention. A `[container]`-scoped modal whose container has siblings is
+ * therefore still uncovered; no registered fixture has that shape.
+ */
+function inertAncestry(host: HTMLElement): readonly string[] {
+  const marked: string[] = [];
+  for (let el: Element | null = host; el !== null; el = el.parentElement) {
+    if (el.hasAttribute('inert')) marked.push(el.tagName.toLowerCase());
+  }
+  return marked;
+}
+
+/**
+ * The identity and attribute set of every `<head>` child. `<body>` is not the
+ * only document-level escape: `[forScrollAreaViewport]` is the library's one
+ * sanctioned global-CSS injector and appends a `<style>` to `<head>` from its
+ * constructor, so nothing about `open` state gates it and no `<body>` snapshot
+ * can see it.
+ */
+function describeHead(): readonly string[] {
+  return Array.from(document.head.children).map(
+    (child) =>
+      `${child.tagName.toLowerCase()}#${child.id}[${child.getAttributeNames().sort().join(' ')}]`,
+  );
+}
+
 describe('SSR smoke tests', () => {
+  // A `<head>` injection is document-level and idempotent by id, so it survives
+  // `resetTestingModule()` — leaving it in place would make the `<head>` sweep a
+  // false negative for every fixture after the first one that injected.
+  let headBaseline: readonly Element[] = [];
+
   beforeEach(() => {
     serverModeGlobal.ngServerMode = true;
     for (const name of ABSENT_ON_A_REAL_SERVER) {
       vi.stubGlobal(name, undefined);
     }
+    headBaseline = Array.from(document.head.children);
     configureServer();
   });
 
   afterEach(() => {
     TestBed.resetTestingModule();
+    for (const child of Array.from(document.head.children)) {
+      if (!headBaseline.includes(child)) child.remove();
+    }
     delete serverModeGlobal.ngServerMode;
   });
 
@@ -255,7 +303,7 @@ describe('SSR smoke tests', () => {
     );
     const unregistered = Object.entries(FIXTURE_MODULES).flatMap(([group, module]) =>
       Object.entries(module)
-        .filter(([, component]) => !registered.has(component))
+        .filter(([, value]) => isFixtureComponent(value) && !registered.has(value))
         .map(([name]) => `${group}: ${name}`),
     );
 
@@ -307,37 +355,29 @@ describe('SSR smoke tests', () => {
         const before = describeBody();
         const f = TestBed.createComponent(fixture);
         f.detectChanges();
+        const host = f.nativeElement as HTMLElement;
 
-        expect(describeBody(f.nativeElement as HTMLElement)).toEqual(before);
+        expect(describeBody(host)).toEqual(before);
+        expect(inertAncestry(host)).toEqual([]);
       });
     }
   });
 
-  it('Disclosure renders ARIA wiring (id, aria-controls, aria-expanded) server-side', () => {
-    const f = TestBed.createComponent(DisclosureFixture);
-    f.detectChanges();
-    const trigger = f.nativeElement.querySelector('[forDisclosureTrigger]') as HTMLElement;
-    const content = f.nativeElement.querySelector('[forDisclosureContent]') as HTMLElement;
-    expect(trigger.getAttribute('aria-expanded')).toBe('false');
-    // Closed → aria-controls is gated off (open-only), so it must be absent on
-    // the server too; the stable content id is what hydration matches on.
-    expect(content.getAttribute('id')).toBeTruthy();
-    expect(trigger.hasAttribute('aria-controls')).toBe(false);
-  });
+  // The `<body>` sweep's sibling, over every fixture rather than the open ones:
+  // `[forScrollAreaViewport]` injects its native-scrollbar-hiding `<style>` from
+  // its constructor, so an open state is irrelevant and a `<body>` snapshot
+  // cannot see it. It is the library's only sanctioned global-CSS injection, and
+  // an ungated one would ship a `<style>` per Universal request.
+  describe('server render appends nothing to <head>', () => {
+    for (const { component } of SSR_FIXTURES) {
+      it(`${component.name} injects no document-level stylesheet`, () => {
+        const before = describeHead();
+        const f = TestBed.createComponent(component);
+        f.detectChanges();
 
-  it('Accordion reflects dir="rtl" from an ancestor [dir="rtl"] server-side', () => {
-    const f = TestBed.createComponent(AccordionRtlFixture);
-    f.detectChanges();
-    const root = f.nativeElement.querySelector('[forAccordion]') as HTMLElement;
-    expect(root.getAttribute('dir')).toBe('rtl');
-  });
-
-  it('AvatarImage mounts with data-status server-side without constructing a MutationObserver', () => {
-    const f = TestBed.createComponent(AvatarFixture);
-    f.detectChanges();
-    const img = f.nativeElement.querySelector('[forAvatarImage]') as HTMLImageElement;
-    expect(img).not.toBeNull();
-    expect(img.hasAttribute('data-status')).toBe(true);
+        expect(describeHead()).toEqual(before);
+      });
+    }
   });
 
   it('Field wires label/control aria association (aria-labelledby, aria-describedby, aria-errormessage) server-side', () => {
@@ -499,18 +539,6 @@ describe('SSR smoke tests', () => {
     expect(item.contains(content)).toBe(true);
     expect(viewport.contains(content)).toBe(false);
     expect(viewport.children.length).toBe(0);
-  });
-
-  it('an open submenu wires the sub-trigger ARIA server-side', () => {
-    const f = TestBed.createComponent(MenuSubOpenFixture);
-    f.detectChanges();
-    const root = f.nativeElement as HTMLElement;
-    const subTrigger = root.querySelector('[forMenuSubTrigger]') as HTMLElement;
-    const subContent = root.querySelector('[forMenuSubContent]') as HTMLElement;
-    expect(subTrigger.getAttribute('role')).toBe('menuitem');
-    expect(subTrigger.getAttribute('aria-haspopup')).toBe('menu');
-    expect(subTrigger.getAttribute('aria-expanded')).toBe('true');
-    expect(subTrigger.getAttribute('aria-controls')).toBe(subContent.getAttribute('id'));
   });
 
   it('gives each [forMenu] opener its own id server-side', () => {
@@ -697,15 +725,6 @@ describe('SSR smoke tests', () => {
     expect(currentButtons.length).toBe(1);
   });
 
-  it('FileUpload renders the native input with type="file" and the trigger with type="button" server-side', () => {
-    const f = TestBed.createComponent(FileUploadFixture);
-    f.detectChanges();
-    const input = f.nativeElement.querySelector('input[forFileUploadInput]') as HTMLInputElement;
-    expect(input.getAttribute('type')).toBe('file');
-    const trigger = f.nativeElement.querySelector('[forFileUploadTrigger]') as HTMLButtonElement;
-    expect(trigger.getAttribute('type')).toBe('button');
-  });
-
   it('Breadcrumbs renders role="navigation" + default label + one aria-current="page" link server-side', () => {
     const f = TestBed.createComponent(BreadcrumbsFixture);
     f.detectChanges();
@@ -736,16 +755,6 @@ describe('SSR smoke tests', () => {
     });
   });
 
-  it('Button renders role/tabindex on a non-button host and type on a native button server-side', () => {
-    const f = TestBed.createComponent(ButtonFixture);
-    f.detectChanges();
-    const native = f.nativeElement.querySelector('button[forButton]') as HTMLElement;
-    const custom = f.nativeElement.querySelector('div[forButton]') as HTMLElement;
-    expect(native.getAttribute('type')).toBe('button');
-    expect(custom.getAttribute('role')).toBe('button');
-    expect(custom.getAttribute('tabindex')).toBe('0');
-  });
-
   it('Search renders role="searchbox" + a hidden clear button server-side', () => {
     const f = TestBed.createComponent(SearchFixture);
     f.detectChanges();
@@ -755,33 +764,6 @@ describe('SSR smoke tests', () => {
       'button[aria-label="Clear search"]',
     ) as HTMLButtonElement;
     expect(clear.hasAttribute('hidden')).toBe(true);
-  });
-
-  it('Meter renders role="meter" + coherent aria-value* server-side', () => {
-    const f = TestBed.createComponent(MeterFixture);
-    f.detectChanges();
-    const meter = f.nativeElement.querySelector('[forMeter]') as HTMLElement;
-    expect(meter.getAttribute('role')).toBe('meter');
-    expect(meter.getAttribute('aria-valuemin')).toBe('0');
-    expect(meter.getAttribute('aria-valuemax')).toBe('100');
-    expect(meter.getAttribute('aria-valuenow')).toBe('40');
-  });
-
-  it('Progress renders role="progressbar" + aria-value* server-side', () => {
-    const f = TestBed.createComponent(ProgressFixture);
-    f.detectChanges();
-    const progress = f.nativeElement.querySelector('[forProgress]') as HTMLElement;
-    expect(progress.getAttribute('role')).toBe('progressbar');
-    expect(progress.getAttribute('aria-valuemin')).toBe('0');
-    expect(progress.getAttribute('aria-valuemax')).toBe('100');
-    expect(progress.getAttribute('aria-valuenow')).toBe('40');
-  });
-
-  it('Separator renders role="separator" server-side', () => {
-    const f = TestBed.createComponent(SeparatorFixture);
-    f.detectChanges();
-    const separator = f.nativeElement.querySelector('[forSeparator]') as HTMLElement;
-    expect(separator.getAttribute('role')).toBe('separator');
   });
 
   it('Toggle group renders role="group" + toggle buttons with aria-pressed server-side', () => {
@@ -820,18 +802,6 @@ describe('SSR smoke tests', () => {
       expect(next.hasAttribute('aria-disabled')).toBe(false);
 
       expect(progress.getAttribute('aria-valuetext')).toBe('Step 1 of 2');
-    });
-
-    it('wires the current trigger/panel aria pairing server-side (aria-labelledby / aria-controls)', () => {
-      const f = TestBed.createComponent(StepperServerFixture);
-      f.detectChanges();
-      const root = f.nativeElement as HTMLElement;
-
-      const triggers = Array.from(root.querySelectorAll<HTMLElement>('[forStepperTrigger]'));
-      const panels = Array.from(root.querySelectorAll<HTMLElement>('[forStepperContent]'));
-
-      expect(panels[0]!.getAttribute('aria-labelledby')).toBe(triggers[0]!.getAttribute('id'));
-      expect(triggers[0]!.getAttribute('aria-controls')).toBe(panels[0]!.getAttribute('id'));
     });
   });
 

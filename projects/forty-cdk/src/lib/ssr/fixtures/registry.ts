@@ -124,7 +124,12 @@ export interface SsrMarkup {
   readonly select: string;
   /** Attributes that must carry exactly this value — `null` asserts absence. */
   readonly attributes?: Readonly<Record<string, string | null>>;
-  /** Attributes that must carry a non-empty value, whatever it is. */
+  /**
+   * Attributes that must carry a non-empty value, whatever it is — a generated
+   * `id`, a `data-status` token. A **boolean** `data-*` / `hidden` attribute is
+   * emitted with an empty value by convention, so it is falsy here and belongs
+   * in {@link SsrMarkup.attributes} as `''` instead.
+   */
   readonly present?: readonly string[];
   /**
    * Attribute → selector of the element whose `id` it must equal. This is the
@@ -172,7 +177,16 @@ export interface SsrFixture {
  * not throw and emitted *some* wiring.
  */
 export const SSR_FIXTURES: readonly SsrFixture[] = [
-  { component: DisclosureFixture },
+  {
+    component: DisclosureFixture,
+    markup: [
+      {
+        select: '[forDisclosureTrigger]',
+        attributes: { 'aria-expanded': 'false', 'aria-controls': null },
+      },
+      { select: '[forDisclosureContent]', present: ['id'] },
+    ],
+  },
   {
     component: AccordionFixture,
     markup: [
@@ -184,7 +198,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forAccordionContent]', present: ['id'] },
     ],
   },
-  { component: AccordionRtlFixture },
+  {
+    component: AccordionRtlFixture,
+    markup: [{ select: '[forAccordion]', attributes: { dir: 'rtl' } }],
+  },
   {
     component: TabsFixture,
     markup: [
@@ -220,7 +237,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     ],
   },
   { component: StepperCompletedFixture },
-  { component: StepperServerFixture },
+  {
+    component: StepperServerFixture,
+    markup: [
+      { select: '[forStepperTrigger]', pairs: { 'aria-controls': '[forStepperContent]' } },
+      { select: '[forStepperContent]', pairs: { 'aria-labelledby': '[forStepperTrigger]' } },
+    ],
+  },
   { component: CarouselFixture },
   {
     component: CarouselAutoplayFixture,
@@ -247,7 +270,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     noWiring: 'a native <textarea>; autosize writes inline style only',
   },
   { component: SearchFixture },
-  { component: ButtonFixture },
+  {
+    component: ButtonFixture,
+    markup: [
+      { select: 'button[forButton]', attributes: { type: 'button' } },
+      { select: 'div[forButton]', attributes: { role: 'button', tabindex: '0' } },
+    ],
+  },
   {
     component: RadioFixture,
     markup: [
@@ -445,7 +474,10 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   { component: TreeCascadeFixture },
   { component: TreeVirtualizedFixture },
   { component: TreeNodeDragFixture },
-  { component: CalendarFixture },
+  {
+    component: CalendarFixture,
+    markup: [{ select: '[forCalendarGrid]', pairs: { 'aria-labelledby': '[forCalendarHeading]' } }],
+  },
   { component: CalendarDropdownsFixture },
   { component: CalendarSelectDirectivesFixture },
   { component: CalendarMonthViewFixture },
@@ -512,6 +544,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     open: true,
     markup: [
       { select: '[forMenuContent]', attributes: { role: 'menu' } },
+      {
+        select: '[forMenuSubTrigger]',
+        attributes: { role: 'menuitem', 'aria-haspopup': 'menu', 'aria-expanded': 'true' },
+        pairs: { 'aria-controls': '[forMenuSubContent]' },
+      },
       { select: '[forMenuSubContent]', attributes: { role: 'menu', 'data-state': 'open' } },
     ],
   },
@@ -572,16 +609,51 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   { component: PaginationFixture },
   { component: BreadcrumbsFixture },
-  { component: MeterFixture },
-  { component: ProgressFixture },
+  {
+    component: MeterFixture,
+    markup: [
+      {
+        select: '[forMeter]',
+        attributes: {
+          role: 'meter',
+          'aria-valuemin': '0',
+          'aria-valuemax': '100',
+          'aria-valuenow': '40',
+        },
+      },
+    ],
+  },
+  {
+    component: ProgressFixture,
+    markup: [
+      {
+        select: '[forProgress]',
+        attributes: {
+          role: 'progressbar',
+          'aria-valuemin': '0',
+          'aria-valuemax': '100',
+          'aria-valuenow': '40',
+        },
+      },
+    ],
+  },
   {
     component: ToggleFixture,
     markup: [{ select: '[forToggle]', attributes: { 'aria-pressed': 'false' } }],
   },
   { component: ToggleGroupFixture },
-  { component: SeparatorFixture },
+  {
+    component: SeparatorFixture,
+    markup: [{ select: '[forSeparator]', attributes: { role: 'separator' } }],
+  },
   { component: AspectRatioFixture, noWiring: 'the ratio is inline style only' },
-  { component: FileUploadFixture },
+  {
+    component: FileUploadFixture,
+    markup: [
+      { select: 'input[forFileUploadInput]', attributes: { type: 'file' } },
+      { select: '[forFileUploadTrigger]', attributes: { type: 'button' } },
+    ],
+  },
   { component: VirtualizerFixture, noWiring: 'the sizer is inline style only' },
   { component: VirtualViewportFixture, noWiring: 'the sizer is inline style only' },
   { component: VirtualReorderFixture, noWiring: 'the sizer is inline style only' },

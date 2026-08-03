@@ -85,7 +85,6 @@ export class DialogOpenFixture {}
 export class DialogContainedFixture {}
 
 @Component({
-  standalone: true,
   imports: [ForDialog, ForDialogBackdrop, ForDialogTitle],
   template: `
     <section #box style="position: relative">
@@ -122,7 +121,6 @@ export class DrawerOpenFixture {}
 export class DrawerContainedFixture {}
 
 @Component({
-  standalone: true,
   imports: [ForDrawer, ForDrawerBackdrop, ForDrawerTitle],
   template: `
     <section #box style="position: relative">
