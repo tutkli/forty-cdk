@@ -134,7 +134,7 @@ describe('injectInfiniteScroll', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('fires under zoneless change detection when the window reaches the end', async () => {
+  it('fires when the window reaches the end', async () => {
     const fixture = TestBed.createComponent(Host);
     const spy = vi.fn();
     fixture.componentInstance.onLoadMore = spy;

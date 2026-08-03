@@ -454,7 +454,7 @@ describe('ForDateRangeField', () => {
       expect(range.end.getTime()).toBe(new Date(2026, 5, 2).getTime());
     });
 
-    it('does not rewrite the range value on a transient keystroke under zoneless CD', async () => {
+    it('does not rewrite the range value on a transient keystroke', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);
@@ -889,8 +889,8 @@ describe('ForDateRangeField', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('rehydrates both endpoints from an external value write without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('rehydrates both endpoints from an external value write', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);
@@ -911,7 +911,7 @@ describe('ForDateRangeField', () => {
       expect(sg('end-day').textContent?.trim()).toBe('14');
       expect(root.getAttribute('data-empty')).toBeNull();
 
-      // A second external write re-derives both endpoints, no Zone.js involved.
+      // A second external write re-derives both endpoints.
       fixture.componentInstance.value.set({
         start: new Date(2027, 11, 1),
         end: new Date(2027, 11, 25),

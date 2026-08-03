@@ -454,8 +454,8 @@ describe('ForButton', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('fires activate on click and reflects disabled without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('stops firing activate once disabled flips true', async () => {
       const r = renderHost(ActivateHost);
       const btn = r.query<HTMLButtonElement>('[forButton]')!;
 
@@ -474,7 +474,7 @@ describe('ForButton', () => {
       expect(btn.hasAttribute('data-disabled')).toBe(true);
     });
 
-    it('reflects a fieldset disabled flip without Zone.js', async () => {
+    it('reflects a fieldset disabled flip in aria-disabled and data-disabled', async () => {
       const r = renderHost(FieldsetNativeHost);
       const btn = r.query<HTMLButtonElement>('[forButton]')!;
       expect(btn.hasAttribute('aria-disabled')).toBe(false);

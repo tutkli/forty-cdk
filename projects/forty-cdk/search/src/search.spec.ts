@@ -1,12 +1,11 @@
-import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { Component, signal, viewChild } from '@angular/core';
 import { form, FormField, required } from '@angular/forms/signals';
 
 import {
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
-import { afterEachOverlayCleanup, flush, pressKey } from '../../src/test-utils';
+import { afterEachOverlayCleanup, pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import { ForDialog } from 'forty-cdk/dialog';
 import { ForField, ForLabel } from 'forty-cdk/field';
@@ -164,7 +163,7 @@ describe('ForSearch', () => {
     });
 
     it('becomes visible once value is non-empty', async () => {
-      const { el, fixture, flush } = renderHost(SearchHost);
+      const { el, flush } = renderHost(SearchHost);
       const input = searchOf(el);
       const clear = clearOf(el);
 
@@ -700,62 +699,6 @@ describe('ForSearch', () => {
       const { el } = renderHost(FieldHost);
       const control = q(el, 'control');
       expect(control.getAttribute('aria-labelledby')).toBe(q(el, 'label').id);
-    });
-  });
-
-  describe('zoneless reactivity', () => {
-    it('reflects an external set without Zone.js', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(SearchHost);
-      await flush(fixture);
-      const input = searchOf(fixture.nativeElement);
-
-      fixture.componentInstance.text.set('hello');
-      await flush(fixture);
-      expect(input.value).toBe('hello');
-      expect(input.hasAttribute('data-empty')).toBe(false);
-
-      fixture.componentInstance.text.set('');
-      await flush(fixture);
-      expect(input.getAttribute('data-empty')).toBe('');
-    });
-
-    it('clears on Escape without Zone.js', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(SearchHost);
-      await flush(fixture);
-      const input = searchOf(fixture.nativeElement);
-
-      fixture.componentInstance.text.set('hello');
-      await flush(fixture);
-
-      pressKey(input, 'Escape');
-      await flush(fixture);
-      expect(input.value).toBe('');
-      expect(input.getAttribute('data-empty')).toBe('');
-    });
-
-    it('respects [clearOnEscape]="false" without Zone.js', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(SearchHost);
-      await flush(fixture);
-      const input = searchOf(fixture.nativeElement);
-
-      fixture.componentInstance.clearOnEscape.set(false);
-      fixture.componentInstance.text.set('hello');
-      await flush(fixture);
-
-      const event = pressKey(input, 'Escape');
-      await flush(fixture);
-      expect(input.value).toBe('hello');
-      expect(fixture.componentInstance.text()).toBe('hello');
-      expect(event.defaultPrevented).toBe(false);
     });
   });
 });

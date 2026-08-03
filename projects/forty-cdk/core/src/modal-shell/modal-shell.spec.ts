@@ -846,8 +846,8 @@ describe('injectModalShell', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('runs the full lifecycle under provideZonelessChangeDetection', async () => {
+  describe('lifecycle wiring', () => {
+    it('wires mount, Escape dismissal and the close veto in one lifecycle', async () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
@@ -870,11 +870,11 @@ describe('injectModalShell', () => {
       expect(ctx.handle().isModal()).toBe(true);
       expect(ctx.surface()?.parentElement).toBe(document.body);
 
-      // Dismiss-bundle wiring works in zoneless.
+      // Dismiss-bundle wiring fired.
       pressKey(document, 'Escape');
       expect(escapeCalls).toEqual(['escape']);
 
-      // Destroy wiring works in zoneless.
+      // Destroy wiring fired.
       ctx.close();
       expect(closeCalls).toEqual(['close-veto']);
       ctx.destroy();

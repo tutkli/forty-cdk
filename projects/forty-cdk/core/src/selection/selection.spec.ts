@@ -90,7 +90,7 @@ describe('singleSelected', () => {
     expect(singleSelected(value)()).toBe(null);
   });
 
-  it('reacts to source changes without Zone.js', () => {
+  it('reacts to source changes', () => {
     const value = signal<readonly string[]>([]);
     const selected = singleSelected(value);
     expect(selected()).toBe(null);

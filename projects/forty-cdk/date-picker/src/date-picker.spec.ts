@@ -461,7 +461,7 @@ describe('ForDatePicker', () => {
       expect(document.querySelector<HTMLElement>('[forDatePickerContent]')).not.toBeNull();
     });
 
-    it('reacts to anchor registration without zone.js', async () => {
+    it('reacts to anchor registration', async () => {
       const r = renderHost(AnchorHost);
       r.instance.showAnchor.set(false);
       await flush(r.fixture);
@@ -561,7 +561,7 @@ describe('ForDatePicker', () => {
       expect(document.querySelector('[forDatePickerContent]')).not.toBeNull();
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const t = r.query<HTMLButtonElement>('button')!;
 
@@ -1507,8 +1507,8 @@ describe('ForDatePicker', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects open + value transitions without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects open and value transitions', async () => {
       const r = renderHost(Host);
       r.instance.open.set(true);
       await flush(r.fixture);

@@ -605,8 +605,8 @@ describe('injectOverlayShell', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('runs the lifecycle under provideZonelessChangeDetection', async () => {
+  describe('lifecycle wiring', () => {
+    it('moves initial focus, dismisses on Escape and returns focus on close', async () => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],

@@ -286,7 +286,7 @@ describe('ForFreeDrag', () => {
     expect(rootB.style.transform).toBe('translate(5px, 5px)');
   });
 
-  it('applies the position transform to the host (zoneless)', async () => {
+  it('applies the position transform to the host', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(BoxHost);
     fixture.detectChanges();

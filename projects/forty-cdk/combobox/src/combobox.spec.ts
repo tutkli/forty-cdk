@@ -2389,8 +2389,8 @@ describe('ForCombobox', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('open / value / aria stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('open and value writes reach aria-expanded and aria-selected', async () => {
       const r = renderHost(ComboboxHost);
       const input = getInput();
 
@@ -2631,7 +2631,7 @@ describe('ForCombobox', () => {
       expect(input.getAttribute('aria-controls')).toBe(content.id);
     });
 
-    it('reacts to anchor registration without zone.js', async () => {
+    it('reacts to anchor registration', async () => {
       // `renderHost` runs under `provideZonelessChangeDetection()`. Toggling the
       // anchor on and off stays reactive (no throw, listbox keeps painting).
       const r = renderHost(AnchorHost);
@@ -3137,7 +3137,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(document.querySelector('[data-test-id="banana"]')).toBeNull();
     });
 
-    it('zoneless: seeds the committed selection without zone.js', async () => {
+    it('seeds the committed selection', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const r = renderHost(PickerHost);
       r.instance.value.set(['banana']);
@@ -3214,8 +3214,8 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('trigger → open → list role + focus hooks stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('a trigger click opens the list and fires the focus hooks', async () => {
       const r = renderHost(PickerHost);
       const trigger = getTrigger();
 
@@ -3230,7 +3230,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(r.instance.autoFocusOnCloseCount).toBe(1);
     });
 
-    it('picker query resets on close without zone.js', async () => {
+    it('the picker query resets when a selection commits', async () => {
       const r = renderHost(PickerHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -3293,7 +3293,7 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       expect(document.querySelector('[forComboboxContent]')).not.toBeNull();
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
@@ -3421,7 +3421,7 @@ describe('ForCombobox static option (issue #674)', () => {
     expect(renderedOptionIds()).toEqual(['add', 'apple', 'apricot']);
   });
 
-  it('zoneless: re-folds the static option once its binding lands', async () => {
+  it('re-folds the static option once its binding lands', async () => {
     const r = renderHost(StaticOptionHost);
     // Pre-select the sentinel before the listbox ever opens — cold cache.
     r.instance.value.set(['__add__']);
@@ -3431,8 +3431,7 @@ describe('ForCombobox static option (issue #674)', () => {
     r.instance.open.set(true);
     await flush(r.fixture);
     // The static option registered, its `[value]` binding landed, and the
-    // fold re-ran — the cache now resolves the real label,
-    // all without Zone.js (renderHost configures zoneless change detection).
+    // fold re-ran — the cache now resolves the real label.
     expect(selText(r.el)).toBe('Add new…');
   });
 });
@@ -3705,8 +3704,8 @@ describe('ForCombobox object values', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('object selection stays reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('an object value write reaches data-state', async () => {
       const r = renderHost(ObjectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -3820,8 +3819,8 @@ describe('ForComboboxStatus', () => {
     );
   });
 
-  describe('zoneless reactivity', () => {
-    it('count tracks options without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('the status count tracks the option list', async () => {
       const r = renderHost(StatusHost);
       await flush(r.fixture);
 
@@ -3959,8 +3958,8 @@ describe('ForComboboxIndicator', () => {
     expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
-  describe('zoneless reactivity', () => {
-    it('flips visibility on value change without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('flips indicator visibility on a value change', async () => {
       const r = renderHost(IndicatorHost);
       await flush(r.fixture);
 
@@ -4340,7 +4339,7 @@ describe('ForCombobox virtualization', () => {
     });
   });
 
-  it('zoneless: virtualized navigation works without Zone.js', async () => {
+  it('virtualized navigation works', async () => {
     const r = renderHost(VirtHost);
     r.instance.open.set(true);
     await flush(r.fixture);

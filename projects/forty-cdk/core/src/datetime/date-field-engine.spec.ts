@@ -351,8 +351,8 @@ describe('DateFieldEngine null transitions (current)', () => {
   });
 });
 
-describe('DateFieldEngine signal reactivity (zoneless)', () => {
-  it('recomputes the segment list on an hour-cycle change without Zone.js', () => {
+describe('DateFieldEngine signal reactivity', () => {
+  it('recomputes the segment list on an hour-cycle change', () => {
     const { engine, hourCycle } = setup({ granularity: 'minute', hourCycle: 12 });
     expect(editableTypes(engine)).toContain('dayPeriod');
     hourCycle.set(24);

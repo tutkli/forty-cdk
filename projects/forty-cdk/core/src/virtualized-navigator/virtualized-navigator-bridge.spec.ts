@@ -96,7 +96,7 @@ describe('runVirtualizedNavigatorBridge', () => {
   });
 });
 
-describe('runVirtualizedNavigatorBridge zoneless reactivity', () => {
+describe('runVirtualizedNavigatorBridge window tracking', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   });

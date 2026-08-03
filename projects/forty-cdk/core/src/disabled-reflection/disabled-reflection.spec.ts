@@ -110,7 +110,7 @@ describe('reflectDisabled', () => {
     expect(button.getAttribute('disabled')).toBe('');
   });
 
-  it('works under zoneless change detection', () => {
+  it('adds and removes the native disabled attribute as state flips', () => {
     const { fixture, host, button } = setup(Host);
 
     host.state.set(true);

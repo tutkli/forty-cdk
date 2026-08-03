@@ -326,8 +326,8 @@ describe('ForProgress', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects value writes in data-state', async () => {
       const { fixture, query, flush } = renderHost(ProgressHost);
       fixture.componentInstance.value.set(10);
       await flush();

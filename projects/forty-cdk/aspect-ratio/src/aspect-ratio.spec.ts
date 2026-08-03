@@ -129,8 +129,8 @@ describe('ForAspectRatio', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects ratio changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects a ratio change in the bound aspect-ratio', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

@@ -653,8 +653,8 @@ describe('ForDateRangePicker', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('commits a range via the grid and reflects it without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('commits a range via the grid and unmounts on a close write', async () => {
       const r = renderHost(Host);
       r.instance.open.set(true);
       await flush(r.fixture);

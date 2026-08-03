@@ -351,25 +351,6 @@ describe('ForInput', () => {
       expect(byId(el, 'name').getAttribute('aria-required')).toBe('true');
     });
   });
-
-  describe('zoneless reactivity', () => {
-    it('reflects an external set without Zone.js', async () => {
-      TestBed.configureTestingModule({
-        providers: [provideZonelessChangeDetection()],
-      });
-      const fixture = TestBed.createComponent(InputHost);
-      await flush(fixture);
-      const input = inputOf(fixture.nativeElement);
-
-      fixture.componentInstance.text.set('a');
-      await flush(fixture);
-      expect(input.value).toBe('a');
-
-      fixture.componentInstance.text.set('');
-      await flush(fixture);
-      expect(input.getAttribute('data-empty')).toBe('');
-    });
-  });
 });
 
 describe('ForTextarea', () => {
@@ -429,7 +410,7 @@ describe('ForTextarea', () => {
 
   describe('blur re-syncs the DOM value', () => {
     it('reconciles a stale element value to the model on blur', async () => {
-      const { el, fixture, flush } = renderHost(TextareaHost);
+      const { el, flush } = renderHost(TextareaHost);
       const textarea = textareaOf(el);
 
       textarea.focus();
@@ -465,7 +446,7 @@ describe('ForTextarea', () => {
       expect(textarea.hasAttribute('data-autosize')).toBe(false);
     });
 
-    it('reflects data-autosize without Zone.js', async () => {
+    it('reflects data-autosize', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(AutosizeTextareaHost);
       await flush(fixture);

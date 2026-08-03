@@ -1302,7 +1302,7 @@ describe('ForSelect', () => {
         expect(r.instance.open()).toBe(false);
       });
 
-      it('open: cycles typeahead without Zone.js', async () => {
+      it('open: cycles typeahead', async () => {
         TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
         const fixture = TestBed.createComponent(TypeaheadSelectHost);
         fixture.componentInstance.open.set(true);
@@ -1995,8 +1995,8 @@ describe('ForSelect', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('open / value / aria stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('open and value writes reach aria-expanded and aria-selected', async () => {
       const r = renderHost(SelectHost);
       const trigger = r.query<HTMLButtonElement>('[forSelectTrigger]')!;
 
@@ -2014,7 +2014,7 @@ describe('ForSelect', () => {
       expect(trigger.getAttribute('aria-expanded')).toBe('false');
     });
 
-    it('modal mode opens, reflects data-modal, and dismisses on Escape without zone.js', async () => {
+    it('modal mode reflects data-modal and dismisses on Escape', async () => {
       const r = renderHost(SelectHost);
       r.instance.modal.set(true);
       r.instance.open.set(true);
@@ -2275,7 +2275,7 @@ describe('ForSelect', () => {
       expect(inputs[0]!.value).toBe('2');
     });
 
-    it('keeps object selection reactive without Zone.js', async () => {
+    it('keeps object selection reactive', async () => {
       const r = renderHost(ObjectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -2392,7 +2392,7 @@ describe('ForSelect', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('keeps resolving a selected label from the snapshot after the listbox closes, without zone.js', async () => {
+    it('keeps resolving a selected label from the snapshot after the listbox closes', async () => {
       const r = renderHost(SelectHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -2781,7 +2781,7 @@ describe('ForSelect', () => {
       expect(trigger.getAttribute('aria-controls')).toBe(content.id);
     });
 
-    it('reacts to anchor registration without zone.js', async () => {
+    it('reacts to anchor registration', async () => {
       // `renderHost` runs under `provideZonelessChangeDetection()`. Toggling the
       // anchor on and off stays reactive (no throw, listbox keeps painting).
       const r = renderHost(AnchorHost);
@@ -2992,8 +2992,8 @@ describe('ForSelectIndicator', () => {
     expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
-  describe('zoneless reactivity', () => {
-    it('flips visibility when the parent selection changes without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('flips indicator visibility when the parent selection changes', async () => {
       const r = renderHost(IndicatorHost);
       await flush(r.fixture);
 
@@ -3135,7 +3135,7 @@ describe('ForSelectIndicator', () => {
       expect(document.querySelector('[forSelectContent]')).not.toBeNull();
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
 
@@ -3624,24 +3624,6 @@ describe('ForSelectIndicator', () => {
       x.focus();
       x.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       expect(document.activeElement).toBe(y);
-    });
-
-    describe('zoneless reactivity', () => {
-      it('ArrowDown moves aria-activedescendant without Zone.js', async () => {
-        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-        const fixture = TestBed.createComponent(VirtualSelectHost);
-        fixture.componentInstance.open.set(true);
-        await flush(fixture);
-        const content = document.querySelector('[data-test-id="content"]') as HTMLElement;
-        content.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-        await flush(fixture);
-        content.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await flush(fixture);
-        const opt1Id = (
-          document.querySelector('[data-test-id="opt-1"]') as HTMLButtonElement
-        ).getAttribute('id');
-        expect(content.getAttribute('aria-activedescendant')).toBe(opt1Id);
-      });
     });
   });
 

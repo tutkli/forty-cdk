@@ -377,20 +377,6 @@ describe('ForDisclosure', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
-      const { fixture, query, flush } = renderHost(DisclosureHost);
-      const trigger = query<HTMLButtonElement>('button')!;
-
-      expect(trigger.getAttribute('aria-expanded')).toBe('false');
-
-      fixture.componentInstance.isOpen.set(true);
-      await flush();
-
-      expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    });
-  });
-
   describe('prefers-reduced-motion: reduce', () => {
     let restore: () => void;
     beforeEach(() => {

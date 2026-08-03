@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
-import { flush, renderHost } from '../../src/test-utils';
+import { renderHost } from '../../src/test-utils';
 import { moveItemInArray } from 'forty-cdk/drag-drop';
 import { ForListbox } from './listbox';
 import { provideForListboxDefaults } from './listbox-defaults';
@@ -255,7 +255,7 @@ describe('ForListboxReorder — disabled paths', () => {
     expect(list.hasAttribute('data-dragging')).toBe(false);
   });
 
-  it('re-enables reorder reactively without Zone.js when reorderDisabled flips back to false', async () => {
+  it('re-enables reorder reactively when reorderDisabled flips back to false', async () => {
     const { instance, query, flush: f } = renderHost(ReorderHost);
     instance.reorderDisabled.set(true);
     await f();

@@ -290,7 +290,7 @@ describe('ForAccordion', () => {
       }
     });
 
-    it('reflects data-disabled after a runtime [disabled] flip without Zone.js', async () => {
+    it('reflects data-disabled after a runtime [disabled] flip', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       expect(triggerOf(el, 'a').hasAttribute('data-disabled')).toBe(false);
@@ -710,8 +710,8 @@ describe('ForAccordion', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects state changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external value writes in aria-expanded', async () => {
       const { el, fixture, flush } = renderHost(AccordionHost);
 
       fixture.componentInstance.value.set(['b']);

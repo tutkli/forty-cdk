@@ -1225,8 +1225,8 @@ describe('Menu items / content', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('item state stays reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects checkbox and radio item writes in data-state and aria-checked', async () => {
       const r = renderHost(MenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -1455,8 +1455,8 @@ describe('ForMenuItemIndicator', () => {
     expect(indicator('left-ind').getAttribute('data-state')).toBe('checked');
   });
 
-  describe('zoneless reactivity', () => {
-    it('flips visibility on parent state change without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('flips indicator visibility on a parent state change', async () => {
       const r = renderHost(IndicatorHost);
       await flush(r.fixture);
 

@@ -70,7 +70,7 @@ describe('injectVirtualizer', () => {
     expect(fixture.componentInstance.v.totalSize()).toBe(40000);
   });
 
-  it('totalSize reacts to count change (zoneless reactivity)', async () => {
+  it('totalSize reacts to count change', async () => {
     const fixture = TestBed.createComponent(Host);
     fixture.detectChanges();
     await flush(fixture);

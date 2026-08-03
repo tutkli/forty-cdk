@@ -606,8 +606,8 @@ describe('ForTreeNodeDrag — i18n announcements', () => {
   });
 });
 
-describe('ForTreeNodeDrag — zoneless', () => {
-  it('emits nodeDrop in a zoneless TestBed context', async () => {
+describe('ForTreeNodeDrag — keyboard drag', () => {
+  it('emits nodeDrop after a keyboard lift and drop', async () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
     });
@@ -632,7 +632,7 @@ describe('ForTreeNodeDrag — zoneless', () => {
     expect(fixture.componentInstance.dropped()!.node).toBe('docs');
   });
 
-  it('reflects data-drop-position in a zoneless TestBed context', async () => {
+  it('reflects data-drop-position on the sibling after a lift', async () => {
     TestBed.configureTestingModule({
       providers: [provideZonelessChangeDetection()],
     });
@@ -733,7 +733,7 @@ describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
     expect(instance.dropped()).toBeNull();
   });
 
-  it('resolves the hostDirective-composed node without Zone.js', async () => {
+  it('resolves the hostDirective-composed node', async () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     const fixture = TestBed.createComponent(WrappedTreeDragHost);
     await flush(fixture);

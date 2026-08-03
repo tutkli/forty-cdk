@@ -1,11 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
-import {
-  Field,
-  form,
-  FormField,
-  readonly as fieldReadonly,
-  required,
-} from '@angular/forms/signals';
+import { form, FormField, readonly as fieldReadonly, required } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey } from '../../src/test-utils';
@@ -364,8 +358,8 @@ describe('ForSwitch', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external set without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external checked writes in aria-checked', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       fixture.componentInstance.enabled.set(true);
       await flush();

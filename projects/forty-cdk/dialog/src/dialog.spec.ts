@@ -844,8 +844,8 @@ describe('ForDialog (declarative)', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('mounts and unmounts after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('mounts and unmounts on open writes', async () => {
       const r = renderHost(DialogHost);
       await flush(r.fixture);
       expect(document.querySelector('[forDialog]')).toBeNull();
@@ -1275,8 +1275,8 @@ describe('ForDialog (declarative)', () => {
       });
     });
 
-    describe('zoneless reactivity', () => {
-      it('fires [autoFocusOnClose] under provideZonelessChangeDetection on direct signal-flip close', async () => {
+    describe('reactive updates', () => {
+      it('fires [autoFocusOnClose] on a direct signal-flip close', async () => {
         @Component({
           imports: [ForDialog],
           template: `
@@ -1421,8 +1421,8 @@ describe('ForDialogTrigger', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
-  describe('zoneless reactivity', () => {
-    it('reacts to open changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects open changes in the trigger aria-expanded', async () => {
       const r = renderHost(TriggerHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('[forDialogTrigger]')!;

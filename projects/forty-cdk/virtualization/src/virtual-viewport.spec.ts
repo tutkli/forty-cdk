@@ -115,7 +115,7 @@ describe('ForVirtualViewport + ForVirtualFor', () => {
     expect(first?.textContent?.trim()).toBe('Row 0');
   });
 
-  it('reacts to a count change (zoneless) — the sizer resizes', async () => {
+  it('reacts to a count change — the sizer resizes', async () => {
     const fixture = TestBed.createComponent(Host);
     fakeLayout(viewportEl(fixture), 200);
     fixture.detectChanges();

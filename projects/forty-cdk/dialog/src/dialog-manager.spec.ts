@@ -527,8 +527,6 @@ describe('ForDialogManager (programmatic)', () => {
   // ---- New coverage for #678 — per-channel dismiss hooks on the manager ----
 
   describe('per-channel dismiss hooks (#678)', () => {
-    // The whole suite runs under `provideZonelessChangeDetection()` (see
-    // `setup()`), so this block doubles as the zoneless coverage for the hooks.
     it('interactOutside veto keeps a dismissible dialog open on outside pointer-down while Escape still closes', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, {
@@ -742,9 +740,6 @@ describe('ForDialogManager (programmatic)', () => {
   // ---- New coverage for #1232 — per-scope defaults + DI via open({ injector }) ----
 
   describe('scoped defaults via open({ injector }) (#1232)', () => {
-    // The whole suite runs under `provideZonelessChangeDetection()` (see
-    // `setup()`), so this block doubles as the zoneless coverage for the
-    // scoped-vs-root resolution.
     const SCOPED_TOKEN = new InjectionToken<string>('SCOPED_DIALOG_TEST_TOKEN');
 
     @Component({
@@ -922,7 +917,7 @@ describe('ForDialogManager (programmatic)', () => {
       b.close();
     });
 
-    it('zoneless open + close (provideZonelessChangeDetection)', async () => {
+    it('open() mounts one dialog and close() awaits closed before unmounting', async () => {
       const { dialogs } = setup();
       const ref = dialogs.open(ConfirmDialog, { data: { message: 'x' } });
 

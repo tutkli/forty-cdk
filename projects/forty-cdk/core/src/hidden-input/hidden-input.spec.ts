@@ -2,8 +2,6 @@ import { ɵPLATFORM_SERVER_ID } from '@angular/common';
 import {
   Component,
   Directive,
-  ElementRef,
-  inject,
   input,
   PLATFORM_ID,
   provideZonelessChangeDetection,

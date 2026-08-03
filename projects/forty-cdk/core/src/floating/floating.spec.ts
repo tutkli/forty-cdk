@@ -14,40 +14,6 @@ import { buildFlipOptions, injectFloating } from './floating';
 import { runPositioning } from './run-positioning';
 
 @Component({
-  template: `
-    <button #anchor type="button">Anchor</button>
-    <div id="floating">
-      Content
-      <span #arrow></span>
-    </div>
-  `,
-})
-class FloatingHost {
-  readonly anchor = viewChild.required<ElementRef<HTMLElement>>('anchor');
-  readonly arrowEl = viewChild<ElementRef<HTMLElement>>('arrow');
-
-  readonly isOpen = signal(false);
-  readonly side = signal<'top' | 'bottom' | 'left' | 'right'>('top');
-  readonly sideOffset = signal(8);
-  readonly useArrow = signal(false);
-
-  readonly reference = signal<HTMLElement | null>(null);
-  readonly arrow = signal<HTMLElement | null>(null);
-
-  constructor() {
-    // Defer reference / arrow population to after view init via signal updates
-    // outside of the host's constructor. Tests will trigger this manually.
-  }
-
-  attachReference(): void {
-    this.reference.set(this.anchor().nativeElement);
-    if (this.useArrow()) {
-      this.arrow.set(this.arrowEl()?.nativeElement ?? null);
-    }
-  }
-}
-
-@Component({
   selector: 'floating-bubble',
   template: '<ng-content />',
 })

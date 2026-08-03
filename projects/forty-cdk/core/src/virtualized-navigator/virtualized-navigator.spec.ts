@@ -430,12 +430,12 @@ describe('VirtualizedNavigator', () => {
   });
 });
 
-describe('VirtualizedNavigator zoneless reactivity', () => {
+describe('VirtualizedNavigator snapshot reactivity', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   });
 
-  it('reflects newly-mounted options in the snapshot without Zone.js', () => {
+  it('reflects newly-mounted options in the snapshot', () => {
     TestBed.runInInjectionContext(() => {
       const h = createNavigator({ total: 100 });
       h.setItems([makeHandle({ id: 'r-0', pos: 0 })]);

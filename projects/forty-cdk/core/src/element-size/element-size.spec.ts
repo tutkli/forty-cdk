@@ -1,7 +1,6 @@
 import {
   Component,
   type ElementRef,
-  inject,
   provideZonelessChangeDetection,
   signal,
   viewChild,

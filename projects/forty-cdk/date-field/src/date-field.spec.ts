@@ -540,7 +540,7 @@ describe('ForDateField', () => {
       expect(adapter.getDate(value)).toBe(1);
     });
 
-    it('emits no intermediate value under zoneless change detection', async () => {
+    it('emits no intermediate value', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);
@@ -1126,8 +1126,8 @@ describe('ForDateField', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects an external value write without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects an external value write across the segments', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

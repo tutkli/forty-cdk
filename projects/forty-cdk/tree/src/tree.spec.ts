@@ -609,8 +609,8 @@ describe('ForTree', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('updates DOM state without Zone.js after a signal write', async () => {
+  describe('reactive updates', () => {
+    it('reflects an expanded write in aria-expanded and data-state', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TreeHost);
       fixture.detectChanges();
@@ -757,7 +757,7 @@ describe('ForTree', () => {
       expect(item.hasAttribute('aria-checked')).toBe(false);
     });
 
-    it('zoneless reactivity: aria-checked flips without Zone.js', async () => {
+    it('aria-checked flips', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(CheckboxTreeHost);
       fixture.detectChanges();
@@ -966,7 +966,7 @@ describe('ForTree', () => {
       }).toThrowError(/\[forty-cdk\/tree\]/);
     });
 
-    it('zoneless: cascade checkbox click flips descendant aria-checked without Zone.js', async () => {
+    it('a cascade checkbox click flips descendant aria-checked', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(CascadeHost);
       fixture.detectChanges();
@@ -1340,7 +1340,7 @@ describe('ForTree', () => {
       expect(tree.getAttribute('aria-activedescendant')).toBe(resumed.id);
     });
 
-    it('8d. zoneless — resume-from-retained-position works without Zone.js', async () => {
+    it('8d. resume-from-retained-position works', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(VirtualHost);
       fixture.componentInstance.windowSize.set(2);
@@ -1375,7 +1375,7 @@ describe('ForTree', () => {
       expect(document.activeElement).toBe(itemOf(el, 'downloads'));
     });
 
-    it('10. zoneless — ArrowDown updates aria-activedescendant without Zone.js', async () => {
+    it('10. ArrowDown updates aria-activedescendant', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(VirtualHost);
       fixture.detectChanges();

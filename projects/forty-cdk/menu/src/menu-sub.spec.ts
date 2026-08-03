@@ -1254,8 +1254,8 @@ describe('ForMenuSub', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('submenu open state stays reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('mounts and unmounts the submenu content on open writes', async () => {
       const r = renderHost(SubMenuHost);
       r.instance.open.set(true);
       await flush(r.fixture);
@@ -1269,10 +1269,10 @@ describe('ForMenuSub', () => {
       expect(document.querySelector('[forMenuSubContent]')).toBeNull();
     });
 
-    it('pointer hover-open stays reactive without zone.js', async () => {
+    it('a pointerenter opens the submenu with a zero open delay', async () => {
       // subMenuOpenDelay: 0 makes the hover-open synchronous, so this asserts
       // the pointer path drives change detection without relying on fake
-      // timers — purely on signals under provideZonelessChangeDetection.
+      // timers — purely on signals.
       @Component({
         imports: IMPORTS,
         providers: [provideForMenuDefaults({ subMenuOpenDelay: 0 })],
@@ -1342,7 +1342,7 @@ describe('ForMenuSub', () => {
       expect(sub.fallbackAxisSideDirection()).toBe('start');
     });
 
-    it('reacts to a runtime input change without zone.js', async () => {
+    it('reacts to a runtime input change', async () => {
       const r = renderHost(Host);
       await flush(r.fixture);
       const sub = r.fixture.debugElement.query(By.directive(ForMenuSub)).injector.get(ForMenuSub);

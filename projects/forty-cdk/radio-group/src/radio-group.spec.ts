@@ -871,8 +871,8 @@ describe('ForRadioGroup', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external value writes in aria-checked', async () => {
       const { el, fixture, flush } = renderHost(RadioGroupHost);
       fixture.componentInstance.color.set('blue');
       await flush();

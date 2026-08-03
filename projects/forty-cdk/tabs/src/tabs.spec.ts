@@ -723,7 +723,7 @@ describe('ForTabs', () => {
       expect(triggerOf(el, 'c').getAttribute('aria-selected')).toBe('true');
     });
 
-    it('zoneless: arrow-over-disabled reaches the disabled trigger without activating it', async () => {
+    it('arrow-over-disabled reaches the disabled trigger without activating it', async () => {
       const { el, fixture, flush } = await withDisabledB();
       fixture.componentInstance.active.set('a');
       await flush();
@@ -828,8 +828,8 @@ describe('ForTabs', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external value writes in aria-selected', async () => {
       const { el, fixture, flush } = renderHost(TabsHost);
       fixture.componentInstance.active.set('c');
       await flush();

@@ -100,8 +100,8 @@ describe('ForCarouselDrag', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('touch-action updates without Zone.js when orientation changes', async () => {
+  describe('reactive updates', () => {
+    it('touch-action updates when orientation changes', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

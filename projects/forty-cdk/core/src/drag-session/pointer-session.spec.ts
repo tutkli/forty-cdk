@@ -846,7 +846,7 @@ describe('createPointerDragSession', () => {
     expect(rec.cancels).toBe(0);
   });
 
-  it('works under provideZonelessChangeDetection', () => {
+  it('a pointerdown → move → up drives one lift and one commit', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
     const { host, session, rec } = setup();
@@ -860,7 +860,7 @@ describe('createPointerDragSession', () => {
     expect(rec.commits).toBe(1);
   });
 
-  it('stands down on a prevented pointerdown under provideZonelessChangeDetection', () => {
+  it('stands down on a prevented pointerdown', () => {
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
     const { host, session, rec } = setup();

@@ -665,8 +665,8 @@ describe('ForFileUpload', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects an external disabled set without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects a disabled write on the trigger and the input', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

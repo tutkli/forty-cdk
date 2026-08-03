@@ -364,8 +364,8 @@ describe('ForAvatar', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects status changes after detectChanges without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('tracks data-status across the image load lifecycle', async () => {
       const { fixture, query, flush } = renderHost(AvatarHost);
       const root = query<HTMLElement>('[forAvatar]')!;
       expect(root.getAttribute('data-status')).toBe('idle');

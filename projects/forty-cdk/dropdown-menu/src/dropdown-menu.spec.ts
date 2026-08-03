@@ -791,8 +791,8 @@ describe('ForDropdownMenu', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('open / aria-expanded stay reactive without zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects open writes in the trigger aria-expanded', async () => {
       const r = renderHost(DropdownHost);
       const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
 
@@ -894,7 +894,7 @@ describe('ForDropdownMenu', () => {
       expect(document.activeElement?.id).toBe('b');
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       const trigger = r.query<HTMLButtonElement>('button')!;
 

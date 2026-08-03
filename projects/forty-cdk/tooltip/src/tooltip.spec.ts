@@ -448,7 +448,7 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('reflects the press dismiss through data-state without Zone.js', async () => {
+    it('reflects the press dismiss through data-state', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
       r.instance.leaving.set(true);
@@ -619,7 +619,7 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('reflects the Escape close through data-state without Zone.js', async () => {
+    it('reflects the Escape close through data-state', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
       r.instance.leaving.set(true);
@@ -954,7 +954,7 @@ describe('ForTooltip', () => {
       expect(r.instance.open()).toBe(false);
     });
 
-    it('reflects show() / hide() through data-state without Zone.js', async () => {
+    it('reflects show() / hide() through data-state', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         template: `
@@ -1805,7 +1805,7 @@ describe('ForTooltip', () => {
       expect(r.instance.isOpen()).toBe(false);
     });
 
-    it('reflects the scroll close through data-state without Zone.js', async () => {
+    it('reflects the scroll close through data-state', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
       r.instance.leaving.set(true);
@@ -1823,10 +1823,10 @@ describe('ForTooltip', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
+  describe('reactive updates', () => {
     afterEachOverlayCleanup();
 
-    it('reflects open writes after detectChanges without Zone.js', async () => {
+    it('reflects open writes in the trigger aria-describedby', async () => {
       const r = renderHost(TooltipHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;
@@ -1878,7 +1878,7 @@ describe('ForTooltip', () => {
       expect(trigger.getAttribute('aria-describedby')).toBe(content.id);
     });
 
-    it('open state stays reactive without zone.js through the explicit reference', async () => {
+    it('open state stays reactive through the explicit reference', async () => {
       const r = renderHost(StampedHost);
       await flush(r.fixture);
       const trigger = r.query<HTMLButtonElement>('button')!;

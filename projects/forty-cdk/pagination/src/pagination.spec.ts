@@ -351,7 +351,7 @@ describe('ForPagination directive', () => {
       expect(item('p3').hasAttribute('data-disabled')).toBe(false);
     });
 
-    it('reflects data-disabled on the boundary pieces without Zone.js', async () => {
+    it('reflects data-disabled on the boundary pieces', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TestHost);
       fixture.componentInstance.page.set(1);
@@ -543,50 +543,5 @@ describe('ForPagination — numeric input sanitization', () => {
     const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
     expect(current?.getAttribute('data-testid')).toBe('page-1');
     expect(prev(fixture).hasAttribute('disabled')).toBe(true);
-  });
-});
-
-describe('ForPagination — zoneless', () => {
-  it('a fractional count is sanitized without Zone.js', async () => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const fixture = TestBed.createComponent(TestHost);
-    fixture.componentInstance.count.set(10.5);
-    fixture.componentInstance.page.set(11);
-    fixture.detectChanges();
-    await flush(fixture);
-
-    const values = pageButtons(fixture).map((b) => (b.textContent ?? '').trim());
-    values.forEach((v) => {
-      expect(v).not.toContain('.');
-    });
-    expect(values[values.length - 1]).toBe('10');
-  });
-
-  it('click-driven page change reflects in aria-current without Zone.js', async () => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const fixture = TestBed.createComponent(TestHost);
-    fixture.detectChanges();
-
-    const btns = pageButtons(fixture);
-    const page3 = btns.find((b) => b.getAttribute('data-testid') === 'page-3');
-    page3?.click();
-    await flush(fixture);
-
-    const btnsAfter = pageButtons(fixture);
-    const current = btnsAfter.find((b) => b.getAttribute('aria-current') === 'page');
-    expect(current?.getAttribute('data-testid')).toBe('page-3');
-    expect(fixture.componentInstance.page()).toBe(3);
-  });
-
-  it('reconciles an out-of-range page to aria-current without Zone.js', async () => {
-    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-    const fixture = TestBed.createComponent(TestHost);
-    fixture.componentInstance.count.set(10);
-    fixture.componentInstance.page.set(50);
-    fixture.detectChanges();
-    await flush(fixture);
-
-    const current = pageButtons(fixture).find((b) => b.getAttribute('aria-current') === 'page');
-    expect(current?.getAttribute('data-testid')).toBe('page-10');
   });
 });

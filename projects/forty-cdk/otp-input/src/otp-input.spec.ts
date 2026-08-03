@@ -511,7 +511,7 @@ describe('ForOtpInput', () => {
 
   describe('active slot & fake caret', () => {
     it('marks exactly one slot active at the caret and renders a fake caret when empty', async () => {
-      const { group, input, instance, flush } = await mountOtp();
+      const { group, input, flush } = await mountOtp();
       input.dispatchEvent(new FocusEvent('focus'));
       typeInto(input, '12');
       await flush();
@@ -831,8 +831,8 @@ describe('ForOtpInput', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects an external value set into the slots without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects an external value write into the slots', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

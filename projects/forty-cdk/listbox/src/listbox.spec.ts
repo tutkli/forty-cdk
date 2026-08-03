@@ -1864,7 +1864,7 @@ describe('ForListbox', () => {
       ]);
     });
 
-    it('keeps object selection reactive without Zone.js', async () => {
+    it('keeps object selection reactive', async () => {
       const { el, fixture, flush } = renderHost(ObjectHost);
 
       fixture.componentInstance.picked.set([PARIS]);
@@ -1879,8 +1879,8 @@ describe('ForListbox', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('reflects external value writes without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('reflects external value writes in aria-selected', async () => {
       const { el, fixture, flush } = renderHost(ListboxHost);
       fixture.componentInstance.picked.set(['cherry']);
       await flush();
@@ -1891,7 +1891,7 @@ describe('ForListbox', () => {
       expect(optOf(el, 'cherry').getAttribute('aria-selected')).toBe('false');
     });
 
-    it('reflects aria-label changes without Zone.js', async () => {
+    it('reflects aria-label changes', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -1913,7 +1913,7 @@ describe('ForListbox', () => {
       expect(listboxOf(el).getAttribute('aria-label')).toBe('Fruit');
     });
 
-    it('exposes the single-select accessor without Zone.js', async () => {
+    it('keeps the single-select accessor in sync with value', async () => {
       @Component({
         imports: [...LISTBOX_IMPORTS],
         template: `
@@ -2267,23 +2267,6 @@ describe('ForListbox', () => {
       x.focus();
       x.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       expect(document.activeElement).toBe(y);
-    });
-
-    describe('zoneless reactivity', () => {
-      it('ArrowDown moves aria-activedescendant without Zone.js', async () => {
-        TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
-        const fixture = TestBed.createComponent(VirtualHost);
-        await flush(fixture);
-        const lb = fixture.nativeElement.querySelector('[forListbox]') as HTMLElement;
-        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-        await flush(fixture);
-        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-        await flush(fixture);
-        const opt1Id = (
-          fixture.nativeElement.querySelector('[data-test-id="opt-1"]') as HTMLButtonElement
-        ).getAttribute('id');
-        expect(lb.getAttribute('aria-activedescendant')).toBe(opt1Id);
-      });
     });
   });
 

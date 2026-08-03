@@ -428,7 +428,7 @@ describe('ForTimeRangeField', () => {
       expect(range.end.getTime() - range.start.getTime()).toBe(60 * 60 * 1000);
     });
 
-    it('does not rewrite the range value on a transient keystroke under zoneless CD', async () => {
+    it('does not rewrite the range value on a transient keystroke', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);
@@ -785,8 +785,8 @@ describe('ForTimeRangeField', () => {
     });
   });
 
-  describe('zoneless reactivity', () => {
-    it('rehydrates both endpoints from an external value write without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('rehydrates both endpoints from an external value write', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(Host);
       await flush(fixture);

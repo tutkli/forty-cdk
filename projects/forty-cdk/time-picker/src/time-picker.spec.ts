@@ -1,7 +1,7 @@
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { disabled, form, FormField, required } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
 import {
@@ -935,7 +935,7 @@ describe('ForTimePicker', () => {
       expect(getContent()).not.toBeNull();
     });
 
-    it('reacts to anchor registration without zone.js', async () => {
+    it('reacts to anchor registration', async () => {
       const r = renderHost(AnchorHost);
       r.instance.showAnchor.set(false);
       await flush(r.fixture);
@@ -1005,8 +1005,8 @@ describe('ForTimePicker', () => {
     });
   });
 
-  describe('zoneless', () => {
-    it('opens and closes reactively without Zone.js', async () => {
+  describe('reactive updates', () => {
+    it('open writes mount and unmount the slot list', async () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });

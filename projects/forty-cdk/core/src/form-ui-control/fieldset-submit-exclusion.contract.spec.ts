@@ -161,7 +161,7 @@ describe('fieldset submit exclusion — library-wide contract', () => {
     expectFieldsetExcludesFromSubmit(mount(ListboxHost), 'fruit');
   });
 
-  it('composes through the disabled fieldset under zoneless change detection', () => {
+  it('composes through the disabled fieldset', () => {
     configure();
     const fixture = mount(NumberInputHost);
     expect(hiddenInput(fixture, 'qty').hasAttribute('disabled')).toBe(false);
