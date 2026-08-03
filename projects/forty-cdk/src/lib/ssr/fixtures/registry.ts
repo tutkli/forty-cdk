@@ -238,8 +238,11 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
           'aria-colindex': null,
         },
       },
-      { select: '[forTableRow]', attributes: { role: 'row' } },
-      { select: '[forTableCell]', attributes: { role: 'cell', 'data-column': 'name' } },
+      { select: '[forTableRow]', attributes: { role: 'row', 'aria-rowindex': null } },
+      {
+        select: '[forTableCell]',
+        attributes: { role: 'cell', 'data-column': 'name', 'aria-colindex': null },
+      },
     ],
   },
   { component: TableGridFixture },
@@ -676,7 +679,7 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         present: ['id'],
       },
       { select: '[forTreeGroup]', attributes: { role: 'group' } },
-      { select: '[forTreeNodeDragHandle]', attributes: { 'aria-hidden': 'true' } },
+      { select: '[forTreeNodeDragHandle]' },
     ],
   },
   {
@@ -872,23 +875,18 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         select: '[forDraggable]',
         attributes: { 'aria-roledescription': 'sortable', tabindex: '0' },
       },
-      {
-        select: '[forDragHandle]',
-        attributes: { 'aria-hidden': 'true', 'data-drag-handle': '' },
-      },
+      { select: '[forDragHandle]', attributes: { 'data-drag-handle': '' } },
     ],
   },
   {
     component: FreeDragFixture,
+    noWiring: 'free repositioning is pointer-only; the moved element keeps its own semantics',
     markup: [
       {
         select: '[forFreeDrag]',
         attributes: { role: null, 'aria-roledescription': null, tabindex: null },
       },
-      {
-        select: '[forDragHandle]',
-        attributes: { 'aria-hidden': 'true', 'data-drag-handle': '' },
-      },
+      { select: '[forDragHandle]', attributes: { 'data-drag-handle': '' } },
     ],
   },
   {

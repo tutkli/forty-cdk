@@ -117,7 +117,7 @@ export class DragDropFixture {}
   template: `
     <div class="dialog" style="position: relative">
       <header forFreeDrag rootElement=".dialog" boundary=".dialog">
-        <span forDragHandle aria-hidden="true">::</span>
+        <span forDragHandle>::</span>
         Drag me
       </header>
     </div>
