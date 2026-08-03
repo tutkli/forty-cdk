@@ -42,6 +42,30 @@ const COMPILER_OPTIONS = {
   moduleResolution: ts.ModuleResolutionKind.Bundler,
 };
 
+/**
+ * A synthetic declaration file compiled alongside the emit, carrying one
+ * instance of each shape this gate exists to catch. A green run must report
+ * both of its errors, which is what keeps the gate from passing vacuously: the
+ * options above are the whole of its detection power, and the one that matters
+ * suppresses *every* `.d.ts` when flipped — `skipLibCheck: true` silences the
+ * probe and the emit together, leaving a gate that compiles 350 files and can
+ * no longer fail. The probe is a module (it exports), so its names stay out of
+ * the global scope the emitted files share.
+ */
+const PROBE_PATH = join(repoRoot, '__emitted-types-liveness-probe.d.ts');
+const PROBE_SOURCE = `declare const strippedTypeReference: DeletedByStripInternal;
+interface ProbeContract {
+    strippedMember(): void;
+}
+declare class ProbeImplementation implements ProbeContract {
+}
+export { ProbeImplementation, strippedTypeReference };
+export type { ProbeContract };
+`;
+
+/** `TS2304` (dangling type reference) and `TS2420` (unsatisfied `implements`). */
+const PROBE_EXPECTED_CODES = [2304, 2420];
+
 if (!existsSync(TYPES_DIR)) {
   console.error(`[check-emitted-types-compile] ${TYPES_DIR} not found — run \`pnpm build\` first.`);
   process.exit(1);
@@ -59,14 +83,19 @@ if (!rootNames.length) {
   process.exit(1);
 }
 
-/** Forward-slashed absolute path, so a comparison holds on either platform. */
-function normalize(fileName) {
-  return fileName.replaceAll('\\', '/');
+/**
+ * Forward-slashed absolute path, lower-cased where the filesystem is
+ * case-insensitive, so a comparison holds on either platform however the
+ * compiler spelled the name back.
+ */
+function canonical(fileName) {
+  const forwardSlashed = fileName.replaceAll('\\', '/');
+  return ts.sys.useCaseSensitiveFileNames ? forwardSlashed : forwardSlashed.toLowerCase();
 }
 
 /** Repo-relative, forward-slashed path of a diagnostic's file. */
 function displayPath(fileName) {
-  return normalize(relative(repoRoot, fileName));
+  return relative(repoRoot, fileName).replaceAll('\\', '/');
 }
 
 /** One diagnostic as `<path>:<line>:<column> TS<code>: <message>`. */
@@ -79,18 +108,57 @@ function formatDiagnostic(diagnostic) {
   return `${displayPath(diagnostic.file.fileName)}:${line + 1}:${character + 1} TS${diagnostic.code}: ${message}`;
 }
 
+/** The default host, serving the probe from memory instead of from disk. */
+function createHost() {
+  const host = ts.createCompilerHost(COMPILER_OPTIONS);
+  const canonicalProbe = canonical(PROBE_PATH);
+  const isProbe = (fileName) => canonical(fileName) === canonicalProbe;
+  const { getSourceFile, fileExists, readFile } = host;
+
+  host.getSourceFile = (fileName, languageVersionOrOptions, ...rest) =>
+    isProbe(fileName)
+      ? ts.createSourceFile(fileName, PROBE_SOURCE, languageVersionOrOptions, true)
+      : getSourceFile.call(host, fileName, languageVersionOrOptions, ...rest);
+  host.fileExists = (fileName) => isProbe(fileName) || fileExists.call(host, fileName);
+  host.readFile = (fileName) => (isProbe(fileName) ? PROBE_SOURCE : readFile.call(host, fileName));
+
+  return host;
+}
+
 const started = process.hrtime.bigint();
-const diagnostics = ts.getPreEmitDiagnostics(ts.createProgram(rootNames, COMPILER_OPTIONS));
+const diagnostics = ts.getPreEmitDiagnostics(
+  ts.createProgram([...rootNames, PROBE_PATH], COMPILER_OPTIONS, createHost()),
+);
 const elapsedSeconds = Number(process.hrtime.bigint() - started) / 1e9;
 
-const emittedFiles = new Set(rootNames.map(normalize));
+const canonicalProbe = canonical(PROBE_PATH);
+const emittedFiles = new Set(rootNames.map(canonical));
+const probe = [];
 const emitted = [];
 const foreign = [];
 
 for (const diagnostic of diagnostics) {
   const fileName = diagnostic.file?.fileName;
-  if (fileName && emittedFiles.has(normalize(fileName))) emitted.push(diagnostic);
+  const key = fileName ? canonical(fileName) : null;
+  if (key === canonicalProbe) probe.push(diagnostic);
+  else if (key && emittedFiles.has(key)) emitted.push(diagnostic);
   else foreign.push(diagnostic);
+}
+
+const missingProbeCodes = PROBE_EXPECTED_CODES.filter(
+  (code) => !probe.some((diagnostic) => diagnostic.code === code),
+);
+
+if (missingProbeCodes.length) {
+  console.error(
+    `[check-emitted-types-compile] FAIL — the liveness probe reported no ${missingProbeCodes
+      .map((code) => `TS${code}`)
+      .join(' / ')}, so this run proves nothing about the emit.`,
+  );
+  console.error(
+    `\nThe probe is a synthetic declaration file carrying one dangling type reference and one class that does not satisfy its \`implements\` clause. The compiler must report both, or the options above have stopped detecting the very shapes the gate is for — \`skipLibCheck: true\` is the one that silences every \`.d.ts\` at once, the emitted ones included. Restore the detection rather than the probe.`,
+  );
+  process.exit(1);
 }
 
 if (emitted.length) {
@@ -99,7 +167,7 @@ if (emitted.length) {
   );
   for (const diagnostic of emitted) console.error(`  ${formatDiagnostic(diagnostic)}`);
   console.error(
-    `\nThe shipped types must compile for a consumer who typechecks them (\`skipLibCheck: false\`). The usual cause is \`@internal\` on something a public signature reaches: \`stripInternal\` deletes the declaration and leaves the reference dangling (an unresolved name), or deletes a member and leaves the class no longer satisfying its \`implements\` clause. A type or member reachable from a public signature is never \`@internal\` — narrow the signature so it stops reaching it, or drop the tag and publish it. See the core tier section in .claude/rules/conventions.md.`,
+    `\nThe shipped types must compile for a consumer who typechecks them (\`skipLibCheck: false\`). The usual cause is \`@internal\` on something a public signature reaches: \`stripInternal\` deletes the declaration and leaves the reference dangling (an unresolved name), or deletes a member and leaves the class no longer satisfying its \`implements\` clause. A type or member reachable from a public signature is never \`@internal\` — narrow the signature so it stops reaching it, or drop the tag and publish it. See "A type or member reachable from a public signature is never \`@internal\`" in .claude/rules/conventions.md.`,
   );
 }
 
@@ -116,5 +184,5 @@ if (foreign.length) {
 if (emitted.length || foreign.length) process.exit(1);
 
 console.log(
-  `[check-emitted-types-compile] OK — ${rootNames.length} emitted declaration files typecheck under strict + skipLibCheck:false, resolving each other through the published exports map (${elapsedSeconds.toFixed(1)}s).`,
+  `[check-emitted-types-compile] OK — ${rootNames.length} emitted declaration files typecheck under strict + skipLibCheck:false, resolving each other through the published exports map; the liveness probe reported ${PROBE_EXPECTED_CODES.map((code) => `TS${code}`).join(' + ')} (${elapsedSeconds.toFixed(1)}s).`,
 );
