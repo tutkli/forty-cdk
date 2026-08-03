@@ -540,6 +540,8 @@ describe('injectFloating', () => {
       // the async computePosition resolves. Synchronous detectChanges flushes
       // the effect without letting the position promise resolve.
       bubble.side.set('bottom');
+      // @sanctioned-sync-render(clip-path-baseline): the re-armed baseline only
+      // exists between the effect's re-run and the new position resolving.
       fixture.detectChanges();
       expect(bubbleEl.style.clipPath).toBe('inset(50%)');
       expect(bubbleEl.style.translate).not.toBe('');
@@ -561,6 +563,8 @@ describe('injectFloating', () => {
 
       bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
       bubble.open.set(true);
+      // @sanctioned-sync-render(clip-path-baseline): the armed baseline is what
+      // the surface wears before its first position resolves.
       fixture.detectChanges();
       expect(bubbleEl.style.clipPath).toBe('inset(50%)');
 
@@ -579,6 +583,8 @@ describe('injectFloating', () => {
 
       bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
       bubble.open.set(true);
+      // @sanctioned-sync-render(clip-path-baseline): the opt-out's claim is that
+      // no baseline is armed in the window before the first position resolves.
       fixture.detectChanges();
       expect(bubbleEl.style.clipPath).toBe('');
 

@@ -1248,6 +1248,212 @@ const fortyCdkPlugin = {
       },
     },
 
+    // Rule 9 — `forty-cdk/no-bare-detect-changes`.
+    //
+    // The companion to rule 6 (`no-floating-flush`), covering the other half of
+    // the waiter contract: that rule makes sure a `flush()` that IS written gets
+    // awaited, this one makes sure a `detectChanges()` is not standing in for a
+    // `flush()` that was never written. #1596 audited all 739 bare
+    // `detectChanges()` calls in the suite and the split is the point: 736 of
+    // them assert on DOM the synchronous render itself produces (a host or
+    // template binding, an ARIA attribute, `data-state`, a body child appended
+    // by the imperative handler that ran a line earlier), and are legitimately
+    // served by `detectChanges()`. Blanket-banning the call would therefore mean
+    // ~736 escape-hatch markers, and a 736-entry ledger is not a ledger — the
+    // `@sanctioned-*` families in this repo work precisely because grepping one
+    // returns four or six sites a reviewer can actually read.
+    //
+    // So the rule keys on the *pairing* that is unsafe rather than on the call:
+    // a `detectChanges()` whose following statements assert on DOM that only a
+    // promise-chained hop can produce. That set is not invented here — it is the
+    // one `flushPositioning`'s own JSDoc names ("any spec that asserts on inline
+    // `translate` / `--for-*` styles, transforms, or `data-side` reflection on
+    // portaled overlays"), because `@floating-ui/dom`'s `computePosition`
+    // resolves across several microtask hops and `autoUpdate`'s RAF polyfill in
+    // jsdom is a `setTimeout`. A synchronous `detectChanges()` runs the render
+    // and returns before any of it lands, so the assertion reads the *previous*
+    // position — or the anti-flash baseline — and passes for a reason production
+    // never provides.
+    //
+    // Detection deliberately scans the whole window rather than only the lines
+    // carrying `expect(`, so aliasing the value out first
+    // (`const t = el.style.translate;` … `expect(t)`) does not evade it. That
+    // widens the rule to a setup read followed by an unrelated assertion, which
+    // is the cheap direction to be wrong in: the report is loud, and the marker
+    // below resolves it in one line.
+    //
+    // The escape hatch is the family's canonical shape — a line comment whose
+    // text *starts* with `@sanctioned-sync-render(<subject>): <why>`, matched by
+    // proximity above the call (#1606's anchoring, so a JSDoc block quoting the
+    // phrase licenses nothing). It exists because the un-drained render is
+    // sometimes the *subject* of the test: `core/floating/floating.spec.ts`
+    // asserts that a config change re-arms the `clip-path` baseline at the
+    // retained stale position *before* the new position resolves, which is
+    // observable only without the drain. Those three sites are the whole ledger
+    // today.
+    //
+    // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 14
+    // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
+    // Refs: tutkli/forty-cdk#1596, tutkli/forty-cdk#1154
+    'no-bare-detect-changes': {
+      meta: {
+        type: 'problem',
+        docs: {
+          description:
+            'Forbid a bare `detectChanges()` before an assertion on promise-chained positioning output (`translate` / `clip-path` / `data-side` / the positioners’ `--for-*` properties) — those need `await flushPositioning(fixture)`.',
+        },
+        schema: [],
+        messages: {
+          stale:
+            'This `detectChanges()` is followed by an assertion on {{ mark }}, which `@floating-ui/dom` writes across several promise / RAF hops — the synchronous render returns before any of it lands, so the assertion reads the previous position and passes for a reason production never provides. Use `await flushPositioning(fixture)` instead. If the *un-drained* render is the subject of the test, license it with a marker comment directly above the call: `// @sanctioned-sync-render(<subject>): <why the pre-drain state is what is being asserted>`. (CLAUDE.md § "Test isolation — non-negotiables" rule 14.)',
+          malformedMarker:
+            'Malformed `@sanctioned-sync-render` marker. The shape is `// @sanctioned-sync-render(<subject>): <why the pre-drain state is what is being asserted>` — a kebab-case subject name in parentheses (e.g. `clip-path-baseline`) and a one-sentence rationale after the colon. The subject names what the un-drained render is asserting, which is what a reviewer verifies. (CLAUDE.md § "Test isolation — non-negotiables" rule 14.)',
+        },
+      },
+      create(context) {
+        const filename = (context.filename || context.getFilename()).replace(/\\/g, '/');
+        // Scoped to specs, which is also what keeps `test-utils/` out by
+        // construction rather than by an exemption list: `flush.ts` owns the
+        // drain shape and `render.ts` renders the fixture once on mount, and
+        // neither is a `.spec.ts`. The rule's own fixture (a `.fixture.ts`,
+        // linted via `pnpm lint:rule-fixtures`) is included so it is proven to
+        // fire.
+        const isSpec = filename.endsWith('.spec.ts');
+        const isOwnFixture = filename.endsWith(
+          '/eslint-rules-fixtures/no-bare-detect-changes.fixture.ts',
+        );
+        if (!isSpec && !isOwnFixture) {
+          return {};
+        }
+        // Each mark is DOM only `computePosition` / `autoUpdate` can produce.
+        // The two anti-flash marks (`translate`, `clip-path`) are what
+        // `flushPositioning` itself polls for; the `--for-*` set is the
+        // positioners' output vocabulary (the six unqualified properties of the
+        // pending-rename ledger in `.claude/rules/conventions.md`); `data-side`
+        // / `data-placement` is the resolved-placement reflection.
+        const DEFERRED_MARKS = [
+          { re: /\.style\.translate\b/, mark: 'the positioner’s inline `translate`' },
+          { re: /\.style\.clipPath\b/, mark: 'the anti-flash `clip-path` baseline' },
+          {
+            re: /getPropertyValue\(\s*['"`](?:translate|clip-path)['"`]/,
+            mark: 'the positioner’s `translate` / `clip-path`',
+          },
+          {
+            re: /--for-(?:anchor-(?:width|height)|available-(?:width|height)|arrow-offset|content-transform-origin)/,
+            mark: 'a positioner-written `--for-*` custom property',
+          },
+          { re: /\bdata-side\b/, mark: '`data-side` placement reflection' },
+          {
+            re: /dataset(?:\.|\[\s*['"`])(?:side|placement)/,
+            mark: 'the resolved-placement `dataset` entry',
+          },
+        ];
+        // A statement mentioning one of the waiters ends the window: whatever
+        // follows it is drained by construction. Kept in sync with
+        // `no-floating-flush`'s set.
+        const WAITER = /\b(?:flush|flushPositioning|nextMacrotask|settleHydration)\s*\(/;
+        // How many following statements count as "before the assertion". Wide
+        // enough for a query/alias pair between the render and its assertions,
+        // narrow enough that a later unrelated positioning assertion in the same
+        // block does not retro-flag a render that a waiter already followed.
+        const LOOKAHEAD = 10;
+        const MARKER = /^\s*@sanctioned-sync-render/;
+        const WELL_FORMED = /@sanctioned-sync-render\([a-z][a-z0-9-]*\)\s*:\s*\S/;
+        const MARKER_WINDOW = 6;
+        const sourceCode = context.sourceCode ?? context.getSourceCode();
+
+        function isDetectChangesStatement(statement) {
+          if (statement.type !== 'ExpressionStatement') {
+            return false;
+          }
+          const call = statement.expression;
+          return (
+            call.type === 'CallExpression' &&
+            call.callee.type === 'MemberExpression' &&
+            !call.callee.computed &&
+            call.callee.property.type === 'Identifier' &&
+            call.callee.property.name === 'detectChanges'
+          );
+        }
+
+        /**
+         * The statements between this `detectChanges()` and whatever next drains
+         * the pipeline: siblings in the same block, stopping at the next
+         * `detectChanges()` or at any statement invoking a waiter.
+         */
+        function windowAfter(statement) {
+          const block = statement.parent;
+          if (!block || !Array.isArray(block.body)) {
+            return [];
+          }
+          const index = block.body.indexOf(statement);
+          if (index < 0) {
+            return [];
+          }
+          const following = [];
+          for (const next of block.body.slice(index + 1, index + 1 + LOOKAHEAD)) {
+            if (isDetectChangesStatement(next) || WAITER.test(sourceCode.getText(next))) {
+              break;
+            }
+            following.push(next);
+          }
+          return following;
+        }
+
+        /**
+         * The `@sanctioned-sync-render` comment covering `node`, or `null`.
+         * Matched by proximity, and only when a *line* comment's text starts
+         * with the phrase — mirroring the sanctioned-effect / sanctioned-pull
+         * anchoring so a block comment quoting the marker documents the ledger
+         * rather than joining it (#1606).
+         */
+        function markerFor(node) {
+          const line = node.loc.start.line;
+          for (const comment of sourceCode.getAllComments()) {
+            if (comment.type !== 'Line' || !MARKER.test(comment.value)) continue;
+            const end = comment.loc.end.line;
+            if (end <= line && line - end <= MARKER_WINDOW) {
+              return comment;
+            }
+          }
+          return null;
+        }
+
+        return {
+          ExpressionStatement(statement) {
+            if (!isDetectChangesStatement(statement)) {
+              return;
+            }
+            const following = windowAfter(statement);
+            if (following.length === 0) {
+              return;
+            }
+            const text = following.map((node) => sourceCode.getText(node)).join('\n');
+            if (!/\bexpect\s*\(/.test(text)) {
+              return;
+            }
+            const hit = DEFERRED_MARKS.find((candidate) => candidate.re.test(text));
+            if (!hit) {
+              return;
+            }
+            const marker = markerFor(statement);
+            if (marker && WELL_FORMED.test(marker.value)) {
+              return;
+            }
+            if (marker) {
+              context.report({ node: marker, messageId: 'malformedMarker' });
+              return;
+            }
+            context.report({
+              node: statement.expression,
+              messageId: 'stale',
+              data: { mark: hit.mark },
+            });
+          },
+        };
+      },
+    },
+
     // Enforces CLAUDE.md § "Defaults providers": a primitive must ship a
     // sibling <name>-defaults.ts ONLY when it actually consumes scoped
     // defaults — i.e. some non-defaults source file in the entry's src/
@@ -3341,6 +3547,7 @@ module.exports = tseslint.config(
       'forty-cdk/no-floating-flush': 'error',
       'forty-cdk/require-overlay-cleanup': 'error',
       'forty-cdk/no-redundant-not-tobenull': 'error',
+      'forty-cdk/no-bare-detect-changes': 'error',
 
       // ---- SSR safety: ban raw `document` / `window` globals in library code ----
       // Use `inject(DOCUMENT)` and `document.defaultView` instead so the
