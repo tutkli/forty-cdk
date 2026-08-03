@@ -17,10 +17,16 @@
  *    is set only by the public `provideZonelessChangeDetection()`, so dropping
  *    the call from `renderHost` fails this case and nothing else — `TestBed`
  *    base-provides `provideZonelessChangeDetectionInternal()` on its own, which
- *    is why the behavioural case below stays green without it. `ɵZONELESS_ENABLED`
- *    is the flag Angular's own scheduler reads to decide it must not depend on
- *    `NgZone`; asserting it here is how the fixture states it has no
- *    `NgZone`-backed scheduler, without importing the banned symbol.
+ *    is why the behavioural case below stays green without it. Mind the
+ *    asymmetry inside that first clause: the `false` default is unconditional,
+ *    which is what makes the assertion discriminate, but the provider that
+ *    flips it is added only under `ngDevMode`. Vitest runs dev mode, so it
+ *    reads `true` here; a case that stubbed `ngDevMode` to `false` to exercise
+ *    a production path would read the default and fail for a reason that is not
+ *    this invariant. `ɵZONELESS_ENABLED` is the flag Angular's own scheduler
+ *    reads to decide it must not depend on `NgZone`; asserting it here is how
+ *    the fixture states it has no `NgZone`-backed scheduler, without importing
+ *    the banned symbol.
  * 2. **The behaviour that guarantee buys.** A post-mount signal write reaches
  *    the DOM after a bare macrotask hop, with no `detectChanges()` and no
  *    `flush()` — the render is driven by the signal graph alone. This is the
