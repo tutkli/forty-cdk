@@ -43,10 +43,17 @@ import { TableExpansion } from './table-expansion';
 /**
  * The value [ARIA reserves](https://www.w3.org/TR/wai-aria-1.2/#aria-rowcount) on
  * `aria-rowcount` / `aria-colcount` for a total the author cannot determine. It is
- * what a `grid` / `treegrid` reports when no channel knows the count: a `0` there
- * would state that a grid claiming rows has no columns at all (or that a windowed
- * grid has no rows), a contradiction a screen reader cannot reconcile — and `0` is
- * itself in range, so it reads as a real answer rather than as a missing one.
+ * what a `grid` / `treegrid` reports when the count is genuinely unknowable rather
+ * than merely zero: a `0` there would state that a grid claiming rows has no columns
+ * at all (or that a windowed grid has no rows), a contradiction a screen reader
+ * cannot reconcile — and `0` is itself in range, so it reads as a real answer rather
+ * than as a missing one.
+ *
+ * The two channels qualify "unknowable" differently, and the asymmetry is deliberate
+ * ([#1648](https://github.com/tutkli/forty-cdk/issues/1648)): the row channel gates
+ * on the grid being windowed, because a non-windowed grid's rendered rows *are* all
+ * its rows; the column channel does not, because zero registered cells is degenerate
+ * markup rather than a resolvable state. See `colCount`.
  */
 const UNKNOWN_COUNT = -1;
 
@@ -122,10 +129,12 @@ export class ForTable<T = unknown> implements ForTableContext {
    * automatically from its `rows` dataset length, so bind `[rowCount]` only for a
    * server-known total larger than the loaded rows; when set it wins over the
    * body-derived count. Defaults to the body count, else the rendered data-row
-   * count — and when no channel knows the count (no input, no body, no rendered
-   * data row) `aria-rowcount` reports `-1`, the value ARIA reserves for an unknown
-   * total, rather than counting the header row alone. An explicit value is emitted
-   * verbatim, including `0`. Ignored in `mode="table"`.
+   * count plus the header offset — so an empty non-virtualized grid with a header
+   * row reports `aria-rowcount="1"`, because its rendered rows are all the rows it
+   * has. A **windowed** grid rendering no data row is the one shape whose total is
+   * unknowable, and there `aria-rowcount` reports `-1`, the value ARIA reserves for
+   * an unknown total. An explicit value is emitted verbatim, including `0`. Ignored
+   * in `mode="table"`.
    */
   readonly _rowCountInput = input<number | undefined>(undefined, { alias: 'rowCount' });
 
@@ -158,8 +167,16 @@ export class ForTable<T = unknown> implements ForTableContext {
    * header cells) — and when no channel knows the count, `aria-colcount` reports
    * `-1`, the value ARIA reserves for an unknown total. That is the shape a
    * virtualized grid with no header row has until its first window resolves: no row
-   * is rendered, so no cell has registered. An explicit value is emitted verbatim,
-   * including `0`. Ignored in `mode="table"`.
+   * is rendered, so no cell has registered.
+   *
+   * Unlike `aria-rowcount`, that sentinel is **unconditional** — it is not gated on
+   * the grid being windowed ([#1648](https://github.com/tutkli/forty-cdk/issues/1648)).
+   * A non-windowed grid with no registered cell has rows without cells, or no markup
+   * at all: degenerate either way, so there is no state where `0` is the resolved
+   * answer rather than the missing one, and emitting it would re-open exactly the
+   * "`0` reads as a real answer" defect the sentinel exists for.
+   *
+   * An explicit value is emitted verbatim, including `0`. Ignored in `mode="table"`.
    */
   readonly colCount = input<number>();
 
@@ -346,6 +363,16 @@ export class ForTable<T = unknown> implements ForTableContext {
     return this.#rowOfCell(active)?.virtualIndex() ?? null;
   });
 
+  /**
+   * Whether the grid is windowed — a `[forTableVirtualized]` companion has published
+   * a rendered window, so the registered rows are a slice of the dataset rather than
+   * all of it. That companion registers the window from its **constructor**, so this
+   * already answers `true` server-side and on the first frame, for the raw-primitive
+   * path as much as for `<for-table-body>`; being a signal read inside a `computed`
+   * also makes the two directives' construction order on the shared host irrelevant.
+   */
+  readonly #windowed = computed(() => this.#registry.virtualWindow() !== null);
+
   protected readonly rowCountAttr = computed<number | null>(() => {
     if (this.mode() === 'table') {
       return null;
@@ -355,7 +382,10 @@ export class ForTable<T = unknown> implements ForTableContext {
       return total + this.dataRowIndexOffset();
     }
     const rendered = this.#registry.rows().length;
-    return rendered === 0 ? UNKNOWN_COUNT : rendered + this.dataRowIndexOffset();
+    if (rendered === 0 && this.#windowed()) {
+      return UNKNOWN_COUNT;
+    }
+    return rendered + this.dataRowIndexOffset();
   });
   protected readonly colCountAttr = computed<number | null>(() => {
     if (this.mode() === 'table') {
