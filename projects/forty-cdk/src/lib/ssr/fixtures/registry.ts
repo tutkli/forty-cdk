@@ -611,7 +611,24 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forTree]', attributes: { role: 'tree' } },
       {
         select: '[forTreeItem]',
-        attributes: { role: 'treeitem', 'aria-level': '1' },
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '1',
+          'aria-posinset': '1',
+          'aria-setsize': '1',
+          tabindex: '0',
+        },
+        present: ['id'],
+      },
+      {
+        select: '[forTreeGroup] [forTreeItem]',
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '2',
+          'aria-posinset': '1',
+          'aria-setsize': '1',
+          tabindex: '-1',
+        },
         present: ['id'],
       },
     ],
@@ -628,6 +645,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: {
           role: 'treeitem',
           'aria-level': '1',
+          'aria-posinset': '1',
+          'aria-setsize': '2',
           'aria-checked': 'false',
           'data-checked': 'false',
         },
@@ -652,6 +671,8 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: {
           role: 'treeitem',
           'aria-level': '1',
+          'aria-posinset': '1',
+          'aria-setsize': '2',
           'aria-checked': 'false',
           'data-checked': 'false',
         },
@@ -697,12 +718,24 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
         attributes: {
           role: 'treeitem',
           'aria-level': '1',
+          'aria-posinset': '1',
+          'aria-setsize': '1',
           'aria-expanded': 'false',
           'data-state': 'closed',
         },
         present: ['id'],
       },
       { select: '[forTreeGroup]', attributes: { role: 'group' } },
+      {
+        select: '[forTreeGroup] [forTreeItem]',
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '2',
+          'aria-posinset': '1',
+          'aria-setsize': '1',
+        },
+        present: ['id'],
+      },
       { select: '[forTreeNodeDragHandle]' },
     ],
   },

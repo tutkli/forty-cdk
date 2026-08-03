@@ -11,17 +11,22 @@ import { resolveHostId } from '../host-id/host-id';
  *   `afterNextRender` hook fires. It buys one thing: the parent's lookups can
  *   read the handle's mandatory signals without hitting the not-yet-bound
  *   `input.required` throw, which is why the pieces still on it declare their
- *   value that way (`[forRadio]`, `[forTreeItem]`, the date / time segment
- *   base). Note the hook never fires in a real server render, so a deferred
- *   registration is invisible to SSR: prefer `'sync'` plus `unsetInput` seeding
- *   and an `isUnset`-guarded lookup whenever the registration drives static
- *   markup the pre-hydration DOM needs — that is what Tabs
+ *   value that way (`[forRadio]`, the date / time segment base). Note the hook
+ *   never fires in a real server render, so a deferred registration is invisible
+ *   to SSR: prefer `'sync'` plus `unsetInput` seeding and an `isUnset`-guarded
+ *   lookup whenever the registration drives static markup the pre-hydration DOM
+ *   needs — that is what Tabs
  *   ([#1409](https://github.com/tutkli/forty-cdk/issues/1409)) and
  *   NavigationMenu ([#1636](https://github.com/tutkli/forty-cdk/issues/1636))
- *   each shipped an unpaired `aria-controls` / `aria-labelledby` over. The
- *   `unregister` call always runs eagerly via `DestroyRef.onDestroy`, so
- *   destroy-before-register is a safe no-op as long as `unregister` is
- *   reference-based.
+ *   each shipped an unpaired `aria-controls` / `aria-labelledby` over, and what
+ *   Tree ([#1639](https://github.com/tutkli/forty-cdk/issues/1639)) shipped
+ *   `aria-posinset="0"` / `aria-setsize="0"` over — values WAI-ARIA defines no
+ *   meaning for. The two pieces left on it emit no registration-derived markup:
+ *   `[forRadio]` carries `role` / `aria-checked` only, and the segment base
+ *   derives its `aria-value*` / `tabindex` from the field engine rather than
+ *   from the segment registry. The `unregister` call always runs eagerly via
+ *   `DestroyRef.onDestroy`, so destroy-before-register is a safe no-op as long
+ *   as `unregister` is reference-based.
  */
 export type RegistrationScheduling = 'sync' | 'afterNextRender';
 

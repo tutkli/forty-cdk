@@ -9,10 +9,12 @@ import {
 } from '@angular/core';
 
 import {
+  assertInputBound,
   registerHandle,
   hostId,
   resolveListNavigation,
   resolveTreeExpandCollapse,
+  unsetInput,
 } from 'forty-cdk/core';
 import {
   FOR_TREE_ITEM_CONTEXT,
@@ -66,8 +68,21 @@ export class ForTreeItem implements ForTreeItemContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #drag = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
 
-  /** Stable identifier for this node, mirrored into `[(value)]` / `[(expanded)]`. */
-  readonly value = input.required<string>();
+  /**
+   * Stable identifier for this node, mirrored into `[(value)]` / `[(expanded)]`.
+   *
+   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
+   * `input.required` so the container can skip an item that has registered but
+   * not been bound yet, and an unbound item throws in dev mode.
+   *
+   * That seeding is what lets the item register **synchronously**, so its
+   * `aria-posinset` / `aria-setsize` resolve from the container in the creation
+   * pass — including a real server render, where `afterNextRender` never fires
+   * and a deferred registration left the pre-hydration DOM claiming
+   * `aria-posinset="0"` / `aria-setsize="0"`, values WAI-ARIA defines no meaning
+   * for ([#1639](https://github.com/tutkli/forty-cdk/issues/1639)).
+   */
+  readonly value = input(unsetInput<string>());
 
   /** Disables this node: not selectable, skipped by keyboard navigation. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -180,6 +195,7 @@ export class ForTreeItem implements ForTreeItemContext {
   });
 
   constructor() {
+    assertInputBound(this.value, 'tree', '[forTreeItem]', 'value');
     const handle: ForTreeItemHandle = {
       host: this.#host.nativeElement,
       value: this.value,
@@ -196,7 +212,6 @@ export class ForTreeItem implements ForTreeItemContext {
       handle,
       (h) => this.#container.registerItem(h),
       (h) => this.#container.unregisterItem(h),
-      'afterNextRender',
     );
   }
 

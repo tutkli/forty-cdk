@@ -8,6 +8,8 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
+import { isUnset, unsetInput } from 'forty-cdk/core';
+
 import { flush, pressKey, renderHost } from '../../src/test-utils';
 import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForTree } from './tree';
@@ -1761,5 +1763,145 @@ describe('ForTree', () => {
       await flush(r.fixture);
       expect(r.instance.picked()).toContain('n-1');
     });
+  });
+
+  describe('unwritten item value (issue #1639)', () => {
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul forTree [(value)]="picked" [(expanded)]="open" multiple>
+          <li forTreeItem value="apple" data-test-id="apple">
+            <div forTreeItemLabel data-test-label="apple">Apple</div>
+          </li>
+          <li forTreeItem data-test-id="pending">
+            <div forTreeItemLabel data-test-label="pending">Pending</div>
+          </li>
+        </ul>
+      `,
+    })
+    class UnboundItemHost {
+      readonly tree = viewChild.required(ForTree);
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly open = signal<readonly string[]>([]);
+    }
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul forTree selectionMode="checkbox" cascade [descendantsOf]="descendantsOf">
+          <li forTreeItem value="parent" data-test-id="parent">
+            <div forTreeItemLabel data-test-label="parent">Parent</div>
+          </li>
+          <li forTreeItem data-test-id="pending">
+            <div forTreeItemLabel data-test-label="pending">Pending</div>
+          </li>
+        </ul>
+      `,
+    })
+    class UnboundCascadeHost {
+      readonly descendantsOf = vi.fn((value: string): readonly string[] =>
+        value === 'parent' ? ['leaf'] : [],
+      );
+    }
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel],
+      template: `
+        <ul forTree [(value)]="picked" [(expanded)]="open">
+          <li forTreeItem value="apple" data-test-id="apple">
+            <div forTreeItemLabel data-test-label="apple">Apple</div>
+          </li>
+        </ul>
+      `,
+    })
+    class BoundHost {
+      readonly tree = viewChild.required(ForTree);
+      readonly picked = signal<readonly string[]>(['apple']);
+      readonly open = signal<readonly string[]>([]);
+    }
+
+    it('fails loudly when an item carries no value binding at all', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundItemHost);
+
+      expect(() => fixture.detectChanges()).toThrowError(
+        /\[forty-cdk\/tree\] \[forTreeItem\] has no \[value\] binding/,
+      );
+    });
+
+    it('still counts an unbound item in aria-setsize, since the registry drives the count', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el } = await setupUnbound();
+
+      expect(itemOf(el, 'apple').getAttribute('aria-posinset')).toBe('1');
+      expect(itemOf(el, 'apple').getAttribute('aria-setsize')).toBe('2');
+      expect(itemOf(el, 'pending').getAttribute('aria-posinset')).toBe('2');
+      expect(itemOf(el, 'pending').getAttribute('aria-setsize')).toBe('2');
+    });
+
+    it('never hands the sentinel to descendantsOf once the dev assert is gone', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const r = renderHost(UnboundCascadeHost);
+      await flush(r.fixture);
+
+      const spy = r.instance.descendantsOf;
+      expect(spy).toHaveBeenCalled();
+      expect(spy.mock.calls.flat().some(isUnset)).toBe(false);
+    });
+
+    it('does not commit the sentinel when an unbound item is clicked in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el, fixture, instance } = await setupUnbound();
+
+      labelOf(el, 'pending').click();
+      await flush(fixture);
+
+      expect(instance.picked()).toEqual(['apple']);
+      expect(instance.picked().some(isUnset)).toBe(false);
+    });
+
+    it('leaves an unbound item out of select-all in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      const { el, fixture, instance } = await setupUnbound();
+      instance.picked.set([]);
+      await flush(fixture);
+
+      itemOf(el, 'apple').focus();
+      await flush(fixture);
+      pressKey(itemOf(el, 'apple'), 'a', { ctrlKey: true });
+      await flush(fixture);
+
+      expect(instance.picked()).toEqual(['apple']);
+    });
+
+    it('ignores a sentinel handed to select() instead of committing it', async () => {
+      const { fixture, instance } = await setupBound();
+
+      instance.tree().select(unsetInput<string>());
+      await flush(fixture);
+
+      expect(instance.picked()).toEqual(['apple']);
+    });
+
+    it('ignores a sentinel handed to setExpanded() instead of committing it', async () => {
+      const { fixture, instance } = await setupBound();
+
+      instance.tree().setExpanded(unsetInput<string>(), true);
+      await flush(fixture);
+
+      expect(instance.open()).toEqual([]);
+    });
+
+    async function setupUnbound() {
+      const result = renderHost(UnboundItemHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    async function setupBound() {
+      const result = renderHost(BoundHost);
+      await flush(result.fixture);
+      return result;
+    }
   });
 });

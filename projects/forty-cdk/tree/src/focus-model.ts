@@ -2,6 +2,7 @@ import { type Signal } from '@angular/core';
 
 import {
   firstEnabledHost,
+  isUnset,
   type ListNavigationAction,
   moveIndex,
   type RovingTabindex,
@@ -208,13 +209,18 @@ export class ActiveDescendantFocusModel implements FocusModel {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
         hostOf: (n) => n.host,
-        readEntry: (n) => ({
-          id: n.id(),
-          disabled: n.disabled(),
-          level: n.level(),
-          expandable: n.expandable(),
-          value: n.value(),
-        }),
+        readEntry: (n) => {
+          const value = n.value();
+          return isUnset(value)
+            ? null
+            : {
+                id: n.id(),
+                disabled: n.disabled(),
+                level: n.level(),
+                expandable: n.expandable(),
+                value,
+              };
+        },
       },
     );
   }
