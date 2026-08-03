@@ -347,9 +347,9 @@ const fortyCdkPlugin = {
     // ====================================================================
     // @forty-cdk-test-isolation-rules
     //
-    // The six rules below codify the test-isolation invariants documented
+    // The nine rules below codify the test-isolation invariants documented
     // in `CLAUDE.md` → "Testing notes" → "Test isolation — non-negotiables"
-    // (the twelve numbered items immediately under that heading). Without
+    // (the fourteen numbered items immediately under that heading). Without
     // mechanical enforcement those invariants decay back into PR-review
     // knowledge — the audit that surfaced them (May 11, 2026) already had
     // to remove regressions from each category.
@@ -1283,14 +1283,16 @@ const fortyCdkPlugin = {
     // below resolves it in one line.
     //
     // The escape hatch is the family's canonical shape — a line comment whose
-    // text *starts* with `@sanctioned-sync-render(<subject>): <why>`, matched by
-    // proximity above the call (#1606's anchoring, so a JSDoc block quoting the
-    // phrase licenses nothing). It exists because the un-drained render is
-    // sometimes the *subject* of the test: `core/floating/floating.spec.ts`
-    // asserts that a config change re-arms the `clip-path` baseline at the
-    // retained stale position *before* the new position resolves, which is
-    // observable only without the drain. Those three sites are the whole ledger
-    // today.
+    // text *starts* with `@sanctioned-sync-render(<subject>): <why>`, anchored
+    // to the comments directly above the call (#1606's anchoring, so a JSDoc
+    // block quoting the phrase licenses nothing — and, unlike its siblings, a
+    // marker cannot reach past intervening code to license a second, unrelated
+    // `detectChanges()` a few lines below it). It exists because the un-drained
+    // render is sometimes the *subject* of the test:
+    // `core/floating/floating.spec.ts` asserts that a config change re-arms the
+    // `clip-path` baseline at the retained stale position *before* the new
+    // position resolves, which is observable only without the drain. Those three
+    // sites are the whole ledger today.
     //
     // See: CLAUDE.md > Testing notes > Test isolation — non-negotiables > rule 14
     // Cross-link: https://github.com/tutkli/forty-cdk/blob/main/CLAUDE.md#test-isolation--non-negotiables
@@ -1402,14 +1404,25 @@ const fortyCdkPlugin = {
 
         /**
          * The `@sanctioned-sync-render` comment covering `node`, or `null`.
-         * Matched by proximity, and only when a *line* comment's text starts
-         * with the phrase — mirroring the sanctioned-effect / sanctioned-pull
-         * anchoring so a block comment quoting the marker documents the ledger
-         * rather than joining it (#1606).
+         * Only a *line* comment whose text starts with the phrase is a marker,
+         * mirroring the sanctioned-effect / sanctioned-pull anchoring so a block
+         * comment quoting it documents the ledger rather than joining it (#1606).
+         *
+         * The candidate set is `getCommentsBefore` — the comments between the
+         * previous token and this statement — rather than every comment in the
+         * file within `MARKER_WINDOW` lines. Its siblings can afford the looser
+         * proximity match because an `effect(` opens a multi-line body that keeps
+         * two candidate sites apart; a `detectChanges()` is one line, so two
+         * reportable calls fit inside the window trivially (`floating.spec.ts`
+         * already has marker → call → two assertions) and a file-wide scan would
+         * let the first one's marker license the second silently. Adjacency is
+         * structural, so nothing here can reach across the code in between; the
+         * line window still applies, keeping "immediately above" literal when
+         * blank lines separate the comment from the call.
          */
         function markerFor(node) {
           const line = node.loc.start.line;
-          for (const comment of sourceCode.getAllComments()) {
+          for (const comment of sourceCode.getCommentsBefore(node)) {
             if (comment.type !== 'Line' || !MARKER.test(comment.value)) continue;
             const end = comment.loc.end.line;
             if (end <= line && line - end <= MARKER_WINDOW) {

@@ -11,9 +11,11 @@
  *
  * This file exists to prove the rule fires. Each `bad*` function below is an
  * intentional violation; the `ok*` functions are the shapes that must NOT be
- * flagged. The cases are one-per-function on purpose: `markerFor` matches a
- * marker comment by proximity (six lines above the call), so packing them into
- * one body would let one case's marker license the next case's call.
+ * flagged. The cases are one-per-function so each shape reads on its own — a
+ * marker cannot leak across them, because `markerFor` anchors on the comments
+ * directly above the call (`getCommentsBefore`) and so cannot reach past the
+ * intervening code. `badMarkerDoesNotCarryOver` is the case that pins that:
+ * widen the anchor back to a file-wide proximity scan and it goes green.
  */
 
 declare const fixture: { detectChanges(): void };
@@ -82,6 +84,25 @@ export function badMalformedMarker(): void {
 export function badQuotingJsDoc(): void {
   fixture.detectChanges();
   expect(el.style.clipPath).toBe('inset(50%)');
+}
+
+/**
+ * Expected: 1× forty-cdk/no-bare-detect-changes — on the *second* call. A marker
+ * licenses the call it sits above and nothing else: the second render is
+ * separated from it by an assertion, so it is unlicensed even though it is well
+ * inside the marker's six-line window. `detectChanges()` is a one-line call, so
+ * two reportable ones fit in that window trivially — this is the shape
+ * `floating.spec.ts` already has (marker → call → two assertions), one render
+ * away from a silent miss.
+ */
+export function badMarkerDoesNotCarryOver(): void {
+  // @sanctioned-sync-render(clip-path-baseline): the armed baseline only exists
+  // before the first position resolves.
+  fixture.detectChanges();
+  expect(el.style.clipPath).toBe('inset(50%)');
+
+  fixture.detectChanges();
+  expect(el.style.translate).not.toBe('');
 }
 
 /** Allowed: the un-drained render is the subject, and the marker says so. */
