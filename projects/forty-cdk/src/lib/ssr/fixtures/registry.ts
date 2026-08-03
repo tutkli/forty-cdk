@@ -112,6 +112,7 @@ import {
   TableTreegridFixture,
   TableVirtualizedFixture,
   TableVirtualizedReorderFixture,
+  TableVirtualizedUnknownTotalFixture,
 } from './table';
 
 /**
@@ -276,6 +277,21 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   { component: TableBodyReorderFixture },
   { component: TableTreegridFixture },
   { component: TableVirtualizedFixture },
+  {
+    component: TableVirtualizedUnknownTotalFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: {
+          role: 'grid',
+          'data-mode': 'grid',
+          'aria-rowcount': '-1',
+          'aria-colcount': '1',
+        },
+      },
+      { select: '[forTableHeaderRow]', attributes: { role: 'row', 'aria-rowindex': '1' } },
+    ],
+  },
   { component: TableBodyVirtualizedFixture },
   {
     component: TableVirtualizedReorderFixture,

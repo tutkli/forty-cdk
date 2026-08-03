@@ -1087,6 +1087,32 @@ class VirtualizedTableHost {
 }
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div forTable forTableVirtualized mode="grid" #v="forTableVirtualized">
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="a">a</div>
+      </div>
+      <div role="rowgroup">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div forTableRow [virtualIndex]="vrow.index">
+            <div forTableCell name="a">{{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class VirtualizedNoTotalTableHost {}
+
+@Component({
   imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell],
   template: `
     <div forTable forTableVirtualized mode="grid" [rowCount]="200" #v="forTableVirtualized">
@@ -1526,11 +1552,11 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('5');
     });
 
-    it('aria-rowcount / aria-colcount report -1 when no channel knows the count (#1640)', async () => {
+    it('a non-virtualized grid with zero rows counts them, while aria-colcount goes unknown (#1648)', async () => {
       const { el, instance, flush } = renderHost(GridTableHost);
       instance.rows.set([]);
       await flush();
-      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('-1');
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('0');
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('-1');
     });
 
@@ -1724,12 +1750,12 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('aria-rowcount')).toBe('4');
     });
 
-    it('a registered header row keeps aria-colcount known while aria-rowcount goes unknown (#1640)', async () => {
+    it('a header row with zero data rows reports aria-rowcount="1", not an unknown total (#1648)', async () => {
       const { el, instance, flush } = renderHost(GridWithHeaderHost);
       instance.rows.set([]);
       await flush();
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('3');
-      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('-1');
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('1');
     });
 
     it('header cells carry a 1-based aria-colindex', () => {
@@ -4080,6 +4106,12 @@ describe('ForTable', () => {
       await flush();
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('-1');
       expect(rootEl(el).getAttribute('aria-rowcount')).toBe('1000');
+    });
+
+    it('an empty window with no [rowCount] reports an unknown aria-rowcount, header row and all (#1648)', () => {
+      const { el } = renderHost(VirtualizedNoTotalTableHost);
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('-1');
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('1');
     });
 
     it('aria-rowindex is the absolute 1-based index driven by virtualIndex', () => {

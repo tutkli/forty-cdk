@@ -302,6 +302,38 @@ export class TableTreegridFixture {
 export class TableVirtualizedFixture {}
 
 @Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableHeaderRow,
+    ForTableHeaderCell,
+    ForTableRow,
+    ForTableCell,
+  ],
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      aria-label="Unknown total"
+      #v="forTableVirtualized"
+    >
+      <div forTableHeaderRow>
+        <div forTableHeaderCell name="a">#</div>
+      </div>
+      <div role="rowgroup" [style.height.px]="v.totalSize()" style="position: relative">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div forTableRow [virtualIndex]="vrow.index">
+            <div forTableCell name="a">{{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+export class TableVirtualizedUnknownTotalFixture {}
+
+@Component({
   imports: [ForTable, ForTableVirtualized, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
   template: `
     <div forTable forTableVirtualized mode="grid" aria-label="Big" [rowCount]="1000">
