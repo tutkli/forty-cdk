@@ -1352,4 +1352,121 @@ describe('ForNavigationMenu', () => {
       expect(products.getAttribute('data-motion')).toBe('to-start');
     });
   });
+
+  describe('unresolvable aria-controls (#1636)', () => {
+    it('emits no aria-controls while the open item has no panel mounted', async () => {
+      const { fixture, queryAll, flush } = renderHost(OverlappingNavMenuHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      // Open without mounting the panel: the trigger is expanded but there is no
+      // content id to point at, so the attribute must be absent rather than ''.
+      fixture.componentInstance.open.set('products');
+      await flush();
+
+      expect(triggers[0]!.getAttribute('aria-expanded')).toBe('true');
+      expect(triggers[0]!.hasAttribute('aria-controls')).toBe(false);
+
+      fixture.componentInstance.mountProducts.set(true);
+      await flush();
+
+      const panel = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+        '[data-id="products"]',
+      )!;
+      expect(triggers[0]!.getAttribute('aria-controls')).toBe(panel.id);
+    });
+  });
+
+  describe('unbound [forNavigationMenuItem] (#1636)', () => {
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+      ],
+      template: `
+        <nav forNavigationMenu [(value)]="open">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+            </li>
+            <li forNavigationMenuItem>
+              <button forNavigationMenuTrigger data-id="pending">Pending</button>
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class UnboundItemHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    it('fails loudly when an item carries no value binding at all', () => {
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundItemHost);
+
+      expect(() => fixture.detectChanges()).toThrowError(
+        /\[forty-cdk\/navigation-menu\] \[forNavigationMenuItem\] has no \[value\] binding/,
+      );
+    });
+
+    it('does not commit the sentinel when an unbound trigger is clicked in a production build', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+      const fixture = TestBed.createComponent(UnboundItemHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+
+      host.querySelector<HTMLButtonElement>('[data-id="pending"]')!.click();
+      await flush(fixture);
+
+      expect(fixture.componentInstance.open()).toBeNull();
+      // The bound sibling still opens, so the guard rejects the sentinel rather
+      // than the whole activation path.
+      host.querySelectorAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!.click();
+      await flush(fixture);
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('does not label a panel from a trigger that belongs to another unbound item', async () => {
+      vi.stubGlobal('ngDevMode', false);
+      TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+
+      @Component({
+        imports: [
+          ForNavigationMenu,
+          ForNavigationMenuList,
+          ForNavigationMenuItem,
+          ForNavigationMenuTrigger,
+          ForNavigationMenuContent,
+        ],
+        template: `
+          <nav forNavigationMenu value="products">
+            <ul forNavigationMenuList>
+              <li forNavigationMenuItem>
+                <button forNavigationMenuTrigger data-id="a">A</button>
+              </li>
+              <li forNavigationMenuItem>
+                <div forNavigationMenuContent data-id="b-panel">B panel</div>
+              </li>
+            </ul>
+          </nav>
+        `,
+      })
+      class TwoUnboundItemsHost {}
+
+      const fixture = TestBed.createComponent(TwoUnboundItemsHost);
+      fixture.detectChanges();
+      await flush(fixture);
+      const host = fixture.nativeElement as HTMLElement;
+
+      // Both handles read the same sentinel, so `triggerIdFor` on an identity
+      // comparison alone would resolve the *other* item's trigger.
+      expect(host.querySelector('[data-id="b-panel"]')!.hasAttribute('aria-labelledby')).toBe(
+        false,
+      );
+    });
+  });
 });

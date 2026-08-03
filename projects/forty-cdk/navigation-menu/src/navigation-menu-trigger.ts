@@ -27,6 +27,11 @@ import {
  * gated to hover-capable pointers, so a touch or pen tap drives the panel
  * through the native `click` instead of opening it mid-press.
  *
+ * `aria-controls` is emitted only while the item is open, and only once the
+ * paired `[forNavigationMenuContent]` has registered — an id that cannot be
+ * resolved emits no attribute rather than an empty one, so the reference never
+ * dangles (mirroring `[forAccordionTrigger]` and the carousel arrows).
+ *
  * Disabling: {@link effectiveDisabled} merges the owning
  * `[forNavigationMenuItem]`'s `[disabled]` with the root
  * `[forNavigationMenu]`'s. It is reflected through a single channel,
@@ -76,7 +81,7 @@ export class ForNavigationMenuTrigger {
   );
 
   protected readonly isOpen = computed(() => this.menu.isOpen(this.value()));
-  protected readonly contentId = computed(() => this.menu.contentIdFor(this.value()) ?? '');
+  protected readonly contentId = computed(() => this.menu.contentIdFor(this.value()));
 
   constructor() {
     const handle = {
@@ -85,16 +90,21 @@ export class ForNavigationMenuTrigger {
       disabled: this.effectiveDisabled,
       id: this.id,
     };
-    // Defer registration so the parent's `triggerIdFor` / `contentIdFor` /
-    // `triggerHostFor` lookups can read `handle.value()` without hitting the
-    // not-yet-bound `input.required` throw on the owning `[forNavigationMenuItem]`.
-    // `unregisterTrigger` is reference-based, so destroy-before-register is a
-    // safe no-op.
+    // Registered synchronously so the parent's `triggerIdFor` / `contentIdFor` /
+    // `triggerHostFor` lookups resolve during the same pass that renders the
+    // pairing. A deferred registration is invisible to a server render, where
+    // `afterNextRender` never fires — which is what shipped `aria-controls=""`
+    // on the trigger and no `aria-labelledby` on the panel
+    // ([#1409](https://github.com/tutkli/forty-cdk/issues/1409) is the same
+    // failure class in Tabs). The lookups can read `handle.value()` safely
+    // because the owning `[forNavigationMenuItem]`'s `value` is seeded with the
+    // `unsetInput` sentinel instead of being declared `input.required`, so a
+    // lookup running before that binding is written skips the handle rather
+    // than throwing.
     registerHandle(
       handle,
       (h) => this.menu.registerTrigger(h),
       (h) => this.menu.unregisterTrigger(h),
-      'afterNextRender',
     );
   }
 

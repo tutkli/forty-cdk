@@ -101,8 +101,9 @@ export class ForNavigationMenuViewport {
   // Tracked panels in insertion order, each with its last known trigger host.
   // Ordering resolves a trigger's document position from this list rather than
   // a DOM `aria-labelledby` → `getElementById` round-trip, which silently
-  // returns `null` while a trigger's registration races its content's (both
-  // defer to `afterNextRender`) and degrades ordering to mount order. The
+  // returns `null` whenever a panel's trigger is not yet resolvable (its item's
+  // `[value]` binding may still be unwritten, so the parent's lookup skips the
+  // handle) and degrades ordering to mount order. The
   // content re-invokes `insertPanel` once its trigger registers, so the list
   // and the resulting DOM order self-heal. Insertion order is preserved so
   // panels whose trigger is not yet known keep a stable relative position
@@ -123,9 +124,9 @@ export class ForNavigationMenuViewport {
     // Track the active content's natural size via ResizeObserver so layout
     // mutations between renders (e.g. async content load, viewport host
     // resize from a surrounding column) flow into the exposed CSS variables.
-    // Browser-only API; on SSR / very old runtimes we simply skip the
-    // observation and the `width`/`height` computed signals still settle on
-    // first read because they pull from `getBoundingClientRect` directly.
+    // Browser-only API; off-browser the observation is skipped and
+    // `width` / `height` resolve to 0 without measuring at all — see
+    // `#measureSize` for why reading the rect there is not an option.
     if (this.#isBrowser && typeof ResizeObserver !== 'undefined') {
       const ro = new ResizeObserver(() => this.#measureTick.update((t) => t + 1));
       // Always observe the viewport host itself so layout changes that affect
@@ -217,6 +218,15 @@ export class ForNavigationMenuViewport {
   #measureSize(): { width: number; height: number } {
     // Depend on the manual tick so RO callbacks invalidate the computed.
     this.#measureTick();
+    // Browser-only: `getBoundingClientRect` is a layout API, and the DOM
+    // `@angular/platform-server` runs on (domino) does not implement it at all —
+    // so an ungated read throws a `TypeError` on Angular Universal rather than
+    // returning zeros. jsdom does implement it, which is why the SSR smoke suite
+    // cannot see this. Reachable since panels register synchronously
+    // ([#1636](https://github.com/tutkli/forty-cdk/issues/1636)): before that
+    // `activeContentHost()` was always `null` server-side, so the early return
+    // below hid the call by accident.
+    if (!this.#isBrowser) return { width: 0, height: 0 };
     const active = this.menu.activeContentHost();
     if (!active) return { width: 0, height: 0 };
     const r = active.getBoundingClientRect();

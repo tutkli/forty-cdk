@@ -23,6 +23,7 @@ import {
   createSkipDelayWindow,
   type ListNavigationAction,
   type WritingDirection,
+  isUnset,
   nextEnabledHandle,
   injectTextDirection,
   hostAriaLabel,
@@ -238,6 +239,11 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    */
   open(value: string): void {
     if (this.disabled()) return;
+    // The single write funnel into `value`, so it is where the `unsetInput`
+    // sentinel is stopped: a trigger whose `[forNavigationMenuItem]` has no
+    // `[value]` binding yet would otherwise commit the sentinel into the value
+    // model instead of failing (dev mode reports it through `assertInputBound`).
+    if (isUnset(value)) return;
     this.#cancelPending();
     if (this.value() === value) return;
     this.#recordMotion(this.value(), value);
@@ -271,6 +277,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void {
     if (this.disabled()) return;
+    if (isUnset(value)) return;
     this.#closeAction.cancel();
     this.#clearOpenTimer();
     if (this.value() === value) return;
@@ -440,7 +447,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   contentIdFor(value: string): string | null {
     for (const c of this.#contents.items()) {
-      if (c.value() === value) {
+      const candidate = c.value();
+      if (!isUnset(candidate) && candidate === value) {
         return c.id();
       }
     }
@@ -449,7 +457,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   triggerIdFor(value: string): string | null {
     for (const t of this.#triggers.items()) {
-      if (t.value() === value) {
+      const candidate = t.value();
+      if (!isUnset(candidate) && candidate === value) {
         return t.id();
       }
     }
@@ -458,7 +467,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
 
   triggerHostFor(value: string): HTMLElement | null {
     for (const t of this.#triggers.items()) {
-      if (t.value() === value) {
+      const candidate = t.value();
+      if (!isUnset(candidate) && candidate === value) {
         return t.host;
       }
     }
@@ -470,7 +480,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     const v = this.value();
     if (v === null) return null;
     for (const t of this.#triggers.items()) {
-      if (t.value() === v) return t.host;
+      const candidate = t.value();
+      if (!isUnset(candidate) && candidate === v) return t.host;
     }
     return null;
   });
@@ -480,7 +491,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     const v = this.value();
     if (v === null) return null;
     for (const c of this.#contents.items()) {
-      if (c.value() === v) return c.host;
+      const candidate = c.value();
+      if (!isUnset(candidate) && candidate === v) return c.host;
     }
     return null;
   });
@@ -576,7 +588,8 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   #triggerIndexFor(value: string): number {
     const triggers = this.#triggers.items();
     for (let i = 0; i < triggers.length; i++) {
-      if (triggers[i]!.value() === value) return i;
+      const candidate = triggers[i]!.value();
+      if (!isUnset(candidate) && candidate === value) return i;
     }
     return -1;
   }

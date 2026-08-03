@@ -109,8 +109,30 @@ export interface ForNavigationMenuContext {
   /** Focus the trigger associated with the given value, if any. */
   focusTrigger(value: string): void;
 
+  /**
+   * Looks up the content id for a given item value. Reactive.
+   *
+   * Triggers and contents register synchronously in their constructors, so the
+   * pairing resolves during the first change-detection pass — including a real
+   * server render, where `afterNextRender` never fires and a deferred
+   * registration left the pre-hydration DOM without its `aria-controls` /
+   * `aria-labelledby` linkage. A handle whose owning `[forNavigationMenuItem]`
+   * has not had its `[value]` written yet reads the `unsetInput` sentinel and is
+   * skipped — it can never pair with a lookup value — and the tracked dependency
+   * re-runs the lookup once that binding lands.
+   */
   contentIdFor(value: string): string | null;
+  /**
+   * Looks up the trigger id for a given item value. Reactive. Same
+   * synchronous-registration and not-yet-bound handling as
+   * {@link contentIdFor}.
+   */
   triggerIdFor(value: string): string | null;
+  /**
+   * Looks up the trigger host element for a given item value. Reactive. Same
+   * synchronous-registration and not-yet-bound handling as
+   * {@link contentIdFor}.
+   */
   triggerHostFor(value: string): HTMLElement | null;
   /** Layout-oriented selector for indicator positioning. */
   readonly activeTriggerHost: Signal<HTMLElement | null>;
@@ -168,6 +190,13 @@ export const NAVIGATION_MENU_CONTEXT = new InjectionToken<NavigationMenuContext>
 
 /** Per-item context, consumed by the trigger and content. */
 export interface ForNavigationMenuItemContext {
+  /**
+   * The item's id, matched against the menu's `value`. Reads the `unsetInput`
+   * sentinel until the consumer's `[value]` binding is written — the root's
+   * lookups skip a handle in that state rather than throwing, which is what lets
+   * the trigger and content register synchronously. Guard with `isUnset` before
+   * letting the value leave a read site.
+   */
   readonly value: Signal<string>;
   /**
    * The item's own `[disabled]`, without the root `[forNavigationMenu]`'s

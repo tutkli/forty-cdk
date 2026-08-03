@@ -1,5 +1,6 @@
 import { booleanAttribute, computed, Directive, input } from '@angular/core';
 
+import { assertInputBound, unsetInput } from 'forty-cdk/core';
 import {
   FOR_NAVIGATION_MENU_ITEM_CONTEXT,
   type ForNavigationMenuItemContext,
@@ -29,8 +30,21 @@ import {
 export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
   readonly #ctx = injectNavigationMenuContext('ForNavigationMenuItem');
 
-  /** Identifier matched against the menu's `value`. Required. */
-  readonly value = input.required<string>();
+  /**
+   * Identifier matched against the menu's `value`, shared by this item's
+   * trigger and content. Mandatory: it is seeded with the `unsetInput` sentinel
+   * rather than declared `input.required` so the root can skip a trigger /
+   * content handle whose owning item has registered but not been bound yet, and
+   * an unbound item throws in dev mode.
+   *
+   * That seeding is what lets both pieces register **synchronously**: the
+   * pairing then resolves during the first change-detection pass, including a
+   * real server render, where `afterNextRender` never fires and a deferred
+   * registration would leave the pre-hydration DOM without its
+   * `aria-controls` / `aria-labelledby` linkage
+   * ([#1409](https://github.com/tutkli/forty-cdk/issues/1409)).
+   */
+  readonly value = input(unsetInput<string>());
 
   /**
    * Per-item disabled. Stands on its own — the root `[forNavigationMenu]`'s
@@ -42,4 +56,8 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
   readonly disabled = input(false, { transform: booleanAttribute });
 
   protected readonly state = computed(() => (this.#ctx.isOpen(this.value()) ? 'open' : 'closed'));
+
+  constructor() {
+    assertInputBound(this.value, 'navigation-menu', '[forNavigationMenuItem]', 'value');
+  }
 }

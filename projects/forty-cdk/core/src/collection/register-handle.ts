@@ -8,15 +8,20 @@ import { resolveHostId } from '../host-id/host-id';
  * - `'sync'` (default) — register inside the directive's constructor, at
  *   directive-construction time. Matches what most callsites do today.
  * - `'afterNextRender'` — defer the `register` call until Angular's
- *   `afterNextRender` hook fires. Required when the parent's lookups read the
- *   handle's mandatory signals during host-binding evaluation that interleaves
- *   with sibling directives' input-binding step (NavigationMenu). Note the hook
- *   never fires in a real server render, so a deferred registration is
- *   invisible to SSR: prefer `'sync'` plus an `isUnset`-guarded lookup when the
- *   registration drives static markup the pre-hydration DOM needs (Tabs). The
- *   `unregister` call always runs
- *   eagerly via `DestroyRef.onDestroy`, so destroy-before-register is a safe
- *   no-op as long as `unregister` is reference-based.
+ *   `afterNextRender` hook fires. It buys one thing: the parent's lookups can
+ *   read the handle's mandatory signals without hitting the not-yet-bound
+ *   `input.required` throw, which is why the pieces still on it declare their
+ *   value that way (`[forRadio]`, `[forTreeItem]`, the date / time segment
+ *   base). Note the hook never fires in a real server render, so a deferred
+ *   registration is invisible to SSR: prefer `'sync'` plus `unsetInput` seeding
+ *   and an `isUnset`-guarded lookup whenever the registration drives static
+ *   markup the pre-hydration DOM needs — that is what Tabs
+ *   ([#1409](https://github.com/tutkli/forty-cdk/issues/1409)) and
+ *   NavigationMenu ([#1636](https://github.com/tutkli/forty-cdk/issues/1636))
+ *   each shipped an unpaired `aria-controls` / `aria-labelledby` over. The
+ *   `unregister` call always runs eagerly via `DestroyRef.onDestroy`, so
+ *   destroy-before-register is a safe no-op as long as `unregister` is
+ *   reference-based.
  */
 export type RegistrationScheduling = 'sync' | 'afterNextRender';
 
