@@ -13,6 +13,7 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForMenu } from './menu';
 import { ForMenuContent } from './menu-content';
 import { ForMenuItem } from './menu-item';
@@ -223,6 +224,23 @@ function pointerDown(el: HTMLElement | Document): void {
 
 describe('ForMenu (multiple openers, one content block)', () => {
   afterEachOverlayCleanup();
+
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(SharedMenuHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forMenu]'),
+          kebabOpener: r.query<HTMLElement>('[data-testid="kebab"]'),
+          regionOpener: r.query<HTMLElement>('[data-testid="region"]'),
+          content: document.querySelector<HTMLElement>('[forMenuContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
 
   describe('shared content', () => {
     it('opens the single content block from either opener', async () => {
