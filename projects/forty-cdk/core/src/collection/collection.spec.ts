@@ -497,4 +497,67 @@ describe('Collection', () => {
   it('rejects construction outside an injection context instead of skipping teardown', () => {
     expect(() => new Collection<Handle>()).toThrowError(/NG0203/);
   });
+
+  describe('non-element hosts (#1562)', () => {
+    interface NodeHandle {
+      readonly host: Node;
+      readonly id: string;
+    }
+
+    function nodeHandle(id: string, host: Node): NodeHandle {
+      return { id, host };
+    }
+
+    function createNodeCollection(): Collection<NodeHandle> {
+      return TestBed.runInInjectionContext(() => new Collection<NodeHandle>());
+    }
+
+    it('orders a comment anchor against element hosts by document position', () => {
+      const anchor = document.createComment('container');
+      host.insertBefore(anchor, b);
+      const col = createNodeCollection();
+      col.register(nodeHandle('c', c));
+      col.register(nodeHandle('anchor', anchor));
+      col.register(nodeHandle('a', a));
+
+      expect(col.items().map((h) => h.id)).toEqual(['a', 'anchor', 'c']);
+    });
+
+    it('resolves lookups keyed by a comment anchor', () => {
+      const anchor = document.createComment('container');
+      host.appendChild(anchor);
+      const col = createNodeCollection();
+      const anchored = nodeHandle('anchor', anchor);
+      col.register(nodeHandle('a', a));
+      col.register(anchored);
+
+      expect(col.findByHost(anchor)).toBe(anchored);
+      expect(col.indexOfHost(anchor)).toBe(1);
+    });
+
+    it('keeps a detached comment anchor at the end', () => {
+      const detached = document.createComment('detached');
+      const col = createNodeCollection();
+      col.register(nodeHandle('detached', detached));
+      col.register(nodeHandle('b', b));
+
+      expect(col.items().map((h) => h.id)).toEqual(['b', 'detached']);
+    });
+
+    it('re-orders comment anchors after their parent reorders its children', async () => {
+      const first = document.createComment('first');
+      const second = document.createComment('second');
+      host.append(first, second);
+      const col = createNodeCollection();
+      col.register(nodeHandle('first', first));
+      col.register(nodeHandle('second', second));
+      await waitForMutationObserver();
+      expect(col.items().map((h) => h.id)).toEqual(['first', 'second']);
+
+      host.append(second, first);
+      await waitForMutationObserver();
+
+      expect(col.items().map((h) => h.id)).toEqual(['second', 'first']);
+    });
+  });
 });

@@ -8,6 +8,12 @@ import type { CollectionHandle } from './collection';
  * shape for {@link firstEnabledHost} and {@link nextEnabledHandle}.
  */
 export interface DisableableHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the navigators here hand
+   * the host back to callers that focus it and compare it against
+   * `document.activeElement`, so a disableable handle owes an element.
+   */
+  readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
 }
 

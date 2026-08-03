@@ -61,6 +61,11 @@ export type ForMenuCloseReason =
  * match string. Empty / unset means "fall back to the host's text content".
  */
 export interface ForMenuItemHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the menu focuses its items
+   * and scrolls them into view.
+   */
+  readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
   readonly textValue?: Signal<string>;
   /**

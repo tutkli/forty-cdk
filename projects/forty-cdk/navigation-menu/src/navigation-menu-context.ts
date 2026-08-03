@@ -15,6 +15,11 @@ import {
  * `public-api.ts` — see {@link NavigationMenuContext}.
  */
 export interface ForNavigationMenuTriggerHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the menu focuses the
+   * trigger, scrolls it into view, and measures it for indicator positioning.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<string>;
   readonly disabled: Signal<boolean>;
   readonly id: Signal<string>;
@@ -26,6 +31,11 @@ export interface ForNavigationMenuTriggerHandle extends CollectionHandle {
  * `public-api.ts` — see {@link NavigationMenuContext}.
  */
 export interface ForNavigationMenuContentHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the active panel's host is
+   * measured for viewport sizing and counted as a dismiss-exempt surface.
+   */
+  readonly host: HTMLElement;
   readonly value: Signal<string>;
   readonly id: Signal<string>;
 }

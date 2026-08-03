@@ -16,6 +16,11 @@ import type { RovingTabindex } from './roving-tabindex';
  * stay on the container's own handle interface.
  */
 export interface HostRovingItemHandle extends CollectionHandle {
+  /**
+   * Narrowed from {@link CollectionHandle}'s `Node`: the host owns focus moves
+   * and the roving tab stop, both of which are element operations.
+   */
+  readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
 }
 
