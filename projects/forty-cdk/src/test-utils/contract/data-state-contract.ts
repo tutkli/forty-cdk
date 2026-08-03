@@ -93,7 +93,10 @@ export interface DataStateMountResult {
    * message quotes (`'root'`, `'trigger'`, `'content'`). Called after every
    * `setState` + `flush`, so a portaled surface that exists only while open
    * resolves per state; a piece absent in the current state returns `null`
-   * and is skipped rather than failing.
+   * and is skipped rather than failing. A `null` is a per-state answer and
+   * never a permanent one: a key that resolves in **no** state fails the
+   * resolution case, so a mistyped selector cannot pass for a piece the
+   * primitive legitimately does not render yet.
    *
    * Report only the pieces whose state is the one {@link setState} drives.
    * `[forMenuSubTrigger]` reflects the *submenu's* open state, so it belongs
@@ -158,7 +161,7 @@ const present = (
  * Run the `data-state` vocabulary assertions inside a
  * `describe('data-state contract', …)` block.
  *
- * Four cases, and two of them exist to fail a misconfigured adoption rather
+ * Five cases, and three of them exist to fail a misconfigured adoption rather
  * than a broken primitive:
  *
  *   - **The declaration case** rejects a one-state vocabulary (nothing to
@@ -169,6 +172,14 @@ const present = (
  *     failure names the piece that drifted. It fails a `pieces` resolver that
  *     returns `null` for everything, which would otherwise reduce that
  *     comparison to an empty-object equality.
+ *   - **The resolution case** is the completeness half of that comparison. The
+ *     per-state cases skip a `null`, and the floor above only demands *one*
+ *     piece — so a key whose selector resolves in no state at all is covered
+ *     by nothing while the `describe` stays green, which is the same
+ *     invisibility the adoption guard closes one level up (a missing entry
+ *     point reports as N green primitives too). It drives the whole vocabulary
+ *     through one mount and asserts the pieces that resolved are the set the
+ *     resolver declared, so the failure names the key that never appeared.
  *   - **The sweep case** drives the whole vocabulary through **one** mount,
  *     which is what catches a `setState` that silently ignores a state: with a
  *     fresh mount per state a primitive pinned to its resting value fails only
@@ -207,6 +218,23 @@ export function assertDataStateContract(
         ).toEqual(Object.fromEntries(reported.map(([name]) => [name, state])));
       });
     }
+
+    it('resolves every declared piece in at least one state', async () => {
+      const ctx = await setup.mount();
+      const declared = new Set<string>();
+      const resolved = new Set<string>();
+      for (const state of vocabulary) {
+        ctx.setState(state);
+        await ctx.flush();
+        for (const [name, el] of Object.entries(ctx.pieces())) {
+          declared.add(name);
+          if (el !== null) {
+            resolved.add(name);
+          }
+        }
+      }
+      expect(sorted([...resolved])).toEqual(sorted([...declared]));
+    });
 
     it('emits every declared state and nothing outside the vocabulary', async () => {
       const ctx = await setup.mount();

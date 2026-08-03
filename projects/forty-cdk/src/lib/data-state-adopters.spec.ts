@@ -51,10 +51,17 @@ const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
  * Entry points whose literal `data-state` emission is deliberately not the
  * contract's business, with the reason. An exclusion is a named condition
  * rather than a silent omission, so a primitive cannot be parked here and a
- * reader can check the claim against the source — and the last case below
- * fails on a stale entry, which is the failure mode the SSR registry's
- * `noWiring` strings have (the reason keeps reading plausibly long after the
- * source it describes changed).
+ * reader can check the claim against the source.
+ *
+ * The last case below fails on a stale entry, and it checks the **condition**
+ * rather than mere existence: the entry point must still emit a literal
+ * vocabulary *and* every set it emits must still be single-state, which is
+ * what "no second state to distinguish" means. Existence alone is the weaker
+ * half — the day `[forToast]` gains a `closed` the reason stops holding while
+ * the emission does, and the exclusion would keep a two-state vocabulary out
+ * of the contract with nothing red. That is the failure mode the SSR
+ * registry's `noWiring` strings have (the reason keeps reading plausibly long
+ * after the source it describes changed).
  */
 const EXCLUSIONS: Readonly<Record<string, string>> = {
   toast:
@@ -166,9 +173,17 @@ describe('data-state contract adoption (meta-guard)', () => {
     expect(missing).toEqual([]);
   });
 
-  it('excludes no entry point that stopped emitting a literal vocabulary', () => {
+  it('excludes no entry point whose exclusion condition stopped holding', () => {
     const emitting = literalVocabulariesByEntryPoint();
-    const stale = Object.keys(EXCLUSIONS).filter((entryPoint) => !emitting.has(entryPoint));
+
+    const stale = Object.keys(EXCLUSIONS).flatMap((entryPoint) => {
+      const sets = emitting.get(entryPoint);
+      if (sets === undefined) {
+        return [`${entryPoint}: no longer emits a literal vocabulary`];
+      }
+      const multiState = [...sets].filter((set) => set.includes('|'));
+      return multiState.length === 0 ? [] : [`${entryPoint}: now emits ${multiState.join(', ')}`];
+    });
 
     expect(stale).toEqual([]);
   });
