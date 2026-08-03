@@ -57,6 +57,17 @@ export class ForNavigationMenuIndicator {
     // Depend on the manual tick so ResizeObserver callbacks invalidate the
     // geometry, and on the active trigger so a trigger switch re-measures.
     this.#measureTick();
+    // Browser-only: `getBoundingClientRect` is a layout API, and the DOM
+    // `@angular/platform-server` runs on (domino) does not implement it at all —
+    // so an ungated read throws a `TypeError` on Angular Universal rather than
+    // returning zeros. jsdom does implement it, which is why the SSR smoke suite
+    // cannot see this. Reachable since triggers register synchronously
+    // ([#1636](https://github.com/tutkli/forty-cdk/issues/1636)): before that
+    // `activeTriggerHost()` was always `null` server-side, so the early return
+    // below hid the call by accident.
+    if (!this.#isBrowser) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
     const trigger = this.menu.activeTriggerHost();
     const list = this.#host.parentElement;
     if (!trigger || !list) {

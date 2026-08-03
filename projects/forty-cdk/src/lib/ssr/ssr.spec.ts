@@ -107,6 +107,44 @@ const ABSENT_ON_A_REAL_SERVER = [
   'MutationObserver',
 ] as const;
 
+/**
+ * Makes the layout APIs a real server does not have throw, the way they do on a
+ * consumer's server.
+ *
+ * The `ABSENT_ON_A_REAL_SERVER` globals above are the constructors and
+ * schedulers; this is the other half of the same gap, and it is worse because
+ * the value looks plausible. `getBoundingClientRect` needs a layout engine, and
+ * domino — the DOM `@angular/platform-server` bundles — defines it nowhere at
+ * all, so an ungated read is a `TypeError` on Angular Universal. jsdom hands the
+ * same read a rect full of zeros, which is why the sweeps could not see the two
+ * `forty-cdk/navigation-menu` reads that shipped
+ * ([#1636](https://github.com/tutkli/forty-cdk/issues/1636)): the indicator and
+ * the viewport both measured the *registered* active trigger / panel, so they
+ * were protected only by a registry that happened to be empty server-side, and
+ * registering synchronously exposed both at once.
+ *
+ * Which prototype owns the descriptor differs by platform — Linux jsdom defines
+ * it on `HTMLElement.prototype`, macOS / Windows only on `Element.prototype`
+ * ([#193](https://github.com/tutkli/forty-cdk/issues/193)) — so every rung that
+ * owns it is patched, and a run that patched **none** fails here instead of
+ * leaving the whole file silently unable to report. `vi.spyOn` is undone by the
+ * runner's `restoreMocks` invariant at the test boundary.
+ */
+function makeLayoutApisAbsent(): void {
+  const owners = [Element.prototype, HTMLElement.prototype].filter((proto) =>
+    Object.prototype.hasOwnProperty.call(proto, 'getBoundingClientRect'),
+  );
+  expect(
+    owners.length,
+    'no prototype owns getBoundingClientRect — this run proves nothing about ungated layout reads',
+  ).toBeGreaterThan(0);
+  for (const proto of owners) {
+    vi.spyOn(proto, 'getBoundingClientRect').mockImplementation(() => {
+      throw new TypeError('getBoundingClientRect is not a function');
+    });
+  }
+}
+
 function configureServer(): void {
   TestBed.configureTestingModule({
     providers: [
@@ -274,6 +312,7 @@ describe('SSR smoke tests', () => {
       vi.stubGlobal(name, undefined);
     }
     headBaseline = Array.from(document.head.children);
+    makeLayoutApisAbsent();
     configureServer();
   });
 
