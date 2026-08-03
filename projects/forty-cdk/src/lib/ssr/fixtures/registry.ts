@@ -215,9 +215,61 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   },
   { component: TabsServerFixture },
   { component: TabsServerRepeatFixture },
-  { component: TableFixture },
+  {
+    component: TableFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: {
+          role: 'table',
+          'data-mode': 'table',
+          'aria-label': 'People',
+          'aria-rowcount': null,
+          'aria-colcount': null,
+        },
+      },
+      { select: '[forTableHeaderRow]', attributes: { role: 'row', 'aria-rowindex': null } },
+      {
+        select: '[forTableHeaderCell]',
+        attributes: {
+          role: 'columnheader',
+          'data-column': 'name',
+          'data-sticky': '',
+          'aria-colindex': null,
+        },
+      },
+      { select: '[forTableRow]', attributes: { role: 'row', 'aria-rowindex': null } },
+      {
+        select: '[forTableCell]',
+        attributes: { role: 'cell', 'data-column': 'name', 'aria-colindex': null },
+      },
+    ],
+  },
   { component: TableGridFixture },
-  { component: TableBodyFixture },
+  {
+    component: TableBodyFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: {
+          role: 'grid',
+          'data-mode': 'grid',
+          'aria-rowcount': '3',
+          'aria-colcount': '2',
+        },
+      },
+      { select: '[forTableHeaderRow]', attributes: { role: 'row', 'aria-rowindex': '1' } },
+      {
+        select: '[forTableHeaderCell]',
+        attributes: { role: 'columnheader', 'data-column': 'name', 'aria-colindex': '1' },
+      },
+      { select: '[forTableRow]', attributes: { role: 'row', 'aria-rowindex': '2' } },
+      {
+        select: '[forTableCell]',
+        attributes: { role: 'gridcell', 'data-column': 'name', 'aria-colindex': '1' },
+      },
+    ],
+  },
   { component: TableBodyRowVariantFixture },
   { component: TableBodyPlaceholderVariantFixture },
   { component: TableBodyRowInteractionFixture },
@@ -225,7 +277,19 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
   { component: TableTreegridFixture },
   { component: TableVirtualizedFixture },
   { component: TableBodyVirtualizedFixture },
-  { component: TableVirtualizedReorderFixture },
+  {
+    component: TableVirtualizedReorderFixture,
+    markup: [
+      {
+        select: '[forTable]',
+        attributes: { role: 'grid', 'data-mode': 'grid', 'aria-rowcount': '1000' },
+      },
+      {
+        select: '[forTableRowReorder]',
+        attributes: { role: 'rowgroup', 'data-orientation': 'vertical' },
+      },
+    ],
+  },
   {
     component: StepperFixture,
     markup: [
@@ -236,7 +300,35 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forStepperContent]', pairs: { 'aria-labelledby': '[forStepperTrigger]' } },
     ],
   },
-  { component: StepperCompletedFixture },
+  {
+    component: StepperCompletedFixture,
+    markup: [
+      { select: '[forStepperList]', attributes: { role: 'tablist', 'aria-label': 'Checkout' } },
+      {
+        select: '[forStepperTrigger]',
+        attributes: {
+          role: 'tab',
+          'aria-selected': 'false',
+          'data-state': 'pending',
+          'aria-controls': null,
+        },
+      },
+      {
+        select: '[forStepperContent]',
+        attributes: {
+          role: 'tabpanel',
+          'aria-hidden': 'true',
+          'data-state': 'inactive',
+          inert: '',
+        },
+        pairs: { 'aria-labelledby': '[forStepperTrigger]' },
+      },
+      {
+        select: '[forStepperCompletedContent]',
+        attributes: { role: 'group', 'data-state': 'active' },
+      },
+    ],
+  },
   {
     component: StepperServerFixture,
     markup: [
@@ -308,7 +400,22 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     noWiring: 'load state is `data-status`; the <img> carries the semantics',
     markup: [{ select: '[forAvatarImage]', present: ['data-status'] }],
   },
-  { component: ScrollAreaFixture },
+  {
+    component: ScrollAreaFixture,
+    markup: [
+      { select: '[forScrollArea]', attributes: { 'data-type': 'hover' } },
+      { select: '[forScrollAreaViewport]', attributes: { tabindex: '0' } },
+      {
+        select: '[forScrollAreaScrollbar]',
+        attributes: { 'data-orientation': 'vertical', 'data-state': 'hidden', hidden: '' },
+      },
+      {
+        select: '[forScrollAreaThumb]',
+        attributes: { 'data-orientation': 'vertical', 'data-state': 'hidden' },
+      },
+      { select: '[forScrollAreaCorner]', attributes: { hidden: '' } },
+    ],
+  },
   {
     component: PopoverOpenFixture,
     open: true,
@@ -467,7 +574,13 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forMenuItem]', attributes: { role: 'menuitem' } },
     ],
   },
-  { component: OtpInputFixture },
+  {
+    component: OtpInputFixture,
+    markup: [
+      { select: '[forOtpInput]', attributes: { role: 'group' } },
+      { select: '[forOtpInputSlot]', attributes: { 'data-empty': '' } },
+    ],
+  },
   {
     component: TreeFixture,
     markup: [
@@ -479,22 +592,242 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       },
     ],
   },
-  { component: TreeCheckboxFixture },
-  { component: TreeCascadeFixture },
-  { component: TreeVirtualizedFixture },
-  { component: TreeNodeDragFixture },
+  {
+    component: TreeCheckboxFixture,
+    markup: [
+      {
+        select: '[forTree]',
+        attributes: { role: 'tree', 'aria-label': 'Categories', 'aria-orientation': 'vertical' },
+      },
+      {
+        select: '[forTreeItem]',
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '1',
+          'aria-checked': 'false',
+          'data-checked': 'false',
+        },
+        present: ['id'],
+      },
+      {
+        select: '[forTreeItemCheckbox]',
+        attributes: { 'aria-hidden': 'true', 'data-state': 'unchecked' },
+      },
+      {
+        select: '[forTreeItemCheckboxIndicator]',
+        attributes: { 'data-state': 'unchecked', hidden: '' },
+      },
+    ],
+  },
+  {
+    component: TreeCascadeFixture,
+    markup: [
+      { select: '[forTree]', attributes: { role: 'tree', 'aria-label': 'Groups' } },
+      {
+        select: '[forTreeItem]',
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '1',
+          'aria-checked': 'false',
+          'data-checked': 'false',
+        },
+        present: ['id'],
+      },
+      {
+        select: '[forTreeItemCheckbox]',
+        attributes: { 'aria-hidden': 'true', 'data-state': 'unchecked' },
+      },
+    ],
+  },
+  {
+    component: TreeVirtualizedFixture,
+    markup: [
+      {
+        select: '[forTree]',
+        attributes: {
+          role: 'tree',
+          'aria-label': 'Virtualized',
+          tabindex: '0',
+          'aria-activedescendant': null,
+        },
+      },
+      {
+        select: '[forTreeItem]',
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '1',
+          'aria-setsize': '3',
+          'aria-posinset': '1',
+          'aria-selected': 'false',
+        },
+        present: ['id'],
+      },
+    ],
+  },
+  {
+    component: TreeNodeDragFixture,
+    markup: [
+      { select: '[forTree]', attributes: { role: 'tree', 'aria-label': 'Files' } },
+      {
+        select: '[forTreeItem]',
+        attributes: {
+          role: 'treeitem',
+          'aria-level': '1',
+          'aria-expanded': 'false',
+          'data-state': 'closed',
+        },
+        present: ['id'],
+      },
+      { select: '[forTreeGroup]', attributes: { role: 'group' } },
+      { select: '[forTreeNodeDragHandle]' },
+    ],
+  },
   {
     component: CalendarFixture,
     markup: [{ select: '[forCalendarGrid]', pairs: { 'aria-labelledby': '[forCalendarHeading]' } }],
   },
-  { component: CalendarDropdownsFixture },
-  { component: CalendarSelectDirectivesFixture },
-  { component: CalendarMonthViewFixture },
-  { component: CalendarYearViewFixture },
-  { component: DateFieldFixture },
-  { component: TimeFieldFixture },
-  { component: DateRangeFieldFixture },
-  { component: TimeRangeFieldFixture },
+  {
+    component: CalendarDropdownsFixture,
+    markup: [
+      { select: '[forCalendar]', attributes: { 'data-view': 'day' } },
+      {
+        select: '[forCalendarGrid]',
+        attributes: { role: 'grid' },
+        pairs: { 'aria-labelledby': '[forCalendarHeading]' },
+      },
+      {
+        select: '[forCalendarCell]',
+        attributes: { role: 'gridcell', 'aria-selected': 'false' },
+        present: ['aria-label'],
+      },
+    ],
+  },
+  {
+    component: CalendarSelectDirectivesFixture,
+    markup: [
+      { select: '[forCalendar]', attributes: { 'data-view': 'day' } },
+      {
+        select: '[forCalendarGrid]',
+        attributes: { role: 'grid' },
+        pairs: { 'aria-labelledby': '[forCalendarHeading]' },
+      },
+      {
+        select: '[forCalendarCell]',
+        attributes: { role: 'gridcell', 'aria-selected': 'false' },
+        present: ['aria-label'],
+      },
+    ],
+  },
+  {
+    component: CalendarMonthViewFixture,
+    markup: [
+      { select: '[forCalendar]', attributes: { 'data-view': 'month' } },
+      {
+        select: '[forCalendarMonthGrid]',
+        attributes: { role: 'grid', 'data-view': 'month' },
+        pairs: { 'aria-labelledby': '[forCalendarHeading]' },
+      },
+      {
+        select: '[forCalendarMonthCell]',
+        attributes: { role: 'gridcell', 'aria-selected': 'false' },
+      },
+    ],
+  },
+  {
+    component: CalendarYearViewFixture,
+    markup: [
+      { select: '[forCalendar]', attributes: { 'data-view': 'year' } },
+      {
+        select: '[forCalendarYearGrid]',
+        attributes: { role: 'grid', 'data-view': 'year' },
+        pairs: { 'aria-labelledby': '[forCalendarHeading]' },
+      },
+      {
+        select: '[forCalendarYearCell]',
+        attributes: { role: 'gridcell', 'aria-selected': 'false' },
+      },
+    ],
+  },
+  {
+    component: DateFieldFixture,
+    markup: [
+      {
+        select: '[forDateField]',
+        attributes: { role: 'group', 'aria-label': 'Date', 'data-empty': '' },
+      },
+      {
+        select: '[forDateFieldSegment]',
+        attributes: {
+          role: 'spinbutton',
+          'aria-valuetext': 'Empty',
+          'aria-valuenow': null,
+          'data-placeholder': '',
+        },
+        present: ['aria-label', 'aria-valuemin', 'aria-valuemax'],
+      },
+      { select: '[forDateFieldLiteral]', attributes: { 'aria-hidden': 'true' } },
+    ],
+  },
+  {
+    component: TimeFieldFixture,
+    markup: [
+      {
+        select: '[forTimeField]',
+        attributes: { role: 'group', 'aria-label': 'Time', 'data-empty': '' },
+      },
+      {
+        select: '[forTimeFieldSegment]',
+        attributes: { role: 'spinbutton', 'aria-valuenow': null, 'data-placeholder': '' },
+        present: ['aria-label', 'aria-valuemin', 'aria-valuemax'],
+      },
+      { select: '[forTimeFieldLiteral]', attributes: { 'aria-hidden': 'true' } },
+    ],
+  },
+  {
+    component: DateRangeFieldFixture,
+    markup: [
+      {
+        select: '[forDateRangeField]',
+        attributes: { role: 'group', 'aria-label': 'Stay', 'data-empty': '' },
+      },
+      {
+        select: '[forDateRangeFieldStart]',
+        attributes: { role: 'group', 'aria-label': 'Start date' },
+      },
+      { select: '[forDateRangeFieldEnd]', attributes: { role: 'group', 'aria-label': 'End date' } },
+      {
+        select: '[forDateRangeFieldSegment]',
+        attributes: {
+          role: 'spinbutton',
+          'aria-valuetext': 'Empty',
+          'aria-valuenow': null,
+          'data-placeholder': '',
+        },
+        present: ['aria-label', 'aria-valuemin', 'aria-valuemax'],
+      },
+      { select: '[forDateRangeFieldLiteral]', attributes: { 'aria-hidden': 'true' } },
+    ],
+  },
+  {
+    component: TimeRangeFieldFixture,
+    markup: [
+      {
+        select: '[forTimeRangeField]',
+        attributes: { role: 'group', 'aria-label': 'Opening hours', 'data-empty': '' },
+      },
+      {
+        select: '[forTimeRangeFieldStart]',
+        attributes: { role: 'group', 'aria-label': 'Start time' },
+      },
+      { select: '[forTimeRangeFieldEnd]', attributes: { role: 'group', 'aria-label': 'End time' } },
+      {
+        select: '[forTimeRangeFieldSegment]',
+        attributes: { role: 'spinbutton', 'aria-valuenow': null, 'data-placeholder': '' },
+        present: ['aria-label', 'aria-valuemin', 'aria-valuemax'],
+      },
+      { select: '[forTimeRangeFieldLiteral]', attributes: { 'aria-hidden': 'true' } },
+    ],
+  },
   {
     component: DatePickerFixture,
     markup: [
@@ -534,8 +867,28 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forTimePickerOption]', attributes: { role: 'option' } },
     ],
   },
-  { component: DragDropFixture },
-  { component: FreeDragFixture },
+  {
+    component: DragDropFixture,
+    markup: [
+      { select: '[forDropList]', attributes: { 'data-orientation': 'vertical' } },
+      {
+        select: '[forDraggable]',
+        attributes: { 'aria-roledescription': 'sortable', tabindex: '0' },
+      },
+      { select: '[forDragHandle]', attributes: { 'data-drag-handle': '' } },
+    ],
+  },
+  {
+    component: FreeDragFixture,
+    noWiring: 'free repositioning is pointer-only; the moved element keeps its own semantics',
+    markup: [
+      {
+        select: '[forFreeDrag]',
+        attributes: { role: null, 'aria-roledescription': null, tabindex: null },
+      },
+      { select: '[forDragHandle]', attributes: { 'data-drag-handle': '' } },
+    ],
+  },
   {
     component: DropdownMenuOpenFixture,
     open: true,
@@ -596,7 +949,25 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       { select: '[forListboxOption]', attributes: { role: 'option', 'aria-setsize': '3' } },
     ],
   },
-  { component: ListboxReorderFixture },
+  {
+    component: ListboxReorderFixture,
+    markup: [
+      {
+        select: '[forListbox]',
+        attributes: {
+          role: 'listbox',
+          'aria-label': 'Tags',
+          'aria-multiselectable': 'true',
+          'aria-orientation': 'vertical',
+        },
+      },
+      {
+        select: '[forListboxOption]',
+        attributes: { role: 'option', 'aria-selected': 'false', 'data-state': 'unchecked' },
+        present: ['id'],
+      },
+    ],
+  },
   {
     component: SliderFixture,
     markup: [
@@ -607,7 +978,23 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
       },
     ],
   },
-  { component: PaneResizerFixture },
+  {
+    component: PaneResizerFixture,
+    markup: [
+      {
+        select: '[forPaneResizer]',
+        attributes: {
+          role: 'separator',
+          'aria-orientation': 'vertical',
+          'aria-valuemin': '0',
+          'aria-valuemax': '100',
+          'aria-valuenow': '50',
+          'data-orientation': 'vertical',
+          tabindex: '0',
+        },
+      },
+    ],
+  },
   {
     component: NumberInputFixture,
     markup: [{ select: '[forNumberInput]', attributes: { role: 'spinbutton' } }],

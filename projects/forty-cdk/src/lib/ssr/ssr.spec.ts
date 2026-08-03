@@ -28,7 +28,12 @@ import { BreadcrumbsFixture, PaginationFixture, VisuallyHiddenFixture } from './
 import { FieldFixture, SearchFixture, ToggleGroupFixture } from './fixtures/form';
 import { MenuMultiOpenerOpenFixture, NavigationMenuViewportOpenFixture } from './fixtures/menu';
 import { CarouselFixture, VirtualViewportFixture, VirtualizerFixture } from './fixtures/motion';
-import { OPEN_STATE_FIXTURES, SSR_FIXTURES, type SsrMarkup } from './fixtures/registry';
+import {
+  OPEN_STATE_FIXTURES,
+  SSR_FIXTURES,
+  type SsrFixture,
+  type SsrMarkup,
+} from './fixtures/registry';
 import {
   TableBodyPlaceholderVariantFixture,
   TableBodyReorderFixture,
@@ -180,6 +185,39 @@ const FIXTURE_MODULES = {
  */
 function isFixtureComponent(value: unknown): value is Type<unknown> {
   return typeof value === 'function' && 'ɵcmp' in value;
+}
+
+const HAND_WRITTEN_MARKUP_FIXTURES: readonly string[] = [
+  'BreadcrumbsFixture',
+  'CarouselFixture',
+  'FieldFixture',
+  'PaginationFixture',
+  'SearchFixture',
+  'TableBodyPlaceholderVariantFixture',
+  'TableBodyReorderFixture',
+  'TableBodyRowInteractionFixture',
+  'TableBodyRowVariantFixture',
+  'TableBodyVirtualizedFixture',
+  'TableGridFixture',
+  'TableTreegridFixture',
+  'TableVirtualizedFixture',
+  'TabsServerFixture',
+  'TabsServerRepeatFixture',
+  'ToggleGroupFixture',
+];
+
+function declaresServerMarkup(fixture: SsrFixture): boolean {
+  return (fixture.markup?.length ?? 0) > 0 || fixture.noWiring !== undefined;
+}
+
+function fixtureExportNames(): ReadonlyMap<unknown, string> {
+  return new Map(
+    Object.values(FIXTURE_MODULES).flatMap((module) =>
+      Object.entries(module)
+        .filter(([, value]) => isFixtureComponent(value))
+        .map(([name, value]): [unknown, string] => [value, name]),
+    ),
+  );
 }
 
 /**
@@ -347,6 +385,18 @@ describe('SSR smoke tests', () => {
     );
 
     expect(unregistered).toEqual([]);
+  });
+
+  it('declares markup or noWiring for every entry no hand-written case covers', () => {
+    const names = fixtureExportNames();
+    const undeclared = SSR_FIXTURES.filter((fixture) => !declaresServerMarkup(fixture))
+      .map(({ component }) => names.get(component) ?? component.name)
+      .sort();
+
+    expect(
+      undeclared,
+      'an entry declaring neither `markup` nor `noWiring` only proves it rendered — declare what it emits, or add it here with the hand-written case that asserts it',
+    ).toEqual([...HAND_WRITTEN_MARKUP_FIXTURES]);
   });
 
   for (const { component } of SSR_FIXTURES) {
