@@ -3431,8 +3431,7 @@ describe('ForCombobox static option (issue #674)', () => {
     r.instance.open.set(true);
     await flush(r.fixture);
     // The static option registered, its `[value]` binding landed, and the
-    // fold re-ran — the cache now resolves the real label,
-    // all without Zone.js (renderHost configures zoneless change detection).
+    // fold re-ran — the cache now resolves the real label.
     expect(selText(r.el)).toBe('Add new…');
   });
 });

@@ -278,8 +278,6 @@ describe('ForDrawerManager (programmatic)', () => {
   });
 
   describe('per-channel dismiss hooks (#678)', () => {
-    // The whole suite runs under `provideZonelessChangeDetection()` (see
-    // `setup()`), so this block doubles as the zoneless coverage for the hooks.
     it('interactOutside veto keeps a dismissible drawer open on outside pointer-down while Escape still closes', async () => {
       const { drawers } = setup();
       const ref = drawers.open(SheetDrawer, {
@@ -405,9 +403,6 @@ describe('ForDrawerManager (programmatic)', () => {
   // ---- New coverage for #1232 — per-scope defaults + DI via open({ injector }) ----
 
   describe('scoped defaults via open({ injector }) (#1232)', () => {
-    // The whole suite runs under `provideZonelessChangeDetection()` (see
-    // `setup()`), so this block doubles as the zoneless coverage for the
-    // scoped-vs-root resolution.
     const SCOPED_TOKEN = new InjectionToken<string>('SCOPED_DRAWER_TEST_TOKEN');
 
     @Component({
