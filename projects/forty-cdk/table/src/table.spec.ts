@@ -1526,6 +1526,24 @@ describe('ForTable', () => {
       expect(rootEl(el).getAttribute('aria-colcount')).toBe('5');
     });
 
+    it('aria-rowcount / aria-colcount report -1 when no channel knows the count (#1640)', async () => {
+      const { el, instance, flush } = renderHost(GridTableHost);
+      instance.rows.set([]);
+      await flush();
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('-1');
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('-1');
+    });
+
+    it('an explicit rowCount / colCount of 0 is emitted verbatim (#1640)', async () => {
+      const { el, instance, flush } = renderHost(GridTableHost);
+      instance.rows.set([]);
+      instance.rowCount.set(0);
+      instance.colCount.set(0);
+      await flush();
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('0');
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('0');
+    });
+
     it('aria-rowindex on data rows is 1-based', () => {
       const { el } = renderHost(GridTableHost);
       const rows = Array.from(el.querySelectorAll<HTMLElement>('[forTableRow]'));
@@ -1704,6 +1722,14 @@ describe('ForTable', () => {
     it('aria-rowcount includes the header row', () => {
       const { el } = renderHost(GridWithHeaderHost);
       expect(rootEl(el).getAttribute('aria-rowcount')).toBe('4');
+    });
+
+    it('a registered header row keeps aria-colcount known while aria-rowcount goes unknown (#1640)', async () => {
+      const { el, instance, flush } = renderHost(GridWithHeaderHost);
+      instance.rows.set([]);
+      await flush();
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('3');
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('-1');
     });
 
     it('header cells carry a 1-based aria-colindex', () => {
@@ -4043,6 +4069,16 @@ describe('ForTable', () => {
   describe('virtualization', () => {
     it('aria-rowcount is the declared true total, not the rendered row count', () => {
       const { el } = renderHost(VirtualizedTableHost);
+      expect(rootEl(el).getAttribute('aria-rowcount')).toBe('1000');
+    });
+
+    it('aria-colcount is -1 while the window is empty, leaving the declared aria-rowcount intact (#1640)', async () => {
+      const { el, instance, flush } = renderHost(VirtualizedTableHost);
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('1');
+
+      instance.windowIndices.set([]);
+      await flush();
+      expect(rootEl(el).getAttribute('aria-colcount')).toBe('-1');
       expect(rootEl(el).getAttribute('aria-rowcount')).toBe('1000');
     });
 

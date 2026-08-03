@@ -282,7 +282,12 @@ export const SSR_FIXTURES: readonly SsrFixture[] = [
     markup: [
       {
         select: '[forTable]',
-        attributes: { role: 'grid', 'data-mode': 'grid', 'aria-rowcount': '1000' },
+        attributes: {
+          role: 'grid',
+          'data-mode': 'grid',
+          'aria-rowcount': '1000',
+          'aria-colcount': '-1',
+        },
       },
       {
         select: '[forTableRowReorder]',
