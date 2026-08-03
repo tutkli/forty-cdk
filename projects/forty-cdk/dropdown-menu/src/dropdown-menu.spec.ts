@@ -10,6 +10,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
@@ -91,6 +92,22 @@ class DismissibleContractHost {
 describe('ForDropdownMenu', () => {
   afterEachOverlayCleanup();
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(DropdownHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forDropdownMenu]'),
+          trigger: r.query<HTMLElement>('[forDropdownMenuTrigger]'),
+          content: document.querySelector<HTMLElement>('[forMenuContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(DismissibleContractHost);
@@ -134,23 +151,6 @@ describe('ForDropdownMenu', () => {
       expect(trigger.hasAttribute('data-disabled')).toBe(false);
       expect(trigger.hasAttribute('aria-disabled')).toBe(false);
       expect(trigger.hasAttribute('disabled')).toBe(false);
-    });
-
-    it('reflects data-state on root, trigger, and content', async () => {
-      const r = renderHost(DropdownHost);
-      const root = r.query<HTMLElement>('[forDropdownMenu]')!;
-      const trigger = r.query<HTMLButtonElement>('[forDropdownMenuTrigger]')!;
-
-      expect(root.getAttribute('data-state')).toBe('closed');
-      expect(trigger.getAttribute('data-state')).toBe('closed');
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const content = document.querySelector<HTMLElement>('[forMenuContent]')!;
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(trigger.getAttribute('data-state')).toBe('open');
-      expect(content.getAttribute('data-state')).toBe('open');
     });
   });
 

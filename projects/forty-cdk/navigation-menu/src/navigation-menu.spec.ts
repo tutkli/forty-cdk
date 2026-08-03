@@ -2,6 +2,7 @@ import { Component, provideZonelessChangeDetection, signal, viewChild } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost, TestStackedLayer } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';
@@ -149,6 +150,22 @@ function pointer(
 }
 
 describe('ForNavigationMenu', () => {
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(NavMenuHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forNavigationMenu]'),
+          trigger: r.queryAll<HTMLElement>('[forNavigationMenuTrigger]')[0] ?? null,
+          content: r.query<HTMLElement>('[forNavigationMenuContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open' ? 'products' : null),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('basic rendering', () => {
     it('reflects aria-label, data-orientation, and trigger ↔ content ids', async () => {
       const { query, queryAll, fixture, flush } = renderHost(NavMenuHost);

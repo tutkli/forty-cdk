@@ -2,7 +2,10 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost, withReducedMotion } from '../../src/test-utils';
-import { assertRovingTabindexContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertRovingTabindexContract,
+} from '../../src/test-utils/contract';
 import { ForTabs } from './tabs';
 import { ForTabsContent } from './tabs-content';
 import { ForTabsList } from './tabs-list';
@@ -70,6 +73,21 @@ const triggers = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forTabsTrigger]'));
 
 describe('ForTabs', () => {
+  assertDataStateContract({
+    vocabulary: ['active', 'inactive'],
+    mount: () => {
+      const r = renderHost(TabsHost);
+      return {
+        pieces: () => ({
+          trigger: triggerOf(r.el, 'a'),
+          content: contentOf(r.el, 'a'),
+        }),
+        setState: (state) => r.instance.active.set(state === 'active' ? 'a' : 'b'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('static accessibility & wiring', () => {
     it('sets role=tablist with aria-orientation, role=tab on triggers, role=tabpanel on contents', () => {
       const { el } = renderHost(TabsHost);
@@ -200,7 +218,6 @@ describe('ForTabs', () => {
         expect(triggerOf(el, v).getAttribute('aria-selected')).toBe('false');
         expect(contentOf(el, v).getAttribute('aria-hidden')).toBe('true');
         expect(contentOf(el, v).hasAttribute('inert')).toBe(true);
-        expect(contentOf(el, v).getAttribute('data-state')).toBe('inactive');
       }
     });
   });
@@ -487,7 +504,6 @@ describe('ForTabs', () => {
 
       expect(fixture.componentInstance.active()).toBe('b');
       expect(triggerOf(el, 'b').getAttribute('aria-selected')).toBe('true');
-      expect(triggerOf(el, 'b').getAttribute('data-state')).toBe('active');
       expect(contentOf(el, 'b').hasAttribute('aria-hidden')).toBe(false);
       expect(contentOf(el, 'b').hasAttribute('inert')).toBe(false);
       expect(contentOf(el, 'a').getAttribute('aria-hidden')).toBe('true');

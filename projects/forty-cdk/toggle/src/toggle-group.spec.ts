@@ -5,6 +5,7 @@ import { By } from '@angular/platform-browser';
 
 import { pressKey, renderHost } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertFormControlContract,
   assertRovingTabindexContract,
   type FormControlMountResult,
@@ -88,6 +89,18 @@ const toggleItems = (host: HTMLElement): HTMLElement[] =>
   Array.from(host.querySelectorAll<HTMLElement>('[forToggleGroupItem]'));
 
 describe('ForToggleGroup', () => {
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(ToggleGroupHost);
+      return {
+        pieces: () => ({ item: itemOf(r.el, 'center') }),
+        setState: (state) => r.instance.value.set(state === 'checked' ? ['center'] : []),
+        flush: r.flush,
+      };
+    },
+  });
+
   assertRovingTabindexContract({
     mount: async () => {
       const r = renderHost(ToggleGroupHost);
@@ -225,7 +238,6 @@ describe('ForToggleGroup', () => {
         const item = itemOf(el, v);
         expect(item.getAttribute('type')).toBe('button');
         expect(item.getAttribute('aria-pressed')).toBe('false');
-        expect(item.getAttribute('data-state')).toBe('unchecked');
       }
     });
 
@@ -354,7 +366,7 @@ describe('ForToggleGroup', () => {
       expect(r.instance.value()).toEqual([]);
     });
 
-    it('reflects aria-pressed and data-state per item', async () => {
+    it('reflects aria-pressed per item', async () => {
       const r = renderHost(ToggleGroupHost);
 
       itemOf(r.el, 'center').click();
@@ -362,7 +374,6 @@ describe('ForToggleGroup', () => {
 
       expect(itemOf(r.el, 'left').getAttribute('aria-pressed')).toBe('false');
       expect(itemOf(r.el, 'center').getAttribute('aria-pressed')).toBe('true');
-      expect(itemOf(r.el, 'center').getAttribute('data-state')).toBe('checked');
       expect(itemOf(r.el, 'right').getAttribute('aria-pressed')).toBe('false');
     });
   });

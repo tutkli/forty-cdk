@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { pressKey, renderHost } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertFormControlContract,
   assertRovingTabindexContract,
   type FormControlMountResult,
@@ -209,7 +210,6 @@ describe('ForRadioGroup', () => {
         expect(r.getAttribute('role')).toBe('radio');
         expect(r.getAttribute('type')).toBe('button');
         expect(r.getAttribute('aria-checked')).toBe('false');
-        expect(r.getAttribute('data-state')).toBe('unchecked');
       }
     });
 
@@ -732,26 +732,34 @@ describe('ForRadioGroup', () => {
       readonly color = signal<string | null>('');
     }
 
-    it('reflects data-state unchecked without a hidden attribute while no radio is selected', () => {
-      const { el } = renderHost(IndicatorHost);
-      const inds = el.querySelectorAll<HTMLElement>('[data-ind]');
-      expect(Array.from(inds).some((n) => n.hasAttribute('hidden'))).toBe(false);
-      expect(Array.from(inds).every((n) => n.getAttribute('data-state') === 'unchecked')).toBe(
-        true,
-      );
+    assertDataStateContract({
+      vocabulary: ['checked', 'unchecked'],
+      mount: () => {
+        const r = renderHost(IndicatorHost);
+        return {
+          pieces: () => ({
+            radio: r.query<HTMLElement>('[data-test-id="red"]'),
+            indicator: r.query<HTMLElement>('[data-ind="red"]'),
+          }),
+          setState: (state) => r.instance.color.set(state === 'checked' ? 'red' : 'blue'),
+          flush: r.flush,
+        };
+      },
     });
 
-    it("reflects data-state on the selected radio's indicator without a hidden attribute", async () => {
+    it('never hides the indicator with a hidden attribute, checked or not', async () => {
       const { el, fixture, flush } = renderHost(IndicatorHost);
+      const hidden = () =>
+        Array.from(el.querySelectorAll<HTMLElement>('[data-ind]')).some((n) =>
+          n.hasAttribute('hidden'),
+        );
+
+      expect(hidden()).toBe(false);
+
       fixture.componentInstance.color.set('blue');
       await flush();
 
-      const red = el.querySelector<HTMLElement>('[data-ind="red"]')!;
-      const blue = el.querySelector<HTMLElement>('[data-ind="blue"]')!;
-      expect(red.hasAttribute('hidden')).toBe(false);
-      expect(blue.hasAttribute('hidden')).toBe(false);
-      expect(red.getAttribute('data-state')).toBe('unchecked');
-      expect(blue.getAttribute('data-state')).toBe('checked');
+      expect(hidden()).toBe(false);
     });
 
     it('throws when used outside [forRadio]', () => {

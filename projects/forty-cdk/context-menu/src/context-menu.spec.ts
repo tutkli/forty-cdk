@@ -3,7 +3,10 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { assertDismissibleLayerContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertDismissibleLayerContract,
+} from '../../src/test-utils/contract';
 import { FOR_MENU_CONTEXT, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
@@ -102,6 +105,22 @@ describe('ForContextMenu', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(ContextMenuHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forContextMenu]'),
+          trigger: r.query<HTMLElement>('[forContextMenuTrigger]'),
+          content: document.querySelector<HTMLElement>('[forMenuContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
   });
 
   describe('right-click trigger', () => {

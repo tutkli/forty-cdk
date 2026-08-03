@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../src/test-utils/render';
 import {
+  assertDataStateContract,
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
@@ -41,13 +42,24 @@ class ToggleHost {
 }
 
 describe('ForToggle', () => {
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(ToggleHost);
+      return {
+        pieces: () => ({ toggle: r.query<HTMLElement>('[forToggle]') }),
+        setState: (state) => r.instance.checked.set(state === 'checked'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('a11y baseline', () => {
-    it('reflects aria-pressed and data-state on the host', () => {
+    it('reflects aria-pressed and type="button" on the host', () => {
       const r = renderHost(ToggleHost);
       const btn = r.query<HTMLButtonElement>('[forToggle]')!;
 
       expect(btn.getAttribute('aria-pressed')).toBe('false');
-      expect(btn.getAttribute('data-state')).toBe('unchecked');
       expect(btn.getAttribute('type')).toBe('button');
     });
 
@@ -64,7 +76,6 @@ describe('ForToggle', () => {
       await r.flush();
 
       expect(btn.getAttribute('aria-pressed')).toBe('true');
-      expect(btn.getAttribute('data-state')).toBe('checked');
     });
 
     it('reflects disabled via aria-disabled and data-disabled, staying focusable (no native disabled)', async () => {
@@ -132,7 +143,6 @@ describe('ForToggle', () => {
       btn.click();
       await r.flush();
       expect(btn.getAttribute('aria-pressed')).toBe('true');
-      expect(btn.getAttribute('data-state')).toBe('checked');
       expect(r.instance.checked()).toBe(true);
 
       btn.click();
@@ -281,12 +291,10 @@ describe('ForToggle', () => {
       await r.flush();
       expect(r.instance.model().bold).toBe(true);
       expect(bold.getAttribute('aria-pressed')).toBe('true');
-      expect(bold.getAttribute('data-state')).toBe('checked');
 
       r.instance.model.update((m) => ({ ...m, bold: false }));
       await r.flush();
       expect(bold.getAttribute('aria-pressed')).toBe('false');
-      expect(bold.getAttribute('data-state')).toBe('unchecked');
     });
 
     it('flows `required` from the schema into data-required (role="button" has no aria-required)', async () => {

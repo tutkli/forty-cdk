@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { pressKey } from '../../src/test-utils';
 import { renderHost } from '../../src/test-utils/render';
 import {
+  assertDataStateContract,
   assertFormControlContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
@@ -60,6 +61,18 @@ const switchOf = (host: HTMLElement) => host.querySelector<HTMLButtonElement>('b
 const divSwitchOf = (host: HTMLElement) => host.querySelector<HTMLElement>('[forSwitch]')!;
 
 describe('ForSwitch', () => {
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(SwitchHost);
+      return {
+        pieces: () => ({ switch: switchOf(r.el) }),
+        setState: (state) => r.instance.enabled.set(state === 'checked'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('static accessibility', () => {
     it('sets role="switch", type="button" and starts unchecked', () => {
       const { el } = renderHost(SwitchHost);
@@ -67,7 +80,6 @@ describe('ForSwitch', () => {
       expect(sw.getAttribute('role')).toBe('switch');
       expect(sw.getAttribute('type')).toBe('button');
       expect(sw.getAttribute('aria-checked')).toBe('false');
-      expect(sw.getAttribute('data-state')).toBe('unchecked');
     });
 
     it('always emits aria-checked even when falsy (togglable widget rule)', () => {
@@ -119,14 +131,13 @@ describe('ForSwitch', () => {
   );
 
   describe('click', () => {
-    it('toggles aria-checked / data-state and emits the model', async () => {
+    it('toggles aria-checked and emits the model', async () => {
       const { el, fixture, flush } = renderHost(SwitchHost);
       const sw = switchOf(el);
 
       sw.click();
       await flush();
       expect(sw.getAttribute('aria-checked')).toBe('true');
-      expect(sw.getAttribute('data-state')).toBe('checked');
       expect(fixture.componentInstance.enabled()).toBe(true);
 
       sw.click();
@@ -212,7 +223,6 @@ describe('ForSwitch', () => {
       await flush();
       expect(fixture.componentInstance.enabled()).toBe(true);
       expect(sw.getAttribute('aria-checked')).toBe('true');
-      expect(sw.getAttribute('data-state')).toBe('checked');
     });
 
     it('toggles on Enter keydown', async () => {

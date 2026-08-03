@@ -12,6 +12,7 @@ import {
   type RenderResult,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
@@ -250,6 +251,22 @@ describe('ForDatePicker', () => {
 
   afterEachOverlayCleanup();
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(Host);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forDatePicker]'),
+          trigger: r.query<HTMLElement>('[forDatePickerTrigger]'),
+          content: content(),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   assertDismissibleLayerContract({
     mount: async (options = {}) => {
       const r = renderHost(DatePickerDismissContractHost);
@@ -344,18 +361,6 @@ describe('ForDatePicker', () => {
       const r = renderHost(Host);
       await openPicker(r);
       expect(content()!.parentElement).toBe(document.body);
-    });
-
-    it('reflects data-state on the root and trigger', async () => {
-      const r = renderHost(Host);
-      const root = r.query('[forDatePicker]')!;
-      expect(root.getAttribute('data-state')).toBe('closed');
-      expect(trigger(r).getAttribute('data-state')).toBe('closed');
-
-      await openPicker(r);
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(trigger(r).getAttribute('data-state')).toBe('open');
-      expect(content()!.getAttribute('data-state')).toBe('open');
     });
   });
 

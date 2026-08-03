@@ -18,6 +18,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
   type FormControlMountResult,
@@ -171,6 +172,22 @@ describe('ForCombobox', () => {
 
   afterEachOverlayCleanup();
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(ComboboxHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forCombobox]'),
+          input: r.query<HTMLElement>('[forComboboxInput]'),
+          content: document.querySelector<HTMLElement>('[forComboboxContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('portal cleanup', () => {
     it('removes the portaled content from document.body on close', async () => {
       // Issue #89 reproduction. Combobox previously called `injectPortal()`
@@ -216,30 +233,14 @@ describe('ForCombobox', () => {
       expect(input.hasAttribute('aria-controls')).toBe(false);
     });
 
-    it('options carry role=option + aria-selected + data-state', async () => {
+    it('options carry role=option', async () => {
       const r = renderHost(ComboboxHost);
       r.instance.value.set(['banana']);
       r.instance.open.set(true);
       await flush(r.fixture);
 
-      const apple = getOption('apple');
-      const banana = getOption('banana');
-      expect(apple.getAttribute('role')).toBe('option');
-      expect(apple.getAttribute('data-state')).toBe('unchecked');
-      expect(banana.getAttribute('data-state')).toBe('checked');
-    });
-
-    it('reflects data-state on root and input', async () => {
-      const r = renderHost(ComboboxHost);
-      const root = r.query<HTMLElement>('[forCombobox]')!;
-      const input = getInput();
-      expect(root.getAttribute('data-state')).toBe('closed');
-      expect(input.getAttribute('data-state')).toBe('closed');
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(input.getAttribute('data-state')).toBe('open');
+      expect(getOption('apple').getAttribute('role')).toBe('option');
+      expect(getOption('banana').getAttribute('role')).toBe('option');
     });
 
     it('reflects data-readonly on the root while read-only, and clears it', async () => {
@@ -3874,18 +3875,31 @@ describe('ForComboboxIndicator', () => {
     return el;
   }
 
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(IndicatorHost);
+      return {
+        pieces: () => ({
+          option: document.querySelector<HTMLElement>('[data-test-id="apple"]'),
+          indicator: document.querySelector<HTMLElement>('[data-test-id="apple-ind"]'),
+        }),
+        setState: (state) => r.instance.value.set(state === 'checked' ? ['apple'] : ['banana']),
+        flush: r.flush,
+      };
+    },
+  });
+
   it('hides while unselected and shows when the option enters value()', async () => {
     const r = renderHost(IndicatorHost);
     await flush(r.fixture);
 
     expect(indicator('apple-ind').hasAttribute('hidden')).toBe(true);
-    expect(indicator('apple-ind').getAttribute('data-state')).toBe('unchecked');
 
     r.instance.value.set(['apple']);
     await flush(r.fixture);
 
     expect(indicator('apple-ind').hasAttribute('hidden')).toBe(false);
-    expect(indicator('apple-ind').getAttribute('data-state')).toBe('checked');
   });
 
   it('enforces inline display:none while unselected so a consumer display class cannot leak through', async () => {

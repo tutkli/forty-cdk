@@ -2,6 +2,7 @@ import { Component, provideZonelessChangeDetection, signal } from '@angular/core
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost, withReducedMotion } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForAccordion } from './accordion';
 import { ForAccordionContent } from './accordion-content';
 import { ForAccordionItem } from './accordion-item';
@@ -72,6 +73,22 @@ const contentOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-content-id="${id}"]`);
 
 describe('ForAccordion', () => {
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(AccordionHost);
+      return {
+        pieces: () => ({
+          item: r.query<HTMLElement>('[forAccordionItem]'),
+          trigger: triggerOf(r.el, 'a'),
+          content: contentOf(r.el, 'a'),
+        }),
+        setState: (state) => r.instance.value.set(state === 'open' ? ['a'] : []),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('render & wiring', () => {
     it('host-binds type="button" so a trigger inside a <form> does not submit on toggle', async () => {
       const { el, fixture, flush } = renderHost(FormAccordionHost);
@@ -101,10 +118,7 @@ describe('ForAccordion', () => {
       const { el } = renderHost(AccordionHost);
 
       for (const id of ['a', 'b', 'c']) {
-        const trigger = triggerOf(el, id);
-        const content = contentOf(el, id)!;
-        expect(trigger.getAttribute('aria-expanded')).toBe('false');
-        expect(content.getAttribute('data-state')).toBe('closed');
+        expect(triggerOf(el, id).getAttribute('aria-expanded')).toBe('false');
       }
     });
 
@@ -134,7 +148,6 @@ describe('ForAccordion', () => {
       await flush();
       expect(fixture.componentInstance.value()).toEqual(['a']);
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('true');
-      expect(contentOf(el, 'a')!.getAttribute('data-state')).toBe('open');
 
       triggerOf(el, 'b').click();
       await flush();
@@ -312,7 +325,6 @@ describe('ForAccordion', () => {
       await flush();
 
       expect(triggerOf(el, 'c').getAttribute('aria-expanded')).toBe('true');
-      expect(contentOf(el, 'c')!.getAttribute('data-state')).toBe('open');
       expect(triggerOf(el, 'a').getAttribute('aria-expanded')).toBe('false');
     });
   });

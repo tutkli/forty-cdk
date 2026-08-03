@@ -11,6 +11,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
   assertRovingTabindexContract,
@@ -433,6 +434,22 @@ function pointerEvent(type: 'pointerenter' | 'pointerleave'): PointerEvent {
 
 describe('ForMenubar', () => {
   afterEachOverlayCleanup();
+
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(MenubarHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forMenubar]'),
+          trigger: menubarTriggers(r.el)[0] ?? null,
+          content: document.querySelector<HTMLElement>('[forMenuContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open' ? 'file' : null),
+        flush: r.flush,
+      };
+    },
+  });
 
   assertDismissibleLayerContract({
     mount: async (options = {}) => {

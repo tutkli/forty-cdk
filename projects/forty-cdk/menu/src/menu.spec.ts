@@ -2,6 +2,7 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
 import { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
@@ -1303,18 +1304,31 @@ describe('ForMenuItemIndicator', () => {
     return el;
   }
 
+  assertDataStateContract({
+    vocabulary: ['checked', 'unchecked'],
+    mount: () => {
+      const r = renderHost(IndicatorHost);
+      return {
+        pieces: () => ({
+          checkboxItem: document.querySelector<HTMLElement>('#bold'),
+          indicator: document.querySelector<HTMLElement>('[data-test-id="bold-ind"]'),
+        }),
+        setState: (state) => r.instance.bold.set(state === 'checked'),
+        flush: r.flush,
+      };
+    },
+  });
+
   it('hides while the checkbox item is unchecked and shows when checked', async () => {
     const r = renderHost(IndicatorHost);
     await flush(r.fixture);
 
     expect(indicator('bold-ind').hasAttribute('hidden')).toBe(true);
-    expect(indicator('bold-ind').getAttribute('data-state')).toBe('unchecked');
 
     r.instance.bold.set(true);
     await flush(r.fixture);
 
     expect(indicator('bold-ind').hasAttribute('hidden')).toBe(false);
-    expect(indicator('bold-ind').getAttribute('data-state')).toBe('checked');
   });
 
   it('reflects the radio group value across siblings', async () => {

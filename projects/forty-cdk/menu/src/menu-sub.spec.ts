@@ -10,6 +10,7 @@ import {
   renderHost,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
@@ -132,6 +133,24 @@ function pointerEvent(
 
 describe('ForMenuSub', () => {
   afterEachOverlayCleanup();
+
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: async () => {
+      const r = renderHost(SubMenuHost);
+      r.instance.open.set(true);
+      await r.flush();
+      return {
+        pieces: () => ({
+          sub: document.querySelector<HTMLElement>('[forMenuSub]'),
+          subTrigger: document.querySelector<HTMLElement>('#more'),
+          subContent: document.querySelector<HTMLElement>('#sub-content'),
+        }),
+        setState: (state) => r.instance.subOpen.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
 
   assertOverlayTriggerAriaContract(
     {

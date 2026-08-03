@@ -13,6 +13,7 @@ import {
   withReducedMotion,
 } from '../../src/test-utils';
 import {
+  assertDataStateContract,
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
 } from '../../src/test-utils/contract';
@@ -137,6 +138,22 @@ class DismissibleContractHost {
 describe('ForPopover', () => {
   afterEachOverlayCleanup();
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(PopoverHost);
+      return {
+        pieces: () => ({
+          root: r.query<HTMLElement>('[forPopover]'),
+          trigger: r.query<HTMLElement>('[forPopoverTrigger]'),
+          content: document.querySelector<HTMLElement>('[forPopoverContent]'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open'),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('portal cleanup', () => {
     it('removes the portaled content from document.body on close', async () => {
       // Issue #89 reproduction.
@@ -214,23 +231,6 @@ describe('ForPopover', () => {
       const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
       expect(content.getAttribute('aria-label')).toBe('Quick action');
       expect(content.hasAttribute('aria-labelledby')).toBe(false);
-    });
-
-    it('reflects data-state on root, trigger, and content', async () => {
-      const r = renderHost(PopoverHost);
-      const root = r.query<HTMLElement>('[forPopover]')!;
-      const trigger = r.query<HTMLButtonElement>('[forPopoverTrigger]')!;
-
-      expect(root.getAttribute('data-state')).toBe('closed');
-      expect(trigger.getAttribute('data-state')).toBe('closed');
-
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      expect(root.getAttribute('data-state')).toBe('open');
-      expect(trigger.getAttribute('data-state')).toBe('open');
-      const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
-      expect(content.getAttribute('data-state')).toBe('open');
     });
   });
 

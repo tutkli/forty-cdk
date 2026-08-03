@@ -9,6 +9,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost } from '../../src/test-utils';
+import { assertDataStateContract } from '../../src/test-utils/contract';
 import { ForTree } from './tree';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
@@ -308,13 +309,27 @@ describe('ForTree', () => {
     });
   });
 
+  assertDataStateContract({
+    vocabulary: ['closed', 'open'],
+    mount: () => {
+      const r = renderHost(TreeHost);
+      return {
+        pieces: () => ({
+          item: itemOf(r.el, 'documents'),
+          toggle: toggleOf(r.el, 'documents'),
+        }),
+        setState: (state) => r.instance.open.set(state === 'open' ? ['documents'] : []),
+        flush: r.flush,
+      };
+    },
+  });
+
   describe('expansion (aria-expanded + data-state on parents only)', () => {
-    it('emits aria-expanded / data-state on parents and neither on leaves', async () => {
+    it('emits aria-expanded on parents and neither channel on leaves', async () => {
       const { el } = await setup((i) => i.open.set(['documents']));
 
       const documents = itemOf(el, 'documents');
       expect(documents.getAttribute('aria-expanded')).toBe('true');
-      expect(documents.getAttribute('data-state')).toBe('open');
 
       const readme = itemOf(el, 'readme');
       expect(readme.hasAttribute('aria-expanded')).toBe(false);
@@ -325,11 +340,10 @@ describe('ForTree', () => {
       expect(report.hasAttribute('data-state')).toBe(false);
     });
 
-    it('reports closed parents with aria-expanded=false / data-state=closed', async () => {
+    it('reports closed parents with aria-expanded=false', async () => {
       const { el } = await setup();
       const documents = itemOf(el, 'documents');
       expect(documents.getAttribute('aria-expanded')).toBe('false');
-      expect(documents.getAttribute('data-state')).toBe('closed');
     });
 
     it('clicking a toggle expands the parent and renders its group', async () => {
@@ -610,7 +624,7 @@ describe('ForTree', () => {
   });
 
   describe('reactive updates', () => {
-    it('reflects an expanded write in aria-expanded and data-state', async () => {
+    it('reflects an expanded write in aria-expanded', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TreeHost);
       fixture.detectChanges();
@@ -622,7 +636,6 @@ describe('ForTree', () => {
       fixture.componentInstance.open.set(['documents']);
       await flush(fixture);
       expect(itemOf(el, 'documents').getAttribute('aria-expanded')).toBe('true');
-      expect(itemOf(el, 'documents').getAttribute('data-state')).toBe('open');
     });
   });
 
