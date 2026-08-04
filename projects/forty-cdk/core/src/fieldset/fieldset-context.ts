@@ -2,9 +2,10 @@ import { InjectionToken, type Signal } from '@angular/core';
 
 /**
  * Coordination contract owned by the `ForFieldset` root. A `[forFieldsetLegend]`
- * reads `legendId` and registers its presence so the fieldset can resolve its
- * `aria-labelledby`; a descendant form control optionally reads
- * `effectiveDisabled` and ORs it into its own disabled state.
+ * reads `legendId`, hands its host over for static-`id` adoption, and registers
+ * its presence so the fieldset can resolve its `aria-labelledby`; a descendant
+ * form control optionally reads `effectiveDisabled` and ORs it into its own
+ * disabled state.
  *
  * The token lives in its own file (no directive import) so a consumer of another
  * primitive — a form control reading `effectiveDisabled` here — pulls in only the
@@ -13,6 +14,13 @@ import { InjectionToken, type Signal } from '@angular/core';
 export interface ForFieldsetContext {
   /** Id of the legend element; the group's `aria-labelledby` points here. */
   readonly legendId: Signal<string>;
+  /**
+   * Adopt a consumer-set **static** `id` on the legend host into `legendId`, so
+   * the legend's `[id]` host binding re-emits it instead of clobbering it with
+   * the generated fallback. Called by `[forFieldsetLegend]` from its
+   * constructor, before the first host-binding pass.
+   */
+  adoptLegendId(el: HTMLElement): void;
   /**
    * Whether the fieldset (and therefore its descendants) is effectively
    * disabled — its own `disabled` input OR'd with an enclosing disabled

@@ -18,7 +18,7 @@ import type { StaticAdoptionAdopter } from './mount';
   imports: [ForFieldset, ForFieldsetLegend],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div forFieldset aria-labelledby="probe-labelledby">
-    <div forFieldsetLegend>Shipping</div>
+    <div forFieldsetLegend id="probe-legend">Shipping</div>
   </div>`,
 })
 class FieldsetAdopted {}
@@ -151,13 +151,14 @@ class OtpInputBare {
  * `bare` fixture keeps the input, so the fallback *is* the input's value), and
  * `[forSearchClear]`'s beats the scope default.
  *
- * `[forFieldsetLegend]` is deliberately not a claim: it host-binds
- * `'[attr.id]'` to the fieldset's generated `legendId` with no adoption seam at
- * all, so a consumer static `id` on it is clobbered — the #659 rule's own case,
- * tracked by [#1654](https://github.com/tutkli/forty-cdk/issues/1654). Fixing
- * it is a library change, and the guard cannot ask for the claim until then: a
- * piece calling no seam is not a call site. It is the fallback of the
- * `[forFieldset]` claim below and is resolved as such.
+ * `[forFieldsetLegend]` carries two claims at once, and the `adopted` fixture
+ * keeps them independent on purpose. Its own `id` claim is stated over
+ * `fieldset.ts` — the root adopts on behalf of the child, so the seam's call
+ * site is not the piece's file ([#1654](https://github.com/tutkli/forty-cdk/issues/1654)).
+ * The group's `aria-labelledby` claim keeps naming it as a `{ pairs }` fallback,
+ * which the `bare` mount pins on the *generated* legend id; that the cascade
+ * follows an *adopted* one needs a fieldset with no static value of its own, a
+ * mixed mount neither variant can express, so it lives in `fieldset.spec.ts`.
  */
 export const FORM_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
   {
@@ -172,6 +173,14 @@ export const FORM_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
         seam: 'hostLabelledBy',
         probe: 'probe-labelledby',
         fallback: { pairs: '[forFieldsetLegend]' },
+      },
+      {
+        key: '[forFieldsetLegend]',
+        channel: 'id',
+        source: 'fieldset/src/fieldset.ts',
+        seam: 'adoptHostId',
+        probe: 'probe-legend',
+        fallback: { generated: 'for-fieldset-legend' },
       },
     ],
   },

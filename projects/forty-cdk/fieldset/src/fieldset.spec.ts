@@ -71,6 +71,102 @@ describe('ForFieldset', () => {
     });
   });
 
+  describe('consumer-set static legend id', () => {
+    @Component({
+      imports: [ForFieldset, ForFieldsetLegend],
+      template: `
+        <div forFieldset data-test-id="group">
+          <span forFieldsetLegend id="shipping-legend" data-test-id="legend">Shipping</span>
+        </div>
+      `,
+    })
+    class Host {}
+
+    it('survives the [id] host binding and the group aria-labelledby follows it', () => {
+      const { el } = renderHost(Host);
+      expect(q(el, 'legend').id).toBe('shipping-legend');
+      expect(q(el, 'group').getAttribute('aria-labelledby')).toBe('shipping-legend');
+    });
+  });
+
+  describe('duplicate legends', () => {
+    @Component({
+      imports: [ForFieldset, ForFieldsetLegend],
+      template: `
+        <div forFieldset data-test-id="group">
+          <span forFieldsetLegend data-test-id="first">Shipping</span>
+          <span forFieldsetLegend id="billing-legend" data-test-id="second">Billing</span>
+        </div>
+      `,
+    })
+    class TwoLegendsHost {}
+
+    @Component({
+      imports: [ForFieldset, ForFieldsetLegend],
+      template: `
+        <div forFieldset data-test-id="group">
+          <span forFieldsetLegend data-test-id="legend">Shipping</span>
+        </div>
+      `,
+    })
+    class OneLegendHost {}
+
+    @Component({
+      imports: [ForFieldset, ForFieldsetLegend],
+      template: `
+        <div forFieldset data-test-id="group">
+          @if (mode() === 'a') {
+            <span forFieldsetLegend id="legend-a" data-test-id="a">Shipping</span>
+          }
+          @if (mode() === 'b') {
+            <span forFieldsetLegend id="legend-b" data-test-id="b">Billing</span>
+          }
+        </div>
+      `,
+    })
+    class SwapHost {
+      readonly mode = signal<'a' | 'b'>('b');
+    }
+
+    it('warns in dev mode when a second legend registers under one fieldset', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(TwoLegendsHost);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain('[forty-cdk/fieldset]');
+      expect(warn.mock.calls[0]![0]).toContain('a single [forFieldsetLegend]');
+      expect(warn.mock.calls[0]![0]).toContain('legendId');
+    });
+
+    it('lets the last registered legend own the shared id', () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el } = renderHost(TwoLegendsHost);
+
+      expect(q(el, 'second').id).toBe('billing-legend');
+      expect(q(el, 'first').id).toBe('billing-legend');
+      expect(q(el, 'group').getAttribute('aria-labelledby')).toBe('billing-legend');
+    });
+
+    it('does not warn for the single-legend case', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      renderHost(OneLegendHost);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('does not warn when a structural swap mounts the replacement before the outgoing legend is destroyed', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const { el, fixture, flush } = renderHost(SwapHost);
+      expect(warn).not.toHaveBeenCalled();
+
+      fixture.componentInstance.mode.set('a');
+      await flush();
+
+      expect(warn).not.toHaveBeenCalled();
+      expect(q(el, 'a').id).toBe('legend-a');
+      expect(q(el, 'group').getAttribute('aria-labelledby')).toBe('legend-a');
+    });
+  });
+
   describe('disabled reflection', () => {
     @Component({
       imports: [ForFieldset],
