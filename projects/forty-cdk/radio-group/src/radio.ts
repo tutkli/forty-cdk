@@ -8,7 +8,13 @@ import {
   input,
 } from '@angular/core';
 
-import { hostButtonType, registerHandle, hostId, resolveListNavigation } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  registerHandle,
+  hostId,
+  resolveListNavigation,
+  selectionTabStop,
+} from 'forty-cdk/core';
 import { type ForRadioGroupContext, injectRadioGroupContext } from './radio-group-context';
 
 /**
@@ -99,19 +105,24 @@ export class ForRadio {
    * in DOM order; -1 otherwise.
    *
    * Disabled radios are always -1.
+   *
+   * The ladder is the shared `selectionTabStop`, and this is the one piece in
+   * the library that resolves it **without** consulting a `RovingTabindex`:
+   * selection follows focus in the Radio Group pattern, so the group's Tab entry
+   * point is its checked radio and there is no user-driven roving pointer that
+   * could diverge from it. See the roving-tabindex contract's adopter guard
+   * ([#1658](https://github.com/tutkli/forty-cdk/issues/1658)) for why that
+   * makes RadioGroup a declared member of the roving family rather than a
+   * derived one.
    */
-  readonly tabindex = computed<-1 | 0>(() => {
-    if (this.effectiveDisabled()) {
-      return -1;
-    }
-    if (this.checked()) {
-      return 0;
-    }
-    if (this.group.hasSelectedRadio()) {
-      return -1;
-    }
-    return this.group.isFirstEnabledRadio(this.#host.nativeElement) ? 0 : -1;
-  });
+  readonly tabindex = computed<-1 | 0>(() =>
+    selectionTabStop({
+      disabled: this.effectiveDisabled(),
+      selected: this.checked(),
+      hasSelected: this.group.hasSelectedRadio(),
+      isFirstEnabled: this.group.isFirstEnabledRadio(this.#host.nativeElement),
+    }),
+  );
 
   protected onClick(): void {
     if (this.effectiveDisabled() || this.group.readonly()) {

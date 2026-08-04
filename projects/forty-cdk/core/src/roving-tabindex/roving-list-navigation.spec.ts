@@ -1,7 +1,7 @@
 import { computed, signal } from '@angular/core';
 
 import { RovingTabindex } from './roving-tabindex';
-import { rovingListTarget, rovingTabStop } from './roving-list-navigation';
+import { rovingListTarget, rovingTabStop, selectionTabStop } from './roving-list-navigation';
 
 interface Handle {
   host: HTMLElement;
@@ -47,6 +47,51 @@ describe('rovingListTarget', () => {
 
   it('returns null for an empty list', () => {
     expect(rovingListTarget([], 0, 'next')).toBe(null);
+  });
+});
+
+describe('selectionTabStop', () => {
+  const base = () => ({
+    disabled: false,
+    selected: false,
+    hasSelected: false,
+    isFirstEnabled: false,
+  });
+
+  it('disabled → -1 even when selected and first enabled', () => {
+    expect(
+      selectionTabStop({ ...base(), disabled: true, selected: true, isFirstEnabled: true }),
+    ).toBe(-1);
+  });
+
+  it('selected → 0', () => {
+    expect(selectionTabStop({ ...base(), selected: true })).toBe(0);
+  });
+
+  it('another item holds the selection → -1', () => {
+    expect(selectionTabStop({ ...base(), hasSelected: true })).toBe(-1);
+  });
+
+  it('a selection matching no enabled item falls back to the first enabled one (#1132 / #1170)', () => {
+    expect(selectionTabStop({ ...base(), isFirstEnabled: true })).toBe(0);
+    expect(selectionTabStop({ ...base(), isFirstEnabled: false })).toBe(-1);
+  });
+
+  it('keeps the tab stop on the selected item where rovingTabStop would hand it to the tracker', () => {
+    const host = document.createElement('button');
+    const focused = document.createElement('button');
+    document.body.append(host, focused);
+    try {
+      const roving = new RovingTabindex();
+      roving.setActive(focused);
+      const selection = { ...base(), selected: true };
+
+      expect(selectionTabStop(selection)).toBe(0);
+      expect(rovingTabStop({ ...selection, roving, host })).toBe(-1);
+    } finally {
+      host.remove();
+      focused.remove();
+    }
   });
 });
 

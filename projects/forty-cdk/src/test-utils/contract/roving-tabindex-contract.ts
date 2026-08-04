@@ -1,15 +1,17 @@
 /**
  * Shared contract suite for primitives that own a roving-tabindex
- * keyboard model. Adopted by: Tabs, Toolbar, Stepper, Listbox,
- * RadioGroup, Menubar, ToggleGroup.
+ * keyboard model.
  *
- * Menu (and submenus) is intentionally excluded: its items keep a static
- * `tabindex="-1"` and the shared menu overlay moves focus imperatively
- * (managed-focus), so no item ever carries `tabindex="0"` — the contract's
- * entry-point assertion does not model that pattern. Drag-drop is excluded
- * too: its keyboard model reorders the lifted item (Arrow = move item) and
- * has no Home/End, so it moves the DOM, not focus, and diverges from the
- * focus-movement assertions here.
+ * **The roster is not here.** Adoption is derived from library source by
+ * [`src/lib/roving-tabindex-adopters.spec.ts`](../../lib/roving-tabindex-adopters.spec.ts),
+ * which folds every construction of `RovingTabindex` and fails on one no claim
+ * covers ([#1658](https://github.com/tutkli/forty-cdk/issues/1658)). Read that
+ * file for the roster, for the two keyboard models that are excluded (the
+ * table's 2D grid and the date / time fields' spinbutton segment strips, each
+ * with the condition the guard falsifies), and for why `[forRadioGroup]` is a
+ * declared member rather than a derived one. A list of names in this header was
+ * the shape that let a member join the family unnoticed — and the shape that let
+ * drag-drop's exclusion stay here after it had stopped being true.
  *
  * The contract owns the assertions that are identical across every
  * roving primitive:

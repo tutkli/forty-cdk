@@ -256,7 +256,11 @@ export {
   type HostRovingContext,
   type HostRovingItemHandle,
 } from './roving-tabindex/host-roving-context';
-export { rovingListTarget, rovingTabStop } from './roving-tabindex/roving-list-navigation';
+export {
+  rovingListTarget,
+  rovingTabStop,
+  selectionTabStop,
+} from './roving-tabindex/roving-list-navigation';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
 export { isScrollableAtEdge } from './scroll-boundary/scroll-boundary';
 export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';

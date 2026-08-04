@@ -7,7 +7,10 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDataStateContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertRovingTabindexContract,
+} from '../../src/test-utils/contract';
 import { ForCarousel } from './carousel';
 import { provideForCarouselDefaults } from './carousel-defaults';
 import { ForCarouselIndicator } from './carousel-indicator';
@@ -59,7 +62,11 @@ const CAROUSEL_IMPORTS = [
       <button forCarouselNext data-testid="next" aria-label="Next"></button>
       <div forCarouselIndicators [ariaLabel]="indicatorsLabel()">
         @for (s of slides(); track s; let i = $index) {
-          <button forCarouselIndicator [attr.data-indicator]="i"></button>
+          <button
+            forCarouselIndicator
+            [attr.data-indicator]="i"
+            [disabled]="disabledIndicators().includes(i)"
+          ></button>
         }
       </div>
     </div>
@@ -67,6 +74,7 @@ const CAROUSEL_IMPORTS = [
 })
 class CarouselHost {
   readonly active = signal(0);
+  readonly disabledIndicators = signal<readonly number[]>([]);
   readonly loop = signal(false);
   readonly orientation = signal<'horizontal' | 'vertical'>('horizontal');
   readonly dir = signal<'ltr' | 'rtl'>('ltr');
@@ -197,6 +205,54 @@ describe('ForCarousel', () => {
       };
     },
   });
+
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(CarouselHost);
+        await r.flush();
+        return { items: indicators(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.disabledIndicators.set([0]);
+        r.instance.active.set(1);
+        await r.flush();
+        return { items: indicators(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledMiddle: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.disabledIndicators.set([1]);
+        await r.flush();
+        return { items: indicators(r.el), enabledIndices: [0, 2], flush: r.flush };
+      },
+      mountRtl: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.dir.set('rtl');
+        await r.flush();
+        return { items: indicators(r.el), flush: r.flush };
+      },
+      mountWithSelection: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.active.set(1);
+        await r.flush();
+        return { items: indicators(r.el), selectedIndices: [1], flush: r.flush };
+      },
+      mountWithSelectedDisabled: async () => {
+        const r = renderHost(CarouselHost);
+        r.instance.disabledIndicators.set([2]);
+        r.instance.active.set(2);
+        await r.flush();
+        return {
+          items: indicators(r.el),
+          enabledIndices: [0, 1],
+          selectedIndices: [2],
+          flush: r.flush,
+        };
+      },
+    },
+    { forwardArrow: 'ArrowRight' },
+  );
 
   describe('static accessibility & wiring', () => {
     it('sets role=group, aria-roledescription=carousel, aria-label on the root', () => {
@@ -710,14 +766,7 @@ describe('ForCarousel', () => {
     });
   });
 
-  describe('indicators tabindex (initial state)', () => {
-    it('current indicator (index 0) has tabindex=0; others have tabindex=-1', () => {
-      const { el } = renderHost(CarouselHost);
-      expect(indicator(el, 0).getAttribute('tabindex')).toBe('0');
-      expect(indicator(el, 1).getAttribute('tabindex')).toBe('-1');
-      expect(indicator(el, 2).getAttribute('tabindex')).toBe('-1');
-    });
-
+  describe('indicators tabindex', () => {
     it('after navigating to slide 1, indicator 1 gets tabindex=0', async () => {
       const { el, flush } = renderHost(CarouselHost);
       indicator(el, 0).focus();
