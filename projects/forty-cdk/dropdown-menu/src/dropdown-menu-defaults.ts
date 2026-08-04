@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant dropdown menus in the surrounding
@@ -20,6 +20,14 @@ export interface ForDropdownMenuDefaults {
    * the edge when `flip` / `shift` runs.
    */
   collisionPadding: number;
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides
+   * of the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let a menu clipped on a narrow
+   * viewport drop to a perpendicular side. Only consulted when
+   * `avoidCollisions` is on.
+   */
+  fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
 }
 
 /**
@@ -30,6 +38,7 @@ export interface ForDropdownMenuDefaults {
 export const FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS: ForDropdownMenuDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
+  fallbackAxisSideDirection: 'none',
 };
 
 const { token, provideDefaults } = createDefaults<ForDropdownMenuDefaults>(

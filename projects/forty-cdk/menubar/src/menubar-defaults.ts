@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant menubars in the surrounding injector
@@ -20,6 +20,14 @@ export interface ForMenubarDefaults {
    * `shift` runs.
    */
   collisionPadding: number;
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides
+   * of the preferred axis overflow. `'none'` (default) keeps only the opposite
+   * same-axis placement; `'start'` / `'end'` let a menu clipped on a narrow
+   * viewport drop to a perpendicular side. Only consulted when
+   * `avoidCollisions` is on.
+   */
+  fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
 }
 
 /**
@@ -30,6 +38,7 @@ export interface ForMenubarDefaults {
 export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
   sideOffset: 4,
   collisionPadding: 8,
+  fallbackAxisSideDirection: 'none',
 };
 
 const { token, provideDefaults } = createDefaults<ForMenubarDefaults>(
