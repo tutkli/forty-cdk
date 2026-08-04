@@ -138,9 +138,13 @@ export interface StaticAdoptionMountResult {
    * Resolve the pieces this adopter covers, keyed by the claim's `key`. Called
    * after `flush`, so a portaled surface that exists only while open resolves.
    *
-   * A piece absent from the *current variant* returns `null` and is skipped —
-   * but a key that resolves in **neither** variant fails the resolution case,
-   * so a mistyped selector cannot pass for a piece the fixture never rendered.
+   * A piece absent from the current variant returns `null`, which the adoption
+   * and fallback comparisons skip — so the resolution case requires every
+   * declared key in **both** variants rather than in their union. Skipping is a
+   * safety net against a half-rendered mount, never a licence for one: a key
+   * present in one variant only would keep that half asserted and lose the
+   * other silently, which is the invisibility
+   * [#1645](https://github.com/tutkli/forty-cdk/issues/1645) found one rung up.
    */
   pieces: () => Readonly<Record<string, HTMLElement | null>>;
   /**
@@ -159,7 +163,8 @@ export interface StaticAdoptionContractSetup {
    * `'adopted'` writes every claim's `probe` as a plain static attribute on the
    * piece's host; `'bare'` writes none of them and is what pins each
    * `fallback`. Both must render the same pieces — an element the consumer
-   * happens not to name is still the same element.
+   * happens not to name is still the same element — and the resolution case
+   * asserts that rather than trusting it.
    *
    * Called more than once inside a single case, so the factory must reset the
    * `TestBed` before configuring it (`mountStaticAdoptionFixture` does).
@@ -293,10 +298,16 @@ const normalizeGenerated = (
  *     prove, the way `assertRovingTabindexContract` fails a factory that cannot
  *     produce two enabled items.
  *   - **The resolution case** is the completeness half of the two comparisons.
- *     Both skip a `null`, so a key whose selector resolves in neither variant is
- *     covered by nothing while the `describe` stays green — the invisibility
+ *     Both skip a `null`, so a key the fixture never rendered is covered by
+ *     nothing while the `describe` stays green — the invisibility
  *     [#1645](https://github.com/tutkli/forty-cdk/issues/1645) found one level
- *     up. It asserts the pieces that resolved are the set the claims declared.
+ *     up. It asserts, **per variant**, that the pieces which resolved are the
+ *     set the claims declared. Per variant and not over their union, because a
+ *     key present in `adopted` alone keeps its adoption asserted and drops its
+ *     fallback — and the reverse loses the adoption claim, which is the whole
+ *     point of the contract. Two hand-written fixture templates are exactly the
+ *     kind of pair that drifts, so the symmetry the `mount` contract asks for is
+ *     verified instead of assumed.
  */
 export function assertStaticAdoptionContract(
   setup: StaticAdoptionContractSetup,
@@ -377,17 +388,15 @@ export function assertStaticAdoptionContract(
       expect(vacuous).toEqual([]);
     });
 
-    it('resolves every claimed piece in at least one variant', async () => {
-      const declared = new Set(claims.flatMap((claim) => [claim.key, ...pairedKey(claim)]));
-      const resolved = new Set<string>();
+    it('resolves every claimed piece in both variants', async () => {
+      const declared = sorted(new Set(claims.flatMap((claim) => [claim.key, ...pairedKey(claim)])));
+      const resolved: Record<string, string[]> = {};
       for (const variant of ['adopted', 'bare'] as const) {
         const ctx = setup.mount(variant);
         await ctx.flush();
-        for (const [key] of present(ctx.pieces())) {
-          resolved.add(key);
-        }
+        resolved[variant] = sorted(present(ctx.pieces()).map(([key]) => key));
       }
-      expect(sorted(resolved)).toEqual(sorted(declared));
+      expect(resolved).toEqual({ adopted: declared, bare: declared });
     });
   });
 }

@@ -3811,10 +3811,18 @@ module.exports = tseslint.config(
   // mirror the spec relaxations so harness templates that render bare `<button
   // forX>` triggers (no visible text) don't trip a11y rules meant for
   // production HTML.
-  // The SSR smoke suite's fixture modules (#1594) carry the same harness
-  // templates without being `.spec.ts` themselves, so they need the same entry.
+  // The SSR smoke suite's fixture modules (#1594) and the static-attribute
+  // adoption sweep's (#1597) carry the same harness templates without being
+  // `.spec.ts` themselves, so they need the same entry. Registering the folder
+  // in the `.ts` relaxation above is not enough: the processor names the
+  // extracted template as a sub-path of the parent `.ts`, so only a `**/*.html`
+  // pattern reaches it.
   {
-    files: ['**/*.spec.ts/**/*.html', 'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts/**/*.html'],
+    files: [
+      '**/*.spec.ts/**/*.html',
+      'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts/**/*.html',
+      'projects/forty-cdk/src/lib/static-adoption/fixtures/**/*.ts/**/*.html',
+    ],
     rules: {
       '@angular-eslint/template/elements-content': 'off',
       '@angular-eslint/template/click-events-have-key-events': 'off',

@@ -153,7 +153,10 @@ class OtpInputBare {
  *
  * `[forFieldsetLegend]` is deliberately not a claim: it host-binds
  * `'[attr.id]'` to the fieldset's generated `legendId` with no adoption seam at
- * all, so a consumer static `id` on it is clobbered. It is the fallback of the
+ * all, so a consumer static `id` on it is clobbered — the #659 rule's own case,
+ * tracked by [#1654](https://github.com/tutkli/forty-cdk/issues/1654). Fixing
+ * it is a library change, and the guard cannot ask for the claim until then: a
+ * piece calling no seam is not a call site. It is the fallback of the
  * `[forFieldset]` claim below and is resolved as such.
  */
 export const FORM_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
