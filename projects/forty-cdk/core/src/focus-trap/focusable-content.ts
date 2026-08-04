@@ -9,10 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import {
-  isFocusableCandidate,
-  queryFocusableCandidates,
-} from '../focusable-candidate/focusable-candidate';
+import { isFocusableCandidate, queryFocusableCandidates } from './focusable-candidate';
 
 /**
  * Reports whether the host element currently has at least one focusable

@@ -66,7 +66,7 @@ const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
  * `<source file>#<seam>` for every call site in library source.
  *
  * A file that **declares** the seam is skipped rather than path-listed, so
- * moving `core/host-aria` or `core/host-id` cannot silently drop the filter —
+ * moving `core/host-attributes`'s seams cannot silently drop the filter —
  * the condition is "this file is the definition", which travels with the code.
  */
 function callSites(): Set<string> {

@@ -17,7 +17,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 
 import {
-  clampToRange,
+  clamp,
   createPointerDragSession,
   type PointerDragSession,
   DRAG_DEAD_ZONE_PX,
@@ -245,7 +245,7 @@ export class ForTableColumnResizer {
     if (!this.#isBrowser) {
       return this.width() ?? this.min();
     }
-    const next = clampToRange(this.#measureContentWidth(), this.min(), this.max());
+    const next = clamp(this.#measureContentWidth(), this.min(), this.max());
     this.width.set(next);
     this.resizeCommit.emit({ column: this.column(), width: next });
     return next;
@@ -270,7 +270,7 @@ export class ForTableColumnResizer {
     if (this.#dragInvert) {
       delta = -delta;
     }
-    const next = clampToRange(this.#dragStartValue + delta, this.min(), this.max());
+    const next = clamp(this.#dragStartValue + delta, this.min(), this.max());
     if (next === this.#dragCurrent) {
       return;
     }
@@ -302,9 +302,9 @@ export class ForTableColumnResizer {
     const base = this.width() ?? this.#measureBaseWidth();
     let next: number;
     if (event.key === 'ArrowRight') {
-      next = clampToRange(base + (ltr ? this.step() : -this.step()), this.min(), this.max());
+      next = clamp(base + (ltr ? this.step() : -this.step()), this.min(), this.max());
     } else if (event.key === 'ArrowLeft') {
-      next = clampToRange(base + (ltr ? -this.step() : this.step()), this.min(), this.max());
+      next = clamp(base + (ltr ? -this.step() : this.step()), this.min(), this.max());
     } else {
       return;
     }

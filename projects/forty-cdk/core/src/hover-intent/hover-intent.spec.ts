@@ -1,6 +1,87 @@
-import { signal, type WritableSignal } from '@angular/core';
+import { provideZonelessChangeDetection, signal, type WritableSignal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 
-import { createHoverIntent, type HoverIntentCoordinator } from './hover-intent';
+import {
+  createDebouncedAction,
+  createHoverIntent,
+  forceCloseWhenDisabled,
+  type HoverIntentCoordinator,
+} from './hover-intent';
+
+describe('createDebouncedAction', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('runs the action after the scheduled delay', () => {
+    vi.useFakeTimers();
+    let runs = 0;
+    const action = createDebouncedAction(() => runs++);
+
+    action.schedule(200);
+    expect(runs).toBe(0);
+    expect(action.isPending()).toBe(true);
+
+    vi.advanceTimersByTime(199);
+    expect(runs).toBe(0);
+
+    vi.advanceTimersByTime(1);
+    expect(runs).toBe(1);
+    expect(action.isPending()).toBe(false);
+  });
+
+  it('runs synchronously when the delay is 0', () => {
+    vi.useFakeTimers();
+    let runs = 0;
+    const action = createDebouncedAction(() => runs++);
+
+    action.schedule(0);
+    expect(runs).toBe(1);
+    expect(action.isPending()).toBe(false);
+  });
+
+  it('clamps a negative delay to 0 (runs synchronously)', () => {
+    vi.useFakeTimers();
+    let runs = 0;
+    const action = createDebouncedAction(() => runs++);
+
+    action.schedule(-100);
+    expect(runs).toBe(1);
+  });
+
+  it('a later schedule supersedes the pending one (single timer)', () => {
+    vi.useFakeTimers();
+    let runs = 0;
+    const action = createDebouncedAction(() => runs++);
+
+    action.schedule(200);
+    action.schedule(100);
+    vi.advanceTimersByTime(100);
+    expect(runs).toBe(1);
+
+    // The first (superseded) timer must not fire afterwards.
+    vi.advanceTimersByTime(200);
+    expect(runs).toBe(1);
+  });
+
+  it('cancel stops a pending action', () => {
+    vi.useFakeTimers();
+    let runs = 0;
+    const action = createDebouncedAction(() => runs++);
+
+    action.schedule(200);
+    action.cancel();
+    expect(action.isPending()).toBe(false);
+    vi.advanceTimersByTime(500);
+    expect(runs).toBe(0);
+  });
+
+  it('cancel is safe with no pending timer', () => {
+    const action = createDebouncedAction(() => {});
+    expect(() => action.cancel()).not.toThrow();
+    expect(action.isPending()).toBe(false);
+  });
+});
 
 function createStubCoordinator(skip = false): HoverIntentCoordinator & {
   skipDelayValue: WritableSignal<boolean>;
@@ -305,5 +386,80 @@ describe('createHoverIntent', () => {
 
       expect(() => scheduler.cancelPending()).not.toThrow();
     });
+  });
+});
+
+describe('forceCloseWhenDisabled', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('force-closes an open overlay and runs onForceClose when disabled flips to true', () => {
+    const open = signal(true);
+    const disabled = signal(false);
+    let forceCloseCalls = 0;
+
+    TestBed.runInInjectionContext(() => {
+      forceCloseWhenDisabled({
+        open,
+        disabled,
+        onForceClose: () => forceCloseCalls++,
+      });
+    });
+    TestBed.tick();
+
+    disabled.set(true);
+    TestBed.tick();
+
+    expect(open()).toBe(false);
+    expect(forceCloseCalls).toBe(1);
+  });
+
+  it('does nothing when disabled flips to true while already closed', () => {
+    const open = signal(false);
+    const disabled = signal(false);
+    let forceCloseCalls = 0;
+
+    TestBed.runInInjectionContext(() => {
+      forceCloseWhenDisabled({
+        open,
+        disabled,
+        onForceClose: () => forceCloseCalls++,
+      });
+    });
+    TestBed.tick();
+
+    disabled.set(true);
+    TestBed.tick();
+
+    expect(open()).toBe(false);
+    expect(forceCloseCalls).toBe(0);
+  });
+
+  it('does not re-run as a function of open alone (no read+write cycle)', () => {
+    const open = signal(false);
+    const disabled = signal(true);
+    let forceCloseCalls = 0;
+
+    TestBed.runInInjectionContext(() => {
+      forceCloseWhenDisabled({
+        open,
+        disabled,
+        onForceClose: () => forceCloseCalls++,
+      });
+    });
+    TestBed.tick();
+
+    // Opening while disabled does not re-trigger the effect (open is untracked):
+    // the carve-out reacts to `disabled` only, so a programmatic open stays open.
+    open.set(true);
+    TestBed.tick();
+
+    expect(open()).toBe(true);
+    expect(forceCloseCalls).toBe(0);
   });
 });

@@ -1,6 +1,6 @@
 import { DestroyRef, inject, type Signal, signal } from '@angular/core';
 
-import { isPageHidden, subscribeVisibilityPause } from '../visibility-pause/visibility-pause';
+import { isPageHidden, subscribeVisibilityPause } from './visibility-pause';
 
 /**
  * Options for {@link injectPauseController}.

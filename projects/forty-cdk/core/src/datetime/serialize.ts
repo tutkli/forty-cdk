@@ -1,8 +1,4 @@
-import {
-  assertTimeCapable,
-  type DateAdapter,
-  type TimeCapableDateAdapter,
-} from '../date-adapter/date-adapter';
+import { assertTimeCapable, type DateAdapter, type TimeCapableDateAdapter } from './date-adapter';
 
 /**
  * The granularity at which a date control serializes its value: a bare calendar

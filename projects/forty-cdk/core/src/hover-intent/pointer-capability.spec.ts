@@ -1,4 +1,4 @@
-import { isHoverCapablePointer, isNonTouchPointer } from './hover-capable-pointer';
+import { isHoverCapablePointer, isNonTouchPointer } from './pointer-capability';
 
 describe('isHoverCapablePointer', () => {
   it('reports a mouse pointer as hover-capable', () => {

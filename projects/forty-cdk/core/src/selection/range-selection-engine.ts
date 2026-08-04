@@ -1,7 +1,7 @@
 import { signal, type Signal } from '@angular/core';
 
 import { nextEnabledHandle } from '../collection/enabled-handle-navigation';
-import { isInArray, toggleInArray } from '../selection/selection';
+import { isInArray, toggleInArray } from './selection';
 import { isUnset } from '../unset-input/unset-input';
 
 /**

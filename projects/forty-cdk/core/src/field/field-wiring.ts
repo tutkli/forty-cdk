@@ -1,7 +1,7 @@
 import { DestroyRef, effect, ElementRef, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
-import { composeIds } from '../host-aria/host-aria';
+import { composeIds } from '../host-attributes/host-aria';
 
 /**
  * A form control's contribution to its surrounding `[forField]`. The control

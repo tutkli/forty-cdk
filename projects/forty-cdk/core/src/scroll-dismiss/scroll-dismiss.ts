@@ -1,7 +1,4 @@
-import {
-  createPointerSuppression,
-  type PointerSuppression,
-} from '../pointer-suppression/pointer-suppression';
+import { createPointerSuppression, type PointerSuppression } from '../pointer/pointer-suppression';
 
 /**
  * Scroll-dismiss helper for hover-driven anchored overlays (Tooltip today).

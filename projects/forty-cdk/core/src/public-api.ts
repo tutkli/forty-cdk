@@ -51,7 +51,6 @@
 export { accessibleTextContent } from './accessible-text/accessible-text';
 export { afterNextRenderCancellable } from './after-next-render-cancellable/after-next-render-cancellable';
 export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';
-export { resolveConfigClass } from './class-list/resolve-config-class';
 export { Collection, type CollectionHandle } from './collection/collection';
 export { firstEnabledHost, nextEnabledHandle } from './collection/enabled-handle-navigation';
 export {
@@ -65,6 +64,7 @@ export {
   registerA11yName,
   registerHandle,
 } from './collection/register-handle';
+export { createSingleSlot } from './collection/single-slot';
 export {
   assertTimeCapable,
   compareDateOf,
@@ -72,11 +72,11 @@ export {
   FOR_DATE_ADAPTER,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-} from './date-adapter/date-adapter';
-export { createFormatterCache } from './date-adapter/formatter-cache';
-export { type DateRange } from './date-range/date-range';
+} from './datetime/date-adapter';
 export { DateFieldEngine } from './datetime/date-field-engine';
+export { type DateRange } from './datetime/date-range';
 export { type FieldGranularity } from './datetime/date-segments';
+export { createFormatterCache } from './datetime/formatter-cache';
 export { ForDateTimeLiteralBase } from './datetime/literal-directive';
 export { RangeFieldComposer } from './datetime/range-field-composer';
 export { ForDateTimeSegmentBase, type SegmentEditorContext } from './datetime/segment-directive';
@@ -100,7 +100,6 @@ export { TimeFieldEngine } from './datetime/time-field-engine';
 export { type TimeGranularity } from './datetime/time-segments';
 export { FOR_TIME_VALUE_SOURCE } from './datetime/time-value-source';
 export { createDefaults } from './defaults/defaults';
-export { reflectDisabled } from './disabled-reflection/disabled-reflection';
 export {
   DismissibleLayerStack,
   injectDismissibleLayer,
@@ -118,8 +117,13 @@ export {
 export { createTemplatePreview, type DragPreview } from './drag-session/drag-preview';
 export { isDragLiftKey, resolveLiftedDragControl } from './drag-session/keyboard-drag-keys';
 export { createKeyboardDragMediator } from './drag-session/keyboard-drag-mediator';
-export { createPointerDragSession, type PointerDragSession } from './drag-session/pointer-session';
+export {
+  createPointerDragSession,
+  DRAG_DEAD_ZONE_PX,
+  type PointerDragSession,
+} from './drag-session/pointer-session';
 export { PreviewController } from './drag-session/preview-controller';
+export { resolveScrubReorder, translateWindowReorder } from './drag-session/window-index-map';
 export { type ForDrawerSide } from './drawer-stack/drawer-side';
 export {
   type DrawerStackHandle,
@@ -133,7 +137,7 @@ export {
   type ForFieldContext,
   injectFieldWiring,
 } from './field/field-wiring';
-export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './fieldset/fieldset-context';
+export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './field/fieldset-context';
 export {
   AnchoredOverlayPositioningBase,
   type AnchoredPositioningSeedDefaults,
@@ -148,20 +152,24 @@ export {
   type FloatingSide,
 } from './floating/floating';
 export { findFirstFocusable } from './focus-trap/focus-trap';
-export { injectHasFocusableContent } from './focusable-content/focusable-content';
+export { injectHasFocusableContent } from './focus-trap/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
-export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
+export { injectHiddenInput } from './form-ui-control/hidden-input';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
-export { injectHiddenInput } from './hidden-input/hidden-input';
-export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-aria/host-aria';
-export { adoptHostId, hostId, resolveHostId } from './host-id/host-id';
-export { hostButtonType } from './host-type/host-type';
-export { createDebouncedAction, type DebouncedAction } from './hover-intent/debounced-action';
-export { forceCloseWhenDisabled } from './hover-intent/force-close-when-disabled';
-export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/hover-capable-pointer';
-export { createHoverIntent, type HoverIntentScheduler } from './hover-intent/hover-intent';
-export { SkipDelayCoordinator } from './hover-intent/skip-delay-coordinator';
-export { createSkipDelayWindow } from './hover-intent/skip-delay-window';
+export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
+export { reflectDisabled } from './host-attributes/disabled-reflection';
+export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
+export { adoptHostId, hostId, resolveHostId } from './host-attributes/host-id';
+export { hostButtonType } from './host-attributes/host-type';
+export {
+  createDebouncedAction,
+  createHoverIntent,
+  type DebouncedAction,
+  forceCloseWhenDisabled,
+  type HoverIntentScheduler,
+} from './hover-intent/hover-intent';
+export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/pointer-capability';
+export { createSkipDelayWindow, SkipDelayCoordinator } from './hover-intent/skip-delay';
 export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
 export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
@@ -176,12 +184,6 @@ export {
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
 export {
-  isRangeSelectShortcut,
-  resolveListTypeahead,
-  throwUnsupportedVirtualizedRangeSelect,
-  throwUnsupportedVirtualizedSelectionFollowsFocus,
-} from './list-typeahead/list-typeahead';
-export {
   type ListboxOverlayContext,
   ListboxOverlayController,
 } from './listbox-overlay/listbox-overlay-controller';
@@ -193,13 +195,10 @@ export {
   type ForMenuContext,
   type ForMenuItemHandle,
   injectMenuContext,
-  menuLayerNesting,
   type MenuActivationModality,
+  menuLayerNesting,
   type MenuSiblingNavigator,
 } from './menu-overlay/menu-context';
-export { CloseReasonState } from './overlay-controller/close-reason-state';
-export { ElementRegistry } from './overlay-controller/element-registry';
-export { InitialFocusState } from './overlay-controller/initial-focus-state';
 export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-item-list';
 export {
   asMenuOpenerRegistration,
@@ -211,11 +210,7 @@ export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
 export { MENU_POSITIONING_DEFAULTS } from './menu-overlay/menu-positioning-inputs';
 export { injectModalShell } from './modal-shell/modal-shell';
-export { ModalSurfaceBase } from './modal-surface-base/modal-surface-base';
-export {
-  type MountedWhileClosedConfig,
-  warnIfMountedWhileClosed,
-} from './mounted-while-closed/mounted-while-closed';
+export { ModalSurfaceBase } from './modal-shell/modal-surface-base';
 export {
   clamp,
   decimalPlaces,
@@ -224,6 +219,18 @@ export {
   snapToStep,
   stepOnGrid,
 } from './numeric-step/numeric-step';
+export { CloseReasonState } from './overlay-controller/close-reason-state';
+export { ElementRegistry } from './overlay-controller/element-registry';
+export { InitialFocusState } from './overlay-controller/initial-focus-state';
+export {
+  type MountedWhileClosedConfig,
+  warnIfMountedWhileClosed,
+} from './overlay-controller/mounted-while-closed';
+export {
+  injectOverlayShell,
+  type OverlayShellConfig,
+  type OverlayShellPositionerConfig,
+} from './overlay-controller/overlay-shell';
 export {
   OverlayManagerCore,
   type OverlayManagerEntry,
@@ -232,25 +239,16 @@ export {
   type OverlaySurface,
 } from './overlay-manager/overlay-manager';
 export { OverlayRef } from './overlay-manager/overlay-ref';
-export {
-  injectOverlayShell,
-  type OverlayShellConfig,
-  type OverlayShellPositionerConfig,
-} from './overlay-shell/overlay-shell';
+export { resolveConfigClass } from './overlay-manager/resolve-config-class';
 export { injectPauseController, type PauseController } from './pausable/pause-controller';
 export {
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
-} from './pointer-grace/pointer-grace';
-export {
-  createPointerSuppression,
-  type PointerSuppression,
-} from './pointer-suppression/pointer-suppression';
+} from './pointer/pointer-grace';
+export { createPointerSuppression, type PointerSuppression } from './pointer/pointer-suppression';
 export { injectPortal } from './portal/portal';
-export { RangeSelectionEngine } from './range-selection/range-selection-engine';
-export { clampToRange, DRAG_DEAD_ZONE_PX } from './resize-geometry/resize-geometry';
 export {
   FOR_HOST_ROVING_CONTEXT,
   type HostRovingContext,
@@ -262,15 +260,15 @@ export {
   selectionTabStop,
 } from './roving-tabindex/roving-list-navigation';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
-export { isScrollableAtEdge } from './scroll-boundary/scroll-boundary';
 export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';
+export { RangeSelectionEngine } from './selection/range-selection-engine';
 export {
   defaultItemToFormValue,
   isInArray,
   singleSelected,
   toggleInArray,
 } from './selection/selection';
-export { createSingleSlot } from './single-slot/single-slot';
+export { isScrollableAtEdge } from './swipe-dismiss/scroll-boundary';
 export {
   attachSwipeDismiss,
   FLICK_STALE_VELOCITY_MS,
@@ -285,10 +283,10 @@ export {
   type SyntheticActivationConfig,
 } from './synthetic-activation/synthetic-activation';
 export {
-  TABLE_REGISTRATION_CONTEXT,
-  TABLE_ROW_REGISTRATION_CONTEXT,
   type ForTableCellHandle,
   type ForTableRowHandle,
+  TABLE_REGISTRATION_CONTEXT,
+  TABLE_ROW_REGISTRATION_CONTEXT,
   type TableRegistrationContext,
   type TableRowRegistrationContext,
   type TableVirtualRow,
@@ -296,6 +294,12 @@ export {
   type TableVirtualWindow,
 } from './table-registration/table-registration';
 export { injectTextDirection } from './text-direction/text-direction';
+export {
+  isRangeSelectShortcut,
+  resolveListTypeahead,
+  throwUnsupportedVirtualizedRangeSelect,
+  throwUnsupportedVirtualizedSelectionFollowsFocus,
+} from './typeahead/list-typeahead';
 export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
 export { injectTypeahead } from './typeahead/typeahead';
 export { assertInputBound, isUnset, unsetInput } from './unset-input/unset-input';
@@ -314,4 +318,3 @@ export {
   type VirtualizedNavigatorBridgeTarget,
 } from './virtualized-navigator/virtualized-navigator-bridge';
 export { ForVisuallyHidden } from './visually-hidden/visually-hidden';
-export { resolveScrubReorder, translateWindowReorder } from './window-index-map/window-index-map';

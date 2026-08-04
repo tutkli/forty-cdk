@@ -1,4 +1,4 @@
-import type { SwipeDirection } from '../swipe-dismiss/swipe-dismiss';
+import type { SwipeDirection } from './swipe-dismiss';
 
 /**
  * Returns true when `target` is inside a scrollable ancestor that has not

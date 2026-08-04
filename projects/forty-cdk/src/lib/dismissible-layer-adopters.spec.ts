@@ -43,7 +43,7 @@
  *     this guard the modal layer of all three was covered by three hand-written
  *     Select cases, two `aria-modal` DatePicker cases, and — for TimePicker —
  *     nothing at all.
- *   - **Comments are stripped before the scan.** `core/modal-surface-base`
+ *   - **Comments are stripped before the scan.** `core/modal-shell/modal-surface-base`
  *     documents the shell its subclasses call, in a JSDoc line that a bare
  *     `injectModalShell\(` scan reads as a fourteenth call site. Same anchoring
  *     failure the marker rules hit in
@@ -224,7 +224,7 @@ const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SO
  * `<source file>#<shell>` for every layer-pushing call site.
  *
  * A file that **declares** a shell is skipped by condition rather than by path,
- * so moving `core/overlay-shell` or `core/modal-shell` cannot silently drop the
+ * so moving `core/overlay-controller/overlay-shell` or `core/modal-shell/modal-shell` cannot silently drop the
  * filter.
  */
 function layerCallSites(): Set<string> {

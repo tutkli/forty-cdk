@@ -1,4 +1,65 @@
-import type { WritableSignal } from '@angular/core';
+import { effect, type Signal, untracked, type WritableSignal } from '@angular/core';
+
+/**
+ * A single self-clearing debounce timer: the `Math.max(0, delay)` clamp, the
+ * `delay === 0` synchronous fast-path, and the lone pending
+ * `setTimeout` / `clearTimeout` pair.
+ *
+ * The hover-driven menus (`[forMenuSub]`, `[forMenubar]`, `[forNavigationMenu]`)
+ * each hand-rolled this exact timer arming/clearing under their own divergent
+ * open/close policy (chain keep-alive, hover-after-open, per-value cancel
+ * guards, skip-delay). This factory owns only the timing mechanics so those
+ * policies stay at the call site — the caller arms with `schedule(delay)`,
+ * which clears any in-flight timer first, runs `run` immediately when the
+ * clamped delay is `0`, else fires it once after the delay.
+ *
+ * Internal core tier — exported from `forty-cdk/core` for the library's own
+ * entry points, with no semver guarantee.
+ */
+export interface DebouncedAction {
+  /**
+   * Arm the action after `delay` ms (clamped to `>= 0`). Clears any pending
+   * timer first; a clamped delay of `0` runs `run` synchronously.
+   */
+  schedule(delay: number): void;
+  /** Cancel a pending action without running it. Safe with no pending timer. */
+  cancel(): void;
+  /** `true` while an action is armed but not yet fired. */
+  isPending(): boolean;
+}
+
+/**
+ * Builds a {@link DebouncedAction} around `run`. Framework-free.
+ */
+export function createDebouncedAction(run: () => void): DebouncedAction {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  function cancel(): void {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+
+  function schedule(delay: number): void {
+    cancel();
+    const clamped = Math.max(0, delay);
+    if (clamped === 0) {
+      run();
+      return;
+    }
+    timer = setTimeout(() => {
+      timer = null;
+      run();
+    }, clamped);
+  }
+
+  return {
+    schedule,
+    cancel,
+    isPending: () => timer !== null,
+  };
+}
 
 /**
  * Per-injector-scope coordinator the hover-intent scheduler consults to decide
@@ -115,4 +176,47 @@ export function createHoverIntent(options: HoverIntentOptions): HoverIntentSched
   }
 
   return { scheduleOpen, scheduleClose, cancelPending };
+}
+
+/**
+ * Inputs for {@link forceCloseWhenDisabled}.
+ */
+export interface ForceCloseWhenDisabledOptions {
+  /** Open-state signal that is force-closed when `disabled` flips to true. */
+  open: WritableSignal<boolean>;
+  /** Whether all hover / focus interaction is currently ignored. */
+  disabled: Signal<boolean>;
+  /** Imperative cleanup run before the force-close (cancel any pending timers). */
+  onForceClose: () => void;
+}
+
+/**
+ * The single audited place that force-closes a hover-driven overlay when its
+ * `disabled` input flips to `true` while open.
+ *
+ * Tooltip and Hover-card each carried a byte-identical copy of this reaction;
+ * it is the **one sanctioned exception** to the project's "never propagate
+ * state inside `effect()`" rule, so it must live in exactly one place rather
+ * than two carve-outs to audit. The hover scheduler already early-returns on
+ * `disabled()`, so hover / focus can't open a disabled overlay; this isolated
+ * reaction only covers the remaining path — an open overlay being disabled out
+ * from under itself.
+ *
+ * The `open` read is `untracked` so the effect never re-runs as a function of
+ * `open` (no read+write cycle on the same signal); it reacts to `disabled`
+ * alone. It integrates the disabled gate with the public `model()` instead of
+ * wrapping the model in a parallel signal.
+ *
+ * Must be called from an injection context (registers an `effect`). Internal
+ * core tier — no semver guarantee.
+ */
+export function forceCloseWhenDisabled(options: ForceCloseWhenDisabledOptions): void {
+  // @sanctioned-effect(untracked-read): the `open` read is untracked, so the
+  // effect reacts to `disabled` alone and never cycles on the signal it writes.
+  effect(() => {
+    if (options.disabled() && untracked(options.open)) {
+      options.onForceClose();
+      options.open.set(false);
+    }
+  });
 }

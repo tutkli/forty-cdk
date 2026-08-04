@@ -230,7 +230,7 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDialog]',
         channel: 'aria-label',
-        source: 'core/src/modal-surface-base/modal-surface-base.ts',
+        source: 'core/src/modal-shell/modal-surface-base.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe confirm',
         fallback: 'Input name',
@@ -238,7 +238,7 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDialog]',
         channel: 'aria-labelledby',
-        source: 'core/src/modal-surface-base/modal-surface-base.ts',
+        source: 'core/src/modal-shell/modal-surface-base.ts',
         seam: 'hostLabelledBy',
         probe: 'probe-labelledby',
         fallback: { pairs: '[forDialogTitle]' },
@@ -246,7 +246,7 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDialog]',
         channel: 'aria-describedby',
-        source: 'core/src/modal-surface-base/modal-surface-base.ts',
+        source: 'core/src/modal-shell/modal-surface-base.ts',
         seam: 'hostDescribedBy',
         probe: 'probe-describedby',
         fallback: { pairs: '[forDialogDescription]' },
@@ -277,7 +277,7 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDrawer]',
         channel: 'aria-label',
-        source: 'core/src/modal-surface-base/modal-surface-base.ts',
+        source: 'core/src/modal-shell/modal-surface-base.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe filters',
         fallback: 'Input name',
@@ -285,7 +285,7 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDrawer]',
         channel: 'aria-labelledby',
-        source: 'core/src/modal-surface-base/modal-surface-base.ts',
+        source: 'core/src/modal-shell/modal-surface-base.ts',
         seam: 'hostLabelledBy',
         probe: 'probe-labelledby',
         fallback: { pairs: '[forDrawerTitle]' },
@@ -293,7 +293,7 @@ export const OVERLAY_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDrawer]',
         channel: 'aria-describedby',
-        source: 'core/src/modal-surface-base/modal-surface-base.ts',
+        source: 'core/src/modal-shell/modal-surface-base.ts',
         seam: 'hostDescribedBy',
         probe: 'probe-describedby',
         fallback: { pairs: '[forDrawerDescription]' },

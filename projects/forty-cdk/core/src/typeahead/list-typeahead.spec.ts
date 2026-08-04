@@ -1,4 +1,4 @@
-import { Typeahead } from '../typeahead/typeahead';
+import { Typeahead } from './typeahead';
 import {
   isRangeSelectShortcut,
   resolveListTypeahead,

@@ -10,7 +10,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, renderHost } from '../../../src/test-utils';
-import { injectModalShell } from '../modal-shell/modal-shell';
+import { injectModalShell } from './modal-shell';
 import { ModalSurfaceBase } from './modal-surface-base';
 
 type TestReason = 'escape' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'programmatic';

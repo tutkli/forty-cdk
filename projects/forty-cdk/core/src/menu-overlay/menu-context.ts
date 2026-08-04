@@ -13,7 +13,7 @@ import type {
   ListNavigationAction,
   WritingDirection,
 } from '../keyboard-navigation/keyboard-navigation';
-import type { Point } from '../pointer-grace/pointer-grace';
+import type { Point } from '../pointer/pointer-grace';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
 /**
