@@ -23,12 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from it entirely. Each adapter got its own entry rather than sharing one, because a single
   `forty-cdk/table-virtualization` holding the list-reorder directive would have pulled the table into
   every windowed-list bundle and left the entry point's name describing the wrong thing.
-  **Migration:** change `import { ForTableVirtualized } from 'forty-cdk/virtualization'` to
-  `'forty-cdk/table-virtualization'`, and `import { ForVirtualReorder, type ForVirtualReorderEvent } from
-'forty-cdk/virtualization'` to `'forty-cdk/virtual-reorder'`. `injectVirtualizer`,
-  `injectInfiniteScroll`, `[forVirtualViewport]` and `*forVirtualFor` stay where they are, and no API
-  shape, input, output or emitted attribute changed. The two directives' orphan `Error` messages now carry
-  their new entry point's prefix (`[forty-cdk/table-virtualization]` / `[forty-cdk/virtual-reorder]`).
+  **Migration:** re-point the imports — `ForTableVirtualized` now comes from
+  `'forty-cdk/table-virtualization'`, and `ForVirtualReorder` / `ForVirtualReorderEvent` from
+  `'forty-cdk/virtual-reorder'`; both previously came from `'forty-cdk/virtualization'`.
+  `injectVirtualizer`, `injectInfiniteScroll`, `[forVirtualViewport]` and `*forVirtualFor` stay
+  where they are, and no API shape, input, output or emitted attribute changed. The two directives'
+  orphan `Error` messages now carry their new entry point's prefix
+  (`[forty-cdk/table-virtualization]` / `[forty-cdk/virtual-reorder]`).
 
 ## [0.20.0] - 2026-08-04
 
