@@ -43,8 +43,8 @@ export function rovingListTarget<H extends CollectionHandle>(
   return next === null ? null : (items[next] ?? null);
 }
 
-/** Options for {@link rovingTabStop}. */
-export interface RovingTabStopOptions {
+/** Options for {@link selectionTabStop}. */
+export interface SelectionTabStopOptions {
   /**
    * Whether this item is disabled. A disabled item never owns the Tab stop,
    * so it always resolves to `-1` (while staying arrow-reachable via
@@ -57,6 +57,10 @@ export interface RovingTabStopOptions {
   hasSelected: boolean;
   /** Whether this item is the first enabled entry-point fallback. */
   isFirstEnabled: boolean;
+}
+
+/** Options for {@link rovingTabStop}. */
+export interface RovingTabStopOptions extends SelectionTabStopOptions {
   /** The group's roving tracker. */
   roving: RovingTabindex;
   /** This item's host element (queried against the roving tracker). */
@@ -64,22 +68,30 @@ export interface RovingTabStopOptions {
 }
 
 /**
- * Computes the roving-tabindex ladder shared by every roving list primitive.
- * Returns `0` (Tab entry point) or `-1` (arrow-reachable only):
+ * Computes the **selection-driven** half of the tab-stop ladder — the rungs a
+ * group owns when its single Tab entry point is defined by its selection rather
+ * than by which item the user last focused. Returns `0` (Tab entry point) or
+ * `-1` (arrow-reachable only):
  *
  * - disabled → `-1` (never the Tab entry point, but still arrow-reachable).
- * - the roving tracker owns the tab stop → `roving.tabindexFor(host)`.
  * - selected / current → `0`.
  * - another item owns the current selection → `-1`.
  * - otherwise the first enabled item → `0`, else `-1`.
+ *
+ * The third rung is the fallback the
+ * [#1132](https://github.com/tutkli/forty-cdk/issues/1132) /
+ * [#1170](https://github.com/tutkli/forty-cdk/issues/1170) family regressed:
+ * a selection pointing at a disabled or absent item must not take the whole
+ * group out of the tab order.
+ *
+ * `[forRadio]` is the one caller that uses this alone. Selection follows focus
+ * in the WAI-ARIA Radio Group pattern, so a radio group has no user-driven
+ * roving pointer to consult — see {@link rovingTabStop} for the groups that do.
  */
-export function rovingTabStop(options: RovingTabStopOptions): 0 | -1 {
-  const { disabled, selected, hasSelected, isFirstEnabled, roving, host } = options;
+export function selectionTabStop(options: SelectionTabStopOptions): 0 | -1 {
+  const { disabled, selected, hasSelected, isFirstEnabled } = options;
   if (disabled) {
     return -1;
-  }
-  if (roving.hasActive()) {
-    return roving.tabindexFor(host);
   }
   if (selected) {
     return 0;
@@ -88,4 +100,24 @@ export function rovingTabStop(options: RovingTabStopOptions): 0 | -1 {
     return -1;
   }
   return isFirstEnabled ? 0 : -1;
+}
+
+/**
+ * Computes the roving-tabindex ladder shared by every roving list primitive:
+ * {@link selectionTabStop}'s rungs with the user-driven roving pointer taking
+ * precedence over them once any item has been focused.
+ *
+ * - disabled → `-1` (never the Tab entry point, but still arrow-reachable).
+ * - the roving tracker owns the tab stop → `roving.tabindexFor(host)`.
+ * - otherwise the selection rungs of {@link selectionTabStop}.
+ */
+export function rovingTabStop(options: RovingTabStopOptions): 0 | -1 {
+  const { roving, host, ...selection } = options;
+  if (selection.disabled) {
+    return -1;
+  }
+  if (roving.hasActive()) {
+    return roving.tabindexFor(host);
+  }
+  return selectionTabStop(selection);
 }

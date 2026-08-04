@@ -11,7 +11,10 @@ import { TestBed } from '@angular/core/testing';
 import { isUnset, unsetInput } from 'forty-cdk/core';
 
 import { flush, pressKey, renderHost } from '../../src/test-utils';
-import { assertDataStateContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertRovingTabindexContract,
+} from '../../src/test-utils/contract';
 import { ForTree } from './tree';
 import { ForTreeGroup } from './tree-group';
 import { ForTreeItem } from './tree-item';
@@ -130,6 +133,8 @@ const labelOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-label="${id}"]`)!;
 const toggleOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLElement>(`[data-test-toggle="${id}"]`)!;
+const visibleItems = (host: HTMLElement): HTMLElement[] =>
+  Array.from(host.querySelectorAll<HTMLElement>('[role="treeitem"]'));
 
 async function setup(configure?: (instance: TreeHost) => void) {
   const result = renderHost(TreeHost);
@@ -325,6 +330,63 @@ describe('ForTree', () => {
       };
     },
   });
+
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = await setup();
+        return { items: visibleItems(r.el), flush: () => flush(r.fixture) };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = await setup((i) => i.disabledIds.set(['documents']));
+        return {
+          items: visibleItems(r.el),
+          enabledIndices: [1, 2],
+          flush: () => flush(r.fixture),
+        };
+      },
+      mountWithDisabledMiddle: async () => {
+        const r = await setup((i) => i.disabledIds.set(['downloads']));
+        return {
+          items: visibleItems(r.el),
+          enabledIndices: [0, 2],
+          flush: () => flush(r.fixture),
+        };
+      },
+      mountWithSelection: async () => {
+        const r = await setup((i) => i.picked.set(['downloads']));
+        return {
+          items: visibleItems(r.el),
+          selectedIndices: [1],
+          flush: () => flush(r.fixture),
+        };
+      },
+      mountWithMultiSelection: async () => {
+        const r = await setup((i) => {
+          i.isMulti.set(true);
+          i.picked.set(['downloads', 'readme']);
+        });
+        return {
+          items: visibleItems(r.el),
+          selectedIndices: [1, 2],
+          flush: () => flush(r.fixture),
+        };
+      },
+      mountWithSelectedDisabled: async () => {
+        const r = await setup((i) => {
+          i.picked.set(['documents']);
+          i.disabledIds.set(['documents']);
+        });
+        return {
+          items: visibleItems(r.el),
+          enabledIndices: [1, 2],
+          selectedIndices: [0],
+          flush: () => flush(r.fixture),
+        };
+      },
+    },
+    { forwardArrow: 'ArrowDown' },
+  );
 
   describe('expansion (aria-expanded + data-state on parents only)', () => {
     it('emits aria-expanded on parents and neither channel on leaves', async () => {
@@ -547,21 +609,6 @@ describe('ForTree', () => {
   });
 
   describe('roving tabindex entry point', () => {
-    it('makes exactly one treeitem tabbable (the first enabled node)', async () => {
-      const { el } = await setup();
-      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
-        (node) => node.getAttribute('tabindex') === '0',
-      );
-      expect(tabbable).toHaveLength(1);
-      expect(tabbable[0]).toBe(itemOf(el, 'documents'));
-    });
-
-    it('promotes the selected node to the tab stop instead of the first', async () => {
-      const { el } = await setup((i) => i.picked.set(['readme']));
-      expect(itemOf(el, 'readme').getAttribute('tabindex')).toBe('0');
-      expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('-1');
-    });
-
     it('collapsing a parent that holds the active descendant moves the tab stop to the parent', async () => {
       const { el, fixture } = await setup((i) => i.open.set(['documents', 'photos']));
 
@@ -608,20 +655,6 @@ describe('ForTree', () => {
       );
       expect(tabbable).toHaveLength(1);
       expect(tabbable[0]).toBe(itemOf(el, 'documents'));
-    });
-
-    it('falls back to the first enabled item when the only selected node is disabled', async () => {
-      const { el } = await setup((i) => {
-        i.picked.set(['documents']);
-        i.disabledIds.set(['documents']);
-      });
-
-      expect(itemOf(el, 'documents').getAttribute('tabindex')).toBe('-1');
-      const tabbable = Array.from(el.querySelectorAll<HTMLElement>('[role="treeitem"]')).filter(
-        (node) => node.getAttribute('tabindex') === '0',
-      );
-      expect(tabbable).toHaveLength(1);
-      expect(tabbable[0]).toBe(itemOf(el, 'downloads'));
     });
   });
 

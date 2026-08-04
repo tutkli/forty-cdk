@@ -11,6 +11,7 @@ import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { withReducedMotion } from '../../src/test-utils/reduced-motion';
 
 import { flush, nextMacrotask, pressKey, renderHost } from '../../src/test-utils';
+import { assertRovingTabindexContract } from '../../src/test-utils/contract';
 import { provideForDragDropDefaults } from './drag-drop-defaults';
 import { ForDragHandle } from './drag-handle';
 import { ForDragPlaceholder } from './drag-placeholder';
@@ -355,7 +356,49 @@ function listEl(host: HTMLElement, index = 0): HTMLElement {
   return host.querySelectorAll<HTMLElement>('[forDropList]')[index]!;
 }
 
+function draggables(host: HTMLElement): HTMLElement[] {
+  return Array.from(host.querySelectorAll<HTMLElement>('[forDraggable]'));
+}
+
 describe('ForDropList + ForDraggable', () => {
+  assertRovingTabindexContract(
+    {
+      mount: async () => {
+        const r = renderHost(SingleListHost);
+        await r.flush();
+        return { items: draggables(r.el), flush: r.flush };
+      },
+      mountWithDisabledFirst: async () => {
+        const r = renderHost(SingleListHost);
+        r.instance.rows.set([
+          { id: 1, label: 'Alpha', disabled: true },
+          { id: 2, label: 'Beta' },
+          { id: 3, label: 'Gamma' },
+        ]);
+        await r.flush();
+        return { items: draggables(r.el), enabledIndices: [1, 2], flush: r.flush };
+      },
+      mountWithDisabledMiddle: async () => {
+        const r = renderHost(SingleListHost);
+        r.instance.rows.set([
+          { id: 1, label: 'Alpha' },
+          { id: 2, label: 'Beta', disabled: true },
+          { id: 3, label: 'Gamma' },
+        ]);
+        await r.flush();
+        return { items: draggables(r.el), enabledIndices: [0, 2], flush: r.flush };
+      },
+      mountRtl: async () => {
+        const r = renderHost(SingleListHost);
+        r.instance.orientation.set('horizontal');
+        r.instance.dir.set('rtl');
+        await r.flush();
+        return { items: draggables(r.el), flush: r.flush };
+      },
+    },
+    { forwardArrow: 'ArrowDown' },
+  );
+
   describe('orientation default', () => {
     it('a plain [forDropList] reflects data-orientation="vertical" with no binding', () => {
       const { el } = renderHost(TwoListGroupHost);
@@ -366,59 +409,12 @@ describe('ForDropList + ForDraggable', () => {
   });
 
   describe('registration and roving tabindex', () => {
-    it('gives exactly one item tabindex="0" — the first enabled item', () => {
-      const { el } = renderHost(SingleListHost);
-      const items = el.querySelectorAll('[forDraggable]');
-      const tabzeros = [...items].filter((i) => i.getAttribute('tabindex') === '0');
-      expect(tabzeros).toHaveLength(1);
-      expect(tabzeros[0]).toBe(items[0]);
-    });
-
-    it('moves roving focus on ArrowDown', () => {
-      const { el } = renderHost(SingleListHost);
-      const first = itemEl(el, 1);
-      first.focus();
-      pressKey(first, 'ArrowDown');
-      expect(document.activeElement).toBe(itemEl(el, 2));
-    });
-
     it('moves roving focus on ArrowUp', () => {
       const { el } = renderHost(SingleListHost);
       const second = itemEl(el, 2);
       second.focus();
       pressKey(second, 'ArrowUp');
       expect(document.activeElement).toBe(itemEl(el, 1));
-    });
-
-    it('jumps to first item on Home', () => {
-      const { el } = renderHost(SingleListHost);
-      const last = itemEl(el, 3);
-      last.focus();
-      pressKey(last, 'Home');
-      expect(document.activeElement).toBe(itemEl(el, 1));
-    });
-
-    it('jumps to last item on End', () => {
-      const { el } = renderHost(SingleListHost);
-      const first = itemEl(el, 1);
-      first.focus();
-      pressKey(first, 'End');
-      expect(document.activeElement).toBe(itemEl(el, 3));
-    });
-
-    it('skips disabled items during navigation', async () => {
-      const { el, fixture } = renderHost(SingleListHost);
-      fixture.componentInstance.rows.set([
-        { id: 1, label: 'Alpha' },
-        { id: 2, label: 'Beta', disabled: true },
-        { id: 3, label: 'Gamma' },
-      ]);
-      fixture.detectChanges();
-      await flush(fixture);
-      const first = itemEl(el, 1);
-      first.focus();
-      pressKey(first, 'ArrowDown');
-      expect(document.activeElement).toBe(itemEl(el, 3));
     });
 
     it('disabled items have tabindex="-1", aria-disabled="true", and data-disabled', async () => {

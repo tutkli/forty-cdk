@@ -1,6 +1,11 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
-import { hostButtonType, registerHandle, resolveListNavigation } from 'forty-cdk/core';
+import {
+  hostButtonType,
+  registerHandle,
+  resolveListNavigation,
+  rovingTabStop,
+} from 'forty-cdk/core';
 import { injectCarouselContext } from './carousel-context';
 
 /**
@@ -66,21 +71,16 @@ export class ForCarouselIndicator {
    * been focused. Before that, fall back to "current slide's indicator, else
    * first enabled".
    */
-  protected readonly tabindex = computed<-1 | 0>(() => {
-    if (this.disabled()) {
-      return -1;
-    }
-    if (this.ctx.roving.hasActive()) {
-      return this.ctx.roving.tabindexFor(this.#host.nativeElement);
-    }
-    if (this.current()) {
-      return 0;
-    }
-    if (this.ctx.hasCurrentIndicator()) {
-      return -1;
-    }
-    return this.ctx.isFirstEnabledIndicator(this.#host.nativeElement) ? 0 : -1;
-  });
+  protected readonly tabindex = computed<-1 | 0>(() =>
+    rovingTabStop({
+      disabled: this.disabled(),
+      selected: this.current(),
+      hasSelected: this.ctx.hasCurrentIndicator(),
+      isFirstEnabled: this.ctx.isFirstEnabledIndicator(this.#host.nativeElement),
+      roving: this.ctx.roving,
+      host: this.#host.nativeElement,
+    }),
+  );
 
   constructor() {
     const handle = { host: this.#host.nativeElement, disabled: this.disabled };
