@@ -2,7 +2,7 @@
  * Shared contract suites for behavioural surfaces that recur across
  * 5+ primitives — form-control flags, roving tabindex, dismissible
  * layer, the anchored-overlay trigger ARIA trio, the `data-state`
- * styling vocabulary.
+ * styling vocabulary, consumer-set static attribute adoption.
  *
  * Each contract owns the assertions that are identical across every
  * primitive in its family. Migration is incremental: when a primitive's
@@ -46,3 +46,14 @@ export {
   type DismissibleLayerContractSetup,
   type DismissibleLayerContractOptions,
 } from './dismissible-layer-contract';
+
+export {
+  assertStaticAdoptionContract,
+  type StaticAdoptionChannel,
+  type StaticAdoptionSeam,
+  type StaticAdoptionFallback,
+  type StaticAdoptionClaim,
+  type StaticAdoptionMountResult,
+  type StaticAdoptionContractSetup,
+  type StaticAdoptionContractOptions,
+} from './static-adoption-contract';
