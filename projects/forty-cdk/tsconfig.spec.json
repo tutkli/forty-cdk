@@ -122,6 +122,7 @@
     "src/**/*.d.ts",
     "src/**/*.spec.ts",
     "src/lib/ssr/fixtures/**/*.ts",
+    "src/lib/static-adoption/fixtures/**/*.ts",
     "src/test-utils/**/*.ts",
     "button/src/**/*.spec.ts",
     "core/src/**/*.spec.ts",

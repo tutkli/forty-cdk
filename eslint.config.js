@@ -3613,13 +3613,16 @@ module.exports = tseslint.config(
 
   // ---------- Spec / test-utility relaxations ----------
   // `src/lib/ssr/fixtures/**` holds the SSR smoke suite's fixture components and
-  // its registry — spec support that is not itself a `.spec.ts` (#1594). It is
-  // excluded from `tsconfig.lib.json` for the same reason: nothing there ships.
+  // its registry — spec support that is not itself a `.spec.ts` (#1594);
+  // `src/lib/static-adoption/fixtures/**` is the same shape for the
+  // static-attribute adoption sweep (#1597). Both are excluded from
+  // `tsconfig.lib.json` for the same reason: nothing there ships.
   {
     files: [
       '**/*.spec.ts',
       '**/test-utils/**/*.ts',
       'projects/forty-cdk/src/lib/ssr/fixtures/**/*.ts',
+      'projects/forty-cdk/src/lib/static-adoption/fixtures/**/*.ts',
     ],
     rules: {
       // Test harness components don't need to follow the public selector convention.
