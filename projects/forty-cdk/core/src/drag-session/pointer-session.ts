@@ -87,6 +87,18 @@ export interface PointerDragSession {
   cancel(event?: PointerEvent): void;
 }
 
+/**
+ * The {@link PointerDragSessionOptions.armThreshold} a pointer-driven **resize**
+ * gesture uses: the travel a press must cover before it starts mutating the
+ * value it resizes.
+ *
+ * Shared by `[forPaneResizer]` and `[forTableColumnResizer]` so both resize
+ * affordances arm at the same distance; the reorder / drag-drop family arms on
+ * its own `POINTER_ARM_THRESHOLD_PX`, and Slider deliberately arms at `0`
+ * because a press on a track commits immediately.
+ */
+export const DRAG_DEAD_ZONE_PX = 3;
+
 /** Configuration for {@link createPointerDragSession}. */
 export interface PointerDragSessionOptions {
   /** Element whose `pointerdown` (capture) starts a potential session. */

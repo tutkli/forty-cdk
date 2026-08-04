@@ -14,7 +14,7 @@ import {
   isFocusableCandidate,
   isTabbableCandidate,
   queryFocusableCandidates,
-} from '../focusable-candidate/focusable-candidate';
+} from './focusable-candidate';
 
 /**
  * Returns the first focusable descendant of `container`, or `null` if none

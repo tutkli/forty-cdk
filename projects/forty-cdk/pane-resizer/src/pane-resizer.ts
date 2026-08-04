@@ -18,7 +18,7 @@ import {
   createPointerDragSession,
   type PointerDragSession,
   injectTextDirection,
-  clampToRange,
+  clamp,
   roundToStepPrecision,
   DRAG_DEAD_ZONE_PX,
 } from 'forty-cdk/core';
@@ -421,7 +421,7 @@ export class ForPaneResizer {
   }
 
   #clamp(n: number): number {
-    return clampToRange(n, this.min(), this.max());
+    return clamp(n, this.min(), this.max());
   }
 
   /** Clamp a step-derived value, rounding to the step's precision first. */

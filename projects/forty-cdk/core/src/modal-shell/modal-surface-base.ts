@@ -1,7 +1,7 @@
 import { booleanAttribute, Directive, input, output, signal, type Signal } from '@angular/core';
 
-import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from '../host-aria/host-aria';
-import { type ModalShellConfig } from '../modal-shell/modal-shell';
+import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from '../host-attributes/host-aria';
+import { type ModalShellConfig } from './modal-shell';
 import { type VetoableEvent, type VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
 /**

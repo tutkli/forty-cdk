@@ -2,7 +2,7 @@ import { computed, signal, type Signal, type WritableSignal } from '@angular/cor
 import type { ReferenceElement, VirtualElement } from '@floating-ui/dom';
 
 import type { FloatingAlign, FloatingSide } from '../floating/floating';
-import { adoptHostId } from '../host-id/host-id';
+import { adoptHostId } from '../host-attributes/host-id';
 
 /**
  * Builds a floating-ui `VirtualElement` pinned to a by-value rect snapshot, so

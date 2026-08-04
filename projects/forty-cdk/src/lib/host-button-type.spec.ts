@@ -27,7 +27,7 @@ import { ForToolbar, ForToolbarButton } from 'forty-cdk/toolbar';
  *
  * One piece per family is audited here (form control, overlay trigger,
  * collection option, icon / push button); the seam's own unit coverage lives in
- * `core/host-type/host-type.spec.ts`, and `[forButton]`'s deliberately opposite
+ * `core/host-attributes/host-type.spec.ts`, and `[forButton]`'s deliberately opposite
  * contract — it *preserves* a consumer `type`, because a `[forButton]` on a real
  * submit button is legitimate usage — is asserted in `button/src/button.spec.ts`.
  */

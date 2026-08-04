@@ -1,6 +1,6 @@
 import { computed, linkedSignal, type Signal, signal, type WritableSignal } from '@angular/core';
 
-import { type DateRange } from '../date-range/date-range';
+import { type DateRange } from './date-range';
 import type { WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import { RovingTabindex } from '../roving-tabindex/roving-tabindex';
 import { type SegmentEditorDelegate } from './segment-editor';

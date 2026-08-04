@@ -1,6 +1,6 @@
 import { afterNextRender, DestroyRef, ElementRef, inject } from '@angular/core';
 
-import { resolveHostId } from '../host-id/host-id';
+import { resolveHostId } from '../host-attributes/host-id';
 
 /**
  * Scheduling for the `register` call.

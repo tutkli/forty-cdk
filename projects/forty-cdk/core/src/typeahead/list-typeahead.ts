@@ -5,8 +5,8 @@ import {
   resolveListNavigation,
   type WritingDirection,
 } from '../keyboard-navigation/keyboard-navigation';
-import { findTypeaheadMatch } from '../typeahead/match-options';
-import type { Typeahead } from '../typeahead/typeahead';
+import { findTypeaheadMatch } from './match-options';
+import type { Typeahead } from './typeahead';
 
 /** Orientation / direction context {@link isRangeSelectShortcut} reads to resolve arrow intent. */
 export interface RangeSelectShortcutContext {

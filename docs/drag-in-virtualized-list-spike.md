@@ -45,7 +45,7 @@ point.
 Since the plan was authored, the table epic landed a full row-reorder ×
 virtualization integration — `[forTableRowReorder]`
 (`projects/forty-cdk/table/src/table-row-reorder.ts`), a reusable index-mapping
-core helper (`projects/forty-cdk/core/src/window-index-map/window-index-map.ts`),
+core helper (`projects/forty-cdk/core/src/drag-session/window-index-map.ts`),
 a fixture (`table-virtualized-reorder.fixture.ts`), and an E2E spec
 (`table-virtualized-reorder.e2e.ts`). The spike's job therefore shifts from
 "discover whether it can work" to "document the boundary between the supported

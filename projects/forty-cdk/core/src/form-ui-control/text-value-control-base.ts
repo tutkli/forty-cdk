@@ -1,7 +1,7 @@
 import { Directive, ElementRef, inject, model } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
-import { reflectDisabled } from '../disabled-reflection/disabled-reflection';
+import { reflectDisabled } from '../host-attributes/disabled-reflection';
 import { FormUiControlBase } from './form-ui-control-base';
 import { mirrorUnfocusedValue } from './unfocused-value-mirror';
 

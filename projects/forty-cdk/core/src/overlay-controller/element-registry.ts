@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { adoptHostId } from '../host-id/host-id';
+import { adoptHostId } from '../host-attributes/host-id';
 import { IdGenerator } from '../id-generator/id-generator';
 
 /**

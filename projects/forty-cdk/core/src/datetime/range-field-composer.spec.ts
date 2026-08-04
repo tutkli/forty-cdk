@@ -1,6 +1,6 @@
 import { signal, type WritableSignal } from '@angular/core';
 
-import { type DateRange } from '../date-range/date-range';
+import { type DateRange } from './date-range';
 import { type WritingDirection } from '../keyboard-navigation/keyboard-navigation';
 import {
   RangeFieldComposer,

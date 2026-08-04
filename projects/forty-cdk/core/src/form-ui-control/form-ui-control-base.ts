@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import type { ValidationError } from '@angular/forms/signals';
 
-import { FOR_FIELDSET_CONTEXT } from '../fieldset/fieldset-context';
+import { FOR_FIELDSET_CONTEXT } from '../field/fieldset-context';
 import { injectFieldWiring } from '../field/field-wiring';
 
 /**

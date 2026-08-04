@@ -1,10 +1,6 @@
 import { computed, linkedSignal, type Signal } from '@angular/core';
 
-import {
-  assertTimeCapable,
-  type DateAdapter,
-  type TimeCapableDateAdapter,
-} from '../date-adapter/date-adapter';
+import { assertTimeCapable, type DateAdapter, type TimeCapableDateAdapter } from './date-adapter';
 import { type BaseFieldEngineConfig, DateTimeFieldEngineBase } from './field-engine-base';
 import { buildDateTimeSegments, type FieldGranularity } from './date-segments';
 import { type FieldSpec, type SegmentType } from './segment-editor';

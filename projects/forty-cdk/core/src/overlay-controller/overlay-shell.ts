@@ -10,7 +10,7 @@ import { findFirstFocusable } from '../focus-trap/focus-trap';
 import { injectFloating, type FloatingConfig } from '../floating/floating';
 import { InertSiblingsStack, MODAL_PEER_ATTRIBUTE } from '../inert-siblings/inert-siblings';
 import { injectItemAlignedPositioner, type ItemAlignedConfig } from '../floating/item-aligned';
-import { buildOutsideVetoOptions, outsideVetoChannels } from '../overlay-controller/outside-veto';
+import { buildOutsideVetoOptions, outsideVetoChannels } from './outside-veto';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 
 /**
