@@ -16,7 +16,7 @@ import {
   ForTable,
   ForTableBody,
 } from 'forty-cdk/table';
-import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 const TOTAL = 500;
 const GROUP_EVERY = 10;

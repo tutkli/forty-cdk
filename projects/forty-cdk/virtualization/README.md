@@ -6,9 +6,14 @@ Given a reactive item count, a size estimator, and a scroll container, the core 
 
 > Ships from the **`forty-cdk/virtualization`** secondary entry point — import every
 > symbol below (`injectVirtualizer`, `ForVirtualViewport`, `ForVirtualFor`,
-> `injectInfiniteScroll`, `ForTableVirtualized`) from `forty-cdk/virtualization`, not
-> `forty-cdk`. This keeps `@tanstack/virtual-core` out of the main `forty-cdk` bundle for
-> apps and routes that don't virtualize.
+> `injectInfiniteScroll`) from `forty-cdk/virtualization`, not `forty-cdk`. This keeps
+> `@tanstack/virtual-core` out of the bundle for apps and routes that don't virtualize.
+>
+> This entry point imports no other primitive. The two adapters that compose one ship
+> from their own specifiers: **[`forty-cdk/table-virtualization`](../table-virtualization/README.md)**
+> (`[forTableVirtualized]`, which also needs `forty-cdk/table`) and
+> **[`forty-cdk/virtual-reorder`](../virtual-reorder/README.md)** (`[forVirtualReorder]`,
+> which also needs `forty-cdk/drag-drop`).
 
 ## Ergonomic layer
 
@@ -154,38 +159,12 @@ scrolls the minimum amount needed to bring the item into view.
 
 ## Drag-reorder
 
-Apply `[forVirtualReorder]` on the same element as `[forVirtualViewport]` to make a
-windowed `*forVirtualFor` list reorderable by pointer and keyboard. It composes
-`[forDropList]` (drag-drop) and translates its window-relative drop into
-dataset-**absolute** indices — so `moveItemInArray` over the full array moves the
-right item even when the lifted row scrolls out of the rendered window. Mark each
-rendered row as `[forDraggable]` with a `[dragData]`.
+`[forVirtualReorder]` makes a windowed `*forVirtualFor` list reorderable by pointer
+and keyboard, translating the drop into dataset-**absolute** indices so the right
+item moves even when the lifted row scrolls out of the rendered window. It composes
+`[forDropList]`, so it ships from its own entry point rather than this one.
 
-```html
-<div
-  forVirtualViewport
-  [virtualCount]="rows().length"
-  [estimateSize]="44"
-  forVirtualReorder
-  (itemReorder)="onReorder($event)"
-  style="height: 400px"
->
-  <div *forVirtualFor="let row of rows()" forDraggable [dragData]="row.id">{{ row.label }}</div>
-</div>
-```
-
-```ts
-onReorder({ from, to }: ForVirtualReorderEvent): void {
-  this.rows.update((rows) => moveItemInArray(rows, from, to));
-}
-```
-
-It never reorders the data itself (BYO-data): apply the move in the
-`(itemReorder)` handler. Pointer drag works within the window and reaches rows
-beyond it via auto-scroll (the lifted row is pinned mounted); keyboard reorder
-(`Space`/`Enter` to lift, arrows / `Home` / `End` / `PageUp` / `PageDown` to step,
-`Space`/`Enter` to drop, `Escape` to cancel) steps the target across the entire
-dataset, scrolling unmounted target rows into view. Vertical lists only.
+→ **[`forty-cdk/virtual-reorder`](../virtual-reorder/README.md)**
 
 ## Accessibility
 

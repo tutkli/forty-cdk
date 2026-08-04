@@ -20,12 +20,8 @@ import {
   ForDropListGroup,
   ForFreeDrag,
 } from 'forty-cdk/drag-drop';
-import {
-  ForVirtualFor,
-  ForVirtualReorder,
-  ForVirtualViewport,
-  injectVirtualizer,
-} from 'forty-cdk/virtualization';
+import { ForVirtualReorder } from 'forty-cdk/virtual-reorder';
+import { ForVirtualFor, ForVirtualViewport, injectVirtualizer } from 'forty-cdk/virtualization';
 
 @Component({
   imports: [

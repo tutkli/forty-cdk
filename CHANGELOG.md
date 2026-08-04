@@ -5,6 +5,32 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Virtualization (breaking)** — `[forTableVirtualized]` and `[forVirtualReorder]` moved out of
+  `forty-cdk/virtualization` into two new entry points,
+  **`forty-cdk/table-virtualization`** and **`forty-cdk/virtual-reorder`**
+  ([#1589](https://github.com/tutkli/forty-cdk/issues/1589)). `forty-cdk/virtualization` exists to isolate
+  `@tanstack/virtual-core`, but it also statically imported `forty-cdk/table` (for the table adapter's
+  context) and `forty-cdk/drag-drop` (for the reorder adapter's drop list) — so a consumer who wanted
+  nothing but `injectVirtualizer` for a plain list got an entry point whose FESM top-level-imported two
+  other primitives. That is a code-splitting problem rather than a tree-shaking one: a static import edge
+  between two entry points is what merges their chunks, which is the whole reason the library ships
+  per-primitive entry points at all. Measured on the built package, the module graph reachable from an
+  `injectVirtualizer`-only import drops from 462 KB to 150 KB, with the table and drag-drop bundles gone
+  from it entirely. Each adapter got its own entry rather than sharing one, because a single
+  `forty-cdk/table-virtualization` holding the list-reorder directive would have pulled the table into
+  every windowed-list bundle and left the entry point's name describing the wrong thing.
+  **Migration:** re-point the imports — `ForTableVirtualized` now comes from
+  `'forty-cdk/table-virtualization'`, and `ForVirtualReorder` / `ForVirtualReorderEvent` from
+  `'forty-cdk/virtual-reorder'`; both previously came from `'forty-cdk/virtualization'`.
+  `injectVirtualizer`, `injectInfiniteScroll`, `[forVirtualViewport]` and `*forVirtualFor` stay
+  where they are, and no API shape, input, output or emitted attribute changed. The two directives'
+  orphan `Error` messages now carry their new entry point's prefix
+  (`[forty-cdk/table-virtualization]` / `[forty-cdk/virtual-reorder]`).
+
 ## [0.20.0] - 2026-08-04
 
 The release where the server render stops lying. Three primitives derived ARIA from a registration that

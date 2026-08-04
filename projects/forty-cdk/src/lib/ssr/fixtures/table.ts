@@ -21,7 +21,7 @@ import {
   ForTableRowReorder,
   ForTableSortHeader,
 } from 'forty-cdk/table';
-import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 @Component({
   imports: [ForTable, ForTableHeaderRow, ForTableRow, ForTableHeaderCell, ForTableCell],

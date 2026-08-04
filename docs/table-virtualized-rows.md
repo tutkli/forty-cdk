@@ -3,8 +3,9 @@
 How `[forTableVirtualized]` windows a `forty-cdk/table` grid over `forty-cdk/virtualization`,
 including the scroll-container choice and the ARIA reindexing contract. Split out of the table
 README in [#1401](https://github.com/tutkli/forty-cdk/issues/1401) because it spans two entry
-points; the table itself is documented in
-[the table README](../projects/forty-cdk/table/README.md).
+points; the adapter itself ships from the third,
+[`forty-cdk/table-virtualization`](../projects/forty-cdk/table-virtualization/README.md), and the
+table is documented in [the table README](../projects/forty-cdk/table/README.md).
 
 `[forTableVirtualized]` is opt-in and works only with `<div role>` grid mode. Native `<table>` cannot omit rows mid-body (the browser recalculates all column widths when any row is missing), so virtualization requires the `<div>` structure documented in
 [the table README](../projects/forty-cdk/table/README.md#div-mode).
@@ -53,7 +54,7 @@ Key points:
 
 ```ts
 import { afterEveryRender } from '@angular/core';
-import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 afterEveryRender(() => {
   for (const el of this.rowEls()) {

@@ -39,7 +39,7 @@ import {
   translateRowReorderIndices,
   type TableRowReorderDescriptor,
 } from './table-row-reorder';
-import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 const TABLE_IMPORTS = [
   ForTable,

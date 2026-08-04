@@ -15,7 +15,8 @@ import {
   type TableSortDescriptor,
   type TableSortDirection,
 } from 'forty-cdk/table';
-import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 import { makePeople } from './big-people';
 import { COLUMN_LABELS, type Person, type PersonColumn, personField } from './people';

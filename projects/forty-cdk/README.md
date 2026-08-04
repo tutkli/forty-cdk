@@ -147,11 +147,13 @@ The tables below group the primitives by purpose. The link on each name opens th
 
 Headless — no DOM or ARIA of their own; an `inject*` / provider API that other primitives compose.
 
-| Utility                          | What it is                                                                                                                             |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| [Breakpoints](breakpoints)       | A signal-first, zoneless, SSR-safe viewport breakpoint observer (`injectBreakpoints`).                                                 |
-| [Drag & Drop](drag-drop)         | Headless, accessible drag-and-drop for sortable lists and cross-list transfers, keyboard and pointer driven.                           |
-| [Virtualization](virtualization) | A headless windowing core (`injectVirtualizer`) plus a `[forVirtualViewport]` layer that renders only the visible slice of huge lists. |
+| Utility                                      | What it is                                                                                                                                             |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [Breakpoints](breakpoints)                   | A signal-first, zoneless, SSR-safe viewport breakpoint observer (`injectBreakpoints`).                                                                 |
+| [Drag & Drop](drag-drop)                     | Headless, accessible drag-and-drop for sortable lists and cross-list transfers, keyboard and pointer driven.                                           |
+| [Virtualization](virtualization)             | A headless windowing core (`injectVirtualizer`) plus a `[forVirtualViewport]` layer that renders only the visible slice of huge lists.                 |
+| [Table Virtualization](table-virtualization) | `[forTableVirtualized]`, the adapter that windows a `[forTable]` grid — its own entry point because it composes both the table and the windowing core. |
+| [Virtual Reorder](virtual-reorder)           | `[forVirtualReorder]`, drag-reorder for a windowed `*forVirtualFor` list — its own entry point because it composes both the viewport and drag-drop.    |
 
 ## Building
 

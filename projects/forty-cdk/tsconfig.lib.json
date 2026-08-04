@@ -10,6 +10,7 @@
     "paths": {
       "forty-cdk/drag-drop": ["./drag-drop/src/public-api.ts"],
       "forty-cdk/table": ["./table/src/public-api.ts"],
+      "forty-cdk/table-virtualization": ["./table-virtualization/src/public-api.ts"],
       "forty-cdk/tree": ["./tree/src/public-api.ts"],
       "forty-cdk/carousel": ["./carousel/src/public-api.ts"],
       "forty-cdk/stepper": ["./stepper/src/public-api.ts"],
@@ -66,12 +67,14 @@
       "forty-cdk/dialog": ["./dialog/src/public-api.ts"],
       "forty-cdk/internationalized-date": ["./internationalized-date/src/public-api.ts"],
       "forty-cdk/virtualization": ["./virtualization/src/public-api.ts"],
+      "forty-cdk/virtual-reorder": ["./virtual-reorder/src/public-api.ts"],
       "forty-cdk/visually-hidden": ["./visually-hidden/src/public-api.ts"]
     }
   },
   "include": [
     "drag-drop/src/**/*.ts",
     "table/src/**/*.ts",
+    "table-virtualization/src/**/*.ts",
     "tree/src/**/*.ts",
     "carousel/src/**/*.ts",
     "stepper/src/**/*.ts",
@@ -128,6 +131,7 @@
     "dialog/src/**/*.ts",
     "internationalized-date/src/**/*.ts",
     "virtualization/src/**/*.ts",
+    "virtual-reorder/src/**/*.ts",
     "visually-hidden/src/**/*.ts"
   ],
   "exclude": [

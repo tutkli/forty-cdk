@@ -328,7 +328,7 @@ recycled out of the DOM) is supported through two opt-in companions:
 - a **table** — [`[forTableRowReorder]`](../../../docs/table-reordering.md#reordering-under-virtualization)
   composed with `[forTableVirtualized]`, and
 - a **plain `*forVirtualFor` list** — `[forVirtualReorder]` composed with
-  `[forVirtualViewport]` (see `forty-cdk/virtualization`).
+  `[forVirtualViewport]` (see [`forty-cdk/virtual-reorder`](../virtual-reorder/README.md)).
 
 A bare `[forDropList]` wrapping `*forVirtualFor` is **not** supported on its own:
 it only ever registers the rows currently rendered in the window, so it
