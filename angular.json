@@ -34,6 +34,7 @@
               "**/*.spec.ts",
               "../drag-drop/src/**/*.spec.ts",
               "../table/src/**/*.spec.ts",
+              "../table-virtualization/src/**/*.spec.ts",
               "../tree/src/**/*.spec.ts",
               "../carousel/src/**/*.spec.ts",
               "../stepper/src/**/*.spec.ts",
@@ -89,6 +90,7 @@
               "../dialog/src/**/*.spec.ts",
               "../internationalized-date/src/**/*.spec.ts",
               "../virtualization/src/**/*.spec.ts",
+              "../virtual-reorder/src/**/*.spec.ts",
               "../visually-hidden/src/**/*.spec.ts"
             ]
           }

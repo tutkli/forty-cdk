@@ -25,7 +25,8 @@ import {
   type TableSortDescriptor,
   type TableSortDirection,
 } from 'forty-cdk/table';
-import { ForTableVirtualized, injectInfiniteScroll } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
+import { injectInfiniteScroll } from 'forty-cdk/virtualization';
 
 const ROW_HEIGHT = 44;
 

@@ -7,7 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ForColumnDef, ForDataCell, ForHeaderCell, ForTable, ForTableBody } from 'forty-cdk/table';
-import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 const ROW_COUNT = 10_000;
 const ROW_HEIGHT = 44;

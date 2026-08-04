@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
-import {
-  ForVirtualFor,
-  ForVirtualReorder,
-  ForVirtualViewport,
-  type ForVirtualReorderEvent,
-} from 'forty-cdk/virtualization';
+import { ForVirtualReorder, type ForVirtualReorderEvent } from 'forty-cdk/virtual-reorder';
+import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
 
 const ROW_COUNT = 10_000;
 const ROW_HEIGHT = 44;

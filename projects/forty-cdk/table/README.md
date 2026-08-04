@@ -29,7 +29,7 @@ The library sets roles, `aria-label`, writing direction, `data-column`, sticky h
 </div>
 ```
 
-Opt-in companions compose on the same elements: `[forTableVirtualized]` on `[forTable]` for windowed rows, and `[forTableColumnReorder]` / `[forTableRowReorder]` on the header row / data rowgroup for drag reordering.
+Opt-in companions compose on the same elements: [`[forTableVirtualized]`](../table-virtualization/README.md) on `[forTable]` for windowed rows (its own `forty-cdk/table-virtualization` entry point), and `[forTableColumnReorder]` / `[forTableRowReorder]` on the header row / data rowgroup for drag reordering.
 
 ## Native `<table>` mode
 
@@ -483,9 +483,11 @@ never mutates the consumer's data** — reorder handlers apply `moveItemInArray`
 
 `[forTableVirtualized]` is opt-in and works only with `<div role>` grid mode: a native `<table>`
 cannot omit rows mid-body without the browser recalculating every column width. Set `[rowCount]` on
-`[forTable]` to the **true total** so `aria-rowcount` and the window size both stay honest.
-`@tanstack/virtual-core` loads only when you import `ForTableVirtualized`.
+`[forTable]` to the **true total** so `aria-rowcount` and the window size both stay honest. It ships
+from the **`forty-cdk/table-virtualization`** entry point, so neither the table nor
+`@tanstack/virtual-core` reaches a bundle that does not import it.
 
+→ **[`forty-cdk/table-virtualization`](../table-virtualization/README.md)**
 → **[Table: virtualized rows](../../../docs/table-virtualized-rows.md)**
 
 ## API

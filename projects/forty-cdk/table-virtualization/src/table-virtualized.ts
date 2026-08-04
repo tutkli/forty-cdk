@@ -11,12 +11,12 @@ import {
 
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk/table';
+import { injectVirtualizer, type VirtualItem } from 'forty-cdk/virtualization';
 
-import { injectVirtualizer, type VirtualItem } from './virtualizer';
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
 const ORPHAN_ERROR =
-  '[forty-cdk/virtualization] ForTableVirtualized must be used inside a [forTable] element.';
+  '[forty-cdk/table-virtualization] ForTableVirtualized must be used inside a [forTable] element.';
 
 function injectTableContext(): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });

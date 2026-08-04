@@ -11,8 +11,8 @@ import { TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
 import { ForDraggable, moveItemInArray } from 'forty-cdk/drag-drop';
-import { ForVirtualFor } from './virtual-for';
-import { ForVirtualViewport } from './virtual-viewport';
+import { ForVirtualFor, ForVirtualViewport } from 'forty-cdk/virtualization';
+
 import { ForVirtualReorder, type ForVirtualReorderEvent } from './virtual-reorder';
 
 interface Row {

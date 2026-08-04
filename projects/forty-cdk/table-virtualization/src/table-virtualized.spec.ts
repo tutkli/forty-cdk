@@ -18,7 +18,7 @@ import { flush } from '../../src/test-utils';
 import { ForTableVirtualized } from './table-virtualized';
 
 describe('ForTableVirtualized', () => {
-  it('throws a virtualization-prefixed error when used outside [forTable]', () => {
+  it('throws a table-virtualization-prefixed error when used outside [forTable]', () => {
     @Component({
       imports: [ForTableVirtualized],
       template: `<div forTableVirtualized></div>`,
@@ -30,7 +30,7 @@ describe('ForTableVirtualized', () => {
     });
 
     expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/virtualization\] ForTableVirtualized must be used inside a \[forTable\] element\./,
+      /\[forty-cdk\/table-virtualization\] ForTableVirtualized must be used inside a \[forTable\] element\./,
     );
   });
 });

@@ -4,7 +4,7 @@ import { type ComponentFixture } from '@angular/core/testing';
 import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
 
 import { installObserverPolyfills, pointerEvent, renderHost } from '../../src/test-utils';
-import { ForTableVirtualized } from 'forty-cdk/virtualization';
+import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 import { ForDragPlaceholder, moveItemInArray } from 'forty-cdk/drag-drop';
 
 import {

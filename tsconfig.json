@@ -10,6 +10,10 @@
         "./projects/forty-cdk/drag-drop/src/public-api.ts"
       ],
       "forty-cdk/table": ["./dist/forty-cdk/table", "./projects/forty-cdk/table/src/public-api.ts"],
+      "forty-cdk/table-virtualization": [
+        "./dist/forty-cdk/table-virtualization",
+        "./projects/forty-cdk/table-virtualization/src/public-api.ts"
+      ],
       "forty-cdk/tree": ["./dist/forty-cdk/tree", "./projects/forty-cdk/tree/src/public-api.ts"],
       "forty-cdk/carousel": [
         "./dist/forty-cdk/carousel",
@@ -206,6 +210,10 @@
       "forty-cdk/virtualization": [
         "./dist/forty-cdk/virtualization",
         "./projects/forty-cdk/virtualization/src/public-api.ts"
+      ],
+      "forty-cdk/virtual-reorder": [
+        "./dist/forty-cdk/virtual-reorder",
+        "./projects/forty-cdk/virtual-reorder/src/public-api.ts"
       ],
       "forty-cdk/visually-hidden": [
         "./dist/forty-cdk/visually-hidden",

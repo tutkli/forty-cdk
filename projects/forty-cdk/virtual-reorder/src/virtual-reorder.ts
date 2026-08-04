@@ -18,8 +18,7 @@ import {
   resolveScrubReorder,
   translateWindowReorder,
 } from 'forty-cdk/core';
-
-import { ForVirtualViewport } from './virtual-viewport';
+import { ForVirtualViewport } from 'forty-cdk/virtualization';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
@@ -35,7 +34,7 @@ function injectViewport(): ForVirtualViewport {
   const viewport = inject(ForVirtualViewport, { optional: true });
   if (!viewport) {
     throw new Error(
-      '[forty-cdk/virtualization] ForVirtualReorder must be used on the same element as [forVirtualViewport].',
+      '[forty-cdk/virtual-reorder] ForVirtualReorder must be used on the same element as [forVirtualViewport].',
     );
   }
   return viewport;
