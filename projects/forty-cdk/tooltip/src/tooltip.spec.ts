@@ -14,7 +14,10 @@ import {
   renderHost,
   withReducedMotion,
 } from '../../src/test-utils';
-import { assertDataStateContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertDismissibleLayerContract,
+} from '../../src/test-utils/contract';
 import { ForTooltip } from './tooltip';
 import { ForTooltipArrow } from './tooltip-arrow';
 import { ForTooltipContent } from './tooltip-content';
@@ -70,6 +73,33 @@ class TooltipHost {
 })
 class TooltipWithArrowHost {
   readonly isOpen = signal(false);
+}
+
+@Component({
+  imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
+  template: `
+    <div
+      forTooltip
+      [(open)]="isOpen"
+      [openDelay]="0"
+      [closeDelay]="0"
+      (escapeKeyDown)="onEscape($event)"
+    >
+      <button type="button" forTooltipTrigger>Trigger</button>
+      @if (isOpen()) {
+        <div forTooltipContent>Content</div>
+      }
+    </div>
+  `,
+})
+class DismissibleContractHost {
+  readonly isOpen = signal(false);
+  escapeVeto = false;
+  eCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
 }
 
 @Component({
@@ -581,6 +611,28 @@ describe('ForTooltip', () => {
   describe('escape key', () => {
     afterEachOverlayCleanup();
 
+    // Tooltip adopts the Escape half only, byte-for-byte the shape HoverCard
+    // does: `[forTooltipContent]` hands the layer nothing but
+    // `emitEscapeKeyDown`, there is no `[dismissible]` input, and an outside
+    // press closes the tooltip through the hover / pointer-leave bridge rather
+    // than through the layer's outside-interaction trio.
+    assertDismissibleLayerContract(
+      {
+        mount: async (options = {}) => {
+          const r = renderHost(DismissibleContractHost);
+          r.instance.escapeVeto = options.escapeVeto ?? false;
+          r.instance.isOpen.set(true);
+          await flush(r.fixture);
+          return {
+            flush: () => flush(r.fixture),
+            isOpen: () => r.instance.isOpen(),
+            escapeCount: () => r.instance.eCount,
+          };
+        },
+      },
+      { dismissibleFlag: false, outsideInteraction: false },
+    );
+
     it('closes immediately, bypassing closeDelay', async () => {
       const r = renderHost(TooltipHost);
       r.instance.isOpen.set(true);
@@ -652,47 +704,6 @@ describe('ForTooltip', () => {
       expect(trigger.getAttribute('data-state')).toBe('closed');
       expect(content.getAttribute('data-state')).toBe('closed');
       expect(trigger.hasAttribute('aria-describedby')).toBe(false);
-    });
-
-    it('emits (escapeKeyDown) and stays open when the consumer preventDefault-s', async () => {
-      const captured: VetoableNativeEvent<KeyboardEvent>[] = [];
-
-      @Component({
-        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
-        template: `
-          <div
-            forTooltip
-            #tip="forTooltip"
-            [(open)]="isOpen"
-            [openDelay]="0"
-            [closeDelay]="0"
-            (escapeKeyDown)="onEscape($event)"
-          >
-            <button type="button" forTooltipTrigger>Trigger</button>
-            @if (tip.open()) {
-              <div forTooltipContent>Content</div>
-            }
-          </div>
-        `,
-      })
-      class Host {
-        readonly isOpen = signal(false);
-        onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
-          captured.push(event);
-          event.preventDefault();
-        }
-      }
-
-      const r = renderHost(Host);
-      r.instance.isOpen.set(true);
-      await flush(r.fixture);
-      const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
-
-      pressKey(content, 'Escape');
-      await flush(r.fixture);
-
-      expect(captured.length).toBe(1);
-      expect(r.instance.isOpen()).toBe(true);
     });
   });
 

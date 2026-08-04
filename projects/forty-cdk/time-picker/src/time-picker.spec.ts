@@ -9,6 +9,7 @@ import {
   assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
+  type DismissibleLayerMountOptions,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { type DateAdapter, FOR_DATE_ADAPTER, type VetoableNativeEvent } from 'forty-cdk/core';
@@ -93,6 +94,7 @@ class TimePickerHost {
       forTimePicker
       [(open)]="open"
       [step]="60"
+      [modal]="modal()"
       [dismissible]="dismissible()"
       (escapeKeyDown)="onEscape($event)"
       (pointerDownOutside)="onPointer($event)"
@@ -115,6 +117,7 @@ class TimePickerHost {
 })
 class TimePickerDismissContractHost {
   readonly open = signal(false);
+  readonly modal = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
   pointerVeto = false;
@@ -216,9 +219,16 @@ describe('ForTimePicker', () => {
     { label: 'options' },
   );
 
-  assertDismissibleLayerContract({
-    mount: async (options = {}) => {
+  // Two shells, two layers: `[modal]` swaps `injectOverlayShell` for
+  // `injectModalShell`, which owns the close decision Escape's consumer channel
+  // owns on the anchored path. Nothing asserted the modal one before
+  // [#1655](https://github.com/tutkli/forty-cdk/issues/1655) — this spec had no
+  // `modal` mention at all.
+  const mountDismissContract =
+    (modal: boolean) =>
+    async (options: DismissibleLayerMountOptions = {}) => {
       const r = renderHost(TimePickerDismissContractHost);
+      r.instance.modal.set(modal);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;
@@ -232,8 +242,10 @@ describe('ForTimePicker', () => {
         focusOutsideCount: () => r.instance.fCount,
         interactOutsideCount: () => r.instance.iCount,
       };
-    },
-  });
+    };
+
+  assertDismissibleLayerContract({ mount: mountDismissContract(false) }, { label: 'anchored' });
+  assertDismissibleLayerContract({ mount: mountDismissContract(true) }, { label: 'modal' });
 
   assertFormControlContract(
     () => {
