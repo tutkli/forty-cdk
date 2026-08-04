@@ -5,6 +5,132 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2026-08-04
+
+The release where the server render stops lying. Three primitives derived ARIA from a registration that
+only happened in the browser, so Angular Universal served a tree item at position `0` of `0`, a navigation
+menu trigger controlling `""`, and a grid claiming a thousand rows and no columns — values WAI-ARIA does
+not define, on the document a screen reader reaches first. Registration is synchronous now, unknown totals
+report the `-1` the spec reserves for them, and the two navigation-menu pieces that measure geometry are
+gated on the browser rather than on a registry that happened to be empty. A consumer's static `id` on a
+fieldset legend survives instead of being clobbered, and the emitted declarations are typechecked in the
+build, which is how `forty-cdk-avatar.d.ts` stopped failing to compile. Underneath, mounting a
+2000-row grid went from 8.2 s to 0.77 s: the cost was never the collection, it was one signal every cell
+in the table transitively depended on.
+
+### Added
+
+- **Menu family.** `fallbackAxisSideDirection` now reads its default from each root's own defaults
+  provider ([#1659](https://github.com/tutkli/forty-cdk/issues/1659)), so a design system declares its
+  narrow-viewport degradation policy once for the whole app instead of repeating a binding on every call
+  site. The key joins `ForMenuDefaults`, `ForDropdownMenuDefaults`, `ForContextMenuDefaults` and
+  `ForMenubarDefaults`, and is read by `[forMenu]`, `[forMenuSub]`, `[forDropdownMenu]`,
+  `[forContextMenu]` and `[forMenubarTrigger]`. A per-instance binding still wins over the scope default,
+  exactly as `sideOffset` behaves, and the library fallback stays `'none'` — a consumer calling neither
+  the provider nor the input observes unchanged positioning. The menubar's multiplexed context reads it
+  too, so a scope override is in force on the surface the bar renders before any trigger opens.
+- **Fieldset.** A dev-mode warning when two `[forFieldsetLegend]` pieces are registered under one
+  `[forFieldset]` ([#1654](https://github.com/tutkli/forty-cdk/issues/1654)). `legendId` is one id, not an
+  id list, so the last registration owns it and the group is named by that legend; before this release two
+  legends merely shared a generated id, and now they compete over which consumer id names the group, which
+  is worth reporting. The check reads the settled count, so a structural swap that mounts the replacement
+  before destroying the outgoing legend is not a duplicate and does not warn.
+
+### Changed
+
+- **BREAKING — `[forToastViewport]`'s `[label]` is now `[ariaLabel]`**
+  ([#1598](https://github.com/tutkli/forty-cdk/issues/1598)). It was the library's last un-migrated
+  accessible name: a non-uniform input name carrying a hardcoded English literal. The input defaults to
+  the new `ForToastDefaults.viewportAriaLabel` (fallback `'Notifications'`), so the name is localizable
+  per scope, a static `aria-label` still wins, and `[ariaLabel]="null"` still drops the attribute.
+  Migration: `[label]="x"` → `[ariaLabel]="x"`.
+- **BREAKING — `ForToastDefaults` is the resolved shape; `provideForToastDefaults` takes the partial**
+  ([#1627](https://github.com/tutkli/forty-cdk/issues/1627)). Its keys were all-optional while the
+  fallback it described was typed with a module-private interface no consumer could name. The two are
+  folded into one, following the other 38 defaults providers: `ForToastDefaults` has required keys and
+  `provideForToastDefaults(defaults: Partial<ForToastDefaults> = {})` takes the partial. Call sites are
+  unaffected — `provideForToastDefaults({ duration: 4000 })` still typechecks, and
+  `inject(FOR_TOAST_DEFAULTS)` still returns a fully-populated value. What breaks is annotating a partial
+  literal as `ForToastDefaults`.
+- **BREAKING — `[forComboboxStatus]` and `[forComboboxEmpty]` emit `role="status"` and nothing else**
+  ([#1626](https://github.com/tutkli/forty-cdk/issues/1626)). Both declared their live-region semantics
+  twice: a static `role` beside the `aria-live` / `aria-atomic` values that role already implies. What a
+  screen reader does is unchanged ([ARIA 1.2 §status](https://www.w3.org/TR/wai-aria-1.2/#status)), but
+  CSS or tests selecting these hosts by `[aria-live]` / `[aria-atomic]` stop matching. The role is the
+  surviving channel here because `[forComboboxEmpty]` self-hides and comes back with its message already
+  in the DOM — an insertion into the accessibility tree, which is what a live role is read reliably on.
+- **BREAKING — a `LiveAnnouncer` region no longer carries a `role`**
+  ([#1598](https://github.com/tutkli/forty-cdk/issues/1598)). The same doubling, resolved the opposite
+  way: these regions are anonymous off-screen text sinks rather than a status or alert landmark a user
+  should be able to navigate to, and they are inserted empty and only ever have their text rewritten, so
+  the role bought them nothing. `aria-live` + `aria-atomic` stay — the pair states `aria-atomic` outright
+  instead of leaving it to an implicit role mapping. A selector matching `[role="status"]` or
+  `[role="alert"]` on an announcer region stops matching; `[aria-live]` still does.
+- **BREAKING — a table def handle's `host` is a `Node`**
+  ([#1562](https://github.com/tutkli/forty-cdk/issues/1562)). `[forColumnDef]` on an `<ng-container>`
+  anchors at a comment node, so the handles `ForTableDefRegistry` registers claimed an element they never
+  had. The parameters are widened, so every existing call site is unaffected; a consumer who implements or
+  wraps that registry and reads element APIs off `handle.host` now narrows it themselves.
+- **BREAKING — `aria-colcount` / `aria-rowcount` report `-1` when no channel knows the total**
+  ([#1640](https://github.com/tutkli/forty-cdk/issues/1640),
+  [#1648](https://github.com/tutkli/forty-cdk/issues/1648)). See the Fixed entry below for what this
+  repairs; the part to migrate is that a grid whose count is genuinely unresolved now advertises the
+  sentinel instead of `0`. An explicit `[rowCount]` / `[colCount]` is still emitted verbatim, including
+  `0`, and an empty non-virtualized grid still counts its own rendered rows.
+- **BREAKING — `[forNavigationMenuTrigger]` omits `aria-controls` when it cannot resolve one**
+  ([#1636](https://github.com/tutkli/forty-cdk/issues/1636)). It emitted `aria-controls=""` — a malformed
+  ID reference rather than an absent one, and the last fallback of its kind in the library. A selector
+  matching `[aria-controls]` on a trigger whose panel is not mounted stops matching.
+
+### Fixed
+
+- **Tree (SSR).** `[forTreeItem]` served `aria-posinset="0"` / `aria-setsize="0"` on every item in a
+  server render ([#1639](https://github.com/tutkli/forty-cdk/issues/1639)). Both derived from a
+  registration scheduled with `afterNextRender`, a hook that never fires under `ngServerMode`, and ARIA
+  defines neither value — `aria-posinset` must be ≥ 1 and an unknown total is `-1`. Registration is
+  synchronous now, so both resolve in the creation pass, and the tab stop the same registration decides
+  resolves with them.
+- **Navigation menu (SSR).** `[forNavigationMenuTrigger]` shipped `aria-controls=""` and
+  `[forNavigationMenuContent]` shipped no `aria-labelledby` at all in a server render
+  ([#1636](https://github.com/tutkli/forty-cdk/issues/1636)) — the same deferred registration, so the
+  pairing lookups iterated empty registries and the pre-hydration document reached assistive tech
+  unpaired. Both register synchronously now. Resolving them server-side also exposed two geometry reads
+  in `[forNavigationMenuIndicator]` and `[forNavigationMenuViewport]` that would have thrown on Angular
+  Universal, where the platform DOM implements no layout API; both are gated on the browser rather than on
+  a registry that happened to be empty.
+- **Table.** A grid with an unresolved window advertised `aria-colcount="0"`
+  ([#1640](https://github.com/tutkli/forty-cdk/issues/1640),
+  [#1648](https://github.com/tutkli/forty-cdk/issues/1648)) — a grid claiming a thousand rows and no
+  columns, which is a contradiction rather than a count. Both channels now report the `-1` ARIA reserves
+  for a total the author cannot determine, the row channel only where the grid is actually windowed: an
+  empty non-virtualized grid's rendered rows _are_ all its rows, so a header row with zero data rows
+  reports `1`, not the sentinel.
+- **Fieldset.** A consumer's static `id` on `[forFieldsetLegend]` was clobbered by the generated one on
+  the first host-binding pass, so every external reference to it resolved to nothing
+  ([#1654](https://github.com/tutkli/forty-cdk/issues/1654)) — on the piece most likely to be referenced
+  from outside the primitive, since it is a label. The legend now adopts a static id through the
+  fieldset's context, and the group's `aria-labelledby` follows it with no second change.
+- **Emitted declarations.** `forty-cdk-avatar.d.ts` did not compile
+  ([#1630](https://github.com/tutkli/forty-cdk/issues/1630)): `ForAvatar.reportStatus` was tagged
+  `@internal` while the `ForAvatarContext.reportStatus` it implements was not, so `stripInternal` deleted
+  the member and left the class failing its own `implements` clause with `TS2420`. Any consumer compiling
+  with `skipLibCheck: false` saw it. The tag is gone — the context published the member either way — and
+  the build now typechecks every emitted declaration under `strict` with `skipLibCheck: false`, resolving
+  them through the published `exports` map, so this class of break cannot ship again.
+
+### Performance
+
+- **Table / roving tabindex.** Mounting a non-virtualized 2000-row × 10-column `[forTable]` in `grid`
+  mode goes from **8227 ms to 765 ms** (10.8×), and the curve across 500 / 1000 / 2000 rows from 8.4× to
+  3.24× per 4× row count — linear ([#1584](https://github.com/tutkli/forty-cdk/issues/1584)). The cost was
+  not the collection, which sorts once per mount and totals 1.0%: it was `[forTable]`'s first-enabled-cell
+  derivation reading _every_ row's cells, making all 20 000 cell bindings transitive consumers of each
+  row's registration. It short-circuits at the first row that answers. The second half is library-wide —
+  `RovingTabindex`'s reconciling `linkedSignal` read the item list even with no active item, where the
+  computation returns null whatever the list holds, so every item in a roving group was a consumer of the
+  whole list. Any roving primitive whose item list is a fold over per-child registries had that shape
+  latent in it. `Collection.indexOfHost` / `findByHost` are O(1) now, served by a lazily built index map.
+
 ## [0.19.0] - 2026-08-02
 
 A hardening release for the overlay core. Focus and dismissal now answer every question against the
@@ -1527,6 +1653,7 @@ primitives.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
 [Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...HEAD
+[0.20.0]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/tutkli/forty-cdk/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/tutkli/forty-cdk/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/tutkli/forty-cdk/compare/v0.16.0...v0.17.0
