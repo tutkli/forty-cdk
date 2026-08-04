@@ -1,5 +1,5 @@
 import type { FloatingSide } from '../floating/floating';
-import { isHoverCapablePointer } from '../hover-intent/pointer-capability';
+import { isHoverCapablePointer } from './pointer-capability';
 
 /**
  * Pointer-grace ("safe triangle") helper.

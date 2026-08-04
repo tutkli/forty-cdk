@@ -161,14 +161,12 @@ export { reflectDisabled } from './host-attributes/disabled-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
 export { adoptHostId, hostId, resolveHostId } from './host-attributes/host-id';
 export { hostButtonType } from './host-attributes/host-type';
+export { createDebouncedAction, type DebouncedAction } from './hover-intent/debounced-action';
 export {
-  createDebouncedAction,
   createHoverIntent,
-  type DebouncedAction,
   forceCloseWhenDisabled,
   type HoverIntentScheduler,
 } from './hover-intent/hover-intent';
-export { isHoverCapablePointer, isNonTouchPointer } from './hover-intent/pointer-capability';
 export { createSkipDelayWindow, SkipDelayCoordinator } from './hover-intent/skip-delay';
 export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
 export { InertSiblingsStack } from './inert-siblings/inert-siblings';
@@ -241,6 +239,7 @@ export {
 export { OverlayRef } from './overlay-manager/overlay-ref';
 export { resolveConfigClass } from './overlay-manager/resolve-config-class';
 export { injectPauseController, type PauseController } from './pausable/pause-controller';
+export { isHoverCapablePointer, isNonTouchPointer } from './pointer/pointer-capability';
 export {
   attachPointerGrace,
   buildSubmenuGracePolygon,
