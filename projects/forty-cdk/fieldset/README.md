@@ -22,7 +22,7 @@ The styleless counterpart to a native `<fieldset>` + `<legend>`, and the groupin
 `ForFieldset` detects its host tag, exactly like `ForLabel`'s `<label>` check:
 
 - On a native **`<fieldset>`**, the browser groups its controls and labels them with the `<legend>` implicitly — so the directive emits **no** `role` and **no** `aria-labelledby`.
-- On **any other element**, it emits `role="group"` and `aria-labelledby` pointing at the `[forFieldsetLegend]`'s generated id.
+- On **any other element**, it emits `role="group"` and `aria-labelledby` pointing at the `[forFieldsetLegend]`'s id — your own static `id` when you set one, else a generated one.
 
 ## Shared `disabled`
 
@@ -87,12 +87,24 @@ On custom markup (no native `<fieldset>`), the same wiring yields `role="group"`
 
 ### `ForFieldsetLegend`
 
-Group label. Adopts the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker. Reflects no `data-*` attributes — it carries only the generated `id` that the group's `aria-labelledby` resolves to.
+Group label. Emits the fieldset's `legendId` so `aria-labelledby` resolves; usable standalone outside a fieldset as an inert marker. Reflects no `data-*` attributes — it carries only the `id` that the group's `aria-labelledby` resolves to.
+
+A static `id` you write on the legend is **preserved**, not clobbered, and the group's `aria-labelledby` follows it — so an external `aria-labelledby` / `aria-describedby` reference or a `<label for>` pointing at your own id keeps resolving:
+
+```html
+<div forFieldset>
+  <span forFieldsetLegend id="shipping-legend">Shipping</span>
+  <!-- … fields … -->
+</div>
+<!-- → <div role="group" aria-labelledby="shipping-legend"> -->
+```
+
+Only a plain `id="…"` attribute is adopted; a `[id]="expr"` property binding evaluates after the directive constructs, so it is not. With no `id` of your own the legend gets a generated `for-fieldset-legend-*` one. Keep **one** legend per group — a fieldset is labelled by a single id, so a second `[forFieldsetLegend]` shares it (duplicate DOM ids) and warns in dev mode.
 
 ## Accessibility
 
 - **Native `<fieldset>` grouping is preserved.** On a `<fieldset>` host, no extra ARIA is added — the browser's native grouping and `<legend>` labelling apply.
-- **Custom hosts get `role="group"` + `aria-labelledby`** wired to the `[forFieldsetLegend]`'s generated id.
+- **Custom hosts get `role="group"` + `aria-labelledby`** wired to the `[forFieldsetLegend]`'s id — a consumer-set static `id` when present, else a generated one.
 - **Disabled propagation reaches custom-role controls** that a native `<fieldset disabled>` cannot disable, via context injection.
 
 ## Styling

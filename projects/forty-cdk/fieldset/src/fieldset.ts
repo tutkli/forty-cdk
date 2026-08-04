@@ -2,13 +2,16 @@ import {
   booleanAttribute,
   computed,
   Directive,
+  effect,
   ElementRef,
   inject,
   input,
+  isDevMode,
   signal,
 } from '@angular/core';
 
 import {
+  adoptHostId,
   reflectDisabled,
   hostLabelledBy,
   IdGenerator,
@@ -57,6 +60,7 @@ export class ForFieldset implements ForFieldsetContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #parent = inject(FOR_FIELDSET_CONTEXT, { optional: true, skipSelf: true });
   readonly #legends = signal(0);
+  readonly #legendId = signal(this.#idGen.next('for-fieldset-legend'));
 
   /**
    * Whether the group is disabled, as bound by the consumer via `[disabled]`.
@@ -77,8 +81,12 @@ export class ForFieldset implements ForFieldsetContext {
    */
   readonly disabled = computed(() => this.disabledInput() || (this.#parent?.disabled() ?? false));
 
-  /** Id of the legend element; the group's `aria-labelledby` resolves here. */
-  readonly legendId = signal(this.#idGen.next('for-fieldset-legend'));
+  /**
+   * Id of the legend element; the group's `aria-labelledby` resolves here. A
+   * generated `for-fieldset-legend-*` id, or the static `id` a consumer wrote on
+   * the `[forFieldsetLegend]` host once {@link adoptLegendId} has adopted it.
+   */
+  readonly legendId = this.#legendId.asReadonly();
 
   /** Whether the host element is a native `<fieldset>` (no role/labelledby needed). */
   protected readonly isNativeFieldset = computed(
@@ -94,6 +102,9 @@ export class ForFieldset implements ForFieldsetContext {
 
   constructor() {
     reflectDisabled(this.nativeDisabled);
+    if (isDevMode()) {
+      this.#warnOnDuplicateLegend();
+    }
   }
 
   /** `role="group"` on a non-`<fieldset>` element, else null. */
@@ -109,9 +120,46 @@ export class ForFieldset implements ForFieldsetContext {
     !this.isNativeFieldset() && this.#legends() > 0 ? this.legendId() : null,
   );
 
-  /** Mark a legend present; returns an unregister callback. */
+  /**
+   * Adopts a consumer-set static `id` on the `[forFieldsetLegend]` host into
+   * {@link legendId} — preserving external `aria-labelledby` /
+   * `aria-describedby` references, `<label for>` targets and test hooks —
+   * instead of letting the legend's `[id]` host binding clobber it with the
+   * generated fallback. {@link labelledBy} reads the same signal, so the group's
+   * `aria-labelledby` follows the adopted value with no second step.
+   *
+   * Only a **static** `id` is adopted: a consumer `[id]="expr"` property binding
+   * evaluates after the legend's construction, so it is invisible here and still
+   * fights the host binding.
+   */
+  adoptLegendId(el: HTMLElement): void {
+    adoptHostId(el, this.#legendId);
+  }
+
+  /**
+   * Mark a legend present; returns an unregister callback. A fieldset is labelled
+   * by a single legend — `legendId` is one id, not an id list — so one
+   * `[forFieldsetLegend]` per group is the supported shape, matching a native
+   * `<fieldset>`'s single `<legend>`. Registrations are counted (mirroring
+   * `ForField`'s label / description / error slots), so unmounting one of several
+   * accidental duplicates never drops the association while another is still
+   * mounted; the last one to register owns {@link legendId}, and a duplicate
+   * emits a dev-mode warning.
+   */
   registerLegend(): () => void {
     this.#legends.update((n) => n + 1);
     return () => this.#legends.update((n) => n - 1);
+  }
+
+  #warnOnDuplicateLegend(): void {
+    effect(() => {
+      const registered = this.#legends();
+      if (registered > 1) {
+        console.warn(
+          `[forty-cdk/fieldset] A [forFieldset] is labelled by a single [forFieldsetLegend], but ${registered} are registered. ` +
+            `They share one legendId, producing duplicate DOM ids and unstable aria wiring — keep one per fieldset.`,
+        );
+      }
+    });
   }
 }
