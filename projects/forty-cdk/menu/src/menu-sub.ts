@@ -160,12 +160,13 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
    * graceful-degradation lever for a submenu clipped on a narrow viewport. Only
    * consulted when `avoidCollisions` is on.
    *
-   * Shares the single `MENU_POSITIONING_DEFAULTS` source with the two top-level
-   * roots; `menu-positioning-inputs.spec.ts` guards the three roots against
-   * drift.
+   * The default is read from `provideForMenuDefaults` for the surrounding scope,
+   * since dropping to a vertical side is a design-system-wide
+   * viewport-degradation policy rather than a per-submenu one;
+   * `menu-positioning-inputs.spec.ts` guards the roots against drift.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
-    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+    this.#defaults.fallbackAxisSideDirection,
   );
 
   /**

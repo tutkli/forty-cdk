@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant menus in the surrounding injector
@@ -11,9 +11,10 @@ import { createDefaults } from 'forty-cdk/core';
  * `[forMenuSubTrigger]` opens its submenu after `subMenuOpenDelay`, and
  * leaving it (without travelling into the submenu through the pointer-grace
  * "safe triangle") closes it after `subMenuCloseDelay` — and the floating-ui
- * placement offsets (`sideOffset` / `collisionPadding`) of both `[forMenuSub]`
- * and the `[forMenu]` root, so they read them from a provider like
- * `[forDropdownMenu]` / `[forContextMenu]` do instead of hardcoding them.
+ * placement offsets and collision fallback (`sideOffset` / `collisionPadding` /
+ * `fallbackAxisSideDirection`) of both `[forMenuSub]` and the `[forMenu]` root,
+ * so they read them from a provider like `[forDropdownMenu]` /
+ * `[forContextMenu]` do instead of hardcoding them.
  * Click / Enter / Space / ArrowRight semantics are unaffected by these values.
  */
 export interface ForMenuDefaults {
@@ -50,6 +51,14 @@ export interface ForMenuDefaults {
    * further from the edge when `flip` / `shift` runs. Default `8`.
    */
   collisionPadding: number;
+  /**
+   * Direction `flip` falls back to on the perpendicular axis when both sides
+   * of the preferred axis overflow, for both `[forMenuSub]` and the
+   * `[forMenu]` root. `'none'` (default) keeps only the opposite same-axis
+   * placement; `'start'` / `'end'` let a submenu clipped on a narrow viewport
+   * drop to a vertical side. Only consulted when `avoidCollisions` is on.
+   */
+  fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
 }
 
 /**
@@ -63,6 +72,7 @@ export const FOR_MENU_FALLBACK_DEFAULTS: ForMenuDefaults = {
   subMenuPointerGraceDuration: 300,
   sideOffset: 0,
   collisionPadding: 8,
+  fallbackAxisSideDirection: 'none',
 };
 
 const { token, provideDefaults } = createDefaults<ForMenuDefaults>(

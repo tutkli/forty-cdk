@@ -134,10 +134,13 @@ export class ForMenubarTrigger {
    * the preferred axis overflow. `'none'` (default) keeps only the opposite
    * same-axis placement; `'start'` / `'end'` let the menu drop to a
    * perpendicular side on a narrow viewport. Only consulted when
-   * `avoidCollisions` is on.
+   * `avoidCollisions` is on. The default is read from
+   * `provideForMenubarDefaults` for the surrounding scope, since dropping to a
+   * perpendicular side is a design-system-wide viewport-degradation policy rather
+   * than a per-trigger one.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
-    MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+    this.#defaults.fallbackAxisSideDirection,
   );
 
   /**

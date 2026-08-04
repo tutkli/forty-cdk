@@ -156,6 +156,18 @@ A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in 
 
 `'start'` prefers the top side when it falls back, `'end'` prefers the bottom. The lever is a pure opt-in — the default `'none'` reproduces today's beside-parent behaviour exactly. `[forDropdownMenu]` and `[forContextMenu]` expose the same input for their own content surface.
 
+Whether a clipped surface may drop to a perpendicular side is usually an app-wide policy rather than a per-submenu decision, so the input's default is seeded from `provideForMenuDefaults` — declare it once and every `[forMenuSub]` and `[forMenu]` root in the scope picks it up with no template binding:
+
+```ts
+import { provideForMenuDefaults } from 'forty-cdk/menu';
+
+bootstrapApplication(App, {
+  providers: [provideForMenuDefaults({ fallbackAxisSideDirection: 'end' })],
+});
+```
+
+A per-instance `[fallbackAxisSideDirection]` still wins over the scope default, exactly as `sideOffset` behaves. `provideForDropdownMenuDefaults` / `provideForContextMenuDefaults` / `provideForMenubarDefaults` carry the same key for their own roots.
+
 ## Shared openers (`[forMenu]`)
 
 `[forDropdownMenu]` and `[forContextMenu]` each provide their own menu context, and Angular resolves that context at the template's **declaration site** — so a single `[forMenuContent]` block can only ever see one of them. A table row that needs the same actions from a kebab button _and_ from a right-click over the whole row therefore had to duplicate every item and keep the two copies in sync.
@@ -232,7 +244,7 @@ Selector `[forMenu]`, `exportAs: 'forMenu'`.
 | `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`; overridable per opener      |
 | `alignOffset`               | `number`                            | `0`              | Overridable per opener via `[menuPositioning]`             |
 | `avoidCollisions`           | `boolean`                           | `true`           |                                                            |
-| `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         |                                                            |
+| `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         | From `provideForMenuDefaults`                              |
 | `collisionPadding`          | `number`                            | `8`              | From `provideForMenuDefaults`                              |
 | `arrowPadding`              | `number`                            | `0`              |                                                            |
 | `sticky`                    | `'partial' \| 'always' \| false`    | `'partial'`      |                                                            |

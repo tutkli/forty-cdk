@@ -12,6 +12,7 @@ import {
   type ListNavigationAction,
   type ForMenuCloseReason,
   type ForMenuContext,
+  type FloatingFallbackAxisSideDirection,
   type ForMenuItemHandle,
   type MenuSiblingNavigator,
   type VetoableEvent,
@@ -27,6 +28,7 @@ import type { ForMenubarTriggerHandle } from './menubar-context';
 export interface MenubarPositioningSeeds {
   readonly sideOffset: number;
   readonly collisionPadding: number;
+  readonly fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
 }
 
 /**
@@ -148,7 +150,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly fallbackAxisSideDirection = computed(
     () =>
       this.#host.activeTrigger()?.fallbackAxisSideDirection() ??
-      MENU_POSITIONING_DEFAULTS.fallbackAxisSideDirection,
+      this.#positioning.fallbackAxisSideDirection,
   );
   readonly collisionPadding = computed(
     () => this.#host.activeTrigger()?.collisionPadding() ?? this.#positioning.collisionPadding,
