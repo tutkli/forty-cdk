@@ -1,19 +1,28 @@
 /**
  * Shared contract suite for primitives that participate in the
- * dismissible-layer behaviour. Adopted by: Dialog, Drawer, Popover,
- * Select, ContextMenu, TimePicker, DatePicker, MenuSub, DropdownMenu,
- * Menubar, and — through the Escape-only subset described by
- * {@link DismissibleLayerContractOptions} — HoverCard.
+ * dismissible-layer behaviour.
  *
- * Combobox is intentionally excluded: its Escape is handled by the
- * editable input's own `keydown` listener (focus stays in the input per
- * the ARIA combobox pattern), not the shared document-level dismissible
- * layer, so the contract's `document`-dispatched Escape never reaches it.
- * Its pointer-down-outside / focus-outside paths do route through the
- * layer and are covered by combobox's own spec.
+ * **The roster is not maintained here.** The family is "this piece pushes a
+ * `DismissibleLayer`", which is derivable from source — the layer is injected
+ * by exactly two core shells, `injectOverlayShell` and `injectModalShell` — so
+ * `src/lib/dismissible-layer-adopters.spec.ts` derives every call site and
+ * fails on one no adopter claims ([#1655](https://github.com/tutkli/forty-cdk/issues/1655)).
+ * Read that file's registry for who adopts what. A hand-read header is how the
+ * form-control roster silently lost four primitives, and this one had drifted
+ * the same way: it claimed Combobox's Escape never reaches the layer, which
+ * stopped being true when `[forComboboxContent]` wired the layer's Escape as a
+ * fallback channel for presses that land on the surface rather than the input.
  *
- * The contract owns the assertions that are identical across every
- * dismissible layer:
+ * **This contract owns per-primitive dismissal only.** Stack routing —
+ * topmost-only dispatch, declared-nesting depth order, Escape-only layer
+ * transparency, `stopPropagation`'s one-layer-per-Escape — is a property of
+ * `DismissibleLayerStack`, asserted once over synthetic layers in
+ * `core/src/dismissible-layer/dismissible-layer.spec.ts` and over two real
+ * layers with real focus in the composition E2E routes. Adding it here would
+ * re-run one stack's behaviour once per adopter and still could not state the
+ * interesting cases, which need two layers.
+ *
+ * The assertions that are identical across every dismissible layer:
  *
  *   - Escape closes the layer when `dismissible` is true.
  *   - Escape does NOT close the layer when `dismissible` is false.
@@ -94,6 +103,14 @@ export interface DismissibleLayerContractOptions {
    * than on an outside press).
    */
   outsideInteraction?: boolean;
+  /**
+   * A label for the layer this call covers, appended to the `describe` title.
+   * Needed only when one spec adopts the contract more than once — Select /
+   * DatePicker / TimePicker each push their layer through a different core
+   * shell per `[modal]` mode, so two identically-named `describe` blocks read
+   * as a duplicate.
+   */
+  label?: string;
 }
 
 // Outside nodes the contract appends to `document.body` to drive
@@ -157,8 +174,11 @@ export function assertDismissibleLayerContract(
 ): void {
   const dismissibleFlag = options.dismissibleFlag ?? true;
   const outsideInteraction = options.outsideInteraction ?? true;
+  const title = options.label
+    ? `dismissible-layer contract (${options.label})`
+    : 'dismissible-layer contract';
 
-  describe('dismissible-layer contract', () => {
+  describe(title, () => {
     // The contract owns its own cleanup: any outside node a test appended to
     // `document.body` is scrubbed here, so a throwing assertion can never leave
     // a stray <button> attached for the next spec.

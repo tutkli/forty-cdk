@@ -22,6 +22,7 @@ import {
   assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
+  type DismissibleLayerMountOptions,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
@@ -116,6 +117,7 @@ class DiacriticsSelectHost {
     <div
       forSelect
       [(open)]="open"
+      [modal]="modal()"
       [dismissible]="dismissible()"
       (escapeKeyDown)="onEscape($event)"
       (pointerDownOutside)="onPointer($event)"
@@ -133,6 +135,7 @@ class DiacriticsSelectHost {
 })
 class SelectDismissContractHost {
   readonly open = signal(false);
+  readonly modal = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
   pointerVeto = false;
@@ -1442,9 +1445,16 @@ describe('ForSelect', () => {
     });
   });
 
-  assertDismissibleLayerContract({
-    mount: async (options = {}) => {
+  // `[modal]` picks the core shell the surface pushes its layer through, so the
+  // two modes are two layers: the anchored one lets `[forSelect]` own the
+  // emit-and-close decision on Escape, while the modal one has the shell decide
+  // it and the root only forward the vetoable event. One call per shell, which
+  // is the pairing the adoption guard derives ([#1655](https://github.com/tutkli/forty-cdk/issues/1655)).
+  const mountDismissContract =
+    (modal: boolean) =>
+    async (options: DismissibleLayerMountOptions = {}) => {
       const r = renderHost(SelectDismissContractHost);
+      r.instance.modal.set(modal);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;
@@ -1458,8 +1468,10 @@ describe('ForSelect', () => {
         focusOutsideCount: () => r.instance.fCount,
         interactOutsideCount: () => r.instance.iCount,
       };
-    },
-  });
+    };
+
+  assertDismissibleLayerContract({ mount: mountDismissContract(false) }, { label: 'anchored' });
+  assertDismissibleLayerContract({ mount: mountDismissContract(true) }, { label: 'modal' });
 
   assertFormControlContract(
     () => {
@@ -1537,47 +1549,6 @@ describe('ForSelect', () => {
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.parentElement).toBe(document.body);
-    });
-
-    it('Escape closes the listbox in modal mode (dismiss via modal-shell)', async () => {
-      const r = renderHost(SelectHost);
-      r.instance.modal.set(true);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-      expect(r.instance.open()).toBe(false);
-    });
-
-    it('outside pointer-down closes the listbox in modal mode', async () => {
-      const r = renderHost(SelectHost);
-      r.instance.modal.set(true);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      const outside = document.createElement('button');
-      document.body.appendChild(outside);
-      const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
-      Object.defineProperty(event, 'target', { value: outside, configurable: true });
-      Object.defineProperty(event, 'composedPath', { value: () => [outside], configurable: true });
-      document.dispatchEvent(event);
-      await flush(r.fixture);
-
-      expect(r.instance.open()).toBe(false);
-      outside.remove();
-    });
-
-    it('dismissible=false keeps the listbox open on Escape in modal mode', async () => {
-      const r = renderHost(SelectHost);
-      r.instance.modal.set(true);
-      r.instance.dismissible.set(false);
-      r.instance.open.set(true);
-      await flush(r.fixture);
-
-      pressKey(document, 'Escape');
-      await flush(r.fixture);
-      expect(r.instance.open()).toBe(true);
     });
 
     it('flips touched on a modal-mode dismiss', async () => {

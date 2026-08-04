@@ -19,6 +19,7 @@ import {
 } from '../../src/test-utils';
 import {
   assertDataStateContract,
+  assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
   type FormControlMountResult,
@@ -148,6 +149,53 @@ function getOption(testId: string): HTMLElement {
 
 function getInput(): HTMLInputElement {
   return document.querySelector<HTMLInputElement>('[forComboboxInput]')!;
+}
+
+@Component({
+  imports: BASE_IMPORTS,
+  template: `
+    <div
+      forCombobox
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      ariaLabel="t"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+    >
+      <input forComboboxInput />
+      @if (open()) {
+        <div forComboboxContent>
+          <div forComboboxOption value="a" label="A">A</div>
+        </div>
+      }
+    </div>
+  `,
+})
+class DismissibleContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
+  }
 }
 
 /** Simulates the user typing into an input — sets value, caret, fires `input`. */
@@ -735,6 +783,36 @@ describe('ForCombobox', () => {
     },
     { haspopup: 'listbox' },
   );
+
+  // Combobox was excluded from this contract on the grounds that its Escape is
+  // the editable input's own `keydown` listener, so a `document`-dispatched
+  // Escape never reached it. That stopped being true: `[forComboboxContent]`
+  // hands the layer an `emitEscapeKeyDown` fallback for presses that land on
+  // the surface rather than the input, and `ForCombobox.emitEscapeKeyDown`
+  // owns the same emit-then-close decision on both channels — so the contract
+  // holds verbatim, and the exclusion was covering a reachable layer
+  // ([#1655](https://github.com/tutkli/forty-cdk/issues/1655)). The
+  // input-dispatched cases stay in `describe('Escape')`: focus staying in the
+  // input, and returning to it from the focused surface, are APG combobox
+  // claims the contract does not make.
+  assertDismissibleLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(DismissibleContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
 
   describe('touched contract', () => {
     @Component({

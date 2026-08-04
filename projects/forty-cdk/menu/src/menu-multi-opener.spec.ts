@@ -3,7 +3,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { ForContextMenuTrigger } from 'forty-cdk/context-menu';
-import type { MenuOpenerPositioning } from 'forty-cdk/core';
+import type { MenuOpenerPositioning, VetoableNativeEvent } from 'forty-cdk/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
 import {
@@ -13,7 +13,10 @@ import {
   pressKey,
   renderHost,
 } from '../../src/test-utils';
-import { assertDataStateContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertDismissibleLayerContract,
+} from '../../src/test-utils/contract';
 import { ForMenu } from './menu';
 import { ForMenuContent } from './menu-content';
 import { ForMenuItem } from './menu-item';
@@ -65,6 +68,55 @@ class VetoingSharedMenuHost {
     if (this.veto()) {
       event.preventDefault();
     }
+  }
+}
+
+@Component({
+  imports: [ForMenu, ForDropdownMenuTrigger, ForContextMenuTrigger, ForMenuContent, ForMenuItem],
+  template: `
+    <div
+      forMenu
+      #row="forMenu"
+      [(open)]="open"
+      [dismissible]="dismissible()"
+      (escapeKeyDown)="onEscape($event)"
+      (pointerDownOutside)="onPointer($event)"
+      (focusOutside)="onFocus($event)"
+      (interactOutside)="onInteract($event)"
+    >
+      <div data-testid="region" [forContextMenuTrigger]="row">Row</div>
+      <button data-testid="kebab" [forDropdownMenuTrigger]="row">⋮</button>
+
+      @if (open()) {
+        <div forMenuContent>
+          <button id="edit" forMenuItem>Edit</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class DismissibleContractHost {
+  readonly open = signal(false);
+  readonly dismissible = signal(true);
+  escapeVeto = false;
+  pointerVeto = false;
+  eCount = 0;
+  pCount = 0;
+  fCount = 0;
+  iCount = 0;
+  onEscape(event: VetoableNativeEvent<KeyboardEvent>): void {
+    this.eCount += 1;
+    if (this.escapeVeto) event.preventDefault();
+  }
+  onPointer(event: VetoableNativeEvent<PointerEvent>): void {
+    this.pCount += 1;
+    if (this.pointerVeto) event.preventDefault();
+  }
+  onFocus(_event: VetoableNativeEvent<FocusEvent>): void {
+    this.fCount += 1;
+  }
+  onInteract(_event: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.iCount += 1;
   }
 }
 
@@ -648,19 +700,38 @@ describe('ForMenu (multiple openers, one content block)', () => {
     });
   });
 
-  describe('dismiss plumbing from either opener', () => {
-    it('emits (escapeKeyDown) and closes for a button-opened instance', async () => {
-      const r = renderHost(VetoingSharedMenuHost);
-
+  // `[forMenu]` is a documented public root, not an internal base, so its own
+  // dismissal is asserted here rather than left to the presets': the layer is
+  // the same `[forMenuContent]` one DropdownMenu / Menubar / ContextMenu /
+  // MenuSub adopt over, but a per-entry-point reading of adoption could not see
+  // this root — `menu-sub.spec.ts` made the `menu` entry point read as covered
+  // while nothing asserted `[forMenu]`'s Escape or outside-press at all
+  // ([#1655](https://github.com/tutkli/forty-cdk/issues/1655), one contract
+  // past [#1645](https://github.com/tutkli/forty-cdk/issues/1645)).
+  //
+  // The mount opens through the button opener, so the contract states the
+  // per-opener plumbing case below it replaced. Each opener's own variants stay
+  // in that block: they are multi-opener claims, not dismissal-vocabulary ones.
+  assertDismissibleLayerContract({
+    mount: async (options = {}) => {
+      const r = renderHost(DismissibleContractHost);
+      r.instance.dismissible.set(options.dismissible ?? true);
+      r.instance.escapeVeto = options.escapeVeto ?? false;
+      r.instance.pointerVeto = options.pointerVeto ?? false;
       r.query<HTMLButtonElement>('[data-testid="kebab"]')!.click();
-      await r.flush();
-      pressKey(document, 'Escape');
-      await r.flush();
+      await flush(r.fixture);
+      return {
+        flush: () => flush(r.fixture),
+        isOpen: () => r.instance.open(),
+        escapeCount: () => r.instance.eCount,
+        pointerOutsideCount: () => r.instance.pCount,
+        focusOutsideCount: () => r.instance.fCount,
+        interactOutsideCount: () => r.instance.iCount,
+      };
+    },
+  });
 
-      expect(r.instance.escapeCount).toBe(1);
-      expect(r.instance.open()).toBe(false);
-    });
-
+  describe('dismiss plumbing from either opener', () => {
     it('honours an Escape veto for a right-click-opened instance', async () => {
       const r = renderHost(VetoingSharedMenuHost);
       r.instance.veto.set(true);

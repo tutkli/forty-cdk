@@ -16,6 +16,7 @@ import {
   assertDismissibleLayerContract,
   assertFormControlContract,
   assertOverlayTriggerAriaContract,
+  type DismissibleLayerMountOptions,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import {
@@ -168,6 +169,7 @@ class DatePickerFormControlHost {
     <div
       forDatePicker
       [(open)]="open"
+      [modal]="modal()"
       [dismissible]="dismissible()"
       (escapeKeyDown)="onEscape($event)"
       (pointerDownOutside)="onPointer($event)"
@@ -205,6 +207,7 @@ class DatePickerFormControlHost {
 })
 class DatePickerDismissContractHost {
   readonly open = signal(false);
+  readonly modal = signal(false);
   readonly dismissible = signal(true);
   escapeVeto = false;
   pointerVeto = false;
@@ -267,9 +270,16 @@ describe('ForDatePicker', () => {
     },
   });
 
-  assertDismissibleLayerContract({
-    mount: async (options = {}) => {
+  // Two shells, two layers: `[modal]` swaps `injectOverlayShell` for
+  // `injectModalShell`, and the modal one has the shell decide the close that
+  // the root decides on the anchored path. The `describe('modal')` block below
+  // asserted `aria-modal` and nothing about dismissal
+  // ([#1655](https://github.com/tutkli/forty-cdk/issues/1655)).
+  const mountDismissContract =
+    (modal: boolean) =>
+    async (options: DismissibleLayerMountOptions = {}) => {
       const r = renderHost(DatePickerDismissContractHost);
+      r.instance.modal.set(modal);
       r.instance.dismissible.set(options.dismissible ?? true);
       r.instance.escapeVeto = options.escapeVeto ?? false;
       r.instance.pointerVeto = options.pointerVeto ?? false;
@@ -283,8 +293,10 @@ describe('ForDatePicker', () => {
         focusOutsideCount: () => r.instance.fCount,
         interactOutsideCount: () => r.instance.iCount,
       };
-    },
-  });
+    };
+
+  assertDismissibleLayerContract({ mount: mountDismissContract(false) }, { label: 'anchored' });
+  assertDismissibleLayerContract({ mount: mountDismissContract(true) }, { label: 'modal' });
 
   assertFormControlContract(
     () => {
