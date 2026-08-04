@@ -34,9 +34,21 @@ Optional — install only if you use the matching entry point / primitives:
 
 `@floating-ui/dom` is a regular dependency, installed automatically with the package. Positioned overlays (`Tooltip`, `Popover`, `Menu`, `Combobox`, `Select`, etc.) import it statically from the main entry point, so every consumer's build must be able to resolve it — but it is internal-only (no floating-ui value crosses the public API) and tree-shakes out of your bundle when you don't use any positioned primitive.
 
+## Entry points
+
+**The package name itself exports nothing.** `import { … } from 'forty-cdk'` resolves to no symbol, and your editor will not auto-import anything under the bare package name — by design, so that every symbol has exactly one import path. There are three specifiers you do import from:
+
+| Specifier                          | What it exports                                                                                                                                                                                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `forty-cdk/<primitive>`            | The primitive's directives, components, context tokens and defaults provider — `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on for every entry in the tables below.                                         |
+| [`forty-cdk/shared`](shared)       | The cross-primitive contract types a primitive's public API references — `WritingDirection`, `VetoableEvent`, `DateAdapter`, `FloatingSide`, … — declared once and published once. Six of them ship from their own primitive instead; see its README. |
+| `forty-cdk/internationalized-date` | The `@internationalized/date` adapters, kept apart so that optional peer stays genuinely optional.                                                                                                                                                    |
+
+`forty-cdk/core` resolves too, but it is **not** public: it holds the engines and DI singletons the library refactors freely, and it exists so every primitive resolves that shared implementation to one compiled module. If a symbol you need is not exported by the three specifiers above, it is internal by design — [open an issue](https://github.com/tutkli/forty-cdk/issues) rather than importing from `core`.
+
 ## Primitives
 
-Every primitive ships as its own **secondary entry point** — import `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on — backed by the shared `forty-cdk/core` entry point. Each lives in its own folder under `projects/forty-cdk/` with its own `README.md` documenting its anatomy, API, keyboard interaction and styling hooks. The `@internationalized/date` adapters live in a dedicated `forty-cdk/internationalized-date` entry point so that optional peer stays truly optional. The cross-primitive contract types a primitive's public API references — `WritingDirection`, `VetoableEvent`, `DateAdapter`, `FloatingSide`, … — are published by [`forty-cdk/shared`](shared); the main `forty-cdk` barrel is **intentionally empty** (it exports no symbols), so always import primitives from the specific `forty-cdk/<primitive>` entry point. Standalone directives plus `"sideEffects": false` mean your bundle only ever includes the primitives you import.
+Every primitive ships as its own secondary entry point, and each lives in its own folder under `projects/forty-cdk/` with its own `README.md` documenting its anatomy, API, keyboard interaction and styling hooks. Standalone directives plus `"sideEffects": false` mean your bundle only ever includes the primitives you import.
 
 The tables below group the primitives by purpose. The link on each name opens that primitive's README — the canonical reference for which HTML element each directive belongs on, its inputs / outputs, `data-*` attributes and keyboard map.
 
