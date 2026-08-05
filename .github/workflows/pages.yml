@@ -1,11 +1,12 @@
 name: Deploy docs to GitHub Pages
 
 on:
+  # Kept alongside the push trigger so a deploy can still be forced without a
+  # commit — re-running a failed deploy, or publishing after a Pages settings
+  # change.
   workflow_dispatch:
-  # Automatic deploy on push to main is intentionally disabled for now — the
-  # first deploy is run manually from the Actions tab. Uncomment to enable.
-  # push:
-  #   branches: [main]
+  push:
+    branches: [main]
 
 permissions:
   contents: read
