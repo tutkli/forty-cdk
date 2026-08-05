@@ -292,7 +292,7 @@ export class ForVirtualReorder {
   }
 
   #draggableHost(target: EventTarget | null): HTMLElement | null {
-    if (!(target instanceof HTMLElement)) {
+    if (!(target instanceof Element)) {
       return null;
     }
     return target.closest<HTMLElement>('[forDraggable]');

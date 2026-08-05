@@ -615,3 +615,53 @@ class InteractiveHost {
     this.buttonClicks.update((n) => n + 1);
   }
 }
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        <svg viewBox="0 0 8 8" aria-hidden="true">
+          <rect [attr.data-testid]="'icon-' + row.id" width="8" height="8"></rect>
+        </svg>
+        {{ row.label }}
+      </div>
+    </div>
+  `,
+})
+class SvgGrabTargetHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+}
+
+describe('ForVirtualReorder — a pointer grab target is an Element, not an HTMLElement (#1677)', () => {
+  it('pins the pressed row when the press lands on an SVG icon inside it', async () => {
+    const { fixture, viewport, query, flush: f } = await render(SvgGrabTargetHost);
+    const icon = (fixture.nativeElement as HTMLElement).querySelector<SVGElement>(
+      '[data-testid="icon-2"]',
+    )!;
+    expect(icon instanceof HTMLElement).toBe(false);
+
+    icon.dispatchEvent(pointer('pointerdown', 0, 100));
+
+    viewport.scrollTo({ top: 20000 });
+    await f();
+    await f();
+
+    expect(query('[data-testid="row-3"]')).toBeNull();
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-index')).toBe('2');
+
+    document.dispatchEvent(pointer('pointerup', 0, 100));
+  });
+});

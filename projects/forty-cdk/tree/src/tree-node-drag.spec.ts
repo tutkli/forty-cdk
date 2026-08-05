@@ -843,3 +843,111 @@ describe('ForTreeNodeDrag — pointer item resolution (item 10-c)', () => {
     expect(event!.node).toBe('music');
   });
 });
+
+@Component({
+  imports: [ForTree, ForTreeNodeDrag, ForTreeItem, ForTreeItemLabel, ForTreeNodeDragHandle],
+  template: `
+    <ul forTree forTreeNodeDrag (nodeDrop)="dropped.set($event)" aria-label="Files">
+      <li forTreeItem value="docs" data-testid="docs">
+        <div forTreeItemLabel data-testid="docs-label">
+          <svg viewBox="0 0 8 8" aria-hidden="true">
+            <rect data-testid="docs-icon" width="8" height="8"></rect>
+          </svg>
+          Docs
+        </div>
+      </li>
+      <li forTreeItem value="music" data-testid="music">
+        <span forTreeNodeDragHandle>
+          <svg viewBox="0 0 8 8" aria-hidden="true">
+            <rect data-testid="music-handle-icon" width="8" height="8"></rect>
+          </svg>
+        </span>
+        <div forTreeItemLabel>Music</div>
+      </li>
+      <li forTreeItem value="notes" data-testid="notes">
+        <span forTreeNodeDragHandle>⠿</span>
+        <div forTreeItemLabel>
+          <svg viewBox="0 0 8 8" aria-hidden="true">
+            <rect data-testid="notes-icon" width="8" height="8"></rect>
+          </svg>
+          Notes
+        </div>
+      </li>
+    </ul>
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+class SvgGrabTargetHost {
+  readonly dropped = signal<ForTreeDragDropEvent | null>(null);
+}
+
+describe('ForTreeNodeDrag — a pointer grab target is an Element, not an HTMLElement (#1677)', () => {
+  it('lifts the node when the press lands on an SVG icon inside [forTreeItemLabel]', async () => {
+    const { instance, query, flush: f } = renderHost(SvgGrabTargetHost);
+    await f();
+
+    const icon = query<SVGElement>('[data-testid="docs-icon"]')!;
+    expect(icon instanceof HTMLElement).toBe(false);
+
+    firePointer(icon, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()!.node).toBe('docs');
+  });
+
+  it('lifts the node when the press lands on an SVG icon inside [forTreeNodeDragHandle]', async () => {
+    const { instance, query, flush: f } = renderHost(SvgGrabTargetHost);
+    await f();
+
+    const icon = query<SVGElement>('[data-testid="music-handle-icon"]')!;
+
+    firePointer(icon, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()!.node).toBe('music');
+  });
+
+  it("still declines an SVG press that misses the item's registered handle", async () => {
+    const { instance, query, flush: f } = renderHost(SvgGrabTargetHost);
+    await f();
+
+    const icon = query<SVGElement>('[data-testid="notes-icon"]')!;
+
+    firePointer(icon, 'pointerdown', 100, 100);
+    firePointer(document, 'pointermove', 100, 120);
+    await f();
+    firePointer(document, 'pointerup', 100, 120);
+    await f();
+
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('ignores a keyboard lift whose target is not an element', async () => {
+    const { instance, query, flush: f } = renderHost(SvgGrabTargetHost);
+    await f();
+
+    const label = query<HTMLElement>('[data-testid="docs-label"]')!;
+    const text = Array.from(label.childNodes).find(
+      (node): node is Text => node instanceof Text && node.textContent!.includes('Docs'),
+    )!;
+
+    const event = new KeyboardEvent('keydown', {
+      key: ' ',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    text.dispatchEvent(event);
+    await f();
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(query<HTMLElement>('[forTreeNodeDrag]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.dropped()).toBeNull();
+  });
+});

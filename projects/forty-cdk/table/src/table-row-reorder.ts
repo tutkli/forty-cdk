@@ -443,7 +443,7 @@ export class ForTableRowReorder {
 
   #pinFromPointer(event: PointerEvent): boolean {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) {
+    if (!(target instanceof Element)) {
       return false;
     }
     const rowHost = target.closest<HTMLElement>('[forTableRow]');
