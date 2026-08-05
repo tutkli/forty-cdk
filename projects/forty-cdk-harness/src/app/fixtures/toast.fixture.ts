@@ -42,6 +42,8 @@ import { ForToastManager, type ForToastSwipeDirection, ForToastViewport } from '
  *    just want "auto-dismiss on" without picking a specific number.
  *  - `?swipe=right` — opt-in swipe direction wired through both the viewport
  *    and the per-toast config. `?swipe=down` for vertical drag, etc.
+ *  - `?stackShift=N` — glide duration (ms) for the rows a mutation of the
+ *    stack displaces. Default `0` (unset), which keeps the synchronous reflow.
  */
 @Component({
   selector: 'app-toast-fixture',
@@ -149,6 +151,7 @@ import { ForToastManager, type ForToastSwipeDirection, ForToastViewport } from '
       [attr.data-side]="side"
       [swipeDirection]="swipeDirection"
       [animateLeave]="viewportAnimateLeave"
+      [stackShift]="stackShift"
     >
     </for-toast-viewport>
 
@@ -177,6 +180,10 @@ export class ToastFixture {
 
   protected readonly viewportAnimateLeave: string = parseAnimateClass(
     this.#route.snapshot.queryParamMap.get('vpAnimateLeave'),
+  );
+
+  protected readonly stackShift: number = parseStackShift(
+    this.#route.snapshot.queryParamMap.get('stackShift'),
   );
 
   readonly #enqueuedCount = signal(0);
@@ -284,6 +291,11 @@ function parseSwipe(raw: string | null): ForToastSwipeDirection {
     default:
       return null;
   }
+}
+
+function parseStackShift(raw: string | null): number {
+  const n = raw === null ? 0 : Number.parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 function parseAnimateClass(raw: string | null): string {

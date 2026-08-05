@@ -1,5 +1,48 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { dragFrom, el, gotoFixture } from './_helpers';
+
+/**
+ * Samples a row's on-screen `top` across animation frames, so a mutation of the
+ * stack can be read as a trajectory rather than as a before / after pair. Start
+ * it *before* triggering the mutation and await it afterwards — the whole point
+ * is the frames in between, which no `boundingBox()` assertion can see.
+ */
+function sampleTop(page: Page, testid: string, budgetMs: number): Promise<number[]> {
+  return page.evaluate(
+    ({ id, budget }) =>
+      new Promise<number[]>((resolve) => {
+        const row = document.querySelector(`[data-testid="${id}"]`);
+        if (!row) {
+          resolve([]);
+          return;
+        }
+        const tops: number[] = [];
+        const started = performance.now();
+        const tick = (): void => {
+          tops.push(Math.round(row.getBoundingClientRect().top));
+          if (performance.now() - started >= budget) {
+            resolve(tops);
+          } else {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      }),
+    { id: testid, budget: budgetMs },
+  );
+}
+
+/** Samples strictly between the trajectory's first and last position. */
+function intermediates(tops: number[]): number[] {
+  const first = tops[0] ?? 0;
+  const last = tops[tops.length - 1] ?? 0;
+  return tops.filter((top) => (top - first) * (top - last) < 0);
+}
+
+/** Whether the trajectory ended somewhere other than where it started. */
+function moved(tops: number[]): boolean {
+  return tops.length > 1 && tops[0] !== tops[tops.length - 1];
+}
 
 /**
  * E2E coverage for `ForToast` paths that jsdom + fake timers cannot honestly
@@ -263,5 +306,57 @@ test.describe('Toast exit animation (#1024)', () => {
     await el(page, 'dismiss-all').click();
     await expect(el(page, 'toast-0')).toHaveCount(0);
     await expect(el(page, 'toast-count')).toHaveText('0');
+  });
+});
+
+/**
+ * A bottom-anchored stack is the case the viewport rect carries and `offsetTop`
+ * alone cannot: appending a toast grows the box upwards, so every surviving row
+ * moves on screen while its offset inside the viewport never changes. jsdom
+ * lays none of this out, so the trajectory is only observable here.
+ */
+test.describe('Toast stack shift (#1680)', () => {
+  test('[stackShift] glides a surviving row across frames when a toast is added', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { side: 'bottom-right', stackShift: '600' });
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-0')).toBeVisible();
+
+    const trajectory = sampleTop(page, 'toast-0', 700);
+    await el(page, 'enqueue').click();
+    const tops = await trajectory;
+
+    expect(moved(tops)).toBe(true);
+    expect(intermediates(tops).length).toBeGreaterThan(0);
+  });
+
+  test('[stackShift] glides a surviving row across frames when the toast pinned to the anchored edge is dismissed', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { side: 'bottom-right', stackShift: '600' });
+    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-1')).toBeVisible();
+
+    const trajectory = sampleTop(page, 'toast-0', 700);
+    await el(page, 'toast-1').locator('[forToastClose]').click();
+    const tops = await trajectory;
+
+    expect(moved(tops)).toBe(true);
+    expect(intermediates(tops).length).toBeGreaterThan(0);
+  });
+
+  test('the same mutation lands in a single step with [stackShift] unset', async ({ page }) => {
+    await gotoFixture(page, 'toast', { side: 'bottom-right' });
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-0')).toBeVisible();
+
+    const trajectory = sampleTop(page, 'toast-0', 700);
+    await el(page, 'enqueue').click();
+    const tops = await trajectory;
+
+    expect(moved(tops)).toBe(true);
+    expect(intermediates(tops)).toEqual([]);
   });
 });

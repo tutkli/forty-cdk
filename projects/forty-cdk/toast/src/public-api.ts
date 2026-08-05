@@ -11,6 +11,7 @@ export {
   type ForToastDefaults,
 } from './toast-defaults';
 export { ForToastRef } from './toast-ref';
+export { type ForToastStackShift } from './toast-stack-shift';
 export {
   DEFAULT_TOAST_REGION,
   FOR_TOAST_CONTEXT,

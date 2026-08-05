@@ -20,4 +20,8 @@ export { installObserverPolyfills } from './observers';
 export { pointerDownOn, focusInOn } from './outside-events';
 export { TestStackedLayer } from './stacked-layer';
 export { pointerEvent } from './pointer';
-export { withReducedMotion } from './reduced-motion';
+export {
+  type FlippableReducedMotion,
+  withFlippableReducedMotion,
+  withReducedMotion,
+} from './reduced-motion';

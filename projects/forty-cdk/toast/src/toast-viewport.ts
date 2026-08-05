@@ -3,17 +3,19 @@ import {
   Component,
   computed,
   DestroyRef,
+  DOCUMENT,
   effect,
   ElementRef,
   inject,
   input,
   isDevMode,
   numberAttribute,
+  PLATFORM_ID,
   type Signal,
 } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
+import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 
-import { hostAriaLabel, resolveConfigClass } from 'forty-cdk/core';
+import { hostAriaLabel, injectPrefersReducedMotion, resolveConfigClass } from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastCloseReason,
@@ -22,6 +24,11 @@ import {
 } from './toast-context';
 import { FOR_TOAST_DEFAULTS } from './toast-defaults';
 import { ForToastManager, type ForToastViewportRegistration } from './toast-manager';
+import {
+  createToastStackShifter,
+  type ForToastStackShift,
+  resolveStackShift,
+} from './toast-stack-shift';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
@@ -51,6 +58,13 @@ import { ForToastTitle } from './toast-title';
  * mounted until its exit animation settles. Supply the class per-toast with
  * `show({ animateLeave })` or set a viewport-wide default with `[animateLeave]`
  * (per-toast wins); `[animateEnter]` mirrors it for class-applied entrances.
+ *
+ * Stack shift: those two hooks cover the row that mounts or unmounts, never its
+ * siblings — nothing about them changed, so CSS has no property to transition
+ * and they snap to their new spot in a single frame. Set `[stackShift]` to glide
+ * them instead (FLIP, driven from `translate` so your own `transform` — the
+ * swipe recipe, an enter / leave keyframe — still composes). Unset, the reflow
+ * stays synchronous.
  *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`
@@ -235,7 +249,30 @@ export class ForToastViewport {
    */
   readonly animateLeave = input<string>('');
 
+  /**
+   * Motion applied to the toasts a mutation of the stack pushes to a new
+   * position — the siblings of the row that mounted or unmounted, which
+   * `animateEnter` / `animateLeave` cannot reach. The viewport measures the new
+   * layout, offsets each moved row back to where it was and animates it to zero
+   * (FLIP), driving `translate` so your own `transform` — the swipe recipe's
+   * `translate3d(var(--for-toast-swipe-movement-x), …)`, an enter / leave
+   * keyframe — composes with the glide instead of being suppressed by it.
+   *
+   * `null` (the default) keeps today's synchronous reflow, and falls back to
+   * the scope's `provideForToastDefaults({ stackShift })` value. A bare number
+   * is shorthand for `{ duration }` (easing `'linear'`), and `0` opts a single
+   * viewport out of a scope default. Fully skipped under
+   * `prefers-reduced-motion: reduce`.
+   */
+  readonly stackShift = input<ForToastStackShift | number | null>(null);
+
   protected readonly defaultDuration = computed(() => this.#manager.defaultDuration());
+
+  readonly #reducedMotion = injectPrefersReducedMotion();
+
+  readonly #resolvedStackShift = computed(() =>
+    resolveStackShift(this.stackShift() ?? this.#defaults.stackShift),
+  );
 
   /**
    * Resolved `maxVisible` limit: the per-viewport `[maxVisible]` when set,
@@ -276,7 +313,18 @@ export class ForToastViewport {
     };
     this.#active = computed(() => this.#manager.isActiveViewport(registration));
     const unregister = this.#manager.registerViewport(registration);
-    inject(DestroyRef).onDestroy(unregister);
+    const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(unregister);
+
+    if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      const shifter = createToastStackShifter({
+        host: this.#host.nativeElement,
+        view: inject(DOCUMENT).defaultView,
+        shift: () => this.#resolvedStackShift(),
+        reducedMotion: () => this.#reducedMotion(),
+      });
+      destroyRef.onDestroy(() => shifter.destroy());
+    }
 
     if (isDevMode()) {
       // Warn once each time this viewport becomes dormant because another

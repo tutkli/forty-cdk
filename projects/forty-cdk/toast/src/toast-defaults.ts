@@ -1,6 +1,7 @@
 import { type Provider } from '@angular/core';
 
 import { createDefaults } from 'forty-cdk/core';
+import { type ForToastStackShift } from './toast-stack-shift';
 
 /**
  * Defaults inherited by toasts in the surrounding injector scope. Provide via
@@ -36,6 +37,13 @@ export interface ForToastDefaults {
    *   critical dialog rather than steal attention from it.
    */
   overModal: 'peer' | 'inert';
+  /**
+   * Default `null`. Motion applied to the toasts a mutation of the stack
+   * pushes to a new position, for viewports that don't set `[stackShift]`
+   * locally. `null` keeps the reflow synchronous; a bare number is shorthand
+   * for `{ duration }`.
+   */
+  stackShift: ForToastStackShift | number | null;
 }
 
 /**
@@ -49,6 +57,7 @@ export const FOR_TOAST_FALLBACK_DEFAULTS: ForToastDefaults = {
   maxVisible: Infinity,
   viewportAriaLabel: 'Notifications',
   overModal: 'peer',
+  stackShift: null,
 };
 
 const { token, provideDefaults } = createDefaults<ForToastDefaults>(
