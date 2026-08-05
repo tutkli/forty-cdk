@@ -204,9 +204,12 @@ export interface ForToastContext {
 /**
  * DI token for the toast's coordination surface, provided by `[forToast]`.
  *
- * Publicly typed as the read surface {@link ForToastContext};
- * {@link injectToastContext} reads the same token at its internal
- * {@link ToastContext} type so the pieces reach the registration protocol.
+ * Publicly typed as the read surface {@link ForToastContext}, which is the whole of what the
+ * token promises a consumer. The pieces read the same token at an internal type that adds
+ * the title / description / action registration protocol, so a wrapper re-providing it must
+ * alias it to the root: `{ provide: FOR_TOAST_CONTEXT, useExisting: MyToast }`, where
+ * `MyToast` extends `ForToast`. A value that merely satisfies the declared type resolves
+ * too, and is rejected in dev mode by the first piece to reach the protocol.
  */
 export const FOR_TOAST_CONTEXT = new InjectionToken<ForToastContext>('FOR_TOAST_CONTEXT');
 

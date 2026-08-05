@@ -52,10 +52,12 @@ export interface ForRadioGroupContext {
 /**
  * DI token for the group's coordination surface, provided by `[forRadioGroup]`.
  *
- * Publicly typed as the read surface {@link ForRadioGroupContext};
- * {@link injectRadioGroupContext} reads the same token at its internal
- * {@link RadioGroupContext} type so each `[forRadio]` reaches the registration
- * protocol.
+ * Publicly typed as the read surface {@link ForRadioGroupContext}, which is the whole of
+ * what the token promises a consumer. Each `[forRadio]` reads the same token at an internal
+ * type that adds the radio-registration protocol, so a wrapper re-providing it must alias it
+ * to the root: `{ provide: FOR_RADIO_GROUP_CONTEXT, useExisting: MyRadioGroup }`, where
+ * `MyRadioGroup` extends `ForRadioGroup`. A value that merely satisfies the declared type
+ * resolves too, and is rejected in dev mode by the first radio to reach the protocol.
  */
 export const FOR_RADIO_GROUP_CONTEXT = new InjectionToken<ForRadioGroupContext>(
   'FOR_RADIO_GROUP_CONTEXT',

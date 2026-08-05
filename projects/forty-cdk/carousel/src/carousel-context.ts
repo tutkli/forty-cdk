@@ -87,9 +87,13 @@ export interface ForCarouselContext {
 /**
  * DI token providing the carousel context to descendant pieces.
  *
- * Publicly typed as the read surface {@link ForCarouselContext};
- * {@link injectCarouselContext} reads the same token at its internal
- * {@link CarouselContext} type so the pieces reach the registration protocol.
+ * Publicly typed as the read surface {@link ForCarouselContext}, which is the whole of
+ * what the token promises a consumer. The pieces read the same token at an internal type
+ * that adds the slide / indicator / viewport registration protocol, so a wrapper
+ * re-providing it must alias it to the root: `{ provide: FOR_CAROUSEL_CONTEXT,
+ * useExisting: MyCarousel }`, where `MyCarousel` extends `ForCarousel`. A value that
+ * merely satisfies the declared type resolves too, and is rejected in dev mode by the
+ * first piece to reach the protocol.
  */
 export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_CAROUSEL_CONTEXT');
 

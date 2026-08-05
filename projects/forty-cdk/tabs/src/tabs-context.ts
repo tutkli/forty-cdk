@@ -83,9 +83,12 @@ export interface ForTabsContext {
 /**
  * DI token for the tabs widget's coordination surface, provided by `[forTabs]`.
  *
- * Publicly typed as the read surface {@link ForTabsContext};
- * {@link injectTabsContext} reads the same token at its internal
- * {@link TabsContext} type so the pieces reach the registration protocol.
+ * Publicly typed as the read surface {@link ForTabsContext}, which is the whole of what the
+ * token promises a consumer. The pieces read the same token at an internal type that adds
+ * the trigger / content registration protocol, so a wrapper re-providing it must alias it to
+ * the root: `{ provide: FOR_TABS_CONTEXT, useExisting: MyTabs }`, where `MyTabs` extends
+ * `ForTabs`. A value that merely satisfies the declared type resolves too, and is rejected
+ * in dev mode by the first piece to reach the protocol.
  */
 export const FOR_TABS_CONTEXT = new InjectionToken<ForTabsContext>('FOR_TABS_CONTEXT');
 
