@@ -10,11 +10,14 @@
  * becomes public again (exported from the barrel, or referenced from an exported
  * declaration's signature).
  *
- * There is no second **token** any more ([#1593]): a protocol that stays inside
- * one entry point is reached by reading the public token at the internal
- * interface's type inside `inject<Primitive>Context`, and the root's own members
- * are kept out of the emitted `.d.ts` by `private` / `protected` / a narrow
- * public type. So the names below are all types.
+ * No split root carries a second **context** token any more ([#1593]): a
+ * protocol that stays inside one entry point is reached by reading the public
+ * token at the internal interface's type inside `inject<Primitive>Context`, and
+ * the root's own members are kept out of the emitted `.d.ts` by `private` /
+ * `protected` / a narrow public type. So every name below is a type, except the
+ * table def-registry's own token and registry class — a registry a scaffold
+ * wrapper must be able to provide is a separate provider rather than a view of
+ * a root, which is the one shape a second token is still for (see below).
  *
  * The table's piece-registration protocol is not listed here: it lives in the
  * `forty-cdk/core` internal tier (the virtualization entry point registers

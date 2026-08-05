@@ -87,7 +87,7 @@ describe('ForTable subclass wrapper (#1399)', () => {
   });
 
   it('fails a hand-written provider list — the registry the root injects is unnameable (#1593)', () => {
-    expect(() => renderHost(HandWrittenProviderHost)).toThrow(/NG0201|TableRegistry/);
+    expect(() => renderHost(HandWrittenProviderHost)).toThrow(/NG0201.*TableRegistry/s);
   });
 
   it('registers the header row and data rows through the subclassed root', () => {
