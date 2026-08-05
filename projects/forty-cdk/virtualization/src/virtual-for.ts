@@ -36,6 +36,14 @@ export interface ForVirtualForContext<T> {
  *   <div *forVirtualFor="let row of rows(); let item = virtualItem">{{ row.label }}</div>
  * </div>
  * ```
+ *
+ * A row that stays in the window across a re-render **keeps its DOM node in place**: views
+ * that left the window are removed before the surviving ones are re-indexed, so a view whose
+ * position in the window changed never has to be detached and re-inserted to get there. That
+ * is what makes focus survive a window jump — `ViewContainerRef.move` removes the node from
+ * the document before re-inserting it, which blurs whatever inside it was focused, and the
+ * row pinned by `[forVirtualReorder]` is focused for the whole gesture
+ * ([#1666](https://github.com/tutkli/forty-cdk/issues/1666)).
  */
 @Directive({
   selector: '[forVirtualFor][forVirtualForOf]',
@@ -67,9 +75,19 @@ export class ForVirtualFor<T> {
     const count = this.#viewport.count();
     const horizontal = this.#viewport.orientation() === 'horizontal';
 
-    const seen = new Set<string | number>();
+    const seen = new Set(items.map((item) => item.key));
+    for (const [key, view] of this.#views) {
+      if (seen.has(key)) {
+        continue;
+      }
+      const index = this.#viewContainer.indexOf(view);
+      if (index >= 0) {
+        this.#viewContainer.remove(index);
+      }
+      this.#views.delete(key);
+    }
+
     items.forEach((item, position) => {
-      seen.add(item.key);
       const value = data[item.index]!;
       let view = this.#views.get(item.key);
       if (!view) {
@@ -91,17 +109,6 @@ export class ForVirtualFor<T> {
       }
       this.#applyLayout(view, item, count, horizontal);
     });
-
-    for (const [key, view] of this.#views) {
-      if (seen.has(key)) {
-        continue;
-      }
-      const index = this.#viewContainer.indexOf(view);
-      if (index >= 0) {
-        this.#viewContainer.remove(index);
-      }
-      this.#views.delete(key);
-    }
   }
 
   #applyLayout(

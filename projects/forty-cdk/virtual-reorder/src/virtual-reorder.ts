@@ -54,7 +54,9 @@ function injectViewport(): ForVirtualViewport {
  *   `data-index` attribute `*forVirtualFor` emits, so `itemReorder` carries dataset indices
  *   (not window-relative ones) and `moveItemInArray` over the full array moves the right item.
  * - **Lifted-row pinning** — the lifted row is pinned into the window via the viewport's
- *   `setReorderingIndex`, so auto-scroll can carry the window past it without recycling it.
+ *   `setReorderingIndex`, so auto-scroll and a dataset-wide keyboard jump can both carry the
+ *   window past it without recycling it, and it keeps its DOM node — and therefore its focus —
+ *   for the whole gesture ([#1666](https://github.com/tutkli/forty-cdk/issues/1666)).
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
  *   scrolling unmounted target rows into view, rather than being confined to the window.
  *
