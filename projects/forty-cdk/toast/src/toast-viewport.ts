@@ -62,8 +62,9 @@ import { ForToastTitle } from './toast-title';
  * Stack shift: those two hooks cover the row that mounts or unmounts, never its
  * siblings — nothing about them changed, so CSS has no property to transition
  * and they snap to their new spot in a single frame. Set `[stackShift]` to glide
- * them instead (FLIP, driven from `transform` so a `translate` keyframe of yours
- * still composes). Unset, the reflow stays synchronous.
+ * them instead (FLIP, driven from `translate` so your own `transform` — the
+ * swipe recipe, an enter / leave keyframe — still composes). Unset, the reflow
+ * stays synchronous.
  *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`
@@ -253,8 +254,9 @@ export class ForToastViewport {
    * position — the siblings of the row that mounted or unmounted, which
    * `animateEnter` / `animateLeave` cannot reach. The viewport measures the new
    * layout, offsets each moved row back to where it was and animates it to zero
-   * (FLIP), driving `transform` so a `translate` in your own enter / leave
-   * keyframes composes with the glide instead of fighting it.
+   * (FLIP), driving `translate` so your own `transform` — the swipe recipe's
+   * `translate3d(var(--for-toast-swipe-movement-x), …)`, an enter / leave
+   * keyframe — composes with the glide instead of being suppressed by it.
    *
    * `null` (the default) keeps today's synchronous reflow, and falls back to
    * the scope's `provideForToastDefaults({ stackShift })` value. A bare number

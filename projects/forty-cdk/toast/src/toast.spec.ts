@@ -17,7 +17,7 @@ import { By } from '@angular/platform-browser';
 import { afterEachOverlayCleanup } from '../../src/test-utils/overlay-cleanup';
 import { flush, nextMacrotask } from '../../src/test-utils/flush';
 import { renderHost } from '../../src/test-utils/render';
-import { withReducedMotion } from '../../src/test-utils/reduced-motion';
+import { withFlippableReducedMotion, withReducedMotion } from '../../src/test-utils/reduced-motion';
 import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
@@ -1863,13 +1863,21 @@ interface RecordedGlide {
   readonly duration: number;
   readonly easing: string;
   readonly animation: FakeAnimation;
+  readonly properties: readonly string[];
 }
 
 const titleOf = (row: HTMLElement): string =>
   row.querySelector('[forToastTitle]')?.textContent?.trim() ?? '';
 
+/** The y of a `translate` keyframe, which the glide always writes as `<x> <y>`. */
 const parseTranslateY = (value: string): number =>
-  Number.parseFloat(/translateY\((-?[\d.]+)px\)/.exec(value)?.[1] ?? 'NaN');
+  Number.parseFloat(value.trim().split(/\s+/)[1] ?? 'NaN');
+
+/**
+ * The one easing the stub refuses, standing in for what the platform does with a
+ * value it cannot parse: `Element.animate` throws rather than degrading.
+ */
+const REJECTED_EASING = 'not-an-easing';
 
 /**
  * jsdom implements no part of the Web Animations API, so `row.animate` has to
@@ -1887,15 +1895,19 @@ function installAnimateStub(): { glides: RecordedGlide[]; restore: () => void } 
   const original = proto.animate;
 
   proto.animate = function (this: HTMLElement, keyframes: unknown, options: unknown): unknown {
-    const [first] = keyframes as { transform: string }[];
+    const frames = keyframes as Record<string, string>[];
     const timing = options as { duration: number; easing: string };
+    if (timing.easing === REJECTED_EASING) {
+      throw new TypeError(`Failed to parse easing: ${timing.easing}`);
+    }
     const animation = new FakeAnimation();
     glides.push({
       row: this,
-      from: parseTranslateY(first?.transform ?? ''),
+      from: parseTranslateY(frames[0]?.['translate'] ?? ''),
       duration: timing.duration,
       easing: timing.easing,
       animation,
+      properties: [...new Set(frames.flatMap((frame) => Object.keys(frame)))],
     });
     return animation;
   };
@@ -1937,6 +1949,16 @@ function setOffsetTop(row: HTMLElement, top: number): void {
 }
 
 /**
+ * Models whether the viewport sits in flow, which jsdom lays out no more than it
+ * does anything else. The value picks the scroll posture the shifter takes: an
+ * out-of-flow host reports `null` — what `position: fixed` gives — and keeps its
+ * rect under scroll, so its baseline survives one.
+ */
+function setOffsetParent(el: HTMLElement, value: Element | null): void {
+  Object.defineProperty(el, 'offsetParent', { configurable: true, value });
+}
+
+/**
  * Models the viewport's own box, the half of the measurement `offsetTop` cannot
  * express: a bottom-anchored stack grows away from its anchor, so its rows move
  * on screen while their offset inside it never changes.
@@ -1946,63 +1968,6 @@ function stubViewportTop(viewport: HTMLElement): (top: number) => void {
   vi.spyOn(viewport, 'getBoundingClientRect').mockImplementation(() => ({ top }) as DOMRect);
   return (next: number) => {
     top = next;
-  };
-}
-
-/**
- * `withReducedMotion` hands back a `MediaQueryList` whose listeners are inert,
- * which is enough for a preference read once at construction. The baseline case
- * below needs the preference to flip mid-test, so this variant keeps the
- * listeners and re-emits to them.
- */
-function withFlippableReducedMotion(): { set: (matches: boolean) => void; restore: () => void } {
-  const target = window as unknown as { matchMedia?: (query: string) => MediaQueryList };
-  const had = 'matchMedia' in target;
-  const original = target.matchMedia;
-  const listeners = new Set<(event: MediaQueryListEvent) => void>();
-
-  const reduced = {
-    matches: true,
-    media: '(prefers-reduced-motion: reduce)',
-    onchange: null,
-    addEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
-      listeners.add(listener);
-    },
-    removeEventListener: (_type: string, listener: (event: MediaQueryListEvent) => void) => {
-      listeners.delete(listener);
-    },
-    addListener: () => {},
-    removeListener: () => {},
-    dispatchEvent: () => true,
-  };
-
-  Object.defineProperty(target, 'matchMedia', {
-    configurable: true,
-    writable: true,
-    value: (query: string): MediaQueryList =>
-      (/prefers-reduced-motion:\s*reduce/i.test(query)
-        ? reduced
-        : { ...reduced, matches: false }) as unknown as MediaQueryList,
-  });
-
-  return {
-    set: (matches: boolean) => {
-      reduced.matches = matches;
-      for (const listener of listeners) {
-        listener({ matches } as MediaQueryListEvent);
-      }
-    },
-    restore: () => {
-      if (had) {
-        Object.defineProperty(target, 'matchMedia', {
-          configurable: true,
-          writable: true,
-          value: original,
-        });
-      } else {
-        delete target.matchMedia;
-      }
-    },
   };
 }
 
@@ -2021,7 +1986,7 @@ describe('stack-shift glide (ForToastViewport)', () => {
 
   const glidedTitles = (): string[] => probe.glides.map((glide) => titleOf(glide.row));
 
-  it('leaves a row whose position did not change alone, and never animates the entering row', async () => {
+  it('leaves a row whose position did not change alone', async () => {
     const r = renderHost(StackShiftHost);
     r.instance.stackShift.set(200);
     r.instance.toasts.show({ title: 'A', duration: 0 });
@@ -2032,6 +1997,24 @@ describe('stack-shift glide (ForToastViewport)', () => {
 
     expect(r.queryAll('[forToast]')).toHaveLength(2);
     expect(glidedTitles()).toEqual([]);
+  });
+
+  it('never glides the row that just entered, the row animateEnter owns', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    // The reference is deliberately non-zero, so a row with no baseline measures
+    // at something other than `0`: a bug reading the missing entry as `0` would
+    // glide the entering row, which a jsdom-zeroed layout cannot tell apart.
+    const setViewportTop = stubViewportTop(r.query('for-toast-viewport')!);
+    setViewportTop(-40);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    setViewportTop(-100);
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual(['A']);
   });
 
   it('glides a row a mutation pushed to a new position, with the configured duration / easing', async () => {
@@ -2049,6 +2032,23 @@ describe('stack-shift glide (ForToastViewport)', () => {
     expect(glide!.duration).toBe(240);
     expect(glide!.easing).toBe('ease-out');
     expect(startedAbove(glide!)).toBe(true);
+  });
+
+  it('plays the glide on translate and writes no transform, the property the consumer owns', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    setOffsetTop(rowOf(r.el, 'A'), 60);
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+
+    // An animation resolves in the animation origin, so it outranks even an
+    // inline declaration of the same property: a glide on `transform` would
+    // suppress the swipe recipe's `translate3d(var(--for-toast-swipe-movement-x),
+    // …)` — and the README's own exit keyframes — for as long as it played.
+    expect(probe.glides[0]!.properties).toEqual(['translate']);
   });
 
   it('glides a row whose offset inside the viewport never moved, because the box grew upwards under it', async () => {
@@ -2083,6 +2083,135 @@ describe('stack-shift glide (ForToastViewport)', () => {
     expect(startedAbove(probe.glides[0]!)).toBe(true);
   });
 
+  it('drops the baseline on a window resize instead of replaying the resize as a glide', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    // The baseline is a measurement from the *previous* mutation, so a resize —
+    // which moves the edge an anchored stack hangs off, with no mutation to
+    // announce it — leaves it pointing at a spot the row has already left.
+    const row = rowOf(r.el, 'A');
+    setOffsetTop(row, 60);
+    window.dispatchEvent(new Event('resize'));
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual([]);
+
+    // Dropped, not destroyed: the pass that skipped the glide is the one that
+    // measured 60, so the next real move glides from there.
+    setOffsetTop(row, 100);
+    r.instance.toasts.show({ title: 'C', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual(['A']);
+    expect(startedAbove(probe.glides[0]!)).toBe(true);
+  });
+
+  it('drops the baseline when an in-flow viewport scrolls', async () => {
+    const r = renderHost(StackShiftHost);
+    setOffsetParent(r.query('for-toast-viewport')!, document.body);
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    const row = rowOf(r.el, 'A');
+    setOffsetTop(row, 60);
+    // Dispatched on the viewport rather than on `window`: a scroll event does not
+    // bubble, so only a captured listener sees a scrolled ancestor at all.
+    r.query('for-toast-viewport')!.dispatchEvent(new Event('scroll'));
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual([]);
+  });
+
+  it('keeps the baseline of an out-of-flow viewport across a scroll, which is the documented setup', async () => {
+    const r = renderHost(StackShiftHost);
+    setOffsetParent(r.query('for-toast-viewport')!, null);
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    const row = rowOf(r.el, 'A');
+    setOffsetTop(row, 60);
+    r.query('for-toast-viewport')!.dispatchEvent(new Event('scroll'));
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual(['A']);
+  });
+
+  it('contains an easing the platform rejects: warns once, and the pass still refreshes the baseline', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set({ duration: 200, easing: REJECTED_EASING });
+    const setViewportTop = stubViewportTop(r.query('for-toast-viewport')!);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+
+    // Both rows move, so two glides are attempted inside one pass.
+    setViewportTop(-60);
+    r.instance.toasts.show({ title: 'C', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual([]);
+    expect(
+      warn.mock.calls.filter(([first]) => String(first).includes('[stackShift]')),
+    ).toHaveLength(1);
+
+    // The throw did not abort the pass: the baseline it rewrote is the one the
+    // next glide measures against, so all three rows glide back. Had it escaped,
+    // A and B would still be recorded at their old spot (distance 0, no glide)
+    // and C would be absent from the map entirely.
+    r.instance.stackShift.set({ duration: 200, easing: 'linear' });
+    setViewportTop(0);
+    r.instance.toasts.show({ title: 'D', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual(['A', 'B', 'C']);
+    expect(probe.glides.every(startedAbove)).toBe(true);
+  });
+
+  it('cancels the glide of a row unmounted after [stackShift] was turned off', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(300);
+    const first = r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    setOffsetTop(rowOf(r.el, 'A'), 60);
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+    const inFlight = probe.glides[0]!;
+    expect(inFlight.animation.playState).toBe('running');
+
+    // The pass that usually prunes `running` is the one an unset motion returns
+    // from early, so without a prune there the detached row stays in the map.
+    r.instance.stackShift.set(null);
+    first.dismiss();
+    await r.flush();
+
+    expect(inFlight.animation.playState).toBe('idle');
+  });
+
+  it('removes the listeners it installed when the viewport is destroyed', async () => {
+    const r = renderHost(StackShiftHost);
+    setOffsetParent(r.query('for-toast-viewport')!, document.body);
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    const removed = vi.spyOn(window, 'removeEventListener');
+    r.fixture.destroy();
+
+    expect(removed.mock.calls.map(([type]) => type)).toEqual(
+      expect.arrayContaining(['resize', 'scroll']),
+    );
+  });
+
   it('animates nothing when [stackShift] is unset', async () => {
     const r = renderHost(StackShiftHost);
     r.instance.toasts.show({ title: 'A', duration: 0 });
@@ -2109,9 +2238,7 @@ describe('stack-shift glide (ForToastViewport)', () => {
 
     const computed = window.getComputedStyle.bind(window);
     vi.spyOn(window, 'getComputedStyle').mockImplementation((el, pseudo) =>
-      el === row
-        ? ({ transform: 'matrix(1, 0, 0, 1, 0, -24)' } as CSSStyleDeclaration)
-        : computed(el, pseudo),
+      el === row ? ({ translate: '0px -24px' } as CSSStyleDeclaration) : computed(el, pseudo),
     );
 
     setOffsetTop(row, 90);

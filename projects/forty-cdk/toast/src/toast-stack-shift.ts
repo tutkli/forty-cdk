@@ -1,7 +1,10 @@
+import { isDevMode } from '@angular/core';
+
 /**
  * Motion applied to the toasts a mutation of the stack pushes to a new
  * position. Set it on `[forToastViewport]` via `[stackShift]`, or per scope
- * with `provideForToastDefaults({ stackShift })`.
+ * with `provideForToastDefaults({ stackShift })`. The glide is played on
+ * `translate`, leaving `transform` to the consumer.
  *
  * `animate.enter` / `animate.leave` cover the row that mounts or unmounts;
  * this covers its siblings, which reflow to their new spot in a single frame
@@ -16,8 +19,8 @@ export interface ForToastStackShift {
 
 const DEFAULT_EASING = 'linear';
 
-/** `matrix(a, b, c, d, tx, ty)` / `matrix3d(…16 values…)`, as `getComputedStyle` serializes it. */
-const TRANSFORM_MATRIX = /^matrix(3d)?\(([^)]+)\)$/;
+/** A `px` length, the only shape the glide's own keyframes produce. */
+const PIXEL_LENGTH = /^-?(?:\d+\.?\d*|\.\d+)px$/;
 
 /**
  * Normalizes the `[stackShift]` input (or its defaults counterpart) into a
@@ -70,15 +73,37 @@ export interface ToastStackShifter {
  *   visibly move up when one is appended, yet their offset inside the viewport
  *   never changes — the viewport box is what grew.
  *
- * The glide drives `transform`, never `translate`, so it composes with a
- * consumer's enter / leave keyframes instead of clobbering them. On a burst the
- * in-flight offset is carried into the restarted glide, so a row stays visually
- * continuous.
+ * The glide drives `translate` — the individual transform property — and never
+ * `transform`, which stays the consumer's. An animation resolves in the
+ * animation origin, so it outranks every author declaration of the same
+ * property including an inline one: a glide on `transform` would suppress the
+ * primitive's own documented swipe recipe (`transform: translate3d(var(
+ * --for-toast-swipe-movement-x), …)`) and any enter / leave keyframe written on
+ * `transform` for as long as it played. `translate` is applied before
+ * `transform`, so the two compose instead. On a burst the in-flight offset is
+ * carried into the restarted glide, so a row stays visually continuous.
  *
  * A `MutationObserver` on the host's child list is what schedules the pass: its
  * callback is a microtask, so the measurement lands in the same turn as the
  * mutation and before paint, and it also catches the deferred unmount an
  * `animate.leave` row performs once its exit animation settles.
+ *
+ * That makes the baseline a measurement from the *previous* mutation, so a layout
+ * change with no mutation to announce it leaves the map pointing at a spot the
+ * rows have already left — and the next mutation would replay that change as a
+ * glide of its full distance instead of the real travel. The two that move a
+ * whole stack are watched and drop the baseline rather than being animated: a
+ * window `resize` (the edge an anchored stack hangs off moves, mobile keyboards
+ * included) and, for an in-flow host only, a `scroll`. Both listeners are
+ * installed on the first pass that has motion, so an unset `[stackShift]` keeps
+ * costing nothing but the observer.
+ *
+ * Known limit: a row that reflows on its own — text swapped, a late font, an
+ * image settling — moves its siblings with neither a mutation nor either event,
+ * so that shift is still measured from the stale baseline. A `ResizeObserver`
+ * would see it, but it also fires on every add / remove, where dropping the
+ * baseline is exactly wrong (a burst would stop gliding), so it needs a way to
+ * tell the two apart before it is worth having.
  */
 export function createToastStackShifter(options: ToastStackShifterOptions): ToastStackShifter {
   const { host, view, shift, reducedMotion } = options;
@@ -88,10 +113,48 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
 
   const positions = new Map<HTMLElement, number>();
   const running = new Map<HTMLElement, Animation>();
+  const unwatch: (() => void)[] = [];
+  let watchingResize = false;
+  let watchingScroll = false;
+
+  /**
+   * Drops the baseline. Whatever moved the rows did not go through the child
+   * list, so the map is no longer comparable to a fresh measurement and the next
+   * mutation measures a clean one and glides nothing — the cheap direction to be
+   * wrong in, since a stale baseline replays the whole layout change as a glide.
+   */
+  const invalidate = (): void => {
+    positions.clear();
+  };
+
+  /** Watches lazily, so an unset `[stackShift]` installs no listener at all. */
+  const watch = (type: 'resize' | 'scroll', capture: boolean): void => {
+    view.addEventListener(type, invalidate, { capture, passive: true });
+    unwatch.push(() => view.removeEventListener(type, invalidate, { capture }));
+  };
 
   const cancel = (row: HTMLElement): void => {
     running.get(row)?.cancel();
     running.delete(row);
+  };
+
+  let warnedRejected = false;
+
+  /**
+   * Dev-only, once per viewport. A `throw` would be the wrong channel here for
+   * the same reason it is inside an `effect`: the stack names the observer rather
+   * than the binding at fault, and it would re-throw on every mutation.
+   */
+  const warnRejectedMotion = (motion: ForToastStackShift, error: unknown): void => {
+    if (!isDevMode() || warnedRejected) {
+      return;
+    }
+    warnedRejected = true;
+    console.warn(
+      `[forty-cdk/toast] [stackShift] easing ${JSON.stringify(motion.easing)} was rejected: ` +
+        `${error instanceof Error ? error.message : String(error)}. The stack-shift glide is ` +
+        `skipped until it is a valid CSS easing function; the rows still reflow.`,
+    );
   };
 
   const glide = (row: HTMLElement, distance: number, motion: ForToastStackShift): void => {
@@ -104,23 +167,58 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
     if (from === 0 || typeof row.animate !== 'function') {
       return;
     }
-    running.set(
-      row,
-      row.animate([{ transform: `translateY(${from}px)` }, { transform: 'translateY(0px)' }], {
+    // `animate` throws on an easing the platform cannot parse, and this runs
+    // inside the observer callback: an escaping throw would abort the pass before
+    // it prunes `running` or rewrites the baseline — leaving a map that keeps
+    // detached rows and never refreshes again — and it would do so on every
+    // mutation from then on, reported outside Angular's `ErrorHandler`.
+    let animation: Animation;
+    try {
+      animation = row.animate([{ translate: `0px ${from}px` }, { translate: '0px 0px' }], {
         duration: motion.duration,
         easing: motion.easing,
-      }),
-    );
+      });
+    } catch (error) {
+      warnRejectedMotion(motion, error);
+      return;
+    }
+    running.set(row, animation);
   };
 
   const sync = (): void => {
     const motion = shift();
     if (!motion) {
       positions.clear();
+      // Motion off costs no measurement, but the pass this returns from is also
+      // the one that prunes `running` — so a row unmounted after `[stackShift]`
+      // was turned off would keep its entry, and the detached element with it,
+      // for the viewport's lifetime. `isConnected` forces no layout.
+      for (const row of Array.from(running.keys())) {
+        if (!row.isConnected) {
+          cancel(row);
+        }
+      }
       return;
     }
 
+    // A resize moves the edge an anchored stack hangs off, with no mutation to
+    // announce it.
+    if (!watchingResize) {
+      watchingResize = true;
+      watch('resize', false);
+    }
+
     const top = host.getBoundingClientRect().top;
+
+    // A host out of flow (`position: fixed`, the documented setup) keeps its rect
+    // under scroll; an in-flow one does not, so any scroll invalidates its
+    // baseline — captured, because a scroll event does not bubble, and only for
+    // the hosts that need it, so the recommended setup pays nothing.
+    if (!watchingScroll && Boolean(host.offsetParent)) {
+      watchingScroll = true;
+      watch('scroll', true);
+    }
+
     const next = new Map<HTMLElement, number>();
     for (const row of Array.from(host.querySelectorAll<HTMLElement>(':scope > [forToast]'))) {
       next.set(row, top + row.offsetTop);
@@ -153,6 +251,9 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
   return {
     destroy: () => {
       observer.disconnect();
+      for (const remove of unwatch.splice(0)) {
+        remove();
+      }
       for (const row of Array.from(running.keys())) {
         cancel(row);
       }
@@ -161,14 +262,22 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
   };
 }
 
+/**
+ * The block-axis component of the row's current `translate`, which mid-glide is
+ * the offset this pass has to carry. `getComputedStyle` serializes the property
+ * as one, two or three components (`none` when unset), so the y is the second —
+ * absent means `0`. Anything that is not a `px` length is a value the glide did
+ * not write, so it reads as no carry rather than as a number in the wrong unit.
+ */
 function readTranslateY(view: Window, row: HTMLElement): number {
-  const transform = view.getComputedStyle(row).transform;
-  const match = transform ? TRANSFORM_MATRIX.exec(transform.trim()) : null;
-  if (!match) {
+  const translate = view.getComputedStyle(row).translate;
+  if (!translate || translate === 'none') {
     return 0;
   }
-  const values = (match[2] ?? '').split(',');
-  const raw = match[1] ? values[13] : values[5];
-  const parsed = raw === undefined ? Number.NaN : Number.parseFloat(raw);
+  const raw = translate.trim().split(/\s+/)[1];
+  if (raw === undefined || !PIXEL_LENGTH.test(raw)) {
+    return 0;
+  }
+  const parsed = Number.parseFloat(raw);
   return Number.isFinite(parsed) ? parsed : 0;
 }

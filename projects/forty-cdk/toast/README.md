@@ -240,7 +240,7 @@ A bare number is shorthand for `{ duration }` with `linear` easing:
 
 Four things are worth knowing:
 
-- **The library drives `transform`, you drive `translate`.** The glide is played on `transform`, so a `translate` in your own enter / leave keyframes composes with it instead of clobbering it. Keep your keyframes on `translate` (and `opacity`, `scale`, …) and the two never fight.
+- **The library drives `translate`, `transform` stays yours.** The glide is played on the individual `translate` property, which the browser applies _before_ `transform`, so the two compose. Nothing above changes: the [exit keyframes](#exit--enter-animations-programmatic) on `transform` and the [swipe recipe](#swipe-to-dismiss)'s `transform: translate3d(var(--for-toast-swipe-movement-x), …)` keep working with `[stackShift]` set, including while a row is mid-glide. The one thing to avoid is writing your own `translate` on `[forToast]` — an animation outranks every author declaration of the same property, inline ones included, so the glide would suppress it while it played.
 - **Nothing moves by default.** Leaving `[stackShift]` unset keeps today's synchronous reflow, and `[stackShift]="0"` opts a single viewport out of a scope-level default.
 - **`prefers-reduced-motion: reduce` suppresses it** — the library skips the glide entirely, no consumer CSS needed. This is the one animation hook the directive gates for you, because the directive owns the motion rather than handing you a class.
 - **It is the programmatic path only.** On the declarative path the rows and their container are yours, so a directive of your own on that container is the right level.
