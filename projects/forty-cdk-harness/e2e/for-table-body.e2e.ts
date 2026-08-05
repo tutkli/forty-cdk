@@ -116,10 +116,18 @@ test.describe('ForTableBody — declarative columns', () => {
 
     await headerCell(page, 'name').locator('[forTableColumnResizer]').dblclick();
 
-    const after = await root.evaluate((node) =>
-      getComputedStyle(node).getPropertyValue('--for-table-col-name-width').trim(),
-    );
-    expect(parseFloat(after)).toBeGreaterThan(120);
+    // Polled, not read once: `dblclick` resolves when the click has been
+    // dispatched, not when the auto-fit has measured the stamped cells and
+    // published the var. A single read races that, and the failure is
+    // `parseFloat('') === NaN` rather than a wrong number — so it reads as a
+    // broken measurement instead of a missed wait.
+    await expect
+      .poll(() =>
+        root.evaluate((node) =>
+          parseFloat(getComputedStyle(node).getPropertyValue('--for-table-col-name-width')),
+        ),
+      )
+      .toBeGreaterThan(120);
   });
 
   test('a row selector placed in a cell template selects its row (rowKey identity)', async ({
