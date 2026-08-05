@@ -155,7 +155,7 @@ export class ForTableRowReorder {
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
 
   #kbLiftedHost: HTMLElement | null = null;
-  #kbFocusEl: HTMLElement | null = null;
+  #kbFocusEl: HTMLElement | SVGElement | null = null;
   #kbPath: 'virtual' | 'list' | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
@@ -411,9 +411,10 @@ export class ForTableRowReorder {
     this.#kbTeardown();
   }
 
-  #resolveFocusTarget(host: HTMLElement): HTMLElement {
+  #resolveFocusTarget(host: HTMLElement): HTMLElement | SVGElement {
     const active = this.#document.activeElement;
-    return active instanceof HTMLElement && host.contains(active) ? active : host;
+    const focusable = active instanceof HTMLElement || active instanceof SVGElement;
+    return focusable && host.contains(active) ? active : host;
   }
 
   #kbTeardown(): void {
