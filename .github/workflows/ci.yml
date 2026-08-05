@@ -41,7 +41,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - run: pnpm build:playground
+      # `build:docs` rather than `build:playground`: it is the same project in
+      # its *production* configuration plus the prerender and its output check,
+      # so it detects everything the development build does and, additionally,
+      # the SSG failures that only appear when routes are rendered without a
+      # browser. That path used to run nowhere but the Pages workflow, which
+      # meant a prerender break surfaced as a red deploy on main instead of on
+      # the PR that caused it — and since #1686 that deploy fires on every push.
+      # Building the same project twice per PR would buy nothing beyond this.
+      - run: pnpm build:docs
 
   test:
     name: Test
