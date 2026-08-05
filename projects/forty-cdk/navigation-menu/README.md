@@ -277,4 +277,4 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must spread `provideForNavigationMenu(MyNavigationMenu)` in its own `providers` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through them. A hand-written re-provide of `FOR_NAVIGATION_MENU_CONTEXT` is not enough — the root also provides an internal coordination token the pieces resolve, which is deliberately not exported. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_NAVIGATION_MENU_CONTEXT` with `useExisting` pointing at itself, because Angular does not inherit a directive's `providers` and every projected piece resolves its context through that token. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

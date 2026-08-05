@@ -1,4 +1,4 @@
-export { ForRadioGroup, provideForRadioGroup } from './radio-group';
+export { ForRadioGroup } from './radio-group';
 export { FOR_RADIO, ForRadio } from './radio';
 export { ForRadioIndicator } from './radio-indicator';
 export { FOR_RADIO_GROUP_CONTEXT, type ForRadioGroupContext } from './radio-group-context';

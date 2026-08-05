@@ -108,7 +108,7 @@ export interface ForSelectOverlayFacade {
  * instead of the root re-forwarding each member.
  *
  * Internal — never re-exported from `public-api.ts`; pieces reach it through
- * {@link SELECT_CONTEXT}.
+ * {@link SelectContext}.
  */
 export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
   ForSelectOptionHandle<T>,
@@ -334,25 +334,31 @@ export interface ForSelectContext<T = unknown> {
   markTouched(): void;
 }
 
+/**
+ * DI token for the select's coordination surface, provided by `[forSelect]`.
+ *
+ * Publicly typed as the read surface {@link ForSelectContext};
+ * {@link injectSelectContext} reads the same token at its internal
+ * {@link SelectContext} type so the pieces reach the full overlay controller.
+ */
 export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELECT_CONTEXT');
 
 /**
  * The select's internal coordination surface: everything {@link ForSelectContext}
  * publishes, plus the full overlay state machine instead of the consumer facade.
  *
- * Never exported from `public-api.ts`. `[forSelect]` provides it alongside
- * {@link FOR_SELECT_CONTEXT} on the same object, so a consumer who injects the
- * public token gets the read surface while the pieces get the wiring protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_SELECT_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while the pieces get the wiring protocol. `ForSelect` declares
+ * `overlay` with the narrow public type, which keeps the controller out of the
+ * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
 export interface SelectContext<T = unknown> extends ForSelectContext<T> {
   readonly overlay: ForSelectOverlayContext<T>;
 }
 
-/** DI token carrying the internal {@link SelectContext}. Provided by `[forSelect]`. */
-export const SELECT_CONTEXT = new InjectionToken<SelectContext>('SELECT_CONTEXT');
-
 export function injectSelectContext<T = unknown>(piece: string): SelectContext<T> {
-  const ctx = inject(SELECT_CONTEXT, { optional: true });
+  const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
       `[forty-cdk/select] ${piece} must be used inside a [forSelect] element. ` +
@@ -366,7 +372,7 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
 
 /**
  * Resolves the trigger's root context: the explicit reference when the
- * `[forSelectTrigger]` input carries one, the injected `SELECT_CONTEXT`
+ * `[forSelectTrigger]` input carries one, the injected `FOR_SELECT_CONTEXT`
  * otherwise. The orphan error only fires when neither resolves, on first read
  * of the returned signal. Must be called in an injection context.
  *
@@ -378,7 +384,7 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
 export function injectSelectTriggerContext<T = unknown>(
   explicitRoot: Signal<ForSelectContext<T> | ''>,
 ): Signal<SelectContext<T>> {
-  const injected = inject(SELECT_CONTEXT, { optional: true });
+  const injected = inject(FOR_SELECT_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
     if (explicit !== '') {

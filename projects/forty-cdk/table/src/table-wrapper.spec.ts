@@ -5,6 +5,7 @@ import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 
 import { ForTable, provideForTable } from './table';
 import { ForTableCell } from './table-cell';
+import { FOR_TABLE_CONTEXT } from './table-context';
 import { ForTableHeaderCell } from './table-header-cell';
 import { ForTableHeaderRow } from './table-header-row';
 import { ForTableRow } from './table-row';
@@ -60,6 +61,18 @@ class WrapperTableCell {}
 })
 class WrapperHost {}
 
+@Directive({
+  selector: '[handWrittenTable]',
+  providers: [{ provide: FOR_TABLE_CONTEXT, useExisting: HandWrittenTable }],
+})
+class HandWrittenTable extends ForTable {}
+
+@Component({
+  imports: [HandWrittenTable],
+  template: `<div handWrittenTable mode="grid"></div>`,
+})
+class HandWrittenProviderHost {}
+
 describe('ForTable subclass wrapper (#1399)', () => {
   let restoreObservers: () => void;
   beforeAll(() => {
@@ -71,6 +84,10 @@ describe('ForTable subclass wrapper (#1399)', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperTable]')?.getAttribute('role')).toBe('grid');
+  });
+
+  it('fails a hand-written provider list — the registry the root injects is unnameable (#1593)', () => {
+    expect(() => renderHost(HandWrittenProviderHost)).toThrow(/NG0201|TableRegistry/);
   });
 
   it('registers the header row and data rows through the subclassed root', () => {

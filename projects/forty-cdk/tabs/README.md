@@ -148,4 +148,4 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 
 ## Wrapping in a design system
 
-Subclassing the root is the supported pattern; the subclass must spread `provideForTabs(MyRoot)` into its own `providers` because Angular does not inherit a directive's `providers`, and every projected piece resolves its context through it. Re-providing `FOR_TABS_CONTEXT` by hand is not enough: the root also provides an unexported registration token the wrapper cannot name. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).
+Subclassing the root is the supported pattern; the subclass must re-provide `FOR_TABS_CONTEXT` with `useExisting` pointing at itself, because Angular does not inherit a directive's `providers` and every projected piece resolves its context through that token. See [Wrapping non-form roots](../../../docs/wrapping-non-form-roots.md).

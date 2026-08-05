@@ -4,12 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { pressKey, renderHost } from '../../src/test-utils';
 
 import { ForRadio } from './radio';
-import { ForRadioGroup, provideForRadioGroup } from './radio-group';
+import { ForRadioGroup } from './radio-group';
+import { FOR_RADIO_GROUP_CONTEXT } from './radio-group-context';
 
 @Directive({
   selector: '[wrapperRadioGroup]',
   exportAs: 'wrapperRadioGroup',
-  providers: provideForRadioGroup(WrapperRadioGroup),
+  providers: [{ provide: FOR_RADIO_GROUP_CONTEXT, useExisting: WrapperRadioGroup }],
   host: { class: 'wrapper-radio-group' },
 })
 class WrapperRadioGroup extends ForRadioGroup {}
@@ -31,8 +32,8 @@ class WrapperRadio {}
 })
 class WrapperHost {}
 
-describe('ForRadioGroup subclass wrapper (#1524)', () => {
-  it('mounts a subclassed root whose own providers come from provideForRadioGroup', () => {
+describe('ForRadioGroup subclass wrapper (#1593)', () => {
+  it('mounts a subclassed root that re-provides FOR_RADIO_GROUP_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperRadioGroup]')?.getAttribute('role')).toBe('radiogroup');

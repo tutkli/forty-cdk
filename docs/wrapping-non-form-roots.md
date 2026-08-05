@@ -70,13 +70,15 @@ import { FOR_POPOVER_CONTEXT, ForPopover } from 'forty-cdk/popover';
 export class MtxPopover extends ForPopover {}
 ```
 
-Every non-form root that needs a plain re-provide, and the token to name. The roots whose context is
-**split** are not in this table — they need `provideFor<Primitive>()` instead, see the section below:
+Every non-form root that needs a plain re-provide, and the token to name. `ForTable` is the one root
+not in this table — it needs `provideForTable()` instead, see the section below:
 
 | Root                                                | Token to re-provide            |
 | --------------------------------------------------- | ------------------------------ |
+| `ForAccordion`                                      | `FOR_ACCORDION_CONTEXT`        |
 | `ForAvatar`                                         | `FOR_AVATAR_CONTEXT`           |
 | `ForCalendar`                                       | `FOR_CALENDAR_CONTEXT`         |
+| `ForCarousel`                                       | `FOR_CAROUSEL_CONTEXT`         |
 | `ForContextMenu` / `ForDropdownMenu` / `ForMenuSub` | `FOR_MENU_CONTEXT`             |
 | `ForDialog`                                         | `FOR_DIALOG_CONTEXT`           |
 | `ForDisclosure`                                     | `FOR_DISCLOSURE_CONTEXT`       |
@@ -89,15 +91,26 @@ Every non-form root that needs a plain re-provide, and the token to name. The ro
 | `ForHoverCard`                                      | `FOR_HOVER_CARD_CONTEXT`       |
 | `ForMenubar`                                        | `FOR_MENUBAR_CONTEXT`          |
 | `ForMeter`                                          | `FOR_METER_CONTEXT`            |
+| `ForNavigationMenu`                                 | `FOR_NAVIGATION_MENU_CONTEXT`  |
 | `ForPagination`                                     | `FOR_PAGINATION_CONTEXT`       |
 | `ForPopover`                                        | `FOR_POPOVER_CONTEXT`          |
 | `ForProgress`                                       | `FOR_PROGRESS_CONTEXT`         |
 | `ForScrollArea`                                     | `FOR_SCROLL_AREA_CONTEXT`      |
 | `ForStepper`                                        | `FOR_STEPPER_CONTEXT`          |
+| `ForTabs`                                           | `FOR_TABS_CONTEXT`             |
+| `ForToast`                                          | `FOR_TOAST_CONTEXT`            |
 | `ForToolbar`                                        | `FOR_TOOLBAR_CONTEXT`          |
 | `ForTooltip`                                        | `FOR_TOOLTIP_CONTEXT`          |
 | `ForTree`                                           | `FOR_TREE_CONTEXT`             |
 | `ForVirtualViewport`                                | `FOR_VIRTUAL_VIEWPORT_CONTEXT` |
+
+Several of these roots — Accordion, Carousel, NavigationMenu, Tabs, Toast — split their coordination
+surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` above, and an internal interface carrying the
+piece-registration protocol that is deliberately **not** exported
+([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
+[#1524](https://github.com/tutkli/forty-cdk/issues/1524)). That split is invisible to a wrapper
+([#1593](https://github.com/tutkli/forty-cdk/issues/1593)): both surfaces are two typed views of the
+**same token on the same object**, so the one-line re-provide above installs all of it.
 
 **Intermediate pieces provide tokens too**, and subclassing one has the same requirement:
 `ForAccordionItem` (`FOR_ACCORDION_ITEM_CONTEXT`), `ForStepperItem`
@@ -106,16 +119,15 @@ Every non-form root that needs a plain re-provide, and the token to name. The ro
 (`FOR_MENU_GROUP_CONTEXT`), `ForMenuRadioGroup` (`FOR_MENU_RADIO_GROUP_CONTEXT`),
 `ForTreeNodeDrag` (`FOR_TREE_NODE_DRAG_CONTEXT`).
 
-### Split roots need their provider helper, not a hand-written provider
+### `ForTable` needs its provider helper, not a hand-written provider
 
-Some roots split their coordination surface in two: the public `FOR_<PRIMITIVE>_CONTEXT` an advanced
-consumer injects, and a second token carrying the piece-registration protocol that is deliberately
-**not** exported ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
-[#1524](https://github.com/tutkli/forty-cdk/issues/1524)). A hand-written re-provide of the public
-token is not enough, and the missing provider cannot be written by name from outside the library — so
-every piece orphans with the primitive's "must be used inside a […]" error. Worse for `ForTable`,
-whose own constructor injects the registry: the subclass fails to construct at all (`NG0201`).
-Spread the helper instead:
+`ForTable` is the one root a hand-written provider list cannot wrap. Its piece-registration protocol
+is not a second view of the root at all: it is a **separate provider** (`TableRegistry`, reached
+through a token that lives in `forty-cdk/core` so `forty-cdk/table-virtualization` can register
+through it from a second entry point), and `[forTable]`'s own constructor injects it. A subclass
+whose `providers` name only the public token therefore fails to construct at all (`NG0201`), and
+neither the registry class nor its token can be written by name from outside the library. Spread the
+helper instead:
 
 ```ts
 import { Directive } from '@angular/core';
@@ -129,18 +141,9 @@ import { ForTable, provideForTable } from 'forty-cdk/table';
 export class MtxTable<T> extends ForTable<T> {}
 ```
 
-| Split non-form root | Helper to spread           |
-| ------------------- | -------------------------- |
-| `ForAccordion`      | `provideForAccordion`      |
-| `ForCarousel`       | `provideForCarousel`       |
-| `ForNavigationMenu` | `provideForNavigationMenu` |
-| `ForTable`          | `provideForTable`          |
-| `ForTabs`           | `provideForTabs`           |
-| `ForToast`          | `provideForToast`          |
-
-`ForRadioGroup`, `ForSelect` and `ForCombobox` are split too; all three are form controls, so
-`provideForRadioGroup` / `provideForSelect` / `provideForCombobox` are documented in
-[Wrapping form primitives](wrapping-form-primitives.md#roots-with-a-split-context-use-providefor).
+`<for-table-body>` has a public `provideForTableDefRegistry()` for the same reachability reason, but
+it is not a subclassing helper — see [Table](../projects/forty-cdk/table/README.md) for the scaffold
+wrapper shape it supports.
 
 ## What a wrapper must not swallow
 
@@ -168,6 +171,6 @@ systems lose behaviour the primitives were built to give them:
 | Situation                                                        | Pattern                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------- |
 | Styled wrapper around one root                                   | subclass + re-provide the context token                 |
-| Root with a split context (`ForTable`, `ForTabs`, …)             | subclass + spread `provideFor<Primitive>(MyRoot)`       |
+| `ForTable`                                                       | subclass + spread `provideForTable(MyRoot)`             |
 | Wrapper that must extend a different base class                  | `hostDirectives`, re-exposing the surface by hand       |
 | Form-value control (`Switch`, `Select`, `Slider`, `Combobox`, …) | [Wrapping form primitives](wrapping-form-primitives.md) |

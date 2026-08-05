@@ -4,14 +4,15 @@ import { describe, expect, it } from 'vitest';
 
 import { afterEachOverlayCleanup, renderHost } from '../../src/test-utils';
 
-import { ForSelect, provideForSelect } from './select';
+import { ForSelect } from './select';
 import { ForSelectContent } from './select-content';
+import { FOR_SELECT_CONTEXT } from './select-context';
 import { ForSelectTrigger } from './select-trigger';
 
 @Directive({
   selector: '[wrapperSelect]',
   exportAs: 'wrapperSelect',
-  providers: provideForSelect(WrapperSelect),
+  providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: WrapperSelect }],
 })
 class WrapperSelect extends ForSelect<string> {
   readonly box = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
@@ -39,10 +40,10 @@ class WrapperSelectContent {}
 })
 class WrapperHost {}
 
-describe('ForSelect subclass wrapper (#1399)', () => {
+describe('ForSelect subclass wrapper (#1593)', () => {
   afterEachOverlayCleanup();
 
-  it('mounts a subclassed root whose own providers come from provideForSelect', () => {
+  it('mounts a subclassed root that re-provides FOR_SELECT_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperSelect]')?.getAttribute('data-state')).toBe('open');

@@ -9,10 +9,8 @@ import {
   input,
   linkedSignal,
   model,
-  type Provider,
   signal,
   type Signal,
-  type Type,
 } from '@angular/core';
 
 import {
@@ -30,7 +28,6 @@ import {
 } from 'forty-cdk/core';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
-  NAVIGATION_MENU_CONTEXT,
   type ForNavigationMenuContentHandle,
   type ForNavigationMenuContext,
   type ForNavigationMenuMotion,
@@ -80,7 +77,7 @@ import { FOR_NAVIGATION_MENU_DEFAULTS } from './navigation-menu-defaults';
     '[attr.dir]': 'dir()',
     '(focusout)': 'handleSurfaceFocusOut($event)',
   },
-  providers: provideForNavigationMenu(ForNavigationMenu),
+  providers: [{ provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: ForNavigationMenu }],
 })
 export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -603,34 +600,4 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
     this.#openAction.cancel();
     this.#pendingOpenValue = null;
   }
-}
-
-/**
- * The providers a `[forNavigationMenu]` root installs: the public
- * {@link FOR_NAVIGATION_MENU_CONTEXT}, aliased to `root`, plus the internal
- * coordination token the navigation menu's pieces resolve.
- *
- * `ForNavigationMenu` declares its own providers through this helper, so a
- * wrapper that **subclasses** the root has a single call to keep in step with
- * it. That matters because Angular does not inherit a directive's `providers`: a
- * subclass carrying its own `@Directive` metadata replaces the array wholesale,
- * so re-providing `FOR_NAVIGATION_MENU_CONTEXT` alone leaves the internal token
- * absent and every piece orphans with the "must be used inside a
- * [forNavigationMenu] element" error. That token is deliberately unnameable
- * outside the library
- * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
- * wrapper cannot list it by hand.
- *
- * ```ts
- * providers: provideForNavigationMenu(MyNavigationMenu),
- * ```
- *
- * Wrapping through `hostDirectives: [ForNavigationMenu]` needs none of this — a
- * host directive brings its own providers to the element.
- */
-export function provideForNavigationMenu(root: Type<ForNavigationMenu>): Provider[] {
-  return [
-    { provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: root },
-    { provide: NAVIGATION_MENU_CONTEXT, useExisting: root },
-  ];
 }

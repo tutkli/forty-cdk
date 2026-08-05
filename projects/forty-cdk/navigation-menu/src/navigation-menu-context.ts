@@ -155,10 +155,12 @@ export type NavigationMenuScheduleReason = 'hover' | 'keyboard' | 'click';
  * {@link ForNavigationMenuContext} publishes plus the piece-registration
  * protocol and the surface-level focus delegation.
  *
- * Never exported from `public-api.ts`. `[forNavigationMenu]` provides it
- * alongside {@link FOR_NAVIGATION_MENU_CONTEXT} on the same object, so a
- * consumer who injects the public token gets the read surface while the pieces
- * get the wiring protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_NAVIGATION_MENU_CONTEXT} at, so a consumer who injects that token
+ * gets the read surface while the pieces get the wiring protocol.
+ * `ForNavigationMenu` declares the protocol members TS-`private` / `protected`,
+ * which keeps them out of the emitted `.d.ts` while `useExisting` still
+ * satisfies this contract at runtime.
  */
 export interface NavigationMenuContext extends ForNavigationMenuContext {
   registerTrigger(handle: ForNavigationMenuTriggerHandle): void;
@@ -180,14 +182,6 @@ export interface NavigationMenuContext extends ForNavigationMenuContext {
   handleSurfaceFocusOut(event: FocusEvent): void;
 }
 
-/**
- * DI token carrying the internal {@link NavigationMenuContext}. Provided by
- * `[forNavigationMenu]`.
- */
-export const NAVIGATION_MENU_CONTEXT = new InjectionToken<NavigationMenuContext>(
-  'NAVIGATION_MENU_CONTEXT',
-);
-
 /** Per-item context, consumed by the trigger and content. */
 export interface ForNavigationMenuItemContext {
   /**
@@ -206,6 +200,15 @@ export interface ForNavigationMenuItemContext {
   readonly disabled: Signal<boolean>;
 }
 
+/**
+ * DI token for the navigation menu's coordination surface, provided by
+ * `[forNavigationMenu]`.
+ *
+ * Publicly typed as the read surface {@link ForNavigationMenuContext};
+ * {@link injectNavigationMenuContext} reads the same token at its internal
+ * {@link NavigationMenuContext} type so the pieces reach the registration
+ * protocol.
+ */
 export const FOR_NAVIGATION_MENU_CONTEXT = new InjectionToken<ForNavigationMenuContext>(
   'FOR_NAVIGATION_MENU_CONTEXT',
 );
@@ -215,7 +218,9 @@ export const FOR_NAVIGATION_MENU_ITEM_CONTEXT = new InjectionToken<ForNavigation
 );
 
 export function injectNavigationMenuContext(piece: string): NavigationMenuContext {
-  const ctx = inject(NAVIGATION_MENU_CONTEXT, { optional: true });
+  const ctx = inject(FOR_NAVIGATION_MENU_CONTEXT, {
+    optional: true,
+  }) as NavigationMenuContext | null;
   if (!ctx) {
     throw new Error(
       `[forty-cdk/navigation-menu] ${piece} must be used inside a [forNavigationMenu] element. ` +

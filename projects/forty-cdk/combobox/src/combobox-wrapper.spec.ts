@@ -4,14 +4,15 @@ import { describe, expect, it } from 'vitest';
 
 import { afterEachOverlayCleanup, renderHost } from '../../src/test-utils';
 
-import { ForCombobox, provideForCombobox } from './combobox';
+import { ForCombobox } from './combobox';
 import { ForComboboxContent } from './combobox-content';
+import { FOR_COMBOBOX_CONTEXT } from './combobox-context';
 import { ForComboboxInput } from './combobox-input';
 
 @Directive({
   selector: '[wrapperCombobox]',
   exportAs: 'wrapperCombobox',
-  providers: provideForCombobox(WrapperCombobox),
+  providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: WrapperCombobox }],
 })
 class WrapperCombobox extends ForCombobox<string> {
   readonly box = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
@@ -39,10 +40,10 @@ class WrapperComboboxContent {}
 })
 class WrapperHost {}
 
-describe('ForCombobox subclass wrapper (#1399)', () => {
+describe('ForCombobox subclass wrapper (#1593)', () => {
   afterEachOverlayCleanup();
 
-  it('mounts a subclassed root whose own providers come from provideForCombobox', () => {
+  it('mounts a subclassed root that re-provides FOR_COMBOBOX_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperCombobox]')?.getAttribute('data-state')).toBe('open');

@@ -3,15 +3,16 @@ import { describe, expect, it } from 'vitest';
 
 import { pressKey, renderHost } from '../../src/test-utils';
 
-import { ForTabs, provideForTabs } from './tabs';
+import { ForTabs } from './tabs';
 import { ForTabsContent } from './tabs-content';
+import { FOR_TABS_CONTEXT } from './tabs-context';
 import { ForTabsList } from './tabs-list';
 import { ForTabsTrigger } from './tabs-trigger';
 
 @Directive({
   selector: '[wrapperTabs]',
   exportAs: 'wrapperTabs',
-  providers: provideForTabs(WrapperTabs),
+  providers: [{ provide: FOR_TABS_CONTEXT, useExisting: WrapperTabs }],
   host: { class: 'wrapper-tabs' },
 })
 class WrapperTabs extends ForTabs {}
@@ -46,8 +47,8 @@ class WrapperTabsContent {}
 })
 class WrapperHost {}
 
-describe('ForTabs subclass wrapper (#1524)', () => {
-  it('mounts a subclassed root whose own providers come from provideForTabs', () => {
+describe('ForTabs subclass wrapper (#1593)', () => {
+  it('mounts a subclassed root that re-provides FOR_TABS_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperTabsList]')?.getAttribute('role')).toBe('tablist');

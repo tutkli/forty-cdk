@@ -57,6 +57,13 @@ export interface ForAccordionItemContext {
   toggle(): void;
 }
 
+/**
+ * DI token for the accordion's coordination surface, provided by `[forAccordion]`.
+ *
+ * Publicly typed as the read surface {@link ForAccordionContext};
+ * {@link injectAccordionContext} reads the same token at its internal
+ * {@link AccordionContext} type so the pieces reach the registration protocol.
+ */
 export const FOR_ACCORDION_CONTEXT = new InjectionToken<ForAccordionContext>(
   'FOR_ACCORDION_CONTEXT',
 );
@@ -70,21 +77,19 @@ export const FOR_ACCORDION_ITEM_CONTEXT = new InjectionToken<ForAccordionItemCon
  * {@link ForAccordionContext} publishes plus the trigger-registration protocol
  * the root drives keyboard navigation from.
  *
- * Never exported from `public-api.ts`. `[forAccordion]` provides it alongside
- * {@link FOR_ACCORDION_CONTEXT} on the same object, so a consumer who injects
- * the public token gets the read surface while the pieces get the wiring
- * protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_ACCORDION_CONTEXT} at, so a consumer who injects that token gets
+ * the read surface while the pieces get the wiring protocol. `ForAccordion`
+ * declares the protocol members TS-`private`, which keeps them out of the
+ * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
 export interface AccordionContext extends ForAccordionContext {
   registerTrigger(handle: ForAccordionTriggerHandle): void;
   unregisterTrigger(handle: ForAccordionTriggerHandle): void;
 }
 
-/** DI token carrying the internal {@link AccordionContext}. Provided by `[forAccordion]`. */
-export const ACCORDION_CONTEXT = new InjectionToken<AccordionContext>('ACCORDION_CONTEXT');
-
 export function injectAccordionContext(piece: string): AccordionContext {
-  const ctx = inject(ACCORDION_CONTEXT, { optional: true });
+  const ctx = inject(FOR_ACCORDION_CONTEXT, { optional: true }) as AccordionContext | null;
   if (!ctx) {
     throw new Error(`[forty-cdk/accordion] ${piece} must be used inside a [forAccordion] element.`);
   }

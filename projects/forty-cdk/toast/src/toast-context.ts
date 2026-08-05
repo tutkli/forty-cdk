@@ -201,6 +201,13 @@ export interface ForToastContext {
   requestClose(reason: ForToastCloseReason): void;
 }
 
+/**
+ * DI token for the toast's coordination surface, provided by `[forToast]`.
+ *
+ * Publicly typed as the read surface {@link ForToastContext};
+ * {@link injectToastContext} reads the same token at its internal
+ * {@link ToastContext} type so the pieces reach the registration protocol.
+ */
 export const FOR_TOAST_CONTEXT = new InjectionToken<ForToastContext>('FOR_TOAST_CONTEXT');
 
 /**
@@ -209,9 +216,11 @@ export const FOR_TOAST_CONTEXT = new InjectionToken<ForToastContext>('FOR_TOAST_
  * `aria-labelledby` / `aria-describedby` wiring and the synthesized
  * announcement are composed from.
  *
- * Never exported from `public-api.ts`. `[forToast]` provides it alongside
- * {@link FOR_TOAST_CONTEXT} on the same object, so a consumer who injects the
- * public token gets the read surface while the pieces get the wiring protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_TOAST_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while the pieces get the wiring protocol. `ForToast` declares the
+ * protocol members TS-`private`, which keeps them out of the emitted `.d.ts`
+ * while `useExisting` still satisfies this contract at runtime.
  */
 export interface ToastContext extends ForToastContext {
   registerLabel(handle: ForToastTextHandle): void;
@@ -227,11 +236,8 @@ export interface ToastContext extends ForToastContext {
   unregisterAction(handle: ForToastActionHandle): void;
 }
 
-/** DI token carrying the internal {@link ToastContext}. Provided by `[forToast]`. */
-export const TOAST_CONTEXT = new InjectionToken<ToastContext>('TOAST_CONTEXT');
-
 export function injectToastContext(piece: string): ToastContext {
-  const ctx = inject(TOAST_CONTEXT, { optional: true });
+  const ctx = inject(FOR_TOAST_CONTEXT, { optional: true }) as ToastContext | null;
   if (!ctx) {
     throw new Error(`[forty-cdk/toast] ${piece} must be used inside a [forToast] element.`);
   }

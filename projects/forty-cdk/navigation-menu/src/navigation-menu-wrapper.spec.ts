@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 import { pressKey, renderHost } from '../../src/test-utils';
 
-import { ForNavigationMenu, provideForNavigationMenu } from './navigation-menu';
+import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
+import { FOR_NAVIGATION_MENU_CONTEXT } from './navigation-menu-context';
 import { ForNavigationMenuItem } from './navigation-menu-item';
 import { ForNavigationMenuList } from './navigation-menu-list';
 import { ForNavigationMenuTrigger } from './navigation-menu-trigger';
@@ -12,7 +13,7 @@ import { ForNavigationMenuTrigger } from './navigation-menu-trigger';
 @Directive({
   selector: '[wrapperNavigationMenu]',
   exportAs: 'wrapperNavigationMenu',
-  providers: provideForNavigationMenu(WrapperNavigationMenu),
+  providers: [{ provide: FOR_NAVIGATION_MENU_CONTEXT, useExisting: WrapperNavigationMenu }],
   host: { class: 'wrapper-navigation-menu' },
 })
 class WrapperNavigationMenu extends ForNavigationMenu {}
@@ -68,8 +69,8 @@ class WrapperHost {
   readonly open = signal<string | null>(null);
 }
 
-describe('ForNavigationMenu subclass wrapper (#1399)', () => {
-  it('mounts a subclassed root whose own providers come from provideForNavigationMenu', () => {
+describe('ForNavigationMenu subclass wrapper (#1593)', () => {
+  it('mounts a subclassed root that re-provides FOR_NAVIGATION_MENU_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperNavigationMenu]')?.getAttribute('data-orientation')).toBe(

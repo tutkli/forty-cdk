@@ -45,6 +45,14 @@ export interface ForRadioGroupContext {
   isFirstEnabledRadio(el: HTMLElement): boolean;
 }
 
+/**
+ * DI token for the group's coordination surface, provided by `[forRadioGroup]`.
+ *
+ * Publicly typed as the read surface {@link ForRadioGroupContext};
+ * {@link injectRadioGroupContext} reads the same token at its internal
+ * {@link RadioGroupContext} type so each `[forRadio]` reaches the registration
+ * protocol.
+ */
 export const FOR_RADIO_GROUP_CONTEXT = new InjectionToken<ForRadioGroupContext>(
   'FOR_RADIO_GROUP_CONTEXT',
 );
@@ -54,21 +62,19 @@ export const FOR_RADIO_GROUP_CONTEXT = new InjectionToken<ForRadioGroupContext>(
  * {@link ForRadioGroupContext} publishes plus the radio-registration protocol
  * the tab-stop and navigation lookups are driven from.
  *
- * Never exported from `public-api.ts`. `[forRadioGroup]` provides it alongside
- * {@link FOR_RADIO_GROUP_CONTEXT} on the same object, so a consumer who injects
- * the public token gets the read surface while the pieces get the wiring
- * protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_RADIO_GROUP_CONTEXT} at, so a consumer who injects that token gets
+ * the read surface while the pieces get the wiring protocol. `ForRadioGroup`
+ * declares the protocol members TS-`private`, which keeps them out of the
+ * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
 export interface RadioGroupContext extends ForRadioGroupContext {
   registerRadio(handle: ForRadioHandle): void;
   unregisterRadio(handle: ForRadioHandle): void;
 }
 
-/** DI token carrying the internal {@link RadioGroupContext}. Provided by `[forRadioGroup]`. */
-export const RADIO_GROUP_CONTEXT = new InjectionToken<RadioGroupContext>('RADIO_GROUP_CONTEXT');
-
 export function injectRadioGroupContext(piece: string): RadioGroupContext {
-  const ctx = inject(RADIO_GROUP_CONTEXT, { optional: true });
+  const ctx = inject(FOR_RADIO_GROUP_CONTEXT, { optional: true }) as RadioGroupContext | null;
   if (!ctx) {
     throw new Error(
       `[forty-cdk/radio-group] ${piece} must be used inside a [forRadioGroup] element.`,

@@ -3,16 +3,17 @@ import { describe, expect, it } from 'vitest';
 
 import { afterEachOverlayCleanup, renderHost } from '../../src/test-utils';
 
-import { ForToast, provideForToast } from './toast';
+import { ForToast } from './toast';
 import { ForToastAction } from './toast-action';
 import { ForToastClose } from './toast-close';
+import { FOR_TOAST_CONTEXT } from './toast-context';
 import { ForToastDescription } from './toast-description';
 import { ForToastTitle } from './toast-title';
 
 @Directive({
   selector: '[wrapperToast]',
   exportAs: 'wrapperToast',
-  providers: provideForToast(WrapperToast),
+  providers: [{ provide: FOR_TOAST_CONTEXT, useExisting: WrapperToast }],
   host: { class: 'wrapper-toast' },
 })
 class WrapperToast extends ForToast {}
@@ -53,10 +54,10 @@ class WrapperHost {
   reason: string | null = null;
 }
 
-describe('ForToast subclass wrapper (#1524)', () => {
+describe('ForToast subclass wrapper (#1593)', () => {
   afterEachOverlayCleanup();
 
-  it('mounts a subclassed root whose own providers come from provideForToast', () => {
+  it('mounts a subclassed root that re-provides FOR_TOAST_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[data-testid="toast"]')?.getAttribute('role')).toBe('status');

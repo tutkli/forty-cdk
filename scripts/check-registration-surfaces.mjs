@@ -153,8 +153,8 @@ if (failures.length) {
     console.error(`  ${failure}`);
   }
   console.error(
-    `\nKeep the protocol on the unexported registration interface + token, or move the leaking ` +
-      `member to the public read surface deliberately (and drop it from ` +
+    `\nKeep the protocol on the unexported registration interface, or move the leaking member ` +
+      `to the public read surface deliberately (and drop it from ` +
       `scripts/lib/registration-surfaces.mjs).`,
   );
   process.exit(1);

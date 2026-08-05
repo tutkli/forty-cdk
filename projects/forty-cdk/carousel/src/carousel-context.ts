@@ -83,7 +83,13 @@ export interface ForCarouselContext {
   hasCurrentIndicator(): boolean;
 }
 
-/** DI token providing the carousel context to descendant pieces. */
+/**
+ * DI token providing the carousel context to descendant pieces.
+ *
+ * Publicly typed as the read surface {@link ForCarouselContext};
+ * {@link injectCarouselContext} reads the same token at its internal
+ * {@link CarouselContext} type so the pieces reach the registration protocol.
+ */
 export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_CAROUSEL_CONTEXT');
 
 /**
@@ -92,9 +98,11 @@ export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_
  * registration protocol the index lookups, geometry observer and roving
  * tabindex are driven from.
  *
- * Never exported from `public-api.ts`. `[forCarousel]` provides it alongside
- * {@link FOR_CAROUSEL_CONTEXT} on the same object, so a consumer who injects the
- * public token gets the read surface while the pieces get the wiring protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_CAROUSEL_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while the pieces get the wiring protocol. `ForCarousel` declares
+ * the protocol members TS-`private`, which keeps them out of the emitted
+ * `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
 export interface CarouselContext extends ForCarouselContext {
   registerSlide(handle: ForCarouselSlideHandle): void;
@@ -105,11 +113,8 @@ export interface CarouselContext extends ForCarouselContext {
   unregisterViewport(handle: ForCarouselViewportHandle): void;
 }
 
-/** DI token carrying the internal {@link CarouselContext}. Provided by `[forCarousel]`. */
-export const CAROUSEL_CONTEXT = new InjectionToken<CarouselContext>('CAROUSEL_CONTEXT');
-
 export function injectCarouselContext(piece: string): CarouselContext {
-  const ctx = inject(CAROUSEL_CONTEXT, { optional: true });
+  const ctx = inject(FOR_CAROUSEL_CONTEXT, { optional: true }) as CarouselContext | null;
   if (!ctx) {
     throw new Error(`[forty-cdk/carousel] ${piece} must be used inside a [forCarousel] element.`);
   }
