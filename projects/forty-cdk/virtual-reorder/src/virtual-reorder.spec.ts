@@ -54,6 +54,16 @@ function dispatchKey(el: HTMLElement, key: string): KeyboardEvent {
   return event;
 }
 
+function focusOut(el: HTMLElement, relatedTarget: HTMLElement | null = null): void {
+  el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
+}
+
+function assertiveText(): string {
+  return Array.from(document.querySelectorAll('[aria-live="assertive"]'))
+    .map((node) => node.textContent ?? '')
+    .join(' ');
+}
+
 function pointer(type: string, x: number, y: number): PointerEvent {
   return new PointerEvent(type, {
     clientX: x,
@@ -87,6 +97,7 @@ function pointer(type: string, x: number, y: number): PointerEvent {
         {{ row.label }}
       </div>
     </div>
+    <button type="button" data-testid="outside">outside</button>
   `,
 })
 class ReorderHost {
@@ -335,6 +346,81 @@ describe('ForVirtualReorder — a window jump past the lifted row keeps the gest
     const assertive = document.querySelector('[aria-live="assertive"]');
     expect(assertive?.textContent).toContain('dropped at position 1000 of 1000');
     expect(assertive?.textContent).not.toContain('cancelled');
+  });
+});
+
+describe('ForVirtualReorder — a focusout only cancels when focus really left the viewport', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('keeps the lift when the focusout reports no destination and focus is still inside', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+    focusOut(row);
+    await f();
+
+    expect(assertiveText()).not.toContain('cancelled');
+
+    dispatchKey(row, 'ArrowDown');
+    await f();
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(instance.last()).toEqual({ from: 2, to: 3 });
+  });
+
+  it('keeps the lift when focus moves to another row inside the viewport', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+    focusOut(row, query('[data-testid="row-3"]')!);
+    await f();
+
+    expect(assertiveText()).not.toContain('cancelled');
+
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(instance.last()).toEqual({ from: 2, to: 2 });
+  });
+
+  it('cancels the lift when focus lands on an element outside the viewport', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+
+    focusOut(row, query('[data-testid="outside"]')!);
+    await f();
+
+    expect(assertiveText()).toContain('movement cancelled');
+    expect(instance.events()).toBe(0);
+  });
+
+  it('cancels the lift when the focusout reports no destination and focus left the viewport', async () => {
+    const { instance, query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+
+    row.blur();
+    focusOut(row);
+    await f();
+
+    expect(assertiveText()).toContain('movement cancelled');
+    expect(instance.events()).toBe(0);
   });
 });
 

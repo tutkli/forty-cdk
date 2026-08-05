@@ -145,12 +145,13 @@ export class ForListboxReorder {
   constructor() {
     createKeyboardDragMediator({
       host: this.#host,
+      document: this.#document,
       isBrowser: this.#isBrowser,
       destroyRef: this.#destroyRef,
       isLifted: () => this.#mode === 'keyboard',
       onIdleKeydown: (event) => this.#onIdleKeydown(event),
       onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
-      onFocusOut: (event) => this.#onFocusOut(event),
+      onFocusLeave: () => this.#cancel(),
     });
 
     if (this.#isBrowser) {
@@ -302,17 +303,6 @@ export class ForListboxReorder {
         this.#setTarget(this.#ctx.options().length - 1, 'polite');
         return;
     }
-  }
-
-  #onFocusOut(event: FocusEvent): void {
-    if (this.#mode !== 'keyboard') {
-      return;
-    }
-    const related = event.relatedTarget as HTMLElement | null;
-    if (related && this.#host.contains(related)) {
-      return;
-    }
-    this.#cancel();
   }
 
   #lift(

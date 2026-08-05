@@ -136,16 +136,13 @@ export class ForVirtualReorder {
 
       createKeyboardDragMediator({
         host: this.#host,
+        document: this.#document,
         isBrowser: this.#isBrowser,
         destroyRef,
         isLifted: () => this.#kbLiftedHost !== null,
         onIdleKeydown: (event) => this.#onIdleKeydown(event),
         onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
-        onFocusOut: (event) => {
-          if (this.#kbLiftedHost !== null && event.target === this.#kbLiftedHost) {
-            this.#kbCancel();
-          }
-        },
+        onFocusLeave: () => this.#kbCancel(),
       });
 
       destroyRef.onDestroy(() => {

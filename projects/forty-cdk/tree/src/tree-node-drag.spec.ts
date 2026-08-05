@@ -60,6 +60,7 @@ import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
         <div forTreeItemLabel>Notes</div>
       </li>
     </ul>
+    <button type="button" data-testid="outside">outside</button>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -77,6 +78,10 @@ class TreeDragHost {
 
 function dispatchKey(el: HTMLElement, key: string, opts: KeyboardEventInit = {}): void {
   el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...opts }));
+}
+
+function focusOut(el: HTMLElement, relatedTarget: HTMLElement | null = null): void {
+  el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
 }
 
 function firePointer(target: EventTarget, type: string, x: number, y: number): void {
@@ -296,6 +301,93 @@ describe('ForTreeNodeDrag — keyboard', () => {
     await f();
 
     expect(tree.hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
+describe('ForTreeNodeDrag — a focusout only cancels when focus really left the tree', () => {
+  it('keeps the lift when the focusout reports no destination and focus is still inside', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+    focusOut(docsEl);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+
+    dispatchKey(tree, 'ArrowDown', {});
+    await f();
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(instance.dropped()!.node).toBe('docs');
+  });
+
+  it('keeps the lift when focus moves to another node inside the tree', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+    focusOut(docsEl, query<HTMLElement>('[data-testid="music"]')!);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(true);
+
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(instance.dropped()!.node).toBe('docs');
+  });
+
+  it('cancels the lift when focus lands on an element outside the tree', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+
+    focusOut(docsEl, query<HTMLElement>('[data-testid="outside"]')!);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+
+    dispatchKey(tree, ' ', {});
+    await f();
+
+    expect(instance.dropped()).toBeNull();
+  });
+
+  it('cancels the lift when the focusout reports no destination and focus left the tree', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTree]')!;
+    const docsEl = query<HTMLElement>('[data-testid="docs"]')!;
+    docsEl.focus();
+
+    dispatchKey(docsEl, ' ', { ctrlKey: true });
+    await f();
+
+    docsEl.blur();
+    focusOut(docsEl);
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.dropped()).toBeNull();
   });
 });
 

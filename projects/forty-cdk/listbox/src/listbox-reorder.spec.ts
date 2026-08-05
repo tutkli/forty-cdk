@@ -30,6 +30,7 @@ import { ForListboxReorder, type ForListboxReorderEvent } from './listbox-reorde
         </li>
       }
     </ul>
+    <button type="button" data-testid="outside">outside</button>
   `,
 })
 class ReorderHost {
@@ -55,6 +56,10 @@ function dispatchKey(el: HTMLElement, key: string, opts: KeyboardEventInit = {})
   });
   el.dispatchEvent(event);
   return event;
+}
+
+function focusOut(el: HTMLElement, relatedTarget: HTMLElement | null = null): void {
+  el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
 }
 
 function order(queryAll: (s: string) => HTMLElement[]): string[] {
@@ -186,6 +191,93 @@ describe('ForListboxReorder — keyboard', () => {
     await f();
 
     expect(instance.events()).toEqual([{ from: 1, to: 2 }]);
+  });
+});
+
+describe('ForListboxReorder — a focusout only cancels when focus really left the listbox', () => {
+  it('keeps the lift when the focusout reports no destination and focus is still inside', async () => {
+    const { instance, query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+    focusOut(optB);
+    await f();
+
+    expect(list.getAttribute('data-dragging')).toBe('');
+
+    dispatchKey(list, 'ArrowDown', {});
+    await f();
+    dispatchKey(list, ' ', {});
+    await f();
+
+    expect(instance.events()).toEqual([{ from: 1, to: 2 }]);
+  });
+
+  it('keeps the lift when focus moves to another option inside the listbox', async () => {
+    const { instance, query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+    focusOut(optB, query('[data-testid="opt-c"]')!);
+    await f();
+
+    expect(list.getAttribute('data-dragging')).toBe('');
+
+    dispatchKey(list, ' ', {});
+    await f();
+
+    expect(instance.events()).toEqual([{ from: 1, to: 1 }]);
+  });
+
+  it('cancels the lift when focus lands on an element outside the listbox', async () => {
+    const { instance, query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+
+    focusOut(optB, query('[data-testid="outside"]')!);
+    await f();
+
+    expect(list.hasAttribute('data-dragging')).toBe(false);
+
+    dispatchKey(list, ' ', {});
+    await f();
+
+    expect(instance.events()).toEqual([]);
+  });
+
+  it('cancels the lift when the focusout reports no destination and focus left the listbox', async () => {
+    const { instance, query, flush: f } = renderHost(ReorderHost);
+    await f();
+
+    const list = query('[forListbox]')!;
+    const optB = query('[data-testid="opt-b"]')!;
+    optB.focus();
+
+    dispatchKey(optB, ' ', { ctrlKey: true });
+    await f();
+
+    optB.blur();
+    focusOut(optB);
+    await f();
+
+    expect(list.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.events()).toEqual([]);
   });
 });
 
