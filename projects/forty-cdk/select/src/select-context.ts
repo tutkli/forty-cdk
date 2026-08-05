@@ -338,9 +338,13 @@ export interface ForSelectContext<T = unknown> {
 /**
  * DI token for the select's coordination surface, provided by `[forSelect]`.
  *
- * Publicly typed as the read surface {@link ForSelectContext};
- * {@link injectSelectContext} reads the same token at its internal
- * {@link SelectContext} type so the pieces reach the full overlay controller.
+ * Publicly typed as the read surface {@link ForSelectContext}, which is the whole of what
+ * the token promises a consumer — `overlay` included, narrowed there to
+ * {@link ForSelectOverlayFacade}. The pieces read the same token at an internal type that
+ * widens it to the full overlay controller, so a wrapper re-providing it must alias it to
+ * the root: `{ provide: FOR_SELECT_CONTEXT, useExisting: MySelect }`, where `MySelect`
+ * extends `ForSelect`. A value that merely satisfies the declared type resolves too, and is
+ * rejected in dev mode by the first piece to reach the controller.
  */
 export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELECT_CONTEXT');
 

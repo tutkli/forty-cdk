@@ -403,9 +403,12 @@ export interface ForComboboxContext<T = unknown> {
 
 /**
  * DI token for the combobox's coordination surface, provided by `[forCombobox]`.
- * Publicly typed as the read surface {@link ForComboboxContext};
- * {@link injectComboboxContext} reads the same token at its internal
- * {@link ComboboxContext} type so the pieces reach the registration protocol.
+ * Publicly typed as the read surface {@link ForComboboxContext}, which is the whole of
+ * what the token promises a consumer. The pieces read the same token at an internal type
+ * that adds the registration protocol, so a wrapper re-providing it must alias it to the
+ * root: `{ provide: FOR_COMBOBOX_CONTEXT, useExisting: MyCombobox }`, where `MyCombobox`
+ * extends `ForCombobox`. A value that merely satisfies the declared type resolves too, and
+ * is rejected in dev mode by the first piece to reach the protocol.
  *
  * `ForCombobox<T>`'s generic does NOT flow to this token: an `InjectionToken`
  * is a single runtime instance, so it is published at `ForComboboxContext<unknown>`.

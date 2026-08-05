@@ -48,6 +48,16 @@ import { renderHost } from '../test-utils/render';
  * accordion case below states the sharper half: a value the public interface
  * accepts *in full*, written as a typed const so the compiler has every chance
  * to object, and it still resolves.
+ *
+ * The three JSDoc cases gate the *other* half of that precondition — the one a
+ * consumer reads before writing the provider. A token's JSDoc lands verbatim in
+ * the emitted `.d.ts`, so it is exactly what IntelliSense shows at the
+ * `inject(FOR_<X>_CONTEXT)` call site: it must name the `useExisting` shape, and
+ * it must not `{@link}` a symbol the entry point does not export — a hidden
+ * context resolver ([#626](https://github.com/tutkli/forty-cdk/issues/626)) or an
+ * internal `<X>Context` interface, both absent from the emitted types, so the
+ * link is dead precisely where it is read. `For`-prefixed context interfaces are
+ * the public ones, which is what makes the check a one-line pattern.
  */
 const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
   query: '?raw',
@@ -266,7 +276,34 @@ const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries
   .filter(([key]) => !key.endsWith('.spec.ts'))
   .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
 
+/** The same sources with their comments intact, for the JSDoc claims below. */
+const DOCUMENTED_SOURCES: ReadonlyMap<string, string> = new Map(
+  Object.entries(SOURCES).map(([key, source]) => [pathOf(key), source as string] as const),
+);
+
 const escaped = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * The JSDoc block immediately above a token's declaration, or `null` when the
+ * declaration or an adjacent block is missing. Adjacency is required: a block
+ * separated by anything but whitespace documents something else.
+ */
+function tokenDoc(entry: GuardedRoot): string | null {
+  const source = DOCUMENTED_SOURCES.get(entry.source);
+  if (source === undefined) {
+    return null;
+  }
+  const declaration = source.indexOf(`export const ${entry.token} = new InjectionToken`);
+  if (declaration === -1) {
+    return null;
+  }
+  const close = source.lastIndexOf('*/', declaration);
+  const open = source.lastIndexOf('/**', close);
+  if (close === -1 || open === -1 || source.slice(close + 2, declaration).trim() !== '') {
+    return null;
+  }
+  return source.slice(open, close + 2);
+}
 
 /** Source paths declaring an internal `<X>Context extends For<X>Context`. */
 function splitContextSources(): Set<string> {
@@ -340,6 +377,30 @@ describe('split-root context guard (meta-guard)', () => {
     callers.delete(HELPER_SOURCE);
 
     expect(sorted(callers)).toEqual(sorted(splitContextSources()));
+  });
+
+  it('resolves the JSDoc block above every guarded token', () => {
+    const undocumented = GUARDED.filter((entry) => tokenDoc(entry) === null).map(
+      (entry) => entry.token,
+    );
+
+    expect(sorted(undocumented)).toEqual([]);
+  });
+
+  it('documents the `useExisting` precondition on every guarded token', () => {
+    const silent = GUARDED.filter((entry) => !(tokenDoc(entry) ?? '').includes('useExisting')).map(
+      (entry) => entry.token,
+    );
+
+    expect(sorted(silent)).toEqual([]);
+  });
+
+  it('links no internal symbol from a guarded token', () => {
+    const leaked = GUARDED.filter((entry) =>
+      /\{@link (?!For)\w+Context\}/.test(tokenDoc(entry) ?? ''),
+    ).map((entry) => entry.token);
+
+    expect(sorted(leaked)).toEqual([]);
   });
 
   it('declares the number of guarded resolvers each module has', () => {
