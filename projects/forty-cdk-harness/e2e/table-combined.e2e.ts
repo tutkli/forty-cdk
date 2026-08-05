@@ -39,13 +39,19 @@ test.describe('Table combined composition', () => {
     await page.mouse.move(rx + 80, ry);
     await page.mouse.up();
 
-    const afterBox = await headerName.boundingBox();
-    if (!afterBox) throw new Error('header-name has no box after resize');
-    expect(afterBox.width).toBeGreaterThan(beforeBox.width);
-    const widthVar = await root.evaluate((node) =>
-      getComputedStyle(node).getPropertyValue('--for-table-col-name-width').trim(),
-    );
-    expect(widthVar).not.toBe('');
+    // Both polled: `mouse.up()` resolves when the event is dispatched, not when
+    // the resize has been applied and the width var published, so reading
+    // either once races the commit.
+    await expect
+      .poll(() => headerName.boundingBox().then((b) => b?.width ?? 0))
+      .toBeGreaterThan(beforeBox.width);
+    await expect
+      .poll(() =>
+        root.evaluate((node) =>
+          getComputedStyle(node).getPropertyValue('--for-table-col-name-width').trim(),
+        ),
+      )
+      .not.toBe('');
 
     await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
     expect(await headerOrder(page)).toEqual(['name', 'role', 'dept', 'location']);
