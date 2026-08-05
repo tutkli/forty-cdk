@@ -112,6 +112,13 @@ piece-registration protocol that is deliberately **not** exported
 ([#1593](https://github.com/tutkli/forty-cdk/issues/1593)): both surfaces are two typed views of the
 **same token on the same object**, so the one-line re-provide above installs all of it.
 
+What that costs is a precondition worth stating: on those roots the token must be aliased to the
+root itself — `useExisting` pointing at the root's class or a subclass of it — because the pieces
+read it at the internal interface's type. A `useValue` carrying your own object satisfies the token's
+declared type and resolves, but has none of the registration protocol behind it; in dev mode the
+first piece to resolve rejects it with a `[forty-cdk/<primitive>]`-prefixed error naming this shape
+([#1669](https://github.com/tutkli/forty-cdk/issues/1669)).
+
 **Intermediate pieces provide tokens too**, and subclassing one has the same requirement:
 `ForAccordionItem` (`FOR_ACCORDION_ITEM_CONTEXT`), `ForStepperItem`
 (`FOR_STEPPER_ITEM_CONTEXT`), `ForTableRow` (`FOR_TABLE_ROW_CONTEXT`), `ForTreeItem`

@@ -2,6 +2,7 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  assertRootContext,
   type CollectionHandle,
   type FloatingAlign,
   type FloatingSide,
@@ -477,6 +478,16 @@ export interface ComboboxContext<T = unknown>
   extends ForComboboxContext<T>, ComboboxRegistrationContext<T> {}
 
 /**
+ * The constant half of both resolvers' {@link assertRootContext} calls, so the
+ * injected and the explicit path state the same requirement.
+ */
+const ROOT_ASSERTION = {
+  entryPoint: 'combobox',
+  token: 'FOR_COMBOBOX_CONTEXT',
+  root: '[forCombobox]',
+};
+
+/**
  * Resolve the surrounding combobox context, re-applying the caller's `T`. The
  * cast through `unknown` is unavoidable (see {@link FOR_COMBOBOX_CONTEXT}): the
  * token can't carry the per-instance generic, so `T` correctness is a
@@ -492,7 +503,13 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
         '[forCombobox] root.',
     );
   }
-  return ctx as unknown as ComboboxContext<T>;
+  const widened = ctx as unknown as ComboboxContext<T>;
+  assertRootContext({
+    ...ROOT_ASSERTION,
+    piece,
+    probe: () => widened.registerInput,
+  });
+  return widened;
 }
 
 /**
@@ -503,7 +520,11 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
  *
  * The explicit reference is a public `ForComboboxContext`, so it is widened back
  * to the internal surface: the runtime object is always the `[forCombobox]`
- * root, which owns the registration protocol the public interface omits.
+ * root, which owns the registration protocol the public interface omits. Both
+ * paths are guarded, on read rather than at injection time, because the explicit
+ * one only resolves inside the `computed`; the explicit widening predates the
+ * one-token collapse ([#1593](https://github.com/tutkli/forty-cdk/issues/1593))
+ * and was never checked either.
  */
 export function injectComboboxTriggerContext<T = unknown>(
   explicitRoot: Signal<ForComboboxContext<T> | ''>,
@@ -511,18 +532,22 @@ export function injectComboboxTriggerContext<T = unknown>(
   const injected = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit as ComboboxContext<T>;
+    const resolved = explicit === '' ? injected : explicit;
+    if (!resolved) {
+      throw new Error(
+        '[forty-cdk/combobox] ForComboboxTrigger could not resolve its [forCombobox] root: ' +
+          'no FOR_COMBOBOX_CONTEXT provider is visible and no explicit root reference was passed. ' +
+          "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+          'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+          'root explicitly: [forComboboxTrigger]="root" with #root="forCombobox".',
+      );
     }
-    if (injected) {
-      return injected as unknown as ComboboxContext<T>;
-    }
-    throw new Error(
-      '[forty-cdk/combobox] ForComboboxTrigger could not resolve its [forCombobox] root: ' +
-        'no FOR_COMBOBOX_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forComboboxTrigger]="root" with #root="forCombobox".',
-    );
+    const widened = resolved as unknown as ComboboxContext<T>;
+    assertRootContext({
+      ...ROOT_ASSERTION,
+      piece: 'ForComboboxTrigger',
+      probe: () => widened.registerInput,
+    });
+    return widened;
   });
 }

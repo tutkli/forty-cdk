@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type ListNavigationAction,
   type WritingDirection,
   type RovingTabindex,
@@ -111,5 +112,12 @@ export function injectTabsContext(piece: string): TabsContext {
   if (!ctx) {
     throw new Error(`[forty-cdk/tabs] ${piece} must be used inside a [forTabs] element.`);
   }
+  assertRootContext({
+    entryPoint: 'tabs',
+    token: 'FOR_TABS_CONTEXT',
+    root: '[forTabs]',
+    piece,
+    probe: () => ctx.registerTrigger,
+  });
   return ctx;
 }

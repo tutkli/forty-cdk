@@ -1,6 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type CollectionHandle,
   type FloatingAlign,
   type FloatingSide,
@@ -357,6 +358,18 @@ export interface SelectContext<T = unknown> extends ForSelectContext<T> {
   readonly overlay: ForSelectOverlayContext<T>;
 }
 
+/**
+ * The constant half of both resolvers' {@link assertRootContext} calls, so the
+ * injected and the explicit path state the same requirement. `SelectContext`
+ * adds no method of its own — it widens `overlay` from the consumer facade to
+ * the full controller — so the probe each call site supplies is nested.
+ */
+const ROOT_ASSERTION = {
+  entryPoint: 'select',
+  token: 'FOR_SELECT_CONTEXT',
+  root: '[forSelect]',
+};
+
 export function injectSelectContext<T = unknown>(piece: string): SelectContext<T> {
   const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
@@ -367,7 +380,13 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
         '[forSelect] root.',
     );
   }
-  return ctx as unknown as SelectContext<T>;
+  const widened = ctx as unknown as SelectContext<T>;
+  assertRootContext({
+    ...ROOT_ASSERTION,
+    piece,
+    probe: () => widened.overlay.setInitialFocus,
+  });
+  return widened;
 }
 
 /**
@@ -379,7 +398,11 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
  * The explicit reference is a public `ForSelectContext`, so it is widened back
  * to the internal surface: the runtime object is always the `[forSelect]` root,
  * which owns the full overlay controller — the public interface only narrows
- * `overlay` to the consumer facade.
+ * `overlay` to the consumer facade. Both paths are guarded, on read rather than
+ * at injection time, because the explicit one only resolves inside the
+ * `computed`; the explicit widening predates the one-token collapse
+ * ([#1593](https://github.com/tutkli/forty-cdk/issues/1593)) and was never
+ * checked either.
  */
 export function injectSelectTriggerContext<T = unknown>(
   explicitRoot: Signal<ForSelectContext<T> | ''>,
@@ -387,18 +410,22 @@ export function injectSelectTriggerContext<T = unknown>(
   const injected = inject(FOR_SELECT_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
-    if (explicit !== '') {
-      return explicit as SelectContext<T>;
+    const resolved = explicit === '' ? injected : explicit;
+    if (!resolved) {
+      throw new Error(
+        '[forty-cdk/select] ForSelectTrigger could not resolve its [forSelect] root: ' +
+          'no FOR_SELECT_CONTEXT provider is visible and no explicit root reference was passed. ' +
+          "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
+          'site — not where it is stamped — so either declare the template inside the root or pass the ' +
+          'root explicitly: [forSelectTrigger]="root" with #root="forSelect".',
+      );
     }
-    if (injected) {
-      return injected as unknown as SelectContext<T>;
-    }
-    throw new Error(
-      '[forty-cdk/select] ForSelectTrigger could not resolve its [forSelect] root: ' +
-        'no FOR_SELECT_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forSelectTrigger]="root" with #root="forSelect".',
-    );
+    const widened = resolved as unknown as SelectContext<T>;
+    assertRootContext({
+      ...ROOT_ASSERTION,
+      piece: 'ForSelectTrigger',
+      probe: () => widened.overlay.setInitialFocus,
+    });
+    return widened;
   });
 }

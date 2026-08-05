@@ -189,6 +189,14 @@ import { FOR_SELECT_CONTEXT, ForSelect } from 'forty-cdk/select';
 export class MtxSelect<T> extends ForSelect<T> {}
 ```
 
+`useExisting` pointing at the root's class (or a subclass of it) is a precondition rather than a
+style, because the pieces read the token at the internal interface's type. A `useValue` carrying your
+own object satisfies the token's declared type and resolves, but has none of the registration protocol
+behind it; in dev mode the first piece to resolve rejects it with a `[forty-cdk/<primitive>]`-prefixed
+error naming this shape ([#1669](https://github.com/tutkli/forty-cdk/issues/1669)). The same check
+covers Select's and Combobox's explicit trigger reference (`[forSelectTrigger]="root"` /
+`[forComboboxTrigger]="root"`), which resolves the root without DI.
+
 `ForTable` is the one exception. It is not a form primitive, but it splits its context the same way
 _and_ provides an internal registry its own constructor injects, so a subclass without
 `provideForTable(MyTable)` fails to construct at all (`NG0201`) — see
