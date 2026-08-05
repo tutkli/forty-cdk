@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expectFocused, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
 
 test.describe('Tree', () => {
   test('roving entry: exactly one treeitem is tabbable and Tab lands on it', async ({ page }) => {
@@ -13,7 +13,7 @@ test.describe('Tree', () => {
 
   test('Tab exits the tree to the next focusable element', async ({ page }) => {
     await gotoFixture(page, 'tree');
-    await el(page, 'item-documents').focus();
+    await focusRovingItem(page, 'item-documents');
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
   });

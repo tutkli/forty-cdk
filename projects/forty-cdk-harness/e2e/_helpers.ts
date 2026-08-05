@@ -230,14 +230,17 @@ export async function dragFromSteps(
   const armPx = options.armPx ?? 5;
   const release = options.release ?? true;
   const flickRelease = options.flickRelease ?? false;
-  // Skip the timed wait before the final step when a deterministic flick
-  // is requested, so its release-velocity dt is the event-dispatch gap.
-  const isLastStep = (i: number): boolean => i === steps - 1;
-  const waitBeforeStep = (i: number): boolean => !(flickRelease && isLastStep(i));
+  // A flick needs its final move and its release in one page task (see
+  // flickReleaseAt), so that last step leaves the per-event path. With
+  // `release: false` there is no release to pair it with, so the flag is inert.
+  const synthesizeFlick = flickRelease && release;
+  const pacedSteps = synthesizeFlick ? steps - 1 : steps;
 
   const len = Math.hypot(step.dx, step.dy) || 1;
   const armDx = (step.dx / len) * armPx;
   const armDy = (step.dy / len) * armPx;
+
+  if (synthesizeFlick) await armFlickCapture(page);
 
   if (options.testInfo && isMobileProject(options.testInfo)) {
     await start.dispatchEvent('pointerdown', { pointerType: 'touch' });
@@ -245,13 +248,15 @@ export async function dragFromSteps(
 
     let cx = startX + armDx;
     let cy = startY + armDy;
-    for (let i = 0; i < steps; i++) {
-      if (waitBeforeStep(i)) await page.waitForTimeout(stepDelayMs);
+    for (let i = 0; i < pacedSteps; i++) {
+      await page.waitForTimeout(stepDelayMs);
       cx += step.dx;
       cy += step.dy;
       await dispatchPointerMoveAt(page, cx, cy);
     }
-    if (release) {
+    if (synthesizeFlick) {
+      await flickReleaseAt(page, cx + step.dx, cy + step.dy);
+    } else if (release) {
       await dispatchPointerUpAt(page, cx, cy);
     }
     return;
@@ -265,15 +270,88 @@ export async function dragFromSteps(
 
   let cx = startX + armDx;
   let cy = startY + armDy;
-  for (let i = 0; i < steps; i++) {
-    if (waitBeforeStep(i)) await page.waitForTimeout(stepDelayMs);
+  for (let i = 0; i < pacedSteps; i++) {
+    await page.waitForTimeout(stepDelayMs);
     cx += step.dx;
     cy += step.dy;
     await page.mouse.move(cx, cy);
   }
-  if (release) {
+  if (synthesizeFlick) {
+    await flickReleaseAt(page, cx + step.dx, cy + step.dy);
+    // Let go of the real button the synthetic release closed the session for,
+    // so the mouse is not left pressed for whatever the test does next.
+    await page.mouse.up();
+  } else if (release) {
     await page.mouse.up();
   }
+}
+
+/**
+ * Record the `pointerId` of the gesture's real `pointerdown` so the synthetic
+ * release below can carry it. `createPointerDragSession` filters every move and
+ * release on `event.pointerId !== pointerId`, so a synthetic event with the
+ * wrong id is dropped in silence.
+ *
+ * Call before the `pointerdown` that opens the gesture. {@link dragFromSteps}
+ * does this itself; a spec building its own gesture pairs this with
+ * {@link flickReleaseAt}.
+ */
+export async function armFlickCapture(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const store = window as unknown as { __gesturePointerId: number | null };
+    store.__gesturePointerId = null;
+    document.addEventListener(
+      'pointerdown',
+      (event) => {
+        store.__gesturePointerId = (event as PointerEvent).pointerId;
+      },
+      { capture: true, once: true },
+    );
+  });
+}
+
+/**
+ * Close a gesture with a **flick**: the final `pointermove` and the `pointerup`
+ * are dispatched from inside the page, back-to-back in one task.
+ *
+ * A flick is decided by two wall-clock properties of the gap between the last
+ * two events — the release velocity (`|delta| / dt` against
+ * `FLICK_VELOCITY_PX_PER_MS`, where the engine derives `dt` from
+ * `event.timeStamp`) and the staleness cutoff (`FLICK_STALE_VELOCITY_MS`, 100ms,
+ * past which the sample is discarded outright). Playwright cannot bound that
+ * gap: every `page.mouse.*` call is its own CDP round trip, so under worker
+ * contention the release either falls under the velocity gate or arrives already
+ * stale, and the flick silently fails to register. Measured at ~1 in 18 on the
+ * two-worker CI profile before this existed. Note the staleness half cannot be
+ * bought off with a larger delta — that cutoff is purely temporal, which is why
+ * tuning distances only ever moved the failure rate around.
+ *
+ * Dispatching the pair in one page task puts both gaps at ~0, so a flick
+ * registers regardless of load. This is a faithful model rather than a
+ * convenient one: in a real flick the finger leaves the surface immediately
+ * after the fast movement, and the CDP round trip is an artefact of the
+ * instrument, not of the gesture. Fidelity is otherwise preserved — the
+ * `pointerdown`, the pointer capture and every earlier move are real, the
+ * synthetic pair carries the same `pointerId`, and the engine listens on
+ * `document` with `capture: true`, so these events reach it by the same path.
+ *
+ * Requires {@link armFlickCapture} before the gesture's `pointerdown`.
+ */
+export async function flickReleaseAt(page: Page, x: number, y: number): Promise<void> {
+  await page.evaluate(
+    ({ x, y }) => {
+      const store = window as unknown as { __gesturePointerId: number | null };
+      const pointerId = store.__gesturePointerId;
+      if (pointerId === null) {
+        throw new Error('flickReleaseAt: armFlickCapture was not called before the pointerdown');
+      }
+      const target = document.elementFromPoint(x, y) ?? document.body;
+      const init = { pointerId, clientX: x, clientY: y, bubbles: true };
+      target.dispatchEvent(new PointerEvent('pointermove', init));
+      target.dispatchEvent(new PointerEvent('pointerup', init));
+    },
+    { x, y },
+  );
 }
 
 /**
@@ -365,6 +443,32 @@ export async function rovingFirst(page: Page, testid: string, maxAttempts = 20):
   throw new Error(
     `rovingFirst: did not land on data-testid="${testid}" after ${maxAttempts} Tab presses (last focused: ${last ?? 'none'})`,
   );
+}
+
+/**
+ * Focus a roving-tabindex item and wait until its group has handed it the
+ * group's single tab stop. Use this — never a bare `.focus()` — before a
+ * `Tab` / `Shift+Tab` that is meant to leave the group.
+ *
+ * Focusing an item is what *moves* the tab stop onto it: the items bind
+ * `(focus)` (see `listbox-option.ts`) and the handler rewrites every sibling's
+ * `tabindex` through a signal, so the new attributes land on a later,
+ * asynchronous render under zoneless change detection. A `Tab` fired straight
+ * after `.focus()` is therefore resolved by the browser against the *previous*
+ * item's `tabindex="0"` and lands one stop short — on a sibling instead of
+ * outside the group. The window is narrow locally and widens under CI worker
+ * contention, which is the shape that kept the E2E gate red without ever
+ * reproducing on a developer machine.
+ *
+ * Waiting for `tabindex="0"` gives the keypress a settled origin, and asserts
+ * the roving contract — programmatic focus moves the tab stop — on the way, so
+ * the wait is itself coverage rather than a delay.
+ */
+export async function focusRovingItem(page: Page, testid: string): Promise<void> {
+  const item = el(page, testid);
+  await item.focus();
+  await expect(item).toBeFocused();
+  await expect(item).toHaveAttribute('tabindex', '0');
 }
 
 /**

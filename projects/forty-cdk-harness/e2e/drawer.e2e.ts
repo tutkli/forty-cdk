@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { clickOutside, dragFrom, dragFromSteps, el, gotoFixture } from './_helpers';
+import {
+  armFlickCapture,
+  clickOutside,
+  dragFrom,
+  dragFromSteps,
+  el,
+  flickReleaseAt,
+  gotoFixture,
+} from './_helpers';
 
 test.describe('Drawer', () => {
   test('moves focus to the first focusable on open (initialFocus="first")', async ({ page }) => {
@@ -793,18 +801,20 @@ test.describe('Drawer', () => {
       // flick is registered iff the final move's velocity clears the
       // 0.4 px/ms `FLICK_VELOCITY_PX_PER_MS` gate.
       //
-      // Robustness: the previous shape relied on the final move's
-      // `dt` being sub-millisecond ("CDP transport overhead") while keeping
-      // the delta tiny (25 px) to stay under the position threshold. On
-      // `Mobile Safari` under `--ui` / load that assumption breaks — WebKit
-      // coalesces pointermoves and inflates `dt`, so 25 px / dt dipped under
-      // 0.4 and the dismiss silently failed, inconsistently. We instead buy
-      // headroom: raise the position threshold to 100 px via
-      // `closeThreshold=0.5` (200 × 0.5) so the velocity branch can use a
-      // LARGE final delta (70 px) that still sits below the position
-      // threshold (total offset 90 px < 100 px). 70 px / dt clears 0.4 even
-      // when `dt` inflates past 100 ms, so the only dismiss path remains the
-      // velocity branch of `#onSwipeRelease`
+      // Two thresholds have to be cleared, and only one of them can be bought
+      // with distance. A large final delta (70 px) keeps `|delta| / dt` above
+      // 0.4 px/ms even when `dt` inflates well past 100 ms — but the release
+      // also has to reach the engine within `FLICK_STALE_VELOCITY_MS` (100 ms)
+      // of that move or the sample is discarded outright, and that cutoff is
+      // purely temporal: no delta clears it. Since every `page.mouse.*` call is
+      // its own CDP round trip, the move→release gap was unbounded, which is
+      // why this dismissed only most of the time. `flickReleaseAt` emits the
+      // pair in one page task so both gaps are ~0.
+      //
+      // The distance arithmetic still matters, for a different reason: raising
+      // the position threshold to 100 px via `closeThreshold=0.5` (200 × 0.5)
+      // keeps the total offset (90 px) underneath it, so the velocity branch of
+      // `#onSwipeRelease` stays the ONLY path that can dismiss
       // (`offset >= dim * closeThreshold || #pointerVelocity >= 0.4`).
       await gotoFixture(page, 'drawer', { drawerHeight: '200', closeThreshold: '0.5' });
       await el(page, 'trigger').click();
@@ -813,6 +823,7 @@ test.describe('Drawer', () => {
       const handleBox = (await el(page, 'handle').boundingBox())!;
       const sx = handleBox.x + handleBox.width / 2;
       const sy = handleBox.y + handleBox.height / 2;
+      await armFlickCapture(page);
       await page.mouse.move(sx, sy);
       await page.mouse.down();
       await page.mouse.move(sx, sy + 5); // arm
@@ -821,12 +832,10 @@ test.describe('Drawer', () => {
       // tight dt below stands out unambiguously.
       await page.waitForTimeout(120);
       await page.mouse.move(sx, sy + 20); // intermediate (slow, velocity here is small)
-      // Back-to-back final move + release: the directive recomputes
-      // `#pointerVelocity` on this move against the previous one. The
-      // 70 px delta keeps velocity well above 0.4 even if WebKit inflates
-      // `dt`; total offset (90 px) stays under the 100 px position
-      // threshold so this can only dismiss via the velocity branch.
-      await page.mouse.move(sx, sy + 90);
+      // Final move + release in one page task: the directive recomputes
+      // `#pointerVelocity` on this move against the previous one, and reads it
+      // on a release that cannot have gone stale.
+      await flickReleaseAt(page, sx, sy + 90);
       await page.mouse.up();
 
       await expect(el(page, 'drawer')).toHaveCount(0);

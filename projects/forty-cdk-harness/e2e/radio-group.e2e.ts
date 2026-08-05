@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expectFocused, focusRovingItem, gotoFixture } from './_helpers';
 
 /**
  * Real-browser focus + selection contract for `[forRadioGroup]`. The Vitest
@@ -32,7 +32,7 @@ test.describe('RadioGroup (single tabstop)', () => {
     page,
   }) => {
     await gotoFixture(page, 'radio-group', { checked: '1' });
-    await el(page, 'opt-1').focus();
+    await focusRovingItem(page, 'opt-1');
     await page.keyboard.press('Tab');
     // One Tab from the checked radio must reach the trailing input — if every
     // radio had `tabindex=0` we'd stop at `opt-2` first.

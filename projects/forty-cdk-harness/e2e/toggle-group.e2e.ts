@@ -1,5 +1,5 @@
 import { test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expectFocused, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
 
 /**
  * Real-browser roving-tabindex contract for the standalone
@@ -21,7 +21,7 @@ test.describe('ToggleGroup', () => {
 
   test('Tab from inside the group exits to the next document focusable', async ({ page }) => {
     await gotoFixture(page, 'toggle-group');
-    await el(page, 'tg-center').focus();
+    await focusRovingItem(page, 'tg-center');
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
   });

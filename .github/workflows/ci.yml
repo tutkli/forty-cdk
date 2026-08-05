@@ -56,11 +56,34 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  # Sharded across 3 runners per browser engine. The single-job shape this
+  # replaced could not pass: the suite needs ~19 min of wall clock at
+  # `workers: 2` for both engines, against a `timeout-minutes: 15` — so the job
+  # timed out even with every test green, and those timeouts were
+  # indistinguishable from real failures. Each shard now runs ~4-6 min, which
+  # leaves 2x headroom, and `retries: 0` (see playwright.config.ts) means a
+  # race is reported instead of retried away.
+  #
+  # One engine per job so the browser cache holds exactly what the job needs;
+  # the emulated mobile project riding the same engine joins it, since
+  # `@mobile`-tagged tests are cheap and would otherwise need a job of their
+  # own to download a second browser for.
   e2e:
-    if: false
-    name: E2E (Playwright)
+    name: E2E (${{ matrix.browser }} ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      # One shard's failure must not cancel the others: partial results across
+      # engines are what tells a WebKit-only regression from a real one.
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+        shard: [1, 2, 3]
+        include:
+          - browser: chromium
+            projects: --project=chromium --project='Mobile Chrome'
+          - browser: webkit
+            projects: --project=webkit --project='Mobile Safari'
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6
@@ -77,21 +100,52 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - name: Install Playwright browsers
+          # Keyed by engine: a job that installs only Chromium must not publish
+          # its cache under a key a WebKit job would then restore and trust.
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.browser }}
+      - name: Install Playwright browser
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps chromium webkit
-      - name: Install system deps for cached browsers
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install system deps for cached browser
         if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps chromium webkit
-      - run: pnpm exec playwright test
+        run: pnpm exec playwright install-deps ${{ matrix.browser }}
+      - run: pnpm exec playwright test ${{ matrix.projects }} --shard=${{ matrix.shard }}/3
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.browser }}-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Stitches every shard's blob into one HTML report, so a failure is read in a
+  # single place rather than by opening six shard logs. Runs even when a shard
+  # failed — that is precisely when the report is needed.
+  e2e-report:
+    name: E2E report
+    if: ${{ !cancelled() }}
+    needs: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      - run: pnpm exec playwright merge-reports --reporter=html ./all-blob-reports
       - name: Upload Playwright report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
+          path: playwright-report/
           retention-days: 14
           if-no-files-found: ignore

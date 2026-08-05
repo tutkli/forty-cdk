@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, gotoFixture, rovingFirst } from './_helpers';
+import { el, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
 
 test.describe('Listbox', () => {
   test('Tab into the listbox lands on the first enabled option', async ({ page }) => {
@@ -48,7 +48,7 @@ test.describe('Listbox', () => {
 
   test('Tab exits the listbox to the next focusable element', async ({ page }) => {
     await gotoFixture(page, 'listbox');
-    await el(page, 'opt-apple').focus();
+    await focusRovingItem(page, 'opt-apple');
     await page.keyboard.press('Tab');
     await expect(el(page, 'after')).toBeFocused();
   });

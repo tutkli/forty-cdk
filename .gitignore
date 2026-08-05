@@ -54,6 +54,7 @@ __screenshots__/
 
 # Playwright
 /playwright-report/
+/blob-report/
 /test-results/
 /playwright/.cache/
 /.playwright-cli/

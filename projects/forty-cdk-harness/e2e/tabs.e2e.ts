@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expectFocused, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
 
 /**
  * Real-browser coverage for the Tabs roving-tabindex keyboard journey. The
@@ -142,7 +142,7 @@ test.describe('Tabs (Tab into panel)', () => {
     page,
   }) => {
     await gotoFixture(page, 'tabs');
-    await el(page, 'trigger-a').focus();
+    await focusRovingItem(page, 'trigger-a');
     // Panel A embeds a focusable <button>, so per the APG the panel host is
     // NOT a tab stop (it carries no tabindex). Tab out of the tablist moves
     // focus straight to the panel's focusable child.
@@ -155,7 +155,7 @@ test.describe('Tabs (Tab into panel)', () => {
     // Select panel D (text only) and Tab out of the tablist — the panel host
     // owns the tab stop because it has no focusable descendants.
     await gotoFixture(page, 'tabs', { disabled: 'none' });
-    await el(page, 'trigger-d').focus();
+    await focusRovingItem(page, 'trigger-d');
     await page.keyboard.press(' ');
     await expect(el(page, 'content-d')).toHaveAttribute('tabindex', '0');
 
