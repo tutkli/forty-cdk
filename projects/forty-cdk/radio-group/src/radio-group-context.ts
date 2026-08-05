@@ -1,6 +1,10 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type ListNavigationAction, type WritingDirection } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  type ListNavigationAction,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 /**
  * Lightweight handle each `ForRadio` registers with the group on init so the
@@ -80,5 +84,12 @@ export function injectRadioGroupContext(piece: string): RadioGroupContext {
       `[forty-cdk/radio-group] ${piece} must be used inside a [forRadioGroup] element.`,
     );
   }
+  assertRootContext({
+    entryPoint: 'radio-group',
+    token: 'FOR_RADIO_GROUP_CONTEXT',
+    root: '[forRadioGroup]',
+    piece,
+    probe: () => ctx.registerRadio,
+  });
   return ctx;
 }

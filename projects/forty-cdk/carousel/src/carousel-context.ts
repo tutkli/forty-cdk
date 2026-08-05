@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type ListNavigationAction,
   type WritingDirection,
   type RovingTabindex,
@@ -118,5 +119,12 @@ export function injectCarouselContext(piece: string): CarouselContext {
   if (!ctx) {
     throw new Error(`[forty-cdk/carousel] ${piece} must be used inside a [forCarousel] element.`);
   }
+  assertRootContext({
+    entryPoint: 'carousel',
+    token: 'FOR_CAROUSEL_CONTEXT',
+    root: '[forCarousel]',
+    piece,
+    probe: () => ctx.registerSlide,
+  });
   return ctx;
 }

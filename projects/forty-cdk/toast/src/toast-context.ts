@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal, type TemplateRef } from '@angular/core';
 
-import { type SwipeDirection } from 'forty-cdk/core';
+import { assertRootContext, type SwipeDirection } from 'forty-cdk/core';
 
 export type ForToastVariant = 'info' | 'success' | 'warning' | 'error';
 
@@ -241,5 +241,12 @@ export function injectToastContext(piece: string): ToastContext {
   if (!ctx) {
     throw new Error(`[forty-cdk/toast] ${piece} must be used inside a [forToast] element.`);
   }
+  assertRootContext({
+    entryPoint: 'toast',
+    token: 'FOR_TOAST_CONTEXT',
+    root: '[forToast]',
+    piece,
+    probe: () => ctx.registerLabel,
+  });
   return ctx;
 }

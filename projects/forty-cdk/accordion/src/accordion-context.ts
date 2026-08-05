@@ -1,6 +1,10 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type ListNavigationAction, type WritingDirection } from 'forty-cdk/core';
+import {
+  assertRootContext,
+  type ListNavigationAction,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 /**
  * Registry entry for one `ForAccordionTrigger`. Triggers register their host
@@ -93,6 +97,13 @@ export function injectAccordionContext(piece: string): AccordionContext {
   if (!ctx) {
     throw new Error(`[forty-cdk/accordion] ${piece} must be used inside a [forAccordion] element.`);
   }
+  assertRootContext({
+    entryPoint: 'accordion',
+    token: 'FOR_ACCORDION_CONTEXT',
+    root: '[forAccordion]',
+    piece,
+    probe: () => ctx.registerTrigger,
+  });
   return ctx;
 }
 

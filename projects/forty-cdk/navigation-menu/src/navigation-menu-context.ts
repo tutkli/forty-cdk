@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type CollectionHandle,
   type ListNavigationAction,
   type WritingDirection,
@@ -229,6 +230,13 @@ export function injectNavigationMenuContext(piece: string): NavigationMenuContex
         '[forNavigationMenu] root.',
     );
   }
+  assertRootContext({
+    entryPoint: 'navigation-menu',
+    token: 'FOR_NAVIGATION_MENU_CONTEXT',
+    root: '[forNavigationMenu]',
+    piece,
+    probe: () => ctx.registerTrigger,
+  });
   return ctx;
 }
 

@@ -248,6 +248,7 @@ export {
 } from './pointer/pointer-grace';
 export { createPointerSuppression, type PointerSuppression } from './pointer/pointer-suppression';
 export { injectPortal } from './portal/portal';
+export { assertRootContext } from './root-context/root-context';
 export {
   FOR_HOST_ROVING_CONTEXT,
   type HostRovingContext,
