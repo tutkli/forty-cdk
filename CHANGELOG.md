@@ -5,7 +5,49 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.21.0] - 2026-08-05
+
+The release where a keyboard reorder survives the window it is standing on. Lifting a row and pressing
+`End` recycled the rendered window underneath the gesture: the lifted row's own DOM node was detached to
+re-index it, focus fell to `<body>`, and the lift was announced as cancelled for something the user never
+did. The renderer no longer detaches a row it is keeping, three coordinators hold the lift across a jump,
+all four agree on what a `focusout` with no destination means, and a press on an `<svg>` icon inside a drag
+handle starts the drag instead of failing an `instanceof` one interface too narrow. Above that, two
+structural cleanups move imports rather than behaviour: `forty-cdk/virtualization` stops statically
+importing two other primitives, which takes the module graph behind a plain `injectVirtualizer` from 462 KB
+to 150 KB, and the eight roots that split their coordination surface in two go back to providing one token —
+now with a dev-mode error when a consumer provides it wrong, instead of a `TypeError` from library code.
+Toast's surviving rows finally have something to animate.
+
+### Added
+
+- **Toast.** `[stackShift]` on `[forToastViewport]` opts into a FLIP glide for the rows a mount or unmount
+  pushes around ([#1680](https://github.com/tutkli/forty-cdk/issues/1680)). `animateEnter` / `animateLeave`
+  only ever covered the row that appears or disappears; its siblings reflowed to their new spot in a single
+  frame with no property of their own for CSS to transition. The input takes
+  `ForToastStackShift | number | null` — a bare number being shorthand for `{ duration }` with `linear`
+  easing — and reads its default from the new `ForToastDefaults.stackShift` key, so a design system declares
+  the motion once per scope and `[stackShift]="0"` opts a single viewport back out. There is no motion unless
+  asked for: an unset viewport keeps today's synchronous reflow. The glide drives the individual `translate`
+  property, never `transform` — `transform` is the consumer's by this primitive's own documentation (the
+  swipe recipe writes it, the exit-animation example keyframes it), and the browser applies `translate`
+  first, so the two compose instead of the glide suppressing them. `prefers-reduced-motion: reduce` skips the
+  glide while keeping the position map fresh, so the first shift after the preference flips off is measured
+  from the right baseline; an easing the platform rejects warns once per viewport in dev mode rather than
+  throwing out of the observer callback. Known limit: a row that reflows on its own — text swapped by
+  `ForToastRef.update()`, a late font — is measured from the previous mutation's baseline
+  ([#1684](https://github.com/tutkli/forty-cdk/issues/1684)).
+- **Split-context roots.** Providing `FOR_<PRIMITIVE>_CONTEXT` with a value that is not the root is now a
+  prefixed dev-mode error naming the provider shape to write
+  ([#1669](https://github.com/tutkli/forty-cdk/issues/1669)). Nothing checked that cast: a consumer whose
+  providers satisfied the public interface typechecked, resolved, and then failed inside the first piece to
+  reach the registration protocol — a bare `TypeError`, no `[forty-cdk/<entry>]` prefix, and a stack pointing
+  at a library file for a mistake made in consumer providers. Each root's internal resolver now probes the
+  resolved value and throws the library's own error, naming
+  `{ provide: FOR_<X>_CONTEXT, useExisting: MyRoot }` — which is also the precondition of the migration
+  below. `[forSelectTrigger]` and `[forComboboxTrigger]` guard their explicit-root binding from the same call
+  site, a widening that was unchecked before the collapse, and a nullish explicit reference now reports the
+  orphan error instead of being handed back. A production build probes nothing.
 
 ### Changed
 
@@ -49,6 +91,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `TableRegistry` provider its own constructor injects, so a hand-written list still cannot wrap it.
   `provideForTableDefRegistry` and every `provideFor<Primitive>Defaults` helper are untouched, and no
   role, ARIA attribute, `data-state` or input / output changed.
+
+### Fixed
+
+- **Virtualization / Table.** A keyboard reorder lift survives a window jump — `End`, `Home`, `PageUp` and
+  `PageDown` no longer lose the gesture when they carry the rendered window past the lifted row
+  ([#1666](https://github.com/tutkli/forty-cdk/issues/1666),
+  [#1671](https://github.com/tutkli/forty-cdk/issues/1671)). Two independent mechanisms were destroying it.
+  In `*forVirtualFor`, the surviving views were re-indexed **before** the departed ones were removed, so a
+  survivor reached its new position through `ViewContainerRef.move` — a detach and re-insert, which blurs the
+  node; the removal now happens first, and because both the window and the container are ascending by index,
+  no survivor ever needs moving. That also takes the churn out of ordinary scrolling, where a one-item window
+  shift used to detach and re-insert every surviving row and silently blur a focused one in any windowed
+  list, reorder or not. In `[forTableRowReorder]`, Angular's reconciler takes that same path only for the
+  live tail wanted at the new head, so a lift on the **last** rendered row died on a downward jump while a
+  mid-window lift survived and an upward jump was already safe; the coordinator now captures the element
+  focused at lift and re-asserts it whenever the rendered-row set changes while focus has fallen outside the
+  rowgroup. That restore covers a lift started from a focusable non-HTML element too — an
+  `<svg tabindex="0">` control inside a cell, which a narrower reading dropped to the row host and its `-1`
+  grid tab stop ([#1679](https://github.com/tutkli/forty-cdk/issues/1679)).
+- **Keyboard reorder.** A focus change that never left the widget no longer cancels the gesture, so a
+  consumer re-render mid-lift stops announcing `movement cancelled` for something the user never did
+  ([#1673](https://github.com/tutkli/forty-cdk/issues/1673)). The keyboard-drag mediator handed each
+  coordinator the raw `focusout` and left "where did focus go?" to be re-answered per call site — four
+  coordinators, three different answers. The resolution moves into the mediator, and `[forListboxReorder]`,
+  `[forTreeNodeDrag]`, `[forTableRowReorder]` and `[forVirtualReorder]` now agree on three channels: a
+  destination inside the host keeps the lift, a destination outside cancels immediately, and a `focusout`
+  reporting no destination at all is deferred one microtask and decided against `document.activeElement`.
+  `[forVirtualReorder]` had the loosest of the four — it compared `event.target` against the lifted host and
+  never read `relatedTarget`, so focus moving to another element **inside the same viewport** cancelled the
+  gesture there and nowhere else.
+- **Tree / Virtualization / Table.** A pointer press that lands on an `<svg>` icon inside a drag handle
+  starts the drag ([#1677](https://github.com/tutkli/forty-cdk/issues/1677)). The three reorder coordinators
+  disagreed on what a grab target is: `[forVirtualReorder]` and `[forTableRowReorder]` narrowed to
+  `HTMLElement`, so a press on an SVG child — the shape a handle icon usually takes — failed the check and
+  never pinned the row, while `[forTreeNodeDrag]` reached the same value through an
+  `event.target as HTMLElement` cast that only happened to work. All three now read it as `Element`, which is
+  what `closest()` and the tree's element-keyed host map need, and `isInsideGrabArea` widens to `Node` since
+  it only calls `contains`. The keyboard path keeps its own `Node` narrowing — it compares by identity and
+  containment, where `Node` is already the sound minimum rather than a third reading of the same value.
 
 ## [0.20.0] - 2026-08-04
 
@@ -1697,7 +1778,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.21.0...HEAD
+[0.21.0]: https://github.com/tutkli/forty-cdk/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/tutkli/forty-cdk/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/tutkli/forty-cdk/compare/v0.17.0...v0.18.0
