@@ -2,6 +2,7 @@ import {
   DestroyRef,
   Directive,
   DOCUMENT,
+  effect,
   ElementRef,
   inject,
   output,
@@ -99,6 +100,11 @@ export function translateRowReorderIndices(
  * it. Without Shift, pointer resolution is unchanged.
  * A non-virtualized table emits rendered-order indices unchanged.
  *
+ * A keyboard jump recycles the rendered window, which re-positions the retained lifted row
+ * in the consumer's `@for` and blurs it on the way through. That is not a cancel: focus is
+ * put back on the lifted row once the window settles, and a `focusout` reporting no
+ * destination only cancels the gesture if focus is still outside the rowgroup afterwards.
+ *
  * @example
  * ```html
  * <div role="rowgroup" forTableRowReorder (rowReorder)="onReorder($event)">
@@ -149,6 +155,7 @@ export class ForTableRowReorder {
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
 
   #kbLiftedHost: HTMLElement | null = null;
+  #kbFocusEl: HTMLElement | null = null;
   #kbPath: 'virtual' | 'list' | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
@@ -190,11 +197,20 @@ export class ForTableRowReorder {
             return;
           }
           const related = event.relatedTarget;
-          if (related instanceof Node && this.#host.contains(related)) {
+          if (related instanceof Node) {
+            if (this.#host.contains(related)) {
+              return;
+            }
+            this.#cancelActive();
             return;
           }
-          this.#cancelActive();
+          this.#deferFocusLeaveCancel();
         },
+      });
+
+      effect(() => {
+        this.#registration.rows();
+        this.#restoreLiftedFocus();
       });
 
       destroyRef.onDestroy(() => {
@@ -357,8 +373,38 @@ export class ForTableRowReorder {
     }
   }
 
+  #deferFocusLeaveCancel(): void {
+    const lifted = this.#kbLiftedHost;
+    queueMicrotask(() => {
+      if (this.#kbLiftedHost !== lifted) {
+        return;
+      }
+      const active = this.#document.activeElement;
+      if (active !== null && this.#host.contains(active)) {
+        return;
+      }
+      this.#cancelActive();
+    });
+  }
+
+  #restoreLiftedFocus(): void {
+    if (this.#kbPath !== 'virtual' || this.#kbLiftedHost === null) {
+      return;
+    }
+    const target = this.#kbFocusEl;
+    if (target === null || !this.#host.contains(target)) {
+      return;
+    }
+    const active = this.#document.activeElement;
+    if (active !== null && this.#host.contains(active)) {
+      return;
+    }
+    target.focus();
+  }
+
   #kbLift(host: HTMLElement, vi: number): void {
     this.#kbLiftedHost = host;
+    this.#kbFocusEl = this.#resolveFocusTarget(host);
     this.#kbFrom = vi;
     this.#kbTarget = vi;
     this.#registration.setReorderingRow(vi);
@@ -391,8 +437,14 @@ export class ForTableRowReorder {
     this.#kbTeardown();
   }
 
+  #resolveFocusTarget(host: HTMLElement): HTMLElement {
+    const active = this.#document.activeElement;
+    return active instanceof HTMLElement && host.contains(active) ? active : host;
+  }
+
   #kbTeardown(): void {
     this.#kbLiftedHost = null;
+    this.#kbFocusEl = null;
     this.#kbPath = null;
     this.#kbFrom = 0;
     this.#kbTarget = 0;
