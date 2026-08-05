@@ -149,12 +149,13 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
 
     createKeyboardDragMediator({
       host: this.#hostEl,
+      document: this.#document,
       isBrowser: this.#isBrowser,
       destroyRef: this.#destroyRef,
       isLifted: () => this.#mode === 'keyboard',
       onIdleKeydown: (event) => this.#onIdleKeydown(event),
       onLiftedKeydown: (event) => this.#handleLiftedKeydown(event),
-      onFocusOut: (event) => this.#onFocusout(event),
+      onFocusLeave: () => this.#cancelSession(true),
     });
 
     this.#pointerSession = createPointerDragSession({
@@ -233,17 +234,6 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
       this.#desiredLevel = Math.max(1, this.#desiredLevel - 1);
     }
     this.#resolveAndAnnounceMove(visible);
-  }
-
-  #onFocusout(event: FocusEvent): void {
-    if (this.#mode !== 'keyboard') {
-      return;
-    }
-    const related = event.relatedTarget as HTMLElement | null;
-    if (related && this.#hostEl.contains(related)) {
-      return;
-    }
-    this.#cancelSession(true);
   }
 
   #canStartPointer(event: PointerEvent): boolean {

@@ -187,25 +187,13 @@ export class ForTableRowReorder {
 
       createKeyboardDragMediator({
         host: this.#host,
+        document: this.#document,
         isBrowser: this.#isBrowser,
         destroyRef,
         isLifted: () => this.#kbLiftedHost !== null,
         onIdleKeydown: (event) => this.#onIdleKeydown(event),
         onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
-        onFocusOut: (event) => {
-          if (this.#kbLiftedHost === null) {
-            return;
-          }
-          const related = event.relatedTarget;
-          if (related instanceof Node) {
-            if (this.#host.contains(related)) {
-              return;
-            }
-            this.#cancelActive();
-            return;
-          }
-          this.#deferFocusLeaveCancel();
-        },
+        onFocusLeave: () => this.#cancelActive(),
       });
 
       effect(() => {
@@ -371,20 +359,6 @@ export class ForTableRowReorder {
       this.#list.cancel();
       this.#kbTeardown();
     }
-  }
-
-  #deferFocusLeaveCancel(): void {
-    const lifted = this.#kbLiftedHost;
-    queueMicrotask(() => {
-      if (this.#kbLiftedHost !== lifted) {
-        return;
-      }
-      const active = this.#document.activeElement;
-      if (active !== null && this.#host.contains(active)) {
-        return;
-      }
-      this.#cancelActive();
-    });
   }
 
   #restoreLiftedFocus(): void {

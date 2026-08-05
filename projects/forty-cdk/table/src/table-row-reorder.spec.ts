@@ -288,6 +288,28 @@ describe('ForTableRowReorder — a focusout only cancels when focus really left 
     expect(instance.last).toEqual({ from, to: from + 1 });
   });
 
+  it('keeps the lift when focus moves to another cell inside the rowgroup', async () => {
+    const { instance, settle, indices, cell } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    const sibling = cell(from - 1);
+    focusOut(lifted, sibling);
+    await settle();
+
+    expect(liveRegionText()).not.toContain('cancelled');
+
+    press(lifted, 'ArrowDown');
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: from + 1 });
+  });
+
   it('cancels the lift when focus lands on an element outside the rowgroup', async () => {
     const { instance, settle, indices, cell, query } = await mount();
     const from = Math.max(...indices());
@@ -297,9 +319,7 @@ describe('ForTableRowReorder — a focusout only cancels when focus really left 
     press(lifted, ' ', { ctrlKey: true });
     await settle();
 
-    const outside = query('[data-testid="outside"]');
-    outside.focus();
-    focusOut(lifted, outside);
+    focusOut(lifted, query('[data-testid="outside"]'));
     await settle();
 
     expect(liveRegionText()).toContain('movement cancelled');
@@ -312,7 +332,7 @@ describe('ForTableRowReorder — a focusout only cancels when focus really left 
   });
 
   it('cancels the lift when the focusout reports no destination and focus left the rowgroup', async () => {
-    const { instance, settle, indices, cell, query } = await mount();
+    const { instance, settle, indices, cell } = await mount();
     const from = Math.max(...indices());
     const lifted = cell(from);
     lifted.focus();
@@ -320,7 +340,7 @@ describe('ForTableRowReorder — a focusout only cancels when focus really left 
     press(lifted, ' ', { ctrlKey: true });
     await settle();
 
-    query('[data-testid="outside"]').focus();
+    lifted.blur();
     focusOut(lifted);
     await settle();
 

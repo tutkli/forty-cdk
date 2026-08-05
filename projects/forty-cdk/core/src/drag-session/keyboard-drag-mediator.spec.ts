@@ -1,6 +1,9 @@
 import type { DestroyRef } from '@angular/core';
 
-import { createKeyboardDragMediator } from './keyboard-drag-mediator';
+import {
+  createKeyboardDragMediator,
+  type KeyboardDragMediatorConfig,
+} from './keyboard-drag-mediator';
 
 function fakeDestroyRef(): { ref: DestroyRef; runDestroy: () => void } {
   const callbacks: Array<() => void> = [];
@@ -15,44 +18,55 @@ function fakeDestroyRef(): { ref: DestroyRef; runDestroy: () => void } {
 
 describe('createKeyboardDragMediator', () => {
   let host: HTMLElement;
+  let inside: HTMLButtonElement;
+  let outside: HTMLButtonElement;
+  let destroy: { ref: DestroyRef; runDestroy: () => void };
+
+  function wire(overrides: Partial<KeyboardDragMediatorConfig> = {}) {
+    const callbacks = {
+      onIdleKeydown: vi.fn(),
+      onLiftedKeydown: vi.fn(),
+      onFocusLeave: vi.fn(),
+    };
+    createKeyboardDragMediator({
+      host,
+      document,
+      isBrowser: true,
+      destroyRef: destroy.ref,
+      isLifted: () => false,
+      ...callbacks,
+      ...overrides,
+    });
+    return callbacks;
+  }
+
+  function focusOut(target: HTMLElement, relatedTarget: EventTarget | null = null): void {
+    target.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
+  }
 
   beforeEach(() => {
     host = document.createElement('div');
-    document.body.appendChild(host);
+    inside = document.createElement('button');
+    host.appendChild(inside);
+    outside = document.createElement('button');
+    document.body.append(host, outside);
+    destroy = fakeDestroyRef();
   });
 
   afterEach(() => {
     host.remove();
+    outside.remove();
   });
 
   it('does nothing on the server (isBrowser false)', () => {
-    const onIdleKeydown = vi.fn();
-    createKeyboardDragMediator({
-      host,
-      isBrowser: false,
-      destroyRef: fakeDestroyRef().ref,
-      isLifted: () => false,
-      onIdleKeydown,
-      onLiftedKeydown: vi.fn(),
-      onFocusOut: vi.fn(),
-    });
+    const { onIdleKeydown } = wire({ isBrowser: false });
 
     host.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
     expect(onIdleKeydown).not.toHaveBeenCalled();
   });
 
   it('routes keydown to onIdleKeydown while not lifted', () => {
-    const onIdleKeydown = vi.fn();
-    const onLiftedKeydown = vi.fn();
-    createKeyboardDragMediator({
-      host,
-      isBrowser: true,
-      destroyRef: fakeDestroyRef().ref,
-      isLifted: () => false,
-      onIdleKeydown,
-      onLiftedKeydown,
-      onFocusOut: vi.fn(),
-    });
+    const { onIdleKeydown, onLiftedKeydown } = wire({ isLifted: () => false });
 
     host.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     expect(onIdleKeydown).toHaveBeenCalledTimes(1);
@@ -60,17 +74,7 @@ describe('createKeyboardDragMediator', () => {
   });
 
   it('routes keydown to onLiftedKeydown while lifted', () => {
-    const onIdleKeydown = vi.fn();
-    const onLiftedKeydown = vi.fn();
-    createKeyboardDragMediator({
-      host,
-      isBrowser: true,
-      destroyRef: fakeDestroyRef().ref,
-      isLifted: () => true,
-      onIdleKeydown,
-      onLiftedKeydown,
-      onFocusOut: vi.fn(),
-    });
+    const { onIdleKeydown, onLiftedKeydown } = wire({ isLifted: () => true });
 
     host.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
     expect(onLiftedKeydown).toHaveBeenCalledTimes(1);
@@ -78,53 +82,82 @@ describe('createKeyboardDragMediator', () => {
   });
 
   it('listens in the capture phase so a keydown on a descendant is intercepted first', () => {
-    const child = document.createElement('button');
-    host.appendChild(child);
-    const onIdleKeydown = vi.fn();
-    createKeyboardDragMediator({
-      host,
-      isBrowser: true,
-      destroyRef: fakeDestroyRef().ref,
-      isLifted: () => false,
-      onIdleKeydown,
-      onLiftedKeydown: vi.fn(),
-      onFocusOut: vi.fn(),
-    });
+    const { onIdleKeydown } = wire({ isLifted: () => false });
 
-    child.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    inside.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
     expect(onIdleKeydown).toHaveBeenCalledTimes(1);
   });
 
-  it('forwards focusout to onFocusOut', () => {
-    const onFocusOut = vi.fn();
-    createKeyboardDragMediator({
-      host,
-      isBrowser: true,
-      destroyRef: fakeDestroyRef().ref,
-      isLifted: () => false,
-      onIdleKeydown: vi.fn(),
-      onLiftedKeydown: vi.fn(),
-      onFocusOut,
-    });
+  it('reports a leave as soon as the focusout names a destination outside the host', () => {
+    const { onFocusLeave } = wire({ isLifted: () => true });
 
-    host.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-    expect(onFocusOut).toHaveBeenCalledTimes(1);
+    focusOut(inside, outside);
+    expect(onFocusLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports no leave when the focusout names a destination inside the host', async () => {
+    const { onFocusLeave } = wire({ isLifted: () => true });
+
+    focusOut(host, inside);
+    await Promise.resolve();
+    expect(onFocusLeave).not.toHaveBeenCalled();
+  });
+
+  it('reports no leave for a focusout with no destination while focus is still inside', async () => {
+    const { onFocusLeave } = wire({ isLifted: () => true });
+    inside.focus();
+
+    focusOut(inside);
+    await Promise.resolve();
+    expect(onFocusLeave).not.toHaveBeenCalled();
+  });
+
+  it('reports a leave for a focusout with no destination once focus has settled outside', async () => {
+    const { onFocusLeave } = wire({ isLifted: () => true });
+    outside.focus();
+
+    focusOut(inside);
+    expect(onFocusLeave).not.toHaveBeenCalled();
+
+    await Promise.resolve();
+    expect(onFocusLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports no leave while no drag is in progress, on either channel', async () => {
+    const { onFocusLeave } = wire({ isLifted: () => false });
+    outside.focus();
+
+    focusOut(inside, outside);
+    focusOut(inside);
+    await Promise.resolve();
+    expect(onFocusLeave).not.toHaveBeenCalled();
+  });
+
+  it('reports no leave when the drag ended before the deferred check ran', async () => {
+    let lifted = true;
+    const { onFocusLeave } = wire({ isLifted: () => lifted });
+    outside.focus();
+
+    focusOut(inside);
+    lifted = false;
+    await Promise.resolve();
+    expect(onFocusLeave).not.toHaveBeenCalled();
+  });
+
+  it('reports no leave once the owner is destroyed', async () => {
+    const { onFocusLeave } = wire({ isLifted: () => true });
+    outside.focus();
+
+    focusOut(inside);
+    destroy.runDestroy();
+    await Promise.resolve();
+    expect(onFocusLeave).not.toHaveBeenCalled();
   });
 
   it('removes its listeners on destroy', () => {
-    const onIdleKeydown = vi.fn();
-    const { ref, runDestroy } = fakeDestroyRef();
-    createKeyboardDragMediator({
-      host,
-      isBrowser: true,
-      destroyRef: ref,
-      isLifted: () => false,
-      onIdleKeydown,
-      onLiftedKeydown: vi.fn(),
-      onFocusOut: vi.fn(),
-    });
+    const { onIdleKeydown } = wire({ isLifted: () => false });
 
-    runDestroy();
+    destroy.runDestroy();
     host.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
     expect(onIdleKeydown).not.toHaveBeenCalled();
   });
