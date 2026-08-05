@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { el, gotoFixture } from './_helpers';
+import { el, expectFocused, gotoFixture } from './_helpers';
 
 /**
  * Reads the absolute `data-index` values of the currently rendered rows, sorted
@@ -28,6 +28,15 @@ async function scrollAndSettle(page: Page, minStart = 50): Promise<number[]> {
   });
   await expect.poll(async () => (await renderedIndices(page))[0] ?? -1).toBeGreaterThan(minStart);
   return renderedIndices(page);
+}
+
+async function settleAtDatasetEnd(page: Page): Promise<void> {
+  await expect
+    .poll(async () => {
+      const indices = await renderedIndices(page);
+      return indices[indices.length - 1] ?? -1;
+    })
+    .toBe(9999);
 }
 
 test.describe('Table virtualized row reorder', () => {
@@ -86,6 +95,23 @@ test.describe('Table virtualized row reorder', () => {
     await el(page, `cell-${from}-id`).focus();
     await page.keyboard.press('Control+Space');
     await page.keyboard.press('End');
+    await settleAtDatasetEnd(page);
+    await expectFocused(el(page, `cell-${from}-id`));
+    await page.keyboard.press('Space');
+
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
+  });
+
+  test('keyboard End jump survives a lift on the LAST rendered row (#1671)', async ({ page }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[indices.length - 1]!;
+    expect(from).toBeGreaterThan(50);
+
+    await el(page, `cell-${from}-id`).focus();
+    await page.keyboard.press('Control+Space');
+    await page.keyboard.press('End');
+    await settleAtDatasetEnd(page);
+    await expectFocused(el(page, `cell-${from}-id`));
     await page.keyboard.press('Space');
 
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
