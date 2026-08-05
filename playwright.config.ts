@@ -9,14 +9,27 @@ export default defineConfig({
   testMatch: /.*\.e2e\.ts$/,
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
+  // No retries anywhere. A retry turns a race into a green run with a "flaky"
+  // note nobody reads, which is how this suite lost its signal: the gate was
+  // held for months over flakes that `retries: 2` had been hiding all along.
+  // A test that only passes on the second attempt is a defect — in the
+  // primitive, or in the test's own synchronisation — and it has to be red to
+  // get fixed. CI dimensioning is handled by sharding the job, not by
+  // re-running failures.
+  retries: 0,
   workers: isCI ? 2 : undefined,
   timeout: 30_000,
   expect: { timeout: 5_000 },
-  reporter: isCI ? [['list'], ['html', { open: 'never' }]] : [['list']],
+  // `blob` is what `playwright merge-reports` consumes: each sharded CI job
+  // uploads its blob and a final job stitches them into one HTML report.
+  // `list` rides along so a failing shard's own log is readable without
+  // downloading an artifact.
+  reporter: isCI ? [['list'], ['blob']] : [['list']],
   use: {
     baseURL: BASE_URL,
-    trace: 'on-first-retry',
+    // Not `on-first-retry`: with `retries: 0` that setting captures nothing
+    // ever, so the one run that mattered would leave no diagnostic behind.
+    trace: 'retain-on-failure',
     actionTimeout: 5_000,
     navigationTimeout: 15_000,
   },

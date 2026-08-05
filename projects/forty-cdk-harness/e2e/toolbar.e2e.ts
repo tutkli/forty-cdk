@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture, rovingFirst } from './_helpers';
+import { el, expectFocused, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
 
 /**
  * Real-browser keyboard contract for `[forToolbar]`. Vitest covers the
@@ -112,7 +112,7 @@ test.describe('Toolbar', () => {
 
   test('Tab from inside the toolbar exits to the next document focusable', async ({ page }) => {
     await gotoFixture(page, 'toolbar');
-    await el(page, 'toggle').focus();
+    await focusRovingItem(page, 'toggle');
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
   });
