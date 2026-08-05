@@ -23,12 +23,16 @@ test.describe('Table (roles + sticky header)', () => {
     await gotoFixture(page, 'table');
     const root = el(page, 'root');
 
-    const headerHeight = await root.evaluate((el) => {
-      const raw = getComputedStyle(el).getPropertyValue('--for-table-header-height');
-      return parseFloat(raw);
-    });
-
-    expect(headerHeight).toBeGreaterThan(0);
+    // Polled: the var is published once the header has been measured, which is
+    // not something `networkidle` waits for — so a single read can land on the
+    // unset value and fail as `NaN > 0`.
+    await expect
+      .poll(() =>
+        root.evaluate((el) =>
+          parseFloat(getComputedStyle(el).getPropertyValue('--for-table-header-height')),
+        ),
+      )
+      .toBeGreaterThan(0);
   });
 
   test('sticky header row stays visible after scrolling the container to the bottom', async ({
