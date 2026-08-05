@@ -52,6 +52,17 @@ function focusOut(el: HTMLElement, relatedTarget: HTMLElement | null = null): vo
   el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
 }
 
+function pointer(type: string, x: number, y: number): PointerEvent {
+  return new PointerEvent(type, {
+    clientX: x,
+    clientY: y,
+    button: 0,
+    pointerId: 1,
+    bubbles: true,
+    cancelable: true,
+  });
+}
+
 @Component({
   imports: [
     ForTable,
@@ -346,5 +357,72 @@ describe('ForTableRowReorder — a focusout only cancels when focus really left 
 
     expect(liveRegionText()).toContain('movement cancelled');
     expect(instance.reorders).toBe(0);
+  });
+});
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Rows grabbed by an icon"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div role="rowgroup" forTableRowReorder [style.height.px]="v.totalSize()">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+            [attr.data-testid]="'row-' + vrow.index"
+          >
+            <div forTableCell name="a">
+              <svg viewBox="0 0 8 8" aria-hidden="true">
+                <rect [attr.data-testid]="'icon-' + vrow.index" width="8" height="8"></rect>
+              </svg>
+              {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class SvgGrabTargetHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+}
+
+describe('ForTableRowReorder — a pointer grab target is an Element, not an HTMLElement (#1677)', () => {
+  it('pins the pressed row when the press lands on an SVG icon inside a cell', async () => {
+    const { fixture, scroller, settle } = await render(SvgGrabTargetHost);
+    const root = fixture.nativeElement as HTMLElement;
+    const icon = root.querySelector<SVGElement>('[data-testid="icon-2"]')!;
+    expect(icon instanceof HTMLElement).toBe(false);
+
+    icon.dispatchEvent(pointer('pointerdown', 0, 100));
+
+    scroller.scrollTo({ top: 20000 });
+    await settle();
+
+    expect(root.querySelector('[data-testid="row-3"]')).toBeNull();
+    expect(root.querySelector('[data-testid="row-2"]')!.getAttribute('data-index')).toBe('2');
+
+    document.dispatchEvent(pointer('pointerup', 0, 100));
   });
 });

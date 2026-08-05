@@ -192,7 +192,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     if (this.disabled() || this.#ctx.disabled()) {
       return;
     }
-    const target = event.target as HTMLElement;
+    const target = event.target;
     const visible = this.#ctx.visibleNodes();
     const entry = visible.find((e) => e.handle.host === target);
     if (!entry || entry.handle.disabled()) {
@@ -240,7 +240,10 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     if (this.disabled() || this.#ctx.disabled() || event.button !== 0) {
       return false;
     }
-    const target = event.target as HTMLElement;
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return false;
+    }
     const entry = this.#resolveVisibleNodeFromTarget(target);
     if (!entry || entry.handle.disabled()) {
       return false;
@@ -253,9 +256,11 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     return true;
   }
 
-  #resolveVisibleNodeFromTarget(target: HTMLElement): ForTreeVisibleNode | null {
-    const hosts = new Map(this.#ctx.visibleNodes().map((e) => [e.handle.host, e]));
-    let node: HTMLElement | null = target;
+  #resolveVisibleNodeFromTarget(target: Element): ForTreeVisibleNode | null {
+    const hosts = new Map<Element, ForTreeVisibleNode>(
+      this.#ctx.visibleNodes().map((e) => [e.handle.host, e]),
+    );
+    let node: Element | null = target;
     while (node && node !== this.#hostEl) {
       const entry = hosts.get(node);
       if (entry) {

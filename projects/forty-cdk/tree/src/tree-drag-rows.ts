@@ -53,12 +53,13 @@ export function treeNodeLabel(entry: ForTreeVisibleNode): string {
  * no handle is grabbable anywhere.
  *
  * @param itemHost The `[forTreeItem]` host the press landed in.
- * @param target The pointerdown event target.
+ * @param target The pointerdown event target — a `Node`, because a press can land on a non-HTML
+ * node such as an `<svg>` icon inside the grab area, and containment is all this check needs.
  * @param handles All registered drag-handle elements (across the whole tree).
  */
 export function isInsideGrabArea(
   itemHost: HTMLElement,
-  target: HTMLElement,
+  target: Node,
   handles: ReadonlySet<HTMLElement>,
 ): boolean {
   const itemHandles = [...handles].filter((h) => itemHost.contains(h));
