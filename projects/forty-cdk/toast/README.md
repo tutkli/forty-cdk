@@ -222,6 +222,31 @@ A viewport-level default applies to every toast that omits its own; a per-toast 
 
 The **declarative** path is unchanged — write `animate.leave` directly on your `<div forToast>` (see [Declarative usage](#declarative-usage)).
 
+### Gliding the rest of the stack (`[stackShift]`)
+
+`animateEnter` / `animateLeave` cover the row that mounts or unmounts. They do not cover its **siblings**: when a toast is added or dismissed, the rest of the stack is re-laid-out by reflow and snaps to its new spot in a single frame. Nothing about those rows changed, so there is no property for your CSS to transition.
+
+`[stackShift]` opts into a glide for exactly those rows. The viewport measures the new layout, offsets each moved row back to where it was and animates it to zero (FLIP):
+
+```html
+<for-toast-viewport [stackShift]="{ duration: 200, easing: 'cubic-bezier(0.05, 0.7, 0.1, 1)' }" />
+```
+
+A bare number is shorthand for `{ duration }` with `linear` easing:
+
+```html
+<for-toast-viewport [stackShift]="200" />
+```
+
+Four things are worth knowing:
+
+- **The library drives `transform`, you drive `translate`.** The glide is played on `transform`, so a `translate` in your own enter / leave keyframes composes with it instead of clobbering it. Keep your keyframes on `translate` (and `opacity`, `scale`, …) and the two never fight.
+- **Nothing moves by default.** Leaving `[stackShift]` unset keeps today's synchronous reflow, and `[stackShift]="0"` opts a single viewport out of a scope-level default.
+- **`prefers-reduced-motion: reduce` suppresses it** — the library skips the glide entirely, no consumer CSS needed. This is the one animation hook the directive gates for you, because the directive owns the motion rather than handing you a class.
+- **It is the programmatic path only.** On the declarative path the rows and their container are yours, so a directive of your own on that container is the right level.
+
+Set it for a whole scope with `provideForToastDefaults({ stackShift: 200 })`; a viewport's own `[stackShift]` wins.
+
 ### Custom rendering with a `template`
 
 If the default title / description / action / close shape isn't enough, pass a `template`:
@@ -365,6 +390,8 @@ Per-viewport overrides take precedence: `<for-toast-viewport [maxVisible]="3" ho
 `viewportAriaLabel` (default `'Notifications'`) is the localizable accessible name of every viewport in the scope; `[ariaLabel]` overrides it per viewport.
 
 `overModal` (`'peer'` | `'inert'`, default `'peer'`) is also a defaults key — see [Sitting behind the modal instead](#sitting-behind-the-modal-instead).
+
+`stackShift` (default `null`) sets the sibling glide for every viewport in the scope — see [Gliding the rest of the stack](#gliding-the-rest-of-the-stack-stackshift).
 
 ## Keyboard
 

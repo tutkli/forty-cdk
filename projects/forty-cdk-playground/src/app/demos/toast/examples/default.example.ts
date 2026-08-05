@@ -22,7 +22,11 @@ type Variant = 'info' | 'success' | 'warning' | 'error';
       <button type="button" class="btn btn--danger" (click)="notify('error')">Error</button>
     </div>
 
-    <for-toast-viewport class="demo-toast-viewport" region="toast-variants" />
+    <for-toast-viewport
+      class="demo-toast-viewport"
+      region="toast-variants"
+      [stackShift]="{ duration: 220, easing: 'cubic-bezier(0.05, 0.7, 0.1, 1)' }"
+    />
   `,
   styles: `
     app-toast-default-example {
