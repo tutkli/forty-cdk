@@ -42,7 +42,7 @@ function installFakeScroll(el: HTMLElement): void {
   }) as typeof el.scrollTo;
 }
 
-function press(el: HTMLElement, key: string, modifiers: Partial<KeyboardEventInit> = {}): void {
+function press(el: Element, key: string, modifiers: Partial<KeyboardEventInit> = {}): void {
   el.dispatchEvent(
     new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...modifiers }),
   );
@@ -424,5 +424,102 @@ describe('ForTableRowReorder — a pointer grab target is an Element, not an HTM
     expect(root.querySelector('[data-testid="row-2"]')!.getAttribute('data-index')).toBe('2');
 
     document.dispatchEvent(pointer('pointerup', 0, 100));
+  });
+});
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Rows with a focusable icon control"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [style.height.px]="v.totalSize()"
+        (rowReorder)="onReorder($event)"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [attr.data-index]="vrow.index"
+            [attr.data-testid]="'row-' + vrow.index"
+          >
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + vrow.index">
+              <svg
+                viewBox="0 0 8 8"
+                tabindex="0"
+                role="button"
+                [attr.aria-label]="'Options for row ' + vrow.index"
+                [attr.data-testid]="'icon-' + vrow.index"
+              >
+                <rect width="8" height="8"></rect>
+              </svg>
+              {{ vrow.index }}
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class SvgFocusTargetHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  last: TableRowReorderDescriptor | null = null;
+
+  protected onReorder(descriptor: TableRowReorderDescriptor): void {
+    this.last = descriptor;
+  }
+}
+
+describe('ForTableRowReorder — the restored focus target may be an SVGElement (#1679)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('End on a lift started from a focusable SVG returns focus to the SVG, not to the row host', async () => {
+    const { fixture, instance, settle, indices } = await render(SvgFocusTargetHost);
+    const root = fixture.nativeElement as HTMLElement;
+    const from = Math.max(...indices());
+    const icon = root.querySelector<SVGElement>(`[data-testid="icon-${from}"]`)!;
+    const rowHost = root.querySelector<HTMLElement>(`[data-testid="row-${from}"]`)!;
+    expect(icon instanceof SVGElement).toBe(true);
+    expect(icon instanceof HTMLElement).toBe(false);
+
+    icon.focus();
+    expect(document.activeElement).toBe(icon);
+
+    press(icon, ' ', { ctrlKey: true });
+    await settle();
+    press(icon, 'End');
+    await settle();
+
+    expect(indices()).toContain(ROW_COUNT - 1);
+    expect(document.activeElement).not.toBe(rowHost);
+    expect(document.activeElement).toBe(icon);
+
+    press(icon, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: ROW_COUNT - 1 });
   });
 });
