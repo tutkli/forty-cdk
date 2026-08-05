@@ -90,6 +90,44 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
   });
 
+  test('the lifted row stays focused once an End jump has re-rendered the window', async ({
+    page,
+  }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+    expect(from).toBeGreaterThan(50);
+
+    const row = el(page, `row-${from}`);
+    await row.focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('End');
+
+    await expect.poll(async () => (await renderedIndices(page)).at(-1) ?? -1).toBe(9999);
+    await expect(row).toBeFocused();
+
+    await page.keyboard.press('Space');
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
+  });
+
+  test('keyboard Home jump moves the target to the dataset start with absolute indices', async ({
+    page,
+  }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+    expect(from).toBeGreaterThan(50);
+
+    const row = el(page, `row-${from}`);
+    await row.focus();
+    await page.keyboard.press('Space');
+    await page.keyboard.press('Home');
+
+    await expect.poll(async () => (await renderedIndices(page))[0] ?? -1).toBe(0);
+    await expect(row).toBeFocused();
+
+    await page.keyboard.press('Space');
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->0`);
+  });
+
   test('Shift+pointer scrub drops the lifted row at a far target in a single gesture', async ({
     page,
   }) => {

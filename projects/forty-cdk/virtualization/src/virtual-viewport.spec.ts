@@ -1,5 +1,5 @@
 import { Component, provideZonelessChangeDetection, signal, viewChild } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { flush } from '../../src/test-utils';
 import { ForVirtualFor } from './virtual-for';
@@ -43,6 +43,21 @@ class Host {
   readonly rows = signal<Row[]>(makeRows(1000));
   readonly orientation = signal<'vertical' | 'horizontal'>('vertical');
   readonly overscan = signal(5);
+}
+
+function installFakeScroll(el: HTMLElement): void {
+  let top = 0;
+  Object.defineProperty(el, 'scrollTop', {
+    configurable: true,
+    get: () => top,
+    set: (value: number) => {
+      top = value;
+    },
+  });
+  el.scrollTo = ((options: ScrollToOptions | number) => {
+    top = typeof options === 'number' ? options : (options.top ?? top);
+    el.dispatchEvent(new Event('scroll'));
+  }) as typeof el.scrollTo;
 }
 
 function viewportEl(fixture: { nativeElement: HTMLElement }): HTMLElement {
@@ -230,6 +245,91 @@ describe('ForVirtualViewport — retained (pinned) row offset', () => {
     const pinned = rowEls(fixture).find((el) => el.getAttribute('data-index') === '900');
     expect(pinned).toBeDefined();
     expect(pinned?.style.transform).toBe('translateY(36060px)');
+  });
+});
+
+describe('ForVirtualFor — a row retained across a window jump keeps its element (#1666)', () => {
+  @Component({
+    imports: [ForVirtualViewport, ForVirtualFor],
+    template: `
+      <div
+        forVirtualViewport
+        [virtualCount]="rows().length"
+        [estimateSize]="40"
+        style="height: 200px; width: 200px"
+      >
+        <div *forVirtualFor="let row of rows()" tabindex="0">{{ row.label }}</div>
+      </div>
+    `,
+  })
+  class FocusHost {
+    readonly rows = signal<Row[]>(makeRows(1000));
+    readonly viewport = viewChild.required(ForVirtualViewport);
+  }
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
+  });
+
+  async function mount() {
+    const fixture = TestBed.createComponent(FocusHost);
+    const host = viewportEl(fixture);
+    fakeLayout(host, 200);
+    installFakeScroll(host);
+    fixture.detectChanges();
+    await flush(fixture);
+    return fixture;
+  }
+
+  function rowAt(fixture: ComponentFixture<FocusHost>, index: number): HTMLElement | undefined {
+    return rowEls(fixture).find((el) => el.getAttribute('data-index') === String(index));
+  }
+
+  it('keeps the pinned row mounted, focused and on the same element after the window jumps past it', async () => {
+    const fixture = await mount();
+    fixture.componentInstance.viewport().setReorderingIndex(2);
+    await flush(fixture);
+
+    const pinned = rowAt(fixture, 2)!;
+    pinned.focus();
+    expect(document.activeElement).toBe(pinned);
+
+    fixture.componentInstance.viewport().scrollToIndex(999);
+    await flush(fixture);
+    await flush(fixture);
+
+    expect(rowAt(fixture, 999)).toBeDefined();
+    expect(rowAt(fixture, 2)).toBe(pinned);
+    expect(pinned.isConnected).toBe(true);
+    expect(document.activeElement).toBe(pinned);
+  });
+
+  it('keeps a focused in-window row focused when a scroll moves its position in the window', async () => {
+    const fixture = await mount();
+    const row = rowAt(fixture, 8)!;
+    row.focus();
+    const positionBefore = rowEls(fixture).indexOf(row);
+
+    fixture.componentInstance.viewport().scrollToOffset(400);
+    await flush(fixture);
+    await flush(fixture);
+
+    expect(rowEls(fixture).indexOf(row)).not.toBe(positionBefore);
+    expect(document.activeElement).toBe(row);
+  });
+
+  it('renders the jumped-to window in ascending document order', async () => {
+    const fixture = await mount();
+    fixture.componentInstance.viewport().setReorderingIndex(2);
+    await flush(fixture);
+
+    fixture.componentInstance.viewport().scrollToIndex(999);
+    await flush(fixture);
+    await flush(fixture);
+
+    const rendered = rowEls(fixture).map((el) => Number(el.getAttribute('data-index')));
+    expect(rendered[0]).toBe(2);
+    expect([...rendered].sort((a, b) => a - b)).toEqual(rendered);
   });
 });
 

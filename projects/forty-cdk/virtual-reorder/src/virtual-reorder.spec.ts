@@ -33,6 +33,21 @@ function fakeLayout(el: HTMLElement, main = 200): void {
   Object.defineProperty(el, 'scrollWidth', { configurable: true, value: main * 200 });
 }
 
+function installFakeScroll(el: HTMLElement): void {
+  let top = 0;
+  Object.defineProperty(el, 'scrollTop', {
+    configurable: true,
+    get: () => top,
+    set: (value: number) => {
+      top = value;
+    },
+  });
+  el.scrollTo = ((options: ScrollToOptions | number) => {
+    top = typeof options === 'number' ? options : (options.top ?? top);
+    el.dispatchEvent(new Event('scroll'));
+  }) as typeof el.scrollTo;
+}
+
 function dispatchKey(el: HTMLElement, key: string): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
   el.dispatchEvent(event);
@@ -96,14 +111,21 @@ async function render<T>(host: Type<T>) {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
   const fixture = TestBed.createComponent(host);
   const root = fixture.nativeElement as HTMLElement;
-  fakeLayout(root.querySelector('[forVirtualViewport]')!, 200);
+  const viewport = root.querySelector<HTMLElement>('[forVirtualViewport]')!;
+  fakeLayout(viewport, 200);
+  installFakeScroll(viewport);
   fixture.detectChanges();
   await flush(fixture);
   return {
     fixture,
     instance: fixture.componentInstance,
+    viewport,
     query: (selector: string) => root.querySelector<HTMLElement>(selector),
     queryAll: (selector: string) => Array.from(root.querySelectorAll<HTMLElement>(selector)),
+    indices: () =>
+      Array.from(root.querySelectorAll<HTMLElement>('[data-index]')).map((el) =>
+        Number(el.getAttribute('data-index')),
+      ),
     flush: () => flush(fixture),
   };
 }
@@ -188,6 +210,131 @@ describe('ForVirtualReorder — keyboard', () => {
     await f();
 
     expect(instance.events()).toBe(0);
+  });
+});
+
+describe('ForVirtualReorder — a window jump past the lifted row keeps the gesture alive (#1666)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function settle(harness: Awaited<ReturnType<typeof mount>>): Promise<void> {
+    await harness.flush();
+    await harness.flush();
+  }
+
+  async function scrollTo(
+    harness: Awaited<ReturnType<typeof mount>>,
+    top: number,
+  ): Promise<number> {
+    harness.viewport.scrollTo({ top });
+    await settle(harness);
+    const indices = harness.indices();
+    return indices[Math.floor(indices.length / 2)]!;
+  }
+
+  it('End leaves the lifted row mounted and focused, and the drop emits the dataset end', async () => {
+    const harness = await mount();
+    const { instance, indices, query } = harness;
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+
+    expect(indices()).toContain(999);
+    expect(query('[data-testid="row-2"]')).toBe(row);
+    expect(document.activeElement).toBe(row);
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(instance.last()).toEqual({ from: 2, to: 999 });
+  });
+
+  it('Home survives the jump when the lifted row started far from the dataset start', async () => {
+    const harness = await mount();
+    const { instance, indices, query } = harness;
+    const from = await scrollTo(harness, 20000);
+    expect(from).toBeGreaterThan(400);
+
+    const row = query(`[data-testid="row-${from}"]`)!;
+    row.focus();
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'Home');
+    await settle(harness);
+
+    expect(indices()).toContain(0);
+    expect(document.activeElement).toBe(row);
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(instance.last()).toEqual({ from, to: 0 });
+  });
+
+  it('PageDown survives the jump when the step leaves the rendered window', async () => {
+    const harness = await mount();
+    const { instance, indices, query } = harness;
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    const page = indices().length;
+    expect(2 + page).toBeGreaterThan(Math.max(...indices()));
+
+    dispatchKey(row, 'PageDown');
+    await settle(harness);
+    expect(document.activeElement).toBe(row);
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(instance.last()).toEqual({ from: 2, to: 2 + page });
+  });
+
+  it('PageUp survives the jump when the step leaves the rendered window', async () => {
+    const harness = await mount();
+    const { instance, indices, query } = harness;
+    const from = await scrollTo(harness, 20000);
+
+    const row = query(`[data-testid="row-${from}"]`)!;
+    row.focus();
+    dispatchKey(row, ' ');
+    await settle(harness);
+    const page = indices().length;
+    expect(from - page).toBeLessThan(Math.min(...indices()));
+
+    dispatchKey(row, 'PageUp');
+    await settle(harness);
+    expect(document.activeElement).toBe(row);
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    expect(instance.last()).toEqual({ from, to: from - page });
+  });
+
+  it('announces the drop, never a cancel, when the window jump recycles the window', async () => {
+    const harness = await mount();
+    const { query } = harness;
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await settle(harness);
+    dispatchKey(row, 'End');
+    await settle(harness);
+    dispatchKey(row, ' ');
+    await settle(harness);
+
+    const assertive = document.querySelector('[aria-live="assertive"]');
+    expect(assertive?.textContent).toContain('dropped at position 1000 of 1000');
+    expect(assertive?.textContent).not.toContain('cancelled');
   });
 });
 
