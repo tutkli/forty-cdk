@@ -1,4 +1,4 @@
-export { ForNavigationMenu, provideForNavigationMenu } from './navigation-menu';
+export { ForNavigationMenu } from './navigation-menu';
 export { ForNavigationMenuList } from './navigation-menu-list';
 export { ForNavigationMenuItem } from './navigation-menu-item';
 export { ForNavigationMenuTrigger } from './navigation-menu-trigger';

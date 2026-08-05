@@ -9,9 +9,7 @@ import {
   model,
   numberAttribute,
   output,
-  type Provider,
   signal,
-  type Type,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
@@ -51,7 +49,6 @@ import {
   type ForSelectInitialFocus,
   type ForSelectOptionHandle,
   type ForSelectOverlayFacade,
-  SELECT_CONTEXT,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
 import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
@@ -91,7 +88,7 @@ import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
     '[attr.data-readonly]': 'readonly() ? "" : null',
     '[attr.dir]': 'dir()',
   },
-  providers: provideForSelect(ForSelect),
+  providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
 })
 export class ForSelect<T = string>
   extends FormUiControlBase
@@ -903,33 +900,4 @@ export class ForSelect<T = string>
       match.host.scrollIntoView?.({ block: 'nearest' });
     }
   }
-}
-
-/**
- * The providers a `[forSelect]` root installs: the public
- * {@link FOR_SELECT_CONTEXT}, aliased to `root`, plus the internal
- * coordination token the select's pieces resolve.
- *
- * `ForSelect` declares its own providers through this helper, so a wrapper that
- * **subclasses** the root has a single call to keep in step with it. That
- * matters because Angular does not inherit a directive's `providers`: a subclass
- * carrying its own `@Directive` metadata replaces the array wholesale, so
- * re-providing `FOR_SELECT_CONTEXT` alone leaves the internal token absent and
- * every piece orphans with the "must be used inside a [forSelect] element"
- * error. That token is deliberately unnameable outside the library
- * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
- * wrapper cannot list it by hand.
- *
- * ```ts
- * providers: provideForSelect(MySelect),
- * ```
- *
- * Wrapping through `hostDirectives: [ForSelect]` needs none of this — a host
- * directive brings its own providers to the element.
- */
-export function provideForSelect<T = string>(root: Type<ForSelect<T>>): Provider[] {
-  return [
-    { provide: FOR_SELECT_CONTEXT, useExisting: root },
-    { provide: SELECT_CONTEXT, useExisting: root },
-  ];
 }

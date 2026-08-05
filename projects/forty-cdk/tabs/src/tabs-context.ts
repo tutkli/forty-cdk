@@ -79,6 +79,13 @@ export interface ForTabsContext {
   hasSelectedTrigger(): boolean;
 }
 
+/**
+ * DI token for the tabs widget's coordination surface, provided by `[forTabs]`.
+ *
+ * Publicly typed as the read surface {@link ForTabsContext};
+ * {@link injectTabsContext} reads the same token at its internal
+ * {@link TabsContext} type so the pieces reach the registration protocol.
+ */
 export const FOR_TABS_CONTEXT = new InjectionToken<ForTabsContext>('FOR_TABS_CONTEXT');
 
 /**
@@ -86,9 +93,11 @@ export const FOR_TABS_CONTEXT = new InjectionToken<ForTabsContext>('FOR_TABS_CON
  * {@link ForTabsContext} publishes plus the trigger / content registration
  * protocol the id pairing and keyboard navigation are driven from.
  *
- * Never exported from `public-api.ts`. `[forTabs]` provides it alongside
- * {@link FOR_TABS_CONTEXT} on the same object, so a consumer who injects the
- * public token gets the read surface while the pieces get the wiring protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_TABS_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while the pieces get the wiring protocol. `ForTabs` declares the
+ * protocol members TS-`private`, which keeps them out of the emitted `.d.ts`
+ * while `useExisting` still satisfies this contract at runtime.
  */
 export interface TabsContext extends ForTabsContext {
   registerTrigger(handle: ForTabsTriggerHandle): void;
@@ -97,11 +106,8 @@ export interface TabsContext extends ForTabsContext {
   unregisterContent(handle: ForTabsContentHandle): void;
 }
 
-/** DI token carrying the internal {@link TabsContext}. Provided by `[forTabs]`. */
-export const TABS_CONTEXT = new InjectionToken<TabsContext>('TABS_CONTEXT');
-
 export function injectTabsContext(piece: string): TabsContext {
-  const ctx = inject(TABS_CONTEXT, { optional: true });
+  const ctx = inject(FOR_TABS_CONTEXT, { optional: true }) as TabsContext | null;
   if (!ctx) {
     throw new Error(`[forty-cdk/tabs] ${piece} must be used inside a [forTabs] element.`);
   }

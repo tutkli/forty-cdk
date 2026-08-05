@@ -11,9 +11,7 @@ import {
   model,
   numberAttribute,
   PLATFORM_ID,
-  type Provider,
   signal,
-  type Type,
   untracked,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -34,7 +32,6 @@ import {
   hostAriaLabel,
 } from 'forty-cdk/core';
 import {
-  CAROUSEL_CONTEXT,
   type CarouselAlign,
   FOR_CAROUSEL_CONTEXT,
   type ForCarouselContext,
@@ -79,7 +76,7 @@ import { FOR_CAROUSEL_DEFAULTS } from './carousel-defaults';
     '(focusin)': 'onAutoplayPause("focus")',
     '(focusout)': 'onAutoplayFocusOut($event)',
   },
-  providers: provideForCarousel(ForCarousel),
+  providers: [{ provide: FOR_CAROUSEL_CONTEXT, useExisting: ForCarousel }],
 })
 export class ForCarousel implements ForCarouselContext {
   readonly #defaults = inject(FOR_CAROUSEL_DEFAULTS);
@@ -476,33 +473,4 @@ export class ForCarousel implements ForCarouselContext {
       this.activeIndex.set(next);
     }
   }
-}
-
-/**
- * The providers a `[forCarousel]` root installs: the public
- * {@link FOR_CAROUSEL_CONTEXT}, aliased to `root`, plus the internal
- * coordination token the carousel's pieces resolve.
- *
- * `ForCarousel` declares its own providers through this helper, so a wrapper
- * that **subclasses** the root has a single call to keep in step with it. That
- * matters because Angular does not inherit a directive's `providers`: a subclass
- * carrying its own `@Directive` metadata replaces the array wholesale, so
- * re-providing `FOR_CAROUSEL_CONTEXT` alone leaves the internal token absent and
- * every piece orphans with the "must be used inside a [forCarousel] element"
- * error. That token is deliberately unnameable outside the library
- * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
- * wrapper cannot list it by hand.
- *
- * ```ts
- * providers: provideForCarousel(MyCarousel),
- * ```
- *
- * Wrapping through `hostDirectives: [ForCarousel]` needs none of this — a host
- * directive brings its own providers to the element.
- */
-export function provideForCarousel(root: Type<ForCarousel>): Provider[] {
-  return [
-    { provide: FOR_CAROUSEL_CONTEXT, useExisting: root },
-    { provide: CAROUSEL_CONTEXT, useExisting: root },
-  ];
 }

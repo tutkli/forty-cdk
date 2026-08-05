@@ -3,15 +3,16 @@ import { describe, expect, it } from 'vitest';
 
 import { pressKey, renderHost } from '../../src/test-utils';
 
-import { ForAccordion, provideForAccordion } from './accordion';
+import { ForAccordion } from './accordion';
 import { ForAccordionContent } from './accordion-content';
+import { FOR_ACCORDION_CONTEXT } from './accordion-context';
 import { ForAccordionItem } from './accordion-item';
 import { ForAccordionTrigger } from './accordion-trigger';
 
 @Directive({
   selector: '[wrapperAccordion]',
   exportAs: 'wrapperAccordion',
-  providers: provideForAccordion(WrapperAccordion),
+  providers: [{ provide: FOR_ACCORDION_CONTEXT, useExisting: WrapperAccordion }],
   host: { class: 'wrapper-accordion' },
 })
 class WrapperAccordion extends ForAccordion {}
@@ -50,8 +51,8 @@ class WrapperAccordionContent {}
 })
 class WrapperHost {}
 
-describe('ForAccordion subclass wrapper (#1524)', () => {
-  it('mounts a subclassed root whose own providers come from provideForAccordion', () => {
+describe('ForAccordion subclass wrapper (#1593)', () => {
+  it('mounts a subclassed root that re-provides FOR_ACCORDION_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperAccordion]')?.getAttribute('data-orientation')).toBe(

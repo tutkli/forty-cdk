@@ -401,6 +401,11 @@ export interface ForComboboxContext<T = unknown> {
 }
 
 /**
+ * DI token for the combobox's coordination surface, provided by `[forCombobox]`.
+ * Publicly typed as the read surface {@link ForComboboxContext};
+ * {@link injectComboboxContext} reads the same token at its internal
+ * {@link ComboboxContext} type so the pieces reach the registration protocol.
+ *
  * `ForCombobox<T>`'s generic does NOT flow to this token: an `InjectionToken`
  * is a single runtime instance, so it is published at `ForComboboxContext<unknown>`.
  * `injectComboboxContext<T>()` re-applies `T` with an `as unknown as` cast, and
@@ -462,15 +467,14 @@ export interface ComboboxRegistrationContext<T = unknown> {
  * {@link ForComboboxContext} publishes plus the
  * {@link ComboboxRegistrationContext} protocol.
  *
- * Never exported from `public-api.ts`. `[forCombobox]` provides it alongside
- * {@link FOR_COMBOBOX_CONTEXT} on the same object, so a consumer who injects the
- * public token gets the read surface while the pieces get the wiring protocol.
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_COMBOBOX_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while the pieces get the wiring protocol. `ForCombobox` declares
+ * the protocol members TS-`private`, which keeps them out of the emitted
+ * `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
 export interface ComboboxContext<T = unknown>
   extends ForComboboxContext<T>, ComboboxRegistrationContext<T> {}
-
-/** DI token carrying the internal {@link ComboboxContext}. Provided by `[forCombobox]`. */
-export const COMBOBOX_CONTEXT = new InjectionToken<ComboboxContext>('COMBOBOX_CONTEXT');
 
 /**
  * Resolve the surrounding combobox context, re-applying the caller's `T`. The
@@ -479,7 +483,7 @@ export const COMBOBOX_CONTEXT = new InjectionToken<ComboboxContext>('COMBOBOX_CO
  * consumer-honored contract, not a compiler-enforced one.
  */
 export function injectComboboxContext<T = unknown>(piece: string): ComboboxContext<T> {
-  const ctx = inject(COMBOBOX_CONTEXT, { optional: true });
+  const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
       `[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element. ` +
@@ -493,7 +497,7 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
 
 /**
  * Resolves the trigger's root context: the explicit reference when the
- * `[forComboboxTrigger]` input carries one, the injected `COMBOBOX_CONTEXT`
+ * `[forComboboxTrigger]` input carries one, the injected `FOR_COMBOBOX_CONTEXT`
  * otherwise. The orphan error only fires when neither resolves, on first read
  * of the returned signal. Must be called in an injection context.
  *
@@ -504,7 +508,7 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
 export function injectComboboxTriggerContext<T = unknown>(
   explicitRoot: Signal<ForComboboxContext<T> | ''>,
 ): Signal<ComboboxContext<T>> {
-  const injected = inject(COMBOBOX_CONTEXT, { optional: true });
+  const injected = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   return computed(() => {
     const explicit = explicitRoot();
     if (explicit !== '') {

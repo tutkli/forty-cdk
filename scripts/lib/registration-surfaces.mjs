@@ -5,10 +5,19 @@
  * A primitive's `FOR_<PRIMITIVE>_CONTEXT` interface is public — advanced
  * consumers legitimately inject it to read state or drive commands. The
  * registration protocol behind it is not: it is the code the library refactors
- * most freely, so it lives on a second interface + token that no entry point
- * exports, and `check-registration-surfaces.mjs` fails the build if one of these
- * names becomes public again (exported from the barrel, or referenced from an
- * exported declaration's signature).
+ * most freely, so it lives on a second interface that no entry point exports,
+ * and `check-registration-surfaces.mjs` fails the build if one of these names
+ * becomes public again (exported from the barrel, or referenced from an exported
+ * declaration's signature).
+ *
+ * No split root carries a second **context** token any more ([#1593]): a
+ * protocol that stays inside one entry point is reached by reading the public
+ * token at the internal interface's type inside `inject<Primitive>Context`, and
+ * the root's own members are kept out of the emitted `.d.ts` by `private` /
+ * `protected` / a narrow public type. So every name below is a type, except the
+ * table def-registry's own token and registry class — a registry a scaffold
+ * wrapper must be able to provide is a separate provider rather than a view of
+ * a root, which is the one shape a second token is still for (see below).
  *
  * The table's piece-registration protocol is not listed here: it lives in the
  * `forty-cdk/core` internal tier (the virtualization entry point registers
@@ -19,25 +28,23 @@
  * token a scaffold wrapper provides.
  */
 export const REGISTRATION_SURFACES = {
-  accordion: ['AccordionContext', 'ACCORDION_CONTEXT', 'ForAccordionTriggerHandle'],
+  accordion: ['AccordionContext', 'ForAccordionTriggerHandle'],
   carousel: [
     'CarouselContext',
-    'CAROUSEL_CONTEXT',
     'ForCarouselIndicatorHandle',
     'ForCarouselSlideHandle',
     'ForCarouselViewportHandle',
   ],
-  combobox: ['ComboboxContext', 'COMBOBOX_CONTEXT', 'ComboboxRegistrationContext'],
+  combobox: ['ComboboxContext', 'ComboboxRegistrationContext'],
   'navigation-menu': [
     'NavigationMenuContext',
-    'NAVIGATION_MENU_CONTEXT',
     'ForNavigationMenuContentHandle',
     'ForNavigationMenuTriggerHandle',
     'ForNavigationMenuViewportHandle',
   ],
-  'radio-group': ['RadioGroupContext', 'RADIO_GROUP_CONTEXT', 'ForRadioHandle'],
-  select: ['SelectContext', 'SELECT_CONTEXT', 'ForSelectOverlayContext'],
+  'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
+  select: ['SelectContext', 'ForSelectOverlayContext'],
   table: ['TableDefRegistration', 'TABLE_DEF_REGISTRATION', 'TableDefHandle', 'TableDefRegistry'],
-  tabs: ['TabsContext', 'TABS_CONTEXT', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
-  toast: ['ToastContext', 'TOAST_CONTEXT', 'ForToastActionHandle', 'ForToastTextHandle'],
+  tabs: ['TabsContext', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
+  toast: ['ToastContext', 'ForToastActionHandle', 'ForToastTextHandle'],
 };

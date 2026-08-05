@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 
-import { ForCarousel, provideForCarousel } from './carousel';
+import { ForCarousel } from './carousel';
+import { FOR_CAROUSEL_CONTEXT } from './carousel-context';
 import { ForCarouselIndicator } from './carousel-indicator';
 import { ForCarouselIndicators } from './carousel-indicators';
 import { ForCarouselNext } from './carousel-next';
@@ -14,7 +15,7 @@ import { ForCarouselViewport } from './carousel-viewport';
 @Directive({
   selector: '[wrapperCarousel]',
   exportAs: 'wrapperCarousel',
-  providers: provideForCarousel(WrapperCarousel),
+  providers: [{ provide: FOR_CAROUSEL_CONTEXT, useExisting: WrapperCarousel }],
   host: { class: 'wrapper-carousel' },
 })
 class WrapperCarousel extends ForCarousel {}
@@ -65,14 +66,14 @@ class WrapperCarouselIndicator {}
 })
 class WrapperHost {}
 
-describe('ForCarousel subclass wrapper (#1524)', () => {
+describe('ForCarousel subclass wrapper (#1593)', () => {
   let restoreObservers: () => void;
   beforeAll(() => {
     restoreObservers = installObserverPolyfills();
   });
   afterAll(() => restoreObservers());
 
-  it('mounts a subclassed root whose own providers come from provideForCarousel', () => {
+  it('mounts a subclassed root that re-provides FOR_CAROUSEL_CONTEXT by hand', () => {
     const { el } = renderHost(WrapperHost);
 
     expect(el.querySelector('[wrapperCarousel]')?.getAttribute('role')).toBe('group');

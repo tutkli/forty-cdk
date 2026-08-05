@@ -30,6 +30,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   where they are, and no API shape, input, output or emitted attribute changed. The two directives'
   orphan `Error` messages now carry their new entry point's prefix
   (`[forty-cdk/table-virtualization]` / `[forty-cdk/virtual-reorder]`).
+- **Split-context roots (breaking)** — `provideForAccordion`, `provideForCarousel`,
+  `provideForCombobox`, `provideForNavigationMenu`, `provideForRadioGroup`, `provideForSelect`,
+  `provideForTabs` and `provideForToast` are removed
+  ([#1593](https://github.com/tutkli/forty-cdk/issues/1593)). Eight of the nine roots that split their
+  coordination surface in two provided their internal registration token as
+  `{ provide: <PRIMITIVE>_CONTEXT, useExisting: root }` — the **same object** the public
+  `FOR_<PRIMITIVE>_CONTEXT` already aliased — so the second token only re-typed a reference DI was
+  already returning. The registration protocol stays exactly as private as it was: it lives on an
+  unexported `<Primitive>Context` interface that `inject<Primitive>Context` reads the public token at,
+  and each root's members stay TS-`private` (or carry the narrow public type, as `ForSelect.overlay`
+  does), so nothing new reaches the emitted `.d.ts`. What goes away is the machinery the second token
+  forced: a provider helper per root, the positive wrapper spec guarding it, and its roster line.
+  **Migration:** replace the helper with the one-line re-provide every unsplit root already uses —
+  `providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: MySelect }]` in place of
+  `providers: provideForSelect(MySelect)`, and likewise for the other seven. `provideForTable` is
+  **not** affected: Table's protocol crosses an entry-point boundary and is aliased to a separate
+  `TableRegistry` provider its own constructor injects, so a hand-written list still cannot wrap it.
+  `provideForTableDefRegistry` and every `provideFor<Primitive>Defaults` helper are untouched, and no
+  role, ARIA attribute, `data-state` or input / output changed.
 
 ## [0.20.0] - 2026-08-04
 

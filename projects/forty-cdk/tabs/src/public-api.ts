@@ -1,4 +1,4 @@
-export { ForTabs, provideForTabs } from './tabs';
+export { ForTabs } from './tabs';
 export { ForTabsList } from './tabs-list';
 export { ForTabsTrigger } from './tabs-trigger';
 export { ForTabsContent } from './tabs-content';
