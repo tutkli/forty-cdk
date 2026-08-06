@@ -64,10 +64,41 @@ test.describe('Table virtualized row reorder', () => {
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
+    await expect(fromRow).toHaveAttribute('data-dragging', '');
     await page.mouse.move(startX, targetY);
     await page.mouse.up();
 
+    await expect(fromRow).not.toHaveAttribute('data-dragging');
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${to}`);
+  });
+
+  test('a keyboard lift marks the row with data-dragging, and cancel / drop clear it', async ({
+    page,
+  }) => {
+    const indices = await scrollAndSettle(page);
+    const from = indices[Math.floor(indices.length / 2)]!;
+    expect(from).toBeGreaterThan(50);
+
+    const row = el(page, `row-${from}`);
+    const rowgroup = el(page, 'scroll-body');
+    await expect(row).not.toHaveAttribute('data-dragging');
+
+    await el(page, `cell-${from}-id`).focus();
+    await page.keyboard.press('Control+Space');
+    await expect(row).toHaveAttribute('data-dragging', '');
+    await expect(rowgroup).toHaveAttribute('data-dragging', '');
+
+    await page.keyboard.press('Escape');
+    await expect(row).not.toHaveAttribute('data-dragging');
+    await expect(rowgroup).not.toHaveAttribute('data-dragging');
+    await expect(el(page, 'last-reorder')).toHaveText('none');
+
+    await page.keyboard.press('Control+Space');
+    await expect(row).toHaveAttribute('data-dragging', '');
+    await page.keyboard.press('Space');
+    await expect(row).not.toHaveAttribute('data-dragging');
+    await expect(rowgroup).not.toHaveAttribute('data-dragging');
+    await expect(el(page, 'last-reorder')).toHaveText(`${from}->${from}`);
   });
 
   test('keyboard Ctrl+Space lift on a cell → ArrowDown → drop emits ABSOLUTE indices', async ({

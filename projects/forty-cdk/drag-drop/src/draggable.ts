@@ -52,7 +52,7 @@ const POINTER_ARM_THRESHOLD_PX = 5;
     '[attr.tabindex]': 'tabindex()',
     '[attr.aria-roledescription]': 'roleDescription() || null',
     '[attr.aria-disabled]': "effectiveDisabled() ? 'true' : null",
-    '[attr.data-dragging]': "lifted() ? '' : null",
+    '[attr.data-dragging]': "dragging() ? '' : null",
     '[attr.data-disabled]': "effectiveDisabled() ? '' : null",
     '[attr.data-highlighted]': "highlighted() ? '' : null",
     '[style.touch-action]': 'touchAction()',
@@ -102,8 +102,19 @@ export class ForDraggable implements ForDraggableContext {
 
   readonly #handleGuard = createPointerHandleGuard(this.effectiveDisabled);
 
-  /** `true` when this item is the currently lifted draggable. Reflected as `data-dragging`. */
+  /**
+   * `true` when this item is the draggable the list itself lifted, and therefore the one its
+   * `moveLifted` / `drop` / `cancel` act on. A drag a composing coordinator owns does not set it
+   * — read `data-dragging` (or the context's `isItemDragging`) for "a drag of this item is live".
+   */
   readonly lifted = computed(() => this.#list.isLifted(this.#host.nativeElement));
+
+  /**
+   * `true` while a drag of this item is live — the list's own lift, or one owned by a
+   * coordinator composing the list (`[forVirtualReorder]`, the virtualized branch of
+   * `[forTableRowReorder]`). Reflected as `data-dragging`.
+   */
+  protected readonly dragging = computed(() => this.#list.isItemDragging(this.#host.nativeElement));
 
   /** `true` when this item is the roving-tabindex active candidate. Reflected as `data-highlighted`. */
   protected readonly highlighted = computed(() =>

@@ -382,6 +382,7 @@ export class ForTableRowReorder {
     this.#kbFrom = vi;
     this.#kbTarget = vi;
     this.#registration.setReorderingRow(vi);
+    this.#list.setCoordinatorLift(host);
     const total = this.#count();
     this.#announcer.announce(
       this.#dragDefaults.announceLift(this.#label(), vi + 1, total),
@@ -424,6 +425,7 @@ export class ForTableRowReorder {
     this.#kbFrom = 0;
     this.#kbTarget = 0;
     this.#registration.setReorderingRow(null);
+    this.#list.setCoordinatorLift(null);
   }
 
   #count(): number {

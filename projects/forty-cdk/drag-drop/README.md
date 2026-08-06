@@ -388,6 +388,13 @@ for the full analysis.
 | `data-drag-animating`   | `[forDraggable]`  | Present while the item's FLIP reorder transition plays (requires `[animateReorder]`) |
 | `data-settling`         | preview element   | Present while the drop-settle transition plays (requires `[animateReorder]`)         |
 
+Both `data-dragging` rows hold for a drag a **coordinator** composing the list owns rather
+than starting through `[forDraggable]` itself — the keyboard lift of `[forVirtualReorder]`, and
+the virtualized branch of `[forTableRowReorder]`. Those intercept the lift key before the item
+sees it, so the list carries no lift state for the gesture, and the coordinator marks the item
+instead ([#1693](https://github.com/tutkli/forty-cdk/issues/1693)). Styling keyed off either
+attribute therefore behaves the same whether the collection is windowed or not.
+
 ## Sortable list
 
 ```html
