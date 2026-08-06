@@ -409,13 +409,14 @@ class SvgGrabTargetHost {
 }
 
 describe('ForTableRowReorder — a pointer grab target is an Element, not an HTMLElement (#1677)', () => {
-  it('pins the pressed row when the press lands on an SVG icon inside a cell', async () => {
+  it('pins the pressed row when the drag that arms started on an SVG icon inside a cell', async () => {
     const { fixture, scroller, settle } = await render(SvgGrabTargetHost);
     const root = fixture.nativeElement as HTMLElement;
     const icon = root.querySelector<SVGElement>('[data-testid="icon-2"]')!;
     expect(icon instanceof HTMLElement).toBe(false);
 
     icon.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
 
     scroller.scrollTo({ top: 20000 });
     await settle();
@@ -423,7 +424,130 @@ describe('ForTableRowReorder — a pointer grab target is an Element, not an HTM
     expect(root.querySelector('[data-testid="row-3"]')).toBeNull();
     expect(root.querySelector('[data-testid="row-2"]')!.getAttribute('data-index')).toBe('2');
 
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+  });
+});
+
+describe('ForTableRowReorder — the pointer pin follows the armed session (#1695)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  async function pinHarness() {
+    const harness = await render(SvgGrabTargetHost);
+    const root = harness.fixture.nativeElement as HTMLElement;
+    return {
+      ...harness,
+      press: (index: number, y: number) =>
+        root
+          .querySelector<HTMLElement>(`[data-testid="row-${index}"]`)!
+          .dispatchEvent(pointer('pointerdown', 0, y)),
+      scrollAway: async (): Promise<void> => {
+        harness.scroller.scrollTo({ top: 20000 });
+        await harness.settle();
+      },
+    };
+  }
+
+  it('a press that never crosses the arm threshold leaves no row pinned', async () => {
+    const { press, indices, scrollAway, settle } = await pinHarness();
+
+    press(2, 100);
     document.dispatchEvent(pointer('pointerup', 0, 100));
+    await settle();
+    await scrollAway();
+
+    expect(indices()).not.toContain(2);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('an armed drag pins the dragged row for the gesture and the release unpins it', async () => {
+    const { press, indices, scrollAway, settle } = await pinHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await scrollAway();
+
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await settle();
+
+    expect(indices()).not.toContain(2);
+  });
+
+  it('a cancelled drag unpins the row it had pinned', async () => {
+    const { press, indices, scrollAway, settle } = await pinHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await scrollAway();
+
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointercancel', 0, 120));
+    await settle();
+
+    expect(indices()).not.toContain(2);
+  });
+
+  it('the row retained off-window keeps the rendered indices in ascending DOM order', async () => {
+    const { press, indices, scrollAway } = await pinHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await scrollAway();
+
+    const rendered = indices();
+    expect(rendered[0]).toBe(2);
+    expect(rendered).toEqual([...rendered].sort((a, b) => a - b));
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+  });
+
+  it('a press during a keyboard lift pins no second row and leaves the gesture committable', async () => {
+    const { instance, settle, indices, cell, scrollTo } = await mount();
+    const from = Math.max(...indices());
+    const pressed = from - 2;
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    cell(pressed).dispatchEvent(pointer('pointerdown', 0, 140));
+    await settle();
+
+    const rendered = await scrollTo(200 * ROW_HEIGHT);
+
+    expect(rendered).toContain(from);
+    expect(rendered).not.toContain(pressed);
+    expect(document.activeElement).toBe(lifted);
+
+    document.dispatchEvent(pointer('pointerup', 0, 140));
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: from });
+  });
+
+  it('a lift key pressed during an armed pointer drag starts no keyboard gesture', async () => {
+    const { settle, indices, cell, query } = await mount();
+    const dragged = Math.min(...indices());
+    const other = Math.max(...indices());
+
+    cell(dragged).dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await settle();
+
+    cell(other).focus();
+    press(cell(other), ' ', { ctrlKey: true });
+    await settle();
+
+    expect(query(`[data-index="${other}"]`).hasAttribute('data-dragging')).toBe(false);
+    expect(query(`[data-index="${dragged}"]`).getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointercancel', 0, 120));
   });
 });
 
