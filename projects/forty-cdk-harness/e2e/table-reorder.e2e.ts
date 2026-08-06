@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { el, gotoFixture } from './_helpers';
+import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
 
 test.describe('table column reorder', () => {
   test.beforeEach(async ({ page }) => {
@@ -114,13 +114,23 @@ test.describe('table column reorder — composite grid tab stop (#1223)', () => 
     await expect(el(page, 'header-role')).toBeFocused();
   });
 
-  test('the single tab stop follows roving focus into the body', async ({ page }) => {
+  test('a roving move into the body hands the grid tab stop to the body cell', async ({ page }) => {
+    await el(page, 'header-name').focus();
+    await expect(el(page, 'header-name')).toHaveAttribute('tabindex', '0');
+
+    await page.keyboard.press('ArrowDown');
+
+    await expectRovingFocus(page, 'cell-0-name');
+    await expect(el(page, 'table-root').locator('[tabindex="0"]')).toHaveCount(1);
+  });
+
+  test('Tab from the body cell holding the tab stop leaves the grid', async ({ page }) => {
     await el(page, 'header-name').focus();
     await page.keyboard.press('ArrowDown');
-    await expect(el(page, 'cell-0-name')).toBeFocused();
+    await expectRovingFocus(page, 'cell-0-name');
 
     await page.keyboard.press('Tab');
-    await expect(el(page, 'after')).toBeFocused();
+    await expectFocused(el(page, 'after'));
   });
 
   test('Space still lifts a draggable header cell for keyboard reordering', async ({ page }) => {
