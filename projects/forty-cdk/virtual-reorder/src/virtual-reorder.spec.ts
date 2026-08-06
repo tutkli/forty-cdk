@@ -64,7 +64,12 @@ function assertiveText(): string {
     .join(' ');
 }
 
-function pointer(type: string, x: number, y: number): PointerEvent {
+function pointer(
+  type: string,
+  x: number,
+  y: number,
+  init: Partial<PointerEventInit> = {},
+): PointerEvent {
   return new PointerEvent(type, {
     clientX: x,
     clientY: y,
@@ -72,6 +77,7 @@ function pointer(type: string, x: number, y: number): PointerEvent {
     pointerId: 1,
     bubbles: true,
     cancelable: true,
+    ...init,
   });
 }
 
@@ -907,5 +913,110 @@ describe('ForVirtualReorder — the pointer pin follows the armed session (#1695
     expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
 
     document.dispatchEvent(pointer('pointercancel', 0, 120));
+  });
+});
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      [disabled]="listDisabled()"
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [dragDisabled]="disabledRow() === row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        {{ row.label }}
+      </div>
+    </div>
+  `,
+})
+class GuardedReorderHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+  readonly listDisabled = signal(false);
+  readonly disabledRow = signal<number | null>(null);
+}
+
+describe('ForVirtualReorder — the pointer guard set matches the sibling coordinators (#1697)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function guardHarness() {
+    const harness = await render(GuardedReorderHost);
+    return {
+      ...harness,
+      press: (index: number, init: Partial<PointerEventInit> = {}): PointerEvent => {
+        const event = pointer('pointerdown', 0, 100, { pointerType: 'mouse', ...init });
+        harness.query(`[data-testid="row-${index}"]`)!.dispatchEvent(event);
+        return event;
+      },
+      arm: () => document.dispatchEvent(pointer('pointermove', 0, 120)),
+      scrollAway: async (): Promise<void> => {
+        harness.viewport.scrollTo({ top: 20000 });
+        await harness.flush();
+        await harness.flush();
+      },
+    };
+  }
+
+  it('pins nothing when the press lands on a row of a disabled list', async () => {
+    const { instance, press, arm, indices, scrollAway, flush: f } = await guardHarness();
+    instance.listDisabled.set(true);
+    await f();
+
+    press(2);
+    arm();
+    await scrollAway();
+
+    expect(indices()).not.toContain(2);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('pins nothing when a mouse press uses a non-primary button', async () => {
+    const { press, arm, indices, scrollAway } = await guardHarness();
+
+    const event = press(3, { button: 2 });
+    expect(event.pointerType).toBe('mouse');
+    arm();
+    await scrollAway();
+
+    expect(indices()).not.toContain(3);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('still pins for a touch press reporting a non-zero button', async () => {
+    const { press, arm, indices, scrollAway } = await guardHarness();
+
+    const event = press(3, { pointerType: 'touch', button: 2 });
+    expect(event.pointerType).toBe('touch');
+    arm();
+    await scrollAway();
+
+    expect(indices()).toContain(3);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+  });
+
+  it('pins nothing when the pressed row is dragDisabled', async () => {
+    const { instance, press, arm, indices, scrollAway, flush: f } = await guardHarness();
+    instance.disabledRow.set(2);
+    await f();
+
+    press(2);
+    arm();
+    await scrollAway();
+
+    expect(indices()).not.toContain(2);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
   });
 });

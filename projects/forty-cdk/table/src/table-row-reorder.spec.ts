@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   provideZonelessChangeDetection,
+  signal,
   type Type,
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -52,7 +53,12 @@ function focusOut(el: HTMLElement, relatedTarget: HTMLElement | null = null): vo
   el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
 }
 
-function pointer(type: string, x: number, y: number): PointerEvent {
+function pointer(
+  type: string,
+  x: number,
+  y: number,
+  init: Partial<PointerEventInit> = {},
+): PointerEvent {
   return new PointerEvent(type, {
     clientX: x,
     clientY: y,
@@ -60,6 +66,7 @@ function pointer(type: string, x: number, y: number): PointerEvent {
     pointerId: 1,
     bubbles: true,
     cancelable: true,
+    ...init,
   });
 }
 
@@ -738,6 +745,182 @@ describe('ForTableRowReorder — the lifted row reflects data-dragging (#1693)',
     expect(instance.last).toEqual({ from: 1, to: 2 });
     expect(query('[data-index="1"]').hasAttribute('data-dragging')).toBe(false);
     expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
+@Component({
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableRow,
+    ForTableCell,
+    ForTableRowReorder,
+    ForDraggable,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Guarded reorderable rows"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div
+        role="rowgroup"
+        forTableRowReorder
+        [disabled]="listDisabled()"
+        [style.height.px]="v.totalSize()"
+      >
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            forDraggable
+            [dragData]="vrow.index"
+            [dragDisabled]="disabledRow() === vrow.index"
+            [attr.data-index]="vrow.index"
+            [attr.data-testid]="'row-' + vrow.index"
+          >
+            <div forTableCell name="a">{{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class GuardedRowReorderHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+  readonly listDisabled = signal(false);
+  readonly disabledRow = signal<number | null>(null);
+}
+
+@Component({
+  imports: [ForTable, ForTableVirtualized, ForTableRow, ForTableCell, ForTableRowReorder],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forTable
+      forTableVirtualized
+      mode="grid"
+      ariaLabel="Rows with no draggable"
+      [rowCount]="rowCount"
+      [estimateRowSize]="rowHeight"
+      #v="forTableVirtualized"
+      style="height: 200px; overflow: auto"
+    >
+      <div role="rowgroup" forTableRowReorder [style.height.px]="v.totalSize()">
+        @for (vrow of v.virtualRows(); track vrow.index) {
+          <div
+            forTableRow
+            [virtualIndex]="vrow.index"
+            [attr.data-index]="vrow.index"
+            [attr.data-testid]="'row-' + vrow.index"
+          >
+            <div forTableCell name="a">{{ vrow.index }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class UndraggableRowReorderHost {
+  protected readonly rowCount = ROW_COUNT;
+  protected readonly rowHeight = ROW_HEIGHT;
+}
+
+describe('ForTableRowReorder — the pointer guard set matches the sibling coordinators (#1697)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  async function guardHarness() {
+    const harness = await render(GuardedRowReorderHost);
+    const root = harness.fixture.nativeElement as HTMLElement;
+    return {
+      ...harness,
+      press: (index: number, init: Partial<PointerEventInit> = {}): PointerEvent => {
+        const event = pointer('pointerdown', 0, 100, { pointerType: 'mouse', ...init });
+        root.querySelector<HTMLElement>(`[data-testid="row-${index}"]`)!.dispatchEvent(event);
+        return event;
+      },
+      arm: () => document.dispatchEvent(pointer('pointermove', 0, 120)),
+      scrollAway: async (): Promise<void> => {
+        harness.scroller.scrollTo({ top: 20000 });
+        await harness.settle();
+      },
+    };
+  }
+
+  it('pins nothing when the press lands on a row of a disabled rowgroup', async () => {
+    const { instance, press, arm, indices, scrollAway, settle } = await guardHarness();
+    instance.listDisabled.set(true);
+    await settle();
+
+    press(2);
+    arm();
+    await scrollAway();
+
+    expect(indices()).not.toContain(2);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('pins nothing when a mouse press uses a non-primary button', async () => {
+    const { press, arm, indices, scrollAway } = await guardHarness();
+
+    const event = press(3, { button: 2 });
+    expect(event.pointerType).toBe('mouse');
+    arm();
+    await scrollAway();
+
+    expect(indices()).not.toContain(3);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('still pins for a touch press reporting a non-zero button', async () => {
+    const { press, arm, indices, scrollAway } = await guardHarness();
+
+    const event = press(3, { pointerType: 'touch', button: 2 });
+    expect(event.pointerType).toBe('touch');
+    arm();
+    await scrollAway();
+
+    expect(indices()).toContain(3);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+  });
+
+  it('pins nothing when the pressed row is dragDisabled', async () => {
+    const { instance, press, arm, indices, scrollAway, settle } = await guardHarness();
+    instance.disabledRow.set(2);
+    await settle();
+
+    press(2);
+    arm();
+    await scrollAway();
+
+    expect(indices()).not.toContain(2);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('pins nothing when the pressed row carries no registered draggable', async () => {
+    const { fixture, scroller, settle, indices } = await render(UndraggableRowReorderHost);
+    const row = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-testid="row-2"]',
+    )!;
+    expect(row.hasAttribute('forDraggable')).toBe(false);
+
+    row.dispatchEvent(pointer('pointerdown', 0, 100, { pointerType: 'mouse' }));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    scroller.scrollTo({ top: 20000 });
+    await settle();
+
+    expect(indices()).not.toContain(2);
+    expect(Math.min(...indices())).toBeGreaterThan(100);
   });
 });
 

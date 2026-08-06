@@ -115,6 +115,17 @@ export function translateRowReorderIndices(
  * and a lift key pressed during a pointer drag is ignored. Whichever gesture starts first owns the
  * pin until it commits or aborts.
  *
+ * A pointer press is refused outright — nothing tracked, no `'pointer'` mode, no pin — when the
+ * rowgroup is `disabled`, when a **mouse** press uses a non-primary button (touch and pen presses
+ * keep whatever `button` their engine reports), or when the pressed row carries no registered
+ * `[forDraggable]` or its draggable is `[dragDisabled]`. The row lookup stays the loose
+ * `closest('[forTableRow]')` a grab on nested row content needs
+ * ([#1677](https://github.com/tutkli/forty-cdk/issues/1677)); resolving the draggable from it is
+ * what the guard adds, so a row with no draggable is now refused rather than tracked. That is the
+ * guard set `[forListboxReorder]` and `[forTreeNodeDrag]` apply at the same seam, and it matches
+ * what this coordinator's own keyboard path already refuses
+ * ([#1697](https://github.com/tutkli/forty-cdk/issues/1697)).
+ *
  * @example
  * ```html
  * <div role="rowgroup" forTableRowReorder (rowReorder)="onReorder($event)">
@@ -463,12 +474,19 @@ export class ForTableRowReorder {
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
+    if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
+      return false;
+    }
     const target = event.target;
     if (!(target instanceof Element)) {
       return false;
     }
     const rowHost = target.closest<HTMLElement>('[forTableRow]');
     if (rowHost === null) {
+      return false;
+    }
+    const draggable = this.#list.items().find((h) => h.host === rowHost);
+    if (draggable === undefined || draggable.disabled()) {
       return false;
     }
     this.#pointerMain = event.clientY;
