@@ -341,13 +341,15 @@ test.describe('Table virtualized', () => {
         .poll(() => page.locator('[forTableRow]').first().getAttribute('data-testid'))
         .not.toBe(firstBefore);
 
-      const rowAfter = page.locator('[forTableRow]').first();
-      const rowAfterIndex = parseInt(
-        (await rowAfter.getAttribute('data-testid'))!.replace('row-', ''),
-        10,
-      );
-      const rowAfterAriaIndex = await rowAfter.getAttribute('aria-rowindex');
-      expect(rowAfterAriaIndex).toBe(String(rowAfterIndex + 2));
+      const rowAfterAttributes = await page
+        .locator('[forTableRow]')
+        .first()
+        .evaluate((node) => ({
+          testId: node.getAttribute('data-testid'),
+          ariaRowIndex: node.getAttribute('aria-rowindex'),
+        }));
+      const rowAfterIndex = parseInt(rowAfterAttributes.testId!.replace('row-', ''), 10);
+      expect(rowAfterAttributes.ariaRowIndex).toBe(String(rowAfterIndex + 2));
     });
   });
 });

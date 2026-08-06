@@ -157,6 +157,8 @@ test.describe('Tabs (Tab into panel)', () => {
     await gotoFixture(page, 'tabs', { disabled: 'none' });
     await focusRovingItem(page, 'trigger-d');
     await page.keyboard.press(' ');
+    await expect(el(page, 'content-d')).toHaveAttribute('data-state', 'active');
+    await expect(el(page, 'content-d')).not.toHaveAttribute('inert');
     await expect(el(page, 'content-d')).toHaveAttribute('tabindex', '0');
 
     await page.keyboard.press('Tab');

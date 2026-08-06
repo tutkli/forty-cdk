@@ -532,8 +532,32 @@ export async function rovingFirst(page: Page, testid: string, maxAttempts = 20):
  * the wait is itself coverage rather than a delay.
  */
 export async function focusRovingItem(page: Page, testid: string): Promise<void> {
+  await el(page, testid).focus();
+  await expectRovingFocus(page, testid);
+}
+
+/**
+ * Assert that `testid` holds focus **and** owns its roving group's single tab
+ * stop. Use this — never a bare {@link expectFocused} — after an arrow / `Home`
+ * / `End` press whose landing a following `Tab` / `Shift+Tab` depends on.
+ *
+ * It is the keyboard-path half of what {@link focusRovingItem} does for a
+ * programmatic `.focus()`, and it exists for the same reason: the two halves of
+ * a roving move settle at different times. The browser moves DOM focus
+ * synchronously, so `toBeFocused()` is satisfied while the group's `tabindex`
+ * rewrite is still an unflushed zoneless render. A `Tab` fired in that window
+ * is resolved against the *previous* owner's `tabindex="0"`, and the damage
+ * outlives the window: `Shift+Tab` back in lands on that stale owner, whose own
+ * `(focus)` handler then claims the tab stop for real — so the group settles
+ * into a stable wrong state and the re-entry assertion fails for its whole
+ * timeout instead of retrying its way green
+ * ([#1701](https://github.com/tutkli/forty-cdk/issues/1701)).
+ *
+ * Asserting the rewrite is the roving contract itself — a keyboard move
+ * relocates the tab stop — so the wait is coverage rather than a delay.
+ */
+export async function expectRovingFocus(page: Page, testid: string): Promise<void> {
   const item = el(page, testid);
-  await item.focus();
   await expect(item).toBeFocused();
   await expect(item).toHaveAttribute('tabindex', '0');
 }

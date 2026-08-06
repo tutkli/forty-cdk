@@ -1,5 +1,12 @@
 import { test } from '@playwright/test';
-import { el, expectFocused, focusRovingItem, gotoFixture, rovingFirst } from './_helpers';
+import {
+  el,
+  expectFocused,
+  expectRovingFocus,
+  focusRovingItem,
+  gotoFixture,
+  rovingFirst,
+} from './_helpers';
 
 /**
  * Real-browser roving-tabindex contract for the standalone
@@ -33,7 +40,7 @@ test.describe('ToggleGroup', () => {
     await el(page, 'before').focus();
     await rovingFirst(page, 'tg-left');
     await page.keyboard.press('ArrowRight');
-    await expectFocused(el(page, 'tg-center'));
+    await expectRovingFocus(page, 'tg-center');
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
 
@@ -48,7 +55,7 @@ test.describe('ToggleGroup', () => {
     await el(page, 'before').focus();
     await rovingFirst(page, 'tg-left');
     await page.keyboard.press('End');
-    await expectFocused(el(page, 'tg-right'));
+    await expectRovingFocus(page, 'tg-right');
     await page.keyboard.press('Tab');
     await expectFocused(el(page, 'after'));
 
