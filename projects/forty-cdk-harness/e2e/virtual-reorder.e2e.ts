@@ -75,22 +75,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await expect(el(page, 'last-reorder')).toHaveText(`${from}->${from + 1}`);
   });
 
-  test('keyboard End jump moves the target to the dataset end (9999) with absolute indices', async ({
-    page,
-  }) => {
-    const indices = await scrollAndSettle(page);
-    const from = indices[Math.floor(indices.length / 2)]!;
-    expect(from).toBeGreaterThan(50);
-
-    await el(page, `row-${from}`).focus();
-    await page.keyboard.press('Space');
-    await page.keyboard.press('End');
-    await page.keyboard.press('Space');
-
-    await expect(el(page, 'last-reorder')).toHaveText(`${from}->9999`);
-  });
-
-  test('the lifted row stays focused once an End jump has re-rendered the window', async ({
+  test('keyboard End jump keeps the lifted row focused and emits ABSOLUTE indices to the dataset end (9999)', async ({
     page,
   }) => {
     const indices = await scrollAndSettle(page);
@@ -103,6 +88,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await page.keyboard.press('End');
 
     await expect.poll(async () => (await renderedIndices(page)).at(-1) ?? -1).toBe(9999);
+    expect(await renderedIndices(page)).toContain(from);
     await expect(row).toBeFocused();
 
     await page.keyboard.press('Space');
@@ -122,6 +108,7 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await page.keyboard.press('Home');
 
     await expect.poll(async () => (await renderedIndices(page))[0] ?? -1).toBe(0);
+    expect(await renderedIndices(page)).toContain(from);
     await expect(row).toBeFocused();
 
     await page.keyboard.press('Space');
