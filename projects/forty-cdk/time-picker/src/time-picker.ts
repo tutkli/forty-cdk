@@ -369,7 +369,7 @@ export class ForTimePicker<D>
    * focus-on-error would silently go nowhere. No-op when disabled or before the
    * trigger has registered.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

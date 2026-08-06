@@ -10,7 +10,7 @@ import {
 } from '../../src/test-utils/contract';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
 import { type DateRange } from 'forty-cdk/shared';
-import { ForField } from 'forty-cdk/field';
+import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 import { ForDateRangeField } from './date-range-field';
 import { ForDateRangeFieldEnd, ForDateRangeFieldStart } from './date-range-field-endpoint';
@@ -573,6 +573,112 @@ describe('ForDateRangeField', () => {
       await typeInto('end-year', '2026');
 
       expect(fieldEl.hasAttribute('data-invalid')).toBe(true);
+    });
+
+    @Component({
+      imports: [
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForDateRangeField,
+        ForDateRangeFieldStart,
+        ForDateRangeFieldEnd,
+        ForDateRangeFieldSegment,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <button data-testid="outside">Elsewhere</button>
+        <div forField>
+          @if (nativeLabel()) {
+            <label forLabel data-testid="label">Stay</label>
+          } @else {
+            <span forLabel data-testid="label">Stay</span>
+          }
+          <div
+            forDateRangeField
+            [(value)]="value"
+            [disabled]="disabled()"
+            [locale]="'en-US'"
+            data-testid="group"
+          >
+            <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+              @for (s of start.segments(); track s.id) {
+                @if (!s.isLiteral) {
+                  <span
+                    forDateRangeFieldSegment
+                    [segment]="s.type!"
+                    [attr.data-testid]="'start-' + s.type"
+                    >{{ s.text }}</span
+                  >
+                }
+              }
+            </div>
+            <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+              @for (s of end.segments(); track s.id) {
+                @if (!s.isLiteral) {
+                  <span
+                    forDateRangeFieldSegment
+                    [segment]="s.type!"
+                    [attr.data-testid]="'end-' + s.type"
+                    >{{ s.text }}</span
+                  >
+                }
+              }
+            </div>
+          </div>
+          <p forFieldDescription data-testid="desc">Check-in and check-out.</p>
+        </div>
+      `,
+    })
+    class LabelledFieldHost {
+      readonly value = signal<DateRange<Date> | null>(null);
+      readonly disabled = signal(false);
+      readonly nativeLabel = signal(false);
+    }
+
+    const at = (r: RenderResult<LabelledFieldHost>, id: string) =>
+      r.query(`[data-testid="${id}"]`)!;
+
+    it('keeps the field association on the role=group host, off every segment', () => {
+      const r = renderHost(LabelledFieldHost);
+      const groupEl = at(r, 'group');
+
+      expect(groupEl.getAttribute('aria-labelledby')).toBe(at(r, 'label').id);
+      expect(groupEl.getAttribute('aria-describedby')).toBe(at(r, 'desc').id);
+      expect(groupEl.id).toBeTruthy();
+      for (const segment of r.queryAll('[forDateRangeFieldSegment]')) {
+        expect(segment.hasAttribute('aria-labelledby')).toBe(false);
+        expect(segment.hasAttribute('aria-describedby')).toBe(false);
+        expect(segment.hasAttribute('aria-errormessage')).toBe(false);
+        expect(segment.id).not.toBe(groupEl.id);
+      }
+    });
+
+    it('focuses the start endpoint first segment when a non-`<label>` host is clicked', () => {
+      const r = renderHost(LabelledFieldHost);
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'start-month'));
+    });
+
+    it('focuses the start endpoint first segment when a native `<label>` is clicked', async () => {
+      const r = renderHost(LabelledFieldHost);
+      r.instance.nativeLabel.set(true);
+      await r.flush();
+
+      expect(at(r, 'label').getAttribute('for')).toBe(at(r, 'group').id);
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'start-month'));
+    });
+
+    it('ignores the label click while the field is disabled', async () => {
+      const r = renderHost(LabelledFieldHost);
+      r.instance.disabled.set(true);
+      await r.flush();
+
+      const outside = at(r, 'outside');
+      outside.focus();
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(outside);
     });
   });
 

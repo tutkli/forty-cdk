@@ -16,6 +16,7 @@ import {
   provideInternationalizedDateTimeAdapter,
 } from 'forty-cdk/internationalized-date';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import { ForDateField } from './date-field';
 import { provideForDateFieldDefaults } from './date-field-defaults';
 import { ForDateFieldLiteral } from './date-field-literal';
@@ -168,6 +169,98 @@ describe('ForDateField', () => {
         .injector.get(ForDateField);
       field.focus();
       expect(document.activeElement).toBe(seg(r, 'month'));
+    });
+  });
+
+  describe('[forField] integration (#1683)', () => {
+    @Component({
+      imports: [
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForDateField,
+        ForDateFieldSegment,
+        ForDateFieldLiteral,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <button data-testid="outside">Elsewhere</button>
+        <div forField>
+          @if (nativeLabel()) {
+            <label forLabel data-testid="label">Date of birth</label>
+          } @else {
+            <span forLabel data-testid="label">Date of birth</span>
+          }
+          <div
+            forDateField
+            [(value)]="value"
+            [disabled]="disabled()"
+            [locale]="'en-US'"
+            data-testid="group"
+            #field="forDateField"
+          >
+            @for (s of field.segments(); track s.id) {
+              @if (s.isLiteral) {
+                <span forDateFieldLiteral>{{ s.text }}</span>
+              } @else {
+                <span forDateFieldSegment [segment]="s.type!" [attr.data-testid]="s.type">{{
+                  s.text
+                }}</span>
+              }
+            }
+          </div>
+          <p forFieldDescription data-testid="desc">Day, month and year.</p>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly value = signal<Date | null>(null);
+      readonly disabled = signal(false);
+      readonly nativeLabel = signal(false);
+    }
+
+    const at = (r: RenderResult<FieldHost>, id: string) => r.query(`[data-testid="${id}"]`)!;
+
+    it('keeps the field association on the role=group host, off every segment', () => {
+      const r = renderHost(FieldHost);
+      const group = at(r, 'group');
+
+      expect(group.getAttribute('aria-labelledby')).toBe(at(r, 'label').id);
+      expect(group.getAttribute('aria-describedby')).toBe(at(r, 'desc').id);
+      expect(group.id).toBeTruthy();
+      for (const segment of r.queryAll('[forDateFieldSegment]')) {
+        expect(segment.hasAttribute('aria-labelledby')).toBe(false);
+        expect(segment.hasAttribute('aria-describedby')).toBe(false);
+        expect(segment.hasAttribute('aria-errormessage')).toBe(false);
+        expect(segment.id).not.toBe(group.id);
+      }
+    });
+
+    it('focuses the first editable segment when a non-`<label>` host is clicked', () => {
+      const r = renderHost(FieldHost);
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'month'));
+    });
+
+    it('focuses the first editable segment when a native `<label>` is clicked', async () => {
+      const r = renderHost(FieldHost);
+      r.instance.nativeLabel.set(true);
+      await r.flush();
+
+      expect(at(r, 'label').getAttribute('for')).toBe(at(r, 'group').id);
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'month'));
+    });
+
+    it('ignores the label click while the field is disabled', async () => {
+      const r = renderHost(FieldHost);
+      r.instance.disabled.set(true);
+      await r.flush();
+
+      const outside = at(r, 'outside');
+      outside.focus();
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(outside);
     });
   });
 

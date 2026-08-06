@@ -17,21 +17,36 @@ import { composeIds } from '../host-attributes/host-aria';
 export interface FieldControlHandle {
   /**
    * The control's host element. Default target of `id` / `aria-*` wiring and
-   * focus-on-label-click, unless {@link labelledElement} nominates a distinct
+   * of the label click, unless {@link labelledElement} nominates a distinct
    * element.
    */
   readonly host: HTMLElement;
   /**
-   * The element that should actually carry the field's `aria-*` association
-   * and receive focus on label click, when it differs from {@link host}. For
-   * primitives whose host is a non-interactive wrapper (`<div forSelect>`,
-   * `<div forCombobox>`) this nominates the focusable control inside it (the
-   * trigger button / `role="combobox"` input), which registers after the field
-   * wiring runs — hence a signal. When omitted or resolving to `null` the field
-   * falls back to {@link host} (the host-is-the-control case, e.g. `ForListbox`
-   * or a native `<input forFieldControl>`).
+   * The element that should carry the field's `aria-*` association, when it
+   * differs from {@link host}. For primitives whose host is a non-interactive
+   * wrapper (`<div forSelect>`, `<div forCombobox>`) this nominates the
+   * focusable control inside it (the trigger button / `role="combobox"` input),
+   * which registers after the field wiring runs — hence a signal. When omitted
+   * or resolving to `null` the field falls back to {@link host} (the
+   * host-is-the-control case, e.g. `ForListbox` or a native
+   * `<input forFieldControl>`).
+   *
+   * This nominates the **association** target only. Where focus should land on
+   * a label click is {@link focus}'s job, because the two diverge on a
+   * composite: a segmented date / time field names its whole `role="group"` on
+   * this channel and focuses one spinbutton inside it.
    */
   readonly labelledElement?: Signal<HTMLElement | null>;
+  /**
+   * Moves focus into the control, when it exposes an entry point of its own
+   * (`FormValueControl.focus`). The field prefers this over focusing the
+   * association target on a label click, because a composite root is not
+   * focusable: `[forDateField]` & friends host a `role="group"` whose real
+   * entry point is the first editable segment. Omitted by controls whose
+   * association target is itself focusable, where the field focuses that
+   * element directly.
+   */
+  readonly focus?: (options?: FocusOptions) => void;
   /**
    * The id already host-bound on {@link labelledElement} (the Select trigger's
    * `triggerId`, the Combobox input's `inputId`). The field adopts it as its
@@ -107,11 +122,14 @@ export interface ForFieldContext {
   /** Register an error slot; returns an unregister callback. Counted, single `[forFieldError]` per field — see {@link registerLabel}. */
   registerError(): () => void;
   /**
-   * Forward a click to the registered control's focusable element, then focus
-   * it — the same outcome a native `<label for>` produces through the browser's
+   * Forward a click to the registered control, then move focus into it — the
+   * same outcome a native `<label for>` produces through the browser's
    * click-forwarding (toggling a checkbox / switch, activating a button). Used
-   * by a non-`<label>` `[forLabel]`, which has no native `for` forwarding, so
-   * label-click activation stays consistent across host shapes.
+   * by a `[forLabel]` the browser will not forward for: a non-`<label>` host,
+   * which has no native `for` forwarding at all, and a native `<label>` whose
+   * `for` resolves to a non-labelable element (the `role="group"` of a
+   * segmented date / time field), so label-click activation stays consistent
+   * across host shapes and control anatomies.
    */
   clickControl(): void;
 }

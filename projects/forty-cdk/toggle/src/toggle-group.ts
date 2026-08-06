@@ -170,7 +170,7 @@ export class ForToggleGroup
    * is pressed, else the first enabled item's host; no-op when disabled or when
    * no enabled item exists.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

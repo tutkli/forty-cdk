@@ -93,6 +93,19 @@ export abstract class FormUiControlBase {
    */
   readonly touch = output<void>();
 
+  /**
+   * Moves focus into the control, mirroring the optional `FormUiControl.focus`
+   * from `@angular/forms/signals`. Declared here without an implementation —
+   * the base has no idea where a subclass's focus entry point is — so that a
+   * surrounding `[forField]` can be handed the subclass's own `focus()` for
+   * label-click activation whenever one exists. A subclass whose host is
+   * itself focusable declares nothing and the field focuses that host.
+   *
+   * A subclass must declare this as a **method**, not an arrow-valued field:
+   * the base reads it during `super()`, before subclass fields initialize.
+   */
+  focus?(options?: FocusOptions): void;
+
   readonly #fieldset = inject(FOR_FIELDSET_CONTEXT, { optional: true });
 
   /**
@@ -196,6 +209,7 @@ export abstract class FormUiControlBase {
       errors: this.errors,
       labelledElement: computed(() => this.fieldLabelledElement()),
       labelledElementId: computed(() => this.fieldLabelledElementId() ?? undefined),
+      focus: this.focus?.bind(this),
     });
   }
 }

@@ -535,7 +535,7 @@ export class ForSlider
    * first registered thumb (the roving-tabindex entry point); no-op when the
    * slider is disabled or has no thumbs.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

@@ -9,6 +9,7 @@ import {
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { NativeDateAdapter, provideNativeDateAdapter } from 'forty-cdk/calendar';
+import { ForField, ForFieldDescription, ForLabel } from 'forty-cdk/field';
 import type { TimeSegmentType } from 'forty-cdk/core';
 import { ForTimeField } from './time-field';
 import { provideForTimeFieldDefaults } from './time-field-defaults';
@@ -164,6 +165,99 @@ describe('ForTimeField', () => {
         .injector.get(ForTimeField);
       field.focus();
       expect(document.activeElement).toBe(seg(r, 'hour'));
+    });
+  });
+
+  describe('[forField] integration (#1683)', () => {
+    @Component({
+      imports: [
+        ForField,
+        ForLabel,
+        ForFieldDescription,
+        ForTimeField,
+        ForTimeFieldSegment,
+        ForTimeFieldLiteral,
+      ],
+      providers: [...provideNativeDateAdapter()],
+      template: `
+        <button data-testid="outside">Elsewhere</button>
+        <div forField>
+          @if (nativeLabel()) {
+            <label forLabel data-testid="label">Appointment time</label>
+          } @else {
+            <span forLabel data-testid="label">Appointment time</span>
+          }
+          <div
+            forTimeField
+            [(value)]="value"
+            [disabled]="disabled()"
+            [hourCycle]="24"
+            [locale]="'en-US'"
+            data-testid="group"
+            #field="forTimeField"
+          >
+            @for (s of field.segments(); track s.id) {
+              @if (s.isLiteral) {
+                <span forTimeFieldLiteral>{{ s.text }}</span>
+              } @else {
+                <span forTimeFieldSegment [segment]="s.type!" [attr.data-testid]="s.type">{{
+                  s.text
+                }}</span>
+              }
+            }
+          </div>
+          <p forFieldDescription data-testid="desc">Hours and minutes.</p>
+        </div>
+      `,
+    })
+    class FieldHost {
+      readonly value = signal<Date | null>(null);
+      readonly disabled = signal(false);
+      readonly nativeLabel = signal(false);
+    }
+
+    const at = (r: RenderResult<FieldHost>, id: string) => r.query(`[data-testid="${id}"]`)!;
+
+    it('keeps the field association on the role=group host, off every segment', () => {
+      const r = renderHost(FieldHost);
+      const group = at(r, 'group');
+
+      expect(group.getAttribute('aria-labelledby')).toBe(at(r, 'label').id);
+      expect(group.getAttribute('aria-describedby')).toBe(at(r, 'desc').id);
+      expect(group.id).toBeTruthy();
+      for (const segment of r.queryAll('[forTimeFieldSegment]')) {
+        expect(segment.hasAttribute('aria-labelledby')).toBe(false);
+        expect(segment.hasAttribute('aria-describedby')).toBe(false);
+        expect(segment.hasAttribute('aria-errormessage')).toBe(false);
+        expect(segment.id).not.toBe(group.id);
+      }
+    });
+
+    it('focuses the first editable segment when a non-`<label>` host is clicked', () => {
+      const r = renderHost(FieldHost);
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'hour'));
+    });
+
+    it('focuses the first editable segment when a native `<label>` is clicked', async () => {
+      const r = renderHost(FieldHost);
+      r.instance.nativeLabel.set(true);
+      await r.flush();
+
+      expect(at(r, 'label').getAttribute('for')).toBe(at(r, 'group').id);
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(at(r, 'hour'));
+    });
+
+    it('ignores the label click while the field is disabled', async () => {
+      const r = renderHost(FieldHost);
+      r.instance.disabled.set(true);
+      await r.flush();
+
+      const outside = at(r, 'outside');
+      outside.focus();
+      at(r, 'label').click();
+      expect(document.activeElement).toBe(outside);
     });
   });
 

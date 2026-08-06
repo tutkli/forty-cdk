@@ -250,7 +250,7 @@ export class ForTimeField<D>
    * Signal Forms would focus the host `role="group"` wrapper — which is not
    * focusable — so focus-on-error would silently go nowhere. No-op when disabled.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

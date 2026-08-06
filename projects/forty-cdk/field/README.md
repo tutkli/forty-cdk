@@ -82,6 +82,8 @@ Clicking the label activates the control on both host shapes, not just focuses i
 
 > Note: composite controls whose host is not the focusable element (`forListbox`, `forSelect`, `forCombobox`) still receive `aria-labelledby` correctly, and a label click is forwarded to the control's nominated focusable element (the Select trigger / Combobox input) rather than the wrapper host.
 
+Where a composite is named on the wrapper itself — the `role="group"` of `[forDateField]`, `[forTimeField]`, `[forDateRangeField]` and `[forTimeRangeField]` — the association stays on that group and the label click moves focus to the control's own entry point instead: the first editable segment, or nowhere while the field is disabled. A native `<label>` reaches it too, because `for` pointing at a `role="group"` is not a [labelable element](https://html.spec.whatwg.org/multipage/forms.html#category-label) and the browser forwards nothing there, so the directive forwards it. Any control implementing `FormValueControl.focus` gets the same treatment.
+
 ## API
 
 ### `ForField`

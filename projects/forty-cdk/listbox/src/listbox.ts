@@ -382,7 +382,7 @@ export class ForListbox<T = string>
    * focus-on-error would focus the bound host even in the roving model, where
    * the options carry the tab stops. No-op when disabled.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }
