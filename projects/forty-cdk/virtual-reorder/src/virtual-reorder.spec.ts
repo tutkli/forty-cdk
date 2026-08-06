@@ -739,7 +739,7 @@ class SvgGrabTargetHost {
 }
 
 describe('ForVirtualReorder — a pointer grab target is an Element, not an HTMLElement (#1677)', () => {
-  it('pins the pressed row when the press lands on an SVG icon inside it', async () => {
+  it('pins the pressed row when the drag that arms started on an SVG icon inside it', async () => {
     const { fixture, viewport, query, flush: f } = await render(SvgGrabTargetHost);
     const icon = (fixture.nativeElement as HTMLElement).querySelector<SVGElement>(
       '[data-testid="icon-2"]',
@@ -747,6 +747,7 @@ describe('ForVirtualReorder — a pointer grab target is an Element, not an HTML
     expect(icon instanceof HTMLElement).toBe(false);
 
     icon.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
 
     viewport.scrollTo({ top: 20000 });
     await f();
@@ -755,6 +756,156 @@ describe('ForVirtualReorder — a pointer grab target is an Element, not an HTML
     expect(query('[data-testid="row-3"]')).toBeNull();
     expect(query('[data-testid="row-2"]')!.getAttribute('data-index')).toBe('2');
 
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+  });
+});
+
+@Component({
+  imports: [ForVirtualViewport, ForVirtualFor, ForVirtualReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div
+      forVirtualViewport
+      [virtualCount]="rows().length"
+      [estimateSize]="40"
+      forVirtualReorder
+      style="height: 200px; width: 200px"
+    >
+      <div
+        *forVirtualFor="let row of rows()"
+        forDraggable
+        [dragData]="row.id"
+        [attr.data-testid]="'row-' + row.id"
+      >
+        {{ row.label }}
+      </div>
+    </div>
+  `,
+})
+class PinLifecycleHost {
+  readonly rows = signal<readonly Row[]>(makeRows(1000));
+}
+
+describe('ForVirtualReorder — the pointer pin follows the armed session (#1695)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  async function pinHarness() {
+    const harness = await render(PinLifecycleHost);
+    return {
+      ...harness,
+      press: (index: number, y: number) =>
+        harness.query(`[data-testid="row-${index}"]`)!.dispatchEvent(pointer('pointerdown', 0, y)),
+      scrollAway: async (): Promise<void> => {
+        harness.viewport.scrollTo({ top: 20000 });
+        await harness.flush();
+        await harness.flush();
+      },
+    };
+  }
+
+  it('a press that never crosses the arm threshold leaves no row pinned', async () => {
+    const { press, query, indices, scrollAway, flush: f } = await pinHarness();
+
+    press(2, 100);
     document.dispatchEvent(pointer('pointerup', 0, 100));
+    await f();
+    await scrollAway();
+
+    expect(query('[data-testid="row-2"]')).toBeNull();
+    expect(Math.min(...indices())).toBeGreaterThan(100);
+  });
+
+  it('an armed drag pins the dragged row for the gesture and the release unpins it', async () => {
+    const { press, indices, scrollAway, flush: f } = await pinHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await scrollAway();
+
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await f();
+    await f();
+
+    expect(indices()).not.toContain(2);
+  });
+
+  it('a cancelled drag unpins the row it had pinned', async () => {
+    const { press, indices, scrollAway, flush: f } = await pinHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await scrollAway();
+
+    expect(indices()).toContain(2);
+
+    document.dispatchEvent(pointer('pointercancel', 0, 120));
+    await f();
+    await f();
+
+    expect(indices()).not.toContain(2);
+  });
+
+  it('the row retained off-window keeps the rendered indices in ascending DOM order', async () => {
+    const { press, indices, scrollAway } = await pinHarness();
+
+    press(2, 100);
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await scrollAway();
+
+    const rendered = indices();
+    expect(rendered[0]).toBe(2);
+    expect(rendered).toEqual([...rendered].sort((a, b) => a - b));
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+  });
+
+  it('a press during a keyboard lift keeps the lifted row pinned, focused and committable', async () => {
+    const { instance, query, indices, viewport, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+
+    query('[data-testid="row-4"]')!.dispatchEvent(pointer('pointerdown', 0, 140));
+    await f();
+
+    viewport.scrollTo({ top: 20000 });
+    await f();
+    await f();
+
+    expect(indices()).toContain(2);
+    expect(indices()).not.toContain(4);
+    expect(query('[data-testid="row-2"]')).toBe(row);
+    expect(document.activeElement).toBe(row);
+
+    document.dispatchEvent(pointer('pointerup', 0, 140));
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(instance.last()).toEqual({ from: 2, to: 2 });
+  });
+
+  it('a lift key pressed during an armed pointer drag starts no keyboard gesture', async () => {
+    const { query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+
+    row.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await f();
+
+    const other = query('[data-testid="row-5"]')!;
+    other.focus();
+    dispatchKey(other, ' ');
+    await f();
+
+    expect(query('[data-testid="row-5"]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointercancel', 0, 120));
   });
 });

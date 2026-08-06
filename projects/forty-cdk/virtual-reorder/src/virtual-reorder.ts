@@ -22,6 +22,8 @@ import { ForVirtualViewport } from 'forty-cdk/virtualization';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
+type ReorderMode = 'idle' | 'keyboard' | 'pointer';
+
 /** Payload of `itemReorder`: the lifted item's previous and new absolute index. */
 export interface ForVirtualReorderEvent {
   /** Previous absolute (dataset) index of the lifted item (0-based). */
@@ -59,6 +61,13 @@ function injectViewport(): ForVirtualViewport {
  *   for the whole gesture ([#1666](https://github.com/tutkli/forty-cdk/issues/1666)).
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
  *   scrolling unmounted target rows into view, rather than being confined to the window.
+ *
+ * **One gesture at a time** ([#1695](https://github.com/tutkli/forty-cdk/issues/1695)). The pin is
+ * written when a pointer drag **arms**, not when the press lands, and released on its commit or
+ * cancel — so an ordinary click on a row pins nothing and leaves no retained node behind. Pointer
+ * and keyboard reorder are mutually exclusive: while a keyboard lift is live the coordinator stands
+ * its pointer channel down (no pin, no scrub tracking, no arming), and a lift key pressed during a
+ * pointer drag is ignored. Whichever gesture starts first owns the pin until it commits or aborts.
  *
  * Hold **Shift** during a pointer drag to engage **windowed scrub**: the viewport maps onto the
  * whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted
@@ -105,9 +114,11 @@ export class ForVirtualReorder {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
 
+  #mode: ReorderMode = 'idle';
   #kbLiftedHost: HTMLElement | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
+  #pointerGrab: HTMLElement | null = null;
   #pointerMain: number | null = null;
   #scrubEngaged = false;
   #pointerSession: PointerDragSession | null = null;
@@ -127,11 +138,11 @@ export class ForVirtualReorder {
         host: this.#host,
         document: this.#document,
         armThreshold: POINTER_ARM_THRESHOLD_PX,
-        canStart: (event) => this.#pinFromPointer(event),
-        onLift: () => {},
+        canStart: (event) => this.#trackPointerPress(event),
+        onLift: () => this.#pinOnPointerLift(),
         onMove: (event) => this.#trackScrub(event),
-        onCommit: () => this.#viewport.setReorderingIndex(null),
-        onCancel: () => this.#viewport.setReorderingIndex(null),
+        onCommit: () => this.#endPointerSession(),
+        onCancel: () => this.#endPointerSession(),
       });
 
       createKeyboardDragMediator({
@@ -139,7 +150,7 @@ export class ForVirtualReorder {
         document: this.#document,
         isBrowser: this.#isBrowser,
         destroyRef,
-        isLifted: () => this.#kbLiftedHost !== null,
+        isLifted: () => this.#mode === 'keyboard',
         onIdleKeydown: (event) => this.#onIdleKeydown(event),
         onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
         onFocusLeave: () => this.#kbCancel(),
@@ -157,7 +168,7 @@ export class ForVirtualReorder {
 
   #onIdleKeydown(event: KeyboardEvent): void {
     const key = event.key;
-    if (key !== ' ' && key !== 'Enter') {
+    if (this.#mode !== 'idle' || (key !== ' ' && key !== 'Enter')) {
       return;
     }
     const draggable = this.#list.items().find((h) => h.host === event.target);
@@ -217,6 +228,7 @@ export class ForVirtualReorder {
   }
 
   #kbLift(host: HTMLElement, vi: number): void {
+    this.#mode = 'keyboard';
     this.#kbLiftedHost = host;
     this.#kbFrom = vi;
     this.#kbTarget = vi;
@@ -251,6 +263,7 @@ export class ForVirtualReorder {
   }
 
   #kbTeardown(): void {
+    this.#mode = 'idle';
     this.#kbLiftedHost = null;
     this.#kbFrom = 0;
     this.#kbTarget = 0;
@@ -274,15 +287,39 @@ export class ForVirtualReorder {
     this.#kbTarget = Math.max(0, Math.min(this.#count() - 1, value));
   }
 
-  #pinFromPointer(event: PointerEvent): boolean {
+  #trackPointerPress(event: PointerEvent): boolean {
     const host = this.#draggableHost(event.target);
     if (host === null) {
       return false;
     }
     this.#pointerMain = event.clientY;
     this.#scrubEngaged = event.shiftKey;
+    if (this.#mode !== 'idle') {
+      this.#pointerGrab = null;
+      return false;
+    }
+    this.#pointerGrab = host;
+    return true;
+  }
+
+  #pinOnPointerLift(): boolean {
+    const host = this.#pointerGrab;
+    this.#pointerGrab = null;
+    if (host === null || this.#mode !== 'idle') {
+      return false;
+    }
+    this.#mode = 'pointer';
     this.#viewport.setReorderingIndex(this.#absoluteIndex(host));
     return true;
+  }
+
+  #endPointerSession(): void {
+    this.#pointerGrab = null;
+    if (this.#mode !== 'pointer') {
+      return;
+    }
+    this.#mode = 'idle';
+    this.#viewport.setReorderingIndex(null);
   }
 
   #trackScrub(event: PointerEvent): void {

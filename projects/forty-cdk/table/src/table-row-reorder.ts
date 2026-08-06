@@ -31,6 +31,8 @@ import { injectTableContext, injectTableRegistration } from './table-context';
 
 const POINTER_ARM_THRESHOLD_PX = 5;
 
+type ReorderMode = 'idle' | 'keyboard' | 'pointer';
+
 const LIFTED_NAV_KEYS: ReadonlySet<string> = new Set([
   'ArrowDown',
   'ArrowUp',
@@ -105,6 +107,14 @@ export function translateRowReorderIndices(
  * put back on the lifted row once the window settles, and a `focusout` reporting no
  * destination only cancels the gesture if focus is still outside the rowgroup afterwards.
  *
+ * **One gesture at a time** ([#1695](https://github.com/tutkli/forty-cdk/issues/1695)). Under
+ * virtualization the pin is written when a pointer drag **arms**, not when the press lands, and
+ * released on its commit or cancel — so an ordinary click on a row pins nothing and leaves no
+ * retained node behind. Pointer and keyboard reorder are mutually exclusive: while a keyboard lift
+ * is live the coordinator stands its pointer channel down (no pin, no scrub tracking, no arming),
+ * and a lift key pressed during a pointer drag is ignored. Whichever gesture starts first owns the
+ * pin until it commits or aborts.
+ *
  * @example
  * ```html
  * <div role="rowgroup" forTableRowReorder (rowReorder)="onReorder($event)">
@@ -154,11 +164,13 @@ export class ForTableRowReorder {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #dragDefaults = inject(FOR_DRAG_DROP_DEFAULTS);
 
+  #mode: ReorderMode = 'idle';
   #kbLiftedHost: HTMLElement | null = null;
   #kbFocusEl: HTMLElement | SVGElement | null = null;
   #kbPath: 'virtual' | 'list' | null = null;
   #kbFrom = 0;
   #kbTarget = 0;
+  #pointerGrab: HTMLElement | null = null;
   #pointerMain: number | null = null;
   #scrubEngaged = false;
   #pointerSession: PointerDragSession | null = null;
@@ -178,11 +190,11 @@ export class ForTableRowReorder {
         host: this.#host,
         document: this.#document,
         armThreshold: POINTER_ARM_THRESHOLD_PX,
-        canStart: (event) => this.#pinFromPointer(event),
-        onLift: () => {},
+        canStart: (event) => this.#trackPointerPress(event),
+        onLift: () => this.#pinOnPointerLift(),
         onMove: (event) => this.#trackScrub(event),
-        onCommit: () => this.#registration.setReorderingRow(null),
-        onCancel: () => this.#registration.setReorderingRow(null),
+        onCommit: () => this.#endPointerSession(),
+        onCancel: () => this.#endPointerSession(),
       });
 
       createKeyboardDragMediator({
@@ -190,7 +202,7 @@ export class ForTableRowReorder {
         document: this.#document,
         isBrowser: this.#isBrowser,
         destroyRef,
-        isLifted: () => this.#kbLiftedHost !== null,
+        isLifted: () => this.#mode === 'keyboard',
         onIdleKeydown: (event) => this.#onIdleKeydown(event),
         onLiftedKeydown: (event) => this.#onLiftedKeydown(event),
         onFocusLeave: () => this.#cancelActive(),
@@ -220,6 +232,9 @@ export class ForTableRowReorder {
   }
 
   #onIdleKeydown(event: KeyboardEvent): void {
+    if (this.#mode !== 'idle') {
+      return;
+    }
     const lift = this.#gridMode()
       ? isDragLiftKey(event)
       : this.#virtualized() && (event.key === ' ' || event.key === 'Enter');
@@ -290,6 +305,7 @@ export class ForTableRowReorder {
     if (from < 0) {
       return;
     }
+    this.#mode = 'keyboard';
     this.#kbPath = 'list';
     this.#kbLiftedHost = rowHost;
   }
@@ -377,6 +393,7 @@ export class ForTableRowReorder {
   }
 
   #kbLift(host: HTMLElement, vi: number): void {
+    this.#mode = 'keyboard';
     this.#kbLiftedHost = host;
     this.#kbFocusEl = this.#resolveFocusTarget(host);
     this.#kbFrom = vi;
@@ -419,6 +436,7 @@ export class ForTableRowReorder {
   }
 
   #kbTeardown(): void {
+    this.#mode = 'idle';
     this.#kbLiftedHost = null;
     this.#kbFocusEl = null;
     this.#kbPath = null;
@@ -444,7 +462,7 @@ export class ForTableRowReorder {
     this.#kbTarget = Math.max(0, Math.min(this.#count() - 1, value));
   }
 
-  #pinFromPointer(event: PointerEvent): boolean {
+  #trackPointerPress(event: PointerEvent): boolean {
     const target = event.target;
     if (!(target instanceof Element)) {
       return false;
@@ -455,9 +473,33 @@ export class ForTableRowReorder {
     }
     this.#pointerMain = event.clientY;
     this.#scrubEngaged = event.shiftKey;
+    if (this.#mode !== 'idle') {
+      this.#pointerGrab = null;
+      return false;
+    }
+    this.#pointerGrab = rowHost;
+    return true;
+  }
+
+  #pinOnPointerLift(): boolean {
+    const rowHost = this.#pointerGrab;
+    this.#pointerGrab = null;
+    if (rowHost === null || this.#mode !== 'idle') {
+      return false;
+    }
+    this.#mode = 'pointer';
     const handle = this.#registration.rows().find((r) => r.host === rowHost);
     this.#registration.setReorderingRow(handle?.virtualIndex() ?? null);
     return true;
+  }
+
+  #endPointerSession(): void {
+    this.#pointerGrab = null;
+    if (this.#mode !== 'pointer') {
+      return;
+    }
+    this.#mode = 'idle';
+    this.#registration.setReorderingRow(null);
   }
 
   #trackScrub(event: PointerEvent): void {
