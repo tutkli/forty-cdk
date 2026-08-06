@@ -11,10 +11,14 @@ import { FOR_FIELD_CONTEXT } from './field-context';
  * emits `for` and the browser forwards the click to the control (toggling a
  * checkbox / switch, activating a button); a non-`<label>` host has no native
  * `for` forwarding, so the directive forwards the click itself — clicking the
- * label activates the control either way, not just focuses it. A click that
- * originated on the control (when the control is nested inside the label host)
- * is not re-forwarded, so a label-wrapping layout toggles once, matching native
- * `<label>` semantics.
+ * label activates the control either way, not just focuses it. A native
+ * `<label>` whose `for` resolves to a non-labelable element gets the same
+ * treatment, since the browser forwards nothing there: that is the composite
+ * case, where the control is named on a `role="group"` a `<label for>` cannot
+ * reach (`[forDateField]`, `[forTimeField]`, their range siblings). A click
+ * that originated on the control (when the control is nested inside the label
+ * host) is not re-forwarded, so a label-wrapping layout toggles once, matching
+ * native `<label>` semantics.
  *
  * Usable standalone outside a field — there it is an inert
  * marker and the consumer wires native `for` themselves.
@@ -60,7 +64,7 @@ export class ForLabel {
   }
 
   protected onClick(event: MouseEvent): void {
-    if (!this.ctx || this.#host.nativeElement.tagName === 'LABEL') {
+    if (!this.ctx || this.#browserForwards()) {
       return;
     }
     // When the control is nested inside the label host (label wraps control),
@@ -74,5 +78,17 @@ export class ForLabel {
       return;
     }
     this.ctx.clickControl();
+  }
+
+  /**
+   * Whether the browser itself forwards this click, in which case the
+   * directive must not forward it too. True only on a native `<label>` that
+   * resolved a labeled control — `for` pointing at a non-labelable element
+   * (a composite's `role="group"`) leaves `control` null and the browser
+   * forwards nothing, so the directive owns the activation there.
+   */
+  #browserForwards(): boolean {
+    const host = this.#host.nativeElement;
+    return host.tagName === 'LABEL' && (host as HTMLLabelElement).control !== null;
   }
 }

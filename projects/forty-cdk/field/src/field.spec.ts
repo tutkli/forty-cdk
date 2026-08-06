@@ -1,8 +1,17 @@
-import { Component, computed, provideZonelessChangeDetection, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  Directive,
+  ElementRef,
+  inject,
+  provideZonelessChangeDetection,
+  signal,
+} from '@angular/core';
 import { form, FormField, validate } from '@angular/forms/signals';
 import { TestBed } from '@angular/core/testing';
 
 import { renderHost } from '../../src/test-utils/render';
+import { FormUiControlBase } from 'forty-cdk/core';
 import { ForSwitch } from 'forty-cdk/switch';
 import { ForField } from './field';
 import { ForFieldControl } from './field-control';
@@ -422,6 +431,99 @@ describe('ForField', () => {
       q(el, 'label').click();
       await flush();
       expect(control.getAttribute('aria-checked')).toBe('true');
+    });
+
+    @Component({
+      imports: [ForField, ForLabel, ForSwitch],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="label">Notify</label>
+          <button forSwitch [(checked)]="checked" data-test-id="control"></button>
+        </div>
+      `,
+    })
+    class NativeLabelSwitchHost {
+      readonly checked = signal(false);
+    }
+
+    it('leaves a native `<label>` over a labelable control to the browser', async () => {
+      const { el, flush } = renderHost(NativeLabelSwitchHost);
+      const control = q(el, 'control');
+
+      q(el, 'label').click();
+      await flush();
+      expect(control.getAttribute('aria-checked')).toBe('true');
+    });
+  });
+
+  describe('label-click activation on a composite control', () => {
+    @Directive({
+      selector: '[forCompositeControl]',
+      host: { role: 'group' },
+    })
+    class CompositeControl extends FormUiControlBase {
+      readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
+
+      override focus(options?: FocusOptions): void {
+        if (this.effectiveDisabled()) {
+          return;
+        }
+        this.#host.nativeElement.querySelector<HTMLElement>('[tabindex]')?.focus(options);
+      }
+    }
+
+    @Component({
+      imports: [ForField, ForLabel, CompositeControl],
+      template: `
+        <button data-test-id="outside">Elsewhere</button>
+        <div forField>
+          <span forLabel data-test-id="span-label">Date</span>
+          <div forCompositeControl [disabled]="disabled()" data-test-id="group">
+            <span data-test-id="part" tabindex="0">01</span>
+          </div>
+        </div>
+      `,
+    })
+    class SpanLabelHost {
+      readonly disabled = signal(false);
+    }
+
+    @Component({
+      imports: [ForField, ForLabel, CompositeControl],
+      template: `
+        <div forField>
+          <label forLabel data-test-id="native-label">Date</label>
+          <div forCompositeControl data-test-id="group">
+            <span data-test-id="part" tabindex="0">01</span>
+          </div>
+        </div>
+      `,
+    })
+    class CompositeNativeLabelHost {}
+
+    it('prefers the control focus hook over the association target', () => {
+      const { el } = renderHost(SpanLabelHost);
+      q(el, 'span-label').click();
+      expect(document.activeElement).toBe(q(el, 'part'));
+    });
+
+    it('forwards a native `<label>` click when its `for` reaches no labelable element', () => {
+      const { el } = renderHost(CompositeNativeLabelHost);
+      expect(q(el, 'native-label').getAttribute('for')).toBe(q(el, 'group').id);
+
+      q(el, 'native-label').click();
+      expect(document.activeElement).toBe(q(el, 'part'));
+    });
+
+    it('ignores the label click while the control is disabled', async () => {
+      const { el, fixture, flush } = renderHost(SpanLabelHost);
+      fixture.componentInstance.disabled.set(true);
+      await flush();
+
+      const outside = q(el, 'outside');
+      outside.focus();
+      q(el, 'span-label').click();
+      expect(document.activeElement).toBe(outside);
     });
   });
 

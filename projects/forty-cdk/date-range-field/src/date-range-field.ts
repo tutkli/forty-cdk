@@ -307,7 +307,7 @@ export class ForDateRangeField<D>
    * wrapper — which is not focusable — so focus-on-error would silently go
    * nowhere. No-op when disabled.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

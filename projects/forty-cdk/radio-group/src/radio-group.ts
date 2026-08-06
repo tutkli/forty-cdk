@@ -132,7 +132,7 @@ export class ForRadioGroup
    * selected radio's host when one matches, else the first enabled radio host;
    * no-op when the group is disabled or has no enabled radio.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

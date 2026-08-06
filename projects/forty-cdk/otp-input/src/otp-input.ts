@@ -289,7 +289,7 @@ export class ForOtpInput
   }
 
   /** Move focus to the real input. Implements `FormUiControl.focus`. */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     this.#inputEl()?.focus(options);
   }
 

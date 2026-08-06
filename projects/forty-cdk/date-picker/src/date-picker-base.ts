@@ -302,7 +302,7 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
    * focusable role — so focus-on-error would silently go nowhere. No-op when
    * disabled or before the trigger has registered.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

@@ -518,7 +518,7 @@ export class ForCombobox<T = string>
    * focusable role — so focus-on-error would silently go nowhere. No-op when
    * disabled or before the input has registered.
    */
-  focus(options?: FocusOptions): void {
+  override focus(options?: FocusOptions): void {
     if (this.effectiveDisabled()) {
       return;
     }

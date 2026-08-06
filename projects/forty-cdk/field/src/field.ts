@@ -63,8 +63,8 @@ export class ForField implements ForFieldContext {
   }
 
   /**
-   * The element the field actually targets for `id` / `aria-*` association and
-   * focus: the control's nominated `labelledElement` (Select trigger / Combobox
+   * The element the field actually targets for `id` / `aria-*` association:
+   * the control's nominated `labelledElement` (Select trigger / Combobox
    * input) when present, else its host (Listbox, native `<input>`).
    */
   readonly #targetEl = computed<HTMLElement | null>(() => {
@@ -211,17 +211,28 @@ export class ForField implements ForFieldContext {
   }
 
   /**
-   * Forward a click to the control's focusable element and focus it — matching
-   * the activation a native `<label for>` triggers via the browser, so a
-   * non-`<label>` `[forLabel]` toggles a custom-role control instead of only
-   * focusing it.
+   * Forward a click to the control and move focus into it — matching the
+   * activation a native `<label for>` triggers via the browser, so a
+   * `[forLabel]` the browser will not forward for toggles a custom-role control
+   * instead of only focusing it.
+   *
+   * Focus prefers the control's own {@link FieldControlHandle.focus} entry
+   * point over the association target, because the two diverge on a composite:
+   * the `role="group"` a segmented date / time field is named on takes no
+   * focus, while its `focus()` lands on the first editable segment (and no-ops
+   * while disabled).
    */
   clickControl(): void {
+    const control = this.#control();
     const target = this.#targetEl();
     if (!target) {
       return;
     }
     target.click();
+    if (control?.focus) {
+      control.focus();
+      return;
+    }
     target.focus();
   }
 }
