@@ -422,6 +422,73 @@ export async function longPress(locator: Locator, ms = 600): Promise<void> {
 }
 
 /**
+ * Hold a live pointer drag inside a scroll container's bottom auto-scroll band
+ * until the virtualized window has rendered past `untilIndex`, and return the
+ * highest absolute index it reached.
+ *
+ * The budget is **progress, not iteration count**. Auto-scroll advances on a
+ * `requestAnimationFrame` loop, so how many rows one paced hold covers is a
+ * function of the fixture's row height and of whatever CPU the run has left: a
+ * fixed cap is tuned to one fixture on one machine, and on a slower one it ends
+ * the hold by *releasing the drag early*
+ * ([#1689](https://github.com/tutkli/forty-cdk/issues/1689)). Holding while the
+ * window is still advancing removes that cliff — the loop gives up only after
+ * `stallIterations` consecutive reads that surface no new row, which is a real
+ * "auto-scroll is not running" signal rather than a stopwatch.
+ *
+ * It then asserts that signal itself, so an exhausted hold fails naming the
+ * auto-scroll. Without it the shortfall falls through to the caller's business
+ * assertion, where an early release is indistinguishable from a broken
+ * cross-window pin in the primitive — the expensive half of the original flake.
+ *
+ * `stallIterations` defaults to twelve, i.e. ~600 ms of a stationary window at
+ * the default 50-ms pace. At the drag-drop defaults (16 px per frame, damped to
+ * ~15 px three pixels from the edge) a 44-px row clears in roughly three frames,
+ * so one iteration covers about one row and the budget is an order of magnitude
+ * past the nominal gap between two rows.
+ *
+ * The `waitForTimeout` is gesture pacing in the sense of this module's header:
+ * it is the hold's own dwell between two moves of one drag, not a settle-wait
+ * on application state — the settle condition is the polled index itself.
+ */
+export async function holdPointerAtAutoScrollEdge(
+  page: Page,
+  options: {
+    x: number;
+    edgeY: number;
+    untilIndex: number;
+    readIndices: () => Promise<number[]>;
+    stallIterations?: number;
+    holdMs?: number;
+  },
+): Promise<number> {
+  const { x, edgeY, untilIndex, readIndices } = options;
+  const stallIterations = options.stallIterations ?? 12;
+  const holdMs = options.holdMs ?? 50;
+
+  let maxRendered = (await readIndices()).at(-1) ?? -1;
+  let stalled = 0;
+  for (let i = 0; maxRendered <= untilIndex && stalled < stallIterations; i++) {
+    await page.mouse.move(x, i % 2 ? edgeY : edgeY - 1);
+    await page.waitForTimeout(holdMs);
+    const last = (await readIndices()).at(-1) ?? maxRendered;
+    if (last > maxRendered) {
+      maxRendered = last;
+      stalled = 0;
+    } else {
+      stalled++;
+    }
+  }
+
+  expect(
+    maxRendered,
+    `auto-scroll never advanced the rendered window past index ${untilIndex} ` +
+      `(it stalled at ${maxRendered} for ${stallIterations} consecutive ${holdMs}ms holds)`,
+  ).toBeGreaterThan(untilIndex);
+  return maxRendered;
+}
+
+/**
  * Press `Tab` until `document.activeElement` exposes a matching
  * `data-testid`. Throws after `maxAttempts` presses (default 20) with a
  * diagnostic message including the last-focused testid, so a regression
