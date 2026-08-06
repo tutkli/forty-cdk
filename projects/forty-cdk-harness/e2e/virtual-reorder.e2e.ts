@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { el, gotoFixture } from './_helpers';
+import { el, gotoFixture, holdPointerAtAutoScrollEdge } from './_helpers';
 
 /**
  * Reads the absolute `data-index` values of the currently rendered rows, sorted
@@ -180,17 +180,12 @@ test.describe('Virtualized *forVirtualFor list reorder', () => {
     await page.mouse.move(startX, startY);
     await page.mouse.down();
     await page.mouse.move(startX, startY + 5);
-    let maxRendered = from;
-    for (let i = 0; i < 80 && maxRendered <= from + 30; i++) {
-      await page.mouse.move(startX, i % 2 ? edgeY : edgeY - 1);
-      // Pacing wait inside a bounded poll loop, not a settle-wait: each
-      // iteration gives the auto-scroll rAF a frame to advance the window
-      // before re-reading it, and the loop exits as soon as the target row
-      // renders.
-      await page.waitForTimeout(50);
-      const idx = await renderedIndices(page);
-      maxRendered = idx[idx.length - 1] ?? maxRendered;
-    }
+    await holdPointerAtAutoScrollEdge(page, {
+      x: startX,
+      edgeY,
+      untilIndex: from + 30,
+      readIndices: () => renderedIndices(page),
+    });
     await page.mouse.up();
 
     await expect(el(page, 'last-reorder')).not.toHaveText('none');
