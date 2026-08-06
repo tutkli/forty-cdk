@@ -42,10 +42,11 @@ export function isHoverCapablePointer(event: Pick<PointerEvent, 'pointerType'>):
  * for; do not fold one onto the other.
  *
  * Neither predicate covers the non-hover `pointerType` checks in the library —
- * the primary-button guards (`pointerType === 'mouse' && button !== 0` in
- * `pressed`, the drag-session handle guard, swipe-dismiss, listbox reorder) and
- * the context-menu long-press gate (`pointerType !== 'touch'`). Those classify
- * a press, not a hover, so they stay inline by design.
+ * the seven primary-button guards (`pointerType === 'mouse' && button !== 0` in
+ * `pressed`, the drag-session handle guard, swipe-dismiss, listbox reorder,
+ * virtual reorder, table row reorder and tree node drag) and the context-menu
+ * long-press gate (`pointerType !== 'touch'`). Those classify a press, not a
+ * hover, so they stay inline by design.
  *
  * @param event The pointer event to classify — only `pointerType` is read.
  * @returns `false` for `'touch'`, `true` for every other `pointerType`
