@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { el, expectFocused, gotoFixture } from './_helpers';
+import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
 
 test.describe('Table (roles + sticky header)', () => {
   test('root has role=grid, header row has role=row, data cell has role=gridcell', async ({
@@ -249,7 +249,7 @@ test.describe('Table (grid keyboard navigation)', () => {
     await gotoFixture(page, 'table');
     await el(page, 'cell-0-name').focus();
     await page.keyboard.press('ArrowRight');
-    await expectFocused(el(page, 'cell-0-role'));
+    await expectRovingFocus(page, 'cell-0-role');
     await el(page, 'after').focus();
     await page.keyboard.press('Shift+Tab');
     await expectFocused(el(page, 'cell-0-role'));
