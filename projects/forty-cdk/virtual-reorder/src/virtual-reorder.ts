@@ -69,6 +69,13 @@ function injectViewport(): ForVirtualViewport {
  * its pointer channel down (no pin, no scrub tracking, no arming), and a lift key pressed during a
  * pointer drag is ignored. Whichever gesture starts first owns the pin until it commits or aborts.
  *
+ * A pointer press is refused outright — nothing tracked, no `'pointer'` mode, no pin — when the
+ * list is `disabled`, when a **mouse** press uses a non-primary button (touch and pen presses keep
+ * whatever `button` their engine reports), or when the pressed row's `[forDraggable]` is
+ * `[dragDisabled]` or unregistered. That is the guard set `[forListboxReorder]` and
+ * `[forTreeNodeDrag]` apply at the same seam, and it matches what this coordinator's own keyboard
+ * path already refuses ([#1697](https://github.com/tutkli/forty-cdk/issues/1697)).
+ *
  * Hold **Shift** during a pointer drag to engage **windowed scrub**: the viewport maps onto the
  * whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted
  * item at an arbitrary far item without waiting for auto-scroll to reach it. Without Shift, pointer
@@ -288,8 +295,15 @@ export class ForVirtualReorder {
   }
 
   #trackPointerPress(event: PointerEvent): boolean {
+    if (this.#list.effectiveDisabled() || (event.pointerType === 'mouse' && event.button !== 0)) {
+      return false;
+    }
     const host = this.#draggableHost(event.target);
     if (host === null) {
+      return false;
+    }
+    const draggable = this.#list.items().find((h) => h.host === host);
+    if (draggable === undefined || draggable.disabled()) {
       return false;
     }
     this.#pointerMain = event.clientY;
