@@ -214,6 +214,7 @@ export class ForDropList implements ForDropListContext {
   readonly items = this.#items.items;
 
   readonly #liftedHost = signal<HTMLElement | null>(null);
+  readonly #coordinatorLiftedHost = signal<HTMLElement | null>(null);
   readonly #flatIndex = signal(0);
   readonly #dragOver = signal<number | null>(null);
 
@@ -229,8 +230,14 @@ export class ForDropList implements ForDropListContext {
   /** Insertion index this list is the current drop target at, else `null`. */
   readonly dragOverIndex = this.#dragOver.asReadonly();
 
-  /** `true` while a drag originating from this list is in progress. */
-  readonly isDragging = computed(() => this.#liftedHost() !== null);
+  /**
+   * `true` while a drag originating from this list is in progress — its own keyboard / pointer
+   * lift, or one a composing coordinator owns (see {@link setCoordinatorLift}). Reflected as
+   * `data-dragging` on the list host.
+   */
+  readonly isDragging = computed(
+    () => this.#liftedHost() !== null || this.#coordinatorLiftedHost() !== null,
+  );
 
   constructor() {
     const group = this.#group;
@@ -291,6 +298,26 @@ export class ForDropList implements ForDropListContext {
       return delegated;
     }
     return this.roving.active() === el;
+  }
+
+  isItemDragging(el: HTMLElement): boolean {
+    return this.#liftedHost() === el || this.#coordinatorLiftedHost() === el;
+  }
+
+  /**
+   * Mark `el` as the item of a drag a **coordinator** composing this list owns end to end —
+   * `[forVirtualReorder]`, and the virtualized branch of `[forTableRowReorder]`. Those wrap the
+   * list via `hostDirectives` and intercept the lift key in the capture phase, so `ForDraggable`
+   * never reaches {@link lift} and the list holds no lift state of its own for the gesture. The
+   * mark is what keeps {@link isItemDragging} and {@link isDragging} — and therefore the
+   * `data-dragging` hook on both the item and the list host — true for the whole gesture.
+   *
+   * It is deliberately **not** folded into the list's own lift state: `moveLifted` / `drop` /
+   * `cancel` still act on nothing, because the coordinator owns the target index, the
+   * announcements and the teardown. Pass `null` on drop, cancel, or destroy.
+   */
+  setCoordinatorLift(el: HTMLElement | null): void {
+    this.#coordinatorLiftedHost.set(el);
   }
 
   setActiveItem(el: HTMLElement): void {

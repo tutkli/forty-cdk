@@ -35,6 +35,15 @@ export interface ForDropListContext {
   itemTabindex(el: HTMLElement): -1 | 0 | null;
   isFirstFocusableItem(el: HTMLElement): boolean;
   isItemHighlighted(el: HTMLElement): boolean;
+  /**
+   * Whether a live drag of `el` is in progress — this list's own keyboard / pointer lift, or a
+   * lift a composing coordinator owns and drives itself (`ForDropList.setCoordinatorLift`).
+   * Drives `[forDraggable]`'s `data-dragging`.
+   *
+   * Deliberately broader than {@link isLifted}, which answers only for the list's own lift —
+   * the state {@link moveLifted} / {@link drop} / {@link cancel} act on.
+   */
+  isItemDragging(el: HTMLElement): boolean;
   setActiveItem(el: HTMLElement): void;
 
   /** Idle roving focus move from `el`. */

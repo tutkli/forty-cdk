@@ -491,6 +491,132 @@ class SvgFocusTargetHost {
   }
 }
 
+@Component({
+  imports: [ForTable, ForTableRow, ForTableCell, ForTableRowReorder, ForDraggable],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div forTable mode="grid" ariaLabel="Reorderable rows">
+      <div role="rowgroup" forTableRowReorder (rowReorder)="onReorder($event)">
+        @for (row of rows; track row) {
+          <div forTableRow forDraggable [dragData]="row" [attr.data-index]="row">
+            <div forTableCell name="a" [attr.data-testid]="'cell-' + row">{{ row }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+class ListRowReorderHost {
+  protected readonly rows = [0, 1, 2, 3];
+  last: TableRowReorderDescriptor | null = null;
+
+  protected onReorder(descriptor: TableRowReorderDescriptor): void {
+    this.last = descriptor;
+  }
+}
+
+describe('ForTableRowReorder — the lifted row reflects data-dragging (#1693)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((node) => node.remove());
+  });
+
+  it('a virtualized keyboard lift marks the lifted row and the rowgroup, and the drop clears both', async () => {
+    const { instance, settle, indices, cell, query } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    const rowgroup = query('[forTableRowReorder]');
+    lifted.focus();
+
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    expect(query(`[data-index="${from}"]`).getAttribute('data-dragging')).toBe('');
+    expect(rowgroup.getAttribute('data-dragging')).toBe('');
+    expect(query(`[data-index="${from - 1}"]`).hasAttribute('data-dragging')).toBe(false);
+
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from, to: from });
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+    expect(rowgroup.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('Escape clears the mark from the lifted row and the rowgroup', async () => {
+    const { settle, indices, cell, query } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    const rowgroup = query('[forTableRowReorder]');
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    expect(query(`[data-index="${from}"]`).getAttribute('data-dragging')).toBe('');
+
+    press(lifted, 'Escape');
+    await settle();
+
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+    expect(rowgroup.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('a focus leave that cancels the gesture clears the mark', async () => {
+    const { settle, indices, cell, query } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+    expect(query(`[data-index="${from}"]`).getAttribute('data-dragging')).toBe('');
+
+    focusOut(lifted, query('[data-testid="outside"]'));
+    await settle();
+
+    expect(liveRegionText()).toContain('movement cancelled');
+    expect(query(`[data-index="${from}"]`).hasAttribute('data-dragging')).toBe(false);
+    expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('a focus leave that keeps the gesture alive keeps the mark', async () => {
+    const { settle, indices, cell, query } = await mount();
+    const from = Math.max(...indices());
+    const lifted = cell(from);
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    focusOut(lifted, cell(from - 1));
+    await settle();
+
+    expect(liveRegionText()).not.toContain('cancelled');
+    expect(query(`[data-index="${from}"]`).getAttribute('data-dragging')).toBe('');
+  });
+
+  it('the non-virtualized branch keeps marking the row it lifts through the drop list', async () => {
+    const { instance, settle, query } = await render(ListRowReorderHost);
+    const lifted = query('[data-testid="cell-1"]');
+    lifted.focus();
+
+    press(lifted, ' ', { ctrlKey: true });
+    await settle();
+
+    expect(query('[data-index="1"]').getAttribute('data-dragging')).toBe('');
+    expect(query('[forTableRowReorder]').getAttribute('data-dragging')).toBe('');
+
+    press(lifted, 'ArrowDown');
+    press(lifted, ' ');
+    await settle();
+
+    expect(instance.last).toEqual({ from: 1, to: 2 });
+    expect(query('[data-index="1"]').hasAttribute('data-dragging')).toBe(false);
+    expect(query('[forTableRowReorder]').hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
 describe('ForTableRowReorder — the restored focus target may be an SVGElement (#1679)', () => {
   afterEach(() => {
     document.querySelectorAll('[aria-live]').forEach((node) => node.remove());

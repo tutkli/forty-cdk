@@ -224,6 +224,99 @@ describe('ForVirtualReorder — keyboard', () => {
   });
 });
 
+describe('ForVirtualReorder — the lifted row reflects data-dragging (#1693)', () => {
+  afterEach(() => {
+    document.querySelectorAll('[aria-live]').forEach((n) => n.remove());
+  });
+
+  it('a keyboard lift marks the lifted row and the viewport, and the drop clears both', async () => {
+    const { query, viewport, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    expect(row.hasAttribute('data-dragging')).toBe(false);
+    expect(viewport.hasAttribute('data-dragging')).toBe(false);
+
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
+    expect(viewport.getAttribute('data-dragging')).toBe('');
+    expect(query('[data-testid="row-3"]')!.hasAttribute('data-dragging')).toBe(false);
+
+    dispatchKey(row, ' ');
+    await f();
+
+    expect(query('[data-testid="row-2"]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(viewport.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('Escape clears the mark from the lifted row and the viewport', async () => {
+    const { query, viewport, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
+
+    dispatchKey(row, 'Escape');
+    await f();
+
+    expect(query('[data-testid="row-2"]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(viewport.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('a focus leave that cancels the gesture clears the mark', async () => {
+    const { query, viewport, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
+
+    focusOut(row, query('[data-testid="outside"]')!);
+    await f();
+
+    expect(assertiveText()).toContain('movement cancelled');
+    expect(query('[data-testid="row-2"]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(viewport.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('a focus leave that keeps the gesture alive keeps the mark', async () => {
+    const { query, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+    row.focus();
+
+    dispatchKey(row, ' ');
+    await f();
+    focusOut(row, query('[data-testid="row-3"]')!);
+    await f();
+
+    expect(assertiveText()).not.toContain('cancelled');
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
+  });
+
+  it('a pointer lift still marks the dragged row, and the release clears it', async () => {
+    const { query, viewport, flush: f } = await mount();
+    const row = query('[data-testid="row-2"]')!;
+
+    row.dispatchEvent(pointer('pointerdown', 0, 100));
+    document.dispatchEvent(pointer('pointermove', 0, 120));
+    await f();
+
+    expect(query('[data-testid="row-2"]')!.getAttribute('data-dragging')).toBe('');
+    expect(viewport.getAttribute('data-dragging')).toBe('');
+
+    document.dispatchEvent(pointer('pointerup', 0, 120));
+    await f();
+
+    expect(query('[data-testid="row-2"]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(viewport.hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
 describe('ForVirtualReorder — a window jump past the lifted row keeps the gesture alive (#1666)', () => {
   afterEach(() => {
     document.querySelectorAll('[aria-live]').forEach((n) => n.remove());

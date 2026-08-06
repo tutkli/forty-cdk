@@ -221,6 +221,7 @@ export class ForVirtualReorder {
     this.#kbFrom = vi;
     this.#kbTarget = vi;
     this.#viewport.setReorderingIndex(vi);
+    this.#list.setCoordinatorLift(host);
     this.#announcer.announce(
       this.#dragDefaults.announceLift(this.#label(), vi + 1, this.#count()),
       'assertive',
@@ -254,6 +255,7 @@ export class ForVirtualReorder {
     this.#kbFrom = 0;
     this.#kbTarget = 0;
     this.#viewport.setReorderingIndex(null);
+    this.#list.setCoordinatorLift(null);
   }
 
   #count(): number {
