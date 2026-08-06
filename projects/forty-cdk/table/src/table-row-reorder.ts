@@ -106,6 +106,10 @@ export function translateRowReorderIndices(
  * in the consumer's `@for` and blurs it on the way through. That is not a cancel: focus is
  * put back on the lifted row once the window settles, and a `focusout` reporting no
  * destination only cancels the gesture if focus is still outside the rowgroup afterwards.
+ * The restore is `preventScroll`, because the jump is what moved the window in the first
+ * place ([#1704](https://github.com/tutkli/forty-cdk/issues/1704)): the retained row keeps
+ * rendering at its original offset, so a scrolling `focus()` scrolls the viewport straight
+ * back off the destination and undoes the jump the user asked for.
  *
  * **One gesture at a time** ([#1695](https://github.com/tutkli/forty-cdk/issues/1695)). Under
  * virtualization the pin is written when a pointer drag **arms**, not when the press lands, and
@@ -400,7 +404,7 @@ export class ForTableRowReorder {
     if (active !== null && this.#host.contains(active)) {
       return;
     }
-    target.focus();
+    target.focus({ preventScroll: true });
   }
 
   #kbLift(host: HTMLElement, vi: number): void {
