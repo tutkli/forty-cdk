@@ -334,7 +334,7 @@ export class ForPaneResizer {
     if (this.disabled()) {
       return false;
     }
-    if (event.button !== 0) {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
       return false;
     }
     event.preventDefault();

@@ -191,7 +191,7 @@ It also owns the axis geometry (the thumb renders from it) and the scroll comman
 
 ```ts
 onTrackPress(event: PointerEvent, bar: ForScrollAreaScrollbar): void {
-  if (event.button !== 0) return;
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
   const point = bar.trackPointFromEvent(event);
   if (point >= bar.thumbOffset() && point <= bar.thumbOffset() + bar.thumbSize()) return;
   bar.pageBy(point < bar.thumbOffset() ? -1 : 1);

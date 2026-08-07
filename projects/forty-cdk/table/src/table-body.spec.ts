@@ -2115,6 +2115,40 @@ describe('ForTableBody', () => {
       expect(instance.lastCommit()).toEqual({ column: 'name', width: 160 });
     });
 
+    it('ignores a non-primary mouse press on the resize handle', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      const handle = query('[forTableColumnResizer]')!;
+
+      const down = pointerEvent('pointerdown', { clientX: 300, button: 2, pointerType: 'mouse' });
+      expect(down.pointerType).toBe('mouse');
+      handle.dispatchEvent(down);
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 340 }));
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(instance.widths()['name']).toBe(150);
+      expect(handle.getAttribute('aria-valuenow')).toBe('150');
+    });
+
+    it('still resizes for a touch press on the handle reporting a non-zero button', async () => {
+      const { instance, query, flush } = renderHost(ResizeOptionsHost);
+      const handle = query('[forTableColumnResizer]')!;
+
+      const down = pointerEvent('pointerdown', { clientX: 300, button: 2, pointerType: 'touch' });
+      expect(down.pointerType).toBe('touch');
+      handle.dispatchEvent(down);
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 340 }));
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(instance.widths()['name']).toBe(190);
+      expect(handle.getAttribute('aria-valuenow')).toBe('190');
+
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 340 }));
+      await flush();
+      expect(instance.lastCommit()).toEqual({ column: 'name', width: 190 });
+    });
+
     it('makes double-click auto-fit a no-op when autoFit is false', () => {
       const { instance, query, fixture } = renderHost(ResizeOptionsHost);
       instance.autoFit.set(false);

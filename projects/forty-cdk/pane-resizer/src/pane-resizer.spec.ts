@@ -537,11 +537,38 @@ describe('ForPaneResizer', () => {
       const { fixture, query, flush } = renderHost(PaneResizerHost);
       const el = query<HTMLElement>('[forPaneResizer]')!;
 
-      el.dispatchEvent(pointerEvent('pointerdown', { clientX: 100, button: 2 }));
+      const down = pointerEvent('pointerdown', {
+        clientX: 100,
+        button: 2,
+        pointerType: 'mouse',
+      });
+      expect(down.pointerType).toBe('mouse');
+      el.dispatchEvent(down);
       document.dispatchEvent(pointerEvent('pointermove', { clientX: 200 }));
       await flush();
+      expect(down.defaultPrevented).toBe(false);
       expect(fixture.componentInstance.value()).toBe(50);
       expect(fixture.componentInstance.resizeEvents).toEqual([]);
+    });
+
+    it('still drags for a touch press reporting a non-zero button', async () => {
+      const { fixture, query, flush } = renderHost(PaneResizerHost);
+      const el = query<HTMLElement>('[forPaneResizer]')!;
+
+      const down = pointerEvent('pointerdown', {
+        clientX: 100,
+        button: 2,
+        pointerType: 'touch',
+      });
+      expect(down.pointerType).toBe('touch');
+      el.dispatchEvent(down);
+      document.dispatchEvent(pointerEvent('pointermove', { clientX: 120 }));
+      await flush();
+      expect(down.defaultPrevented).toBe(true);
+      expect(fixture.componentInstance.value()).toBe(70);
+      expect(fixture.componentInstance.resizeEvents).toEqual([70]);
+
+      document.dispatchEvent(pointerEvent('pointerup', { clientX: 120 }));
     });
 
     it('focuses the separator on pointerdown so arrows fine-tune after a drag (#1392 item 3)', async () => {
