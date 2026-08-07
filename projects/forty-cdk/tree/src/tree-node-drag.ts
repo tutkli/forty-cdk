@@ -237,7 +237,11 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   }
 
   #canStartPointer(event: PointerEvent): boolean {
-    if (this.disabled() || this.#ctx.disabled() || event.button !== 0) {
+    if (
+      this.disabled() ||
+      this.#ctx.disabled() ||
+      (event.pointerType === 'mouse' && event.button !== 0)
+    ) {
       return false;
     }
     const target = event.target;

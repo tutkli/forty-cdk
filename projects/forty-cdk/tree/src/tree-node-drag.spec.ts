@@ -84,17 +84,24 @@ function focusOut(el: HTMLElement, relatedTarget: HTMLElement | null = null): vo
   el.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget }));
 }
 
-function firePointer(target: EventTarget, type: string, x: number, y: number): void {
-  target.dispatchEvent(
-    new PointerEvent(type, {
-      clientX: x,
-      clientY: y,
-      button: 0,
-      pointerId: 1,
-      bubbles: true,
-      cancelable: true,
-    }),
-  );
+function firePointer(
+  target: EventTarget,
+  type: string,
+  x: number,
+  y: number,
+  init: Partial<PointerEventInit> = {},
+): PointerEvent {
+  const event = new PointerEvent(type, {
+    clientX: x,
+    clientY: y,
+    button: 0,
+    pointerId: 1,
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
+  target.dispatchEvent(event);
+  return event;
 }
 
 describe('ForTreeNodeDrag — keyboard', () => {
@@ -948,6 +955,54 @@ describe('ForTreeNodeDrag — a pointer grab target is an Element, not an HTMLEl
 
     expect(event.defaultPrevented).toBe(false);
     expect(query<HTMLElement>('[forTreeNodeDrag]')!.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.dropped()).toBeNull();
+  });
+});
+
+describe('ForTreeNodeDrag — the primary-button guard is scoped to a mouse press (#1699)', () => {
+  it('starts the gesture for a touch press reporting a non-primary button', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTreeNodeDrag]')!;
+    const label =
+      query<HTMLElement>('[data-testid="docs"]')!.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    const down = firePointer(label, 'pointerdown', 100, 100, { pointerType: 'touch', button: 2 });
+    expect(down.pointerType).toBe('touch');
+
+    firePointer(document, 'pointermove', 100, 120, { pointerType: 'touch' });
+    await f();
+
+    expect(tree.getAttribute('data-dragging')).toBe('');
+
+    firePointer(document, 'pointerup', 100, 120, { pointerType: 'touch' });
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+    expect(instance.dropped()!.node).toBe('docs');
+  });
+
+  it('still declines a mouse press using a non-primary button', async () => {
+    const { instance, query, flush: f } = renderHost(TreeDragHost);
+    await f();
+
+    const tree = query<HTMLElement>('[forTreeNodeDrag]')!;
+    const label =
+      query<HTMLElement>('[data-testid="docs"]')!.querySelector<HTMLElement>('[forTreeItemLabel]')!;
+
+    const down = firePointer(label, 'pointerdown', 100, 100, { pointerType: 'mouse', button: 2 });
+    expect(down.pointerType).toBe('mouse');
+
+    firePointer(document, 'pointermove', 100, 120, { pointerType: 'mouse' });
+    await f();
+
+    expect(tree.hasAttribute('data-dragging')).toBe(false);
+    expect(down.defaultPrevented).toBe(false);
+
+    firePointer(document, 'pointerup', 100, 120, { pointerType: 'mouse' });
+    await f();
+
     expect(instance.dropped()).toBeNull();
   });
 });
