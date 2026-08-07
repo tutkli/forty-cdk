@@ -272,7 +272,7 @@ Declaratively the same recipe is the four vetoable outputs on `[forDrawer]`: `(i
 
 `ForDrawerCloseReason`: `'escape' | 'backdrop' | 'pointerDownOutside' | 'focusOutside' | 'closeButton' | 'swipe' | 'programmatic'`.
 
-> **Declarative vs. imperative naming asymmetry.** The declarative output is `(dismiss)`, but the imperative handle method stays `ForDrawerRef.close()`, the `[forDrawerClose]` directive selector is unchanged, and the `ForDrawerCloseReason` type keeps its name. This is intentional: the output rename removes the native-event collision (see [#814](https://github.com/tutkli/forty-cdk/issues/814)) while the imperative surface follows the convention established before that rename.
+> **The declarative and imperative surfaces spell this differently, on purpose.** The output is `(dismiss)` — an output named `close` would collide with the native DOM event and break any wrapper re-exposing it through `hostDirectives`. Nothing else changes name: the imperative handle method is `ForDrawerRef.close()`, the directive selector is `[forDrawerClose]`, and the payload type is `ForDrawerCloseReason`.
 
 | Data attribute           | Values                                       |
 | ------------------------ | -------------------------------------------- |

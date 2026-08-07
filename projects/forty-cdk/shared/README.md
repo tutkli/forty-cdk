@@ -6,7 +6,7 @@ Every primitive ships from its own entry point, but their public APIs speak a co
 
 ## Why this exists
 
-The types live in `forty-cdk/core`, which is **not** a public entry point: it also holds the ~180 engines and DI singletons the library refactors freely, and it exists so every primitive resolves the shared implementation to exactly one compiled module. Publishing the contract types from `forty-cdk/shared` gives them a specifier a consumer can depend on without depending on the engines next to them.
+The types live in `forty-cdk/core`, which is **not** a public entry point: it also holds the engines and DI singletons the library refactors freely, and it exists so every primitive resolves the shared implementation to exactly one compiled module. Publishing the contract types from `forty-cdk/shared` gives them a specifier a consumer can depend on without depending on the engines next to them.
 
 ```ts
 import { ForTabs, ForTabsList, ForTabsTrigger } from 'forty-cdk/tabs';
@@ -122,34 +122,7 @@ Pinning the ids yourself is the natural first idea and it makes this shape _wors
 
 `provideForIdSalt` does not help either — it changes the salt, not the counter.
 
-Every behaviour on this page — the split that survives, the static `id` that dangles, and the deferred root that re-points at a foreign element — is pinned by [`incremental-hydration.spec.ts`](../src/lib/ssr/incremental-hydration.spec.ts), which drives a real `@angular/platform-server` render through a real client hydration rather than simulating one.
-
 `aria-activedescendant` is the one id relationship that needs no rule: it always names a **mounted** option, whose directive has therefore adopted the server's id, and while the options are dehydrated the attribute is simply absent rather than stale.
-
-## Migration
-
-Before this entry point existed, each of these symbols was re-exported by every primitive barrel whose API referenced it — 37 barrels, `WritingDirection` alone in 29 of them. Those re-exports are gone: import from `forty-cdk/shared` instead. The symbols, their shapes and their runtime identity are unchanged, so the migration is a specifier rewrite.
-
-```ts
-// before
-import { ForTabs, type WritingDirection } from 'forty-cdk/tabs';
-import { provideNativeDateAdapter, type DateRange } from 'forty-cdk/calendar';
-
-// after
-import { ForTabs } from 'forty-cdk/tabs';
-import { provideNativeDateAdapter } from 'forty-cdk/calendar';
-import type { DateRange, WritingDirection } from 'forty-cdk/shared';
-```
-
-| Old import path                                                                                                                                                                                             | Symbols                                                                                                                                                                                                                                                                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `forty-cdk/accordion`, `carousel`, `listbox`, `navigation-menu`, `radio-group`, `stepper`, `tabs`, `toggle`, `tree`, `drag-drop`, `pagination`, `pane-resizer`, `slider`, `table`, `scroll-area`, `toolbar` | `WritingDirection`, `ListNavigationAction`, `RovingTabindex`, `HostRovingItemHandle`, `DragPreview`, `ElementBox`                                                                                                                                                                                |
-| `forty-cdk/combobox`, `select`, `popover`, `tooltip`, `hover-card`, `dialog`, `drawer`, `menu`, `menubar`, `dropdown-menu`, `context-menu`, `date-picker`, `time-picker`                                    | `FloatingSide`, `FloatingAlign`, `FloatingFallbackAxisSideDirection`, `Point`, `VetoableEvent`, `VetoableNativeEvent`, `ListboxOverlayContext`, `FOR_MENU_CONTEXT`, `ForMenuContext`, `ForMenuCloseReason`, `ForMenuItemHandle`, `MenuActivationModality`, `MenuSiblingNavigator`                |
-| `forty-cdk/calendar`, `date-field`, `time-field`, `internationalized-date`                                                                                                                                  | `DateAdapter`, `TimeCapableDateAdapter`, `assertTimeCapable`, `FOR_DATE_ADAPTER`, `injectDateAdapter`, `DateRange`, `FieldSegment`, `SegmentEditorContext`, `SegmentEditorDelegate`, `SegmentHandle`, `SegmentType`, `DateSegmentType`, `TimeSegmentType`, `FieldGranularity`, `TimeGranularity` |
-| `forty-cdk/fieldset`                                                                                                                                                                                        | `FOR_FIELDSET_CONTEXT`, `ForFieldsetContext`                                                                                                                                                                                                                                                     |
-| `forty-cdk/toast`                                                                                                                                                                                           | `SwipeDirection`, `SwipeEventDetail`                                                                                                                                                                                                                                                             |
-
-One rename comes with the move: `SegmentType` was also published as `DateTimeSegmentType` from `forty-cdk/date-field` and the then-separate `forty-cdk/date-range-field`. The alias is dropped — a blessed contract has one name, so `import type { SegmentType } from 'forty-cdk/shared'` replaces it.
 
 ## Notes
 

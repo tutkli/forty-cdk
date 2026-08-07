@@ -216,13 +216,13 @@ The pieces are the range-specific `[forDateRangeFieldStart]` / `[forDateRangeFie
 
 ```ts
 import {
-  type DateRange,
   ForDateRangeField,
   ForDateRangeFieldEnd,
   ForDateRangeFieldLiteral,
   ForDateRangeFieldSegment,
   ForDateRangeFieldStart,
 } from 'forty-cdk/date-field';
+import type { DateRange } from 'forty-cdk/shared';
 
 readonly model = signal({ stay: null as DateRange<CalendarDate> | null });
 readonly booking = form(this.model);
@@ -306,18 +306,3 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 ## Wrapping in a design system
 
 Both supported wrapper patterns — `hostDirectives` with the exported `FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
-
-## Migration — `forty-cdk/date-range-field` is folded in here
-
-`forty-cdk/date-range-field` no longer resolves. `ForDateRangeField` is a **variant** of this primitive — same APG composition, same pieces, no dependency of its own — so it ships from `forty-cdk/date-field` under the rule that a variant lives in its base's entry point, the same way `ForDateRangePicker` ships from `forty-cdk/date-picker`. Nothing was renamed and no runtime behavior changed: the migration is a specifier rewrite.
-
-```ts
-// before
-import { ForDateField } from 'forty-cdk/date-field';
-import { ForDateRangeField, ForDateRangeFieldStart } from 'forty-cdk/date-range-field';
-
-// after
-import { ForDateField, ForDateRangeField, ForDateRangeFieldStart } from 'forty-cdk/date-field';
-```
-
-Every symbol that moved: `ForDateRangeField`, `ForDateRangeFieldStart`, `ForDateRangeFieldEnd`, `ForDateRangeFieldSegment`, `ForDateRangeFieldLiteral`, `FOR_DATE_RANGE_FIELD_CONTEXT`, `DateRangeFieldEndpoint`, `DateRangeFieldSegment`, `ForDateRangeFieldContext`, `DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS`, `FOR_DATE_RANGE_FIELD_DEFAULTS`, `provideForDateRangeFieldDefaults`, `ForDateRangeFieldDefaults`, `ForDateRangeFieldSegmentLabels`, `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS`, `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`.

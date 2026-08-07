@@ -5,7 +5,7 @@ Secondary entry point holding the [`@internationalized/date`](https://react-spec
 - `InternationalizedDateAdapter` / `provideInternationalizedDateAdapter()` — day-granular `CalendarDate`.
 - `InternationalizedDateTimeAdapter` / `provideInternationalizedDateTimeAdapter()` — time-capable `CalendarDateTime`.
 
-It exists so the main `forty-cdk` bundle never references `@internationalized/date`: the package is an **optional peer dependency**, required only by consumers who import this entry point. The date/time primitives themselves (`Calendar`, `DateField`, `DatePicker`, `TimeField`) depend only on the abstract `DateAdapter` from the main entry point — `provideNativeDateAdapter()` works with zero extra installs.
+It exists so no other entry point references `@internationalized/date`: the package is an **optional peer dependency**, required only by consumers who import this one. The date/time primitives themselves (`Calendar`, `DateField`, `DatePicker`, `TimeField`, `TimePicker`) depend only on the abstract `DateAdapter` contract from `forty-cdk/shared` — `provideNativeDateAdapter()` works with zero extra installs.
 
 ```bash
 npm install @internationalized/date

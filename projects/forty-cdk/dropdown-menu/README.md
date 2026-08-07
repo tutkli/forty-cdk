@@ -185,7 +185,7 @@ Once focus is in the menu, see [`menu/README.md`](../menu/README.md) for the in-
 
 `[forDropdownMenu]` implements the [WAI-ARIA Menu Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/). The trigger wires `aria-haspopup="menu"`, `aria-expanded`, and `aria-controls`; the menu surface and item roles come from the shared [`menu/`](../menu/README.md) primitives.
 
-A disabled trigger (its own `[disabled]`, or the root's) reflects through a **single channel**: the native `disabled` attribute plus the `data-disabled` styling hook. No `aria-disabled` is emitted — the trigger is a real single-purpose `<button>` and the native attribute already conveys the state to assistive technology, per the sanctioned native-`disabled` case in [rule #561](https://github.com/tutkli/forty-cdk/issues/561) (D2). Style the disabled trigger off `[disabled]` or `[data-disabled]`, never `[aria-disabled]`.
+A disabled trigger (its own `[disabled]`, or the root's) reflects through a **single channel**: the native `disabled` attribute plus the `data-disabled` styling hook. No `aria-disabled` is emitted — the trigger is a real single-purpose `<button>` and the native attribute already conveys the state to assistive technology. Style the disabled trigger off `[disabled]` or `[data-disabled]`, never `[aria-disabled]`.
 
 ## Styling
 

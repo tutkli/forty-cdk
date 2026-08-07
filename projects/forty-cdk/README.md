@@ -4,6 +4,8 @@ Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built
 Designed from the ground up for modern Angular — the API is built around signals, standalone
 directives, and dependency-injection composition.
 
+**Browsing?** The [documentation site](https://tutkli.github.io/forty-cdk/) renders every primitive with live examples.
+
 **New here?** [Your first overlay](../../docs/your-first-overlay.md) walks one Popover from empty markup to styled-and-animated and explains the two concepts every overlay shares: the `@if` / open-state model and the portal → global CSS requirement.
 
 **Styling these primitives?** [Styling forty-cdk](../../docs/styling.md) explains the three hooks you style against — your own class (not the directive selector), `data-*` state attributes, and `--for-*` custom properties — and links to each primitive's styling reference.
@@ -18,21 +20,24 @@ npm install forty-cdk
 
 Required:
 
-- `@angular/common` `^22.0.0`
-- `@angular/core` `^22.0.0`
+- `@angular/common` `^22.0.1`
+- `@angular/core` `^22.0.1`
 
 Optional — install only if you use the matching entry point / primitives:
 
 | Peer                               | Needed by                                                                                                                                                                                                                                                                                                                                                                  |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@angular/forms` `^22.0.0`         | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, `Select`, `Slider`, `Combobox`, …). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. The contract is type-only, so the published bundle never references the package — consumers using only non-form primitives can skip it. |
-| `@internationalized/date` `^3.0.0` | The `forty-cdk/internationalized-date` entry point (`InternationalizedDateAdapter`, `InternationalizedDateTimeAdapter`). The date/time primitives themselves only depend on the abstract `DateAdapter` contract from the main entry point — install this peer only when you import that entry point.                                                                       |
-
-`@angular/forms/signals` is stable as of Angular 22, so the peer follows the standard major range (`^22.0.0`).
+| `@angular/forms` `^22.0.1`         | Form-control primitives (`Switch`, `Checkbox`, `RadioGroup`, `Listbox`, `Select`, `Slider`, `Combobox`, …). They implement `FormValueControl` / `FormCheckboxControl` from `@angular/forms/signals` for `[formField]` auto-wiring. The contract is type-only, so the published bundle never references the package — consumers using only non-form primitives can skip it. |
+| `@internationalized/date` `^3.0.0` | The `forty-cdk/internationalized-date` entry point (`InternationalizedDateAdapter`, `InternationalizedDateTimeAdapter`). The date/time primitives themselves depend only on the abstract `DateAdapter` contract from `forty-cdk/shared` — install this peer only when you import that entry point.                                                                         |
 
 ### Regular dependencies
 
-`@floating-ui/dom` is a regular dependency, installed automatically with the package. Positioned overlays (`Tooltip`, `Popover`, `Menu`, `Combobox`, `Select`, etc.) import it statically from the main entry point, so every consumer's build must be able to resolve it — but it is internal-only (no floating-ui value crosses the public API) and tree-shakes out of your bundle when you don't use any positioned primitive.
+Two packages are regular dependencies, installed automatically and never declared as peers, because nothing of either crosses the public API by value. Both tree-shake out of a bundle that imports no primitive using them.
+
+| Dependency               | Used by                                                                                                                                 |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `@floating-ui/dom`       | Positioning for the anchored overlays — `Tooltip`, `Popover`, `Menu`, `Combobox`, `Select`, `Date Picker`, `Time Picker`, `Hover Card`. |
+| `@tanstack/virtual-core` | The windowing core behind `forty-cdk/virtualization`, and therefore `forty-cdk/table-virtualization` and `forty-cdk/virtual-reorder`.   |
 
 ## Entry points
 
@@ -124,15 +129,16 @@ The tables below group the primitives by purpose. The link on each name opens th
 
 ### Data & layout
 
-| Primitive                    | What it is                                                                                                                                                              |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Table](table)               | A headless data table over a native `<table>` or `<div>` grid: sticky headers, 2D keyboard navigation, row selection, sortable headers, column resizing and reordering. |
-| [Tree](tree)                 | A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, selection and typeahead.                                                    |
-| [Scroll Area](scroll-area)   | A scrollable region with cross-browser, stylable synthetic scrollbars.                                                                                                  |
-| [Pane Resizer](pane-resizer) | A focusable divider that resizes the panes on either side — draggable and keyboard-operable.                                                                            |
-| [Separator](separator)       | A static, optionally semantic divider between groups of content, horizontal or vertical.                                                                                |
-| [Aspect Ratio](aspect-ratio) | A container that keeps its content at a fixed width-to-height ratio.                                                                                                    |
-| [Avatar](avatar)             | A user image with a graceful fallback across its loading lifecycle.                                                                                                     |
+| Primitive                          | What it is                                                                                                                                                              |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Table](table)                     | A headless data table over a native `<table>` or `<div>` grid: sticky headers, 2D keyboard navigation, row selection, sortable headers, column resizing and reordering. |
+| [Tree](tree)                       | A nested tree view for hierarchical data: expandable nodes with roving-tabindex navigation, selection and typeahead.                                                    |
+| [Scroll Area](scroll-area)         | A scrollable region with cross-browser, stylable synthetic scrollbars.                                                                                                  |
+| [Pane Resizer](pane-resizer)       | A focusable divider that resizes the panes on either side — draggable and keyboard-operable.                                                                            |
+| [Separator](separator)             | A static, optionally semantic divider between groups of content, horizontal or vertical.                                                                                |
+| [Aspect Ratio](aspect-ratio)       | A container that keeps its content at a fixed width-to-height ratio.                                                                                                    |
+| [Avatar](avatar)                   | A user image with a graceful fallback across its loading lifecycle.                                                                                                     |
+| [Visually Hidden](visually-hidden) | Hides content visually while keeping it in the accessibility tree — screen-reader-only labels and announcements.                                                        |
 
 ### Feedback
 
@@ -156,7 +162,7 @@ Headless — no DOM or ARIA of their own; an `inject*` / provider API that other
 ## Building
 
 ```bash
-ng build forty-cdk
+pnpm build
 ```
 
 Build artifacts land in `dist/forty-cdk` (consumed locally via the `forty-cdk` path alias in the root `tsconfig.json`).
@@ -167,11 +173,11 @@ Tests run on Vitest via the Angular CLI builder `@angular/build:unit-test`:
 
 ```bash
 pnpm test                                              # all specs, single pass
-pnpm exec ng test forty-cdk --watch                    # watch mode
+pnpm test:watch                                        # watch mode
 pnpm exec ng test forty-cdk --include "../accordion/src/accordion.spec.ts"  # single file (path relative to projects/forty-cdk/src/)
 pnpm exec ng test forty-cdk --filter "Enter and Space select"  # tests by name (regex)
 ```
 
 The `-- <path>` / `-- -t "<name>"` passthrough forms do **not** work on this setup (pnpm mangles the quoted `--`, so `ng` rejects it) — use the builder's own `--include` (repeatable) and `--filter` (regex) flags instead.
 
-Every primitive's test suite includes a case running under `provideZonelessChangeDetection()` to keep reactivity working without Zone.js.
+The whole suite runs under `provideZonelessChangeDetection()`, so reactivity is verified without Zone.js on every spec rather than in a per-primitive case.

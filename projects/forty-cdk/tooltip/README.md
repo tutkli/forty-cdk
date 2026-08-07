@@ -214,11 +214,6 @@ For an **instant, unconditional** open or close that ignores the delays and both
 - **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open tooltip closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so tooltips on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the tooltip normally again.
 - **Touch**: APG flags tooltips as problematic on touch devices (no hover, no separate focus, no obvious dismiss). The trigger filters touch pointers out of both the hover-open and focus-open paths, so a tap does **not** open the tooltip — only mouse hover and keyboard focus do. For touch-first UI where the descriptive content must be reachable on tap, consider a Popover.
 - **Arrow offset**: `[forTooltipArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the bubble. Set `--for-floating-arrow-offset` on the arrow (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. Defaults to `0px`.
-- **Floating-ui dependency** is declared as an optional peer (`@floating-ui/dom`). Install it only if you actually use the Tooltip primitive:
-
-  ```bash
-  npm install @floating-ui/dom
-  ```
 
 ## Accessibility
 
