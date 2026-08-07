@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { el, expectFocused, gotoFixture } from './_helpers';
+import { rowAt, rows } from './_table-helpers';
 
 test.describe('Table virtualized', () => {
   test('only a small window of rows is mounted — not all 10,000', async ({ page }) => {
     await gotoFixture(page, 'table-virtualized');
-    const rowCount = await page.locator('[forTableRow]').count();
+    const rowCount = await rows(page).count();
     expect(rowCount).toBeGreaterThan(0);
     expect(rowCount).toBeLessThan(60);
   });
@@ -21,7 +22,7 @@ test.describe('Table virtualized', () => {
     page,
   }) => {
     await gotoFixture(page, 'table-virtualized');
-    const firstRow = page.locator('[forTableRow]').first();
+    const firstRow = rowAt(page, 0);
     const indexAttr = await firstRow.getAttribute('aria-rowindex');
     const virtualIndexAttr = await firstRow.getAttribute('data-testid');
     const rowIndex = parseInt(virtualIndexAttr!.replace('row-', ''), 10);
@@ -31,20 +32,17 @@ test.describe('Table virtualized', () => {
   test('scrolling down renders a different window of rows', async ({ page }) => {
     await gotoFixture(page, 'table-virtualized');
 
-    const firstRenderedBefore = await page
-      .locator('[forTableRow]')
-      .first()
-      .getAttribute('data-testid');
+    const firstRenderedBefore = await rowAt(page, 0).getAttribute('data-testid');
 
     await el(page, 'root').evaluate((el) => {
       el.scrollTop = 5000 * 44;
     });
 
     await expect
-      .poll(() => page.locator('[forTableRow]').first().getAttribute('data-testid'))
+      .poll(() => rowAt(page, 0).getAttribute('data-testid'))
       .not.toBe(firstRenderedBefore);
 
-    const rowAfter = page.locator('[forTableRow]').first();
+    const rowAfter = rowAt(page, 0);
     const rowAfterIndex = parseInt(
       (await rowAfter.getAttribute('data-testid'))!.replace('row-', ''),
       10,
@@ -60,7 +58,7 @@ test.describe('Table virtualized', () => {
     await firstCell.click();
     await expectFocused(firstCell);
 
-    const focusedRow = page.locator('[forTableRow]').first();
+    const focusedRow = rowAt(page, 0);
     const focusedRowTestId = await focusedRow.getAttribute('data-testid');
 
     await el(page, 'root').evaluate((el) => {
@@ -83,9 +81,9 @@ test.describe('Table virtualized', () => {
 
       expect(start).toBe(0);
 
-      const rows = page.locator('[forTableRow]');
-      const firstIndex = parseInt((await rows.first().getAttribute('data-index'))!, 10);
-      const lastIndex = parseInt((await rows.last().getAttribute('data-index'))!, 10);
+      const rendered = rows(page);
+      const firstIndex = parseInt((await rendered.first().getAttribute('data-index'))!, 10);
+      const lastIndex = parseInt((await rendered.last().getAttribute('data-index'))!, 10);
 
       expect(start).toBe(firstIndex);
       expect(end).toBe(lastIndex + 1);
@@ -98,10 +96,7 @@ test.describe('Table virtualized', () => {
       await firstCell.click();
       await expectFocused(firstCell);
 
-      const focusedRowIndex = parseInt(
-        (await page.locator('[forTableRow]').first().getAttribute('data-index'))!,
-        10,
-      );
+      const focusedRowIndex = parseInt((await rowAt(page, 0).getAttribute('data-index'))!, 10);
 
       await el(page, 'root').evaluate((node) => {
         node.scrollTop = 8000 * 44;
@@ -153,15 +148,12 @@ test.describe('Table virtualized', () => {
 
       await expect
         .poll(async () => {
-          const attr = await page.locator('[forTableRow]').nth(4).getAttribute('data-index');
+          const attr = await rowAt(page, 4).getAttribute('data-index');
           return attr === null ? -1 : parseInt(attr, 10);
         })
         .toBeGreaterThan(100);
 
-      const baseIndex = parseInt(
-        (await page.locator('[forTableRow]').nth(4).getAttribute('data-index'))!,
-        10,
-      );
+      const baseIndex = parseInt((await rowAt(page, 4).getAttribute('data-index'))!, 10);
       const start = el(page, `cell-${baseIndex}-id`);
       await start.click();
       await expectFocused(start);
@@ -194,9 +186,7 @@ test.describe('Table virtualized', () => {
       await expectFocused(el(page, 'header-id'));
 
       await expect(el(page, 'cell-0-id')).toBeAttached();
-      await expect
-        .poll(() => page.locator('[forTableRow]').first().getAttribute('data-testid'))
-        .toBe('row-0');
+      await expect.poll(() => rowAt(page, 0).getAttribute('data-testid')).toBe('row-0');
 
       await page.keyboard.press('ArrowDown');
       await expectFocused(el(page, 'cell-0-id'));
@@ -252,7 +242,7 @@ test.describe('Table virtualized', () => {
       await start.click();
       await expectFocused(start);
 
-      const pageSize = await page.locator('[forTableRow]').count();
+      const pageSize = await rows(page).count();
       expect(pageSize).toBeGreaterThan(1);
       expect(pageSize).toBeLessThan(9999);
 
@@ -275,7 +265,7 @@ test.describe('Table virtualized', () => {
       await page.keyboard.press('ArrowLeft');
       await expectFocused(el(page, 'cell-9999-id'));
 
-      const bottomPageSize = await page.locator('[forTableRow]').count();
+      const bottomPageSize = await rows(page).count();
       expect(bottomPageSize).toBeGreaterThan(1);
 
       await page.keyboard.press('PageUp');
@@ -326,28 +316,23 @@ test.describe('Table virtualized', () => {
     test('window renders and updates on scroll with variable heights', async ({ page }) => {
       await gotoFixture(page, 'table-virtualized', { measured: 'true' });
 
-      await expect(page.locator('[forTableRow]').first()).toBeAttached();
-      const renderedBefore = await page.locator('[forTableRow]').count();
+      await expect(rowAt(page, 0)).toBeAttached();
+      const renderedBefore = await rows(page).count();
       expect(renderedBefore).toBeGreaterThan(0);
       expect(renderedBefore).toBeLessThan(60);
 
-      const firstBefore = await page.locator('[forTableRow]').first().getAttribute('data-testid');
+      const firstBefore = await rowAt(page, 0).getAttribute('data-testid');
 
       await el(page, 'root').evaluate((node) => {
         node.scrollTop = 5000 * 80;
       });
 
-      await expect
-        .poll(() => page.locator('[forTableRow]').first().getAttribute('data-testid'))
-        .not.toBe(firstBefore);
+      await expect.poll(() => rowAt(page, 0).getAttribute('data-testid')).not.toBe(firstBefore);
 
-      const rowAfterAttributes = await page
-        .locator('[forTableRow]')
-        .first()
-        .evaluate((node) => ({
-          testId: node.getAttribute('data-testid'),
-          ariaRowIndex: node.getAttribute('aria-rowindex'),
-        }));
+      const rowAfterAttributes = await rowAt(page, 0).evaluate((node) => ({
+        testId: node.getAttribute('data-testid'),
+        ariaRowIndex: node.getAttribute('aria-rowindex'),
+      }));
       const rowAfterIndex = parseInt(rowAfterAttributes.testId!.replace('row-', ''), 10);
       expect(rowAfterAttributes.ariaRowIndex).toBe(String(rowAfterIndex + 2));
     });

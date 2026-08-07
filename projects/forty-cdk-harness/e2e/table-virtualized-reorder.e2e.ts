@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { el, expectFocused, gotoFixture, holdPointerAtAutoScrollEdge } from './_helpers';
+import { ROW_SELECTOR } from './_table-helpers';
 
 interface WindowSample {
   /** Absolute `data-index` values of the rendered rows, ascending. */
@@ -23,18 +24,18 @@ interface WindowSample {
  * for a window still describing the *previous* scroll offset, which two
  * matching reads of the indices alone cannot tell apart from a settled one.
  *
- * The `:not([data-for-drag-preview])` keeps the sample honest mid-gesture. The
- * default preview is a clone of the lifted row that repeats its `data-index`
+ * `ROW_SELECTOR` keeps the sample honest mid-gesture. The default preview is a
+ * clone of the lifted row that repeats its `data-index`
  * ([#1691](https://github.com/tutkli/forty-cdk/issues/1691)); it is appended to
  * `document.body`, so scoping the query to the scroll root already excludes it
- * today — the filter is what keeps that true if the fixture ever hosts the
- * preview inside the root.
+ * today — the exclusion is what keeps that true if the fixture ever hosts the
+ * preview inside the root. It arrives as an `evaluate` argument because an
+ * in-page body has no `Locator`, and respelling the exclusion here is what
+ * [#1711](https://github.com/tutkli/forty-cdk/issues/1711) closed.
  */
 async function readWindow(page: Page): Promise<WindowSample> {
-  return el(page, 'root').evaluate((root) => {
-    const rows = Array.from(
-      root.querySelectorAll<HTMLElement>('[forTableRow]:not([data-for-drag-preview])'),
-    );
+  return el(page, 'root').evaluate((root, selector) => {
+    const rows = Array.from(root.querySelectorAll<HTMLElement>(selector));
     const indices = rows.map((row) => Number(row.getAttribute('data-index'))).sort((a, b) => a - b);
     const rowHeight = rows[0]?.offsetHeight ?? 0;
     const first = indices[0] ?? -1;
@@ -47,7 +48,7 @@ async function readWindow(page: Page): Promise<WindowSample> {
         first <= Math.floor(root.scrollTop / rowHeight) &&
         last >= Math.floor((root.scrollTop + root.clientHeight - 1) / rowHeight),
     };
-  });
+  }, ROW_SELECTOR);
 }
 
 /**
