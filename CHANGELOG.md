@@ -5,6 +5,89 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.1] - 2026-08-07
+
+A bugfix release about pressing, holding and letting go. A touch or pen press that reports a non-zero
+`button` no longer dies on a guard written for a mouse, in the six gestures that still applied it bare. The
+two virtualized reorder coordinators stop retaining a row for a press that never became a drag, and stop
+retaining it on surfaces where nothing else in the stack agrees a gesture is happening. A keyboard lift on a
+windowed list finally reflects `data-dragging`, a last-row `End` jump keeps the viewport it jumped to, the
+default drag preview stops duplicating the source's `id`s into the document, `[stackShift]` re-measures when
+a toast grows on its own, and a click on a `[forField]` label reaches the first editable segment instead of
+dead-ending on a `role="group"` host. No API changes, nothing to migrate.
+
+### Fixed
+
+- **Tree / Pane resizer / Slider / Scroll area / Table.** A non-mouse press that reports a non-zero `button`
+  no longer refuses the gesture outright ([#1699](https://github.com/tutkli/forty-cdk/issues/1699),
+  [#1708](https://github.com/tutkli/forty-cdk/issues/1708)). The primary-button rule only means anything for
+  a mouse — a touch or pen press whose engine reports `button: 2` is an ordinary press — and six gestures
+  still applied it unqualified: `[forTreeNodeDrag]`, `[forPaneResizer]`, `[forTableColumnResizer]`,
+  `[forSlider]`'s track press and both `[forScrollArea]` track and thumb presses. All six now guard
+  `pointerType === 'mouse' && button !== 0`, matching the eleven siblings that already did, so `grep`ping the
+  bare rule across the library returns nothing. For `[forTreeNodeDrag]` the refusal was the end of the whole
+  gesture — no lift, no preview, no drop indicator, no `nodeDrop` — since it owns its session outright. The
+  `[forScrollAreaScrollbar]` README's hand-rolled track-press recipe carried the same defect and is corrected
+  too.
+- **Virtual reorder / Table.** An ordinary click on a row no longer pins it into the rendered window forever
+  ([#1695](https://github.com/tutkli/forty-cdk/issues/1695)). Both virtualized reorder coordinators wrote
+  their lifted-row pin on `pointerdown` but cleared it only from the commit / cancel callbacks, which fire
+  for an _armed_ session — so a press that never crossed `armThreshold` left one off-window row mounted,
+  focusable and inside `[forDropList]`'s registered `items()` for the rest of the page's life. The pin now
+  shares the armed session's lifecycle: it is written on lift, not on press. The same write also clobbered
+  the pin a live _keyboard_ lift had set, stranding that gesture with its row recycled away; both
+  coordinators now run the `'idle' | 'keyboard' | 'pointer'` state machine `[forListboxReorder]` and
+  `[forTreeNodeDrag]` already carried, so a press is refused while a keyboard lift is live, a lift key is
+  ignored during a pointer drag, and each channel releases only the pin it owns.
+- **Virtual reorder / Table.** A pointer press is refused on a disabled list, on a secondary mouse button and
+  on a disabled drag handle, instead of pinning a row for the duration of the press
+  ([#1697](https://github.com/tutkli/forty-cdk/issues/1697)). Both coordinators resolved the press through a
+  `canStart` that applied only a hit test, so they retained a row on exactly the surfaces where nothing else
+  in the stack agrees a gesture is happening — `[forDraggable]` refuses all three, so no `data-dragging`,
+  preview, placeholder, auto-scroll or drop ever appeared. They now apply the guard set their siblings apply
+  at the same seam. One documented consequence in `[forTableRowReorder]`: a press on a row carrying no
+  registered draggable is now refused rather than tracked.
+- **Drag & drop / Virtual reorder / Table.** A keyboard lift on a windowed list reflects `data-dragging`
+  ([#1693](https://github.com/tutkli/forty-cdk/issues/1693)). The keyboard-drag mediator intercepts the lift
+  key in the capture phase, so `[forDraggable]`'s own handler never ran and the drop list never learned a
+  lift had happened — the attribute the README promises was absent on the lifted row _and_ on the list host,
+  for every `[forVirtualReorder]` lift and for `[forTableRowReorder]`'s virtualized branch only, which made
+  one primitive behave two ways depending on whether the table was windowed. The coordinators now mark the
+  lift on the list through a dedicated seam that leaves the list's own lift state untouched, so nothing on
+  the `lift` / `moveLifted` / `drop` / `cancel` path moves, and the mark clears on drop, `Escape`, focus
+  leave and destroy.
+- **Drag & drop.** The default drag preview no longer duplicates the source's `id`s into the document
+  ([#1691](https://github.com/tutkli/forty-cdk/issues/1691)). The preview is a deep clone that lives in
+  `document.body` for the whole gesture, and it carried every attribute except `data-testid` — so mid-drag
+  the document held two nodes for each `id` in the dragged subtree and `getElementById` was ambiguous,
+  whatever `aria-hidden` said. `id` is now stripped from the clone root and every descendant carrying one.
+  The clone still answers the source's attribute selectors by design; `data-for-drag-preview` remains the
+  supported way to exclude it from a query, and the README and JSDoc now say so.
+- **Table.** A keyboard reorder lift on the last rendered row keeps the viewport an `End` jump moved it to
+  ([#1704](https://github.com/tutkli/forty-cdk/issues/1704)). The focus restore added in 0.21.0 called
+  `focus()` plainly, and because the retained row keeps rendering at its original offset, that call scrolled
+  the viewport straight back off the destination — the gesture survived the jump, the scroll position did
+  not. The restore now passes `preventScroll`.
+- **Toast.** `[stackShift]`'s FLIP baseline is dropped when a row reflows on its own
+  ([#1684](https://github.com/tutkli/forty-cdk/issues/1684)). The baseline is measured during the previous
+  mutation of the row set, so a row that changed height between mutations — the `ForToastRef.update()` flow
+  the API's own JSDoc promotes — left the map pointing at a spot the rows had already left, and the next add
+  or remove glided them from there. A `ResizeObserver` on the viewport host now invalidates it, discriminated
+  by delivery order so a mutation's own pass is never mistaken for an independent reflow: no measuring in the
+  handler, and nothing observed at all while `[stackShift]` is unset. This closes the limit 0.21.0 shipped
+  documented; the three residual cases are named in the JSDoc and each self-corrects on the pass after it.
+- **Field.** A `[forLabel]` click inside a `[forField]` reaches the control's focus target instead of
+  dead-ending on a non-focusable host ([#1683](https://github.com/tutkli/forty-cdk/issues/1683)). The field
+  focused whatever element the control nominated for `aria-*` and `id`, which for a composite is its
+  `role="group"` host — so a label click did nothing on `[forDateField]`, `[forTimeField]`,
+  `[forDateRangeField]` and `[forTimeRangeField]`, and landed on the group rather than the checked item or
+  the first thumb on `[forListbox]`, `[forRadioGroup]`, `[forSlider]` and `[forToggleGroup]`. Control handles
+  now carry an optional focus hook, which the field prefers over the association target and which every
+  `FormValueControl.focus` implementor supplies for free; where the two coincide — select, combobox, date
+  picker, time picker, OTP input — nothing moves. A native `<label forLabel>` is forwarded by the directive
+  only when the browser will not do it itself, so nothing double-activates, and a label click on a disabled
+  control is a no-op rather than a `focus()` call on an unfocusable element.
+
 ## [0.21.0] - 2026-08-05
 
 The release where a keyboard reorder survives the window it is standing on. Lifting a row and pressing
@@ -1778,7 +1861,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.21.1...HEAD
+[0.21.1]: https://github.com/tutkli/forty-cdk/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/tutkli/forty-cdk/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/tutkli/forty-cdk/compare/v0.18.0...v0.19.0
