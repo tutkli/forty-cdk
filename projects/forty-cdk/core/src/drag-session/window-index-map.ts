@@ -10,9 +10,8 @@ export interface WindowReorderResult {
  * Absolute index of `value` once the lifted row at `from` has been removed from
  * the dataset: every index above `from` shifts down by one to close the gap the
  * removal opened. The single post-removal shift both insertion branches of
- * {@link translateWindowReorder} share, so the `> from ? 1 : 0` surgery lives in
- * one place rather than being re-derived per branch (the off-by-one shape behind
- * the #808 `gapIndex` overflow).
+ * {@link translateWindowReorder} share, so the `> from ? 1 : 0` surgery lives in one place rather
+ * than being re-derived per branch.
  */
 function indexAfterRemoval(value: number, from: number): number {
   return value - (value > from ? 1 : 0);

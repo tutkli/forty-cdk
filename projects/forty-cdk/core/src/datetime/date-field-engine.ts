@@ -73,12 +73,8 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
 
   /**
    * The locale-ordered segment specs. A granularity coarser than a day builds
-   * hour / minute / second segments, so this derivation is where a day-only
-   * adapter first becomes a contradiction — and therefore where the assertion
-   * belongs. Both fields on this engine used to run the same check from an
-   * `effect` watching `granularity`, which routed the throw to the application
-   * `ErrorHandler` with the scheduler as its stack instead of the field that
-   * asked for a time segment ([#1583](https://github.com/tutkli/forty-cdk/issues/1583)).
+   * hour / minute / second segments, so a day-only adapter throws here — at the
+   * derivation that asked for a time segment, not from a scheduler callback.
    */
   protected readonly specs = computed<readonly FieldSpec[]>(() => {
     const granularity = this.#config.granularity();

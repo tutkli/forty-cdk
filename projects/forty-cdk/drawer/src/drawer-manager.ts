@@ -75,7 +75,7 @@ export interface ForDrawerOpenConfig<D = unknown> {
    * manager resolves the true origin automatically — the trigger that opened
    * the drawer chain, threaded across a close→open swap so a drawer replacing
    * another restores focus to the original trigger rather than dropping it to
-   * `<body>` (#1385). Pass an element to override that resolution, or `null` to
+   * `<body>`. Pass an element to override that resolution, or `null` to
    * opt out entirely and fall back to the element the drawer captures at
    * construction.
    */
@@ -289,10 +289,9 @@ interface InternalDrawerEntry extends ForDrawerEntry {
 /**
  * Programmatic drawer opener — symmetric with `ForDialogManager`. Inject
  * anywhere, call `open(MyComponent, { data, side, ... })` and get a
- * `ForDrawerRef<R>` back. Internally the manager renders the user component
- * inside a manager-owned `@for` outlet, so Angular's control-flow unmount
- * fires `animate.leave` before the node leaves the DOM — identical to the
- * declarative `@if (open()) { <div forDrawer animate.leave="…"> }` path.
+ * `ForDrawerRef<R>` back. `animate.leave` on the opened component runs before
+ * the node leaves the DOM, identical to the declarative
+ * `@if (open()) { <div forDrawer animate.leave="…"> }` path.
  *
  * Inside the opened component the usual drawer pieces work without any extra
  * wiring: `[forDrawerTitle]`, `[forDrawerDescription]`, `[forDrawerBackdrop]`,

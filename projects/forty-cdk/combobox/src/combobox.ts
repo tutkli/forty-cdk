@@ -156,6 +156,10 @@ export class ForCombobox<T = string>
    */
   readonly open = model<boolean>(false);
 
+  /**
+   * Whether several options can be selected. In multi mode activation toggles an option and the
+   * listbox stays open; single mode keeps `value` at 0 or 1 element and closes on select.
+   */
   readonly multiple = input(false, { transform: booleanAttribute });
 
   /**
@@ -269,6 +273,9 @@ export class ForCombobox<T = string>
    * computes).
    */
   readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
+  /**
+   * Whether arrow navigation wraps past the first / last enabled option.
+   */
   readonly loop = input(true, { transform: booleanAttribute });
 
   /** When true (default), Escape, pointer-down outside, and focus outside close the listbox. */
@@ -327,9 +334,19 @@ export class ForCombobox<T = string>
    */
   readonly scrollToIndex = output<number>();
 
+  /** Emitted before Escape closes the listbox. Call `preventDefault()` to keep it open. */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /** Emitted before an outside pointer-down closes the listbox. Vetoable with `preventDefault()`. */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+
+  /** Emitted before focus leaving the surface closes the listbox. Vetoable with `preventDefault()`. */
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+
+  /**
+   * Emitted alongside {@link pointerDownOutside} and {@link focusOutside} for consumers that do not
+   * care which one occurred. A `preventDefault()` on either channel suppresses the close.
+   */
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**

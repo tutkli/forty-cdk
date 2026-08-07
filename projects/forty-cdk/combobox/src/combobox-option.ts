@@ -99,6 +99,10 @@ export class ForComboboxOption<T = string> {
    */
   readonly label = input<string | null>(null);
 
+  /**
+   * Whether the option can be activated. A disabled option stays rendered and announced, and is
+   * skipped by arrow navigation and typeahead.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

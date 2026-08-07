@@ -26,34 +26,20 @@ export type OverlayShellPositionerConfig =
   | ({ readonly kind: 'item-aligned' } & ItemAlignedConfig);
 
 /**
- * Dismissible-layer wiring. The shell owns the pointer/focus outside-interaction
- * wiring that every trigger-anchored overlay (Popover, Menu / MenuSub /
- * ContextMenu / DropdownMenu, Combobox, Select, date-picker) used to
- * duplicate verbatim:
+ * Outside-interaction wiring for a trigger-anchored overlay.
  *
- * - Each wired outside channel (pointer-down-outside / focus-outside) builds a
- *   single `VetoableNativeEvent` for its physical interaction, hands it to the
- *   consumer's specific emitter (if wired) and to the composite `interactOutside`
- *   emitter (if wired), so a `preventDefault()` from either subscriber vetoes
- *   the close.
- * - When neither subscriber vetoes AND `dismissible()` is `true`, the shell
- *   calls `requestClose(reason)` with the channel's reason
- *   (`'pointerDownOutside' | 'focusOutside'`) — each wired outside channel fires
- *   its own close. `dismissible` / `requestClose` are required whenever any
- *   outside channel is wired and unused otherwise.
- * - `exemptElements` is recomputed on every event so DOM mutations (newly
- *   portaled siblings, swapped triggers) are picked up live.
+ * Each wired channel builds one `VetoableNativeEvent` and hands it to both the specific emitter and
+ * the composite `interactOutside` one, so a `preventDefault()` from either vetoes the close. When
+ * nothing vetoes and `dismissible()` is `true`, the shell calls `requestClose` with the channel's
+ * reason. `dismissible` and `requestClose` are required whenever any outside channel is wired.
  *
- * Escape stays a one-shot, consumer-owned channel (`emitEscapeKeyDown`
- * receives the raw `KeyboardEvent` and forwards verbatim to the layer): it
- * never participates in the outside-close, and its close behaviour differs per
- * primitive (hover-card schedules a close, the input-focused combobox owns
- * Escape on its input directive and omits it here). The shell therefore leaves
- * Escape's emit + close decision entirely to the consumer.
+ * `exemptElements` is re-read on every event, so newly portaled siblings and swapped triggers are
+ * honoured.
  *
- * Each callback is individually optional so a primitive can opt out of a
- * single channel; the shell registers a layer listener only for the channels
- * the consumer actually forwards.
+ * Escape is forwarded verbatim and never participates in the outside-close: its close behaviour
+ * differs per primitive, so emitting and closing stay the consumer's decision.
+ *
+ * Every callback is optional; the shell registers a listener only for the channels supplied.
  */
 export interface OverlayShellDismissConfig {
   /**
@@ -163,73 +149,22 @@ export interface OverlayShellConfig {
 }
 
 /**
- * Single source of truth for the floating-overlay content lifecycle. Drives
- * every `*-content.ts` directive in the library that mounts a portaled
- * surface (`Popover`, `Menu` / `MenuSub` / `ContextMenu` via the shared
- * `[forMenuContent]`, `Combobox`, `Select`, `Tooltip`, `HoverCard`). The
- * shell owns:
+ * Owns the lifecycle of a portaled, trigger-anchored overlay surface — the `*-content` directives
+ * of Popover, the menu family, Combobox, Select, Tooltip and HoverCard.
  *
- * 1. Positioning. Delegates to `injectFloating` (default) or
- *    `injectItemAlignedPositioner` (Select's `position="item-aligned"`).
- *    Both positioners portal by default, so the shell never calls
- *    `injectPortal` itself — the consumer must NOT either, on pain of
- *    double-portaling (see #106).
- * 2. Dismissible layer. When `dismiss` is configured, creates a layer for
- *    the host element and activates it inside `afterNextRender`. Each wired
- *    outside channel is self-closing: it builds one `VetoableNativeEvent` per
- *    physical interaction, hands it to the specific (`pointerDownOutside` /
- *    `focusOutside`) and composite (`interactOutside`) emitters, so a
- *    `preventDefault()` from either suppresses the implicit close. When neither
- *    subscriber vetoes and `dismissible()` is `true`, the shell calls
- *    `requestClose(reason)`. Deactivation runs from the shell's
- *    `DestroyRef.onDestroy` hook.
- * 3. Initial focus. When `initialFocus` is configured, runs `veto()` first;
- *    if it returns truthy the imperative focus move is skipped (this is the
- *    `(autoFocusOnOpen)` veto). Otherwise the shell either calls the
- *    primitive-owned `move()` callback (Menu / Select), focuses the first
- *    focusable descendant via the shared `findFirstFocusable` from
- *    `focus-trap.ts` (Popover's `'first'` mode), or focuses the host
- *    container directly (Popover's `'container'` mode). When the chosen
- *    move returns `false` (no candidate), focus falls back to the host so
- *    keyboard users always land somewhere predictable.
- * 4. Return focus. When `returnFocus` is configured and `enabled()` is true,
- *    on destroy the shell consults `skip()` and `veto()` (`(autoFocusOnClose)`)
- *    and, if neither vetoes, calls `target()?.focus()`.
+ * Positioning is delegated to the configured positioner, which portals the host itself: the caller
+ * must not also call `injectPortal`.
  *
- * Destroy ordering matches the per-primitive code that this helper replaced.
- * Hooks fire in registration order: `injectDismissibleLayer` runs first
- * (deactivate + remove from stack), then the positioner's portal helper
- * (`el.remove()`), and the return-focus hook is registered last so it runs
- * after the portaled DOM node is detached — the trigger receives the focus
- * event in a stable layout.
+ * When configured, the shell activates a dismissible layer after the first render, performs the
+ * initial focus move — falling back to the host when the move finds no candidate — and restores
+ * focus to the return target on destroy. Both focus moves are skipped when their `veto()` returns
+ * truthy, which is how `autoFocusOnOpen` / `autoFocusOnClose` are honoured.
  *
- * Must be called from an injection context (typically the directive
- * constructor). Forwards the host's `ElementRef` to the dismissible layer
- * and the positioner; the consumer never has to touch them.
+ * Return focus runs after the portaled node has been detached, so the trigger receives the focus
+ * event in a settled layout.
  *
- * @example
- * // Popover-content
- * injectOverlayShell({
- *   positioner: { kind: 'floating', reference: ctx.reference, open: ctx.open, ... },
- *   dismiss: {
- *     dismissible: ctx.dismissible,
- *     requestClose: () => ctx.open.set(false),
- *     emitEscapeKeyDown: (event) => ctx.emitEscapeKeyDown(event),
- *     emitPointerDownOutside: (veto) => ctx.pointerDownOutside.emit(veto),
- *     emitFocusOutside: (veto) => ctx.focusOutside.emit(veto),
- *     emitInteractOutside: (veto) => ctx.interactOutside.emit(veto),
- *     exemptElements: () => (ctx.trigger() ? [ctx.trigger()!] : []),
- *   },
- *   initialFocus: {
- *     move: ctx.initialFocus() === 'container' ? 'container' : 'first',
- *     veto: () => ctx.emitAutoFocusOnOpen(),
- *   },
- *   returnFocus: {
- *     enabled: ctx.returnFocus,
- *     target: () => ctx.trigger(),
- *     veto: () => ctx.emitAutoFocusOnClose(),
- *   },
- * });
+ * Must be called from an injection context. The host's `ElementRef` is forwarded to the dismissible
+ * layer and the positioner.
  */
 export function injectOverlayShell(config: OverlayShellConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -359,15 +294,11 @@ export function injectOverlayShell(config: OverlayShellConfig): void {
 }
 
 /**
- * Resolve the real DOM element an overlay is anchored to, for the modal-peer
- * ownership check (#676). Most overlays anchor to a real element (the trigger
- * button / input), exposed directly via the positioner `reference`.
- * Pointer-positioned overlays (ContextMenu) anchor to a floating-ui
- * `VirtualElement`: we read its `contextElement` when present, then fall back
- * to the return-focus target — the logical trigger the overlay was opened
- * from, which for ContextMenu is the registered right-click region. Returns
- * `null` when no backing element can be found (the overlay is then never
- * marked, falling back to the pre-#676 behaviour for that surface).
+ * Resolves the real DOM element an overlay is anchored to, for the modal-peer ownership check.
+ *
+ * Falls back to the `VirtualElement`'s `contextElement` and then to the return-focus target for
+ * pointer-positioned overlays. Returns `null` when no backing element exists, leaving the overlay
+ * unmarked.
  */
 function resolveModalAnchor(config: OverlayShellConfig): Element | null {
   const ref = config.positioner.reference();

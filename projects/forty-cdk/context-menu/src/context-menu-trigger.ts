@@ -66,14 +66,10 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * `routerLink`-style: `[forContextMenuTrigger]="root"` with
  * `#root="forContextMenu"`.
  *
- * The host keeps its generated `[id]` (adopting a consumer-set static `id`)
- * even though nothing consumes it for ARIA wiring: unlike the discrete
- * labelling controls of the other menu flavours, this trigger is the whole
- * right-click region, so `[forMenuContent]` deliberately never points
- * `aria-labelledby` at it and the menu is named with `ariaLabel` instead — under
- * a shared `[forMenu]` too, where a sibling button opener does get the fallback.
- * The id stays because it is a stable consumer / test hook — a decision recorded
- * on `ForContextMenuContext.triggerId` rather than removed pre-1.0.
+ * The host keeps its generated `[id]`, adopting a consumer-set static one, even though no ARIA
+ * wiring consumes it: this trigger is a whole right-click region rather than a discrete labelling
+ * control, so `[forMenuContent]` never points `aria-labelledby` at it and the menu is named with
+ * `ariaLabel` instead. The id remains as a stable consumer and test hook.
  *
  * Disabling merges the trigger's own `disabled` input OR the root's
  * `disabled`. When disabled, only `data-disabled` is reflected as a styling /

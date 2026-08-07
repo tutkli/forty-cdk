@@ -19,7 +19,7 @@ import {
  * barrel: the published surface for this capability is {@link ForVisuallyHidden}
  * (blessed, shipped from `forty-cdk/visually-hidden`), which applies the clip
  * for the consumer. A raw style string covers no use case the directive does
- * not (#1492).
+ * not.
  */
 export const VISUALLY_HIDDEN_STYLE =
   'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0, 0, 0, 0);white-space:nowrap;border:0;';

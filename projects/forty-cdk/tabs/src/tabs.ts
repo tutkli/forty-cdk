@@ -54,7 +54,15 @@ export class ForTabs implements ForTabsContext {
    */
   readonly value = model<string | null>(null);
 
+  /**
+   * Whether arrow navigation also selects the focused tab (`'automatic'`, the default) or only
+   * moves focus until the user presses Enter or Space (`'manual'`). The default is read from
+   * `provideForTabsDefaults` for the surrounding scope.
+   */
   readonly activationMode = input<TabsActivationMode>(this.#defaults.activationMode);
+  /**
+   * Axis the arrow keys navigate. Reflected as `data-orientation`.
+   */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
@@ -66,6 +74,9 @@ export class ForTabs implements ForTabsContext {
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  /**
+   * Whether every trigger in the list is disabled. Individual triggers may also disable themselves.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

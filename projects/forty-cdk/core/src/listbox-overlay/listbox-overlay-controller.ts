@@ -167,7 +167,7 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
  * the option collection, the trigger / anchor / content element registries and
  * their ids, the DOM-focus navigation algorithm, the initial-focus /
  * close-reason state, the open / close machine, and the dismiss / auto-focus
- * emit forwarders — every method each root used to duplicate verbatim.
+ * emit forwarders.
  *
  * Value-specific behaviour (selection equality, `activate`, `focusSelectedOption`,
  * typeahead, the virtualized activedescendant path, `commitOnTab`'s value set)

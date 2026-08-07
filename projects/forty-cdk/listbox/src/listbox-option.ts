@@ -81,6 +81,10 @@ export class ForListboxOption<T = string> {
    * not been bound yet, and an unbound option throws in dev mode.
    */
   readonly value = input(unsetInput<T>());
+  /**
+   * Whether the option can be activated. A disabled option stays rendered and announced, and is
+   * skipped by arrow navigation and typeahead.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

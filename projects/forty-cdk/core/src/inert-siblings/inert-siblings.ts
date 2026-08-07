@@ -5,69 +5,43 @@ import { composedContains, composedParentElement } from '../composed-tree/compos
 
 /**
  * Marks every direct child of a **root element** (default `document.body`,
- * or a positioned container when a region-scoped modal passes one — #819)
+ * or a positioned container when a region-scoped modal passes one)
  * other than the topmost active owner (and any element flagged as a
  * peer-of-owner via the `data-for-modal-peer` attribute) as `inert` and
  * `aria-hidden="true"` while at least one owner is active on that root.
  * Restores each touched element to its exact prior state once the last
  * owner deactivates.
  *
- * Why this exists: `aria-modal="true"` alone is insufficient. Safari +
- * VoiceOver and several other AT combinations still announce siblings of an
- * aria-modal node unless the rest of the document is explicitly hidden. The
- * WAI-ARIA APG modal-dialog pattern recommends combining `aria-modal` with
- * isolating the rest of the page.
+ * `aria-modal="true"` alone is insufficient: Safari with VoiceOver, among other combinations, still
+ * announces siblings of an aria-modal node unless the rest of the document is explicitly hidden.
  *
- * Stacking model (LIFO with safe out-of-order teardown) — per root:
+ * **Stacking.** Each root keeps its own owner stack, snapshot and `MutationObserver`, so a
+ * `document.body` root and a container root are fully independent. The element-level outcome is
+ * recomputed from the current topmost owner whenever the stack changes: the previous outcome is
+ * reverted to its snapshot first, then a fresh one is applied. Closing owners out of LIFO order
+ * therefore still leaves a coherent document, and full restoration runs when the stack empties.
  *
- * - Each root has its own owner-stack, applied snapshot, and
- *   `MutationObserver`. A `document.body` root and a container root are
- *   fully independent — locking one does not affect the other.
- * - A stack of active owners is maintained per root. The element-level
- *   outcome is computed from the *current topmost owner* every time the
- *   stack changes.
- * - When the topmost owner changes, the previous outcome is fully reverted
- *   to the snapshot captured before it was applied, then a fresh outcome is
- *   computed and applied for the new topmost.
- * - This means closing dialogs out of LIFO order still leaves the document
- *   in a coherent state: the topmost remaining dialog gets its expected
- *   isolation, and full restoration runs only when the stack empties.
+ * **Portals.** The owner need not be a direct child of the root — the root-level child that is an
+ * ancestor of the owner is resolved and its subtree excluded, so an in-place dialog keeps its
+ * enclosing app shell interactive. That walk climbs the composed tree, so an owner rendered inside
+ * a shadow root still resolves to the root-level child hosting it.
  *
- * Portal compatibility: the owner does not need to be a direct child of the
- * root. We resolve the *root-level child* that is an ancestor of the owner
- * and exclude that subtree, so an in-place (non-portaled) dialog still keeps
- * its enclosing app shell interactive while everything else is inerted. That
- * walk climbs the composed tree: an owner rendered inside a consumer's shadow
- * root still resolves to the root-level child hosting it, where a
- * `parentElement` walk would stop at the boundary, find no root-level child,
- * and fall back to inerting the very subtree the modal lives in
- * ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)).
+ * **Peers.** Elements carrying `data-for-modal-peer` are excluded from the snapshot, as are those
+ * carrying {@link MODAL_EXEMPT_ATTRIBUTE}, which additionally opts out of the dismissible layer.
  *
- * Peers: any element carrying the `data-for-modal-peer` attribute is
- * excluded from the snapshot (e.g. a dialog backdrop portaled to body
- * alongside the dialog). The `data-for-modal-exempt` attribute is excluded
- * the same way — it additionally opts the element out of the dismissible
- * layer (e.g. a toast viewport), see {@link MODAL_EXEMPT_ATTRIBUTE}.
+ * **Late siblings.** While any owner is active, a `MutationObserver` inerts each newly added
+ * sibling under the same rules, so an element portaled to the root after activation is isolated and
+ * restored too.
  *
- * Late siblings: an element portaled to the root *after* the topmost owner
- * activated would otherwise escape the isolation, since the initial sweep
- * only sees the children present at activation. While any owner is active a
- * `MutationObserver` watches the root's child list and inerts each newly
- * added sibling under the same skip/snapshot rules, so it is restored on
- * teardown too. The observer starts on the 0→1 owner transition and
- * disconnects when the stack empties.
- *
- * SSR: the registry is `providedIn: 'root'` so its state is scoped to a
- * single Angular bootstrap (one per SSR request). On the server, every
- * operation is a no-op — overlays only call `activate()` from
- * `afterNextRender`, which doesn't run server-side.
+ * SSR: every operation is a no-op on the server, since `activate()` is only ever called from
+ * `afterNextRender`.
  */
 
 /**
  * Attribute that exempts a root-level child from the modal inert pass.
  * Carried by dialog / drawer backdrops (portaled alongside the modal)
  * and stamped by `injectOverlayShell` onto anchored-overlay hosts that were
- * opened from inside the protected root (#676), so the initial sweep and the
+ * opened from inside the protected root, so the initial sweep and the
  * late-sibling observer skip them instead of inerting them like background
  * siblings. The backdrops host-bind the literal; imperative callers use this
  * exported constant.
@@ -75,20 +49,16 @@ import { composedContains, composedParentElement } from '../composed-tree/compos
 export const MODAL_PEER_ATTRIBUTE = 'data-for-modal-peer';
 
 /**
- * Attribute that marks a root-level child as an **independent overlay surface**
- * which must stay fully usable while a modal is open. Stronger than
- * {@link MODAL_PEER_ATTRIBUTE}: like a peer it is skipped by the inert pass
- * (left interactive instead of inerted), and in addition every active modal's
- * dismissible layer treats interactions inside it as "inside", so a pointer-down
- * or focus within it never dismisses the modal (see
- * `resolveModalExemptOverlays` in the modal shell). A peer (dialog / drawer
- * backdrop) deliberately stays part of the dismiss-outside surface; an exempt
- * overlay does not.
+ * Marks a root-level child as an independent overlay surface that must stay usable while a modal is
+ * open.
  *
- * Carried by `ForToastViewport` so a toast shown over an open modal `ForDialog`
- * / `ForDrawer` stays interactive (when the viewport sits at the document-body
- * level) and a click on a toast never closes the modal. The viewport host-binds
- * the literal; imperative callers use this exported constant.
+ * Stronger than {@link MODAL_PEER_ATTRIBUTE}: like a peer it is skipped by the inert pass, and in
+ * addition every active modal's dismissible layer treats interactions inside it as inside, so a
+ * pointer-down or focus within it never dismisses the modal. A peer such as a backdrop deliberately
+ * stays part of the dismiss-outside surface; an exempt overlay does not.
+ *
+ * Carried by `ForToastViewport`. The viewport host-binds the literal; imperative callers use this
+ * constant.
  */
 export const MODAL_EXEMPT_ATTRIBUTE = 'data-for-modal-exempt';
 
@@ -127,7 +97,7 @@ export class InertSiblingsStack {
    *
    * When `root` is a positioned container (e.g. a region-scoped modal), only
    * that container's other children are inerted; body siblings outside the
-   * container stay fully interactive (#819).
+   * container stay fully interactive.
    */
   activate(owner: HTMLElement, root: HTMLElement = this.#document.body): InertSiblingsHandle {
     if (!this.#isBrowser) {
@@ -188,7 +158,7 @@ export class InertSiblingsStack {
    * `injectOverlayShell` calls this when an anchored-overlay host is portaled,
    * to decide whether to stamp `MODAL_PEER_ATTRIBUTE` on it so the
    * inert-siblings observer skips forty's own overlays instead of swallowing
-   * them (#676). SSR-safe: on the server the roots map is always empty (no
+   * them. SSR-safe: on the server the roots map is always empty (no
    * owner activates), so this returns `false`.
    */
   ownsAnchor(anchor: Element): boolean {

@@ -40,15 +40,14 @@ function readProbe(probe: () => unknown): unknown {
  * the root. Call it from the primitive's `inject<Primitive>Context` resolver,
  * immediately after the orphan branch.
  *
- * A split root provides **one** token
- * ([#1593](https://github.com/tutkli/forty-cdk/issues/1593)), publicly typed as
+ * A split root provides **one** token, publicly typed as
  * the consumer read surface, which the resolver reads at the unexported
  * internal interface's type so the pieces reach the registration protocol.
  * Nothing checks that cast: a consumer who provides the token with any other
  * value satisfying the public type typechecks and resolves, then fails inside
  * the first piece to reach the protocol — with no `[forty-cdk/<entry>]` prefix
  * and a stack pointing at a library file for a mistake made in consumer
- * providers ([#1669](https://github.com/tutkli/forty-cdk/issues/1669)).
+ * providers.
  *
  * There is no compile-time channel for this, which is why the check is a
  * runtime one: the roots declare `implements For<Primitive>Context` only, and a

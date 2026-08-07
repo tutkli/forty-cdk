@@ -17,17 +17,11 @@ import {
 } from './focusable-candidate';
 
 /**
- * Returns the first focusable descendant of `container`, or `null` if none
- * exists. Uses the shared `isFocusableCandidate` filter (excludes `[hidden]`,
- * elements carrying or nested under an `[inert]` ancestor below the
- * container, and elements hidden via CSS `display: none` / `visibility:
- * hidden`, none of which can receive focus). This is the focusable set — a
- * candidate carrying `tabindex="-1"` is a valid initial-focus target even
- * though it never participates in the Tab cycle.
+ * Returns the first focusable descendant of `container`, or `null` if none exists.
  *
- * Descends into open shadow roots, so a surface whose first control is
- * rendered inside a consumer's web component focuses that control rather than
- * skipping past the host.
+ * Excludes `[hidden]`, `[inert]` subtrees and elements hidden via CSS. A candidate carrying
+ * `tabindex="-1"` still qualifies — this is the focusable set, not the Tab cycle. Descends into
+ * open shadow roots.
  */
 export function findFirstFocusable(container: HTMLElement): HTMLElement | null {
   const candidates = queryFocusableCandidates(container);
@@ -48,20 +42,16 @@ export interface FocusTrapActivateOptions {
    */
   initialFocus?: 'first' | 'container' | HTMLElement;
   /**
-   * When `true`, sets up Tab cycling and captures the previously-focused
-   * element for return on deactivate, but skips the imperative `.focus()`
-   * call. Lets the consumer keep focus elsewhere on open while still
-   * benefitting from the trap's keyboard cycling once focus enters the
-   * surface. Default `false`.
+   * Sets up Tab cycling and captures the return-focus target, but skips the imperative `.focus()`
+   * call so focus stays wherever the consumer put it. Default `false`.
    */
   preventInitialFocus?: boolean;
   /**
-   * Explicit element to restore focus to on `deactivate({ returnFocus: true })`.
-   * When omitted (default), the trap captures `document.activeElement` at
-   * activation time. Pass this when the caller needs to lock the return
-   * target *before* a side-effect that mutates focus — e.g. `ForDialog`
-   * capturing the trigger before applying `inert` on siblings, since
-   * WebKit auto-blurs descendants of a freshly-inert ancestor.
+   * Element to restore focus to on `deactivate({ returnFocus: true })`. Defaults to
+   * `document.activeElement` at activation time.
+   *
+   * Pass it explicitly when the return target must be locked in before a side effect that moves
+   * focus itself, such as applying `inert` to sibling elements.
    */
   returnFocus?: HTMLElement | null;
 }
@@ -72,34 +62,10 @@ export interface FocusTrapDeactivateOptions {
 }
 
 /**
- * Application-scoped LIFO registry of currently-active `FocusTrap`
- * instances. Each trap registers itself on `activate` and removes itself
- * on `deactivate`. The topmost trap is the only one that handles Tab — all
- * earlier (shallower) traps' keydown listeners are no-ops while shadowed,
- * which is what makes nested overlays (e.g. a drawer inside a drawer) trap
- * focus inside the topmost surface instead of the parent's "focus jumped
- * outside" guard yanking focus back to the parent.
+ * Application-scoped LIFO registry of active {@link FocusTrap} instances.
  *
- * Why a service rather than module-level state:
- *
- * - Bootstrap-safety: a module-level array survives
- *   `TestBed.resetTestingModule()`, micro-frontend reloads and any other
- *   code that destroys `ApplicationRef`, so a stale LIFO can leak across
- *   bootstraps. A `providedIn: 'root'` service is instantiated per
- *   application injector and garbage-collected with it, so every bootstrap
- *   starts with an empty stack.
- * - SSR isolation: module-level globals leak between simultaneous server
- *   requests in the same Node process; a root-scoped service is per-request.
- *
- * This mirrors the storage strategy of `DismissibleLayerStack`: all
- * overlay-nesting LIFO stacks are root-scoped DI services, never
- * module-level. The two remain separate services on purpose because they
- * own different responsibilities — `DismissibleLayerStack` centrally owns
- * the shared `document` listeners for Escape / outside-interaction, whereas
- * each `FocusTrap` owns its own keydown listener and only consults this
- * registry to decide whether it is topmost. This holder therefore needs no
- * `DOCUMENT` / `PLATFORM_ID` / `DestroyRef` injection: it is a
- * dependency-free LIFO of trap instances.
+ * Only the topmost trap handles Tab; shallower traps stay registered with inert keydown handlers,
+ * so nested overlays cycle focus inside the innermost surface.
  */
 @Injectable({ providedIn: 'root' })
 export class FocusTrapStack {
@@ -125,26 +91,15 @@ export class FocusTrapStack {
 }
 
 /**
- * Cycles Tab / Shift+Tab focus inside a container element. Used by Dialog,
- * Drawer, Sheet, and any other primitive that needs to keep keyboard focus
- * scoped to a section of the page.
+ * Cycles Tab / Shift+Tab focus inside a container element.
  *
- * When multiple traps are active simultaneously (nested overlays), only
- * the LIFO topmost trap handles Tab. Outer traps stay registered (so
- * cleanup ordering is preserved) but their keydown handlers are no-ops
- * until the deeper trap deactivates.
+ * When several traps are active, only the topmost one handles Tab; the rest stay registered with
+ * inert handlers until it deactivates.
  *
- * Shadow DOM: every question the trap asks is answered against the composed
- * tree — the tabbable set descends into open shadow roots, and "is focus still
- * mine?" climbs back out of them instead of reading the `document.activeElement`
- * host — so controls a consumer's web component renders inside its shadow root
- * take part in the cycle rather than collapsing onto their host, which is what
- * let Tab escape the surface ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)).
- * A closed shadow root stays opaque, by construction.
+ * Both the tabbable set and the containment check are resolved against the composed tree, so
+ * controls inside an open shadow root take part in the cycle. A closed shadow root stays opaque.
  *
- * Out of scope: marking the rest of the page `inert` (focus trap alone is
- * enough for keyboard users; pointer-isolation is the consumer's job via
- * a backdrop).
+ * Marking the rest of the page `inert` is out of scope — pointer isolation is the consumer's job.
  */
 export class FocusTrap {
   readonly #container: HTMLElement;
@@ -172,19 +127,9 @@ export class FocusTrap {
   /**
    * Whether the trap has been activated and not yet deactivated.
    *
-   * This is **not** a reading of the keyboard channel. `injectFocusTrap`'s
-   * safety-net teardown calls {@link releaseKeyboardChannel}, which removes the
-   * `document` listener and the {@link FocusTrapStack} entry while deliberately
-   * leaving this flag set — so a trap whose owner was destroyed without
-   * deactivating still reports `true` forever.
-   *
-   * The corollary is that this is the wrong gate for anything running from a
-   * `DestroyRef.onDestroy` hook: the consumer's own `deactivate()` has not run
-   * yet at that point, so every correctly-closed surface in the library reads
-   * `true` there too. A check that needs the settled answer defers past the
-   * whole hook chain instead — which is what the helper's dev-mode warning does
-   * with a `queueMicrotask` scheduled from the net, where `true` finally means
-   * "nobody deactivated" ([#1617](https://github.com/tutkli/forty-cdk/issues/1617)).
+   * Only `deactivate()` clears it — {@link releaseKeyboardChannel} leaves it set. It is therefore
+   * not a reading of the keyboard channel, and it is still `true` during a `DestroyRef.onDestroy`
+   * hook that runs before the owner's own `deactivate()`.
    */
   get isActive(): boolean {
     return this.#active;
@@ -230,16 +175,11 @@ export class FocusTrap {
   }
 
   /**
-   * Deactivates the trap: removes the keydown listener, unregisters from the
-   * stack, and (unless `returnFocus: false`) restores focus to the element
-   * captured on activation.
+   * Removes the keydown listener, unregisters from the stack and — unless `returnFocus: false` —
+   * restores focus to the element captured on activation.
    *
-   * Return focus is skipped when the captured target is no longer connected
-   * to the document — e.g. the trigger was unmounted while the surface was
-   * open. Focusing a disconnected node is a no-op that silently drops focus
-   * to `<body>`; skipping the imperative move instead lets the browser apply
-   * its own default (focus stays on the surface's last-focused element until
-   * that element is itself removed), which is the least-surprising behavior.
+   * Return focus is skipped when that element is no longer connected to the document, leaving the
+   * browser's own default in place rather than dropping focus to `<body>`.
    */
   deactivate(options: FocusTrapDeactivateOptions = {}): void {
     if (!this.#active) {
@@ -262,25 +202,14 @@ export class FocusTrap {
   }
 
   /**
-   * Removes the `document` keydown listener and the {@link FocusTrapStack}
-   * entry — the half of teardown that is never a judgement call — while
-   * leaving focus and the trap's active state untouched. A no-op on a trap
-   * that is not active.
+   * Removes the `document` keydown listener and the {@link FocusTrapStack} entry, leaving focus,
+   * {@link isActive} and the temporary container `tabindex` untouched. A no-op on an inactive trap.
    *
-   * Two properties make this callable from a safety-net hook that may run
-   * *before* the owner's own cleanup (`DestroyRef.onDestroy` callbacks fire in
-   * registration order): the trap stays `isActive`, so a later
-   * `deactivate({ returnFocus: true })` still performs its focus move rather
-   * than bailing on an already-torn-down trap; and both removals are
-   * idempotent, so the two may run in either order, or twice.
+   * Idempotent, and safe to call before or after `deactivate()` — a later
+   * `deactivate({ returnFocus: true })` still performs its focus move.
    *
-   * The temporary container `tabindex="-1"` is deliberately left alone —
-   * undoing it belongs to `deactivate`, and a container nobody deactivated is
-   * being destroyed along with the attribute.
-   *
-   * Not a substitute for `deactivate()`: this exists for the safety-net hook,
-   * and calling it on a trap that is still in use leaves one that reports
-   * `isActive` yet cycles nothing, whose `activate()` is a silent no-op.
+   * Not a substitute for `deactivate()`: calling it on a trap still in use leaves one that reports
+   * `isActive` yet cycles nothing, and whose `activate()` is a silent no-op.
    */
   releaseKeyboardChannel(): void {
     if (!this.#active) {
@@ -348,31 +277,11 @@ export class FocusTrap {
 }
 
 /**
- * Reports an owner that activated a trap and was destroyed without ever calling
- * `deactivate()` — the defect the teardown net repairs, which would otherwise
- * leave no trace beyond focus silently not returning.
+ * Reports an owner that activated a trap and was destroyed without calling `deactivate()`.
  *
- * Scheduled as a microtask by the net rather than run inside it, because
- * {@link FocusTrap.isActive} is not yet final there: `DestroyRef.onDestroy`
- * callbacks fire in registration order, so the consumer's own `deactivate()` —
- * registered after the `injectFocusTrap()` call that set the net up — has not
- * run when the net does. Angular runs the whole chain synchronously during view
- * destruction, so a microtask scheduled from the net observes the settled flag:
- * `false` for an owner that deactivated (on either hook order), `true` only for
- * one that never did. The net deliberately leaves the flag set, so no extra
- * bookkeeping is needed to tell the two apart.
- *
- * The residual false positive is an owner that deactivates from something
- * asynchronous. Nothing in the library does — `injectModalShell` is the only
- * caller of {@link injectFocusTrap}, and its `deactivate()` is a plain
- * statement inside its own destroy hook — and a surface that defers its close
- * focus move past the destroy tick has already lost return focus for the same
- * reason the warning names.
- *
- * Kept module-private: `injectFocusTrap` is the only net in the library today.
- * `injectDismissibleLayer` and `InertSiblingsStack` share the hook-order
- * problem and would share this shape, so the second one to want it extracts a
- * core helper rather than copying this.
+ * Must be scheduled as a microtask rather than run inside the destroy hook: `onDestroy` callbacks
+ * fire in registration order, so {@link FocusTrap.isActive} is only settled once the whole chain
+ * has run.
  */
 function warnIfNeverDeactivated(trap: FocusTrap): void {
   if (!trap.isActive) {
@@ -388,48 +297,16 @@ function warnIfNeverDeactivated(trap: FocusTrap): void {
 }
 
 /**
- * Creates a `FocusTrap` for the directive's host element. Activation is the
- * consumer's responsibility, and so is the focus move on teardown — call
- * `trap.activate()` when the surface opens and
- * `trap.deactivate({ returnFocus })` from a `DestroyRef.onDestroy` (or
- * equivalent) when it closes.
+ * Creates a {@link FocusTrap} for the current directive's host element.
  *
- * The two halves of teardown have different owners, so only one of them gets a
- * safety net. **Where focus goes on close** is a decision only the consumer can
- * make — forcing `returnFocus: false` from here would race a cleanup that wants
- * `true`, and an unconditional `true` could dump focus on a removed element —
- * so the helper never moves focus. **Removing the `document` keydown listener
- * and the {@link FocusTrapStack} entry** is not a decision at all: a keyboard
- * channel that outlives its container becomes topmost again as soon as the trap
- * above it deactivates, then `preventDefault()`s Tab and focuses a detached
- * node, which drops focus on `<body>` and breaks keyboard navigation for the
- * rest of the session. The helper therefore registers
- * {@link FocusTrap.releaseKeyboardChannel} unconditionally on injector destroy,
- * so an owner that never calls `deactivate()` — a new overlay activating a trap
- * on its own, an early-return path that skips the call — cannot leave one
- * behind.
+ * Activation and teardown are the caller's responsibility: call `trap.activate()` when the surface
+ * opens and `trap.deactivate({ returnFocus })` from a `DestroyRef.onDestroy` when it closes.
  *
- * The net is deliberately not a `deactivate({ returnFocus: false })`, which
- * would only look equivalent: `DestroyRef.onDestroy` callbacks fire in
- * registration order, so this hook runs *before* the hook of the consumer that
- * called `injectFocusTrap()`, and a full deactivate here would flip the trap
- * inactive first and make the consumer's own
- * `deactivate({ returnFocus: true })` bail. That loses return focus on every
- * correctly-written surface — the helper would win the race it is not entitled
- * to arbitrate, rather than avoid it.
+ * On injector destroy the helper releases the keyboard channel unconditionally, so a trap whose
+ * owner skipped `deactivate()` cannot keep intercepting Tab. It never moves focus — only the owner
+ * can decide where focus goes — and warns in dev mode when it finds that repair necessary.
  *
- * The net repairs the leak and reports nothing, which would leave the missing
- * `deactivate()` invisible — so in dev mode it also schedules
- * {@link warnIfNeverDeactivated} to name it. Both halves of the gate are read
- * in the hook itself: a production build schedules no microtask, and neither
- * does a trap that was never activated.
- *
- * SSR-safe: the trap is constructed with the resolved platform, so
- * `activate()` is a no-op off-browser (no `document` keydown listener)
- * rather than relying on the caller to gate it behind `afterNextRender`.
- * The safety net inherits that gate — it bails on an inactive trap, so it
- * touches no `document` off-browser either, and the warning inherits it in
- * turn (a trap that never activated reads `false` here).
+ * SSR-safe: off-browser the trap registers no listener and `activate()` is a no-op.
  */
 export function injectFocusTrap(): FocusTrap {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);

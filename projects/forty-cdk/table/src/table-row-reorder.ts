@@ -102,33 +102,23 @@ export function translateRowReorderIndices(
  * it. Without Shift, pointer resolution is unchanged.
  * A non-virtualized table emits rendered-order indices unchanged.
  *
- * A keyboard jump recycles the rendered window, which re-positions the retained lifted row
- * in the consumer's `@for` and blurs it on the way through. That is not a cancel: focus is
- * put back on the lifted row once the window settles, and a `focusout` reporting no
- * destination only cancels the gesture if focus is still outside the rowgroup afterwards.
- * The restore is `preventScroll`, because the jump is what moved the window in the first
- * place ([#1704](https://github.com/tutkli/forty-cdk/issues/1704)): the retained row keeps
- * rendering at its original offset, so a scrolling `focus()` scrolls the viewport straight
- * back off the destination and undoes the jump the user asked for.
+ * A keyboard jump recycles the rendered window, which re-positions the retained lifted row and
+ * blurs it on the way through. That is not a cancel: focus returns to the lifted row once the
+ * window settles, and a `focusout` reporting no destination cancels only if focus is still outside
+ * the rowgroup afterwards. The restore uses `preventScroll`, because the retained row keeps
+ * rendering at its original offset — a scrolling `focus()` would take the viewport straight back
+ * off the destination and undo the jump.
  *
- * **One gesture at a time** ([#1695](https://github.com/tutkli/forty-cdk/issues/1695)). Under
- * virtualization the pin is written when a pointer drag **arms**, not when the press lands, and
- * released on its commit or cancel — so an ordinary click on a row pins nothing and leaves no
- * retained node behind. Pointer and keyboard reorder are mutually exclusive: while a keyboard lift
- * is live the coordinator stands its pointer channel down (no pin, no scrub tracking, no arming),
- * and a lift key pressed during a pointer drag is ignored. Whichever gesture starts first owns the
- * pin until it commits or aborts.
+ * **One gesture at a time.** Under virtualization the pin is written when a pointer drag *arms*
+ * rather than when the press lands, and released on commit or cancel, so an ordinary click pins
+ * nothing. Pointer and keyboard reorder are mutually exclusive: a live keyboard lift stands the
+ * pointer channel down, and a lift key pressed during a pointer drag is ignored. Whichever gesture
+ * starts first owns the pin until it commits or aborts.
  *
- * A pointer press is refused outright — nothing tracked, no `'pointer'` mode, no pin — when the
- * rowgroup is `disabled`, when a **mouse** press uses a non-primary button (touch and pen presses
- * keep whatever `button` their engine reports), or when the pressed row carries no registered
- * `[forDraggable]` or its draggable is `[dragDisabled]`. The row lookup stays the loose
- * `closest('[forTableRow]')` a grab on nested row content needs
- * ([#1677](https://github.com/tutkli/forty-cdk/issues/1677)); resolving the draggable from it is
- * what the guard adds, so a row with no draggable is now refused rather than tracked. That is the
- * guard set `[forListboxReorder]` and `[forTreeNodeDrag]` apply at the same seam, and it matches
- * what this coordinator's own keyboard path already refuses
- * ([#1697](https://github.com/tutkli/forty-cdk/issues/1697)).
+ * A pointer press is refused outright — nothing tracked, no pin — when the rowgroup is `disabled`,
+ * when a **mouse** press uses a non-primary button (touch and pen presses keep whatever `button`
+ * their engine reports), or when the pressed row carries no registered `[forDraggable]` or its
+ * draggable is `[dragDisabled]`.
  *
  * @example
  * ```html

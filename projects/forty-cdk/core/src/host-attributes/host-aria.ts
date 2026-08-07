@@ -5,19 +5,14 @@ import { computed, ElementRef, inject, type Signal } from '@angular/core';
  * pre-existing **static** `aria-labelledby` when present, else the library's
  * own generated fallback (a trigger / heading / label id).
  *
- * The consumer's accessible name is the one assistive tech should announce, so
- * a value they wrote in the template always wins over the fallback — the
- * generalisation of the static-`id` adoption contract to the naming attribute.
- * A surface with no consumer value keeps its fallback verbatim, so ordinary
- * usage is unaffected.
+ * A name has one owner, so a value the consumer wrote in the template always wins over the
+ * fallback. A surface with no consumer value keeps its fallback verbatim.
  *
- * Only **static** values are adopted: a consumer `[attr.aria-labelledby]="expr"`
- * binding evaluates after directive construction, so it is invisible here and
- * still fights the directive's own host binding (unpredictable last-writer).
- * This mirrors the static-only boundary of `resolveHostId` / `adoptHostId`.
+ * Only **static** values are adopted: a `[attr.aria-labelledby]="expr"` binding evaluates after
+ * directive construction, so it is invisible here and still fights the host binding. This mirrors
+ * the static-only boundary of `resolveHostId` / `adoptHostId`.
  *
- * Must be invoked in an injection context — internally injects
- * {@link ElementRef}.
+ * Must be invoked in an injection context.
  *
  * @param fallback The library-generated value, evaluated only when the host
  *   carries no static `aria-labelledby`.
@@ -32,26 +27,18 @@ export function hostLabelledBy(fallback: () => string | null): Signal<string | n
  * pre-existing **static** `aria-label` when present, else the library's own
  * value (an `ariaLabel` input, a scope default, or a computed name).
  *
- * Reuses {@link hostLabelledBy}'s **replace** semantics — a name has one owner,
- * so composing two of them is meaningless and the consumer's is the one
- * assistive tech should announce. This matters more here than for
- * `aria-labelledby`: most of these host bindings resolve to `null` when the
- * library has no name of its own, and a `null` `[attr.x]` binding calls
- * `removeAttribute` on the first change-detection pass — so without adoption a
- * consumer's `aria-label="Toppings"` is deleted and the widget ends up with no
- * accessible name at all.
+ * Reuses {@link hostLabelledBy}'s replace semantics. Adoption matters more here: most of these host
+ * bindings resolve to `null` when the library has no name of its own, and a `null` binding calls
+ * `removeAttribute`, so without it a consumer's `aria-label` is deleted and the widget is left with
+ * no accessible name at all.
  *
- * When a piece emits both channels, keep the fallback of its
- * {@link hostLabelledBy} gated on this signal rather than on the raw input:
- * `aria-labelledby` wins over `aria-label` in ARIA, so a library-generated
- * `aria-labelledby` fallback would silently outrank the consumer's adopted
- * name.
+ * A piece emitting both channels must gate its {@link hostLabelledBy} fallback on this signal
+ * rather than on the raw input, since `aria-labelledby` outranks `aria-label` in ARIA and a
+ * generated fallback would otherwise beat the consumer's adopted name.
  *
- * Only **static** values are adopted; see {@link hostLabelledBy} for the
- * static-only boundary.
+ * Only **static** values are adopted; see {@link hostLabelledBy} for the boundary.
  *
- * Must be invoked in an injection context — internally injects
- * {@link ElementRef}.
+ * Must be invoked in an injection context.
  *
  * @param fallback The library's own accessible name, evaluated only when the
  *   host carries no static `aria-label`.
@@ -66,17 +53,13 @@ export function hostAriaLabel(fallback: () => string | null): Signal<string | nu
  * pre-existing **static** `aria-describedby` **composed** with the library's
  * own description ids, consumer ids first.
  *
- * Descriptions are additive — assistive tech reads every referenced element —
- * so unlike {@link hostLabelledBy} this composes instead of replacing: a
- * consumer `aria-describedby="hint"` keeps announcing alongside a registered
- * `[for<Primitive>Description]`. Same composition the field wiring applies to
- * the controls it targets.
+ * Descriptions are additive — assistive tech reads every referenced element — so unlike
+ * {@link hostLabelledBy} this composes instead of replacing, and a consumer's
+ * `aria-describedby="hint"` keeps announcing alongside a registered description piece.
  *
- * Only **static** values are adopted; see {@link hostLabelledBy} for the
- * static-only boundary.
+ * Only **static** values are adopted; see {@link hostLabelledBy} for the boundary.
  *
- * Must be invoked in an injection context — internally injects
- * {@link ElementRef}.
+ * Must be invoked in an injection context.
  *
  * @param fallback The library-owned description ids, composed after the
  *   consumer's own.

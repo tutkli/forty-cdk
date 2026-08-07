@@ -17,8 +17,7 @@ import { IdGenerator } from '../id-generator/id-generator';
  * binding evaluates after construction, so it is not adopted — and still
  * fights the `[id]` host binding.
  *
- * Must be invoked in an injection context — internally injects
- * {@link IdGenerator}.
+ * Must be invoked in an injection context.
  *
  * @param host The directive's host element, or `null` to always generate (e.g.
  *   when the owning helper resolved `ElementRef` optionally and found none).
@@ -58,10 +57,8 @@ export function adoptHostId(host: HTMLElement, idSignal: WritableSignal<string>)
  * signal from the host element's pre-existing static `id`, falling back to a
  * freshly generated `<prefix>-*` id.
  *
- * Replaces the hand-written `readonly id = signal(this.#idGen.next('…'))` so
- * the piece's `[id]` host binding re-emits a consumer-set static id instead of
- * clobbering it. Must be invoked in an injection context — internally injects
- * {@link ElementRef} and {@link IdGenerator}.
+ * The piece's `[id]` host binding therefore re-emits a consumer-set static id
+ * instead of clobbering it. Must be invoked in an injection context.
  *
  * @param prefix Prefix for the generated fallback id.
  */

@@ -294,7 +294,7 @@ export class ForMenu extends MenuOverlayHost implements ForMenuContext {
    * own override when it declared one, else the root's `[side]`. The four
    * placement values resolve per opener because a shared menu's openers are
    * heterogeneous — a button opener wants the clearance `[forDropdownMenu]`
-   * seeds, a pointer-anchored region wants to sit flush at the cursor (#1574).
+   * seeds, a pointer-anchored region wants to sit flush at the cursor.
    */
   readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());
 

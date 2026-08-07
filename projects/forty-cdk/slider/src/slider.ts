@@ -108,7 +108,7 @@ export class ForSlider
   readonly value = model<readonly number[]>([0]);
 
   /**
-   * Minimum value. Falls back to `0` internally. A slider's bounds are scalar
+   * Minimum value. Falls back to `0`. A slider's bounds are scalar
    * by the ARIA slider pattern, but since Signal Forms v22 `FormUiControl.min`
    * is typed `NonNullable<TValue>` — an array for this control — so `min` and
    * `max` are excluded from the `FormValueControl` `implements` clause, and
@@ -123,7 +123,7 @@ export class ForSlider
       typeof value === 'number' ? value : undefined,
   });
   /**
-   * Maximum value. Falls back to `100` internally. Excluded from the
+   * Maximum value. Falls back to `100`. Excluded from the
    * `FormValueControl` `implements` clause and write-type-widened — see
    * {@link min}.
    */
@@ -155,6 +155,9 @@ export class ForSlider
   /** Effective maximum (defaults `100`). Exposed to children via context. */
   readonly maxValue = computed(() => this.max() ?? 100);
 
+  /**
+   * Axis the thumb travels along. Reflected as `data-orientation`.
+   */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**

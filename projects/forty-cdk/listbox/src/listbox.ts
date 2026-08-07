@@ -166,6 +166,9 @@ export class ForListbox<T = string>
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
+  /**
+   * Axis the arrow keys navigate. Reflected as `data-orientation`.
+   */
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**

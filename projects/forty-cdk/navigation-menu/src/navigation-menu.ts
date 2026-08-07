@@ -91,6 +91,9 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    */
   readonly value = model<string | null>(null);
 
+  /**
+   * Axis the arrow keys navigate between triggers. Reflected as `data-orientation`.
+   */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
@@ -102,7 +105,13 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  /**
+   * Whether arrow navigation wraps past the first / last enabled trigger.
+   */
   readonly loop = input(true, { transform: booleanAttribute });
+  /**
+   * Whether every item in the navigation is disabled, so no panel can be opened.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**
@@ -139,20 +148,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   readonly #contents = new Collection<ForNavigationMenuContentHandle>();
   readonly #viewport = signal<ForNavigationMenuViewportHandle | null>(null);
 
-  /**
-   * Previously open `value`, tracked so consumers can read the most recent
-   * open value before the current one.
-   *
-   * `linkedSignal` is the canonical replacement for `effect()` writing to a
-   * signal: each time `value()` changes, computation runs with the new
-   * source plus the prior `{ source, value }` and returns the *previous*
-   * source as the new value.
-   *
-   * Note: `data-motion` no longer derives from a single `previousValue`
-   * (it could only remember one leaving panel). Per-panel frozen motion is
-   * tracked in `#motion` instead, so several panels can leave at once during
-   * overlapping `animate.leave` transitions without losing their direction.
-   */
+  /** The `value` that was open before the current one, or `null`. */
   readonly previousValue = linkedSignal<string | null, string | null>({
     source: () => this.value(),
     computation: (_current, prev) => prev?.source ?? null,
@@ -313,43 +309,23 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   }
 
   /**
-   * APG: moving focus out of the navigation closes any open dropdown. Every
-   * leave that reports a destination is owned by the dismissible layer's
-   * `'focus'` channel (declared in {@link open}) and returns from here
-   * untouched, so the question "did focus leave the widget?" has exactly one
-   * owner ([#1535](https://github.com/tutkli/forty-cdk/issues/1535)). The layer
-   * observes `focusin` on the document, which buys three things a host listener
-   * cannot: it sees a focus move out of the *panel* even when the panel was
-   * re-parented outside the nav by a `[forNavigationMenuViewport]`, it resolves
-   * containment **stack-aware** — an interactive surface stacked above the panel
-   * counts as inside, so it never dismisses the panel it is anchored to
-   * ([#1379](https://github.com/tutkli/forty-cdk/issues/1379)) — and it is
-   * routed **per channel**, so a real dismissible layer above the navigation
-   * (a Dialog opened from a mega-menu link) owns the leave and the navigation
-   * stays open behind it.
+   * Closes any open dropdown when focus leaves the navigation, per APG.
    *
-   * This handler covers the one leave `focusin` cannot report: a `null`
-   * `relatedTarget`, i.e. focus leaving the document (Tab past the last
-   * focusable, into the browser chrome) or landing on a non-focusable area, for
-   * which no `focusin` is fired at all. It runs on the nav host **and** on
-   * `[forNavigationMenuContent]`, whose host is the panel itself, so the leave
-   * reaches the root regardless of where the Viewport re-parented the panel —
-   * a `focusout` fired inside an externally-hosted panel never bubbles to the
-   * `<nav>`.
+   * Every leave that reports a destination is owned by the dismissible layer's `'focus'` channel
+   * and returns from here untouched, so "did focus leave the widget?" has one owner.
    *
-   * A `null` `relatedTarget` says nothing about *where* focus went, so the
-   * decision is deferred one microtask and taken against
-   * `document.activeElement` once the focus update has settled. Containment is
-   * the `#containsFocusTarget` rule — the nav host plus the registered viewport
-   * and the active content panel, the same set that feeds the layer's
-   * `exemptElements`.
+   * This handler covers only the leave the layer cannot see: a `null` `relatedTarget`, which fires
+   * no `focusin` at all — focus leaving the document, or landing on a non-focusable area. It runs
+   * on both the nav host and `[forNavigationMenuContent]`, since a `focusout` inside a panel
+   * re-parented by `[forNavigationMenuViewport]` never bubbles to the `<nav>`.
    *
-   * The remaining ambiguity is that focus landing on `<body>` looks identical
-   * whether the user tabbed out of the document or pressed a non-focusable
-   * region *inside* the widget (a caption, a padding area of the panel). The
-   * layer resolves that press with the very same containment set and reports it
-   * through `onPointerDownInside`, so a pointer-induced blur is skipped instead
-   * of spuriously dismissing a panel the user is still interacting with.
+   * Because a `null` `relatedTarget` says nothing about where focus went, the decision is deferred
+   * one microtask and taken against `document.activeElement` once focus has settled.
+   *
+   * Focus landing on `<body>` is ambiguous — it looks the same whether the user tabbed out of the
+   * document or pressed a non-focusable region inside the widget. The layer resolves that press
+   * against the same containment set and reports it through `onPointerDownInside`, so a
+   * pointer-induced blur does not dismiss a panel the user is still interacting with.
    */
   protected handleSurfaceFocusOut(event: FocusEvent): void {
     if (this.value() === null) {
@@ -495,35 +471,19 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
   });
 
   /**
-   * `data-motion` direction for the content with the given `value`.
+   * `data-motion` direction for the content with the given `value`, so entering and leaving panels
+   * shift in the same logical direction like a carousel advancing.
    *
-   * Sets the slide direction by index comparison: when the user
-   * moves rightward from A (index 0) to B (index 2), the entering panel
-   * slides in from the end side (`from-end`) and the leaving panel slides
-   * out to the start side (`to-start`) — both shift in the same logical
-   * direction, like a horizontal carousel advancing.
+   * - The entering content reflects `from-start` / `from-end`, based on which side the previous
+   *   trigger sat on relative to it.
+   * - A leaving content reflects `to-start` / `to-end`, frozen at the transition that started its
+   *   exit and stable for as long as the panel stays mounted, so overlapping `animate.leave`
+   *   transitions never lose a panel's direction.
+   * - Anything else returns `null` and the host emits no attribute, including the first open and
+   *   last close, where there is no peer to compare against.
    *
-   * - The currently-entering content (`value === this.value()`) reflects
-   *   `from-start` / `from-end` based on which side the previous trigger
-   *   sat on relative to it.
-   * - A leaving content reflects the `to-start` / `to-end` direction frozen
-   *   at the transition that started its exit, based on which side the
-   *   then-new trigger sat on relative to it. The direction stays stable for
-   *   as long as the panel is mounted, even across later transitions.
-   * - Anything else (and first open / last close, where there is no peer
-   *   to compare against) returns `null` so the host binding emits no
-   *   attribute.
-   *
-   * "Start" and "end" are logical: index 0 in DOM order is "start", which
-   * maps to the visual right in `dir="rtl"`. Consumers can author the
-   * keyframes once with logical CSS (e.g. `inset-inline-start`) and it
-   * flips automatically.
-   *
-   * The currently-entering panel is computed live against `previousValue()`;
-   * every other (leaving) panel reads its frozen direction from `#motion`,
-   * recorded at the transition that started its exit. This keeps a leaving
-   * panel's direction stable across later, overlapping transitions instead
-   * of dropping to `null` once `previousValue` advances past it.
+   * "Start" and "end" are logical — index 0 in DOM order is start, which is visually on the right
+   * under `dir="rtl"` — so keyframes authored with logical CSS flip automatically.
    */
   motionFor(value: string): ForNavigationMenuMotion | null {
     if (value === this.value()) {

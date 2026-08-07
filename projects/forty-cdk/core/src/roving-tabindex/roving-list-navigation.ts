@@ -78,11 +78,8 @@ export interface RovingTabStopOptions extends SelectionTabStopOptions {
  * - another item owns the current selection → `-1`.
  * - otherwise the first enabled item → `0`, else `-1`.
  *
- * The third rung is the fallback the
- * [#1132](https://github.com/tutkli/forty-cdk/issues/1132) /
- * [#1170](https://github.com/tutkli/forty-cdk/issues/1170) family regressed:
- * a selection pointing at a disabled or absent item must not take the whole
- * group out of the tab order.
+ * The third rung is what keeps a selection pointing at a disabled or absent item from taking the
+ * whole group out of the tab order.
  *
  * `[forRadio]` is the one caller that uses this alone. Selection follows focus
  * in the WAI-ARIA Radio Group pattern, so a radio group has no user-driven

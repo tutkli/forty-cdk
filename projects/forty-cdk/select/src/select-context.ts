@@ -152,7 +152,7 @@ export interface ForSelectContext<T = unknown> {
    * The select's effective disabled — its own `disabled` input OR'd with a
    * surrounding disabled `[forFieldset]`. Trigger and options read this so a
    * disabled select (or fieldset) is inert: the trigger reflects the native
-   * `disabled` attribute (its single channel, #561 D2) and the options, which
+   * `disabled` attribute (its single channel) and the options, which
    * must stay focusable, reflect `aria-disabled`.
    */
   readonly effectiveDisabled: Signal<boolean>;
@@ -405,7 +405,7 @@ export function injectSelectContext<T = unknown>(piece: string): SelectContext<T
  * `overlay` to the consumer facade. Both paths are guarded, on read rather than
  * at injection time, because the explicit one only resolves inside the
  * `computed`; the explicit widening predates the one-token collapse
- * ([#1593](https://github.com/tutkli/forty-cdk/issues/1593)) and was never
+ * and was never
  * checked either.
  */
 export function injectSelectTriggerContext<T = unknown>(

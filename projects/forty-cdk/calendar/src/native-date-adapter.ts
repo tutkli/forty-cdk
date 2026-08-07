@@ -62,7 +62,7 @@ function clampDay(
  * `provideInternationalizedDateTimeAdapter()` for a time-capable one); reach
  * for this one when adding a date library to the bundle is not worthwhile. Both
  * `Date` and the `@internationalized/date` adapters operate on the Gregorian
- * calendar today; non-Gregorian calendar systems are deferred to #354.
+ * calendar; non-Gregorian calendar systems are not supported.
  */
 @Injectable()
 export class NativeDateAdapter implements DateAdapter<Date> {

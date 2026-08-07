@@ -33,9 +33,8 @@ export class ForAccordionItem implements ForAccordionItemContext {
    * When true, this item's trigger ignores clicks and reflects the native
    * `disabled` attribute (not `aria-disabled`): dropped from the Tab order and
    * skipped by arrow-key navigation, but kept in the accessibility tree so
-   * screen readers still announce it. See `ForAccordionTrigger` for the
-   * rationale (rule #561 D2). Bind via `[disabled]`; read the composed
-   * {@link disabled} for state.
+   * screen readers still announce it. See `ForAccordionTrigger` for the rationale. Bind via
+   * `[disabled]`; read the composed {@link disabled} for state.
    */
   readonly disabledInput = input(false, { transform: booleanAttribute, alias: 'disabled' });
 

@@ -36,58 +36,36 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
  * [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) (the same
  * machinery as `ForTimeField`), nested inside one outer `role="group"`.
  *
- * `ForTimeRangeField` is the root: it owns the two time engines (one per
- * endpoint), composes each endpoint's parts into the adapter's date-time type,
- * and assembles the committed `DateRange` — exposing the rendered
- * segments, the per-endpoint coordination surfaces, and the shared configuration
- * to its `[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]` children through
- * {@link FOR_TIME_RANGE_FIELD_CONTEXT}. The spin-button engine lives in the
- * shared `core/datetime` `TimeFieldEngine`; all time math goes through the
- * pluggable `DateAdapter` shared with `ForCalendar`, which **must be time-capable**
- * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`;
- * the day-only `provideInternationalizedDateAdapter()` throws).
+ * The root owns one time engine per endpoint and assembles the committed `DateRange`, exposing the
+ * rendered segments and the shared configuration to its `[forTimeRangeFieldStart]` /
+ * `[forTimeRangeFieldEnd]` children through {@link FOR_TIME_RANGE_FIELD_CONTEXT}. All time math
+ * goes through the `DateAdapter`, which **must be time-capable** — the day-only
+ * `provideInternationalizedDateAdapter()` throws.
  *
- * It implements `FormValueControl<DateRange<D> | null>` from
- * `@angular/forms/signals` — the same contract as `ForDateRangeField` — so the
- * committed range auto-wires with `[formField]`. The `value` stays `null` until
- * **both** endpoints are fully entered: a half-entered range never reaches the
- * form, and the `DateRange` `end >= start` invariant always holds (a
- * complete-but-out-of-order entry keeps the typed segments but leaves `value`
- * `null`, reflecting `aria-invalid="true"` + `data-range-error` so the disorder
- * is perceivable; restoring order emits the range). Set {@link allowOvernight}
- * to instead read a `start > end` entry as a midnight-crossing range (the end
- * advances to the next day) rather than an error.
+ * Implements `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with
+ * `[formField]`. `value` stays `null` until both endpoints are fully entered, so a half-entered
+ * range never reaches the form and the `end >= start` invariant always holds. A complete but
+ * out-of-order entry keeps its typed segments, leaves `value` `null` and reflects
+ * `aria-invalid="true"` + `data-range-error`; restoring the order emits the range. Set
+ * {@link allowOvernight} to read `start > end` as a midnight crossing instead.
  *
- * Each endpoint anchors its wall-clock time on a fixed, DST-stable sentinel date
- * (`2000-01-01`) while no value is bound, exactly as `ForTimeField` does, so the
- * endpoints compare by time-of-day and a time always round-trips to the same
- * instant. Bind an existing range as `value` to edit its endpoints' times in
- * place (each endpoint's calendar day is preserved — except under
- * {@link allowOvernight}, where both endpoints re-anchor on the sentinel).
+ * While no value is bound each endpoint anchors on a fixed, DST-stable sentinel date, so endpoints
+ * compare by time-of-day and a time round-trips to the same instant. Binding an existing range
+ * edits its times in place, preserving each endpoint's calendar day.
  *
- * A read-only field is reflected on this `role="group"` root — and on each
- * endpoint group — as the boolean `data-readonly` styling hook only.
- * `aria-readonly` is not a supported property of `role="group"`, so the ARIA
- * announcement lives on each `[forTimeRangeFieldSegment]` —
- * `role="spinbutton"` does support it.
+ * Read-only and required states reflect as the boolean `data-readonly` / `data-required` hooks on
+ * the root: `role="group"` supports neither ARIA property. The read-only announcement lives on each
+ * `[forTimeRangeFieldSegment]` instead, whose `role="spinbutton"` does support it; the required
+ * state is deliberately not repeated per segment.
  *
- * A required field carries the boolean `data-required` hook on the same root.
- * `aria-required` is not supported on `role="group"` either, and it is
- * deliberately not repeated on every segment — a composite field would
- * announce "required" once per part.
+ * The bounds are named `minTime` / `maxTime` because `min` / `max` are reserved `FormUiControl`
+ * members whose types cannot express a time bound. Only their time-of-day component is considered.
  *
  * @typeParam D The adapter's immutable, time-capable date-time type.
  *
- * Note: the bounds are named `minTime` / `maxTime`, not `min` / `max` — the
- * latter are reserved `FormUiControl` members typed `number | undefined`, and
- * `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` (the
- * range object itself), which is meaningless as a bound. Only the time-of-day
- * component of the bounds is considered.
- *
  * @example
  * ```html
- * <div forTimeRangeField [(value)]="hours" [ariaLabel]="'Opening hours'" name="hours"
- *      #range="forTimeRangeField">
+ * <div forTimeRangeField [(value)]="hours" [ariaLabel]="'Opening hours'" name="hours">
  *   <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
  *     @for (seg of start.segments(); track seg.id) {
  *       @if (seg.isLiteral) {
@@ -98,15 +76,7 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
  *     }
  *   </div>
  *   <span aria-hidden="true">–</span>
- *   <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
- *     @for (seg of end.segments(); track seg.id) {
- *       @if (seg.isLiteral) {
- *         <span forTimeRangeFieldLiteral>{{ seg.text }}</span>
- *       } @else {
- *         <span forTimeRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
- *       }
- *     }
- *   </div>
+ *   <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd"><!-- same segment loop --></div>
  * </div>
  * ```
  */
@@ -176,28 +146,20 @@ export class ForTimeRangeField<D>
   readonly maxTime = input<D | null>(null);
 
   /**
-   * Whether a start time-of-day after the end is interpreted as an **overnight**
-   * range that crosses midnight (e.g. `22:00`–`06:00`, a night shift) rather than
-   * an unorderable error. Defaults to `false`, where `start > end` keeps `value`
-   * `null` and reflects `aria-invalid` (the existing behaviour). When `true`, such
-   * an entry commits `{ start, end }` with the end advanced to the **next day**,
-   * so the `DateRange` `end >= start` invariant still holds and the emitted range
-   * spans the correct duration; the disorder is no longer flagged.
+   * Whether a start time-of-day after the end reads as an **overnight** range crossing midnight
+   * (`22:00`–`06:00`) rather than an unorderable error. Defaults to `false`, where `start > end`
+   * keeps `value` `null` and reflects `aria-invalid`.
    *
-   * In overnight mode both endpoints operate purely on their time-of-day: the
-   * calendar day of a bound `value` is not preserved across edits (it is
-   * re-anchored on the DST-stable sentinel), the reverse of the default mode. Only
-   * the time-of-day of each endpoint is meaningful, so this trade-off is
-   * immaterial to a time-of-day range.
+   * When `true`, such an entry commits with the end advanced to the next day, so `end >= start`
+   * still holds and the range spans the correct duration. Only a **strict** `start > end` is
+   * reinterpreted: two equal times compose a zero-length range, never a 24-hour span.
    *
-   * Overnight reinterpretation applies only to a **strict** `start > end`: two
-   * complete endpoints with an equal time compose a valid zero-length range in
-   * either mode, never a 24-hour span. The midnight crossing lives **only** in the
-   * in-memory `DateRange` delivered via `[(value)]` / `[formField]` — the native
-   * hidden inputs serialize each endpoint's time-of-day only (`HH` / `HH:mm` /
-   * `HH:mm:ss`), so an overnight range posts as `<name>-start` / `<name>-end` with
-   * the +1-day advance erased; a server reading the raw fields sees `start > end`
-   * again and must re-apply the overnight rule to reconstruct the crossing.
+   * In this mode a bound value's calendar day is not preserved across edits — both endpoints
+   * re-anchor on the sentinel date.
+   *
+   * The midnight crossing exists only in the in-memory `DateRange`. The hidden inputs serialize
+   * each endpoint's time-of-day alone, so a server reading the posted fields sees `start > end`
+   * again and must re-apply the rule to reconstruct the crossing.
    */
   readonly allowOvernight = input<boolean>(false);
 

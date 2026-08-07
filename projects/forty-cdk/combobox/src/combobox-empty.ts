@@ -33,10 +33,7 @@ import { injectComboboxContext } from './combobox-context';
  * and neither attribute is emitted beside it. The role rather than the
  * attribute pair because this host self-hides and comes back with its message
  * already in the DOM, which is an insertion into the accessibility tree, and a
- * live *role* is what screen readers read reliably on insertion. That is the
- * same property that keeps `role="alert"` on `[forToast]`'s bare-error host,
- * and the reason `LiveAnnouncer` — whose regions are inserted empty and only
- * ever have their text rewritten — keeps the attribute pair instead.
+ * live *role* is what screen readers read reliably on insertion.
  */
 @Directive({
   selector: '[forComboboxEmpty]',

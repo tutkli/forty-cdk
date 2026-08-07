@@ -12,27 +12,22 @@ import { inject, InjectionToken } from '@angular/core';
  *   formatting; `@internationalized/date` is an optional peer dependency. Both
  *   `@internationalized/date` adapters operate on the **Gregorian** calendar
  *   today — non-Gregorian calendar systems are deferred to the Temporal adapter
- *   track (#354).
+ *   track.
  * - `provideNativeDateAdapter()` — over the built-in `Date`. Zero-dependency
  *   fallback.
  *
  * A `Temporal.PlainDate` adapter is a planned non-breaking addition once the
- * Temporal API is broadly available across browsers (#354).
+ * Temporal API is broadly available across browsers.
  *
- * **Calendar system (Gregorian).** This seam abstracts the date *library* and
- * locale-aware *formatting*, not the calendar *system*'s month structure. The
- * `ForCalendar` grid, the month picker and the date field assume a
- * Gregorian-structured year: exactly twelve months, `month` in **1-12**, and the
- * year ending at month 12. An adapter over a calendar with a different month
- * structure (e.g. a 13-month year) is out of scope; calendar-system
- * pluggability would be revisited alongside the Temporal adapter track (#354).
- * The optional {@link compareDate} hook overrides day-only *ordering* only — it
- * does not make the grid non-Gregorian.
+ * **Calendar system (Gregorian).** The seam abstracts the date *library* and locale-aware
+ * *formatting*, not the calendar system's month structure. The calendar grid, month picker and date
+ * field assume a Gregorian-structured year: twelve months, `month` in 1-12, the year ending at
+ * month 12. An adapter over a different month structure is out of scope. The optional
+ * {@link compareDate} hook overrides day-only *ordering* only.
  *
- * Implementations must be pure with respect to their date type: every
- * operation returns a value and never mutates its inputs. The `D` produced by
- * mutating operations (`add*`, `createDate`) is a fresh value, which keeps it
- * signal-friendly (reference equality changes on every change).
+ * Implementations must be pure with respect to their date type: every operation returns a value and
+ * never mutates its inputs, so reference equality changes on every change and the values stay
+ * signal-friendly.
  *
  * @typeParam D The immutable date representation the adapter operates on.
  */

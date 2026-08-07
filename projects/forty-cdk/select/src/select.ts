@@ -263,7 +263,10 @@ export class ForSelect<T = string>
    */
   readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
 
+  /** Whether arrow navigation wraps past the first / last enabled option. */
   readonly loop = input(true, { transform: booleanAttribute });
+
+  /** Axis the arrow keys navigate. Reflected as `data-orientation` on the content. */
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
 
   /**
@@ -276,9 +279,8 @@ export class ForSelect<T = string>
     transform: (v: unknown): number | undefined => (v == null ? undefined : numberAttribute(v)),
   });
   /**
-   * Inclusive-exclusive `[start, end)` index range of the currently rendered
-   * options, provided by `injectVirtualizer`. Used to decide whether a
-   * navigation target is in the visible window.
+   * Inclusive-exclusive `[start, end)` index range of the currently rendered options, as provided
+   * by `injectVirtualizer`. Decides whether a navigation target is inside the visible window.
    */
   readonly visibleRange = input<readonly [number, number] | undefined>(undefined);
 
@@ -356,9 +358,19 @@ export class ForSelect<T = string>
   /** Manual `aria-label` on `[forSelectContent]` when the trigger isn't a meaningful name. */
   readonly ariaLabel = input<string | null>(null);
 
+  /** Emitted before Escape closes the listbox. Call `preventDefault()` to keep it open. */
   readonly escapeKeyDown = output<VetoableNativeEvent<KeyboardEvent>>();
+
+  /** Emitted before an outside pointer-down closes the listbox. Vetoable with `preventDefault()`. */
   readonly pointerDownOutside = output<VetoableNativeEvent<PointerEvent>>();
+
+  /** Emitted before focus leaving the surface closes the listbox. Vetoable with `preventDefault()`. */
   readonly focusOutside = output<VetoableNativeEvent<FocusEvent>>();
+
+  /**
+   * Emitted alongside {@link pointerDownOutside} and {@link focusOutside} for consumers that do not
+   * care which one occurred. A `preventDefault()` on either channel suppresses the close.
+   */
   readonly interactOutside = output<VetoableNativeEvent<PointerEvent | FocusEvent>>();
 
   /**
@@ -432,13 +444,11 @@ export class ForSelect<T = string>
   });
 
   /**
-   * The shared overlay-listbox coordination surface (trigger / anchor / content
-   * registration + ids, DOM-focus navigation, the open / close machine, the
-   * initial-focus / close-reason state, and the dismiss + auto-focus emit
-   * forwarders). Exposed on the context so child directives read the overlay
-   * machinery here — the root no longer re-forwards each member. The optional
-   * `[forSelectAnchor]` (reached via `overlay.anchor`) is preferred when
-   * registered, otherwise floating-ui falls back to the trigger.
+   * The shared overlay-listbox coordination surface: trigger / anchor / content registration and
+   * ids, DOM-focus navigation, the open / close machine, and the dismiss and auto-focus forwarders.
+   *
+   * Positioning prefers a registered `[forSelectAnchor]`, reached via `overlay.anchor`, and falls
+   * back to the trigger.
    */
   readonly overlay: ForSelectOverlayFacade = this.#controller;
 
@@ -493,30 +503,15 @@ export class ForSelect<T = string>
   }
 
   /**
-   * Bounded option-label cache, shared with `[forCombobox]` through
-   * `forty-cdk/core` so the two can't drift. The live `options` registry is empty
-   * whenever `[forSelectContent]` is unmounted, so both label consumers read it
-   * instead: {@link selectedLabels} takes the selection-keyed projection (bounded
-   * by the selection) and {@link handleClosedTypeahead} the last-window
-   * projection (bounded by one window).
+   * Bounded option-label cache. The live `options` registry is empty whenever
+   * `[forSelectContent]` is unmounted, so {@link selectedLabels} reads the selection-keyed
+   * projection and {@link handleClosedTypeahead} the last-window one.
    *
-   * Two behaviours follow from the window store being *replaced* rather than
-   * merged. An option the consumer removes while the listbox is open is purged
-   * on the next window, so closed-state typeahead stops offering it — but only
-   * while the content is mounted: under the documented `@if (open())` pattern the
-   * options unregister on close, so a removal performed *while the listbox is
-   * closed* cannot refresh the window and typeahead can still commit a value that
-   * no longer exists until the next open. And when virtualizing, the window is
-   * the rendered slice, so a closed-state typeahead match is scoped to the last
-   * slice the consumer rendered rather than to every slice scrolled through.
-   * Selected labels are unaffected there — they live in the selection-keyed
-   * projection, which carries an off-window value's label for as long as it stays
-   * selected.
-   *
-   * Each option's `label` is itself a `Signal<string>`, so this never reads
-   * `textContent` — the canonical replacement for the previous
-   * `afterEveryRender(() => signal.set(...))` snapshot (no state-propagation
-   * inside an `effect`).
+   * Because the window store is replaced rather than merged, a removal performed while the listbox
+   * is **closed** cannot refresh it, so closed-state typeahead can still commit a value that no
+   * longer exists until the next open. When virtualizing, the window is the rendered slice, so a
+   * closed-state match is scoped to it. Selected labels are unaffected — they live in the
+   * selection-keyed projection for as long as the value stays selected.
    */
   readonly #labelCache = new LabelCache<T>({
     items: this.#controller.options,

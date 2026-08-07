@@ -77,6 +77,9 @@ export class ForToolbar implements ForToolbarContext {
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ariaLabel() || null);
 
+  /**
+   * Axis the arrow keys navigate. Reflected as `data-orientation`.
+   */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
@@ -94,6 +97,9 @@ export class ForToolbar implements ForToolbarContext {
    * for the surrounding scope.
    */
   readonly loop = input(this.#defaults.loop, { transform: booleanAttribute });
+  /**
+   * Whether every item in the toolbar is disabled. Individual items may also disable themselves.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

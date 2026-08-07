@@ -61,56 +61,28 @@ export interface LabelCacheDeps<T> {
 const EMPTY_WINDOW = new Map<string, LabelCacheEntry<never>>();
 
 /**
- * Bounded option-label cache shared by `[forSelect]` and `[forCombobox]`. Both
- * roots must resolve labels for options that are not mounted — the live registry
- * is empty whenever the consumer's `@if` unmounts the listbox — and both must do
- * it without retaining every option they have ever seen.
+ * Bounded option-label cache shared by `[forSelect]` and `[forCombobox]`. Both roots must resolve
+ * labels for options that are not mounted, since the live registry is empty whenever the consumer's
+ * `@if` unmounts the listbox, and neither may retain every option it has ever seen.
  *
  * Two projections, each bounded by a different quantity:
  *
- * - {@link selectedEntries} carries the entries of the **currently selected**
- *   values, so `[forSelectValue]`, the combobox chips and the combobox input
- *   label keep resolving after the options unmount, and across a query rebuild
- *   that no longer contains the selected value. Bounded by the selection size:
- *   a value that leaves the selection leaves the cache with it.
- * - {@link windowEntries} carries the most recent non-empty option window,
- *   replaced rather than merged. It backs the two matchers that must see labels
- *   the selection does not contain — the closed-state typeahead of `[forSelect]`
- *   and the closed-state inline completion of `[forComboboxInput]`. Bounded by
- *   one window, and purge-aware for free: an option the consumer removed while
- *   the listbox is open is gone from the next window.
+ * - {@link selectedEntries} carries the currently selected values, so the select value, the
+ *   combobox chips and the combobox input label keep resolving after the options unmount. A value
+ *   that leaves the selection leaves the cache with it.
+ * - {@link windowEntries} carries the most recent non-empty option window, replaced rather than
+ *   merged, and backs the closed-state typeahead and inline completion matchers. Because it is
+ *   replaced, an option removed while the listbox was open is gone from the next window.
  *
- * They are two separate `linkedSignal`s rather than one holding both stores, so
- * the selection is not a dependency of the window read: a commit of `value`
- * rebuilds the selection map alone (bounded by the selection) instead of
- * re-reading every handle in the window, and — because {@link prime} is the
- * cache's only eager reader — the roots' pull effect does not drag the selection
- * into the tracked set of anything else that shares it.
+ * They are separate `linkedSignal`s so a commit of `value` rebuilds the selection map alone instead
+ * of re-reading every handle in the window.
  *
- * The replace semantics are what remove the reset machinery a merging
- * accumulator needed. There is no `totalCount` transition to detect, no
- * data-version bump to honour and no stale-window race to document: a window
- * that lands is the whole store, and a window that races ahead of its
- * `totalCount` is simply the previous window, replaced on the run that follows.
- * The virtualized consequence is deliberate — with one window in the store at a
- * time, `windowEntries` covers the rendered slice rather than every slice
- * scrolled through, so a virtualized closed-state match is scoped to the last
- * window. A label that is already selected is unaffected — it lives in the other
- * projection and is carried for as long as the value stays selected — but neither
- * projection consults a virtualized position map, so a value that *enters* the
- * selection while its option sits outside the current window resolves only if it
- * was cached on an earlier window. The caller owns that fallback, and
- * `[forCombobox]` overlays the position map onto `windowEntries` for its
- * completion matcher only.
+ * Replacing rather than merging bounds the window to the rendered slice, so a virtualized
+ * closed-state match only sees the last window. Neither projection consults a virtualized position
+ * map: a value entering the selection while its option sits outside the current window resolves
+ * only if an earlier window cached it, and the caller owns that fallback.
  *
- * A statically-rendered option registers during the content view's *creation*
- * pass, before its `[value]` binding is written in that view's *update* pass,
- * and {@link prime} pulls the cache inside that gap. Such a handle reads the
- * `unsetInput` sentinel, is skipped for that run, and folds in on the re-run
- * the binding triggers.
- *
- * Internal helper — not part of the blessed core tier and never surfaced on a
- * primitive's public context. Constructed once per root.
+ * Constructed once per root. Never surfaced on a primitive's public context.
  */
 export class LabelCache<T> {
   readonly #windowByKey: Signal<ReadonlyMap<string, LabelCacheEntry<T>>>;

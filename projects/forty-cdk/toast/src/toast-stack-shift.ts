@@ -73,51 +73,33 @@ export interface ToastStackShifter {
  *   visibly move up when one is appended, yet their offset inside the viewport
  *   never changes — the viewport box is what grew.
  *
- * The glide drives `translate` — the individual transform property — and never
- * `transform`, which stays the consumer's. An animation resolves in the
- * animation origin, so it outranks every author declaration of the same
- * property including an inline one: a glide on `transform` would suppress the
- * primitive's own documented swipe recipe (`transform: translate3d(var(
- * --for-toast-swipe-movement-x), …)`) and any enter / leave keyframe written on
- * `transform` for as long as it played. `translate` is applied before
- * `transform`, so the two compose instead. On a burst the in-flight offset is
- * carried into the restarted glide, so a row stays visually continuous.
+ * The glide drives `translate`, never `transform`, which stays the consumer's. An animation
+ * resolves in the animation origin and outranks every author declaration of the same property, so a
+ * glide on `transform` would suppress the primitive's own swipe recipe and any enter / leave
+ * keyframe for as long as it played. `translate` is applied before `transform`, so the two compose.
+ * On a burst the in-flight offset carries into the restarted glide, keeping a row continuous.
  *
- * A `MutationObserver` on the host's child list is what schedules the pass: its
- * callback is a microtask, so the measurement lands in the same turn as the
- * mutation and before paint, and it also catches the deferred unmount an
- * `animate.leave` row performs once its exit animation settles.
+ * A `MutationObserver` on the host's child list schedules the pass. Its callback is a microtask, so
+ * the measurement lands in the same turn as the mutation and before paint, and it also catches the
+ * deferred unmount an `animate.leave` row performs once its exit animation settles.
  *
- * That makes the baseline a measurement from the *previous* mutation, so a layout
- * change with no mutation to announce it leaves the map pointing at a spot the
- * rows have already left — and the next mutation would replay that change as a
- * glide of its full distance instead of the real travel. The two that move a
- * whole stack are watched and drop the baseline rather than being animated: a
- * window `resize` (the edge an anchored stack hangs off moves, mobile keyboards
- * included) and, for an in-flow host only, a `scroll`. Every watch here — both
- * listeners and the `ResizeObserver` below — is installed on the first pass that
- * has motion, so an unset `[stackShift]` keeps costing nothing but the
- * `MutationObserver`.
+ * That makes the baseline a measurement from the *previous* mutation, so a layout change with no
+ * mutation to announce it leaves the map pointing where the rows no longer are. Three sources are
+ * therefore watched and drop the baseline rather than being animated: a window `resize`, a `scroll`
+ * for an in-flow host, and — through a `ResizeObserver` on the host — a row that reflows on its own
+ * from swapped text, a late font or a settling image. All of them are installed on the first pass
+ * with motion, so an unset `[stackShift]` costs nothing but the `MutationObserver`.
  *
- * The third source — a row that reflows on its own, text swapped by
- * `ForToastRef.update()`, a late font, an image settling — moves its siblings
- * with neither a mutation nor either event, and the only instrument that sees it
- * is a `ResizeObserver` on the host. The naive version of that is wrong: it also
- * fires on every add / remove, where dropping the baseline is exactly what must
- * not happen, since a burst would stop gliding. **Delivery order tells the two
- * apart.** A `MutationObserver` callback is a microtask, while a
- * `ResizeObserver` callback runs in the rendering steps after layout, so a
- * mutation's own pass always lands *before* the resize that mutation caused: a
- * delivery finding the flag set is that resize and is consumed, one finding it
- * clear is a reflow and drops the baseline.
+ * The observer also fires on every add and remove, where dropping the baseline would stop a burst
+ * gliding. **Delivery order tells the two apart**: a `MutationObserver` callback is a microtask
+ * while a `ResizeObserver` callback runs after layout, so a mutation's own pass always lands before
+ * the resize it caused. A delivery finding the flag set is that resize and is consumed; one finding
+ * it clear is a reflow and drops the baseline.
  *
- * Known limits, all of them one mutation glided from a stale baseline and
- * self-corrected by the pass after it: a reflow landing in the same frame as a
- * mutation is consumed as that mutation's resize; a reflow the host's own box
- * does not follow (a viewport with a fixed `height`) is never delivered at all;
- * and a mutation that leaves the box unchanged — one row replacing another of
- * equal height at the `maxVisible` cap — leaves the flag set for the next
- * delivery to consume.
+ * Known limits, each costing one mutation glided from a stale baseline and self-correcting on the
+ * next pass: a reflow in the same frame as a mutation is consumed as that mutation's resize; a
+ * reflow the host's own box does not follow is never delivered; and a mutation leaving the box
+ * unchanged leaves the flag set for the next delivery to consume.
  */
 export function createToastStackShifter(options: ToastStackShifterOptions): ToastStackShifter {
   const { host, view, shift, reducedMotion } = options;
@@ -144,10 +126,10 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
   let mutatedSincePaint = false;
 
   /**
-   * Drops the baseline. Whatever moved the rows did not go through the child
-   * list, so the map is no longer comparable to a fresh measurement and the next
-   * mutation measures a clean one and glides nothing — the cheap direction to be
-   * wrong in, since a stale baseline replays the whole layout change as a glide.
+   * Drops the baseline, so the next mutation measures a clean one and glides nothing.
+   *
+   * Whatever moved the rows did not go through the child list, leaving the map incomparable to a
+   * fresh measurement — and a stale baseline would replay the whole layout change as a glide.
    */
   const invalidate = (): void => {
     positions.clear();

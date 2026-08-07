@@ -52,7 +52,7 @@ import { injectComboboxContext } from './combobox-context';
  * So the two splits are keyed independently — roles off `hasList`, focus off
  * the trigger — and the trigger check is a `computed`, consulted at each
  * decision point rather than snapshotted at construction
- * ([#1581](https://github.com/tutkli/forty-cdk/issues/1581)) — so a trigger
+ * — so a trigger
  * declared after this content, projected through `<ng-content>`, or gated by a
  * `@defer` / data-driven `@if` upgrades the surface instead of leaving it with
  * no focus management at all. Initial focus stays a mount-time event (the shell

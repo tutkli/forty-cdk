@@ -39,9 +39,7 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * is typically a `computed` fold over per-child registries that is
  * invalidated once per child while the group mounts — so an unconditional
  * read makes each registration notify every item registered so far, which
- * is quadratic in group size and dominated the 2000-row `[forTable]` mount
- * measured in [#1584](https://github.com/tutkli/forty-cdk/issues/1584).
- * Gating it keeps the mount's tab-stop channel independent of the list.
+ * is quadratic in group size. Gating it keeps the mount's tab-stop channel independent of the list.
  *
  * Construct directly with `new RovingTabindex()` — there is no internal
  * state requiring an injection context or `DestroyRef` cleanup (the

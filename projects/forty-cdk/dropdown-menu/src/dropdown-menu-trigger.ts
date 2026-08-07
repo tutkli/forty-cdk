@@ -71,7 +71,7 @@ function injectDropdownMenuTriggerContext(
  * `disabled`. The native `disabled` attribute is the single reflection channel
  * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
  * trigger the native attribute already conveys the state to assistive
- * technology (rule #561 D2). It is reflected imperatively and
+ * technology. It is reflected imperatively and
  * non-destructively — the directive only removes the attribute when it set it
  * itself, so a consumer-set `disabled` on the same button always survives an
  * enabled menu context. `data-disabled=""` stays as the styling hook.

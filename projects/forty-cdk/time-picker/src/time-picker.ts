@@ -116,8 +116,8 @@ export class ForTimePicker<D>
   readonly maxTime = input<D | null>(null);
 
   /**
-   * Slot interval in whole minutes. Default `30`. Clamped to ≥ 1 internally.
-   * Use `60` for hourly slots, `15` for quarter-hour slots.
+   * Slot interval in whole minutes. Default `30`, clamped to ≥ 1. Use `60` for
+   * hourly slots, `15` for quarter-hour slots.
    */
   readonly step = input(30, { transform: numberAttribute });
 
@@ -297,7 +297,7 @@ export class ForTimePicker<D>
    * registration + ids, DOM-focus navigation, the open / close machine, the
    * initial-focus / close-reason state, and the dismiss + auto-focus emit
    * forwarders). Exposed on the context so child directives read the overlay
-   * machinery here — the root no longer re-forwards each member. The optional
+   * machinery here rather than through the root. The optional
    * `[forTimePickerAnchor]` (reached via `overlay.anchor`) is preferred when
    * registered, otherwise floating-ui falls back to the trigger.
    */

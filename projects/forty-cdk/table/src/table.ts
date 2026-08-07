@@ -49,11 +49,10 @@ import { TableExpansion } from './table-expansion';
  * cannot reconcile — and `0` is itself in range, so it reads as a real answer rather
  * than as a missing one.
  *
- * The two channels qualify "unknowable" differently, and the asymmetry is deliberate
- * ([#1648](https://github.com/tutkli/forty-cdk/issues/1648)): the row channel gates
- * on the grid being windowed, because a non-windowed grid's rendered rows *are* all
- * its rows; the column channel does not, because zero registered cells is degenerate
- * markup rather than a resolvable state. See `colCount`.
+ * The two channels qualify "unknowable" differently, and the asymmetry is deliberate: the row
+ * channel gates on the grid being windowed, because a non-windowed grid's rendered rows *are* all
+ * its rows; the column channel does not, because zero registered cells is degenerate markup rather
+ * than a resolvable state. See `colCount`.
  */
 const UNKNOWN_COUNT = -1;
 
@@ -170,7 +169,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * is rendered, so no cell has registered.
    *
    * Unlike `aria-rowcount`, that sentinel is **unconditional** — it is not gated on
-   * the grid being windowed ([#1648](https://github.com/tutkli/forty-cdk/issues/1648)).
+   * the grid being windowed.
    * A non-windowed grid with no registered cell has rows without cells, or no markup
    * at all: degenerate either way, so there is no state where `0` is the resolved
    * answer rather than the missing one, and emitting it would re-open exactly the
@@ -282,9 +281,8 @@ export class ForTable<T = unknown> implements ForTableContext {
    * reading the materialized `#flatCells`, so it stops depending on a row's
    * `cells()` as soon as an earlier row has answered. Every cell's `tabindex`
    * binding is a live consumer of this signal and each row registers its cells
-   * during that row's own update pass, so a dependency on the whole grid makes
-   * each registration notify every cell mounted so far — the quadratic term
-   * measured in [#1584](https://github.com/tutkli/forty-cdk/issues/1584).
+   * during that row's own update pass, so a dependency on the whole grid would make each
+   * registration notify every cell mounted so far, which is quadratic in grid size.
    *
    * The header branch's fall-through is unreachable: header cells hardcode a
    * `false` `disabled`, and `#headerParticipates()` already rules out an empty
@@ -719,8 +717,7 @@ function resolveCrossWindowRowTarget(
  * row 0, so `[forTable]` resolves these through the non-virtualized
  * `moveGridIndex` path rather than through the cross-window bridge; the caller
  * still asks the virtualizer to scroll back to row 0 first, so the grid is never
- * left focused on its header while the window sits at the bottom of the dataset
- * ([#1499](https://github.com/tutkli/forty-cdk/issues/1499)).
+ * left focused on its header while the window sits at the bottom of the dataset.
  */
 function targetsHeaderRow(
   action: GridNavigationAction,
@@ -750,8 +747,7 @@ function targetsHeaderRow(
  * carrying its own `@Directive` metadata replaces the array wholesale, so
  * re-providing `FOR_TABLE_CONTEXT` alone leaves the registration wiring absent
  * and every piece — down to the root's own constructor — fails to resolve it.
- * The internal providers are deliberately unnameable outside the library
- * ([#1399](https://github.com/tutkli/forty-cdk/issues/1399)), which is why the
+ * The internal providers are deliberately unnameable outside the library, which is why the
  * wrapper cannot list them by hand.
  *
  * ```ts

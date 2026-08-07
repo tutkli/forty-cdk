@@ -41,8 +41,7 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
    * pairing then resolves during the first change-detection pass, including a
    * real server render, where `afterNextRender` never fires and a deferred
    * registration would leave the pre-hydration DOM without its
-   * `aria-controls` / `aria-labelledby` linkage
-   * ([#1409](https://github.com/tutkli/forty-cdk/issues/1409)).
+   * `aria-controls` / `aria-labelledby` linkage.
    */
   readonly value = input(unsetInput<string>());
 

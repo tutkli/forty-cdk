@@ -68,8 +68,7 @@ export class ForDialogTrigger {
    * the native `disabled` attribute so the trigger is announced as disabled by
    * assistive tech and dropped from the tab order. The native attribute is the
    * single reflection channel — no `aria-disabled` is emitted, because on a
-   * real single-purpose `<button>` trigger it already conveys the state (rule
-   * #561 D2).
+   * real single-purpose `<button>` trigger it already conveys the state.
    */
   readonly disabled = input(false, { transform: booleanAttribute });
 

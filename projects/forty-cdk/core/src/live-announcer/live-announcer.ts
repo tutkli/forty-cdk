@@ -17,56 +17,29 @@ interface LiveRegion {
  * (`polite` and `assertive`) into `document.body` at construction, then
  * writes / clears messages on demand.
  *
- * Each region declares exactly one channel: `aria-live` plus `aria-atomic`,
- * never a `role`. The two are redundant — `role="status"` implies
- * `aria-live="polite"` + `aria-atomic="true"` and `role="alert"` implies
- * `assertive` — and the attribute pair is the channel to keep here. The one
- * behaviour a live role adds is being read reliably when a node is *inserted*
- * with its text already present, which is why `ForToast`'s bare-error host
- * keeps `role="alert"`; these regions are inserted empty at construction and
- * only ever have their text rewritten, so the role buys them nothing. The pair
- * also states `aria-atomic` outright instead of leaving it to an implicit role
- * mapping.
+ * Each region declares one channel — `aria-live` plus `aria-atomic`, never a `role`. A live role
+ * buys nothing here: its advantage is being read when a node is *inserted* with its text already
+ * present, and these regions are inserted empty and only ever rewritten.
  *
- * The regions are created up front — not on first use — because a live region
- * must already exist in the accessibility tree before its text changes for
- * that change to be announced. Creating the region inside the first
- * `announce()` risks the first message of a session being dropped, since the
- * node insertion and the text write land too close together for many screen
- * readers to register the mutation.
+ * They are created up front rather than on first use, because a live region must already be in the
+ * accessibility tree before its text changes for the change to be announced; creating one inside
+ * the first `announce()` risks dropping the first message of a session.
  *
- * Every message is flushed through a deferred write (`setTimeout(…, 0)`) so the
- * region is briefly emptied before the text lands — without that, screen
- * readers ignore repeated text that hasn't actually changed. A macrotask (not a
- * microtask) is used deliberately: many screen readers (NVDA, VoiceOver) miss
- * the clear→repopulate cycle on repeat messages when both writes land in the
- * same microtask drain, because the empty state never reaches the
- * accessibility tree between them.
+ * Every message is flushed through a deferred write so the region is briefly emptied first, since
+ * screen readers ignore repeated text that has not changed. The delay is a macrotask on purpose —
+ * with both writes in one microtask drain the empty state never reaches the accessibility tree, and
+ * NVDA and VoiceOver miss the repeat.
  *
- * Each politeness region owns an **independent generation counter and timer**,
- * so the two regions never interfere: a `polite` announce cannot cancel a
- * pending `assertive` write (the keyboard-drop-plus-confirmation-toast case,
- * where a drop and its confirmation toast fire in the same handler). Within a
- * single region a superseding `announce()` still coalesces — the latest message
- * wins — so an announcement that evolves across a change-detection pass (e.g. a
- * toast whose composed text grows as its parts register) is read out once, in
- * full, instead of voicing every intermediate value.
+ * The two politeness regions own independent timers, so a `polite` announce cannot cancel a pending
+ * `assertive` one. Within a single region a superseding `announce()` coalesces and the latest
+ * message wins, so text that evolves across a change-detection pass is read out once, in full.
  *
- * Each region carries the `MODAL_EXEMPT_ATTRIBUTE` so it stays out of the
- * modal inert pass: `InertSiblingsStack` inerts and `aria-hidden`s every
- * unmarked `document.body` child while a modal dialog / drawer is open, which
- * would otherwise swallow every announcement routed through the announcer
- * (e.g. a `ForToast` shown over an open modal) — a WCAG 4.1.3 status-message
- * failure invisible to sighted users. The marker is stamped before the region
- * is appended, so the stack's late-sibling `MutationObserver` also skips a
- * region created while a modal is already open.
+ * Each region carries the `MODAL_EXEMPT_ATTRIBUTE`, so an open modal does not inert it and swallow
+ * every announcement made over it. The marker is stamped before the region is appended, so a region
+ * created while a modal is already open is skipped too.
  *
- * The regions are detached — and every pending write cancelled — when the
- * service's injector is destroyed (one bootstrap per SSR request, or
- * `TestBed.resetTestingModule()`), so a torn-down application leaves no
- * orphaned `[aria-live]` nodes behind and no timer fires against a destroyed
- * context. DOM access is gated on `isPlatformBrowser`, so `announce()` /
- * `clear()` are no-ops on the server.
+ * The regions are detached and every pending write cancelled when the injector is destroyed. DOM
+ * access is gated on `isPlatformBrowser`, so `announce()` and `clear()` are no-ops on the server.
  *
  * @example
  * ```ts

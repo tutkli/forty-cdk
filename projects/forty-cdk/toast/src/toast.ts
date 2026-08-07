@@ -107,6 +107,10 @@ export class ForToast implements ForToastContext {
   readonly #announcer = inject(LiveAnnouncer);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
+  /**
+   * Severity of the toast. `'error'` announces assertively and takes `role="alert"`; every other
+   * variant announces politely.
+   */
   readonly variant = input<ForToastVariant>('info');
 
   /** Auto-dismiss timer in ms. `0` keeps the toast sticky. */

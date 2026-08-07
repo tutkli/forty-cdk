@@ -37,7 +37,7 @@ import {
  * `[forNavigationMenu]`'s. It is reflected through a single channel,
  * `aria-disabled="true"` + `data-disabled`, and enforced by the click / hover /
  * keyboard guards; arrow navigation skips the trigger. The native `disabled`
- * attribute is deliberately NOT emitted (rule #561 D2): every trigger is its
+ * attribute is deliberately NOT emitted: every trigger is its
  * own tab stop in this pattern, so a disabled trigger stays focusable and
  * announceable instead of vanishing from the trigger row — which a menu-level
  * `disabled` would otherwise do to the entire nav.

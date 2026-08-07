@@ -94,7 +94,7 @@ export interface MenuOpenerOptions {
 /**
  * The opener-registration protocol a multi-opener menu root exposes. Deliberately
  * **not** part of `ForMenuContext`: how openers wire themselves into a root is
- * the piece-registration protocol the library refactors freely (#1399), whereas
+ * the piece-registration protocol the library refactors freely, whereas
  * `ForMenuContext` is the blessed consumer read surface. It stays out of every
  * stable entry point's barrel and out of every public signature — the trigger
  * directives resolve it by narrowing their already-resolved root with
@@ -141,20 +141,16 @@ interface MenuOpenerEntry {
 }
 
 /**
- * The registry of openers behind a menu root, replacing the single
- * `IdentifiedElementSlot` the menu overlay used to keep for its one trigger
- * (#1324). A second trigger registering into that slot silently clobbered the
- * first, so one menu definition could never be driven by two openers — the
- * duplicated-markup problem `[forMenu]` exists to solve.
+ * The registry of openers behind a menu root. Several triggers may drive one
+ * menu definition, which is what lets `[forMenu]` be declared once and opened
+ * from many places.
  *
  * Everything the mounted surface reads resolves against the **active** opener:
  * the element return-focus lands on, the id the surface names itself after,
  * whether that id is a valid name at all, the floating-ui anchor, and the
- * placement override that anchor is measured with. "Active"
- * is whichever opener last called
- * {@link activate}, falling back to the sole registered opener so a
- * single-opener root (every preset) and a programmatic open both behave exactly
- * as they did before the registry existed.
+ * placement override that anchor is measured with. "Active" is whichever opener
+ * last called {@link activate}, falling back to the sole registered opener — so
+ * a single-opener root and a programmatic open resolve unambiguously.
  *
  * Each opener carries its own optional virtual anchor, so switching openers
  * switches the anchor with no clearing step: a pointer-anchored right-click
@@ -224,7 +220,7 @@ export class MenuOpenerRegistry {
    * `aria-labelledby="<openerId>"`. Per-opener rather than per-root because a
    * shared menu's openers are heterogeneous — a button opener is a labelling
    * control, a right-click region is not — and the answer therefore flips as the
-   * menu is opened from a different one (#1573).
+   * menu is opened from a different one.
    *
    * `false` while no single opener is resolvable: the surface would otherwise
    * name itself after the root's seeded trigger id, which no element carries
@@ -236,9 +232,9 @@ export class MenuOpenerRegistry {
    * The **active** opener's placement override, or `null` when it declared none
    * (and while no single opener is resolvable). Per-opener for the same reason
    * the anchor is: a shared menu's openers are heterogeneous, so the offsets a
-   * button opener wants are not the ones a pointer-anchored region wants
-   * (#1574). A root resolves each key against its own input — `positioning()?.x
-   * ?? xInput()` — so an opener that overrides nothing changes nothing.
+   * button opener wants are not the ones a pointer-anchored region wants. A
+   * root resolves each key against its own input — `positioning()?.x ??
+   * xInput()` — so an opener that overrides nothing changes nothing.
    */
   readonly positioning = computed<MenuOpenerPositioning | null>(
     () => this.#active()?.positioning?.() ?? null,

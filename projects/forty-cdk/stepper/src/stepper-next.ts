@@ -12,7 +12,7 @@ import { injectStepperContext } from './stepper-context';
  * `type="submit"` on the host cannot make advancing a step submit a surrounding
  * `<form>`.
  *
- * Clicking while `aria-disabled` is a no-op because `next()` guards internally.
+ * Clicking while `aria-disabled` is a no-op.
  */
 @Directive({
   selector: 'button[forStepperNext]',

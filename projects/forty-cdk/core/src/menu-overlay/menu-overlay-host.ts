@@ -67,7 +67,7 @@ export abstract class MenuOverlayHost<H extends MenuItemHandle = MenuItemHandle>
 
   /**
    * The `MenuOpenerRegistration` protocol, forwarded once for every root. Kept
-   * `protected` on purpose: it is the piece-registration protocol (#1399), so it
+   * `protected` on purpose: it is the piece-registration protocol, so it
    * must stay out of the roots' emitted `.d.ts` while remaining callable at
    * runtime — which is what the trigger directives' `asMenuOpenerRegistration`
    * narrowing relies on.

@@ -32,43 +32,32 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  * reinterpreted idiomatically for modern Angular: a focusable trigger that opens
  * a floating surface wrapping a projected `ForCalendar`.
  *
- * `ForDatePicker` is the root and the form value: it implements
- * `FormValueControl<D | null>` from `@angular/forms/signals`, so it auto-wires
- * with `[formField]` and auto-associates inside a `[forField]`. The trigger is
- * the focusable control that carries `name` / `disabled` / `invalid`; selection
- * state flows root → projected calendar via `[(value)]`. The shared overlay /
- * trigger / anchor / dismiss / focus machinery lives in {@link DatePickerBase}.
+ * The root is the form value: it implements `FormValueControl<D | null>`, so it auto-wires with
+ * `[formField]` and auto-associates inside a `[forField]`. The trigger is the focusable control
+ * carrying `name` / `disabled` / `invalid`. The shared overlay, trigger, anchor, dismiss and focus
+ * machinery lives in {@link DatePickerBase}.
  *
- * The surface defaults to a **non-modal popover** (anchored to the trigger,
- * dismiss on Escape / outside-pointer, return focus on close); set `modal`
- * for the trapped / inert / scroll-locked dialog variant. Mount/unmount of the surface is the consumer's job — wrap
- * `[forDatePickerContent]` with `@if (open())`.
+ * The surface defaults to a non-modal popover anchored to the trigger, dismissed on Escape or an
+ * outside pointer, returning focus on close; set `modal` for the trapped, inert, scroll-locked
+ * variant. Mounting is the consumer's job — wrap `[forDatePickerContent]` with `@if (open())`.
  *
- * The projected `ForCalendar` is two-way bound by the consumer (`[(value)]`)
- * and forwarded `[min]` / `[max]` / `[isDateUnavailable]` from the picker's
- * accessors. A selection inside the grid is observed through a `contentChild`
- * query on the calendar's `valueChange`, so the calendar primitive stays
- * untouched; on selection the picker mirrors the value, flips `touched`, and —
- * when `closeOnSelect` is on (default) — closes the surface.
+ * The projected `ForCalendar` is two-way bound by the consumer and forwarded `[min]` / `[max]` /
+ * `[isDateUnavailable]` from the picker's accessors. Selections are observed through a
+ * `contentChild` query on the calendar's `valueChange`, leaving the calendar primitive untouched;
+ * on selection the picker mirrors the value, flips `touched` and — with the default
+ * `closeOnSelect` — closes the surface.
  *
- * Set `granularity` coarser-than-a-day off (`'hour'` / `'minute'` / `'second'`)
- * to make it a **date-time picker**: the consumer projects a `[forTimeField]`
- * beside the calendar (binding both children **one-way** to `picker.value()` so
- * their internal writes don't clobber each other), and the picker grafts the
- * entered time onto each calendar selection. This needs a time-capable adapter
- * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`).
+ * Setting `granularity` finer than `'day'` makes it a date-time picker: project a `[forTimeField]`
+ * beside the calendar, binding both children **one-way** to `picker.value()` so their internal
+ * writes cannot clobber each other, and the picker grafts the entered time onto each selection.
+ * That requires a time-capable adapter.
  *
- * For date **range** selection use the dedicated `ForDateRangePicker` root —
- * it implements `FormValueControl<DateRange<D> | null>` and auto-wires with
- * `[formField]`.
+ * For range selection use `ForDateRangePicker`.
  *
- * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
- *   date-time) type.
+ * The bounds are named `minDate` / `maxDate` because `min` / `max` are reserved `FormUiControl`
+ * members typed for numeric validators.
  *
- * Note: the date bounds are named `minDate` / `maxDate`, not `min` / `max` —
- * the latter are reserved `FormUiControl` members typed `number | undefined`
- * for numeric validators, so a date-typed `min` / `max` would break the
- * `FormValueControl` contract.
+ * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`, date-time) type.
  *
  * @example
  * ```html

@@ -98,6 +98,11 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   /** The enclosing menu — required (orphan throws). */
   readonly parentMenu: ForMenuContext;
 
+  /**
+   * Two-way bindable. Whether the submenu is currently shown. The `model()` change emitter fires
+   * only when the primitive itself opens or closes the submenu, never on consumer writes through
+   * `[(open)]`.
+   */
   readonly open = model<boolean>(false);
 
   /**

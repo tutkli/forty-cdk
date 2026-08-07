@@ -116,9 +116,8 @@ export class ForField implements ForFieldContext {
 
   /**
    * Resolved `aria-describedby`: the description id always, plus the error id
-   * when the control is invalid. The error id is included here (in addition to
-   * `aria-errormessage`) because assistive-tech support for `aria-errormessage`
-   * is uneven; doubling it up is the widely-used robust pattern.
+   * when the control is invalid. The error id is carried here as well as on
+   * `aria-errormessage`, whose assistive-tech support is uneven.
    */
   readonly describedBy = computed(() => {
     const ids: string[] = [];
