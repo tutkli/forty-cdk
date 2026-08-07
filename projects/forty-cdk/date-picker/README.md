@@ -275,10 +275,11 @@ The value display (`[forDatePickerValue]`) automatically appends the time to its
 
 For date-range selection use the dedicated `ForDateRangePicker` root (selector `[forDateRangePicker]`). It is the root **and** the form value, implementing `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]` exactly like any other control.
 
-It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular in v1 (no time composition).
+It reuses the same pieces — `[forDatePickerTrigger]`, `[forDatePickerContent]`, `[forDatePickerValue]`, `[forDatePickerAnchor]` — through a shared base, and provides `FOR_DATE_PICKER_CONTEXT` so they resolve under it. Project a `[forCalendar]` in `selectionMode="range"` and bind its range to the picker's `value`; the two-click anchor → commit flow keeps `value` `null` until both endpoints are chosen (the form never sees a half-entered range), and `start <= end` is an invariant. Range is day-granular (no time composition).
 
 ```ts
-import { type DateRange, ForDateRangePicker } from 'forty-cdk/date-picker';
+import { ForDateRangePicker } from 'forty-cdk/date-picker';
+import type { DateRange } from 'forty-cdk/shared';
 import { form } from '@angular/forms/signals';
 
 interface Booking {
@@ -338,7 +339,7 @@ Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA
 
 - **`role="combobox"`** on the trigger with **`aria-haspopup="dialog"`**, `aria-expanded` reflecting `open()`, and `aria-controls` pointing at the surface while open — the same shape `[forSelectTrigger]` / `[forTimePickerTrigger]` ship, with the `dialog` popup token ARIA 1.2 allows for a combobox surface. The role is also what makes the form-control ARIA below legal: `role="button"` supports neither `aria-readonly` nor `aria-required`.
 - **`role="dialog"`** on the surface, named by `[ariaLabel]` (or `aria-labelledby` the trigger when no label is set). `aria-modal="true"` only in modal mode (truthy-only).
-- **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus, alongside the `data-readonly` styling hook. The disabled state is the exception: it reflects through the native `disabled` attribute alone (plus `data-disabled`), never `aria-disabled` — one channel per #561 D2.
+- **Form-control ARIA** (`aria-readonly` / `aria-required` / `aria-invalid` / `aria-busy`) is reflected on the focusable trigger so assistive tech announces validity on the element that takes focus, alongside the `data-readonly` styling hook. The disabled state is the exception: it reflects through the native `disabled` attribute alone (plus `data-disabled`), never `aria-disabled` — one channel only.
 - **Inside a `[forField]` the labelled element is the trigger**, not the `[forDatePicker]` / `[forDateRangePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forDatePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the surface, and Signal Forms' focus-on-error reaches the trigger. `role="combobox"` takes its name from the author, so this is the channel that names the control — the root's `[ariaLabel]` names the `role="dialog"` surface instead.
 - **Focus management**: focus enters the surface on open (the calendar's roving cell in non-modal mode) and returns to the trigger on close, both vetoable via `(autoFocusOnOpen)` / `(autoFocusOnClose)`.
 - **Dismissal**: Escape (`(escapeKeyDown)`) and outside-pointer (`(pointerDownOutside)` / `(interactOutside)`) close the surface, each vetoable.

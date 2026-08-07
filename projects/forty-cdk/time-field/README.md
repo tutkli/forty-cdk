@@ -193,13 +193,13 @@ The pieces are the range-specific `[forTimeRangeFieldStart]` / `[forTimeRangeFie
 
 ```ts
 import {
-  type DateRange,
   ForTimeRangeField,
   ForTimeRangeFieldEnd,
   ForTimeRangeFieldLiteral,
   ForTimeRangeFieldSegment,
   ForTimeRangeFieldStart,
 } from 'forty-cdk/time-field';
+import type { DateRange } from 'forty-cdk/shared';
 
 readonly model = signal({ hours: null as DateRange<CalendarDateTime> | null });
 readonly schedule = form(this.model);
@@ -286,18 +286,3 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Wrapping in a design system
 
 Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
-
-## Migration — `forty-cdk/time-range-field` is folded in here
-
-`forty-cdk/time-range-field` no longer resolves. `ForTimeRangeField` is a **variant** of this primitive — same APG composition, same pieces, no dependency of its own — so it ships from `forty-cdk/time-field` under the rule that a variant lives in its base's entry point. Nothing was renamed and no runtime behavior changed: the migration is a specifier rewrite.
-
-```ts
-// before
-import { ForTimeField } from 'forty-cdk/time-field';
-import { ForTimeRangeField, ForTimeRangeFieldStart } from 'forty-cdk/time-range-field';
-
-// after
-import { ForTimeField, ForTimeRangeField, ForTimeRangeFieldStart } from 'forty-cdk/time-field';
-```
-
-Every symbol that moved: `ForTimeRangeField`, `ForTimeRangeFieldStart`, `ForTimeRangeFieldEnd`, `ForTimeRangeFieldSegment`, `ForTimeRangeFieldLiteral`, `FOR_TIME_RANGE_FIELD_CONTEXT`, `ForTimeRangeFieldContext`, `TimeRangeFieldEndpoint`, `TimeRangeFieldSegment`, `DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS`, `FOR_TIME_RANGE_FIELD_DEFAULTS`, `provideForTimeRangeFieldDefaults`, `ForTimeRangeFieldDefaults`, `ForTimeRangeFieldSegmentLabels`, `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS`, `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`.

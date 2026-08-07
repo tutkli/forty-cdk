@@ -91,7 +91,7 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 ## Behavior notes
 
-- **Browser support.** Native `aspect-ratio` is in Baseline 2021 (Chrome 88+, Firefox 89+, Safari 15+) — same target as Angular 20+, so no polyfill is needed.
+- **Browser support.** Native `aspect-ratio` is in Baseline 2021 (Chrome 88+, Firefox 89+, Safari 15+), so no polyfill is needed on any browser Angular itself supports.
 - **Width still on you.** The directive only sets `aspect-ratio`; you decide width / max-width / display. The height is computed from the ratio.
 - **Children fill the box.** Use `width: 100%; height: 100%; object-fit: cover` on inner media to fill without distortion. The directive imposes no styles on children.
 - **No role, no a11y.** This is a layout utility. The element it sits on keeps whatever semantics you give it (`<div>`, `<figure>`, `<a>`, …).

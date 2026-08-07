@@ -9,7 +9,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Angular](https://img.shields.io/badge/Angular-22%2B-dd0031.svg)
 
-accessible · zoneless · SSR-safe · tree-shakable
+[**Documentation**](https://tutkli.github.io/forty-cdk/) · accessible · zoneless · SSR-safe ·
+tree-shakable
 
 </div>
 
@@ -34,7 +35,7 @@ composition.
 npm install forty-cdk
 ```
 
-Requires `@angular/common` and `@angular/core` `^22.0.0`. Some primitives have optional peers
+Requires `@angular/common` and `@angular/core` `^22.0.1`. Some primitives have optional peers
 (`@angular/forms`, `@internationalized/date`) — see the
 [peer dependency reference](projects/forty-cdk/README.md#peer-dependencies).
 
@@ -83,14 +84,16 @@ own README with anatomy, API, keyboard map and styling hooks.
 - **Menus** — Menu, Dropdown Menu, Context Menu, Menubar
 - **Navigation** — Navigation Menu, Breadcrumbs, Pagination, Tabs, Toolbar, Stepper
 - **Forms & input** — Button, Field, Fieldset, Input, Search, Number Input, OTP Input, File Upload, Switch, Checkbox, Toggle, Radio Group, Slider, Select, Combobox, Listbox
-- **Date & time** — Calendar, Date Field, Date Picker, Date Range Field, Time Field, Time Picker, Time Range Field
+- **Date & time** — Calendar, Date Field, Date Picker, Time Field, Time Picker
 - **Disclosure & content** — Accordion, Disclosure, Carousel
-- **Data & layout** — Table, Tree, Scroll Area, Pane Resizer, Separator, Aspect Ratio, Avatar
+- **Data & layout** — Table, Tree, Scroll Area, Pane Resizer, Separator, Aspect Ratio, Avatar, Visually Hidden
 - **Feedback** — Progress, Meter
-- **Utilities** — Breakpoints, Drag & Drop, Virtualization
+- **Utilities** — Breakpoints, Drag & Drop, Virtualization, Table Virtualization, Virtual Reorder
 
 ## Documentation
 
+- [**Documentation site**](https://tutkli.github.io/forty-cdk/) — every primitive with live,
+  editable examples.
 - [**Library README**](projects/forty-cdk/README.md) — installation, peer dependencies and the full
   primitive catalog.
 - [**Your first overlay**](docs/your-first-overlay.md) — one Popover from empty markup to
@@ -98,35 +101,31 @@ own README with anatomy, API, keyboard map and styling hooks.
   requirement every overlay shares.
 - [**Styling forty-cdk**](docs/styling.md) — the three hooks you style against: your own class,
   `data-*` state attributes, and `--for-*` custom properties.
-- [`docs/`](docs) — the remaining guides (styling floating content, the selected-indicator
-  pattern, wrapping form primitives).
+- [`docs/`](docs) — the remaining guides (styling floating content, the selection value-type
+  contract, wrapping primitives in a design system, the Table layers).
 - [CHANGELOG](CHANGELOG.md) — release notes.
 
 ## Development
 
-This is an Angular CLI workspace with the `forty-cdk` library and a dev-only
-`forty-cdk-harness` app used by the Playwright E2E suite. The repo uses
-[pnpm](https://pnpm.io/) (pinned via Corepack).
+This is an Angular CLI workspace with the `forty-cdk` library plus two dev-only apps:
+`forty-cdk-harness` (drives the Playwright E2E suite) and `forty-cdk-playground` (the documentation
+site). The repo uses [pnpm](https://pnpm.io/), pinned via Corepack.
 
 ```bash
-pnpm test        # unit tests (Vitest + jsdom), pinned to the library project
-pnpm lint        # eslint (flat config)
-pnpm build       # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
-pnpm watch       # ng build forty-cdk --watch --configuration development
-pnpm test:e2e    # playwright test (Chromium + WebKit; spins up the harness)
+pnpm build        # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
+pnpm watch        # rebuild the library on change
+pnpm test         # unit tests (Vitest + jsdom), pinned to the library project
+pnpm test:e2e     # playwright test (Chromium + WebKit; spins up the harness)
+pnpm lint         # eslint (flat config)
+pnpm typecheck    # library + both apps
+pnpm format       # prettier --write .
+pnpm playground   # serve the documentation site locally
 ```
 
-### Pre-commit hook
-
-A [lefthook](https://github.com/evilmartians/lefthook) `pre-commit` hook runs lint
-(`eslint`), auto-formats staged files (`prettier --write`, re-staging any fixes), and
-a library typecheck (`pnpm typecheck:lib`, `tsc --noEmit`) on each commit. Lint and
-format only inspect the **staged** files, so the hook stays fast; the typecheck runs
-whenever staged TypeScript files exist, but is scoped to the library project — CI runs
-the full `pnpm typecheck` (library plus the dev-only apps) on every PR.
-
-The hook installs automatically — `pnpm install` runs the `prepare` script
-(`lefthook install`). Bypass it for a one-off commit with `git commit --no-verify`.
+A [lefthook](https://github.com/evilmartians/lefthook) `pre-commit` hook lints and formats the
+**staged** files and runs the library typecheck; it installs itself when `pnpm install` runs the
+`prepare` script. Bypass it for a one-off commit with `git commit --no-verify`. CI additionally runs
+`pnpm format:check`, the full `pnpm typecheck`, and the E2E suite sharded across both engines.
 
 ## License
 
