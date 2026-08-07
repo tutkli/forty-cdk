@@ -72,7 +72,7 @@ export class ForScrollAreaThumb {
   }
 
   protected onPointerDown(event: PointerEvent): void {
-    if (event.button !== 0) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
     event.preventDefault();
     this.#dragging.set(true);
     this.scrollbar.setDragging(true);

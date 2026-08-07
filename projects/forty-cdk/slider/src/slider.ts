@@ -447,7 +447,7 @@ export class ForSlider
     if (this.effectiveDisabled() || this.readonly()) {
       return false;
     }
-    if (event.button !== undefined && event.button !== 0) {
+    if (event.pointerType === 'mouse' && event.button !== 0) {
       return false;
     }
     const trackEl = this.#trackEl();

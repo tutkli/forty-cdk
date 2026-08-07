@@ -320,7 +320,7 @@ export class ForScrollAreaScrollbar {
   }
 
   protected onTrackPointerDown(event: PointerEvent): void {
-    if (event.button !== 0 || event.defaultPrevented) return;
+    if ((event.pointerType === 'mouse' && event.button !== 0) || event.defaultPrevented) return;
     const mode = this.ctx.trackPress();
     if (mode === 'none') return;
     const thumb = this.thumb();

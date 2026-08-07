@@ -422,13 +422,62 @@ describe('ForScrollArea', () => {
       const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
       const captured = stubPointerCapture(vbar);
 
-      const down = pointer('pointerdown', { button: 1, clientY: 100 });
+      const down = pointer('pointerdown', { button: 1, clientY: 100, pointerType: 'mouse' });
+      expect(down.pointerType).toBe('mouse');
       vbar.dispatchEvent(down);
       release();
       await flush();
 
       expect(down.defaultPrevented).toBe(false);
       expect(captured).toEqual([]);
+    });
+
+    it('still claims a touch press on the track reporting a non-zero button', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vbar = query<HTMLElement>('[data-testid="vbar"]')!;
+      const captured = stubPointerCapture(vbar);
+
+      const down = pointer('pointerdown', { button: 2, clientY: 100, pointerType: 'touch' });
+      expect(down.pointerType).toBe('touch');
+      vbar.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(captured).toEqual([1]);
+    });
+
+    it('ignores a non-primary mouse press on the thumb', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vthumb = query<HTMLElement>('[data-testid="vthumb"]')!;
+      const captured = stubPointerCapture(vthumb);
+
+      const down = pointer('pointerdown', { button: 2, clientY: 100, pointerType: 'mouse' });
+      expect(down.pointerType).toBe('mouse');
+      vthumb.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(captured).toEqual([]);
+    });
+
+    it('still drags the thumb for a touch press reporting a non-zero button', async () => {
+      const { query, flush } = renderHost(ScrollAreaTrackPressHost);
+      await flush();
+      const vthumb = query<HTMLElement>('[data-testid="vthumb"]')!;
+      const captured = stubPointerCapture(vthumb);
+
+      const down = pointer('pointerdown', { button: 2, clientY: 100, pointerType: 'touch' });
+      expect(down.pointerType).toBe('touch');
+      vthumb.dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(captured).toEqual([1]);
     });
 
     it('does not claim a press that originated on the thumb', async () => {

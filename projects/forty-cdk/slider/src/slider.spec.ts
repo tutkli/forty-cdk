@@ -917,6 +917,40 @@ describe('ForSlider', () => {
       expect(document.activeElement).toBe(thumb(el, 0));
     });
 
+    it('leaves focus and the press default alone for a non-primary mouse button', async () => {
+      const { el, flush } = renderHost(SliderHost);
+      const down = pointer('pointerdown', {
+        clientX: 0,
+        clientY: 0,
+        button: 2,
+        pointerType: 'mouse',
+      });
+      expect(down.pointerType).toBe('mouse');
+      track(el).dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(false);
+      expect(document.activeElement).not.toBe(thumb(el, 0));
+    });
+
+    it('still engages the thumb for a touch press reporting a non-zero button', async () => {
+      const { el, flush } = renderHost(SliderHost);
+      const down = pointer('pointerdown', {
+        clientX: 0,
+        clientY: 0,
+        button: 2,
+        pointerType: 'touch',
+      });
+      expect(down.pointerType).toBe('touch');
+      track(el).dispatchEvent(down);
+      release();
+      await flush();
+
+      expect(down.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(thumb(el, 0));
+    });
+
     it('leaves focus and the press default alone while disabled', async () => {
       const { el, fixture, flush } = renderHost(SliderHost);
       fixture.componentInstance.disabled.set(true);
