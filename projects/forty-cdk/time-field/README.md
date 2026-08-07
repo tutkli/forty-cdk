@@ -165,6 +165,83 @@ providers: [
 
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
 
+## Range selection — `ForTimeRangeField`
+
+For a time-of-day range use the dedicated `ForTimeRangeField` root (selector `[forTimeRangeField]`), shipped from this same entry point. It is the time analog of [DateRangeField](../date-field/README.md#range-selection--fordaterangefield): two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as `ForTimeField` — nested inside one outer `role="group"`. It implements `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with `[formField]`. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`).
+
+The pieces are the range-specific `[forTimeRangeFieldStart]` / `[forTimeRangeFieldEnd]` endpoint groups plus `[forTimeRangeFieldSegment]` / `[forTimeRangeFieldLiteral]`; each endpoint exposes its own `segments()` list, so the same `@for` template renders both sides.
+
+```html
+<div forTimeRangeField [(value)]="hours" ariaLabel="Opening hours">
+  <div forTimeRangeFieldStart #start="forTimeRangeFieldStart">
+    @for (seg of start.segments(); track seg.id) { @if (seg.isLiteral) {
+    <span forTimeRangeFieldLiteral>{{ seg.text }}</span>
+    } @else {
+    <span forTimeRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    } }
+  </div>
+  <span aria-hidden="true">–</span>
+  <div forTimeRangeFieldEnd #end="forTimeRangeFieldEnd">
+    @for (seg of end.segments(); track seg.id) { @if (seg.isLiteral) {
+    <span forTimeRangeFieldLiteral>{{ seg.text }}</span>
+    } @else {
+    <span forTimeRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    } }
+  </div>
+</div>
+```
+
+```ts
+import {
+  type DateRange,
+  ForTimeRangeField,
+  ForTimeRangeFieldEnd,
+  ForTimeRangeFieldLiteral,
+  ForTimeRangeFieldSegment,
+  ForTimeRangeFieldStart,
+} from 'forty-cdk/time-field';
+
+readonly model = signal({ hours: null as DateRange<CalendarDateTime> | null });
+readonly schedule = form(this.model);
+```
+
+### `ForTimeRangeField` API
+
+| Property         | Type                                              | Description                                                                                                                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`          | `model<DateRange<D> \| null>`                     | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`                                                                                                                                              |
+| `minTime`        | `input<D \| null>`                                | Earliest time-of-day (inclusive) for both endpoints. A composed endpoint earlier is clamped up. See note below.<br>**Default:** —                                                                                                                                                 |
+| `maxTime`        | `input<D \| null>`                                | Latest time-of-day (inclusive) for both endpoints. A composed endpoint later is clamped down.<br>**Default:** `null`                                                                                                                                                              |
+| `allowOvernight` | `input<boolean>`                                  | When `true`, a `start > end` entry is read as a range crossing midnight (the end advances to the next day) instead of an error. In this mode the endpoints operate purely on time-of-day (a bound value's calendar days are re-anchored on the sentinel).<br>**Default:** `false` |
+| `granularity`    | `input<'hour' \| 'minute' \| 'second'>`           | Smallest editable unit shared by both endpoints.<br>**Default:** `'minute'`                                                                                                                                                                                                       |
+| `hourCycle`      | `input<12 \| 24 \| null>`                         | 12/24-hour cycle. `null` → locale. 12-hour adds the AM/PM segment to each endpoint.<br>**Default:** `null`                                                                                                                                                                        |
+| `locale`         | `input<string \| null>`                           | BCP 47 locale driving segment order, separators, and AM/PM names. `null` → runtime locale.<br>**Default:** `null`                                                                                                                                                                 |
+| `placeholder`    | `input<Partial<Record<TimeSegmentType, string>>>` | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                                                                                                                                                              |
+| `ariaLabel`      | `input<string \| null>`                           | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                                                                                                                                                       |
+| `dir`            | `input<'ltr' \| 'rtl' \| null>`                   | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`                                                                                                                                               |
+
+The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start time'` / `'End time'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
+
+> **Why `minTime` / `maxTime`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` — the range object itself — which is meaningless as a bound. Only the time-of-day component of the bounds is considered.
+
+`[forTimeRangeField]` reflects the same `data-disabled` / `data-readonly` / `data-empty` hooks as `[forTimeField]`, plus `data-range-error`; `[forTimeRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
+
+### Ordering
+
+The two endpoints are typed independently, so order is not guaranteed by construction. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range. Two complete endpoints with an **equal** time compose a valid zero-length range (`start === end`), not `null`.
+
+### Overnight ranges
+
+Set `allowOvernight` to read a `start > end` entry as a range that **crosses midnight** (a night shift, `22:00`–`06:00`) rather than a disorder. The field then commits `{ start, end }` with the end advanced to the next day, so the `end >= start` invariant still holds and the emitted range spans the correct duration; `aria-invalid` / `data-range-error` are no longer set. In this mode both endpoints operate purely on their time-of-day — the calendar day of a bound `value` is re-anchored on the DST-stable sentinel rather than preserved, so every edit re-derives the crossing afresh (an end nudged back to a same-day time drops the extra day). Only the time-of-day of each endpoint is meaningful, so this trade-off is immaterial to a time-of-day range. The +1-day advance is carried by the in-memory `value` only — the native hidden inputs serialize each endpoint's time-of-day (`HH:mm`), so an overnight range submits as `<name>-start` / `<name>-end` with the crossing erased, and a server must re-apply the overnight rule to reconstruct it.
+
+### Range keyboard and accessibility
+
+Each endpoint is its own tab stop, so `Tab` moves start group → end group → next control; arrows move between segments **within** an endpoint. Every other key behaves as in the [Keyboard](#keyboard) table below. Roving tabindex is per endpoint, and `aria-invalid="true"` is reflected on the root when the form marks it invalid **or** when two complete endpoints are out of order; everything else matches the [Accessibility](#accessibility) notes below.
+
+### Range scope defaults
+
+`provideForTimeRangeFieldDefaults` mirrors `provideForTimeFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start time'` / `'End time'` by default). Both wrapper patterns work via `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS` — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+
 ## Keyboard
 
 Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
@@ -209,3 +286,18 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 ## Wrapping in a design system
 
 Both supported wrapper patterns — `hostDirectives` with the exported `FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+
+## Migration — `forty-cdk/time-range-field` is folded in here
+
+`forty-cdk/time-range-field` no longer resolves. `ForTimeRangeField` is a **variant** of this primitive — same APG composition, same pieces, no dependency of its own — so it ships from `forty-cdk/time-field` under the rule that a variant lives in its base's entry point. Nothing was renamed and no runtime behavior changed: the migration is a specifier rewrite.
+
+```ts
+// before
+import { ForTimeField } from 'forty-cdk/time-field';
+import { ForTimeRangeField, ForTimeRangeFieldStart } from 'forty-cdk/time-range-field';
+
+// after
+import { ForTimeField, ForTimeRangeField, ForTimeRangeFieldStart } from 'forty-cdk/time-field';
+```
+
+Every symbol that moved: `ForTimeRangeField`, `ForTimeRangeFieldStart`, `ForTimeRangeFieldEnd`, `ForTimeRangeFieldSegment`, `ForTimeRangeFieldLiteral`, `FOR_TIME_RANGE_FIELD_CONTEXT`, `ForTimeRangeFieldContext`, `TimeRangeFieldEndpoint`, `TimeRangeFieldSegment`, `DEFAULT_TIME_RANGE_FIELD_SEGMENT_LABELS`, `FOR_TIME_RANGE_FIELD_DEFAULTS`, `provideForTimeRangeFieldDefaults`, `ForTimeRangeFieldDefaults`, `ForTimeRangeFieldSegmentLabels`, `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS`, `FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`.

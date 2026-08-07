@@ -106,15 +106,13 @@ The tables below group the primitives by purpose. The link on each name opens th
 
 ### Date & time
 
-| Primitive                            | What it is                                                                                                 |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| [Calendar](calendar)                 | A single-date calendar grid (APG Grid) over a pluggable date adapter, with roving-tabindex navigation.     |
-| [Date Field](date-field)             | A segmented date (and optional time) input — each part a spinbutton with locale-driven order and clamping. |
-| [Date Picker](date-picker)           | A trigger that opens a floating calendar to pick a date, composing Calendar inside a dismissible popover.  |
-| [Date Range Field](date-range-field) | Two labelled spinbutton endpoints (start / end) sharing locale, granularity and bounds.                    |
-| [Time Field](time-field)             | A segmented time-of-day input with 12 / 24-hour cycles, optional seconds and min / max clamping.           |
-| [Time Picker](time-picker)           | A trigger that opens a floating listbox of generated time slots over a pluggable date adapter.             |
-| [Time Range Field](time-range-field) | Two time-of-day endpoints (start / end) sharing the hour cycle and min / max bounds.                       |
+| Primitive                  | What it is                                                                                                                                |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [Calendar](calendar)       | A single-date calendar grid (APG Grid) over a pluggable date adapter, with roving-tabindex navigation.                                    |
+| [Date Field](date-field)   | A segmented date (and optional time) input — each part a spinbutton with locale-driven order and clamping. Ships `ForDateRangeField` too. |
+| [Date Picker](date-picker) | A trigger that opens a floating calendar to pick a date, composing Calendar inside a dismissible popover. Ships `ForDateRangePicker` too. |
+| [Time Field](time-field)   | A segmented time-of-day input with 12 / 24-hour cycles, optional seconds and min / max clamping. Ships `ForTimeRangeField` too.           |
+| [Time Picker](time-picker) | A trigger that opens a floating listbox of generated time slots over a pluggable date adapter.                                            |
 
 ### Disclosure & content
 

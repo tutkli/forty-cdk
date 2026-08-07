@@ -13,7 +13,16 @@ import {
   ForCalendarYearSelect,
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
-import { ForDateField, ForDateFieldLiteral, ForDateFieldSegment } from 'forty-cdk/date-field';
+import {
+  ForDateField,
+  ForDateFieldLiteral,
+  ForDateFieldSegment,
+  ForDateRangeField,
+  ForDateRangeFieldEnd,
+  ForDateRangeFieldLiteral,
+  ForDateRangeFieldSegment,
+  ForDateRangeFieldStart,
+} from 'forty-cdk/date-field';
 import {
   ForDatePicker,
   ForDatePickerContent,
@@ -21,15 +30,17 @@ import {
   ForDatePickerValue,
   ForDateRangePicker,
 } from 'forty-cdk/date-picker';
-import {
-  ForDateRangeField,
-  ForDateRangeFieldEnd,
-  ForDateRangeFieldLiteral,
-  ForDateRangeFieldSegment,
-  ForDateRangeFieldStart,
-} from 'forty-cdk/date-range-field';
 import { type DateRange } from 'forty-cdk/shared';
-import { ForTimeField, ForTimeFieldLiteral, ForTimeFieldSegment } from 'forty-cdk/time-field';
+import {
+  ForTimeField,
+  ForTimeFieldLiteral,
+  ForTimeFieldSegment,
+  ForTimeRangeField,
+  ForTimeRangeFieldEnd,
+  ForTimeRangeFieldLiteral,
+  ForTimeRangeFieldSegment,
+  ForTimeRangeFieldStart,
+} from 'forty-cdk/time-field';
 import {
   ForTimePicker,
   ForTimePickerContent,
@@ -37,13 +48,6 @@ import {
   ForTimePickerTrigger,
   ForTimePickerValue,
 } from 'forty-cdk/time-picker';
-import {
-  ForTimeRangeField,
-  ForTimeRangeFieldEnd,
-  ForTimeRangeFieldLiteral,
-  ForTimeRangeFieldSegment,
-  ForTimeRangeFieldStart,
-} from 'forty-cdk/time-range-field';
 
 @Component({
   imports: [ForCalendar, ForCalendarHeading, ForCalendarGrid, ForCalendarCell],

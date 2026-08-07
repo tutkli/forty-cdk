@@ -7,7 +7,7 @@ import {
   ForDateRangeFieldLiteral,
   ForDateRangeFieldSegment,
   ForDateRangeFieldStart,
-} from 'forty-cdk/date-range-field';
+} from 'forty-cdk/date-field';
 
 import { queryFlag } from './_query-flag';
 

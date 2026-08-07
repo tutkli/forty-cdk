@@ -188,6 +188,78 @@ providers: [
 
 `segmentLabels` supplies each segment's default `aria-label`, keyed by part type. Unset keys keep the library default (the part name, and `'AM/PM'` for the `dayPeriod` segment), so overriding a single key never wipes the rest. A segment's own `[ariaLabel]` still wins over the scope default.
 
+## Range selection — `ForDateRangeField`
+
+For a date range use the dedicated `ForDateRangeField` root (selector `[forDateRangeField]`), shipped from this same entry point. It is the keyboard-first, form-capable counterpart to [DateRangePicker](../date-picker/README.md): two labelled `role="group"` endpoints (start / end), each holding a row of spinbutton segments — the same machinery as `ForDateField` — nested inside one outer `role="group"`. It implements `FormValueControl<DateRange<D> | null>`, the **same** contract as `ForDateRangePicker`, so the committed range auto-wires with `[formField]`. The value stays `null` until **both** endpoints are fully entered and ordered (`start <= end`).
+
+The pieces are the range-specific `[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]` endpoint groups plus `[forDateRangeFieldSegment]` / `[forDateRangeFieldLiteral]`; each endpoint exposes its own `segments()` list, so the same `@for` template renders both sides.
+
+```html
+<div forDateRangeField [(value)]="stay" ariaLabel="Stay">
+  <div forDateRangeFieldStart #start="forDateRangeFieldStart">
+    @for (seg of start.segments(); track seg.id) { @if (seg.isLiteral) {
+    <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+    } @else {
+    <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    } }
+  </div>
+  <span aria-hidden="true">–</span>
+  <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
+    @for (seg of end.segments(); track seg.id) { @if (seg.isLiteral) {
+    <span forDateRangeFieldLiteral>{{ seg.text }}</span>
+    } @else {
+    <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
+    } }
+  </div>
+</div>
+```
+
+```ts
+import {
+  type DateRange,
+  ForDateRangeField,
+  ForDateRangeFieldEnd,
+  ForDateRangeFieldLiteral,
+  ForDateRangeFieldSegment,
+  ForDateRangeFieldStart,
+} from 'forty-cdk/date-field';
+
+readonly model = signal({ stay: null as DateRange<CalendarDate> | null });
+readonly booking = form(this.model);
+```
+
+### `ForDateRangeField` API
+
+| Property      | Type                                             | Description                                                                                                                                       |
+| ------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`       | `model<DateRange<D> \| null>`                    | Two-way bindable committed range, or `null` while incomplete or out of order. The `FormValueControl` backing.<br>**Default:** `null`              |
+| `minDate`     | `input<D \| null>`                               | Minimum date (inclusive) for both endpoints. A composed endpoint below it is clamped up. Named `minDate` — see note below.<br>**Default:** `null` |
+| `maxDate`     | `input<D \| null>`                               | Maximum date (inclusive) for both endpoints. A composed endpoint above it is clamped down.<br>**Default:** `null`                                 |
+| `granularity` | `input<'day' \| 'hour' \| 'minute' \| 'second'>` | Date-time precision shared by both endpoints. `'day'` is date-only; coarser-than-day appends time segments.<br>**Default:** `'day'`               |
+| `hourCycle`   | `input<12 \| 24 \| null>`                        | 12/24-hour cycle for the time segments. `null` → locale. 12-hour adds the AM/PM segment.<br>**Default:** `null`                                   |
+| `locale`      | `input<string \| null>`                          | BCP 47 locale driving segment order, separators, and month name. `null` → runtime locale.<br>**Default:** `null`                                  |
+| `placeholder` | `input<Partial<Record<SegmentType, string>>>`    | Per-segment placeholder while empty, applied to both endpoints.<br>**Default:** `{}`                                                              |
+| `ariaLabel`   | `input<string \| null>`                          | Accessible name for the whole range field group. Emits no `aria-label` while `null`.<br>**Default:** `null`                                       |
+| `dir`         | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction. `null` resolves the ambient direction; mirrors ArrowLeft / ArrowRight segment navigation.<br>**Default:** `null`               |
+
+The endpoint groups each accept an `ariaLabel` input for their own group label, falling back to the scope defaults (`'Start date'` / `'End date'`). Plus the shared `FormUiControl` members bound automatically by `[formField]`.
+
+> **Why `minDate` / `maxDate`, not `min` / `max`?** Beyond the reason above, `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>` — the range object itself — which is meaningless as a bound.
+
+`[forDateRangeField]` reflects the same `data-disabled` / `data-readonly` / `data-empty` hooks as `[forDateField]`, plus `data-range-error`; `[forDateRangeFieldSegment]` reflects the same four segment hooks. `data-empty` marks the field only while **both** endpoints are entirely empty; a partially-filled or complete-but-disordered range is **not** empty.
+
+### Ordering
+
+The two endpoints are typed independently, so order is not guaranteed by construction the way the picker's two-click flow guarantees it. The field preserves the `DateRange` `end >= start` invariant by **never emitting an out-of-order range**: when both endpoints are complete but `start > end`, the typed segments are kept (not silently rewritten), `value` stays `null`, and the root reflects `aria-invalid="true"` + `data-range-error` so the disorder is perceivable and stylable. Editing either endpoint back into order emits the range.
+
+### Range keyboard and accessibility
+
+Each endpoint is its own tab stop, so `Tab` moves start group → end group → next control; arrows move between segments **within** an endpoint. Every other key behaves as in the [Keyboard](#keyboard) table below. Roving tabindex is per endpoint, and `aria-invalid="true"` is reflected on the root when the form marks it invalid **or** when two complete endpoints are out of order; everything else matches the [Accessibility](#accessibility) notes below.
+
+### Range scope defaults
+
+`provideForDateRangeFieldDefaults` mirrors `provideForDateFieldDefaults` and adds `startLabel` / `endLabel` for the two endpoint group `aria-label`s (`'Start date'` / `'End date'` by default). Both wrapper patterns work via `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS` — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+
 ## Keyboard
 
 Key behavior applies per segment. Horizontal arrows mirror under `dir="rtl"`.
@@ -234,3 +306,18 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 ## Wrapping in a design system
 
 Both supported wrapper patterns — `hostDirectives` with the exported `FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS` name tuples, and subclassing — are documented in [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+
+## Migration — `forty-cdk/date-range-field` is folded in here
+
+`forty-cdk/date-range-field` no longer resolves. `ForDateRangeField` is a **variant** of this primitive — same APG composition, same pieces, no dependency of its own — so it ships from `forty-cdk/date-field` under the rule that a variant lives in its base's entry point, the same way `ForDateRangePicker` ships from `forty-cdk/date-picker`. Nothing was renamed and no runtime behavior changed: the migration is a specifier rewrite.
+
+```ts
+// before
+import { ForDateField } from 'forty-cdk/date-field';
+import { ForDateRangeField, ForDateRangeFieldStart } from 'forty-cdk/date-range-field';
+
+// after
+import { ForDateField, ForDateRangeField, ForDateRangeFieldStart } from 'forty-cdk/date-field';
+```
+
+Every symbol that moved: `ForDateRangeField`, `ForDateRangeFieldStart`, `ForDateRangeFieldEnd`, `ForDateRangeFieldSegment`, `ForDateRangeFieldLiteral`, `FOR_DATE_RANGE_FIELD_CONTEXT`, `DateRangeFieldEndpoint`, `DateRangeFieldSegment`, `ForDateRangeFieldContext`, `DEFAULT_DATE_RANGE_FIELD_SEGMENT_LABELS`, `FOR_DATE_RANGE_FIELD_DEFAULTS`, `provideForDateRangeFieldDefaults`, `ForDateRangeFieldDefaults`, `ForDateRangeFieldSegmentLabels`, `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS`, `FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS`.

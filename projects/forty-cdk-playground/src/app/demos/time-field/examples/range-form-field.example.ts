@@ -9,7 +9,7 @@ import {
   ForTimeRangeFieldLiteral,
   ForTimeRangeFieldSegment,
   ForTimeRangeFieldStart,
-} from 'forty-cdk/time-range-field';
+} from 'forty-cdk/time-field';
 
 interface Schedule {
   readonly hours: DateRange<CalendarDateTime> | null;

@@ -7,7 +7,7 @@ import {
   ForTimeRangeFieldLiteral,
   ForTimeRangeFieldSegment,
   ForTimeRangeFieldStart,
-} from 'forty-cdk/time-range-field';
+} from 'forty-cdk/time-field';
 
 import { queryFlag } from './_query-flag';
 

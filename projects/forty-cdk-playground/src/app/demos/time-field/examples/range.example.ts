@@ -1,53 +1,46 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { CalendarDateTime } from '@internationalized/date';
 import { type DateRange } from 'forty-cdk/shared';
-import {
-  ForDateRangeField,
-  ForDateRangeFieldEnd,
-  ForDateRangeFieldLiteral,
-  ForDateRangeFieldSegment,
-  ForDateRangeFieldStart,
-} from 'forty-cdk/date-range-field';
 import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/internationalized-date';
+import {
+  ForTimeRangeField,
+  ForTimeRangeFieldEnd,
+  ForTimeRangeFieldLiteral,
+  ForTimeRangeFieldSegment,
+  ForTimeRangeFieldStart,
+} from 'forty-cdk/time-field';
 
 @Component({
-  selector: 'app-date-range-field-date-time-example',
+  selector: 'app-time-range-field-default-example',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    ForDateRangeField,
-    ForDateRangeFieldStart,
-    ForDateRangeFieldEnd,
-    ForDateRangeFieldSegment,
-    ForDateRangeFieldLiteral,
+    ForTimeRangeField,
+    ForTimeRangeFieldStart,
+    ForTimeRangeFieldEnd,
+    ForTimeRangeFieldSegment,
+    ForTimeRangeFieldLiteral,
   ],
   providers: [...provideInternationalizedDateTimeAdapter()],
   template: `
-    <div
-      forDateRangeField
-      class="range-field"
-      [(value)]="value"
-      granularity="minute"
-      [hourCycle]="12"
-      ariaLabel="Stay"
-    >
-      <div forDateRangeFieldStart class="range-endpoint" #start="forDateRangeFieldStart">
+    <div forTimeRangeField class="range-field" [(value)]="value" ariaLabel="Opening hours">
+      <div forTimeRangeFieldStart class="range-endpoint" #start="forTimeRangeFieldStart">
         @for (seg of start.segments(); track seg.id) {
           @if (seg.isLiteral) {
-            <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+            <span forTimeRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
           } @else {
-            <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+            <span forTimeRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
               seg.text
             }}</span>
           }
         }
       </div>
-      <span aria-hidden="true" class="range-sep">→</span>
-      <div forDateRangeFieldEnd class="range-endpoint" #end="forDateRangeFieldEnd">
+      <span aria-hidden="true" class="range-sep">–</span>
+      <div forTimeRangeFieldEnd class="range-endpoint" #end="forTimeRangeFieldEnd">
         @for (seg of end.segments(); track seg.id) {
           @if (seg.isLiteral) {
-            <span forDateRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
+            <span forTimeRangeFieldLiteral class="range-literal">{{ seg.text }}</span>
           } @else {
-            <span forDateRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
+            <span forTimeRangeFieldSegment class="range-segment" [segment]="seg.type!">{{
               seg.text
             }}</span>
           }
@@ -126,9 +119,9 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     }
   `,
 })
-export class DateRangeFieldDateTimeExample {
+export class TimeRangeFieldDefaultExample {
   protected readonly value = signal<DateRange<CalendarDateTime> | null>({
-    start: new CalendarDateTime(2024, 6, 15, 15, 0),
-    end: new CalendarDateTime(2024, 6, 18, 11, 0),
+    start: new CalendarDateTime(2024, 6, 15, 9, 0),
+    end: new CalendarDateTime(2024, 6, 15, 17, 30),
   });
 }
