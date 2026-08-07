@@ -1,35 +1,127 @@
 import { expect, type Page, test } from '@playwright/test';
 import { dragFrom, el, gotoFixture } from './_helpers';
 
+/** How a {@link watchTop} run ended — one settled outcome, three failures. */
+type TopWatchOutcome = 'settled' | 'never-moved' | 'never-settled' | 'missing';
+
+/** The frames a watch sampled, plus what ended it. */
+interface TopWatch {
+  tops: number[];
+  outcome: TopWatchOutcome;
+}
+
 /**
- * Samples a row's on-screen `top` across animation frames, so a mutation of the
- * stack can be read as a trajectory rather than as a before / after pair. Start
- * it *before* triggering the mutation and await it afterwards — the whole point
- * is the frames in between, which no `boundingBox()` assertion can see.
+ * Consecutive frames reading one position that end a watch. The glide runs
+ * `linear` over a row's full height, so one of its frames moves the row a
+ * couple of pixels and five identical samples cannot be mistaken for it.
  */
-function sampleTop(page: Page, testid: string, budgetMs: number): Promise<number[]> {
+const SETTLE_FRAMES = 5;
+
+/**
+ * Ceiling on a watch whose subject never arrives — **not** the window it
+ * samples over. It has to outlast a Playwright round trip on a contended shard
+ * plus the longest glide any fixture here configures (600 ms), and it only ever
+ * costs a test that is already failing.
+ */
+const WATCH_BUDGET_MS = 5_000;
+
+/**
+ * Watches a row's on-screen `top` across animation frames until it has held one
+ * position for {@link SETTLE_FRAMES} consecutive frames — having first moved
+ * away from where the watch found it, when `requireMove` asks for it.
+ *
+ * Both halves of the pair below run on it; the budget and the settle count are
+ * no caller's business.
+ */
+function watchTop(page: Page, testid: string, requireMove: boolean): Promise<TopWatch> {
   return page.evaluate(
-    ({ id, budget }) =>
-      new Promise<number[]>((resolve) => {
+    ({ id, budget, settleFrames, mustMove }) =>
+      new Promise<TopWatch>((resolve) => {
         const row = document.querySelector(`[data-testid="${id}"]`);
         if (!row) {
-          resolve([]);
+          resolve({ tops: [], outcome: 'missing' });
           return;
         }
         const tops: number[] = [];
         const started = performance.now();
+        let held = 0;
         const tick = (): void => {
-          tops.push(Math.round(row.getBoundingClientRect().top));
-          if (performance.now() - started >= budget) {
-            resolve(tops);
-          } else {
-            requestAnimationFrame(tick);
+          const top = Math.round(row.getBoundingClientRect().top);
+          held = top === tops[tops.length - 1] ? held + 1 : 1;
+          tops.push(top);
+          const moved = top !== tops[0];
+          if ((moved || !mustMove) && held >= settleFrames) {
+            resolve({ tops, outcome: 'settled' });
+            return;
           }
+          if (performance.now() - started >= budget) {
+            resolve({ tops, outcome: mustMove && !moved ? 'never-moved' : 'never-settled' });
+            return;
+          }
+          requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
       }),
-    { id: testid, budget: budgetMs },
+    { id: testid, budget: WATCH_BUDGET_MS, settleFrames: SETTLE_FRAMES, mustMove: requireMove },
   );
+}
+
+/**
+ * Waits until the row has come to rest where the stack's last mutation put it.
+ * Every {@link sampleTop} is armed after one of these, and none of them is a
+ * formality: a `[stackShift]` glide outlives the Playwright round trips that
+ * follow the mutation starting it, so a sampler armed straight after a mutation
+ * opens on a row that is still travelling, and reads a trajectory belonging to
+ * the mutation *before* the one under test.
+ *
+ * That is not hypothetical — it is what the dismissal case did. Its two
+ * enqueues were followed by a `toBeVisible()` and nothing else, so the samples
+ * that satisfied its `intermediates` claim were the tail of the second
+ * enqueue's glide, and the dismissal's own travel (shortened to a couple of
+ * pixels by the carry that keeps an interrupted row visually continuous) was
+ * never what made it green.
+ */
+async function settleTop(page: Page, testid: string): Promise<void> {
+  const watch = await watchTop(page, testid, false);
+  expect(
+    watch.outcome,
+    `settleTop: [data-testid="${testid}"] never held one position for ${SETTLE_FRAMES} ` +
+      `consecutive frames within ${WATCH_BUDGET_MS}ms — it is still moving ` +
+      `(last frames: ${watch.tops.slice(-SETTLE_FRAMES).join(', ')})`,
+  ).toBe('settled');
+}
+
+/**
+ * Samples a row's on-screen `top` across animation frames, so a mutation of the
+ * stack can be read as a trajectory rather than as a before / after pair. Start
+ * it *before* triggering the mutation and await it afterwards — the whole point
+ * is the frames in between, which no `boundingBox()` assertion can see. The row
+ * must be at rest when it is armed; {@link settleTop} is how a caller says so.
+ *
+ * **The gate is the mutation, not the clock**
+ * ([#1713](https://github.com/tutkli/forty-cdk/issues/1713)). A wall-clock
+ * window opened before the round trip that triggers the mutation budgets that
+ * round trip too: on a contended shard the click can land after the window has
+ * closed, every sample reads the pre-mutation top, and the caller's claim about
+ * the trajectory fails with the primitive behaving correctly. So the sampling
+ * ends when the top has **changed and then held for {@link SETTLE_FRAMES}
+ * frames**, which makes "the row moved at all" this helper's postcondition
+ * instead of the caller's first assertion — callers keep only what they are
+ * actually about, the shape of the travel in between.
+ *
+ * {@link WATCH_BUDGET_MS} bounds failure alone, and an exhausted budget is
+ * reported here, naming the mutation that was never observed rather than
+ * surfacing as whatever the caller was going to claim.
+ */
+async function sampleTop(page: Page, testid: string): Promise<number[]> {
+  const watch = await watchTop(page, testid, true);
+  expect(
+    watch.outcome,
+    `sampleTop: no stack mutation moved [data-testid="${testid}"] to a settled new position ` +
+      `within ${WATCH_BUDGET_MS}ms (${watch.tops.length} frames sampled, ` +
+      `first ${watch.tops[0]}, last ${watch.tops.at(-1)})`,
+  ).toBe('settled');
+  return watch.tops;
 }
 
 /** Samples strictly between the trajectory's first and last position. */
@@ -37,11 +129,6 @@ function intermediates(tops: number[]): number[] {
   const first = tops[0] ?? 0;
   const last = tops[tops.length - 1] ?? 0;
   return tops.filter((top) => (top - first) * (top - last) < 0);
-}
-
-/** Whether the trajectory ended somewhere other than where it started. */
-function moved(tops: number[]): boolean {
-  return tops.length > 1 && tops[0] !== tops[tops.length - 1];
 }
 
 /**
@@ -322,12 +409,12 @@ test.describe('Toast stack shift (#1680)', () => {
     await gotoFixture(page, 'toast', { side: 'bottom-right', stackShift: '600' });
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-0')).toBeVisible();
+    await settleTop(page, 'toast-0');
 
-    const trajectory = sampleTop(page, 'toast-0', 700);
+    const trajectory = sampleTop(page, 'toast-0');
     await el(page, 'enqueue').click();
     const tops = await trajectory;
 
-    expect(moved(tops)).toBe(true);
     expect(intermediates(tops).length).toBeGreaterThan(0);
   });
 
@@ -338,12 +425,12 @@ test.describe('Toast stack shift (#1680)', () => {
     await el(page, 'enqueue').click();
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-1')).toBeVisible();
+    await settleTop(page, 'toast-0');
 
-    const trajectory = sampleTop(page, 'toast-0', 700);
+    const trajectory = sampleTop(page, 'toast-0');
     await el(page, 'toast-1').locator('[forToastClose]').click();
     const tops = await trajectory;
 
-    expect(moved(tops)).toBe(true);
     expect(intermediates(tops).length).toBeGreaterThan(0);
   });
 
@@ -351,12 +438,12 @@ test.describe('Toast stack shift (#1680)', () => {
     await gotoFixture(page, 'toast', { side: 'bottom-right' });
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-0')).toBeVisible();
+    await settleTop(page, 'toast-0');
 
-    const trajectory = sampleTop(page, 'toast-0', 700);
+    const trajectory = sampleTop(page, 'toast-0');
     await el(page, 'enqueue').click();
     const tops = await trajectory;
 
-    expect(moved(tops)).toBe(true);
     expect(intermediates(tops)).toEqual([]);
   });
 
@@ -375,13 +462,12 @@ test.describe('Toast stack shift (#1680)', () => {
     await el(page, 'enqueue').click();
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-1')).toBeVisible();
-    await page.waitForTimeout(600);
+    await settleTop(page, 'toast-0');
 
-    const trajectory = sampleTop(page, 'toast-0', 700);
+    const trajectory = sampleTop(page, 'toast-0');
     await el(page, 'enqueue').click();
     const tops = await trajectory;
 
-    expect(moved(tops)).toBe(true);
     expect(intermediates(tops).length).toBeGreaterThan(0);
   });
 
@@ -392,7 +478,7 @@ test.describe('Toast stack shift (#1680)', () => {
     await el(page, 'enqueue').click();
     await el(page, 'enqueue').click();
     await expect(el(page, 'toast-1')).toBeVisible();
-    await page.waitForTimeout(600);
+    await settleTop(page, 'toast-0');
 
     const beforeGrow = (await el(page, 'toast-0').boundingBox())!.y;
     await el(page, 'grow').click();
@@ -400,12 +486,12 @@ test.describe('Toast stack shift (#1680)', () => {
     await expect
       .poll(async () => (await el(page, 'toast-0').boundingBox())!.y)
       .toBeLessThan(beforeGrow);
+    await settleTop(page, 'toast-0');
 
-    const trajectory = sampleTop(page, 'toast-0', 700);
+    const trajectory = sampleTop(page, 'toast-0');
     await el(page, 'enqueue').click();
     const tops = await trajectory;
 
-    expect(moved(tops)).toBe(true);
     expect(intermediates(tops)).toEqual([]);
   });
 });
