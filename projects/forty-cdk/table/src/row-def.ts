@@ -69,31 +69,24 @@ export class ForRowCell<T, V extends T = T> {
  * this variant instead of the per-column data cells. A def comes in one of two
  * shapes, and must declare **exactly one** of them:
  *
- * - **Full-span** (a `[forRowCell]` template): the matched row's single cell spans
- *   all columns and renders the template — group-header rows, section separators,
- *   full-width summary / empty-state rows. The spanning cell carries the row's
- *   `role` (`gridcell` in grid / treegrid mode) plus `aria-colindex="1"` and
- *   `aria-colspan` equal to the column count, but it does **not** join the roving 2D
- *   navigation grid (it registers no cell handle), so arrow-key navigation moves
- *   between the regular data cells and steps over the variant row.
- * - **Placeholder cells** (the `placeholderCells` flag, no `[forRowCell]`): the
- *   matched row stamps one cell per displayed column from each column's
- *   `[forPlaceholderCell]` template — interleaved / trailing skeleton rows for
- *   infinite-scroll or paginated tables. Unlike the full-span shape these keep the
- *   roving grid **rectangular** (one cell per column), and the cells are stamped
- *   disabled so grid-mode arrow navigation steps over them.
+ * - **Full-span** (a `[forRowCell]` template): the row's single cell spans every column — group
+ *   headers, section separators, summary or empty-state rows. It carries the row's `role` plus
+ *   `aria-colindex="1"` and an `aria-colspan` equal to the column count, but registers no cell
+ *   handle, so roving arrow navigation steps over the row.
+ * - **Placeholder cells** (the `placeholderCells` flag, no `[forRowCell]`): the row stamps one cell
+ *   per displayed column from each column's `[forPlaceholderCell]` — skeleton rows for
+ *   infinite-scroll or paginated tables. These keep the roving grid rectangular, and are stamped
+ *   disabled so arrow navigation steps over them.
  *
- * Either way the variant row is **presentational** and **non-selectable** (its
- * `value` stays `undefined`), while still occupying a row slot and counting towards
- * `aria-rowindex` / `aria-rowcount` (reading order is preserved).
+ * Either way the variant row is presentational and non-selectable — its `value` stays `undefined` —
+ * while still occupying a row slot and counting towards `aria-rowindex` / `aria-rowcount`.
  *
- * When several `[forRowDef]`s match a datum, the first in DOM order wins. A datum
- * matched by no `[forRowDef]` renders the standard per-column row.
+ * When several defs match a datum the first in DOM order wins; a datum matched by none renders the
+ * standard per-column row.
  *
- * Like `[forColumnDef]`, the def **registers itself** with the surrounding body
- * through DI at construction (and unregisters when destroyed), so a preset
- * component may declare it in its own view and a scaffold wrapper may project it
- * into a body it owns — see {@link ForTableDefRegistry}. A def with no reachable
+ * Like `[forColumnDef]`, the def registers itself with the surrounding body through DI at
+ * construction, so a preset component may declare it in its own view and a scaffold wrapper may
+ * project it into a body it owns — see {@link ForTableDefRegistry}. A def with no reachable
  * registry throws.
  *
  * @example

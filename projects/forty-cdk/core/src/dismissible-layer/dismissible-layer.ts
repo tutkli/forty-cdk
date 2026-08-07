@@ -19,7 +19,7 @@ export type DismissibleLayerChannel = 'pointer' | 'focus';
  * submenu). {@link DismissibleLayerStack} orders such a chain by `depth` rather
  * than by activation order, so a deeper level is always dispatched to before
  * its ancestors even when both levels mount in the same render pass and the
- * `afterNextRender` callbacks fire child-before-parent (#1450).
+ * `afterNextRender` callbacks fire child-before-parent.
  *
  * A layer that declares no nesting keeps the plain LIFO behaviour: it is pushed
  * on top of everything, and never reorders relative to a chain it does not
@@ -68,17 +68,11 @@ export interface DismissibleLayerActivateOptions {
   onPointerDownOutside?: (event: PointerEvent) => void;
 
   /**
-   * Fired when the user pointer-downs **inside** this layer's host or one of its
-   * `exemptElements` — the mirror of `onPointerDownOutside`, for an owner that
-   * needs to know a press landed on its own surface. The point is the shared
-   * containment rule: the layer already resolves host + exempt elements (and the
-   * layers stacked above it) from one place, so an owner asking "was that press
-   * mine?" gets the same answer the dismissal path gets, instead of re-deriving
-   * the surface set from its own host listeners.
+   * Fired when the user pointer-downs **inside** this layer's host or one of its `exemptElements`
+   * — the mirror of `onPointerDownOutside`.
    *
-   * NavigationMenu uses it to tell a pointer-induced blur (a press on a
-   * non-focusable region of its own panel, which leaves `document.activeElement`
-   * on `<body>`) from focus genuinely leaving the document.
+   * It answers "was that press mine?" with the same containment rule the dismissal path uses,
+   * instead of the owner re-deriving the surface set from its own host listeners.
    */
   onPointerDownInside?: (event: PointerEvent) => void;
 
@@ -106,46 +100,23 @@ const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] }
  * dismissible layers. Created once per Angular bootstrap (one per SSR
  * request), tied to the root injector lifetime.
  *
- * Why a service rather than module-level state:
+ * Listeners are installed on the first layer activation and removed with the last, and a
+ * `DestroyRef` hook clears both the listeners and the stack, so no bootstrap leaves listeners
+ * behind. Installation is a no-op off-browser.
  *
- * - SSR isolation: module-level globals leak between simultaneous server
- *   requests in the same Node process. A `providedIn: 'root'` service is
- *   instantiated per application injector.
- * - Bootstrap-safety: `TestBed.resetTestingModule()`, micro-frontend
- *   reloads and any other code that destroys `ApplicationRef` should not
- *   leave stale `document` listeners behind. Listeners are installed on the
- *   first layer activation (`0 → 1`) and removed with the last deactivation
- *   (`1 → 0`), mirroring `ScrollDismissDispatcher`; a `DestroyRef` hook
- *   removes any still-attached listeners and clears the stack, so no bootstrap
- *   leaves listeners behind.
- * - SSR safety: `document` is inaccessible on the server. Listener install is
- *   a no-op when `PLATFORM_ID` is not the browser; nothing about this code
- *   path is reachable until an overlay calls `activate()`, which only happens
- *   from `afterNextRender`.
+ * **Stack order** is activation order for standalone layers, but a layer declaring a
+ * {@link DismissibleLayerNesting} is inserted by nesting depth within its chain. Activation order
+ * is a render-timing artifact — a menu and its submenu mounted in one pass run their
+ * `afterNextRender` callbacks child-before-parent — so ordering by timing would place an ancestor
+ * above its own descendant, making the descendant's first focus read as `focusOutside` and collapse
+ * the chain.
  *
- * Stack order is activation order (LIFO) for standalone layers, but a layer
- * that declares a {@link DismissibleLayerNesting} is inserted by nesting depth
- * within its chain. Activation order is a render-timing artifact — a menubar
- * menu and its submenu mounted in the same render pass run their
- * `afterNextRender` callbacks child-before-parent — and ordering the chain by
- * timing would put an ancestor above its own descendant, so the descendant's
- * first focus reads as `focusOutside` on the ancestor and collapses the whole
- * chain (#1450). Declared depth removes the dependency on render timing.
- *
- * Listener phases — intentional asymmetry: `pointerdown` and `focusin`
- * register on the **capture** phase so outside-interaction is detected even
- * when overlay content stops bubbling propagation, but `keydown` (Escape)
- * registers on the **bubble** phase by design. The bubble phase is
- * load-bearing for Escape because the per-overlay `onEscapeKeyDown` handlers
- * (Dialog, Select, Menu, Popover, …) call `event.stopPropagation()` after they
- * close — that stops the same keydown from bubbling further up to an *ancestor*
- * overlay's keydown handler, which is how nested overlays avoid one Escape
- * closing two layers at once. Moving this listener to capture would fire it
- * before any of those handlers and defeat the stopPropagation-based
- * single-layer-per-Escape contract. The trade-off is that overlay content with
- * its own bubble-phase keydown handler that calls `stopPropagation()` can
- * swallow Escape before it reaches this listener; that is an accepted,
- * documented limitation rather than an accidental one.
+ * **Listener phases are deliberately asymmetric.** `pointerdown` and `focusin` register on the
+ * capture phase, so an outside interaction is detected even when overlay content stops
+ * propagation. `keydown` registers on the bubble phase instead, because the per-overlay Escape
+ * handlers call `stopPropagation()` after closing — which is what keeps one Escape from closing an
+ * ancestor layer too. The accepted trade-off is that overlay content with its own bubble-phase
+ * `keydown` handler calling `stopPropagation()` can swallow Escape before it arrives.
  */
 @Injectable({ providedIn: 'root' })
 export class DismissibleLayerStack {
@@ -267,7 +238,7 @@ export class DismissibleLayerStack {
    * unless the layer declared a {@link DismissibleLayerNesting}: then it slides
    * down past the trailing run of layers from the same chain that sit deeper
    * than it, so an ancestor activating after its own descendant still lands
-   * below it (#1450). The scan stops at the first layer that is not a deeper
+   * below it. The scan stops at the first layer that is not a deeper
    * level of the same chain, so an unrelated overlay (a Dialog opened from
    * inside a submenu) is never jumped over.
    */
@@ -313,14 +284,13 @@ export class DismissibleLayerStack {
  * layer that declared the matching channel: a layer that owns only Escape (e.g.
  * a Tooltip, declaring `channels: []`) is transparent to outside-pointer /
  * focus for the real dismissible layers beneath it, so a tooltip visible over
- * an open menu never shadows the menu's outside-click dismissal (#1309). Nested
+ * an open menu never shadows the menu's outside-click dismissal. Nested
  * real layers (a popover inside a dialog) still resolve to a single topmost
  * handler per channel, so single-dismiss semantics hold.
  *
  * Containment is stack-aware: an interaction inside a layer stacked *above* the
  * chosen handler counts as "inside", so an interactive Escape-only surface (a
- * HoverCard over a Popover) never leaks an outside dismissal to the layer below
- * (#1379).
+ * HoverCard over a Popover) never leaks an outside dismissal to the layer below.
  *
  * Dispatch goes through a single shared document listener, so synchronous
  * changes to the stack from a handler don't leak into sibling listeners.
@@ -408,8 +378,7 @@ export class DismissibleLayer {
    * target {@link resolveEventTarget} resolves: plain `Node.contains` answers
    * within one node tree, so a press on a control inside a web component's
    * shadow root — a target the composed path resolves precisely — would read as
-   * a press outside the surface that renders it
-   * ([#1586](https://github.com/tutkli/forty-cdk/issues/1586)).
+   * a press outside the surface that renders it.
    */
   contains(target: Node): boolean {
     if (composedContains(this.#host, target)) {

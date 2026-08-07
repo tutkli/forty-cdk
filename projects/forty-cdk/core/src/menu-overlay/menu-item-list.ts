@@ -13,8 +13,7 @@ import { injectTypeahead, type Typeahead } from '../typeahead/typeahead';
  * Stays exported from `core/src/public-api.ts` — internal tier, not blessed —
  * because it is the default type argument of `MenuOverlay`, which the emitted
  * `.d.ts` names as `MenuOverlay<MenuItemHandle>` for the `protected readonly
- * _overlay` field on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`
- * (#1489).
+ * _overlay` field on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`.
  */
 export interface MenuItemHandle extends CollectionHandle {
   /**
@@ -48,9 +47,8 @@ export interface MenuItemHandle extends CollectionHandle {
  * first/last-enabled focus moves used on mount.
  *
  * Both `MenuOverlay` (for `[forDropdownMenu]` / `[forContextMenu]` /
- * `[forMenuSub]`) and `[forMenubar]`'s multiplexed menu context delegate to
- * this unit, so the verbatim navigate / typeahead / focus copies that used
- * to live in each don't drift.
+ * `[forMenuSub]`) and `[forMenubar]`'s multiplexed menu context delegate their
+ * navigate / typeahead / focus behaviour to this unit.
  *
  * `loop` is read through an accessor so the owner can forward its own
  * reactive `loop` input without the unit depending on a specific source.

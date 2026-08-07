@@ -155,8 +155,8 @@ export class ForDropList implements ForDropListContext {
    * When true, the `[forDragPlaceholder]` follows the live resolved drop index during a
    * **pointer** drag — within this list and across connected lists — so siblings part to
    * reveal where the item will land. When false (the default), the placeholder stays in the
-   * dragged item's source slot (the #806 behaviour). Has no effect without a
-   * `[forDragPlaceholder]` template, and none on keyboard dragging.
+   * dragged item's source slot. Has no effect without a `[forDragPlaceholder]`
+   * template, and none on keyboard dragging.
    *
    * A `dragDisabled` sibling acts as a hard fence: the placeholder stops at the first
    * pinned item instead of travelling past it. Live sorting is purely visual: the drop index

@@ -43,6 +43,9 @@ const MAX_PAGE_OVERLAP_PX = 40;
   },
 })
 export class ForScrollAreaScrollbar {
+  /**
+   * Axis this scrollbar controls.
+   */
   readonly orientation = input.required<ForScrollbarOrientation>();
   readonly ctx = injectScrollAreaContext('ForScrollAreaScrollbar');
   readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

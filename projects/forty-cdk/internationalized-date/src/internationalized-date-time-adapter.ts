@@ -18,7 +18,7 @@ import { createFormatterCache, type DateAdapter, FOR_DATE_ADAPTER } from 'forty-
  *
  * **Gregorian only.** Like {@link InternationalizedDateAdapter}, `createDate`
  * builds a Gregorian `CalendarDateTime`; non-Gregorian calendar systems are
- * deferred to the planned Temporal adapter track (#354).
+ * deferred to the planned Temporal adapter track.
  *
  * Ships in the `forty-cdk/internationalized-date` secondary entry point so the
  * main `forty-cdk` bundle never references `@internationalized/date` — the

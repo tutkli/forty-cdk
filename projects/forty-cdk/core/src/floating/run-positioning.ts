@@ -123,46 +123,26 @@ export interface PositioningConfig {
  * Shared scaffold behind the library's two `@floating-ui/dom` positioners —
  * `injectFloating` (the general anchored positioner) and
  * `injectItemAlignedPositioner` (the macOS-style over-trigger positioner for
- * `[forSelectContent]`). Must be called from an injection context. Pulls the
- * `ElementRef` it lives on as the floating element and owns everything the two
- * positioners had independently reimplemented:
+ * `[forSelectContent]`). Must be called from an injection context, and takes the `ElementRef` it
+ * lives on as the floating element.
  *
- * 1. The `isPlatformBrowser` gate — `effect()` runs server-side even though
- *    `afterNextRender` gates on `ngServerMode`, so the guard has to be explicit
- *    to keep SSR from setting up a portal / positioning effect.
- * 2. The optional portal — `appendChild` to `document.body` once mounted,
- *    `remove()` on `DestroyRef.onDestroy`.
- * 3. The `clip-path: inset(50%)` anti-flash baseline, armed on mount in
- *    `afterNextRender` and re-armed at the start of every open effect run (a
- *    config change while open re-runs the effect and `onCleanup` clears the
- *    baseline, so re-arming keeps the surface hidden at the retained stale
- *    position until the async `computePosition` resolves).
- * 4. A reactive effect that reads `open` / `reference` first and early-returns
- *    while closed — so a closed overlay only tracks `open` / `reference` and
- *    never re-runs on an offset/side change — then delegates to
- *    {@link PositioningConfig.computeAndApply} and drives `autoUpdate`.
- * 5. Inside each `autoUpdate` frame: the `!open()` / cancelled-run bail (the
- *    surface may have closed, or this run may have been superseded by a config
- *    change, between schedule and resolution), the `translate` write, the
- *    `clip-path` drop, the per-open `onFirstPosition` dispatch, and the
- *    `.catch(() => {})` that swallows the rejection when the reference detaches
- *    mid-frame during virtualization / autoUpdate scrolls (`autoUpdate`
- *    reschedules with the next live frame).
- * 6. Symmetric cleanup: `onCleanup` marks the run cancelled (so a
- *    still-pending `computePosition` from it resolves to a no-op), tears down
- *    `autoUpdate`, and invokes the run's `reset` so a re-open never inherits
- *    stale geometry.
+ * It owns the portal, the positioning effect and `autoUpdate`, and tears all three down
+ * symmetrically so a re-open never inherits stale geometry. While closed the effect tracks only
+ * `open` and `reference`, so an offset or side change on a closed overlay re-runs nothing. A
+ * `computePosition` that loses its reference mid-frame is swallowed, since `autoUpdate` reschedules
+ * on the next live frame.
  *
- * Position is written to the `translate` property, NOT `transform`. CSS
- * composes the individual `translate` / `rotate` / `scale` properties before
- * the `transform` property, with `translate` outermost — so a consumer's enter
- * animation on `scale` (or `transform`) pivots in place instead of scaling the
- * position offset itself, dragging the surface in from the viewport corner as
- * it grows. Leaving `transform` free for the consumer is the whole point.
+ * Until the first position resolves the surface wears a `clip-path` anti-flash baseline, re-armed
+ * whenever a config change restarts an open run so it stays hidden at the retained stale position.
+ * `clip-path` rather than `visibility: hidden` keeps the element focusable, so the overlay shell's
+ * initial-focus move still lands while the surface is unpainted.
  *
- * `clip-path` (rather than `visibility: hidden`) keeps the element focusable,
- * so the overlay shell's initial-focus move still lands while the surface is
- * unpainted.
+ * Position is written to `translate`, never `transform`. CSS composes `translate` outside
+ * `transform`, so a consumer's `scale` enter animation pivots in place instead of scaling the
+ * position offset and dragging the surface in from the viewport corner — leaving `transform` free
+ * for the consumer is the point.
+ *
+ * SSR-safe: `effect()` runs server-side, so the browser gate here is explicit.
  */
 export function runPositioning(config: PositioningConfig): void {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);

@@ -111,7 +111,7 @@ export class ForRadio {
    * selection follows focus in the Radio Group pattern, so the group's Tab entry
    * point is its checked radio and there is no user-driven roving pointer that
    * could diverge from it. See the roving-tabindex contract's adopter guard
-   * ([#1658](https://github.com/tutkli/forty-cdk/issues/1658)) for why that
+   * for why that
    * makes RadioGroup a declared member of the roving family rather than a
    * derived one.
    */

@@ -95,9 +95,7 @@ export class ForButton {
 
   /**
    * Emitted once per user activation: a pointer click on any host, or Enter / Space
-   * on a non-native-button host (native buttons synthesize click from keyboard). The
-   * name `activate` is chosen deliberately to avoid colliding with the native `click`
-   * event (which would trip `@angular-eslint/no-output-native` on wrapping consumers).
+   * on a non-native-button host (native buttons synthesize click from keyboard).
    */
   readonly activate = output<void>();
 

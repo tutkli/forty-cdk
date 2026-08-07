@@ -12,7 +12,7 @@ import { createFormatterCache, type DateAdapter, FOR_DATE_ADAPTER } from 'forty-
  * **Gregorian only.** `createDate` always builds a Gregorian `CalendarDate`, so
  * the calendar grid is Gregorian regardless of the runtime locale. True
  * non-Gregorian calendar systems are deferred to the planned Temporal adapter
- * track (#354).
+ * track.
  *
  * Ships in the `forty-cdk/internationalized-date` secondary entry point so the
  * main `forty-cdk` bundle never references `@internationalized/date` — the

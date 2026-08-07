@@ -43,75 +43,23 @@ function sameSequence<T>(a: readonly T[], b: readonly T[]): boolean {
  * exposed in **DOM document order**, resolved from each handle's `host` node
  * regardless of the order children registered in.
  *
- * Resolving document order (rather than registration order) keeps
- * `items()` / `indexOfHost` correct under templates that reorder a list at
- * runtime — `@for (... ; track id)` driven by a sort or drag-reorder moves
- * existing DOM nodes without re-running child constructors, so registration
- * order would otherwise freeze at the original sequence and corrupt
- * `aria-posinset` / `aria-setsize` and keyboard navigation order. The
- * resolution is reactive: an internal `MutationObserver` re-orders the
- * exposed array when nodes move, and consumers' `computed`s recompute
- * automatically.
+ * Document order rather than registration order is what keeps `items()` and `indexOfHost` correct
+ * under a template that reorders its list at runtime: `@for (…; track id)` moves existing DOM nodes
+ * without re-running child constructors, so registration order would freeze and corrupt
+ * `aria-posinset` / `aria-setsize` and the keyboard navigation order. An internal
+ * `MutationObserver` re-orders the exposed array when nodes move.
  *
- * The observer watches `childList` (without `subtree`) on every node from each
- * host's **direct parent up to and including the deepest common ancestor** of
- * all registered hosts. Observing that ancestor chain — not just each host's
- * direct parent — catches reorders that happen at an intermediate wrapper above
- * the hosts: in the common `<ul><li><button forTab></li>…</ul>` markup,
- * reordering the `<li>` wrappers moves the hosts in document order by mutating
- * the `<ul>`'s child list without touching any host's direct parent (`<li>`),
- * so a direct-parent-only observer would miss it and freeze `items()` at the
- * stale order. The `<ul>` is on the common-ancestor chain, so its reorder is
- * seen. Bounding the observed nodes to the chain up to the common ancestor (and
- * still using `childList` rather than `subtree`) keeps the observation local: a
- * mutation confined to a sibling subtree — e.g. a nested `forTreeGroup`
- * container's own `Collection` reordering deeper down — does not touch any node
- * on this collection's chain and so does not invalidate it.
+ * The observer watches `childList` on every node from each host's direct parent up to the deepest
+ * common ancestor of all registered hosts, so a reorder applied at an intermediate wrapper — moving
+ * `<li>` elements inside a `<ul>` without touching any host's own parent — is still seen, while a
+ * mutation confined to a sibling subtree does not invalidate the collection.
  *
- * Must be constructed in an Angular injection context — a field initializer on
- * the owning directive, or a class the injector itself instantiates. It
- * registers `destroy()` with the ambient `DestroyRef` there, so the
- * `MutationObserver` is disconnected when the owner is destroyed without
- * relying on every child unregistering first. Call `register` / `unregister`
- * from each child's constructor / `DestroyRef.onDestroy`. A bare
- * `new Collection()` outside a context raises Angular's NG0203; a spec reaches
- * one through `TestBed.runInInjectionContext`.
+ * Must be constructed in an injection context: it registers `destroy()` with the ambient
+ * `DestroyRef`, so the observer is disconnected with the owner even if children never unregister.
+ * Call `register` / `unregister` from each child's constructor and `DestroyRef.onDestroy`.
  *
- * Membership is tracked in a mutable `Set` with a companion epoch signal, so
- * `register` / `unregister` mutate the set in place (O(1)) and bump the epoch
- * instead of copying the whole set per call — mounting N members stays O(N)
- * rather than O(N²). Document order is computed lazily and memoized: reading
- * `items()` returns the cached array reference until membership or DOM
- * order actually changes, so reads stay O(1) and a single mutation is
- * O(N log N) (the sort) in the current size. `findByHost` / `indexOfHost`
- * resolve through a companion index derived from that same memo, so a lookup is
- * O(1) rather than a scan of the ordered array. The `MutationObserver` resync is
- * deferred to a microtask so a burst of same-turn registrations coalesces into
- * one wiring pass rather than one per member. The observer callback both bumps
- * the DOM epoch (recomputing `items()`) and reschedules that resync, so an
- * observed mutation that re-parents a registered host — moved to a different
- * branch without re-registering — re-anchors the watched ancestor chain to the
- * hosts' new positions on the next microtask; `#sameNodes` keeps this a no-op
- * whenever the chain is unchanged, so steady-state cost stays nil.
- *
- * [#1584](https://github.com/tutkli/forty-cdk/issues/1584) measured that
- * memoization against the library's largest composition — a 2000-row × 10-column
- * non-virtualized `[forTable]`, which builds 2002 collections — and two of its
- * findings are worth keeping here, because both contradict a reading the code
- * invites. **The resort is not re-run per registration**: the whole mount spends
- * `length - 1` comparisons per collection — the count V8's sort needs for an
- * already-ordered array, 20 008 `compareDocumentPosition` calls for 22 010
- * registered handles — because registrations complete in the creation pass before
- * any binding reads `items()`, and `sameSequence` absorbs the DOM-epoch bumps that
- * follow. **And one observer per collection is the cheap shape, not the
- * expensive one**: wiring all 2002 of them costs 5.3 ms, linear in count and
- * 0.7% of the mount, because the sync is deferred and coalesced and a settled
- * table delivers no records at all. The alternative — one observer owned by the
- * outermost collection — needs `subtree: true` to see a nested reorder, so it
- * would trade 2002 registrations that each watch one `childList` for a single
- * registration notified by every mutation anywhere inside the primitive.
- * Neither is the bottleneck a large mount actually has; that one lived in the
- * consumers of `items()`.
+ * Reads are memoized — `items()` returns the same array reference until membership or DOM order
+ * changes, and `findByHost` / `indexOfHost` resolve through a companion index instead of scanning.
  */
 export class Collection<H extends CollectionHandle> {
   readonly #membersSet = new Set<H>();

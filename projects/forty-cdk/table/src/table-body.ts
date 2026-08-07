@@ -94,88 +94,51 @@ interface RenderRow<T> {
  * authored in a single block instead of being smeared across header, data, and
  * placeholder rows.
  *
- * **Supported modes: `table` and `grid`.** Nothing in the body is grid-specific
- * — it derives each stamped cell's role from the table `mode` (`cell` in
- * `table`, `gridcell` in `grid`) and applies no mode guard. Choose `mode="grid"`
- * for interactive cells (roving 2D navigation, cell widgets, cell-entry); choose
- * the default `mode="table"` for read-only or whole-row navigation lists, where
- * `role="grid"` would announce an interaction model the list does not have. The
- * table-mode row-interaction companion feature (whole-row activate / context
- * menu) is tracked in
- * [#1349](https://github.com/tutkli/forty-cdk/issues/1349). `mode="treegrid"` is
- * out of scope — the body stamps no expansion affordances.
+ * **Supported modes: `table` and `grid`.** Each stamped cell's role follows the table `mode`
+ * (`cell` or `gridcell`). Choose `mode="grid"` for interactive cells with roving 2D navigation, and
+ * the default `mode="table"` for read-only or whole-row navigation lists. `mode="treegrid"` is out
+ * of scope — the body stamps no expansion affordances.
  *
- * It owns only the grid **structure** — it applies `display: grid` and the
- * derived `grid-template-columns` track (from each def's `width` and the
- * published `--for-table-col-<name>-width` resize var) to the header row and
- * every data row. All visual styling (colours, borders, padding, sticky offsets)
- * stays the consumer's, off the `data-*` / role hooks the raw primitives emit.
+ * It owns only the grid **structure**: `display: grid` plus the `grid-template-columns` track
+ * derived from each def's `width` and the published `--for-table-col-<name>-width` resize var. All
+ * visual styling stays the consumer's, off the `data-*` and role hooks. The host is
+ * `display: contents`, so it introduces no box between `[forTable]` and its rows; consumers wanting
+ * full DOM control keep using the raw cell primitives.
  *
- * The host is `display: contents` so it never introduces a box between
- * `[forTable]` and its rows. Consumers who want full DOM control keep using the
- * raw `[forTableCell]` / `[forTableHeaderCell]` primitives directly.
+ * **Defs register themselves through DI rather than being content-queried**, so a preset column
+ * component can declare a def in its own view and a scaffold wrapper can project consumer defs into
+ * a body it owns (see `defs`). Registrations are exposed in document order, including defs mounted
+ * later by `@if` or reordered by `@for`; `displayedColumns` pins an explicit render order on top.
  *
- * **Defs register themselves; they are not content-queried.** Each
- * `[forColumnDef]` / `[forRowDef]` / `[forColumnDragPlaceholder]` /
- * `[forPlaceholderCellDefault]` resolves this body's def registry through DI at
- * construction, so a **preset column component** can declare a def in its own
- * view (a content query would never see a view) and a **scaffold wrapper** can
- * project consumer defs into a body it owns (see `defs`). Registrations are
- * exposed in **document order** — identical to the DOM order the content queries
- * resolved, including a def mounted later by `@if` and a `@for`-reordered set of
- * defs — and `displayedColumns` still pins an explicit render order on top.
+ * **Subclassing is not a supported wrapping shape.** Angular inherits neither `template` nor
+ * `imports`, so a subclass renders nothing of the body, and its own `providers` array replaces the
+ * one installing the def registry — a subclass missing `provideForTableDefRegistry()` throws a
+ * `[forty-cdk/table]` error naming it. Compose the body in a wrapper's template instead.
  *
- * **Subclassing this component is not a supported wrapping shape.** A subclass
- * must declare its own `@Component`, and Angular inherits neither `template` nor
- * `imports` — so the subclass renders nothing of the body unless it copies the
- * inline template the library refactors freely, and its own `providers` array
- * replaces the one installing the def registry (a subclass missing
- * `provideForTableDefRegistry()` throws a `[forty-cdk/table]` error naming it).
- * Compose the body in a wrapper's template instead: the preset column component
- * and the scaffold wrapper above are the two supported shapes.
+ * Sort and resize affordances are auto-wired from the per-column `sortable` / `resizable` flags.
+ * Sorting stays consumer-applied: the body derives each header's `aria-sort` from `sort` and
+ * re-emits activation through `sortChange`. Resize width state can be owned by the body through
+ * `[(columnWidths)]`, keyed by column name, with per-def `resizeMin` / `resizeMax` / `resizeStep` /
+ * `autoFit` / `fitIncludesHeader` tuning; gesture-end commits still surface through `resizeCommit`.
+ * Selection stays consumer-placed — drop `[forTableRowSelector]` / `[forTableSelectAll]` into the
+ * cell templates and set `rowKey` to give each row a selection identity.
  *
- * Sort and resize affordances are auto-wired from the per-column `sortable` /
- * `resizable` flags. Sort stays consumer-applied (BYO-data): the body derives each
- * header's `aria-sort` from `sort` and re-emits activation through `sortChange`.
- * Resize width state can be owned by the body instead — `[(columnWidths)]` seeds
- * each `resizable` handle's width (keyed by column name) and tracks its live
- * changes, so the resized track drives itself with no per-consumer plumbing; each
- * `resizable` column is tuned per def via `resizeMin` / `resizeMax` / `resizeStep`
- * / `autoFit` / `fitIncludesHeader`, and gesture-end commits still surface through
- * `resizeCommit`. Selection stays consumer-placed: drop `[forTableRowSelector]` /
- * `[forTableSelectAll]` into the cell templates and set `rowKey` so each row
- * carries a selection identity.
+ * **Virtualization is transparent.** Adding `[forTableVirtualized]` to the same `[forTable]`
+ * switches the body to windowed rendering: it renders only the visible slice of `rows`, sizes the
+ * rowgroup to the full scroll height and positions each row at its offset. Pass the whole dataset
+ * to `rows` — the total is derived from its length, so `[rowCount]` is needed only for a
+ * server-known total larger than the loaded rows. Rows are fixed-size by default; set
+ * `measureRows` for variable heights, which feeds each rendered row's real height back to the
+ * virtualizer.
  *
- * **Virtualization is transparent.** Adding `[forTableVirtualized]` to the same
- * `[forTable]` element switches the body to windowed rendering automatically:
- * it reads the published window off the table context (no cross-entry import),
- * renders only the visible slice indexed into `rows`, sizes its rowgroup to the
- * full scroll height, and absolutely positions each row at its offset. The
- * consumer passes the whole dataset to `rows` — the body derives the true total
- * from its length, so `[rowCount]` on `[forTable]` is unnecessary (bind it only
- * for a server-known total larger than the loaded rows). No `#v` reference,
- * manual sizer, `@for` window, or `[virtualIndex]` binding. Rows are fixed-size
- * by default (drive row height in CSS); set `measureRows` for measured /
- * variable row heights (denser variant rows, group separators) — the body feeds
- * each rendered row's real height back to the virtualizer so the window stays
- * aligned after scroll.
- *
- * **Row variants.** Declare one or more `[forRowDef]` alongside the columns to
- * render a variant row for the data they match. For each datum the body picks the
- * first `[forRowDef]` whose `[when]` predicate returns `true`; unmatched data
- * renders the standard per-column row. Each def declares one of two shapes: a
- * `[forRowCell]` template stamps a **full-span** row (group headers, section
- * separators, summary / empty-state rows) whose single cell spans every column;
- * the `placeholderCells` flag stamps **per-column placeholder cells** (interleaved
- * / trailing skeleton rows for infinite scroll) from each column's
- * `[forPlaceholderCell]`, falling back to the body-level
- * `[forPlaceholderCellDefault]` for a column that declares none. Either way
- * variant rows are presentational and non-selectable, and still count towards
- * `aria-rowindex` / `aria-rowcount`. A
- * full-span cell stays out of the roving 2D navigation grid (registers no cell
- * handle, so arrow keys step over the row); placeholder cells keep the grid
- * rectangular (one cell per column) but are stamped disabled so grid navigation
- * steps over them.
+ * **Row variants.** Declare one or more `[forRowDef]` alongside the columns; for each datum the
+ * body picks the first whose `[when]` predicate returns `true`, and unmatched data renders the
+ * standard per-column row. A `[forRowCell]` template stamps a full-span row whose single cell spans
+ * every column, while the `placeholderCells` flag stamps per-column skeleton cells from each
+ * column's `[forPlaceholderCell]`, falling back to `[forPlaceholderCellDefault]`. Variant rows are
+ * presentational and non-selectable but still count towards `aria-rowindex` / `aria-rowcount`. A
+ * full-span cell registers no cell handle, so arrow keys step over the row; placeholder cells keep
+ * the grid rectangular but are stamped disabled, so navigation steps over them too.
  */
 @Component({
   selector: 'for-table-body',
@@ -533,16 +496,15 @@ export class ForTableBody<T = unknown> {
    * / `treegrid` mode, where roving 2D navigation and cell-entry own the keyboard
    * and whole-row activation would conflict.
    *
-   * Interactive content inside a data cell owns its own events: a click or
-   * `Enter` originating from a `button`, `a[href]`, `input`, `select`,
-   * `textarea`, `summary`, `label`, `audio`/`video[controls]`, an editable
-   * `contenteditable` region, or an element carrying an interactive ARIA `role`
-   * descendant does **not** emit `rowActivate`, and its native default action is
-   * left intact — a trailing per-row action button keeps working, and `Enter` on
-   * it is not `preventDefault`ed. The row still activates from anywhere else: cell text,
-   * the gaps between cells, or the focused row host itself. `rowContextMenu` is
-   * deliberately unguarded — a right-click anywhere on the row, including over an
-   * inner control, still offers the row's context menu, matching native lists.
+   * Interactive content inside a data cell owns its own events: a click or `Enter` originating from
+   * a `button`, `a[href]`, `input`, `select`, `textarea`, `summary`, `label`,
+   * `audio` / `video[controls]`, an editable `contenteditable` region, or an element carrying an
+   * interactive ARIA role does **not** emit `rowActivate`, and its native default action is left
+   * intact. The row still activates from anywhere else — cell text, the gaps between cells, or the
+   * focused row host.
+   *
+   * `rowContextMenu` is deliberately unguarded, so a right-click over an inner control still offers
+   * the row's context menu, matching native lists.
    */
   readonly interactiveRows = input(false, { transform: booleanAttribute });
 
@@ -796,12 +758,12 @@ export class ForTableBody<T = unknown> {
   }
 
   /**
-   * Folds a stamped resizer's teardown revert into `[(columnWidths)]`. A handle
-   * destroyed mid-drag (its column dropped from `displayedColumns`, or `resizable`
-   * toggled off) can no longer report through `widthChange`, so without this the map
-   * would keep the transient drag width. Bound as a function reference because the
-   * revert happens during the handle's teardown; the body itself outlives it, so its
-   * own `columnWidthsChange` still reaches the consumer.
+   * Folds a stamped resizer's teardown revert into `[(columnWidths)]`, so a handle destroyed
+   * mid-drag — its column dropped from `displayedColumns`, or `resizable` toggled off — does not
+   * leave the transient drag width in the map.
+   *
+   * A function reference rather than an output, because the revert happens during the handle's
+   * teardown. The body outlives it, so its own `columnWidthsChange` still reaches the consumer.
    */
   protected readonly onColumnWidthRevert = (descriptor: TableResizeDescriptor): void => {
     this.onColumnWidthChange(descriptor.column, descriptor.width);

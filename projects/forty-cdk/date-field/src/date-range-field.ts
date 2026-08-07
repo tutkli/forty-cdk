@@ -33,54 +33,33 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
  * [Spinbuttons](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/) (the same
  * machinery as `ForDateField`), nested inside one outer `role="group"`.
  *
- * `ForDateRangeField` is the root: it owns the two segment engines (one per
- * endpoint), composes each endpoint's parts into the adapter's date type, and
- * assembles the committed `DateRange` — exposing the rendered segments,
- * the per-endpoint coordination surfaces, and the shared configuration to its
- * `[forDateRangeFieldStart]` / `[forDateRangeFieldEnd]` children through
- * {@link FOR_DATE_RANGE_FIELD_CONTEXT}. The spin-button engine lives in the
- * shared `core/datetime` `DateFieldEngine`; all date math goes through the
- * pluggable {@link DateAdapter} shared with `ForCalendar`, so the field
- * hard-depends on no date library.
+ * The root owns one segment engine per endpoint and assembles the committed `DateRange`, exposing
+ * the rendered segments and the shared configuration to its `[forDateRangeFieldStart]` /
+ * `[forDateRangeFieldEnd]` children through {@link FOR_DATE_RANGE_FIELD_CONTEXT}. All date math
+ * goes through the pluggable {@link DateAdapter}, so the field depends on no date library.
  *
- * It implements `FormValueControl<DateRange<D> | null>` from
- * `@angular/forms/signals` — the same contract as `ForDateRangePicker` — so the
- * committed range auto-wires with `[formField]`. The `value` stays `null` until
- * **both** endpoints are fully entered: a half-entered range never reaches the
- * form, and the `DateRange` `end >= start` invariant always holds (a
- * complete-but-out-of-order entry keeps the typed segments but leaves `value`
- * `null`, reflecting `aria-invalid="true"` + `data-range-error` so the disorder
- * is perceivable; restoring order emits the range).
+ * Implements `FormValueControl<DateRange<D> | null>`, so the committed range auto-wires with
+ * `[formField]`. `value` stays `null` until both endpoints are fully entered, so a half-entered
+ * range never reaches the form and the `end >= start` invariant always holds. A complete but
+ * out-of-order entry keeps its typed segments, leaves `value` `null` and reflects
+ * `aria-invalid="true"` + `data-range-error`; restoring the order emits the range.
  *
- * Set `granularity` coarser-than-a-day off (`'hour'` / `'minute'` / `'second'`)
- * to make it a **date-time range field**: time segments are appended after the
- * date segments in each endpoint. This needs a time-capable adapter
- * (`provideNativeDateAdapter()` / `provideInternationalizedDateTimeAdapter()`);
- * `granularity = 'day'` (default) works with any adapter.
+ * Setting `granularity` finer than `'day'` appends time segments to each endpoint, making it a
+ * date-time range field. That requires a time-capable adapter; the default `'day'` works with any.
  *
- * A read-only field is reflected on this `role="group"` root — and on each
- * endpoint group — as the boolean `data-readonly` styling hook only.
- * `aria-readonly` is not a supported property of `role="group"`, so the ARIA
- * announcement lives on each `[forDateRangeFieldSegment]` —
- * `role="spinbutton"` does support it.
+ * Read-only and required states reflect as the boolean `data-readonly` / `data-required` hooks on
+ * the root: `role="group"` supports neither ARIA property. The read-only announcement lives on each
+ * `[forDateRangeFieldSegment]` instead, whose `role="spinbutton"` does support it; the required
+ * state is deliberately not repeated per segment.
  *
- * A required field carries the boolean `data-required` hook on the same root.
- * `aria-required` is not supported on `role="group"` either, and it is
- * deliberately not repeated on every segment — a composite field would
- * announce "required" once per part.
+ * The bounds are named `minDate` / `maxDate` because `min` / `max` are reserved `FormUiControl`
+ * members whose types cannot express a date bound.
  *
- * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
- *   date-time) type.
- *
- * Note: the date bounds are named `minDate` / `maxDate`, not `min` / `max` —
- * the latter are reserved `FormUiControl` members typed `number | undefined`,
- * and `FormUiControl.min` / `max` are additionally typed `NonNullable<TValue>`
- * (the range object itself), which is meaningless as a bound.
+ * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`, date-time) type.
  *
  * @example
  * ```html
- * <div forDateRangeField [(value)]="stay" [ariaLabel]="'Stay'" name="stay"
- *      #range="forDateRangeField">
+ * <div forDateRangeField [(value)]="stay" [ariaLabel]="'Stay'" name="stay">
  *   <div forDateRangeFieldStart #start="forDateRangeFieldStart">
  *     @for (seg of start.segments(); track seg.id) {
  *       @if (seg.isLiteral) {
@@ -91,15 +70,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
  *     }
  *   </div>
  *   <span aria-hidden="true">–</span>
- *   <div forDateRangeFieldEnd #end="forDateRangeFieldEnd">
- *     @for (seg of end.segments(); track seg.id) {
- *       @if (seg.isLiteral) {
- *         <span forDateRangeFieldLiteral>{{ seg.text }}</span>
- *       } @else {
- *         <span forDateRangeFieldSegment [segment]="seg.type!">{{ seg.text }}</span>
- *       }
- *     }
- *   </div>
+ *   <div forDateRangeFieldEnd #end="forDateRangeFieldEnd"><!-- same segment loop --></div>
  * </div>
  * ```
  */

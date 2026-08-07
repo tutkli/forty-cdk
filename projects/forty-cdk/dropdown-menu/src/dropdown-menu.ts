@@ -258,7 +258,7 @@ export class ForDropdownMenu extends MenuOverlayHost implements ForMenuContext {
    * Side the surface is anchored to: the trigger's own `[menuPositioning]`
    * override when it declared one, else this root's `[side]`. The four
    * placement values resolve through the opener registry so a trigger carries
-   * the same override here as it does under a shared `[forMenu]` root (#1574);
+   * the same override here as it does under a shared `[forMenu]` root;
    * with no override the value is this root's input verbatim.
    */
   readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());

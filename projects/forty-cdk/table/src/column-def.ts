@@ -174,7 +174,7 @@ export class ForColumnDragPlaceholder {
  * declared content of the `<for-table-body>` element: a preset column component
  * may declare it in its own view, and a scaffold wrapper may project it into a
  * body it owns. See {@link ForTableDefRegistry} for both recipes. A def with no
- * reachable registry throws — it used to be silently inert.
+ * reachable registry throws.
  *
  * @example
  * ```html
@@ -224,8 +224,8 @@ export class ForColumnDef {
    * one `reorderable` column, `ForTableBody` applies `[forTableColumnReorder]` to the
    * stamped header row and `[forDraggable]` (with `[dragData]` set to this column's
    * `name`) to this header cell, and re-emits committed reorders through the body's
-   * `columnReorder` output. Non-reorderable columns stay static (not draggable). Note
-   * that any `reorderable` column makes the body bundle `forty-cdk/drag-drop`.
+   * `columnReorder` output. Non-reorderable columns stay static (not draggable).
+   * Any `reorderable` column makes the body bundle `forty-cdk/drag-drop`.
    */
   readonly reorderable = input(false, { transform: booleanAttribute });
 

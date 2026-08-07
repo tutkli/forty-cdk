@@ -42,8 +42,7 @@ export interface ForVirtualForContext<T> {
  * position in the window changed never has to be detached and re-inserted to get there. That
  * is what makes focus survive a window jump — `ViewContainerRef.move` removes the node from
  * the document before re-inserting it, which blurs whatever inside it was focused, and the
- * row pinned by `[forVirtualReorder]` is focused for the whole gesture
- * ([#1666](https://github.com/tutkli/forty-cdk/issues/1666)).
+ * row pinned by `[forVirtualReorder]` is focused for the whole gesture.
  */
 @Directive({
   selector: '[forVirtualFor][forVirtualForOf]',

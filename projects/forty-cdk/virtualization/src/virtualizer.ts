@@ -53,7 +53,7 @@ export interface VirtualizerOptions {
    * Every item's computed offset and every `scrollToIndex` / `scrollToOffset`
    * alignment shifts by this amount, so a sticky header rendered inside the
    * scroller no longer overlaps the row a cross-window keyboard move lands on.
-   * Defaults to `0` (today's behaviour). Should be a stable value.
+   * Defaults to `0`. Should be a stable value.
    */
   readonly scrollMargin?: number;
 }

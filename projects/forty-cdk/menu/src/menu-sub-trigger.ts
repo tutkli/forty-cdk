@@ -33,8 +33,8 @@ import { handleMenuTabOut } from './menu-tab-out';
  * Pointer (mouse):
  * - **pointermove** — drop the parent menu's hover highlight so no sibling item
  *   stays active while the submenu opens. The sub-trigger reflects no
- *   `data-highlighted` of its own and does not take focus (hover-open never
- *   moves focus, per #332).
+ *   `data-highlighted` of its own and does not take focus — hover-open never
+ *   moves focus.
  * - **pointerenter** — open the submenu after the configured `subMenuOpenDelay`
  *   ({@link provideForMenuDefaults}), without moving focus into it.
  * - **pointerleave** — close after `subMenuCloseDelay`, unless the pointer
@@ -76,6 +76,9 @@ export class ForMenuSubTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   #pointerActivation = false;
 
+  /**
+   * Whether the submenu can be opened. A disabled trigger stays focusable and announced.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
   readonly effectiveDisabled = computed(() => this.disabled() || this.submenu.disabled());
 

@@ -21,14 +21,14 @@ import { isPlatformBrowser } from '@angular/common';
  * writes `padding-right`. In that case the final unlock leaves
  * `target.style.paddingRight` untouched, so a consumer's unrelated inline
  * `padding-right` survives. The clear-don't-restore contract only applies to
- * values the lock owns. See #391.
+ * values the lock owns.
  *
  * Why: any code (route transition, theme toggle, the consumer themselves)
  * that mutates `target.style.overflow` between `lock()` and the final
  * `unlock()` would otherwise be silently clobbered when we restored the
  * stale snapshot. Clearing on unlock means the lock owns the inline style
  * only while it exists; intervening mutations win, and the resting state
- * is whatever stylesheet rules apply. See #149.
+ * is whatever stylesheet rules apply.
  *
  * The scrollbar-width compensation prevents content jumping when overflow
  * goes from `auto` (scrollbar shown) to `hidden` (scrollbar hidden).

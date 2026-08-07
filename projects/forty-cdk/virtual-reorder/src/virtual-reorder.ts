@@ -58,11 +58,11 @@ function injectViewport(): ForVirtualViewport {
  * - **Lifted-row pinning** — the lifted row is pinned into the window via the viewport's
  *   `setReorderingIndex`, so auto-scroll and a dataset-wide keyboard jump can both carry the
  *   window past it without recycling it, and it keeps its DOM node — and therefore its focus —
- *   for the whole gesture ([#1666](https://github.com/tutkli/forty-cdk/issues/1666)).
+ *   for the whole gesture.
  * - **Dataset-wide keyboard reorder** — keyboard stepping runs over the true total count,
  *   scrolling unmounted target rows into view, rather than being confined to the window.
  *
- * **One gesture at a time** ([#1695](https://github.com/tutkli/forty-cdk/issues/1695)). The pin is
+ * **One gesture at a time**. The pin is
  * written when a pointer drag **arms**, not when the press lands, and released on its commit or
  * cancel — so an ordinary click on a row pins nothing and leaves no retained node behind. Pointer
  * and keyboard reorder are mutually exclusive: while a keyboard lift is live the coordinator stands
@@ -74,7 +74,7 @@ function injectViewport(): ForVirtualViewport {
  * whatever `button` their engine reports), or when the pressed row's `[forDraggable]` is
  * `[dragDisabled]` or unregistered. That is the guard set `[forListboxReorder]` and
  * `[forTreeNodeDrag]` apply at the same seam, and it matches what this coordinator's own keyboard
- * path already refuses ([#1697](https://github.com/tutkli/forty-cdk/issues/1697)).
+ * path already refuses.
  *
  * Hold **Shift** during a pointer drag to engage **windowed scrub**: the viewport maps onto the
  * whole dataset (top edge → first item, bottom edge → last), so a single gesture drops the lifted

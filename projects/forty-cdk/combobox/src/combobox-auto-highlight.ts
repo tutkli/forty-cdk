@@ -45,29 +45,21 @@ export interface ActiveIdSource<T> {
 }
 
 /**
- * Build the host's activedescendant pointer as a `linkedSignal` so the
- * "what should be highlighted given open / items / autoHighlight" decision is a
- * **pure derivation**, never a write from an `effect` (the banned
- * state-propagation pattern). The returned signal is still writable for the
- * genuinely imperative moves that own their own scroll — arrow / Home / End
- * navigation, pointer-move hover, multi-mode activation, and the virtualized
- * pending-nav resolution (`navigate` / `seedFromIndexedSnapshot` /
- * `tryResolvePending` in `combobox-virtualized-navigator.ts`).
+ * Builds the host's activedescendant pointer as a `linkedSignal`, so what should be highlighted
+ * given `open` / `items` / `autoHighlight` is a pure derivation. The result stays writable for the
+ * imperative moves that own their own scroll — arrow navigation, hover, multi-mode activation, and
+ * the virtualized pending-nav resolution.
  *
- * The reset/seed rule, in order:
- * - On a `query` change the previously-active option may have been filtered
- *   out, so the prior pointer is dropped.
- * - A pointer that no longer matches a registered option is dropped (covers the
- *   consumer mutating the list without touching `query`).
- * - When a valid pointer survives, it is preserved (arrow nav, hover).
- * - Otherwise, in the **non-virtualized** case, auto-highlight seeds the
- *   first / last enabled option (per `initialFocus`) while the listbox is open
- *   via {@link resolveAutoHighlightSeed}. The virtualized case returns `null`
- *   here and the host's effect seeds it imperatively, because that seed must
- *   order options by absolute `posInSet` and must lose to a pending
- *   `(scrollToIndex)` resolution.
+ * The reset and seed rule, in order:
  *
- * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
+ * - A `query` change drops the prior pointer, since the active option may have been filtered out.
+ * - A pointer no longer matching a registered option is dropped, covering a list mutated without
+ *   touching `query`.
+ * - A surviving valid pointer is preserved.
+ * - Otherwise, when not virtualized, {@link resolveAutoHighlightSeed} seeds the first or last
+ *   enabled option while the listbox is open. The virtualized case returns `null` and is seeded
+ *   imperatively instead, because that seed orders by absolute `posInSet` and must lose to a
+ *   pending `(scrollToIndex)` resolution.
  */
 export function createActiveIdSignal<T>(source: ActiveIdSource<T>): WritableSignal<string | null> {
   return linkedSignal<
@@ -218,48 +210,27 @@ export interface AutoHighlightBridgeDeps<T> {
 }
 
 /**
- * The **imperative tail** of the auto-highlight flow, run from the host's
- * constructor `effect`. The activedescendant *decision* is a pure derivation in
- * {@link createActiveIdSignal}; this only performs the side effects that escape
- * the reactive graph. It reacts to `items()`, `autoHighlight()` and `open()`:
+ * The imperative tail of the auto-highlight flow, run from the host's constructor `effect`. The
+ * activedescendant *decision* is a pure derivation in {@link createActiveIdSignal}; this performs
+ * only the side effects that escape the reactive graph, reacting to `items()`, `autoHighlight()`
+ * and `open()`.
  *
- * The label cache is deliberately **not** pulled here: pulling it tracks the
- * selection, and this effect writes activedescendant and scrolls, so it would
- * re-run those writes on every commit of `value`. The root owns a separate
- * read-only effect for that pull, and `require-sanctioned-pull-marker` now
- * enforces the split. The position-map pull runs through the shared
- * {@link runVirtualizedNavigatorBridge} and **does** share this effect with
- * those writes — the one place in the library where a pull and a write live
- * together. It is the asymmetry that makes it safe: the position map's sources
- * (`items` / `totalCount` / the data version) are the ones this bridge already
- * tracks through its own `items()` read, so priming it widens nothing, whereas
- * the label cache would have added the selection. It runs only when the consumer
- * set `totalCount()`, so a plain combobox never builds the navigator.
+ * When virtualized, it resolves a pending `(scrollToIndex)` navigation: once the option for the
+ * requested `posInSet` mounts, activedescendant is seeded to its id and scrolled into view. That
+ * write takes precedence over the auto-highlight seed. The passive `seedFromIndexedSnapshot` then
+ * points at the topmost or bottommost rendered enabled option without touching the consumer's
+ * scroll position.
  *
- * 1. Virtualized only: resolves a pending `(scrollToIndex)` navigation — once
- *    the option for the requested posInSet mounts, `tryResolvePending` seeds
- *    activedescendant to its id and scrolls it into view. This is the single
- *    sanctioned activedescendant write from an effect, and it is a legitimate
- *    side effect (not state propagation): it integrates the consumer's
- *    virtualizer mounting a row asynchronously, and it must win over the
- *    auto-highlight seed — which is why the virtualized seed can't live in the
- *    linkedSignal. `seedFromIndexedSnapshot` then seeds the topmost / bottommost
- *    *rendered* enabled option (ordered by absolute `posInSet`) deliberately
- *    passively — it only moves the pointer, never the consumer's scroll position.
- * 2. Non-virtualized: scrolls the auto-highlight-seeded option into view so a
- *    seed that lands below the fold is visible, for parity with `navigate()`.
- *    The seed itself comes from the linkedSignal; this is its imperative tail.
- *    The activedescendant is read `untracked` so the scroll never re-triggers
- *    the effect, and pointer-move hover doesn't reach here (it changes none of
- *    the tracked reads), so hovering never scrolls. This handles a re-seed while
- *    the listbox is already open (e.g. the consumer's filter dropped the active
- *    option). The **initial open** scroll runs here too but is wiped a tick
- *    later when `[forComboboxContent]` portals to `document.body` (which resets
- *    `scrollTop`); `ForCombobox.scrollActiveOptionIntoView` re-applies it from
- *    the positioner's first-resolved-position hook, after the portal move and
- *    after the surface is sized (#1066).
+ * When not virtualized, it scrolls the seeded option into view so a seed below the fold is visible,
+ * matching `navigate()`. The activedescendant is read `untracked`, so scrolling never re-triggers
+ * the effect and hover never scrolls. The initial-open scroll is re-applied by
+ * `ForCombobox.scrollActiveOptionIntoView` after the content portals, since portaling resets
+ * `scrollTop`.
  *
- * Internal — not re-exported from `combobox/index.ts` or `public-api.ts`.
+ * The label cache is deliberately not pulled here: it tracks the selection, so every commit of
+ * `value` would re-run this effect's writes and scrolls. The position map is pulled, through
+ * {@link runVirtualizedNavigatorBridge}, because its sources are already tracked by this bridge's
+ * own `items()` read and priming it widens nothing.
  */
 export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): void {
   const items = deps.items();

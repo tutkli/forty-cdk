@@ -526,7 +526,7 @@ export function injectComboboxContext<T = unknown>(piece: string): ComboboxConte
  * root, which owns the registration protocol the public interface omits. Both
  * paths are guarded, on read rather than at injection time, because the explicit
  * one only resolves inside the `computed`; the explicit widening predates the
- * one-token collapse ([#1593](https://github.com/tutkli/forty-cdk/issues/1593))
+ * one-token collapse
  * and was never checked either.
  */
 export function injectComboboxTriggerContext<T = unknown>(

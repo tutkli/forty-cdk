@@ -32,44 +32,28 @@ import { FOR_TIME_FIELD_DEFAULTS } from './time-field-defaults';
  * `role="spinbutton"` segment (`[forTimeFieldSegment]`) so entry is unambiguous
  * and locale-correct.
  *
- * `ForTimeField` is the root: it owns the entered parts, composes them into the
- * adapter's date-time type, resolves the locale-ordered segment list, and
- * exposes everything to the segment / literal children through
- * {@link FOR_TIME_FIELD_CONTEXT}. The spin-button engine (digit typing,
- * stepping, Home/End, RTL focus moves, the segment registry, the segment bounds,
- * the midnight seed, and the sentinel-anchored setTime/clamp compose) lives in
- * the shared `core/datetime` {@link TimeFieldEngine} (itself built on
- * `SegmentEditor`); the root supplies only the reactive inputs and writes the
- * composed value. All time math goes through the pluggable `DateAdapter` shared
- * with `ForCalendar`, which **must be time-capable** —
- * `provideNativeDateAdapter()` or `provideInternationalizedDateTimeAdapter()`
- * (the day-only `provideInternationalizedDateAdapter()` throws).
+ * The root owns the entered parts, composes them into the adapter's date-time type, resolves the
+ * locale-ordered segment list, and exposes everything to the segment and literal children through
+ * {@link FOR_TIME_FIELD_CONTEXT}. The spin-button engine lives in the shared
+ * {@link TimeFieldEngine}. All time math goes through the `DateAdapter`, which **must be
+ * time-capable** — the day-only `provideInternationalizedDateAdapter()` throws.
  *
- * It implements `FormValueControl<D | null>` from `@angular/forms/signals`, so
- * it auto-wires with `[formField]` and auto-associates inside a `[forField]`.
- * The value stays `null` until every visible segment is filled. When no value
- * is bound yet, the composed value is anchored on a fixed, DST-stable sentinel
- * date (`2000-01-01`) rather than today, so a wall-clock time always round-trips
- * to the same instant; bind an existing date-time as `value` to edit its time in
- * place.
+ * Implements `FormValueControl<D | null>`, so it auto-wires with `[formField]` and auto-associates
+ * inside a `[forField]`. The value stays `null` until every visible segment is filled.
  *
- * A read-only field is reflected on this `role="group"` root as the boolean
- * `data-readonly` styling hook only. `aria-readonly` is not a supported
- * property of `role="group"`, so the ARIA announcement lives on each
- * `[forTimeFieldSegment]` — `role="spinbutton"` does support it.
+ * While no value is bound the composed value is anchored on a fixed, DST-stable sentinel date
+ * rather than today, so a wall-clock time round-trips to the same instant. Binding an existing
+ * date-time edits its time in place.
  *
- * A required field carries the boolean `data-required` hook on the same root.
- * `aria-required` is not supported on `role="group"` either, and it is
- * deliberately not repeated on every segment — a composite field would
- * announce "required" once per part.
+ * Read-only and required states reflect as the boolean `data-readonly` / `data-required` hooks on
+ * the root: `role="group"` supports neither ARIA property. The read-only announcement lives on each
+ * `[forTimeFieldSegment]` instead, whose `role="spinbutton"` does support it; the required state is
+ * deliberately not repeated per segment.
+ *
+ * The bounds are named `minTime` / `maxTime` because `min` / `max` are reserved `FormUiControl`
+ * members typed for numeric validators. Only their time-of-day component is considered.
  *
  * @typeParam D The adapter's immutable, time-capable date-time type.
- *
- * Note: the bounds are named `minTime` / `maxTime`, not `min` / `max` — the
- * latter are reserved `FormUiControl` members typed `number | undefined` for
- * numeric validators, so a date-time-typed `min` / `max` would break the
- * `FormValueControl` contract. Only the time-of-day component of the bounds is
- * considered.
  *
  * @example
  * ```html

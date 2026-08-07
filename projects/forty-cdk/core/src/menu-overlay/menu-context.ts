@@ -165,8 +165,8 @@ export interface ForMenuContext {
    * A `Signal` rather than a plain `boolean` because a multi-opener root
    * (`[forMenu]`) has heterogeneous openers: a button opener *is* a labelling
    * control while a right-click region is not, so the answer is a property of
-   * the **active** opener and changes as the menu is opened from a different one
-   * (#1573). Roots with a single fixed trigger flavour report a constant signal.
+   * the **active** opener and changes as the menu is opened from a different one. Roots with a
+   * single fixed trigger flavour report a constant signal.
    */
   readonly triggerLabelsMenu?: Signal<boolean>;
 
@@ -175,8 +175,7 @@ export interface ForMenuContext {
    * state — a surface the consumer leaves mounted while no menu is open.
    * `false`, the default when a root omits the member, is the structural
    * mount-equals-open contract every other menu root has, so the surface opts
-   * into the dev-mode mounted-while-closed warning
-   * ([#1591](https://github.com/tutkli/forty-cdk/issues/1591)).
+   * into the dev-mode mounted-while-closed warning.
    *
    * Only `[forMenubar]` reports `true`: its README documents an unconditionally
    * mounted surface as one of three supported mount shapes, because the bar
@@ -343,7 +342,7 @@ export type { MenuActivationModality };
  * order their `afterNextRender` callbacks ran, because a menu and its submenu
  * mounted in the same render pass activate child-before-parent — which would
  * put the parent above its own submenu and make the submenu's first focus close
- * the whole chain with reason `'focusOutside'` (#1450).
+ * the whole chain with reason `'focusOutside'`.
  */
 export function menuLayerNesting(ctx: ForMenuContext): DismissibleLayerNesting {
   let chain: ForMenuContext = ctx;

@@ -72,12 +72,10 @@ import { ForToastTitle } from './toast-title';
  * is owned once by `ForToastManager`, so the hotkey never double-fires when
  * several viewports are mounted.
  *
- * Regions: a viewport renders only toasts whose `region` matches its
- * `[region]` input (default {@link DEFAULT_TOAST_REGION}), so independent
- * viewports — e.g. top-right system notifications and bottom-center action
- * confirmations — are a first-class feature. If two viewports share a region,
- * only the first one mounted renders it (the rest stay dormant and warn in dev
- * mode), so a single `show()` always produces exactly one toast node.
+ * Regions: a viewport renders only toasts whose `region` matches its `[region]` input (default
+ * {@link DEFAULT_TOAST_REGION}), so several viewports can coexist — top-right system notifications
+ * beside bottom-center confirmations. If two share a region, only the first mounted renders it and
+ * the rest stay dormant and warn in dev mode, so one `show()` always produces one toast node.
  *
  * Accessibility: the host carries `role="region"` and an `aria-label` — set it
  * per-viewport with `[ariaLabel]`, or per-scope with
@@ -86,16 +84,12 @@ import { ForToastTitle } from './toast-title';
  * (`status` / `alert`) and `aria-live`, so screen readers announce updates
  * without forcing focus.
  *
- * Over a modal: by default the host carries `data-for-modal-exempt`, so an open
- * modal `ForDialog` / `ForDrawer` (a) leaves the viewport out of its inert pass
- * instead of disabling it (when the viewport sits at the document-body level)
- * and (b) treats a click on a toast as "inside", never as `pointerDownOutside`.
- * A confirmation / error toast shown from a flow inside a modal therefore stays
- * interactive and clicking it does not dismiss the modal — no consumer-side
- * `data-for-modal-peer` stamping or `onPointerDownOutside` veto needed. Opt a
- * viewport out with `provideForToastDefaults({ overModal: 'inert' })`: the
- * marker is dropped, so the modal inerts the viewport and a click on a toast
- * dismisses it like any other background sibling.
+ * Over a modal: the host carries `data-for-modal-exempt` by default, so an open `ForDialog` /
+ * `ForDrawer` leaves the viewport out of its inert pass and treats a click on a toast as inside
+ * rather than as `pointerDownOutside`. A toast shown from a flow inside a modal therefore stays
+ * interactive, and clicking it does not dismiss the modal. Opt out with
+ * `provideForToastDefaults({ overModal: 'inert' })`, which drops the marker so the viewport is
+ * inerted and a click on a toast dismisses the modal like any other background sibling.
  */
 @Component({
   selector: 'for-toast-viewport, [forToastViewport]',

@@ -26,7 +26,7 @@ export interface ForDatePickerContext {
    * The picker's effective disabled — its own `disabled` input OR'd with a
    * surrounding disabled `[forFieldset]`. The trigger reads this so a disabled
    * picker (or fieldset) is inert and reflects the native `disabled` attribute
-   * (its single channel, #561 D2).
+   * (its single channel).
    */
   readonly effectiveDisabled: Signal<boolean>;
   readonly readonly: Signal<boolean>;

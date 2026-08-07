@@ -33,39 +33,24 @@ import {
  * focusable content), so `aria-hidden="false"` is reflected explicitly to
  * counteract any wrapper that defaults to hidden.
  *
- * Two `[forNavigationMenuContent]` panels can briefly co-exist inside the
- * viewport during a transition — the leaving panel stays mounted as long
- * as the consumer's `@if` keeps it around (e.g. `animate.leave`), so the
- * consumer can cross-fade or slide. Mount lifecycle stays with the
- * consumer's template; this directive only re-parents and measures.
+ * Two panels can briefly co-exist inside the viewport during a transition, since a leaving panel
+ * stays mounted for as long as the consumer's `@if` keeps it, so a cross-fade or slide is possible.
+ * Mount lifecycle stays with the consumer's template; this directive only re-parents and measures.
  *
- * The viewport owns panel ordering: panels are inserted in their triggers'
- * document order, never simply appended in mount order. So during an
- * overlapping A→B transition the panel whose trigger comes first in the DOM
- * is always the first child of the viewport, regardless of which panel
- * mounted last — giving cross-fade / slide carousels a deterministic axis
- * to author against (pair this with the `data-motion` hook on Content).
+ * Panels are inserted in their triggers' document order rather than in mount order, so during an
+ * overlapping transition the panel whose trigger comes first is always the viewport's first child.
+ * That gives carousels a deterministic axis to author against — pair it with the `data-motion` hook
+ * on the content.
  *
- * Measurement always tracks the active panel: the ResizeObserver follows
- * `activeContentHost()`, so a non-active panel kept mounted by
- * `animate.leave` is intentionally no longer measured (its size must not
- * drive the viewport box mid-transition). The exposed
- * `--for-navigation-menu-viewport-*` variables therefore reflect the
- * entering panel as soon as it becomes active.
+ * Measurement follows the active panel only, so a panel kept mounted by `animate.leave` no longer
+ * drives the viewport box, and the exposed variables reflect the entering panel as soon as it
+ * becomes active.
  *
- * **Avoid a measurement feedback loop.** The exposed
- * `--for-navigation-menu-viewport-width` / `-height` are measured from the
- * *active content panel*, never from the viewport host's own box — but the
- * ResizeObserver does also observe the host (so a surrounding column resize is
- * picked up). Do **not** drive the host's own measured dimension from these
- * variables (e.g. `width: var(--for-navigation-menu-viewport-width)` applied to
- * the viewport host) and then nest the measured panel such that the host's box
- * constrains the panel's: that would let a measure-tick's CSS output feed back
- * into the next observation. Drive `width` / `height` from the variables on a
- * wrapper or transition them on the host without coupling them back to the
- * measured child's size. The measure-tick read path itself is safe — the
- * observer only bumps a counter, and the geometry is read in a `computed`, not
- * written from the same notification.
+ * **Avoid a measurement feedback loop.** The variables are measured from the active content panel,
+ * but the `ResizeObserver` also watches the host so a surrounding column resize is picked up. Do
+ * not drive the host's own measured dimension from these variables while the host's box constrains
+ * the panel's — a measure tick's CSS output would feed back into the next observation. Apply them
+ * on a wrapper, or transition them on the host without coupling them to the measured child's size.
  *
  * @example
  * ```html

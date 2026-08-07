@@ -17,7 +17,7 @@ import { injectDisclosureContext } from './disclosure-context';
  * attribute, `data-disabled`, and the click guard. The native attribute is the
  * single reflection channel — no `aria-disabled` is emitted, because on a real
  * single-purpose `<button>` trigger the native attribute already conveys the
- * state to assistive technology (rule #561 D2).
+ * state to assistive technology.
  */
 @Directive({
   selector: '[forDisclosureTrigger]',

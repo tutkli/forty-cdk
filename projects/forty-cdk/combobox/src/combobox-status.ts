@@ -8,24 +8,15 @@ import { injectComboboxContext } from './combobox-context';
  * next to the input. The directive sets `role="status"` so messages projected
  * as content are announced to screen readers when they change.
  *
- * The role is the piece's **single** live-region channel — it already implies
- * `aria-live="polite"` and `aria-atomic="true"`, so neither attribute is
- * emitted beside it. This host stays mounted and only rewrites its text, so
- * the attribute pair would have served it equally well; the role is what its
- * sibling `[forComboboxEmpty]` needs (that one reappears with its message
- * already in the DOM, and a live *role* is what is read reliably on
- * insertion), and one vocabulary across the entry point beats two.
+ * The role is the piece's **single** live-region channel — it already implies `aria-live="polite"`
+ * and `aria-atomic="true"`, so neither attribute is emitted beside it.
  *
- * The directive is **content-driven** — it does not pick or render a
- * message. Project whatever the consumer wants and use the exposed
- * `count` signal (or `forComboboxStatus` template ref) to interpolate
- * the option count when relevant.
+ * The directive is **content-driven** and picks no message of its own. Project whatever the
+ * consumer wants and use the exposed `count` signal to interpolate the option count when relevant.
  *
- * Place it inside `[forComboboxContent]` but **outside** the
- * `[forComboboxList]` that owns the options: content carries `role="listbox"`
- * in the editable anatomy, so wrapping the options in a `[forComboboxList]`
- * keeps this `role="status"` region a sibling of the listbox rather than an
- * invalid listbox child.
+ * Place it inside `[forComboboxContent]` but **outside** the `[forComboboxList]` that owns the
+ * options: content carries `role="listbox"` in the editable anatomy, so wrapping the options in a
+ * list keeps this `role="status"` region a sibling of the listbox rather than an invalid child.
  *
  * ```html
  * <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">

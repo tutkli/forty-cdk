@@ -30,7 +30,7 @@ import { injectPopoverContext } from './popover-context';
  * focus) is owned by the shared `injectOverlayShell` helper. The shell's
  * `'first'` mode routes through the same `findFirstFocusable` helper used
  * by `FocusTrap`, dropping the local focusable-selector copy that this
- * directive carried before (see #107).
+ * directive carried before.
  */
 @Directive({
   selector: '[forPopoverContent]',

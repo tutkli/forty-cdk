@@ -80,7 +80,7 @@ export class ForTreeItem implements ForTreeItemContext {
    * pass — including a real server render, where `afterNextRender` never fires
    * and a deferred registration left the pre-hydration DOM claiming
    * `aria-posinset="0"` / `aria-setsize="0"`, values WAI-ARIA defines no meaning
-   * for ([#1639](https://github.com/tutkli/forty-cdk/issues/1639)).
+   * for.
    */
   readonly value = input(unsetInput<string>());
 

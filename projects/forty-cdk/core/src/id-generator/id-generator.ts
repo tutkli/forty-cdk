@@ -34,20 +34,11 @@ export const FOR_ID_SALT = new InjectionToken<string>('forty-cdk id salt', {
  * bootstrapApplication(AppB, { providers: [provideForIdSalt('b')] });
  * ```
  *
- * Without this, both apps default their salt to `APP_ID` — whose Angular
- * default is the literal `'ng'` — so they start from the same salt and the
- * same counter and emit identical id sequences. The duplicate ids then
- * mis-resolve `aria-labelledby` / `aria-controls` to whichever element comes
- * first in the document, which a screen reader announces across app
- * boundaries.
+ * Without it both apps default their salt to `APP_ID` — Angular's default being the literal `'ng'`
+ * — so they emit identical id sequences and the duplicate ids mis-resolve across app boundaries.
  *
- * The salt must stay deterministic per app instance — a runtime random value
- * would break SSR hydration because the server and client renders would no
- * longer agree.
- *
- * Part of the blessed core tier: consumers import it from the
- * `forty-cdk/shared` entry point, which carries the library's semver
- * guarantee.
+ * The salt must be deterministic per app instance: a runtime random value would break SSR
+ * hydration.
  *
  * @param salt A stable, app-unique salt.
  */
@@ -58,55 +49,21 @@ export function provideForIdSalt(salt: string): Provider {
 /**
  * Generates unique string IDs scoped to the application instance.
  *
- * Used by primitives that need to wire `aria-controls` / `aria-labelledby`
- * relationships between pieces — the IDs are stable for the lifetime of the
- * primitive instance.
+ * Backs the `aria-controls` / `aria-labelledby` wiring between a primitive's pieces. Ids are stable
+ * for the lifetime of the instance that minted them.
  *
- * SSR: the generator is `providedIn: 'root'`, so a fresh instance is
- * created for each Angular application bootstrap (one per SSR request).
- * The IDs are salted with {@link FOR_ID_SALT} (which defaults to the
- * application's `APP_ID`) so the server and the client produce identical
- * strings for the same render order — the property hydration relies on. What
- * keeps that order the same, and where incremental hydration stops keeping it,
- * is spelled out below.
+ * Scoped to the application injector, so each bootstrap — and each SSR request — starts a fresh
+ * counter. Ids are salted with {@link FOR_ID_SALT}, defaulting to `APP_ID`, so a server and client
+ * render of the same order produce identical strings.
  *
- * HYDRATION — the counter is monotonic, so that agreement is a property of the
- * *render order*, not of any single id. Ordinary hydration replays the server's
- * order exactly, and incremental hydration (`@defer (hydrate …)`) does not:
- * a dehydrated block's directives construct only when its trigger fires. Two
- * properties keep the emitted DOM correct anyway — every piece that emits a
- * generated id adopts the id already on its host (`hostId` / `adoptHostId`),
- * which during hydration is the server's, and every piece outside all `@defer`
- * blocks mints before any dehydrated block hydrates on both sides. What neither
- * covers is an id a **deferred** root minted for a piece that is **still
- * dehydrated**: the root's counter drifted while it waited, no directive exists
- * in the piece to adopt on its behalf, and so the reference keeps the drifted
- * value and can resolve to nothing — or to the element the server gave that
- * value to. A root outside every `@defer` minting for a dehydrated piece is the
- * split that survives, on the byte-identical guarantee above. The rule that
- * avoids both (keep a primitive's pieces in one hydration unit) is documented
- * for consumers under "Incremental hydration" in the `forty-cdk/shared` README,
- * and pinned by `src/lib/ssr/incremental-hydration.spec.ts` (#1582).
+ * Because the counter is monotonic, that agreement is a property of the render order rather than of
+ * any single id. Ordinary hydration replays the server's order; incremental hydration does not, so
+ * an id minted by a deferred root for a piece that is still dehydrated can keep a drifted value.
+ * Keeping a primitive's pieces in one hydration unit avoids it, and is documented for consumers
+ * under "Incremental hydration" in the `forty-cdk/shared` README.
  *
- * IMPORTANT — multiple apps on one page need distinct salts. The default salt
- * is `APP_ID`, and Angular's default `APP_ID` is the literal `'ng'`. Two
- * forty-cdk apps mounted side-by-side that both keep the default salt
- * therefore start from the same salt and the same counter, emitting identical
- * id sequences — duplicate DOM ids that mis-resolve `aria-labelledby` /
- * `aria-controls` across apps. A per-instance random nonce is deliberately
- * NOT mixed in: it would diverge the salt but break SSR hydration (the server
- * and client renders would no longer agree). When running more than one
- * forty-cdk app on a single page, give each a distinct salt via
- * {@link provideForIdSalt} (the per-app knob that leaves the global `APP_ID`
- * untouched). Overriding the global `APP_ID` works too, but it also drives
- * Angular's hydration store and event replay, so `provideForIdSalt` is the
- * narrower choice.
- *
- * The generator itself stays internal tier while {@link FOR_ID_SALT} and
- * {@link provideForIdSalt} are blessed: a consumer configures the salt, but
- * never mints ids — every id belongs to a primitive's aria wiring, so
- * publishing `next()` would commit the library to an id format it wants to
- * stay free to change (#1492).
+ * Mounting several apps on one page requires a distinct salt per app via {@link provideForIdSalt},
+ * or they emit colliding ids.
  */
 @Injectable({ providedIn: 'root' })
 export class IdGenerator {

@@ -152,7 +152,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    * directive's `returnFocusTarget` so `injectModalShell` restores focus there
    * instead of to whatever it happened to capture at construction (which breaks
    * on a close→open swap, where the incoming surface is built while focus still
-   * lives inside the outgoing, doomed one — see #1385).
+   * lives inside the outgoing, doomed one).
    *
    * Read the currently-focused element **synchronously at `open()` time**,
    * before the render tick mounts the new overlay and swaps the DOM, and
@@ -173,7 +173,7 @@ export class OverlayManagerCore<TEntry extends OverlayManagerEntry> {
    * The resolved origin is remembered so the next swap in the chain can inherit
    * it. Callers may bypass this and thread a caller-chosen element instead.
    *
-   * Both halves of the resolution read the composed tree (#1586): the capture
+   * Both halves of the resolution read the composed tree: the capture
    * descends through open shadow roots, so a trigger inside one is the origin
    * rather than its (usually unfocusable) host, and the "am I inside a managed
    * overlay?" walk climbs back out of them. The two go together — resolving the

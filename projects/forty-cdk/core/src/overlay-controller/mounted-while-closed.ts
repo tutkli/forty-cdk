@@ -29,49 +29,32 @@ export interface MountedWhileClosedConfig {
 }
 
 /**
- * Warns — dev mode only, once per instance — when an overlay surface is still
- * mounted after its first render while its own open state reports closed. That
- * is the consumer forgetting the `@if`, and it is the library's quietest
- * first-use mistake: the surface renders permanently, `data-state="closed"` is
- * reflected onto a visible element, the ARIA stays internally consistent and
- * the primitive keeps working, so it reads as a CSS bug rather than a wiring
- * one ([#1591](https://github.com/tutkli/forty-cdk/issues/1591)).
+ * Warns — dev mode only, once per instance — when an overlay surface is still mounted after its
+ * first render while its own open state reports closed, which is the consumer forgetting the `@if`.
  *
- * Mount equals open is structural for these surfaces (see the
- * `No forceMount / keepMounted equivalent for overlays` rule in
- * `.claude/rules/conventions.md`), so the `@if` is the whole contract and there
- * is no input to suppress the warning with. Only pieces whose closed state has
- * no supported mounted shape adopt it — the always-mounted families (Tabs /
- * Stepper / Carousel panels, Accordion and Disclosure content, all of which
- * reflect `aria-hidden` + `inert` while closed precisely so a consumer *can*
- * keep them mounted) do not, and neither does a `[forMenuContent]` under
- * `[forMenubar]`, whose README documents an unconditionally mounted surface as
- * one of three shapes.
+ * It is the library's quietest first-use mistake: the surface renders permanently,
+ * `data-state="closed"` lands on a visible element, the ARIA stays internally consistent and the
+ * primitive keeps working, so it reads as a CSS bug rather than a wiring one.
  *
- * **The check is a mount-time one.** It reads the open state inside
- * `afterNextRender` and never again, which buys three things at once:
+ * Mount equals open is structural for these surfaces, so the `@if` is the whole contract and no
+ * input suppresses the warning. Only pieces whose closed state has no supported mounted shape adopt
+ * it: the always-mounted panel families do not, and neither does a `[forMenuContent]` under
+ * `[forMenubar]`, which documents an unconditionally mounted surface as a supported shape.
  *
- * - **The exit-animation window stays silent.** A surface the consumer closed
- *   is legitimately mounted-and-closed for as long as `animate.leave` keeps it
- *   around, and re-checking on every close transition would report every
- *   correctly-wired overlay in the library.
- * - **Bindings have settled.** A piece that registers with its parent from its
- *   constructor may derive its open state from an input the consumer has not
- *   written yet — `[forNavigationMenuContent]` reads its owning item's value,
- *   which is `input.required` — so a construction-time read would throw
- *   NG0950 rather than answer. `condition` accepts a thunk for the same
- *   reason: that value is also what the panel's `@if` compares against, so the
- *   quoted fix is only copy-pasteable if it is built where the input is
- *   readable.
- * - **It is inert on the server.** `afterNextRender` never fires there, so a
- *   prerender emits no diagnostics.
+ * **The check is mount-time**, reading the open state inside `afterNextRender` and never again,
+ * which buys three things:
  *
- * The cost is a deliberate false negative: a surface that mounts open and is
- * then left mounted forever is not reported. Catching that would mean
- * re-checking on close, which is the false positive above.
+ * - The exit-animation window stays silent. A closed surface is legitimately mounted for as long as
+ *   `animate.leave` keeps it, so re-checking on close would report every correct overlay.
+ * - Bindings have settled. A piece deriving its open state from an `input.required` its parent has
+ *   not written yet would throw NG0950 on a construction-time read. `condition` takes a thunk for
+ *   the same reason, so the quoted fix is built where the input is readable.
+ * - It is inert on the server, where `afterNextRender` never fires.
  *
- * Must be called from an injection context (the piece's constructor). In a
- * production build it registers no render hook at all.
+ * The cost is a deliberate false negative: a surface that mounts open and is then left mounted
+ * forever goes unreported, since catching it would mean re-checking on close.
+ *
+ * Must be called from an injection context. A production build registers no render hook at all.
  */
 export function warnIfMountedWhileClosed(config: MountedWhileClosedConfig): void {
   if (!isDevMode()) {

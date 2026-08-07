@@ -30,46 +30,28 @@ import { FOR_DATE_FIELD_DEFAULTS } from './date-field-defaults';
  * (`[forDateFieldSegment]`) so entry is unambiguous and locale-correct — no
  * free-text parsing, no `03/04`-is-it-March-4th guesswork.
  *
- * `ForDateField` is the root: it owns the entered parts, composes them into the
- * adapter's date type, resolves the locale-ordered segment list, and exposes
- * everything to the segment / literal children through
- * {@link FOR_DATE_FIELD_CONTEXT}. The spin-button engine (digit typing, stepping,
- * Home/End, RTL focus moves, the segment registry) lives in the shared
- * `core/datetime` {@link DateFieldEngine} (itself built on `SegmentEditor`);
- * the root supplies only the reactive inputs and writes the composed value.
- * All date math goes through the pluggable {@link DateAdapter} shared with
- * `ForCalendar` (`provideInternationalizedDateAdapter()` /
- * `provideNativeDateAdapter()`), so the field hard-depends on no date library.
+ * The root owns the entered parts, composes them into the adapter's date type, resolves the
+ * locale-ordered segment list, and exposes everything to the segment and literal children through
+ * {@link FOR_DATE_FIELD_CONTEXT}. The spin-button engine — digit typing, stepping, Home/End, RTL
+ * focus moves, the segment registry — lives in the shared {@link DateFieldEngine}. All date math
+ * goes through the pluggable {@link DateAdapter}, so the field depends on no date library.
  *
- * Set `granularity` coarser-than-a-day off (`'hour'` / `'minute'` / `'second'`)
- * to make it a **date-time field**: time segments (hour / minute / second and,
- * in 12-hour mode, an AM·PM `dayPeriod`) are appended after the date segments in
- * the same `role="group"`, sharing the one roving tab stop. This needs a
- * time-capable adapter (`provideNativeDateAdapter()` /
- * `provideInternationalizedDateTimeAdapter()`); `granularity = 'day'` (default)
- * is unchanged and works with any adapter.
+ * Setting `granularity` finer than `'day'` appends time segments (and, in 12-hour mode, an AM·PM
+ * `dayPeriod`) to the same `role="group"`, sharing its single roving tab stop. That requires a
+ * time-capable adapter; the default `'day'` works with any.
  *
- * It implements `FormValueControl<D | null>` from `@angular/forms/signals`, so
- * it auto-wires with `[formField]` and auto-associates inside a `[forField]`.
- * The value stays `null` until every visible segment is filled.
+ * Implements `FormValueControl<D | null>`, so it auto-wires with `[formField]` and auto-associates
+ * inside a `[forField]`. The value stays `null` until every visible segment is filled.
  *
- * A read-only field is reflected on this `role="group"` root as the boolean
- * `data-readonly` styling hook only. `aria-readonly` is not a supported
- * property of `role="group"`, so the ARIA announcement lives on each
- * `[forDateFieldSegment]` — `role="spinbutton"` does support it.
+ * Read-only and required states reflect as the boolean `data-readonly` / `data-required` hooks on
+ * the root: `role="group"` supports neither ARIA property. The read-only announcement lives on each
+ * `[forDateFieldSegment]` instead, whose `role="spinbutton"` does support it; the required state is
+ * deliberately not repeated per segment.
  *
- * A required field carries the boolean `data-required` hook on the same root.
- * `aria-required` is not supported on `role="group"` either, and it is
- * deliberately not repeated on every segment — a composite field would
- * announce "required" once per part.
+ * The bounds are named `minDate` / `maxDate` because `min` / `max` are reserved `FormUiControl`
+ * members typed for numeric validators.
  *
- * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`,
- *   date-time) type.
- *
- * Note: the date bounds are named `minDate` / `maxDate`, not `min` / `max` —
- * the latter are reserved `FormUiControl` members typed `number | undefined`
- * for numeric validators, so a date-typed `min` / `max` would break the
- * `FormValueControl` contract.
+ * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`, date-time) type.
  *
  * @example
  * ```html

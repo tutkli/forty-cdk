@@ -27,10 +27,9 @@ export interface PreviewControllerOptions {
  * boundary/axis-lock clamp applied on every move.
  *
  * Created once per pointer drag at lift time and disposed via {@link destroy} / {@link settle} at
- * teardown. Shared by both `ForDropList` (drag-drop) and `ForTreeNodeDrag` (tree) so the floating
- * preview's orchestration lives in one place; it resolves the `DragPreview` discriminator
- * internally (the supplied preview is either already a full `DragPreview` or the minimal
- * `{ moveTo, destroy }` shape). Callers with no boundary or axis lock pass `boundary: null` and
+ * teardown. Shared by both `ForDropList` (drag-drop) and `ForTreeNodeDrag` (tree). The supplied
+ * preview may be either a full `DragPreview` or the minimal `{ moveTo, destroy }` shape.
+ * Callers with no boundary or axis lock pass `boundary: null` and
  * `lockAxis: () => null` (tree's case), leaving the preview to follow the pointer at the grab
  * offset.
  *

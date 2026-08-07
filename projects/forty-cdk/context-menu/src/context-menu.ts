@@ -75,6 +75,11 @@ export class ForContextMenu
 {
   readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
 
+  /**
+   * Two-way bindable. Whether the menu is currently shown. The `model()` change emitter fires only
+   * when the primitive itself opens or closes the menu, never on consumer writes through
+   * `[(open)]`.
+   */
   readonly open = model<boolean>(false);
 
   /**
@@ -264,7 +269,7 @@ export class ForContextMenu
    * Side the surface is anchored to: the region's own `[menuPositioning]`
    * override when it declared one, else this root's `[side]`. The four
    * placement values resolve through the opener registry so a trigger carries
-   * the same override here as it does under a shared `[forMenu]` root (#1574);
+   * the same override here as it does under a shared `[forMenu]` root;
    * with no override the value is this root's input verbatim.
    */
   readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());

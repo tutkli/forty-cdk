@@ -37,36 +37,27 @@
  * A caller layering its own reactive guards on top of the transport (e.g. `attachSwipeDismiss`
  * re-reading its allowed directions mid-gesture) uses it to cancel from inside `onMove`.
  *
- * Escape: with `cancelOnEscape`, a document `keydown` listener (alive only while a press is
- * tracked) aborts an armed drag on `Escape` — it tears the session down and fires `onCancel`,
- * just like a `pointercancel`. It is opt-in so callers that run their own keyboard-drag mode and
- * own the `Escape` handling themselves (e.g. `ForTreeNodeDrag`) stay unaffected. The listener is
- * registered in the **capture** phase and, while armed, consumes the event (`preventDefault` +
- * `stopPropagation`) so the `Escape` that cancels a drag inside an overlay never reaches the
- * enclosing dismissible layer's bubble-phase `keydown` handler — cancelling the drag no longer
- * also dismisses the surrounding dialog / popover / drawer. A non-armed press stays transparent:
- * the event is left untouched so a plain `Escape` still dismisses the overlay as usual.
+ * **Escape.** With `cancelOnEscape`, a document `keydown` listener alive only while a press is
+ * tracked aborts an armed drag, tearing the session down and firing `onCancel` like a
+ * `pointercancel`. It is opt-in, so callers owning their own keyboard-drag mode stay unaffected.
+ * While armed it consumes the event in the capture phase, so cancelling a drag inside an overlay
+ * does not also dismiss the surrounding dialog or popover. A non-armed press stays transparent.
  *
- * Click suppression: when a `pointerup` ends an armed drag, the release point is recorded and a
- * capture-phase `click` listener is installed. Only a click landing at the release coordinates
- * (within a small tolerance) — the synthetic click the release itself generates — is swallowed
- * (`stopPropagation` + `preventDefault`); a click elsewhere is left untouched, so an unrelated
- * click that follows a release which produced no synthetic click still reaches its target. The
- * listener removes itself after the first click either way, and a `suppressClickTimeoutMs`
- * fallback removes it if no click follows.
+ * **Click suppression.** A `pointerup` ending an armed drag records the release point and installs
+ * a capture-phase `click` listener. Only a click landing at those coordinates — the synthetic click
+ * the release itself generates — is swallowed; a click elsewhere reaches its target untouched. The
+ * listener removes itself after the first click, with a `suppressClickTimeoutMs` fallback if none
+ * follows.
  *
- * Nested-control opt-out: if the originating `pointerdown` was `defaultPrevented` by a
- * descendant that owns the same gesture (e.g. a nested resize handle), the session stands
- * down on the first move instead of arming. The descendant's `preventDefault()` runs in the
- * bubble phase, after this capture-phase `pointerdown` listener, so the check is deferred to
- * the first `pointermove` — at `pointerdown` time `defaultPrevented` is still `false`.
+ * **Nested-control opt-out.** When the originating `pointerdown` was `defaultPrevented` by a
+ * descendant owning the same gesture, the session stands down on the first move instead of arming.
+ * The check is deferred to `pointermove` because the descendant's `preventDefault()` runs in the
+ * bubble phase, after this capture-phase listener.
  *
- * Self-prevention: a `canStart` that calls `preventDefault()` on its own `pointerdown` is
- * signalling ancestor sessions to stand down (it owns the gesture), not itself. The session
- * snapshots `defaultPrevented` immediately before and after `canStart`; when `canStart` flips
- * it, the session records that it self-prevented and skips its own move-time stand-down check.
- * A nested handle whose `canStart` prevents therefore still arms, while its ancestor sessions —
- * whose `canStart` did not prevent — see `defaultPrevented === true` and stand down as before.
+ * **Self-prevention.** A `canStart` calling `preventDefault()` is signalling *ancestor* sessions to
+ * stand down, not itself, so the session snapshots `defaultPrevented` around the call and skips its
+ * own stand-down check when `canStart` flipped it. A nested handle therefore still arms while its
+ * ancestors stand down.
  */
 
 /** A live pointer-drag session. Call `destroy()` to remove every listener. */
@@ -92,10 +83,9 @@ export interface PointerDragSession {
  * gesture uses: the travel a press must cover before it starts mutating the
  * value it resizes.
  *
- * Shared by `[forPaneResizer]` and `[forTableColumnResizer]` so both resize
- * affordances arm at the same distance; the reorder / drag-drop family arms on
- * its own `POINTER_ARM_THRESHOLD_PX`, and Slider deliberately arms at `0`
- * because a press on a track commits immediately.
+ * Shared by `[forPaneResizer]` and `[forTableColumnResizer]` so both arm at the same distance. The
+ * drag-drop family arms on its own `POINTER_ARM_THRESHOLD_PX`, and Slider arms at `0` because a
+ * press on its track commits immediately.
  */
 export const DRAG_DEAD_ZONE_PX = 3;
 

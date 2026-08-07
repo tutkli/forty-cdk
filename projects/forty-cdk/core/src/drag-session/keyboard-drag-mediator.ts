@@ -58,9 +58,9 @@ export interface KeyboardDragMediatorConfig {
  * mismatched between an add and its removal. Domain behavior — what lifts, what each key does,
  * what a focus leave costs — stays with the caller through the callbacks.
  *
- * **Resolving a focus leave is the mediator's, not the caller's**
- * ([#1673](https://github.com/tutkli/forty-cdk/issues/1673)). A `focusout` whose `relatedTarget`
- * is a node reports where focus landed, so containment against the host answers it outright. A
+ * **Resolving a focus leave is the mediator's job, not the caller's.** A `focusout` whose
+ * `relatedTarget` is a node reports where focus landed, so containment against the host answers it
+ * outright. A
  * `focusout` reporting `relatedTarget: null` says nothing about *where* focus went — focus may
  * have left the document, landed on a non-focusable area, or simply been dropped by a re-render
  * detaching the focused element — so the decision is deferred one microtask and taken against

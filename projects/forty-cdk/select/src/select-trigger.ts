@@ -16,7 +16,7 @@ import { type ForSelectContext, injectSelectTriggerContext } from './select-cont
  * Disabling: the native `disabled` attribute is the single reflection channel
  * — no `aria-disabled` is emitted, because on a real single-purpose `<button>`
  * trigger the native attribute already conveys the state to assistive
- * technology, and it is what suppresses activation here (rule #561 D2). The
+ * technology, and it is what suppresses activation here. The
  * `role="combobox"` override does not change that: the HTML `disabled`
  * attribute maps to the unavailable state regardless of the ARIA role, and a
  * native `<select disabled>` leaves the tab order the same way. It is

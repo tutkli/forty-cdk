@@ -20,24 +20,14 @@ import {
 } from '../vetoable-event/vetoable-event';
 
 /**
- * Dismiss-bundle wiring. The shell owns the triple-veto + composite
- * `interactOutside` orchestration that Dialog and Drawer used to duplicate
- * verbatim:
+ * Dismissal wiring for a modal surface.
  *
- * - Each channel builds a `VetoableNativeEvent` and hands it to the consumer's
- *   emitter; the pointer-down-outside / focus-outside channels also hand the
- *   same veto to the composite `interactOutside` emitter. A `preventDefault()`
- *   from either the specific or the composite handler suppresses the implicit
- *   close.
- * - When the consumer doesn't veto AND `dismissible()` is `true`, the shell
- *   calls `requestClose(reason)` with the reason that matches the channel
- *   (`'escape' | 'pointerDownOutside' | 'focusOutside'`).
- * - `exemptElements` is recomputed on every event so DOM mutations (newly
- *   portaled siblings — Drawer's backdrop is the live example) are picked up.
+ * Each channel builds one `VetoableNativeEvent` and hands it to both the specific emitter and the
+ * composite `interactOutside` one, so a `preventDefault()` from either suppresses the close. When
+ * nothing vetoes and `dismissible()` is `true`, the shell calls `requestClose` with the reason
+ * matching the channel.
  *
- * `requestClose` is the consumer's existing implementation; the shell never
- * touches the directive's `(dismiss)` output directly. This keeps the shell
- * orthogonal to each primitive's own close-reason union.
+ * `exemptElements` is re-read on every event, so elements portaled after activation are honoured.
  */
 export interface ModalShellDismissConfig {
   /** Whether dismissals via the layer fire the implicit `requestClose`. */
@@ -93,31 +83,20 @@ export interface ModalShellConfig {
   /** Whether the surface activates focus-trap + scroll-lock + inert siblings. */
   readonly modal: Signal<boolean>;
   /**
-   * Whether focus returns to the previously-focused element on destroy.
-   * Read inside the modal teardown (focus-trap deactivate). Has no effect
-   * in non-modal mode (the shell never moves focus on close in that mode).
+   * Whether focus returns to the previously-focused element on destroy. No effect in non-modal
+   * mode, where the shell never moves focus on close.
    */
   readonly returnFocus: Signal<boolean>;
   /**
-   * Optional override for the return-focus target, read at **close time**
-   * rather than captured synchronously in the constructor. When it yields a
-   * connected element, the modal teardown restores focus there instead of to
-   * the construction-time capture; a `null` value — or omitting the member —
-   * falls back to that capture, so default behaviour is unchanged.
+   * Overrides the return-focus target, read at close time instead of captured in the constructor.
+   * A `null` value falls back to the construction-time capture.
    *
-   * Supply this when the surface can be constructed while focus lives inside a
-   * *different, doomed* surface. The canonical case is a close→open modal swap
-   * in a single change-detection pass (a confirm step replacing a form dialog,
-   * a wizard hand-off): the incoming shell would otherwise capture an element
-   * inside the outgoing surface, which is then destroyed, so on close the
-   * captured target is disconnected, focus falls back to `<body>`, and
-   * restoration is lost for the whole chain. Thread the true origin element
-   * through this signal (the programmatic Dialog / Drawer managers own that
-   * origin) so return-focus survives the swap.
+   * Supply it when the surface may be constructed while focus lives inside another surface that is
+   * about to be destroyed — a close→open modal swap in one change-detection pass — where the
+   * captured element would be disconnected by close time and focus would fall back to `<body>`.
    *
-   * Read only in modal mode and only when {@link returnFocus} is `true` and
-   * the `(autoFocusOnClose)` veto did not fire — the same gate as the
-   * construction-time capture.
+   * Read only in modal mode, and only under the same gate as the construction-time capture:
+   * {@link returnFocus} is `true` and `autoFocusOnClose` did not veto.
    */
   readonly returnFocusTarget?: Signal<HTMLElement | null>;
   /**
@@ -177,92 +156,19 @@ export function resolveModalExemptOverlays(doc: Document): readonly Element[] {
 }
 
 /**
- * Single source of truth for the free-floating modal-overlay lifecycle.
- * Drives every directive in the library that mounts a modal surface as its
- * own root — `[forDialog]` and `[forDrawer]` today, future modal Toast /
- * full-screen sheet / command palette tomorrow. The shell owns:
+ * Owns the lifecycle of a free-floating modal surface — the overlay primitives that mount as their
+ * own root, `[forDialog]` and `[forDrawer]` today.
  *
- * 1. Return-focus target capture. Synchronously, in the consumer's
- *    constructor (BEFORE `afterNextRender` fires). Required for WebKit
- *    correctness (#136): WebKit blurs the previously-focused element when
- *    an ancestor receives `inert`, so by the time `afterNextRender` runs
- *    (where inert is activated) reading `document.activeElement` from the
- *    focus trap would yield `<body>`. Capturing it now locks the trigger
- *    in as the return target before any side effect mutates focus. A
- *    consumer that knows the true origin (the programmatic managers, across a
- *    close→open swap) can override this with the `returnFocusTarget` signal,
- *    read at close time instead of construction time.
+ * The shell captures the return-focus target, portals the host to `document.body` (or to
+ * `config.container`), and activates the dismissible layer. In modal mode it additionally inerts
+ * the siblings, activates the focus trap and locks scroll, all scoped to `config.container` when
+ * one is supplied; in non-modal mode it only performs the initial focus move.
  *
- * 2. Portal. `injectPortal()` moves the host to `document.body` after the
- *    first render and removes it on destroy.
+ * Teardown reverses that order on destroy, deactivating inert siblings before focus returns so the
+ * target is not blocked by an inert ancestor.
  *
- * 3. Dismissible layer. Activates inside `afterNextRender` with the
- *    triple-veto + composite `interactOutside` pattern that Dialog and
- *    Drawer duplicated verbatim. The pattern: a single
- *    `VetoableNativeEvent` is built per physical interaction and reused
- *    for the specific channel (`pointerDownOutside` / `focusOutside`) and
- *    the composite (`interactOutside`), so a `preventDefault()` from
- *    either suppresses the implicit `requestClose`. Escape uses its own
- *    one-shot veto.
- *
- * 4. Modal vs non-modal branching.
- *    - Modal: pushes the inert-siblings stack BEFORE the focus trap fires
- *      (so the trap's imperative focus move lands on an already-isolated
- *      tree), activates the trap with `initialFocus` + `preventInitialFocus`
- *      (the `(autoFocusOnOpen)` veto) + the synchronously-captured
- *      `returnFocus` target, then locks scroll. When `config.container` is
- *      set, inert-siblings is scoped to that container (only the container's
- *      other children are inerted; body siblings stay interactive) and scroll
- *      lock targets the container instead of `<body>` (#819). Focus trap is
- *      already subtree-scoped to the host regardless of portal target — no
- *      change there. When `initialFocus` is a
- *      {@link ModalShellInitialFocusConfig}, the trap is activated with
- *      `preventInitialFocus: true` and the shell runs the primitive's
- *      `move()` instead (falling back to the container on a miss).
- *    - Non-modal: skips trap / inert / scroll lock; if `(autoFocusOnOpen)`
- *      didn't veto, focuses the first focusable descendant (or host when
- *      `initialFocus = 'container'`).
- *
- * 5. Destroy ordering. All steps below run inside ONE
- *    `DestroyRef.onDestroy` hook, so they execute as plain sequential
- *    statements — the sequence is fixed by the code, not by Angular's
- *    (FIFO) hook-registration order. Within the hook the side-effects are
- *    torn down in the inverse order they were activated:
- *    - `dismissible.deactivate()` first (it was activated first in the setup
- *      `afterNextRender`).
- *    - `(autoFocusOnClose)` veto fires BEFORE either modal/non-modal
- *      teardown so it runs on every close path regardless of mode.
- *    - Modal only: `inertHandle.deactivate()` (so the return-focus target
- *      is not blocked by an inert ancestor) →
- *      `dismissible.suppress(focusTrap.deactivate)` (so the synthetic
- *      `focusin` from `.focus()`-ing the previous element doesn't
- *      cascade-dismiss whatever layer is now topmost). Focus returns to a
- *      connected `returnFocusTarget()` override when supplied, else to the
- *      construction-time capture held by the focus trap. Then
- *      `bodyScrollLock.unlock()`.
- *
- * Must be called from an injection context (typically the directive
- * constructor). Forwards the host's `ElementRef` to the portal, dismissible
- * layer, focus trap, and inert-siblings stack — the consumer never has to
- * touch them directly.
- *
- * @example
- * // ForDialog constructor body collapses to:
- * injectModalShell({
- *   modal: this.modal,
- *   returnFocus: this.returnFocus,
- *   initialFocus: this.initialFocus,
- *   autoFocusOnOpen: () => this.autoFocusOnOpen(),
- *   autoFocusOnClose: () => this.autoFocusOnClose(),
- *   dismiss: {
- *     dismissible: this.dismissible,
- *     requestClose: (reason) => this.requestClose(reason),
- *     emitEscapeKeyDown: (veto) => this.escapeKeyDown.emit(veto),
- *     emitPointerDownOutside: (veto) => this.pointerDownOutside.emit(veto),
- *     emitFocusOutside: (veto) => this.focusOutside.emit(veto),
- *     emitInteractOutside: (veto) => this.interactOutside.emit(veto),
- *   },
- * });
+ * Must be called from an injection context. The host's `ElementRef` is forwarded to every
+ * collaborator, so the caller never wires them up directly.
  */
 export function injectModalShell(config: ModalShellConfig): ModalShellHandle {
   const host = inject<ElementRef<HTMLElement>>(ElementRef);

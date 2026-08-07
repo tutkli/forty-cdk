@@ -94,8 +94,8 @@ export interface ForNavigationMenuContext {
   close(): void;
 
   /**
-   * Schedule open / close with the configured delays. `reason` lets the
-   * implementation skip delays for keyboard-driven changes.
+   * Schedule open / close with the configured delays. Keyboard-driven changes
+   * (`reason`) skip the delays.
    */
   scheduleOpen(value: string, reason: NavigationMenuScheduleReason): void;
   /**

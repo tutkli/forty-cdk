@@ -98,52 +98,28 @@ export interface MenuOverlayHooks {
  *
  * The helper owns:
  *
- * - id generation for trigger / content,
- * - the item list (`MenuItemList`: the item `Collection` + typeahead +
- *   `navigate` / `handleTypeahead` / `focusFirst/LastEnabledItem`), shared
- *   with `[forMenubar]`'s multiplexed menu context,
- * - trigger / content / initial-focus signals,
- * - `toggle` / `openMenu` / `closeMenu` (honouring `disabled`),
- * - the consumer-owned Escape close (`emitEscapeKeyDown`) and the
- *   `requestClose` the shell invokes after an un-vetoed outside interaction.
- *   The shared `#pendingOutsideVeto` reuse between the specific outside
- *   listeners and the composite `interactOutside` lives in
- *   `injectOverlayShell`, not here,
- * - the `(autoFocusOnOpen)` / `(autoFocusOnClose)` veto pass-throughs,
- * - the opener registry (`MenuOpenerRegistry`): every trigger that can open this
- *   menu, which of them is driving the current open, and the per-opener id /
- *   anchor / labelling policy resolving against it. `[forMenu]` is the root that registers more
- *   than one; the presets register exactly one and keep their previous
- *   behaviour through the registry's sole-opener fallback.
+ * - id generation for trigger and content,
+ * - the item list (`MenuItemList`: the item `Collection`, typeahead and the navigate / focus
+ *   moves), shared with `[forMenubar]`'s multiplexed menu context,
+ * - the trigger / content / initial-focus signals,
+ * - `toggle` / `openMenu` / `closeMenu`, honouring `disabled`,
+ * - the consumer-owned Escape close and the `requestClose` the shell invokes after an un-vetoed
+ *   outside interaction,
+ * - the `autoFocusOnOpen` / `autoFocusOnClose` veto pass-throughs,
+ * - the opener registry: every trigger that can open this menu, which one is driving the current
+ *   open, and the per-opener id / anchor / labelling policy resolved against it.
  *
- * It deliberately does NOT own:
+ * It deliberately does not own:
  *
- * - the resolved `anchor` signal — DropdownMenu derives it from the trigger
- *   element, ContextMenu from the virtual anchor alone, `[forMenu]` from the
- *   active opener (virtual anchor, else its element),
- * - `dismissibleExemptions` — DropdownMenu exempts the trigger button so the
- *   trigger's click toggle doesn't double-fire as a pointer-down-outside;
- *   ContextMenu exempts nothing,
- * - the `input()` / `output()` / `model()` declarations — they remain on the
- *   directive class because Angular's template binding system reads inputs /
- *   outputs off the directive's compiled metadata.
+ * - the resolved `anchor` signal, which each root derives differently — from the trigger element,
+ *   from a virtual anchor, or from the active opener,
+ * - `dismissibleExemptions`, since only some roots exempt their trigger to stop a click toggle
+ *   double-firing as a pointer-down-outside,
+ * - the `input()` / `output()` / `model()` declarations, which must stay on the directive class for
+ *   Angular's template binding to see them.
  *
- * Class form (rather than a function-based factory) is deliberate: the
- * helper has private mutable state (the trigger / content signals, the
- * initial-focus signal) that maps cleanly to instance fields, and the
- * directives read several of its fields back through getter
- * forwarding. Encapsulating that as a class keeps the directive's surface
- * obvious at the call site and matches the Angular idiom for cross-cutting
- * mutable state co-located with DI.
- *
- * Construct via `createMenuOverlay` from a directive's field initializer so
- * the helper's `inject()` calls (id generator, typeahead destroyRef hookup)
- * resolve through the directive's injector.
- *
- * Stays exported from `core/src/public-api.ts` — internal tier, not blessed —
- * because it is the inferred type of the `protected readonly _overlay` field
- * on `[forDropdownMenu]` / `[forContextMenu]` / `[forMenu]`, so the emitted
- * `.d.ts` has to name it (#1489).
+ * Construct via `createMenuOverlay` from a directive's field initializer, so the helper's `inject()`
+ * calls resolve through the directive's injector.
  */
 export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   readonly #registry = inject(ElementRegistry);
@@ -314,10 +290,9 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * pointer-activated, this one move suppresses the item's focus-driven
    * `data-highlighted` (one-shot — later calls highlight normally).
    *
-   * Imperative escape hatch for an explicit first / last move independent of
-   * the resolved {@link initialFocus} target: no piece of the library routes
-   * through it (they all go through {@link focusInitialEnabledItem}), and the
-   * `ForMenuContext` contract deliberately no longer declares it (#1469).
+   * An imperative escape hatch for an explicit first / last move, independent of the resolved
+   * {@link initialFocus} target. No piece of the library routes through it — they all go through
+   * {@link focusInitialEnabledItem} — and `ForMenuContext` does not declare it.
    */
   focusFirstEnabledItem(): boolean {
     return this.#itemList.focusFirstEnabledItem(this.#initialFocusState.consumeHighlight());
@@ -328,7 +303,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * pointer-activated, this one move suppresses the item's focus-driven
    * `data-highlighted` (one-shot — later calls highlight normally). The
    * granular counterpart of {@link focusFirstEnabledItem}, and like it an
-   * imperative escape hatch rather than a `ForMenuContext` member (#1469).
+   * imperative escape hatch rather than a `ForMenuContext` member.
    */
   focusLastEnabledItem(): boolean {
     return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());

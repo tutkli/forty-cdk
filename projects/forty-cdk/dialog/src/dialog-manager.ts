@@ -67,7 +67,7 @@ export interface ForDialogOpenConfig<D = unknown> {
    * manager resolves the true origin automatically — the trigger that opened
    * the modal chain, threaded across a close→open swap so a confirm dialog
    * replacing a form dialog restores focus to the original trigger rather than
-   * dropping it to `<body>` (#1385). Pass an element to override that
+   * dropping it to `<body>`. Pass an element to override that
    * resolution, or `null` to opt out entirely and fall back to the element the
    * dialog captures at construction.
    */
@@ -217,10 +217,9 @@ interface InternalDialogEntry extends ForDialogEntry {
 /**
  * Programmatic dialog opener — open a component as a modal dialog from
  * TypeScript. Inject anywhere, call `open(MyComponent, { data, ... })` and get a
- * `ForDialogRef<R>` back. Internally the manager renders the user component
- * inside a manager-owned `@for` outlet, so Angular's control-flow unmount
- * fires `animate.leave` before the node leaves the DOM — identical to the
- * declarative `@if (open()) { <div forDialog animate.leave="…"> }` path.
+ * `ForDialogRef<R>` back. `animate.leave` on the opened component runs before
+ * the node leaves the DOM, identical to the declarative
+ * `@if (open()) { <div forDialog animate.leave="…"> }` path.
  *
  * Inside the opened component the usual dialog pieces work without any extra
  * wiring: `[forDialogTitle]`, `[forDialogDescription]`, `[forDialogBackdrop]`,

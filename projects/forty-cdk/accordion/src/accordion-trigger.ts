@@ -47,7 +47,7 @@ export class ForAccordionTrigger {
   /**
    * APG: aria-disabled is true only when the panel is open AND the accordion
    * disallows collapse. A real `disabled` item is reflected via the native
-   * `disabled` attribute instead — the sanctioned exception in rule #561 (D2):
+   * `disabled` attribute instead — the sanctioned exception to that rule:
    * the trigger is a real single-purpose `<button>`, not a roving collection
    * item (every trigger stays independently in the Tab order; the arrow-key
    * navigation is an APG-optional enhancement layered on top, not a

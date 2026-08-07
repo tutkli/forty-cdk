@@ -101,6 +101,9 @@ export class ForMenubar implements ForMenubarContext {
    */
   readonly value = model<string | null>(null);
 
+  /**
+   * Axis the arrow keys navigate between triggers. Reflected as `data-orientation`.
+   */
   readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
 
   /**
@@ -112,7 +115,13 @@ export class ForMenubar implements ForMenubarContext {
    */
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
+  /**
+   * Whether arrow navigation wraps past the first / last enabled trigger.
+   */
   readonly loop = input(true, { transform: booleanAttribute });
+  /**
+   * Whether every trigger in the bar is disabled, so no menu can be opened.
+   */
   readonly disabled = input(false, { transform: booleanAttribute });
 
   /**

@@ -80,43 +80,23 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * placement are all derived from the host's `activeTrigger`, so the same
  * context shape transparently covers whichever trigger's menu is mounted.
  *
- * Item navigation reuses the shared `MenuItemList` (the same item-collection /
- * typeahead / navigate / focus mechanics that back `MenuOverlay`), and the
- * initial-focus / highlight-consume protocol and the close-reason record reuse
- * the shared `InitialFocusState` / `CloseReasonState` micro-helpers (also
- * composed by `MenuOverlay`), so this only has to cover the parts the
- * single-owner overlay can't — the `activeTrigger`-derived multiplexing.
+ * Item navigation, the initial-focus protocol and the close-reason record all reuse the same shared
+ * helpers `MenuOverlay` composes, so this class covers only the `activeTrigger`-derived
+ * multiplexing.
  *
- * Ids and the accessible name are the exception: they are derived from the
- * host's `lastTrigger` rather than from `activeTrigger`, because the surface
- * outlives the trigger's active window. `activeTrigger()` is already `null`
- * while the content is still in the DOM for its exit frame (and for as long as
- * an exit animation defers teardown), so an `activeTrigger`-derived id would
- * render `id=""` and drop the `aria-labelledby` wiring mid-close. With no
- * trigger association at all — a surface mounted unconditionally, before any
- * menu was ever opened — `triggerId` / `ariaLabel` resolve to `''` / `null`,
- * which `[forMenuContent]` emits as no attribute rather than as an empty one,
- * while `contentId` falls back to the surface's own consumer-set static `id`
- * (see {@link MenubarMenuContext.sharedContentId}) so an unconditionally
- * mounted surface keeps that id from mount instead of losing it until the first
- * activation. The same fallback covers the surface shared by every trigger
- * through one `@if (value() !== null)`: it registers under whichever trigger
- * opened the bar, but it outlives that trigger's active window, so its static
- * `id` becomes trigger-agnostic the moment the bar switches menus instead of
- * staying the property of the trigger that happened to mount it.
+ * Ids and the accessible name are the exception: they derive from `lastTrigger`, because the
+ * surface outlives the trigger's active window. `activeTrigger()` is already `null` while the
+ * content is still mounted for its exit frame, so deriving from it would render `id=""` and drop
+ * the `aria-labelledby` wiring mid-close. With no trigger association at all, `triggerId` and
+ * `ariaLabel` resolve to `''` / `null` — which `[forMenuContent]` emits as no attribute — while
+ * `contentId` falls back to {@link MenubarMenuContext.sharedContentId}.
  *
- * The dismiss / auto-focus channels forward to the bar-level outputs declared
- * on `[forMenubar]` — `(escapeKeyDown)`, `(pointerDownOutside)`,
- * `(focusOutside)`, `(interactOutside)`, `(autoFocusOnOpen)` and
- * `(autoFocusOnClose)` — so the same `[forMenuContent]` / `[forMenuItem]`
- * markup keeps the full shell contract, and its vetoes, under a menubar. The
- * one exception is a switch between sibling triggers: it is not a close, so the
- * outgoing surface's `(autoFocusOnClose)` and its return-focus are suppressed
- * outright (see {@link MenubarMenuContext.emitAutoFocusOnClose}), and the
- * hover-switch flavour — which parks focus on the hovered trigger — additionally
- * arms a one-shot suppression of the incoming surface's `(autoFocusOnOpen)` move
- * (see {@link MenubarMenuContext.prepareOpen}). Only trigger register /
- * unregister stay inert here: triggers register with the bar directly.
+ * The dismiss and auto-focus channels forward to the bar-level outputs on `[forMenubar]`, so the
+ * same markup keeps the full shell contract and its vetoes under a menubar. Switching between
+ * sibling triggers is not a close: the outgoing surface's `autoFocusOnClose` and return-focus are
+ * suppressed, and a hover switch additionally arms a one-shot suppression of the incoming surface's
+ * `autoFocusOnOpen` move. Trigger registration stays inert here — triggers register with the bar
+ * directly.
  */
 export class MenubarMenuContext implements ForMenuContext {
   readonly #host: MenubarMenuHost;
@@ -191,22 +171,17 @@ export class MenubarMenuContext implements ForMenuContext {
    * `contentId` falls back to it so an unconditionally mounted surface keeps
    * emitting the id before any trigger has ever been active.
    *
-   * Two compositions are trigger-agnostic, and they are told apart by *when*
-   * that becomes observable:
+   * Two compositions are trigger-agnostic, told apart by when that becomes observable:
    *
-   * - **Unconditionally mounted** — registers with no active trigger at all, so
-   *   it is shared from mount (`#contentOwner` is `null`).
-   * - **Shared by one `@if (value() !== null)`** — registers *under* whichever
-   *   trigger opened the bar, exactly like the canonical per-trigger surface, so
-   *   at registration the two are indistinguishable. What separates them is
-   *   survival: the shared surface is still the registered content once the bar
-   *   has switched to a different trigger, whereas the `@if`-per-trigger surface
-   *   is destroyed and replaced by the incoming trigger's own. Hence the
-   *   `lastTrigger() !== owner` test rather than a flag set at registration.
+   * - **Unconditionally mounted** — registers with no active trigger, so it is shared from mount.
+   * - **Shared by one `@if (value() !== null)`** — registers under whichever trigger opened the
+   *   bar, so at registration it is indistinguishable from a per-trigger surface. What separates
+   *   them is survival: it is still the registered content after the bar switches triggers, whereas
+   *   a per-trigger surface is destroyed and replaced. Hence the `lastTrigger() !== owner` test
+   *   rather than a flag set at registration.
    *
-   * `null` while the surface is still the one its registering trigger owns (the
-   * `@if`-per-trigger composition, where that trigger adopted the id directly),
-   * and for any surface carrying no static `id` at all.
+   * `null` while the surface is still the one its registering trigger owns, and for any surface
+   * carrying no static `id`.
    */
   readonly sharedContentId = computed(() => {
     const staticId = this.#contentStaticId();
