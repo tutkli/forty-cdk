@@ -6,10 +6,15 @@ import { el, gotoFixture, holdPointerAtAutoScrollEdge } from './_helpers';
  * Reads the absolute `data-index` values of the currently rendered rows, sorted
  * ascending. Used to pick a target comfortably inside the window and to prove the
  * emitted indices are absolute, not window-relative.
+ *
+ * The `:not([data-for-drag-preview])` is load-bearing mid-gesture: the default
+ * preview is a clone of the lifted row appended to `document.body`, so it answers
+ * `[forDraggable]` and repeats that row's `data-index`
+ * ([#1691](https://github.com/tutkli/forty-cdk/issues/1691)).
  */
 async function renderedIndices(page: Page): Promise<number[]> {
   const values = await page
-    .locator('[forDraggable]')
+    .locator('[forDraggable]:not([data-for-drag-preview])')
     .evaluateAll((nodes) =>
       nodes.map((n) => Number((n as HTMLElement).getAttribute('data-index'))),
     );

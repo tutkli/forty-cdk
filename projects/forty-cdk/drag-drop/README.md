@@ -395,6 +395,15 @@ sees it, so the list carries no lift state for the gesture, and the coordinator 
 instead ([#1693](https://github.com/tutkli/forty-cdk/issues/1693)). Styling keyed off either
 attribute therefore behaves the same whether the collection is windowed or not.
 
+The `data-for-drag-preview` row is also the supported hook for **keeping the clone out of element
+queries**. The default preview is a `cloneNode(true)` copy appended to `document.body`, so for the
+whole gesture — and past the drop, while a settle transition runs — it answers the item's own
+selector (`[forDraggable]`, or a composed one such as `[forTableRow]`) and repeats its `data-index`.
+`id` and `data-testid` are stripped from the clone and its whole subtree, so a hook that identifies
+a single element stays unambiguous; anything that **enumerates** items by attribute selector during
+a drag must filter the preview out with `:not([data-for-drag-preview])`
+([#1691](https://github.com/tutkli/forty-cdk/issues/1691)).
+
 ## Sortable list
 
 ```html

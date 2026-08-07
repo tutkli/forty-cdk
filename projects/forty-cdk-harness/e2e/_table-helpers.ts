@@ -15,9 +15,22 @@
  */
 import { type Locator, type Page } from '@playwright/test';
 
+/**
+ * Excludes the default drag preview from an enumerator.
+ *
+ * The preview is a `cloneNode(true)` copy of the dragged row / header cell
+ * appended to `document.body`, so for the whole gesture — and past the drop, for
+ * as long as the settle transition runs — it answers `[forTableRow]` /
+ * `[forTableHeaderCell]` and carries the source's `data-index` and `data-column`
+ * ([#1691](https://github.com/tutkli/forty-cdk/issues/1691)). Its `id` and
+ * `data-testid` are stripped, so `el(page, …)` is safe; a selector enumerator is
+ * not, and `data-for-drag-preview` is the supported way to filter it out.
+ */
+const NOT_PREVIEW = ':not([data-for-drag-preview])';
+
 /** Every stamped row, in document order. */
 export function rows(page: Page): Locator {
-  return page.locator('[forTableRow]');
+  return page.locator(`[forTableRow]${NOT_PREVIEW}`);
 }
 
 /** The row at `position` in the rendered list — non-virtualized bodies. */
@@ -27,7 +40,7 @@ export function rowAt(page: Page, position: number): Locator {
 
 /** The row carrying the absolute `data-index` — virtualized bodies. */
 export function rowByIndex(page: Page, index: number): Locator {
-  return page.locator(`[forTableRow][data-index="${index}"]`);
+  return page.locator(`[forTableRow][data-index="${index}"]${NOT_PREVIEW}`);
 }
 
 /** A column's cell inside the row at `position` — non-virtualized bodies. */
@@ -52,13 +65,13 @@ export function variantCell(page: Page, index: number): Locator {
 
 /** The header cell stamped for `column`. */
 export function headerCell(page: Page, column: string): Locator {
-  return page.locator(`[forTableHeaderCell][data-column="${column}"]`);
+  return page.locator(`[forTableHeaderCell][data-column="${column}"]${NOT_PREVIEW}`);
 }
 
 /** The stamped header columns, left to right. */
 export function headerOrder(page: Page): Promise<(string | null)[]> {
   return page
-    .locator('[forTableHeaderCell]')
+    .locator(`[forTableHeaderCell]${NOT_PREVIEW}`)
     .evaluateAll((cells) => cells.map((c) => c.getAttribute('data-column')));
 }
 

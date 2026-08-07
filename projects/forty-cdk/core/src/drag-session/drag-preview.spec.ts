@@ -76,6 +76,79 @@ describe('createDragPreview settle', () => {
   });
 });
 
+describe('createDragPreview strips the identity hooks from the clone', () => {
+  afterEach(() => {
+    document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
+  });
+
+  function appendSourceWithIds(): HTMLElement {
+    const source = document.createElement('div');
+    source.setAttribute('id', 'row-root');
+    source.setAttribute('data-testid', 'row-0');
+
+    const child = document.createElement('span');
+    child.setAttribute('id', 'row-child');
+    child.setAttribute('data-testid', 'cell-0-name');
+
+    const grandchild = document.createElement('em');
+    grandchild.setAttribute('id', 'row-grandchild');
+
+    child.appendChild(grandchild);
+    source.appendChild(child);
+    document.body.appendChild(source);
+    return source;
+  }
+
+  function previewClone(): HTMLElement {
+    return document.body.querySelector('[data-for-drag-preview]') as HTMLElement;
+  }
+
+  it('removes id from the clone root and from every descendant carrying one', () => {
+    const source = appendSourceWithIds();
+    try {
+      createDragPreview(source, document);
+      expect(previewClone().hasAttribute('id')).toBe(false);
+      expect(previewClone().querySelectorAll('[id]')).toHaveLength(0);
+    } finally {
+      source.remove();
+    }
+  });
+
+  it('removes data-testid from the clone root and from every descendant carrying one', () => {
+    const source = appendSourceWithIds();
+    try {
+      createDragPreview(source, document);
+      expect(previewClone().hasAttribute('data-testid')).toBe(false);
+      expect(previewClone().querySelectorAll('[data-testid]')).toHaveLength(0);
+    } finally {
+      source.remove();
+    }
+  });
+
+  it('leaves the source subtree untouched', () => {
+    const source = appendSourceWithIds();
+    try {
+      createDragPreview(source, document);
+      expect(source.getAttribute('id')).toBe('row-root');
+      expect(source.getAttribute('data-testid')).toBe('row-0');
+      expect(source.querySelectorAll('[id]')).toHaveLength(2);
+    } finally {
+      source.remove();
+    }
+  });
+
+  it('keeps the stripped clone reachable by [data-for-drag-preview] and hidden from assistive tech', () => {
+    const source = appendSourceWithIds();
+    try {
+      createDragPreview(source, document);
+      expect(document.body.querySelectorAll('[data-for-drag-preview]')).toHaveLength(1);
+      expect(previewClone().getAttribute('aria-hidden')).toBe('true');
+    } finally {
+      source.remove();
+    }
+  });
+});
+
 describe('settle fallback timeout scales from the computed transition duration', () => {
   afterEach(() => {
     document.querySelectorAll('[data-for-drag-preview]').forEach((n) => n.remove());
