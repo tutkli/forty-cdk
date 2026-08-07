@@ -1,17 +1,23 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { el, expectFocused, gotoFixture } from './_helpers';
+import { headerOrder, rows } from './_table-helpers';
 
 const ROW_HEIGHT = 44;
 
-async function headerOrder(page: Page): Promise<string[]> {
-  return page
-    .locator('[forTableHeaderCell]')
-    .evaluateAll((nodes) =>
-      nodes
-        .map((n) => (n as HTMLElement).getAttribute('data-column'))
-        .filter((c): c is string => c !== null && c !== 'sel'),
-    );
+/**
+ * The reorderable column order, with the leading `sel` checkbox column dropped.
+ *
+ * This used to be a fourth local copy of the enumerator, and the only one on a
+ * fixture that genuinely column-drags — so mid-gesture it reported five entries
+ * for four columns, and passed only because this fixture configures no
+ * `data-settling` transition and the clone dies synchronously on release
+ * ([#1711](https://github.com/tutkli/forty-cdk/issues/1711)). It now delegates
+ * to the shared `headerOrder`, which excludes the preview, and drops `sel` at
+ * the call site.
+ */
+async function columnOrder(page: Page): Promise<string[]> {
+  return (await headerOrder(page)).filter((c): c is string => c !== null && c !== 'sel');
 }
 
 test.describe('Table combined composition', () => {
@@ -54,7 +60,7 @@ test.describe('Table combined composition', () => {
       .not.toBe('');
 
     await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
-    expect(await headerOrder(page)).toEqual(['name', 'role', 'dept', 'location']);
+    expect(await columnOrder(page)).toEqual(['name', 'role', 'dept', 'location']);
 
     const headerRole = el(page, 'header-role');
     const nameBox = await headerName.boundingBox();
@@ -69,7 +75,7 @@ test.describe('Table combined composition', () => {
     await page.mouse.move(roleBox.x + roleBox.width * 0.7, roleBox.y + roleBox.height / 2);
     await page.mouse.up();
 
-    await expect.poll(() => headerOrder(page)).toEqual(['role', 'name', 'dept', 'location']);
+    await expect.poll(() => columnOrder(page)).toEqual(['role', 'name', 'dept', 'location']);
     await expect(headerName).toHaveAttribute('aria-sort', 'ascending');
     const widthVarAfter = await root.evaluate((node) =>
       getComputedStyle(node).getPropertyValue('--for-table-col-name-width').trim(),
@@ -83,7 +89,7 @@ test.describe('Table combined composition', () => {
     const headerName = el(page, 'header-name');
     const resizer = el(page, 'resizer-name');
 
-    const orderBefore = await headerOrder(page);
+    const orderBefore = await columnOrder(page);
     const beforeBox = await headerName.boundingBox();
     if (!beforeBox) throw new Error('header-name has no box');
 
@@ -101,7 +107,7 @@ test.describe('Table combined composition', () => {
     const afterBox = await headerName.boundingBox();
     if (!afterBox) throw new Error('header-name has no box after resize');
     expect(afterBox.width).toBeGreaterThan(beforeBox.width + 60);
-    expect(await headerOrder(page)).toEqual(orderBefore);
+    expect(await columnOrder(page)).toEqual(orderBefore);
   });
 
   test('a sortable + draggable header cell is focusable and activates the sort with Enter', async ({
@@ -193,14 +199,40 @@ test.describe('Table combined composition', () => {
     });
     await expect
       .poll(() =>
-        page
-          .locator('[forTableRow]')
-          .evaluateAll(
-            (nodes, n) =>
-              nodes.some((node) => Number((node as HTMLElement).getAttribute('data-index')) >= n),
-            initial,
-          ),
+        rows(page).evaluateAll(
+          (nodes, n) =>
+            nodes.some((node) => Number((node as HTMLElement).getAttribute('data-index')) >= n),
+          initial,
+        ),
       )
       .toBe(true);
+  });
+});
+
+test.describe('Table combined — the preview clone stays out of the shared enumerators (#1711)', () => {
+  test('mid-column-gesture the shared header enumerator reports the live columns while the bare one over-reports', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'table-combined');
+
+    const box = await el(page, 'header-name').boundingBox();
+    if (!box) throw new Error('header-name has no box');
+    const startX = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 6, startY);
+    await expect(page.locator('[data-for-drag-preview]')).toHaveCount(1);
+
+    // Raw on purpose, in the same falsifier role as table-reorder's two #1691
+    // counts: the clone of the lifted header cell answers the bare selector and
+    // repeats its `data-column`, so this fixture's four columns enumerate as
+    // five. Without this half, the filtered assertion below would pass whether
+    // the clone matched or not.
+    await expect(page.locator('[forTableHeaderCell]:not([data-column="sel"])')).toHaveCount(5);
+    expect(await columnOrder(page)).toEqual(['name', 'role', 'dept', 'location']);
+
+    await page.mouse.up();
   });
 });

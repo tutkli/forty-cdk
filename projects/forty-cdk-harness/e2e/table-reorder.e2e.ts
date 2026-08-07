@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
-import { headerCell, headerOrder, rows } from './_table-helpers';
+import { headerCell, headerCellAt, headerOrder, rows } from './_table-helpers';
 
 test.describe('table column reorder', () => {
   test.beforeEach(async ({ page }) => {
@@ -29,8 +29,7 @@ test.describe('table column reorder', () => {
     await page.mouse.move(targetX, targetY);
     await page.mouse.up();
 
-    const firstHeader = page.locator('[forTableHeaderCell]').first();
-    await expect(firstHeader).toHaveAttribute('data-column', 'role');
+    await expect(headerCellAt(page, 0)).toHaveAttribute('data-column', 'role');
 
     const firstRowFirstCell = page.locator('[forTableCell]').first();
     await expect(firstRowFirstCell).toHaveAttribute('aria-colindex', '1');
@@ -61,12 +60,10 @@ test.describe('table column reorder', () => {
     await expect(el(page, 'cell-0-name')).toHaveText('Bob');
     await expect(el(page, 'cell-1-name')).toHaveText('Ada');
 
-    const rows = page.locator('[forTableRow]');
-    const firstRowAria = await rows.first().getAttribute('aria-rowindex');
+    const firstRowAria = await rows(page).first().getAttribute('aria-rowindex');
     expect(firstRowAria).toBe('2');
 
-    const secondRow = rows.nth(1);
-    await expect(secondRow).toHaveAttribute('aria-rowindex', '3');
+    await expect(rows(page).nth(1)).toHaveAttribute('aria-rowindex', '3');
   });
 
   test('keyboard column reorder — Space lift, ArrowRight, Space drop changes order', async ({
@@ -78,8 +75,7 @@ test.describe('table column reorder', () => {
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Space');
 
-    const firstHeader = page.locator('[forTableHeaderCell]').first();
-    await expect(firstHeader).toHaveAttribute('data-column', 'role');
+    await expect(headerCellAt(page, 0)).toHaveAttribute('data-column', 'role');
 
     const nameCell = page.locator('[forTableCell][data-column="name"]').first();
     await expect(nameCell).toHaveAttribute('aria-colindex', '2');
@@ -106,6 +102,11 @@ test.describe('table reorder — the preview clone stays out of the shared enume
     await page.mouse.move(startX, startY + 5);
     await expect(page.locator('[data-for-drag-preview]')).toHaveCount(1);
 
+    // Deliberately raw, and not to be migrated onto `rows` by a later sweep
+    // ([#1711](https://github.com/tutkli/forty-cdk/issues/1711)): this is the
+    // falsifier. It pins that the clone *does* answer the bare selector, which
+    // is the whole reason the filtered count beside it means anything — migrate
+    // it and the exclusion is asserted against nothing.
     await expect(page.locator('[forTableRow]')).toHaveCount(4);
     await expect(rows(page)).toHaveCount(3);
 
@@ -125,6 +126,7 @@ test.describe('table reorder — the preview clone stays out of the shared enume
     await page.mouse.move(startX + 5, startY);
     await expect(page.locator('[data-for-drag-preview]')).toHaveCount(1);
 
+    // The header half of the same falsifier — raw on purpose (#1711).
     await expect(page.locator('[forTableHeaderCell]')).toHaveCount(4);
     expect(await headerOrder(page)).toEqual(['name', 'role', 'dept']);
     await expect(headerCell(page, 'name')).toHaveCount(1);
@@ -187,8 +189,7 @@ test.describe('table column reorder — composite grid tab stop (#1223)', () => 
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Space');
 
-    const firstHeader = page.locator('[forTableHeaderCell]').first();
-    await expect(firstHeader).toHaveAttribute('data-column', 'role');
+    await expect(headerCellAt(page, 0)).toHaveAttribute('data-column', 'role');
   });
 });
 

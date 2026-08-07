@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
+import { rowAt, rows } from './_table-helpers';
 
 test.describe('Table (roles + sticky header)', () => {
   test('root has role=grid, header row has role=row, data cell has role=gridcell', async ({
@@ -80,7 +81,7 @@ test.describe('Table (row selection)', () => {
     page,
   }) => {
     await gotoFixture(page, 'table');
-    const row0 = page.locator('[forTableRow]').nth(0);
+    const row0 = rowAt(page, 0);
     const selector0 = el(page, 'selector-0');
 
     await expect(row0).toHaveAttribute('aria-selected', 'false');
@@ -97,7 +98,7 @@ test.describe('Table (row selection)', () => {
   }) => {
     await gotoFixture(page, 'table');
     const selectAll = el(page, 'select-all');
-    const allRows = page.locator('[forTableRow]');
+    const allRows = rows(page);
 
     await selectAll.click();
     await expect(selectAll).toHaveAttribute('aria-checked', 'true');
@@ -120,7 +121,7 @@ test.describe('Table (row selection)', () => {
     await gotoFixture(page, 'table');
     await el(page, 'cell-0-name').focus();
     await page.keyboard.press('Space');
-    const row0 = page.locator('[forTableRow]').nth(0);
+    const row0 = rowAt(page, 0);
     await expect(row0).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -128,23 +129,22 @@ test.describe('Table (row selection)', () => {
     page,
   }) => {
     await gotoFixture(page, 'table', { selectionBehavior: 'replace' });
-    const rows = page.locator('[forTableRow]');
 
     await el(page, 'cell-0-name').click();
-    await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 0)).toHaveAttribute('aria-selected', 'true');
 
     await el(page, 'cell-2-name').click();
-    await expect(rows.nth(0)).toHaveAttribute('aria-selected', 'false');
-    await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 0)).toHaveAttribute('aria-selected', 'false');
+    await expect(rowAt(page, 2)).toHaveAttribute('aria-selected', 'true');
 
     await el(page, 'cell-4-name').click({ modifiers: ['Control'] });
-    await expect(rows.nth(2)).toHaveAttribute('aria-selected', 'true');
-    await expect(rows.nth(4)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 2)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 4)).toHaveAttribute('aria-selected', 'true');
 
     await el(page, 'cell-6-name').click({ modifiers: ['Shift'] });
-    await expect(rows.nth(4)).toHaveAttribute('aria-selected', 'true');
-    await expect(rows.nth(5)).toHaveAttribute('aria-selected', 'true');
-    await expect(rows.nth(6)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 4)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 5)).toHaveAttribute('aria-selected', 'true');
+    await expect(rowAt(page, 6)).toHaveAttribute('aria-selected', 'true');
   });
 });
 

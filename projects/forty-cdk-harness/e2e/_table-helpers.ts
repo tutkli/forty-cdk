@@ -28,9 +28,24 @@ import { type Locator, type Page } from '@playwright/test';
  */
 const NOT_PREVIEW = ':not([data-for-drag-preview])';
 
+/**
+ * Selector matching every stamped row but the drag preview.
+ *
+ * The exclusion is exported as a **string** and not only as the locators below
+ * because an enumerator inside a `page.evaluate` body has no `Locator` to reach
+ * for and would otherwise have to respell it — which is how the exclusion ends
+ * up living in more than one file
+ * ([#1711](https://github.com/tutkli/forty-cdk/issues/1711)). Append further
+ * attribute selectors to it; a `:not()` mid-compound is valid CSS.
+ */
+export const ROW_SELECTOR = `[forTableRow]${NOT_PREVIEW}`;
+
+/** Selector matching every stamped header cell but the drag preview. */
+export const HEADER_CELL_SELECTOR = `[forTableHeaderCell]${NOT_PREVIEW}`;
+
 /** Every stamped row, in document order. */
 export function rows(page: Page): Locator {
-  return page.locator(`[forTableRow]${NOT_PREVIEW}`);
+  return page.locator(ROW_SELECTOR);
 }
 
 /** The row at `position` in the rendered list — non-virtualized bodies. */
@@ -40,7 +55,7 @@ export function rowAt(page: Page, position: number): Locator {
 
 /** The row carrying the absolute `data-index` — virtualized bodies. */
 export function rowByIndex(page: Page, index: number): Locator {
-  return page.locator(`[forTableRow][data-index="${index}"]${NOT_PREVIEW}`);
+  return page.locator(`${ROW_SELECTOR}[data-index="${index}"]`);
 }
 
 /** A column's cell inside the row at `position` — non-virtualized bodies. */
@@ -65,13 +80,18 @@ export function variantCell(page: Page, index: number): Locator {
 
 /** The header cell stamped for `column`. */
 export function headerCell(page: Page, column: string): Locator {
-  return page.locator(`[forTableHeaderCell][data-column="${column}"]${NOT_PREVIEW}`);
+  return page.locator(`${HEADER_CELL_SELECTOR}[data-column="${column}"]`);
+}
+
+/** The header cell at `position`, left to right — for a column-agnostic claim. */
+export function headerCellAt(page: Page, position: number): Locator {
+  return page.locator(HEADER_CELL_SELECTOR).nth(position);
 }
 
 /** The stamped header columns, left to right. */
 export function headerOrder(page: Page): Promise<(string | null)[]> {
   return page
-    .locator(`[forTableHeaderCell]${NOT_PREVIEW}`)
+    .locator(HEADER_CELL_SELECTOR)
     .evaluateAll((cells) => cells.map((c) => c.getAttribute('data-column')));
 }
 

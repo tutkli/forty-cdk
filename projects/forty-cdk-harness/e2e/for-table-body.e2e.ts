@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { el, expectFocused, gotoFixture } from './_helpers';
-import { dataCellAt as dataCell, headerCell } from './_table-helpers';
+import { dataCellAt as dataCell, headerCell, headerOrder, rowAt, rows } from './_table-helpers';
 
 const columnWidth = (page: Page, column: string): Promise<number | null> =>
   el(page, 'widths').evaluate((node, col) => {
@@ -14,10 +14,7 @@ test.describe('ForTableBody — declarative columns', () => {
   }) => {
     await gotoFixture(page, 'for-table-body');
     await expect(headerCell(page, 'name')).toHaveAttribute('role', 'columnheader');
-    const columns = await page
-      .locator('[forTableHeaderCell]')
-      .evaluateAll((cells) => cells.map((c) => c.getAttribute('data-column')));
-    expect(columns).toEqual(['sel', 'id', 'name', 'role', 'dept']);
+    expect(await headerOrder(page)).toEqual(['sel', 'id', 'name', 'role', 'dept']);
   });
 
   test('stamped data cells carry a 1-based aria-colindex', async ({ page }) => {
@@ -134,7 +131,7 @@ test.describe('ForTableBody — declarative columns', () => {
     page,
   }) => {
     await gotoFixture(page, 'for-table-body');
-    const firstRow = page.locator('[forTableRow]').nth(0);
+    const firstRow = rowAt(page, 0);
     await expect(firstRow).toHaveAttribute('aria-selected', 'false');
 
     await firstRow.locator('[forTableRowSelector]').click();
@@ -145,10 +142,10 @@ test.describe('ForTableBody — declarative columns', () => {
     await gotoFixture(page, 'for-table-body');
     await el(page, 'select-all').click();
 
-    const rows = page.locator('[forTableRow]');
-    const count = await rows.count();
+    const allRows = rows(page);
+    const count = await allRows.count();
     for (let i = 0; i < count; i++) {
-      await expect(rows.nth(i)).toHaveAttribute('aria-selected', 'true');
+      await expect(allRows.nth(i)).toHaveAttribute('aria-selected', 'true');
     }
   });
 

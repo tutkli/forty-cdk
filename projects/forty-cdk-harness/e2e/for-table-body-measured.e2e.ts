@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { el, gotoFixture } from './_helpers';
+import { ROW_SELECTOR, rowByIndex } from './_table-helpers';
 
 const GROUP_EVERY = 10;
 const VARIANT_HEIGHT = 80;
@@ -11,15 +12,17 @@ interface RowBox {
 }
 
 async function rowBoxes(page: Page): Promise<RowBox[]> {
-  const boxes = await page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>('[forTableRow][data-index]')).map((row) => {
-      const rect = row.getBoundingClientRect();
-      return {
-        index: Number(row.getAttribute('data-index')),
-        top: rect.top,
-        height: rect.height,
-      };
-    }),
+  const boxes = await page.evaluate(
+    (selector) =>
+      Array.from(document.querySelectorAll<HTMLElement>(selector)).map((row) => {
+        const rect = row.getBoundingClientRect();
+        return {
+          index: Number(row.getAttribute('data-index')),
+          top: rect.top,
+          height: rect.height,
+        };
+      }),
+    `${ROW_SELECTOR}[data-index]`,
   );
   return boxes.sort((a, b) => a.index - b.index);
 }
@@ -40,7 +43,7 @@ function maxGap(boxes: readonly RowBox[]): number {
 test.describe('ForTableBody — measured row heights (measureRows)', () => {
   test('measures the taller variant rows so the initial window is contiguous', async ({ page }) => {
     await gotoFixture(page, 'for-table-body-measured');
-    await expect(page.locator('[forTableRow][data-index="0"]')).toBeVisible();
+    await expect(rowByIndex(page, 0)).toBeVisible();
 
     await expect
       .poll(async () => {
@@ -54,7 +57,7 @@ test.describe('ForTableBody — measured row heights (measureRows)', () => {
 
   test('keeps the window contiguous after scrolling into a later region', async ({ page }) => {
     await gotoFixture(page, 'for-table-body-measured');
-    await expect(page.locator('[forTableRow][data-index="0"]')).toBeVisible();
+    await expect(rowByIndex(page, 0)).toBeVisible();
 
     await el(page, 'root').evaluate((node) => {
       (node as HTMLElement).scrollTop = 3000;
