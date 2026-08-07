@@ -1971,17 +1971,94 @@ function stubViewportTop(viewport: HTMLElement): (top: number) => void {
   };
 }
 
+interface ReflowProbe {
+  /** The elements a `ResizeObserver` was pointed at, in observation order. */
+  readonly observed: Element[];
+  /**
+   * Delivers one rendering-steps tick in which an observed box changed, and
+   * reports how many live observer callbacks it reached.
+   */
+  readonly deliver: () => number;
+  readonly restore: () => void;
+}
+
+/**
+ * jsdom implements no `ResizeObserver`, so the reflow watch cannot be observed —
+ * or even installed — without one. A `deliver()` models the point in a frame a
+ * real callback runs: after layout, and therefore after the microtask the
+ * `MutationObserver` pass ran in. That ordering is the whole premise of the
+ * discrimination, so the specs drive it explicitly rather than assuming it. One
+ * `deliver()` is one tick, which is why the install pass takes a single call: a
+ * browser coalesces the initial observation with the resize the mutation caused
+ * into the same delivery.
+ *
+ * Restoring is gated on the captured global being a *usable* constructor, for the
+ * reason `test-utils/observers.ts` documents: a presence check would happily put
+ * back a broken value an earlier spec left behind.
+ */
+function installResizeObserverStub(): ReflowProbe {
+  const observed: Element[] = [];
+  const live: (() => void)[] = [];
+  const original = (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+
+  class StubResizeObserver {
+    readonly #notify: () => void;
+
+    constructor(notify: () => void) {
+      this.#notify = notify;
+    }
+
+    observe(target: Element): void {
+      observed.push(target);
+      live.push(this.#notify);
+    }
+
+    unobserve(): void {}
+
+    disconnect(): void {
+      const at = live.indexOf(this.#notify);
+      if (at !== -1) {
+        live.splice(at, 1);
+      }
+    }
+  }
+
+  (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver =
+    StubResizeObserver as unknown as typeof ResizeObserver;
+
+  return {
+    observed,
+    deliver: () => {
+      const delivered = [...live];
+      for (const notify of delivered) {
+        notify();
+      }
+      return delivered.length;
+    },
+    restore: () => {
+      if (typeof original === 'function') {
+        (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver = original;
+      } else {
+        delete (globalThis as { ResizeObserver?: typeof ResizeObserver }).ResizeObserver;
+      }
+    },
+  };
+}
+
 describe('stack-shift glide (ForToastViewport)', () => {
   afterEachOverlayCleanup();
 
   let probe: { glides: RecordedGlide[]; restore: () => void };
+  let reflow: ReflowProbe;
 
   beforeEach(() => {
     probe = installAnimateStub();
+    reflow = installResizeObserverStub();
   });
 
   afterEach(() => {
     probe.restore();
+    reflow.restore();
   });
 
   const glidedTitles = (): string[] => probe.glides.map((glide) => titleOf(glide.row));
@@ -2142,6 +2219,103 @@ describe('stack-shift glide (ForToastViewport)', () => {
     await r.flush();
 
     expect(glidedTitles()).toEqual(['A']);
+  });
+
+  it('drops the baseline when a row reflows on its own, instead of replaying the growth as the next glide', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    const setViewportTop = stubViewportTop(r.query('for-toast-viewport')!);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    const grown = r.instance.toasts.show({ title: 'B', duration: 0, description: 'Uploading…' });
+    await r.flush();
+    reflow.deliver();
+
+    setViewportTop(-20);
+    grown.update({ description: 'Uploaded 1 of 3 files. Two more to go, hang on.' });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual([]);
+    reflow.deliver();
+
+    setViewportTop(-60);
+    r.instance.toasts.show({ title: 'C', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual([]);
+
+    setViewportTop(-100);
+    r.instance.toasts.show({ title: 'D', duration: 0 });
+    await r.flush();
+
+    expect(glidedTitles()).toEqual(['A', 'B', 'C']);
+    expect(probe.glides.every(startedBelow)).toBe(true);
+  });
+
+  it('consumes the resize a mutation caused, so a burst keeps gliding every surviving row', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    const setViewportTop = stubViewportTop(r.query('for-toast-viewport')!);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+    reflow.deliver();
+
+    setViewportTop(-40);
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+    reflow.deliver();
+
+    expect(glidedTitles()).toEqual(['A']);
+
+    setViewportTop(-80);
+    r.instance.toasts.show({ title: 'C', duration: 0 });
+    await r.flush();
+    reflow.deliver();
+
+    expect(glidedTitles()).toEqual(['A', 'A', 'B']);
+  });
+
+  it('drops the baseline without measuring: a reflow delivery reads no rect of its own', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    const rect = vi.spyOn(r.query('for-toast-viewport')!, 'getBoundingClientRect');
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    const readsPerPass = rect.mock.calls.length;
+    reflow.deliver();
+    reflow.deliver();
+
+    expect(readsPerPass).toBeGreaterThan(0);
+    expect(rect.mock.calls.length).toBe(readsPerPass);
+  });
+
+  it('installs the reflow observer once, on the first pass with motion, and none while [stackShift] is unset', async () => {
+    const r = renderHost(StackShiftHost);
+    const viewport = r.query('for-toast-viewport')!;
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    expect(reflow.observed).toEqual([]);
+
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'B', duration: 0 });
+    await r.flush();
+    r.instance.toasts.show({ title: 'C', duration: 0 });
+    await r.flush();
+
+    expect(reflow.observed).toEqual([viewport]);
+  });
+
+  it('disconnects the reflow observer when the viewport is destroyed', async () => {
+    const r = renderHost(StackShiftHost);
+    r.instance.stackShift.set(200);
+    r.instance.toasts.show({ title: 'A', duration: 0 });
+    await r.flush();
+
+    expect(reflow.deliver()).toBe(1);
+    r.fixture.destroy();
+
+    expect(reflow.deliver()).toBe(0);
   });
 
   it('contains an easing the platform rejects: warns once, and the pass still refreshes the baseline', async () => {

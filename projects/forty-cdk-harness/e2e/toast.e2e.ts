@@ -359,4 +359,53 @@ test.describe('Toast stack shift (#1680)', () => {
     expect(moved(tops)).toBe(true);
     expect(intermediates(tops)).toEqual([]);
   });
+
+  /**
+   * The reflow watch of #1684 rests on a claim about the platform, not about this
+   * library: a `MutationObserver` callback is a microtask, a `ResizeObserver`
+   * callback runs in the rendering steps after layout, so a mutation's own pass
+   * always lands before the resize it caused. jsdom implements neither delivery
+   * order (nor `ResizeObserver` at all), so both halves of the discrimination are
+   * only observable against a real engine.
+   */
+  test('[stackShift] keeps gliding a surviving row on the third of three consecutive adds', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { side: 'bottom-right', stackShift: '400' });
+    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-1')).toBeVisible();
+    await page.waitForTimeout(600);
+
+    const trajectory = sampleTop(page, 'toast-0', 700);
+    await el(page, 'enqueue').click();
+    const tops = await trajectory;
+
+    expect(moved(tops)).toBe(true);
+    expect(intermediates(tops).length).toBeGreaterThan(0);
+  });
+
+  test('a row grown by ForToastRef.update() lands the next mutation in a single step, instead of gliding from a spot it left', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'toast', { side: 'bottom-right', stackShift: '400', grow: '1' });
+    await el(page, 'enqueue').click();
+    await el(page, 'enqueue').click();
+    await expect(el(page, 'toast-1')).toBeVisible();
+    await page.waitForTimeout(600);
+
+    const beforeGrow = (await el(page, 'toast-0').boundingBox())!.y;
+    await el(page, 'grow').click();
+    await expect(el(page, 'toast-1')).toContainText('Uploaded 1 of 3 files');
+    await expect
+      .poll(async () => (await el(page, 'toast-0').boundingBox())!.y)
+      .toBeLessThan(beforeGrow);
+
+    const trajectory = sampleTop(page, 'toast-0', 700);
+    await el(page, 'enqueue').click();
+    const tops = await trajectory;
+
+    expect(moved(tops)).toBe(true);
+    expect(intermediates(tops)).toEqual([]);
+  });
 });

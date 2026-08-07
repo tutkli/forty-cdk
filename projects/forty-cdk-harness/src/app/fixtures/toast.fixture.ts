@@ -10,7 +10,12 @@ import {
   ViewEncapsulation,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { ForToastManager, type ForToastSwipeDirection, ForToastViewport } from 'forty-cdk/toast';
+import {
+  ForToastManager,
+  type ForToastRef,
+  type ForToastSwipeDirection,
+  ForToastViewport,
+} from 'forty-cdk/toast';
 
 /**
  * Fixture for the swipe-dismiss / auto-dismiss / stacking behavior on
@@ -44,6 +49,11 @@ import { ForToastManager, type ForToastSwipeDirection, ForToastViewport } from '
  *    and the per-toast config. `?swipe=down` for vertical drag, etc.
  *  - `?stackShift=N` — glide duration (ms) for the rows a mutation of the
  *    stack displaces. Default `0` (unset), which keeps the synchronous reflow.
+ *  - `?grow=1` — enqueues each toast with a one-line description and enables the
+ *    `grow` button, which swaps the last one's text for a paragraph that wraps.
+ *    That is the `ForToastRef.update()` flow of #1684: the row changes height on
+ *    its own, so the rows above it move with nothing in the child list to
+ *    announce it. Off by default, so every other spec's row height is untouched.
  */
 @Component({
   selector: 'app-toast-fixture',
@@ -145,6 +155,7 @@ import { ForToastManager, type ForToastSwipeDirection, ForToastViewport } from '
     <button data-testid="dismiss-all" type="button" (click)="manager.dismissAll()">
       Dismiss all
     </button>
+    <button data-testid="grow" type="button" (click)="grow()">Grow last toast</button>
 
     <for-toast-viewport
       [attr.data-testid]="'viewport'"
@@ -185,6 +196,11 @@ export class ToastFixture {
   protected readonly stackShift: number = parseStackShift(
     this.#route.snapshot.queryParamMap.get('stackShift'),
   );
+
+  protected readonly growable: boolean = this.#route.snapshot.queryParamMap.get('grow') === '1';
+
+  /** The last `show()` handle, so `grow()` can reflow a row that is already mounted. */
+  #last: ForToastRef | null = null;
 
   readonly #enqueuedCount = signal(0);
   protected readonly enqueued = computed(() => this.#enqueuedCount());
@@ -233,9 +249,10 @@ export class ToastFixture {
     const index = this.#enqueuedCount();
     const title = `toast-${index}`;
     this.#pendingTestids.set(title, title);
-    this.manager.show({
+    this.#last = this.manager.show({
       id: title,
       title,
+      description: this.growable ? SHORT_DESCRIPTION : undefined,
       // The duration captured at the moment of the show() call. `0` keeps the
       // toast sticky so swipe / stacking tests aren't racing the timer.
       duration: this.duration,
@@ -247,7 +264,23 @@ export class ToastFixture {
     });
     this.#enqueuedCount.update((n) => n + 1);
   }
+
+  /**
+   * Swaps the last toast's description for one that wraps, so the row grows in
+   * place. `update()` rewrites a text node inside the row, which is no mutation
+   * of the viewport's own child list — the shift reaches the rows above it with
+   * neither a mutation nor a `resize` / `scroll` to announce it.
+   */
+  protected grow(): void {
+    this.#last?.update({ description: LONG_DESCRIPTION });
+  }
 }
+
+const SHORT_DESCRIPTION = 'Uploading…';
+
+const LONG_DESCRIPTION =
+  'Uploaded 1 of 3 files. Two more to go, hang on — this description is long ' +
+  'enough to wrap onto several lines, so the row it sits in grows taller.';
 
 type ToastSide =
   | 'top-right'

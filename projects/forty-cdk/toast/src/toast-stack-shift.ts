@@ -53,9 +53,9 @@ export interface ToastStackShifterOptions {
   readonly reducedMotion: () => boolean;
 }
 
-/** Handle the viewport keeps so it can tear the observer down on destroy. */
+/** Handle the viewport keeps so it can tear the observers down on destroy. */
 export interface ToastStackShifter {
-  /** Disconnects the observer and cancels every glide still in flight. Idempotent. */
+  /** Disconnects both observers and cancels every glide still in flight. Idempotent. */
   destroy(): void;
 }
 
@@ -94,16 +94,30 @@ export interface ToastStackShifter {
  * glide of its full distance instead of the real travel. The two that move a
  * whole stack are watched and drop the baseline rather than being animated: a
  * window `resize` (the edge an anchored stack hangs off moves, mobile keyboards
- * included) and, for an in-flow host only, a `scroll`. Both listeners are
- * installed on the first pass that has motion, so an unset `[stackShift]` keeps
- * costing nothing but the observer.
+ * included) and, for an in-flow host only, a `scroll`. Every watch here — both
+ * listeners and the `ResizeObserver` below — is installed on the first pass that
+ * has motion, so an unset `[stackShift]` keeps costing nothing but the
+ * `MutationObserver`.
  *
- * Known limit: a row that reflows on its own — text swapped, a late font, an
- * image settling — moves its siblings with neither a mutation nor either event,
- * so that shift is still measured from the stale baseline. A `ResizeObserver`
- * would see it, but it also fires on every add / remove, where dropping the
- * baseline is exactly wrong (a burst would stop gliding), so it needs a way to
- * tell the two apart before it is worth having.
+ * The third source — a row that reflows on its own, text swapped by
+ * `ForToastRef.update()`, a late font, an image settling — moves its siblings
+ * with neither a mutation nor either event, and the only instrument that sees it
+ * is a `ResizeObserver` on the host. The naive version of that is wrong: it also
+ * fires on every add / remove, where dropping the baseline is exactly what must
+ * not happen, since a burst would stop gliding. **Delivery order tells the two
+ * apart.** A `MutationObserver` callback is a microtask, while a
+ * `ResizeObserver` callback runs in the rendering steps after layout, so a
+ * mutation's own pass always lands *before* the resize that mutation caused: a
+ * delivery finding the flag set is that resize and is consumed, one finding it
+ * clear is a reflow and drops the baseline.
+ *
+ * Known limits, all of them one mutation glided from a stale baseline and
+ * self-corrected by the pass after it: a reflow landing in the same frame as a
+ * mutation is consumed as that mutation's resize; a reflow the host's own box
+ * does not follow (a viewport with a fixed `height`) is never delivered at all;
+ * and a mutation that leaves the box unchanged — one row replacing another of
+ * equal height at the `maxVisible` cap — leaves the flag set for the next
+ * delivery to consume.
  */
 export function createToastStackShifter(options: ToastStackShifterOptions): ToastStackShifter {
   const { host, view, shift, reducedMotion } = options;
@@ -116,6 +130,18 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
   const unwatch: (() => void)[] = [];
   let watchingResize = false;
   let watchingScroll = false;
+  let watchingReflow = false;
+  let reflowObserver: ResizeObserver | null = null;
+
+  /**
+   * Whether the resize delivery still to come is the one a mutation of the child
+   * list caused, which this pass has already measured. Claimed by every pass with
+   * motion — before {@link watchReflow} installs the observer, so the initial
+   * delivery `observe()` schedules is claimed too — and cleared by the delivery
+   * that finds it claimed. A boolean is the whole discrimination, which is what
+   * keeps the reflow handler free of any measurement of its own.
+   */
+  let mutatedSincePaint = false;
 
   /**
    * Drops the baseline. Whatever moved the rows did not go through the child
@@ -131,6 +157,25 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
   const watch = (type: 'resize' | 'scroll', capture: boolean): void => {
     view.addEventListener(type, invalidate, { capture, passive: true });
     unwatch.push(() => view.removeEventListener(type, invalidate, { capture }));
+  };
+
+  /**
+   * Watches the host's box for the reflow no mutation and neither event
+   * announces, discriminated by the delivery order documented above. Lazy like
+   * both listeners, so an unset `[stackShift]` observes nothing.
+   */
+  const watchReflow = (): void => {
+    if (typeof view.ResizeObserver !== 'function') {
+      return;
+    }
+    reflowObserver = new view.ResizeObserver(() => {
+      if (mutatedSincePaint) {
+        mutatedSincePaint = false;
+        return;
+      }
+      invalidate();
+    });
+    reflowObserver.observe(host);
   };
 
   const cancel = (row: HTMLElement): void => {
@@ -208,6 +253,12 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
       watch('resize', false);
     }
 
+    mutatedSincePaint = true;
+    if (!watchingReflow) {
+      watchingReflow = true;
+      watchReflow();
+    }
+
     const top = host.getBoundingClientRect().top;
 
     // A host out of flow (`position: fixed`, the documented setup) keeps its rect
@@ -251,6 +302,8 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
   return {
     destroy: () => {
       observer.disconnect();
+      reflowObserver?.disconnect();
+      reflowObserver = null;
       for (const remove of unwatch.splice(0)) {
         remove();
       }
