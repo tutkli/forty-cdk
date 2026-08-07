@@ -8,7 +8,7 @@ import {
   ForDateRangeFieldLiteral,
   ForDateRangeFieldSegment,
   ForDateRangeFieldStart,
-} from 'forty-cdk/date-range-field';
+} from 'forty-cdk/date-field';
 import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized-date';
 
 interface Booking {

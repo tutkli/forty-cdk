@@ -67,9 +67,7 @@ export const FOR_DATE_RANGE_FIELD_SEGMENT_CONTEXT = new InjectionToken<SegmentEd
 export function injectDateRangeFieldContext(piece: string): ForDateRangeFieldContext {
   const ctx = inject(FOR_DATE_RANGE_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/date-range-field] ${piece} must be used inside a [forDateRangeField].`,
-    );
+    throw new Error(`[forty-cdk/date-field] ${piece} must be used inside a [forDateRangeField].`);
   }
   return ctx;
 }
@@ -84,7 +82,7 @@ export function injectDateRangeFieldSegmentContext(piece: string): SegmentEditor
   const ctx = inject(FOR_DATE_RANGE_FIELD_SEGMENT_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/date-range-field] ${piece} must be used inside a [forDateRangeFieldStart] or [forDateRangeFieldEnd].`,
+      `[forty-cdk/date-field] ${piece} must be used inside a [forDateRangeFieldStart] or [forDateRangeFieldEnd].`,
     );
   }
   return ctx;

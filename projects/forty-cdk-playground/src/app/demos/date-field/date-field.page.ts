@@ -7,6 +7,9 @@ import { DateFieldDateTimeExample } from './examples/date-time.example';
 import { DateFieldDefaultExample } from './examples/default.example';
 import { DateFieldFormFieldExample } from './examples/form-field.example';
 import { DateFieldLocalizedExample } from './examples/localized.example';
+import { DateRangeFieldDateTimeExample } from './examples/range-date-time.example';
+import { DateRangeFieldFormFieldExample } from './examples/range-form-field.example';
+import { DateRangeFieldDefaultExample } from './examples/range.example';
 import { SOURCES } from './sources.generated';
 import readmeContent from '../../../../../forty-cdk/date-field/README.md';
 
@@ -20,6 +23,9 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
     DateFieldDateTimeExample,
     DateFieldLocalizedExample,
     DateFieldFormFieldExample,
+    DateRangeFieldDefaultExample,
+    DateRangeFieldDateTimeExample,
+    DateRangeFieldFormFieldExample,
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
@@ -50,6 +56,30 @@ import readmeContent from '../../../../../forty-cdk/date-field/README.md';
         sourcePath="date-field/examples/form-field.example.ts"
       >
         <app-date-field-form-field-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Date range"
+        subtitle="<code>ForDateRangeField</code> is the range variant, shipped from this same entry point. Two labelled endpoint groups share locale, granularity and bounds; each is its own tab stop, so <kbd>Tab</kbd> steps start → end while the arrows move between segments inside one endpoint."
+        sourcePath="date-field/examples/range.example.ts"
+      >
+        <app-date-range-field-default-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Date & time range"
+        subtitle="With a time-capable adapter, a <code>granularity</code> coarser than <code>'day'</code> appends time segments to both endpoints and the value becomes a <code>CalendarDateTime</code> range — handy for a check-in to check-out with times. A 12-hour <code>hourCycle</code> adds an AM/PM segment to each side."
+        sourcePath="date-field/examples/range-date-time.example.ts"
+      >
+        <app-date-range-field-date-time-example />
+      </playground-demo>
+
+      <playground-demo
+        title="Range in Signal Forms"
+        subtitle="<code>ForDateRangeField</code> implements <code>FormValueControl&lt;DateRange | null&gt;</code>, so <code>[formField]</code> binds the committed range into the form and pulls validation back out. A half-entered or out-of-order range keeps <code>value()</code> null, so a <code>required</code> field stays invalid until both endpoints are filled and ordered."
+        sourcePath="date-field/examples/range-form-field.example.ts"
+      >
+        <app-date-range-field-form-field-example />
       </playground-demo>
     </primitive-page>
   `,

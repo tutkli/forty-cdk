@@ -60,7 +60,7 @@ import {
   FOR_DATE_RANGE_FIELD_DEFAULTS,
   FOR_DATE_RANGE_FIELD_FALLBACK_DEFAULTS,
   provideForDateRangeFieldDefaults,
-} from '../../../date-range-field/src/date-range-field-defaults';
+} from '../../../date-field/src/date-range-field-defaults';
 import {
   FOR_DIALOG_DEFAULTS,
   FOR_DIALOG_FALLBACK_DEFAULTS,
@@ -155,7 +155,7 @@ import {
   FOR_TIME_RANGE_FIELD_DEFAULTS,
   FOR_TIME_RANGE_FIELD_FALLBACK_DEFAULTS,
   provideForTimeRangeFieldDefaults,
-} from '../../../time-range-field/src/time-range-field-defaults';
+} from '../../../time-field/src/time-range-field-defaults';
 import {
   FOR_TOAST_DEFAULTS,
   FOR_TOAST_FALLBACK_DEFAULTS,

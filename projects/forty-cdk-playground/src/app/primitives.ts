@@ -203,24 +203,10 @@ const PRIMITIVES: readonly PlaygroundPrimitive[] = [
     apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
   },
   {
-    slug: 'date-range-field',
-    title: 'Date Range Field',
-    description:
-      'A segmented date (and optional time) range input over a pluggable date adapter: two labelled spinbutton endpoints (start / end) sharing locale, granularity and bounds. Implements FormValueControl, so the committed range auto-wires with Signal Forms — null until both endpoints are filled and ordered.',
-    apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
-  },
-  {
     slug: 'time-field',
     title: 'Time Field',
     description:
       'A segmented time-of-day input over a pluggable date adapter, with 12 / 24-hour cycles, optional seconds, and min / max time clamping.',
-    apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
-  },
-  {
-    slug: 'time-range-field',
-    title: 'Time Range Field',
-    description:
-      'A segmented time-of-day range input over a time-capable date adapter: two labelled spinbutton endpoints (start / end) sharing the hour cycle and min / max bounds. Implements FormValueControl, so the committed range auto-wires with Signal Forms — null until both endpoints are filled and ordered.',
     apgUrl: 'https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/',
   },
   {

@@ -11,25 +11,25 @@ import {
   ForCalendarYearGrid,
   provideNativeDateAdapter,
 } from 'forty-cdk/calendar';
-import { ForDateField } from 'forty-cdk/date-field';
-import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
 import {
+  ForDateField,
   ForDateRangeField,
   ForDateRangeFieldEnd,
   ForDateRangeFieldStart,
-} from 'forty-cdk/date-range-field';
-import { ForTimeField } from 'forty-cdk/time-field';
+} from 'forty-cdk/date-field';
+import { ForDatePicker, ForDatePickerContent, ForDatePickerTrigger } from 'forty-cdk/date-picker';
+import {
+  ForTimeField,
+  ForTimeRangeField,
+  ForTimeRangeFieldEnd,
+  ForTimeRangeFieldStart,
+} from 'forty-cdk/time-field';
 import {
   ForTimePicker,
   ForTimePickerContent,
   ForTimePickerOption,
   ForTimePickerTrigger,
 } from 'forty-cdk/time-picker';
-import {
-  ForTimeRangeField,
-  ForTimeRangeFieldEnd,
-  ForTimeRangeFieldStart,
-} from 'forty-cdk/time-range-field';
 
 import type { StaticAdoptionAdopter } from './mount';
 
@@ -411,7 +411,7 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDateRangeField]',
         channel: 'aria-label',
-        source: 'date-range-field/src/date-range-field.ts',
+        source: 'date-field/src/date-range-field.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe stay',
         fallback: null,
@@ -419,7 +419,7 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDateRangeFieldStart]',
         channel: 'aria-label',
-        source: 'date-range-field/src/date-range-field-endpoint.ts',
+        source: 'date-field/src/date-range-field-endpoint.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe check-in',
         fallback: 'Start date',
@@ -427,7 +427,7 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forDateRangeFieldEnd]',
         channel: 'aria-label',
-        source: 'date-range-field/src/date-range-field-endpoint.ts',
+        source: 'date-field/src/date-range-field-endpoint.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe check-out',
         fallback: 'End date',
@@ -435,7 +435,7 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forTimeRangeField]',
         channel: 'aria-label',
-        source: 'time-range-field/src/time-range-field.ts',
+        source: 'time-field/src/time-range-field.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe shift',
         fallback: null,
@@ -443,7 +443,7 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forTimeRangeFieldStart]',
         channel: 'aria-label',
-        source: 'time-range-field/src/time-range-field-endpoint.ts',
+        source: 'time-field/src/time-range-field-endpoint.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe shift start',
         fallback: 'Start time',
@@ -451,7 +451,7 @@ export const DATETIME_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forTimeRangeFieldEnd]',
         channel: 'aria-label',
-        source: 'time-range-field/src/time-range-field-endpoint.ts',
+        source: 'time-field/src/time-range-field-endpoint.ts',
         seam: 'hostAriaLabel',
         probe: 'Probe shift end',
         fallback: 'End time',

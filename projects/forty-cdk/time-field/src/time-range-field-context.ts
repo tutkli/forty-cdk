@@ -68,9 +68,7 @@ export const FOR_TIME_RANGE_FIELD_SEGMENT_CONTEXT = new InjectionToken<SegmentEd
 export function injectTimeRangeFieldContext(piece: string): ForTimeRangeFieldContext {
   const ctx = inject(FOR_TIME_RANGE_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/time-range-field] ${piece} must be used inside a [forTimeRangeField].`,
-    );
+    throw new Error(`[forty-cdk/time-field] ${piece} must be used inside a [forTimeRangeField].`);
   }
   return ctx;
 }
@@ -85,7 +83,7 @@ export function injectTimeRangeFieldSegmentContext(piece: string): SegmentEditor
   const ctx = inject(FOR_TIME_RANGE_FIELD_SEGMENT_CONTEXT, { optional: true });
   if (!ctx) {
     throw new Error(
-      `[forty-cdk/time-range-field] ${piece} must be used inside a [forTimeRangeFieldStart] or [forTimeRangeFieldEnd].`,
+      `[forty-cdk/time-field] ${piece} must be used inside a [forTimeRangeFieldStart] or [forTimeRangeFieldEnd].`,
     );
   }
   return ctx;

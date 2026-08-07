@@ -8,7 +8,7 @@ import {
   ForTimeRangeFieldLiteral,
   ForTimeRangeFieldSegment,
   ForTimeRangeFieldStart,
-} from 'forty-cdk/time-range-field';
+} from 'forty-cdk/time-field';
 
 @Component({
   selector: 'app-time-range-field-bounds-example',

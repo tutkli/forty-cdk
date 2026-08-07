@@ -26,13 +26,11 @@ import {
 import {
   FOR_DATE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_FIELD_HOST_DIRECTIVE_OUTPUTS,
-  ForDateField,
-} from 'forty-cdk/date-field';
-import {
   FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  ForDateField,
   ForDateRangeField,
-} from 'forty-cdk/date-range-field';
+} from 'forty-cdk/date-field';
 import {
   FOR_DATE_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_DATE_PICKER_HOST_DIRECTIVE_OUTPUTS,
@@ -44,13 +42,11 @@ import {
 import {
   FOR_TIME_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_FIELD_HOST_DIRECTIVE_OUTPUTS,
-  ForTimeField,
-} from 'forty-cdk/time-field';
-import {
   FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_RANGE_FIELD_HOST_DIRECTIVE_OUTPUTS,
+  ForTimeField,
   ForTimeRangeField,
-} from 'forty-cdk/time-range-field';
+} from 'forty-cdk/time-field';
 import {
   FOR_TIME_PICKER_HOST_DIRECTIVE_INPUTS,
   FOR_TIME_PICKER_HOST_DIRECTIVE_OUTPUTS,
