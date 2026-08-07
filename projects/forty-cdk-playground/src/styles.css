@@ -164,7 +164,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: var(--for-anchor-width);
+  width: var(--for-floating-anchor-width);
   max-height: 260px;
   overflow-y: auto;
   padding: 4px;
@@ -446,7 +446,7 @@ a.pg-nav-link.active {
   height: 9px;
   background: var(--pg-tooltip-bg);
   transform: rotate(45deg);
-  --for-arrow-offset: -4px;
+  --for-floating-arrow-offset: -4px;
 }
 
 @keyframes pg-pop-in {
@@ -457,7 +457,7 @@ a.pg-nav-link.active {
 }
 
 .pg-pop-in {
-  transform-origin: var(--for-content-transform-origin, center);
+  transform-origin: var(--for-floating-content-transform-origin, center);
   animation: pg-pop-in 0.2s var(--pg-ease-spring) both;
 }
 
@@ -468,7 +468,7 @@ a.pg-nav-link.active {
 }
 
 .pg-select-content[data-position='item-aligned'] {
-  max-height: var(--for-available-height);
+  max-height: var(--for-floating-available-height);
 }
 
 .pg-toast-viewport {
@@ -893,7 +893,7 @@ a.pg-nav-link.active {
   background: var(--pg-surface);
   border-top: 1px solid var(--pg-border);
   border-left: 1px solid var(--pg-border);
-  --for-arrow-offset: -6px;
+  --for-floating-arrow-offset: -6px;
 }
 
 .api-pop-arrow[data-side='bottom'] {
@@ -913,7 +913,7 @@ a.pg-nav-link.active {
 }
 
 .api-pop-enter {
-  transform-origin: var(--for-content-transform-origin, center);
+  transform-origin: var(--for-floating-content-transform-origin, center);
   animation: api-pop-enter 0.16s var(--pg-ease-spring, ease) both;
 }
 
@@ -1175,7 +1175,7 @@ a.pg-nav-link.active {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  width: var(--for-anchor-width);
+  width: var(--for-floating-anchor-width);
   max-height: min(50vh, 380px);
   overflow-y: auto;
   margin-top: 0.5rem;

@@ -1332,8 +1332,8 @@ const fortyCdkPlugin = {
         // Each mark is DOM only `computePosition` / `autoUpdate` can produce.
         // The two anti-flash marks (`translate`, `clip-path`) are what
         // `flushPositioning` itself polls for; the `--for-*` set is the
-        // positioners' output vocabulary (the six unqualified properties of the
-        // pending-rename ledger in `.claude/rules/conventions.md`); `data-side`
+        // positioners' output vocabulary (the six `--for-floating-*`
+        // properties of the shared positioner family); `data-side`
         // / `data-placement` is the resolved-placement reflection.
         const DEFERRED_MARKS = [
           { re: /\.style\.translate\b/, mark: 'the positioner’s inline `translate`' },
@@ -1343,7 +1343,7 @@ const fortyCdkPlugin = {
             mark: 'the positioner’s `translate` / `clip-path`',
           },
           {
-            re: /--for-(?:anchor-(?:width|height)|available-(?:width|height)|arrow-offset|content-transform-origin)/,
+            re: /--for-floating-(?:anchor-(?:width|height)|available-(?:width|height)|arrow-offset|content-transform-origin)/,
             mark: 'a positioner-written `--for-*` custom property',
           },
           { re: /\bdata-side\b/, mark: '`data-side` placement reflection' },

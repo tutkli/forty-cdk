@@ -87,9 +87,9 @@ export interface FloatingConfig {
    * Optional arrow element. When non-null, the `arrow` middleware is
    * registered and the helper writes `position: absolute`, the resolved
    * `left` / `top` from floating-ui, and a side-aware
-   * `var(--for-arrow-offset, 0px)` on the *opposite* axis once floating-ui
+   * `var(--for-floating-arrow-offset, 0px)` on the *opposite* axis once floating-ui
    * resolves a position. Consumers control how far the arrow pokes out of
-   * the bubble by setting `--for-arrow-offset` (typically a negative `px`
+   * the bubble by setting `--for-floating-arrow-offset` (typically a negative `px`
    * value) on the arrow element or any ancestor — the helper ships no
    * default visual.
    */
@@ -272,9 +272,9 @@ export function buildFlipOptions(options: {
  * position — `data-placement`, `data-side`, `data-align`, `data-occluded`
  * (when the `hide` middleware reports the reference is off-screen),
  * `data-detached` (when `hideWhenDetached` is on and the reference escaped its
- * clipping ancestors), the `--for-anchor-width/-height`,
- * `--for-available-width/-height`, and `--for-content-transform-origin` CSS
- * variables, and the optional arrow's position + `--for-arrow-offset`.
+ * clipping ancestors), the `--for-floating-anchor-width/-height`,
+ * `--for-floating-available-width/-height`, and `--for-floating-content-transform-origin` CSS
+ * variables, and the optional arrow's position + `--for-floating-arrow-offset`.
  *
  * Once per open cycle, on the first resolved position after opening, it invokes
  * `onFirstPosition` — after the portal move and after `size` applied its
@@ -289,7 +289,7 @@ export function buildFlipOptions(options: {
  * recomputes everything before painting.
  *
  * Stylistic concerns (which side gets the arrow offset via
- * `--for-arrow-offset`, pointer events, background, animations) stay with the
+ * `--for-floating-arrow-offset`, pointer events, background, animations) stay with the
  * consumer.
  */
 export function injectFloating(config: FloatingConfig): void {
@@ -348,16 +348,16 @@ export function injectFloating(config: FloatingConfig): void {
       }
 
       // `size` exposes available width/height as CSS variables so the
-      // consumer can `max-height: var(--for-available-height)` etc.
+      // consumer can `max-height: var(--for-floating-available-height)` etc.
       const sizeOptions: Parameters<typeof size>[0] = {
         padding: sizePaddingValue,
         apply({ availableWidth, availableHeight }) {
           el.style.setProperty(
-            '--for-available-width',
+            '--for-floating-available-width',
             `${Math.max(0, Math.round(availableWidth))}px`,
           );
           el.style.setProperty(
-            '--for-available-height',
+            '--for-floating-available-height',
             `${Math.max(0, Math.round(availableHeight))}px`,
           );
         },
@@ -387,14 +387,14 @@ export function injectFloating(config: FloatingConfig): void {
           el.dataset['align'] = resolvedAlign;
 
           // Anchor box → CSS vars so the consumer can size the floating
-          // element relative to the anchor (`width: var(--for-anchor-width)`).
+          // element relative to the anchor (`width: var(--for-floating-anchor-width)`).
           // Both real `Element`s and floating-ui `VirtualElement`s expose
           // `getBoundingClientRect`, so the call is safe.
           const rect = reference.getBoundingClientRect();
-          el.style.setProperty('--for-anchor-width', `${Math.round(rect.width)}px`);
-          el.style.setProperty('--for-anchor-height', `${Math.round(rect.height)}px`);
+          el.style.setProperty('--for-floating-anchor-width', `${Math.round(rect.width)}px`);
+          el.style.setProperty('--for-floating-anchor-height', `${Math.round(rect.height)}px`);
           el.style.setProperty(
-            '--for-content-transform-origin',
+            '--for-floating-content-transform-origin',
             transformOriginFor(resolvedSide, resolvedAlign),
           );
 
@@ -421,7 +421,7 @@ export function injectFloating(config: FloatingConfig): void {
               top: ay != null ? `${ay}px` : '',
               right: '',
               bottom: '',
-              [opposite]: 'var(--for-arrow-offset, 0px)',
+              [opposite]: 'var(--for-floating-arrow-offset, 0px)',
             });
             // `data-placement` on the arrow stores the *side* only, for
             // historical reasons (CSS like `[data-placement="top"]`).
@@ -446,7 +446,7 @@ export function injectFloating(config: FloatingConfig): void {
  * Strip the transient sizing CSS custom properties, the occlusion `data-*`
  * attributes, and the `clip-path` hide baseline `injectFloating` writes to the
  * floating element. The resolved `translate` and the resolved-placement outputs
- * (`--for-content-transform-origin`, `data-placement`, `data-side`,
+ * (`--for-floating-content-transform-origin`, `data-placement`, `data-side`,
  * `data-align`) are intentionally retained so a closing surface stays anchored
  * to its trigger — and keeps pivoting its scale leave from the trigger edge —
  * through `animate.leave`; the next mount re-arms the `clip-path` baseline in
@@ -458,10 +458,10 @@ function resetFloatingStyles(el: HTMLElement): void {
   // visible for its `animate.leave`; the next mount re-applies the
   // `clip-path` baseline in `afterNextRender`.
   el.style.removeProperty('clip-path');
-  el.style.removeProperty('--for-anchor-width');
-  el.style.removeProperty('--for-anchor-height');
-  el.style.removeProperty('--for-available-width');
-  el.style.removeProperty('--for-available-height');
+  el.style.removeProperty('--for-floating-anchor-width');
+  el.style.removeProperty('--for-floating-anchor-height');
+  el.style.removeProperty('--for-floating-available-width');
+  el.style.removeProperty('--for-floating-available-height');
   el.removeAttribute('data-occluded');
   el.removeAttribute('data-detached');
 }

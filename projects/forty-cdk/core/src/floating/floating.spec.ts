@@ -417,11 +417,13 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['side']).toBe('top');
       expect(bubbleEl.dataset['align']).toBe('center');
       expect(bubbleEl.style.translate).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-available-width')).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-available-height')).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-width')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-height')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-content-transform-origin')).not.toBe(
+        '',
+      );
       expect(arrowEl.style.position).toBe('absolute');
       expect(arrowEl.dataset['side']).toBe('top');
 
@@ -435,11 +437,13 @@ describe('injectFloating', () => {
       expect(bubbleEl.dataset['occluded']).toBeUndefined();
       expect(bubbleEl.dataset['detached']).toBeUndefined();
       expect(bubbleEl.style.translate).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).not.toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-available-width')).toBe('');
-      expect(bubbleEl.style.getPropertyValue('--for-available-height')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-content-transform-origin')).not.toBe(
+        '',
+      );
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-height')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).toBe('');
 
       // Arrow is wiped too.
       expect(arrowEl.style.position).toBe('');
@@ -595,7 +599,7 @@ describe('injectFloating', () => {
   });
 
   describe('arrow', () => {
-    it('positions the arrow absolutely with the --for-arrow-offset CSS var on the opposite side', async () => {
+    it('positions the arrow absolutely with the --for-floating-arrow-offset CSS var on the opposite side', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -614,7 +618,7 @@ describe('injectFloating', () => {
       expect(arrowEl.dataset['side']).toBe('top');
       // top placement → opposite is 'bottom' → bottom is wired to the
       // consumer-controlled CSS var, never the legacy `-4px` literal.
-      expect(arrowEl.style.bottom).toBe('var(--for-arrow-offset, 0px)');
+      expect(arrowEl.style.bottom).toBe('var(--for-floating-arrow-offset, 0px)');
       expect(arrowEl.style.bottom).not.toBe('-4px');
     });
   });
@@ -674,7 +678,7 @@ describe('injectFloating', () => {
   });
 
   describe('CSS variables', () => {
-    it('writes --for-anchor-width / --for-anchor-height from the reference rect', async () => {
+    it('writes --for-floating-anchor-width / --for-floating-anchor-height from the reference rect', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -687,11 +691,11 @@ describe('injectFloating', () => {
 
       // jsdom returns 0 from getBoundingClientRect — the var must still be set
       // with an explicit "Npx" value so consumers can rely on it being present.
-      expect(bubbleEl.style.getPropertyValue('--for-anchor-width')).toMatch(/^-?\d+px$/);
-      expect(bubbleEl.style.getPropertyValue('--for-anchor-height')).toMatch(/^-?\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-width')).toMatch(/^-?\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-height')).toMatch(/^-?\d+px$/);
     });
 
-    it('writes --for-available-width / --for-available-height from the size middleware', async () => {
+    it('writes --for-floating-available-width / --for-floating-available-height from the size middleware', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -702,11 +706,11 @@ describe('injectFloating', () => {
       bubble.open.set(true);
       await flushPositioning(fixture);
 
-      expect(bubbleEl.style.getPropertyValue('--for-available-width')).toMatch(/^\d+px$/);
-      expect(bubbleEl.style.getPropertyValue('--for-available-height')).toMatch(/^\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).toMatch(/^\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).toMatch(/^\d+px$/);
     });
 
-    it('writes --for-content-transform-origin matching the resolved side/align', async () => {
+    it('writes --for-floating-content-transform-origin matching the resolved side/align', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(ModernBubbleHost);
       await flushPositioning(fixture);
@@ -721,14 +725,18 @@ describe('injectFloating', () => {
 
       // bottom + align:start → content scales out from the trigger's
       // bottom-left corner → origin is the floating element's "left top".
-      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).toBe('left top');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-content-transform-origin')).toBe(
+        'left top',
+      );
 
       bubble.side.set('right');
       bubble.align.set('end');
       await flushPositioning(fixture);
 
       // right + align:end → origin is left bottom of the floating element.
-      expect(bubbleEl.style.getPropertyValue('--for-content-transform-origin')).toBe('left bottom');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-content-transform-origin')).toBe(
+        'left bottom',
+      );
     });
   });
 

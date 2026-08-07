@@ -543,11 +543,11 @@ describe('SSR smoke tests', () => {
     const POSITIONER_PROPERTIES = [
       'translate',
       'clip-path',
-      '--for-anchor-width',
-      '--for-anchor-height',
-      '--for-available-width',
-      '--for-available-height',
-      '--for-content-transform-origin',
+      '--for-floating-anchor-width',
+      '--for-floating-anchor-height',
+      '--for-floating-available-width',
+      '--for-floating-available-height',
+      '--for-floating-content-transform-origin',
     ];
 
     for (const fixture of OPEN_STATE_FIXTURES) {

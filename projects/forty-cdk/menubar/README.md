@@ -167,7 +167,7 @@ Submenus opened from a top-level menu work as in `[forDropdownMenu]` — Escape 
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
-> Each trigger's menu surface is the shared `[forMenuContent]` (from [`menu/`](../menu/README.md)), which **portals to `document.body`**. Style it with global CSS or a class — scoped/`:host` styles won't reach it. The portaled content also exposes the shared positioner custom properties (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and how to use them.
+> Each trigger's menu surface is the shared `[forMenuContent]` (from [`menu/`](../menu/README.md)), which **portals to `document.body`**. Style it with global CSS or a class — scoped/`:host` styles won't reach it. The portaled content also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and how to use them.
 
 ```css
 .menubar-trigger[data-state='open'] {

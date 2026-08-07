@@ -262,7 +262,7 @@ export class ComboboxFixture {
     : 'list';
   // `?anchor=1` wraps the input in a wider `[forComboboxAnchor]` field box so
   // e2e specs can assert the listbox is positioned / sized against the box
-  // (`--for-anchor-width` ≈ 320px) rather than the inner input.
+  // (`--for-floating-anchor-width` ≈ 320px) rather than the inner input.
   protected readonly anchor = queryFlag('anchor');
   // `?picker=1` renders the trigger + inner-list picker anatomy (#675): a
   // `[forComboboxTrigger]` button outside the panel and `[forComboboxInput]` +

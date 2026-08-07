@@ -272,7 +272,7 @@ import { provideInternationalizedDateAdapter } from 'forty-cdk/internationalized
     }
 
     .dp-constraints-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: dp-constraints-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

@@ -161,7 +161,7 @@ Animated with standalone `scale` and `opacity` (not `transform`, which floating-
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   min-width: 240px;
 
-  transform-origin: var(--for-content-transform-origin, center);
+  transform-origin: var(--for-floating-content-transform-origin, center);
   animation: popover-in 0.15s ease-out both;
 }
 
@@ -184,7 +184,7 @@ Apply the animation in the template with `animate.enter`:
 }
 ```
 
-`--for-content-transform-origin` is a custom property the library sets on the content element while open. It resolves to the corner or edge closest to the trigger so the content appears to grow out of the anchor point rather than from its own center.
+`--for-floating-content-transform-origin` is a custom property the library sets on the content element while open. It resolves to the corner or edge closest to the trigger so the content appears to grow out of the anchor point rather than from its own center.
 
 The complete template at this point:
 

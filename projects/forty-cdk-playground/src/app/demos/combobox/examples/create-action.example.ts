@@ -100,7 +100,7 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
       display: flex;
       flex-direction: column;
       gap: 2px;
-      width: var(--for-anchor-width);
+      width: var(--for-floating-anchor-width);
       min-width: 12rem;
       max-height: 280px;
       overflow-y: auto;
@@ -174,7 +174,7 @@ const SEED_TAGS = ['design', 'engineering', 'marketing', 'product', 'sales'] as 
     }
 
     .ca-combobox-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: ca-combobox-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

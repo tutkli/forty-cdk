@@ -672,7 +672,7 @@ describe('ForContextMenu', () => {
   });
 
   describe('keyboard activator', () => {
-    // Geometry-driven assertions (anchor rect → `--for-anchor-width/-height`
+    // Geometry-driven assertions (anchor rect → `--for-floating-anchor-width/-height`
     // and resolved `transform`) live in the Playwright suite — see
     // `projects/forty-cdk-harness/e2e/context-menu.e2e.ts`. The Vitest layer
     // covers the non-geometry wiring (menu opens, defaultPrevented, focused
@@ -706,7 +706,7 @@ describe('ForContextMenu', () => {
       // Wiring check for the descendant branch in
       // `ForContextMenuTrigger.onKeyDown` — when `activeElement` is inside the
       // trigger, the directive anchors at the descendant rather than the
-      // trigger. The geometry effect of that decision (the `--for-anchor-*`
+      // trigger. The geometry effect of that decision (the `--for-floating-anchor-*`
       // CSS vars reflect the descendant's rect, not the trigger's) is covered
       // in the Playwright suite; here we only assert the open path runs.
       const r = renderHost(ContextMenuHost);

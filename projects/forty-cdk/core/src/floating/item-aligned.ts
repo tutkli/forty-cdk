@@ -33,7 +33,7 @@ export interface ItemAlignedConfig {
   /**
    * Padding (px) the listbox keeps from the viewport edge. Default `8`.
    * Drives both the viewport clamp on the listbox top/bottom and the
-   * `--for-available-height` CSS variable.
+   * `--for-floating-available-height` CSS variable.
    */
   readonly collisionPadding?: Signal<number | Padding>;
 
@@ -126,20 +126,20 @@ function itemAligned(
  * `translate` write, `clip-path` drop, and symmetric cleanup to the shared
  * {@link runPositioning} scaffold, and supplies its own per-run body: the
  * custom `itemAligned` middleware plus the writes that follow each resolved
- * position — `data-position="item-aligned"`, the `--for-anchor-width/-height`
- * and `--for-available-height` CSS vars — and, on the first resolved position,
+ * position — `data-position="item-aligned"`, the `--for-floating-anchor-width/-height`
+ * and `--for-floating-available-height` CSS vars — and, on the first resolved position,
  * `scrollIntoView({ block: 'nearest' })` on the target option so the visual
  * anchor stays correct when the listbox is taller than the viewport.
  *
- * `--for-available-height` is the same *concept* the anchored positioner
+ * `--for-floating-available-height` is the same *concept* the anchored positioner
  * publishes (the maximum block-size the surface may occupy before it
  * collides), computed for this algorithm: the surface overlays the trigger
  * rather than sitting beside it, so the band is the full viewport minus
  * `collisionPadding` on both edges (`innerHeight - 2 * collisionPadding`)
  * rather than the anchor-relative space floating-ui's `size` middleware
- * reports. A consumer's `max-height: var(--for-available-height)` therefore
+ * reports. A consumer's `max-height: var(--for-floating-available-height)` therefore
  * works unchanged across `position="popper"` and `position="item-aligned"`.
- * `--for-available-width` is deliberately **not** published here: item-aligned
+ * `--for-floating-available-width` is deliberately **not** published here: item-aligned
  * pins the cross axis to the trigger's left edge and computes no width budget.
  *
  * `side`, `align`, `sideOffset`, `alignOffset`, `placement`, `flip`, `shift`,
@@ -171,12 +171,18 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
           el.dataset['position'] = 'item-aligned';
 
           const triggerRect = reference.getBoundingClientRect();
-          el.style.setProperty('--for-anchor-width', `${Math.round(triggerRect.width)}px`);
-          el.style.setProperty('--for-anchor-height', `${Math.round(triggerRect.height)}px`);
+          el.style.setProperty('--for-floating-anchor-width', `${Math.round(triggerRect.width)}px`);
+          el.style.setProperty(
+            '--for-floating-anchor-height',
+            `${Math.round(triggerRect.height)}px`,
+          );
 
           const innerHeight = el.ownerDocument.defaultView?.innerHeight ?? 0;
           const availableHeight = Math.max(0, innerHeight - 2 * collisionPadding);
-          el.style.setProperty('--for-available-height', `${Math.round(availableHeight)}px`);
+          el.style.setProperty(
+            '--for-floating-available-height',
+            `${Math.round(availableHeight)}px`,
+          );
 
           if (!initialScrollDone) {
             initialScrollDone = true;
@@ -208,8 +214,8 @@ export function injectItemAlignedPositioner(config: ItemAlignedConfig): void {
  */
 function resetItemAlignedStyles(el: HTMLElement): void {
   el.style.removeProperty('clip-path');
-  el.style.removeProperty('--for-anchor-width');
-  el.style.removeProperty('--for-anchor-height');
-  el.style.removeProperty('--for-available-height');
+  el.style.removeProperty('--for-floating-anchor-width');
+  el.style.removeProperty('--for-floating-anchor-height');
+  el.style.removeProperty('--for-floating-available-height');
   el.removeAttribute('data-position');
 }

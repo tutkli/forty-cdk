@@ -25,7 +25,7 @@ import {
         transition:
           opacity 250ms ease-out,
           scale 250ms ease-out;
-        transform-origin: var(--for-content-transform-origin, center);
+        transform-origin: var(--for-floating-content-transform-origin, center);
         background: #fff;
         border: 1px solid #ccc;
         padding: 8px;

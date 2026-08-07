@@ -120,7 +120,7 @@ Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invali
 
 ## Anchoring to a field box
 
-By default the listbox is positioned against `[forTimePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel offset from the visible field's edge. Wrap the field box in `[forTimePickerAnchor]` so floating-ui positions (and sizes, via `--for-anchor-width`) the listbox against the box instead:
+By default the listbox is positioned against `[forTimePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel offset from the visible field's edge. Wrap the field box in `[forTimePickerAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
 
 ```html
 <div forTimePicker #picker="forTimePicker" [(value)]="value" [(open)]="open">
@@ -132,7 +132,7 @@ By default the listbox is positioned against `[forTimePickerTrigger]`. When the 
     <button class="clear" (click)="value.set(null)">×</button>
   </div>
   @if (open()) {
-  <div forTimePickerContent style="width: var(--for-anchor-width)">
+  <div forTimePickerContent style="width: var(--for-floating-anchor-width)">
     @for (slot of picker.slots(); track slot.id) {
     <div forTimePickerOption [value]="slot.value" [disabled]="slot.disabled">{{ slot.label }}</div>
     }

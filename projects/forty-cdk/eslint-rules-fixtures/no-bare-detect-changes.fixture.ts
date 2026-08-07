@@ -50,7 +50,7 @@ export function badDataSide(): void {
  */
 export function badAvailableHeight(): void {
   fixture.detectChanges();
-  expect(el.style.getPropertyValue('--for-available-height')).toBe('300px');
+  expect(el.style.getPropertyValue('--for-floating-available-height')).toBe('300px');
 }
 
 /**

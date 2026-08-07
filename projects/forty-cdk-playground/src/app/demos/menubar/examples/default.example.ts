@@ -133,7 +133,7 @@ import { ForMenubar, ForMenubarTrigger } from 'forty-cdk/menubar';
     }
 
     .menubar-menu-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: menubar-menu-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

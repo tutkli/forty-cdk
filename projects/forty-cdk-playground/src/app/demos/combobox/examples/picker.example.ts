@@ -178,7 +178,7 @@ const COUNTRIES = [
       z-index: 60;
       display: flex;
       flex-direction: column;
-      width: var(--for-anchor-width);
+      width: var(--for-floating-anchor-width);
       min-width: 14rem;
       background: var(--pg-surface);
       border: 1px solid var(--pg-border);
@@ -254,7 +254,7 @@ const COUNTRIES = [
     }
 
     .picker-combobox-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: picker-combobox-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

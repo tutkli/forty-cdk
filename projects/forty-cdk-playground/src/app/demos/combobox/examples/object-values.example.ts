@@ -174,7 +174,7 @@ const CITIES: readonly City[] = [
       display: flex;
       flex-direction: column;
       gap: 2px;
-      width: var(--for-anchor-width);
+      width: var(--for-floating-anchor-width);
       min-width: 12rem;
       max-height: 280px;
       overflow-y: auto;
@@ -234,7 +234,7 @@ const CITIES: readonly City[] = [
     }
 
     .obj-combobox-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: obj-combobox-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

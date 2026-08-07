@@ -187,7 +187,7 @@ For an **instant, unconditional** open or close that ignores the delays and ever
 ## Behavior notes
 
 - **Closes on scroll.** When an ancestor scroll container moves content under a stationary cursor (wheel / trackpad scrolling a virtualized or overflow-scroll list), an open card closes immediately and hover opens stay suppressed for a short window while the scroll is in flight — so cards on rows sliding past the pointer don't linger or flicker open. This is always on; a genuine pointer move after scrolling settles opens the card normally again. The keyboard-focus open path is never suppressed.
-- **Arrow offset**: `[forHoverCardArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-arrow-offset, 0px)` on the side opposite the card. Set `--for-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. The helper ships no default visual.
+- **Arrow offset**: `[forHoverCardArrow]` writes `position: absolute`, the floating-ui-resolved `left` / `top`, and `var(--for-floating-arrow-offset, 0px)` on the side opposite the card. Set `--for-floating-arrow-offset` on the arrow element (or any ancestor) to control how far the arrow pokes out — typically a negative `px` value such as `-4px`. The helper ships no default visual.
 
 ## Accessibility
 
@@ -205,26 +205,26 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 See also: [Styling floating content](../../../docs/styling-floating-content.md) — animation rules, standalone `scale`/`opacity`, and the arrow recipe.
 
-`[forHoverCardContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forHoverCardArrow]` reads the consumer-settable `--for-arrow-offset`:
+`[forHoverCardContent]` is portaled to `document.body` and gets its position resolved by floating-ui. It exposes that geometry as custom properties on the content host (cleared on close), and `[forHoverCardArrow]` reads the consumer-settable `--for-floating-arrow-offset`:
 
-| Element                 | Custom property                  | Type / range        | Direction | Meaning                                                                                                      |
-| ----------------------- | -------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
-| `[forHoverCardContent]` | `--for-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                                   |
-| `[forHoverCardContent]` | `--for-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
-| `[forHoverCardContent]` | `--for-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
-| `[forHoverCardContent]` | `--for-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
-| `[forHoverCardContent]` | `--for-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
-| `[forHoverCardArrow]`   | `--for-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the card edge — typically a negative `px` (e.g. `-4px`).      |
+| Element                 | Custom property                           | Type / range        | Direction | Meaning                                                                                                      |
+| ----------------------- | ----------------------------------------- | ------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `[forHoverCardContent]` | `--for-floating-anchor-width`             | px                  | out       | Trigger (reference) width.                                                                                   |
+| `[forHoverCardContent]` | `--for-floating-anchor-height`            | px                  | out       | Trigger (reference) height.                                                                                  |
+| `[forHoverCardContent]` | `--for-floating-available-width`          | px                  | out       | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
+| `[forHoverCardContent]` | `--for-floating-available-height`         | px                  | out       | Space available along the block axis — clamp with `max-height`.                                              |
+| `[forHoverCardContent]` | `--for-floating-content-transform-origin` | `<origin>` keywords | out       | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+| `[forHoverCardArrow]`   | `--for-floating-arrow-offset`             | px (default `0px`)  | in        | Consumer-set. How far the arrow pokes out past the card edge — typically a negative `px` (e.g. `-4px`).      |
 
-> `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element — component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
+> `[forHoverCardContent]` (and the projected `[forHoverCardArrow]`) is portaled to `document.body`, so it sits outside your component's view-encapsulated styles. Style it with **global CSS or a class** you pass on the content element — component-scoped styles won't reach it. The positioner also writes the shared geometry custom properties listed above (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`); see [Styling floating content](../../../docs/styling-floating-content.md) for the full list and the side/align animation recipe.
 
 ```css
 .card[data-state='open'] {
   animation: card-in 120ms ease-out;
 }
 .card {
-  max-width: var(--for-available-width);
-  transform-origin: var(--for-content-transform-origin);
+  max-width: var(--for-floating-available-width);
+  transform-origin: var(--for-floating-content-transform-origin);
 }
 ```
 

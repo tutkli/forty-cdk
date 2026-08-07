@@ -25,7 +25,7 @@ The positioner (floating-ui) writes the inline `translate` property directly on 
 
 The positioner writes the **`translate` property** (`translate: <x>px <y>px`) to place the content on screen — not `transform`. That leaves the `transform` property, plus the standalone `scale` and `rotate` properties, entirely free for your animations. Don't set `translate` yourself; everything else is yours.
 
-CSS composes the individual `translate` / `rotate` / `scale` properties and the `transform` property in a fixed order, with `translate` applied outermost, so a consumer `transform: scale(0.95)` (or the standalone `scale: 0.95`) pivots the content **in place** around `--for-content-transform-origin` instead of scaling the positioning offset and dragging the surface in from the viewport corner. Either form works:
+CSS composes the individual `translate` / `rotate` / `scale` properties and the `transform` property in a fixed order, with `translate` applied outermost, so a consumer `transform: scale(0.95)` (or the standalone `scale: 0.95`) pivots the content **in place** around `--for-floating-content-transform-origin` instead of scaling the positioning offset and dragging the surface in from the viewport corner. Either form works:
 
 ```css
 @keyframes pop-in {
@@ -36,12 +36,12 @@ CSS composes the individual `translate` / `rotate` / `scale` properties and the 
 }
 
 .my-popover {
-  transform-origin: var(--for-content-transform-origin, center);
+  transform-origin: var(--for-floating-content-transform-origin, center);
   animation: pop-in 0.15s ease-out both;
 }
 ```
 
-The `--for-content-transform-origin` custom property (see [CSS custom properties](#css-custom-properties)) is set by the library to the corner or edge closest to the trigger, so the content appears to grow out of the anchor rather than from its own center. Like the positioner's `translate`, it is **retained through the close**, so a scale `animate.leave` keeps pivoting from the trigger edge instead of collapsing toward the surface's own center. (`transform: scale(0.95)` with the same `transform-origin` is equivalent — use whichever fits your keyframes.)
+The `--for-floating-content-transform-origin` custom property (see [CSS custom properties](#css-custom-properties)) is set by the library to the corner or edge closest to the trigger, so the content appears to grow out of the anchor rather than from its own center. Like the positioner's `translate`, it is **retained through the close**, so a scale `animate.leave` keeps pivoting from the trigger edge instead of collapsing toward the surface's own center. (`transform: scale(0.95)` with the same `transform-origin` is equivalent — use whichever fits your keyframes.)
 
 ---
 
@@ -57,9 +57,9 @@ Add all layout properties (`width`, `max-width`, `padding`, `background`, `borde
 
 ---
 
-## Rule 4 — `--for-arrow-offset` is inverted (library writes the opposite side)
+## Rule 4 — `--for-floating-arrow-offset` is inverted (library writes the opposite side)
 
-`[forPopoverArrow]`, `[forTooltipArrow]`, and `[forHoverCardArrow]` are placed by floating-ui's `arrow` middleware. The library then applies `var(--for-arrow-offset, 0px)` to the **side opposite the popover** — the side that faces the trigger — so a negative value pushes the arrow tip out past the content edge.
+`[forPopoverArrow]`, `[forTooltipArrow]`, and `[forHoverCardArrow]` are placed by floating-ui's `arrow` middleware. The library then applies `var(--for-floating-arrow-offset, 0px)` to the **side opposite the popover** — the side that faces the trigger — so a negative value pushes the arrow tip out past the content edge.
 
 The property name is "offset from the content edge toward the trigger", not "offset from the trigger toward the content". A negative value makes the arrow protrude; `0px` (the default) keeps it flush.
 
@@ -69,21 +69,21 @@ Typical usage: `-4px` to `-6px` so the arrow visually straddles the content bord
 
 ## CSS custom properties
 
-All floating content directives set these properties on the **content host element** while `open` is `true`. The sizing vars (`--for-anchor-width`, `--for-anchor-height`, `--for-available-width`, `--for-available-height`) are cleared on close; `--for-content-transform-origin` — like the positioner's `translate` — is **retained through the close** (so a scale `animate.leave` keeps its trigger-edge pivot) and recomputed on the next open.
+All floating content directives set these properties on the **content host element** while `open` is `true`. The sizing vars (`--for-floating-anchor-width`, `--for-floating-anchor-height`, `--for-floating-available-width`, `--for-floating-available-height`) are cleared on close; `--for-floating-content-transform-origin` — like the positioner's `translate` — is **retained through the close** (so a scale `animate.leave` keeps its trigger-edge pivot) and recomputed on the next open.
 
-| Custom property                  | Direction | Meaning                                                                                                                                                                                                                                                                                                                             |
-| -------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | out       | Width (px) of the trigger / anchor element. Cleared on close.                                                                                                                                                                                                                                                                       |
-| `--for-anchor-height`            | out       | Height (px) of the trigger / anchor element. Cleared on close.                                                                                                                                                                                                                                                                      |
-| `--for-available-width`          | out       | Available horizontal space (px) — use with `max-width: var(--for-available-width)`. Cleared on close.                                                                                                                                                                                                                               |
-| `--for-available-height`         | out       | Available vertical space (px) — use with `max-height: var(--for-available-height)`. Cleared on close. Select's `position="item-aligned"` publishes the same property computed viewport-wide (`innerHeight` minus `collisionPadding` on both edges) instead of anchor-relative, so the same `max-height` recipe works in both modes. |
-| `--for-content-transform-origin` | out       | `transform-origin` value matching the resolved side / align — pivot `scale` animations from here. Retained through the close (recomputed on next open) so a scale leave keeps its trigger-edge pivot.                                                                                                                               |
+| Custom property                           | Direction | Meaning                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-floating-anchor-width`             | out       | Width (px) of the trigger / anchor element. Cleared on close.                                                                                                                                                                                                                                                                                |
+| `--for-floating-anchor-height`            | out       | Height (px) of the trigger / anchor element. Cleared on close.                                                                                                                                                                                                                                                                               |
+| `--for-floating-available-width`          | out       | Available horizontal space (px) — use with `max-width: var(--for-floating-available-width)`. Cleared on close.                                                                                                                                                                                                                               |
+| `--for-floating-available-height`         | out       | Available vertical space (px) — use with `max-height: var(--for-floating-available-height)`. Cleared on close. Select's `position="item-aligned"` publishes the same property computed viewport-wide (`innerHeight` minus `collisionPadding` on both edges) instead of anchor-relative, so the same `max-height` recipe works in both modes. |
+| `--for-floating-content-transform-origin` | out       | `transform-origin` value matching the resolved side / align — pivot `scale` animations from here. Retained through the close (recomputed on next open) so a scale leave keeps its trigger-edge pivot.                                                                                                                                        |
 
 Arrow elements additionally consume:
 
-| Custom property      | Direction | Meaning                                                                                                                   |
-| -------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `--for-arrow-offset` | in        | Consumer-set. How far the arrow protrudes past the content edge. Negative values push out, `0px` is flush. Default `0px`. |
+| Custom property               | Direction | Meaning                                                                                                                   |
+| ----------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `--for-floating-arrow-offset` | in        | Consumer-set. How far the arrow protrudes past the content edge. Negative values push out, `0px` is flush. Default `0px`. |
 
 ---
 
@@ -100,7 +100,7 @@ Arrow elements additionally consume:
 }
 
 .my-floating-content {
-  transform-origin: var(--for-content-transform-origin, center);
+  transform-origin: var(--for-floating-content-transform-origin, center);
   animation: for-pop-in 0.15s ease-out both;
 }
 
@@ -130,7 +130,7 @@ The arrow is a rotated square (CSS "diamond" trick). `data-side` on the arrow el
   border-left: 1px solid #e2e8f0;
 
   /* Push the tip 5 px past the content edge. */
-  --for-arrow-offset: -5px;
+  --for-floating-arrow-offset: -5px;
 }
 
 /* Rotate to point at the trigger based on the resolved side. */

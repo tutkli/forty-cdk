@@ -124,7 +124,7 @@ drag delta — it writes it as a `--for-*` custom property you consume:
   width: var(--for-progress-percentage);
 }
 .popover {
-  max-width: var(--for-available-width);
+  max-width: var(--for-floating-available-width);
 }
 ```
 

@@ -138,7 +138,7 @@ Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected'
 
 ## Anchoring to a field box
 
-By default the listbox is positioned against `[forSelectTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forSelectAnchor]` so floating-ui positions (and sizes, via `--for-anchor-width`) the listbox against the box instead:
+By default the listbox is positioned against `[forSelectTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forSelectAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
 
 ```html
 <div forSelect #select="forSelect" [(value)]="value">
@@ -150,7 +150,7 @@ By default the listbox is positioned against `[forSelectTrigger]`. When the trig
     <button class="clear" (click)="value.set([])">×</button>
   </div>
   @if (select.open()) {
-  <div forSelectContent style="width: var(--for-anchor-width)">
+  <div forSelectContent style="width: var(--for-floating-anchor-width)">
     <button forSelectOption value="apple">Apple</button>
     <button forSelectOption value="banana">Banana</button>
   </div>
@@ -206,11 +206,11 @@ When nothing is selected, the algorithm falls back to the first enabled option. 
 </div>
 ```
 
-The directive sets the shared `--for-available-height` on the content host so consumers can clamp the visible height in CSS (the same property and the same `max-height` recipe as `position="popper"`; in item-aligned mode the value is the viewport height minus `collisionPadding` on both edges rather than the anchor-relative space):
+The directive sets the shared `--for-floating-available-height` on the content host so consumers can clamp the visible height in CSS (the same property and the same `max-height` recipe as `position="popper"`; in item-aligned mode the value is the viewport height minus `collisionPadding` on both edges rather than the anchor-relative space):
 
 ```css
 .select-content {
-  max-height: var(--for-available-height);
+  max-height: var(--for-floating-available-height);
   overflow-y: auto;
 }
 ```
@@ -493,15 +493,15 @@ forty-cdk ships no styles. Add your own class to each piece — the `for*` selec
 
 `[forSelectContent]` is portaled to `document.body` and exposes its resolved geometry as custom properties (set on the content host). Which ones are present depends on `position`:
 
-| Custom property                  | Type / range        | `position` | Meaning                                                                                                                                                                                                                                               |
-| -------------------------------- | ------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | px                  | both       | Trigger width — size the content to match with `width: var(--for-anchor-width)`.                                                                                                                                                                      |
-| `--for-anchor-height`            | px                  | both       | Trigger height.                                                                                                                                                                                                                                       |
-| `--for-available-width`          | px                  | `popper`   | Space available to the content along the inline axis (from floating-ui's `size` middleware).                                                                                                                                                          |
-| `--for-available-height`         | px                  | both       | Maximum block-size before collision — clamp with `max-height: var(--for-available-height)`. In `popper` the anchor-relative space from floating-ui's `size` middleware; in `item-aligned` the viewport height minus `collisionPadding` on both edges. |
-| `--for-content-transform-origin` | `<origin>` keywords | `popper`   | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.                                                                                                                                          |
+| Custom property                           | Type / range        | `position` | Meaning                                                                                                                                                                                                                                                        |
+| ----------------------------------------- | ------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--for-floating-anchor-width`             | px                  | both       | Trigger width — size the content to match with `width: var(--for-floating-anchor-width)`.                                                                                                                                                                      |
+| `--for-floating-anchor-height`            | px                  | both       | Trigger height.                                                                                                                                                                                                                                                |
+| `--for-floating-available-width`          | px                  | `popper`   | Space available to the content along the inline axis (from floating-ui's `size` middleware).                                                                                                                                                                   |
+| `--for-floating-available-height`         | px                  | both       | Maximum block-size before collision — clamp with `max-height: var(--for-floating-available-height)`. In `popper` the anchor-relative space from floating-ui's `size` middleware; in `item-aligned` the viewport height minus `collisionPadding` on both edges. |
+| `--for-floating-content-transform-origin` | `<origin>` keywords | `popper`   | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger.                                                                                                                                                   |
 
-> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-anchor-width` / `-height`, `--for-available-width` / `-height`, `--for-content-transform-origin`) live on the portaled host too — `--for-available-height` is published in both modes; see [Styling floating content](../../../docs/styling-floating-content.md) for the full list.
+> `[forSelectContent]` is portaled to `document.body`, so a scoped component style sheet will not reach it — style it with **global CSS** or pass a class the consumer keeps global. The anchored-positioning markers and shared positioner variables (`--for-floating-anchor-width` / `-height`, `--for-floating-available-width` / `-height`, `--for-floating-content-transform-origin`) live on the portaled host too — `--for-floating-available-height` is published in both modes; see [Styling floating content](../../../docs/styling-floating-content.md) for the full list.
 
 ```css
 .select-trigger svg {

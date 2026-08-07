@@ -349,7 +349,7 @@ import { provideInternationalizedDateTimeAdapter } from 'forty-cdk/international
     }
 
     .dp-date-time-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: dp-date-time-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

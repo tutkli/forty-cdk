@@ -116,7 +116,9 @@ test.describe('Combobox', () => {
   test.describe('anchor (field box positioning)', () => {
     const anchorWidth = (page: Page) =>
       el(page, 'content').evaluate((c) =>
-        Number.parseFloat((c as HTMLElement).style.getPropertyValue('--for-anchor-width') || '0'),
+        Number.parseFloat(
+          (c as HTMLElement).style.getPropertyValue('--for-floating-anchor-width') || '0',
+        ),
       );
 
     test('sizes the listbox against the [forComboboxAnchor] box, not the inner input', async ({
