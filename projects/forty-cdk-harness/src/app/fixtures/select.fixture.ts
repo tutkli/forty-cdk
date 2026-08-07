@@ -38,7 +38,7 @@ import { queryFlag } from './_query-flag';
         box-sizing: border-box;
       }
       [forSelectContent].scrollable {
-        max-height: var(--for-available-height);
+        max-height: var(--for-floating-available-height);
         overflow-y: auto;
       }
       /* The decorated field box is deliberately wider than the inner trigger
@@ -145,7 +145,7 @@ export class SelectFixture {
 
   // `?anchor=1` wraps the trigger in a wider `[forSelectAnchor]` field box so
   // e2e specs can assert the listbox is positioned / sized against the box
-  // (`--for-anchor-width` ≈ 280px) rather than the inner trigger (160px).
+  // (`--for-floating-anchor-width` ≈ 280px) rather than the inner trigger (160px).
   protected readonly anchor = queryFlag('anchor');
 
   protected readonly many = queryFlag('many');

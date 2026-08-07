@@ -300,7 +300,7 @@ Implements the [WAI-ARIA Menu pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
-> `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, and `--for-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
+> `[forMenuContent]` / `[forMenuSubContent]` portal to `document.body`, so a class scoped to your trigger's component cannot reach the surface. Style it with **global CSS** or a class you pass through (see [Styling floating content](../../../docs/styling-floating-content.md)). The content host also exposes the shared positioner custom properties — `--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, and `--for-floating-content-transform-origin` — tabulated below and documented in full in [Styling floating content](../../../docs/styling-floating-content.md).
 
 ### CSS custom properties
 
@@ -308,13 +308,13 @@ See also: [Styling floating content](../../../docs/styling-floating-content.md) 
 
 `[forMenuContent]` / `[forMenuSubContent]` are portaled to `document.body` and get their position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close). These also drive the content surface for `[forDropdownMenu]` and `[forContextMenu]`, which reuse `[forMenuContent]`:
 
-| Custom property                  | Type / range        | Meaning                                                                                                      |
-| -------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `--for-anchor-width`             | px                  | Anchor (trigger) width — match it with `width: var(--for-anchor-width)`.                                     |
-| `--for-anchor-height`            | px                  | Anchor (trigger) height.                                                                                     |
-| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
-| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                              |
-| `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
+| Custom property                           | Type / range        | Meaning                                                                                                      |
+| ----------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `--for-floating-anchor-width`             | px                  | Anchor (trigger) width — match it with `width: var(--for-floating-anchor-width)`.                            |
+| `--for-floating-anchor-height`            | px                  | Anchor (trigger) height.                                                                                     |
+| `--for-floating-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.              |
+| `--for-floating-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                              |
+| `--for-floating-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the trigger. |
 
 ```css
 .menu-item[data-highlighted],

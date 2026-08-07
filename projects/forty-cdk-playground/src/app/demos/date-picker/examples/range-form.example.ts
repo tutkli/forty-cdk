@@ -319,7 +319,7 @@ interface Booking {
     }
 
     .dp-range-form-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: dp-range-form-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

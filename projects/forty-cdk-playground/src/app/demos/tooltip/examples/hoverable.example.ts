@@ -92,11 +92,11 @@ import {
       height: 9px;
       background: var(--hoverable-tooltip-bg);
       transform: rotate(45deg);
-      --for-arrow-offset: -4px;
+      --for-floating-arrow-offset: -4px;
     }
 
     .hoverable-tooltip-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: hoverable-tooltip-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

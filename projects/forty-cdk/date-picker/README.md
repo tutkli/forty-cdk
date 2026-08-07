@@ -219,7 +219,7 @@ By default the surface is positioned against `[forDatePickerTrigger]`. When the 
 </div>
 ```
 
-`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. At most one `[forDatePickerAnchor]` per `[forDatePicker]` — a second one throws `[forty-cdk/date-picker]`. (A calendar has its own intrinsic width and ignores `--for-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
+`[forDatePickerAnchor]` changes **only** positioning. The trigger keeps `aria-haspopup` / `aria-expanded` / `aria-controls`, the click toggle, focus return on close, and its exemption from outside-pointer dismissal. Without an anchor the surface falls back to the trigger, so existing markup is unaffected. At most one `[forDatePickerAnchor]` per `[forDatePicker]` — a second one throws `[forty-cdk/date-picker]`. (A calendar has its own intrinsic width and ignores `--for-floating-anchor-width`, so the anchor mainly affects start / side alignment to the box edge.)
 
 ## Modal vs non-modal
 
@@ -347,7 +347,7 @@ Implements the [WAI-ARIA Date Picker Dialog pattern](https://www.w3.org/WAI/ARIA
 
 forty-cdk ships no styles. Add your own class to each piece — the `for*` selectors are the behavior API, not a styling contract (see [Styling forty-cdk](../../../docs/styling.md)). Key your CSS off the reflected `data-*` attributes listed under [Data attributes](#data-attributes).
 
-> `[forDatePickerContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with **global CSS** (or a class you pass through) rather than component-scoped rules — see [Styling floating content](../../../docs/styling-floating-content.md). In non-modal (anchored) mode the surface also exposes the shared positioner custom properties (`--for-anchor-width` / `--for-anchor-height`, `--for-available-width` / `--for-available-height`, `--for-content-transform-origin`); that same guide tabulates the full set.
+> `[forDatePickerContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with **global CSS** (or a class you pass through) rather than component-scoped rules — see [Styling floating content](../../../docs/styling-floating-content.md). In non-modal (anchored) mode the surface also exposes the shared positioner custom properties (`--for-floating-anchor-width` / `--for-floating-anchor-height`, `--for-floating-available-width` / `--for-floating-available-height`, `--for-floating-content-transform-origin`); that same guide tabulates the full set.
 
 ```css
 .date-picker-trigger .date-picker-value[data-placeholder] {

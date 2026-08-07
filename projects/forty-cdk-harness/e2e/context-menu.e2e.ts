@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { el, gotoFixture, longPress } from './_helpers';
 
 /**
- * Read `--for-anchor-width` / `--for-anchor-height` off the menu host once
+ * Read `--for-floating-anchor-width` / `--for-floating-anchor-height` off the menu host once
  * the floating positioner has resolved a value. The positioner runs an async
  * `computePosition` after mount, so the vars land on the next microtask
  * rather than synchronously on open — `expect.poll` matches that timing
@@ -16,8 +16,8 @@ async function anchorSize(
   return page.evaluate((node) => {
     const elem = node as HTMLElement;
     return {
-      width: Number.parseFloat(elem.style.getPropertyValue('--for-anchor-width') || '0'),
-      height: Number.parseFloat(elem.style.getPropertyValue('--for-anchor-height') || '0'),
+      width: Number.parseFloat(elem.style.getPropertyValue('--for-floating-anchor-width') || '0'),
+      height: Number.parseFloat(elem.style.getPropertyValue('--for-floating-anchor-height') || '0'),
       // Position lives on the `translate` property (NOT `transform`).
       translate: elem.style.translate,
     };
@@ -96,7 +96,7 @@ test.describe('ContextMenu', () => {
   // `getBoundingClientRect()` reads on the focused trigger / descendant, so
   // it only makes sense against a laid-out DOM. We assert the relationship
   // between the focused element's box and the floating positioner's
-  // `--for-anchor-*` CSS variables (the only DOM-observable side-effect of
+  // `--for-floating-anchor-*` CSS variables (the only DOM-observable side-effect of
   // `setVirtualAnchorFromRect`).
   test.describe('keyboard activator geometry', () => {
     test('Shift+F10 anchors the menu at the focused trigger rect (not 0,0)', async ({ page }) => {
@@ -112,7 +112,7 @@ test.describe('ContextMenu', () => {
       // The trigger box is laid out by CSS (240x80 from the fixture inline
       // styles); the directive snapshots that rect into a VirtualElement and
       // the floating-ui middleware writes the dimensions into
-      // `--for-anchor-width/-height` verbatim on the menu host. Allowing a
+      // `--for-floating-anchor-width/-height` verbatim on the menu host. Allowing a
       // 1px slack absorbs sub-pixel rounding differences between Chromium
       // and WebKit; the key contract is "non-zero and matches the trigger".
       await expect.poll(async () => (await anchorSize(page)).width).toBeGreaterThan(0);

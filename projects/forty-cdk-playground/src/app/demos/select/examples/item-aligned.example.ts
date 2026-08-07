@@ -119,8 +119,8 @@ interface Option {
       display: flex;
       flex-direction: column;
       gap: 2px;
-      width: var(--for-anchor-width);
-      max-height: var(--for-available-height);
+      width: var(--for-floating-anchor-width);
+      max-height: var(--for-floating-available-height);
       overflow-y: auto;
       padding: 4px;
       background: var(--pg-surface);
@@ -175,7 +175,7 @@ interface Option {
     }
 
     .aligned-select-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: aligned-select-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

@@ -140,7 +140,7 @@ Focus stays on the `<input>` the whole time the listbox is open, so options neve
 
 ## Anchoring to a field box
 
-By default the listbox is positioned against `[forComboboxInput]`. When the input lives inside a decorated field box — padding, a prefix icon, a clear button, or the multi-mode chip cluster — anchoring to the bare `<input>` makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forComboboxAnchor]` so floating-ui positions (and sizes, via `--for-anchor-width`) the listbox against the box instead:
+By default the listbox is positioned against `[forComboboxInput]`. When the input lives inside a decorated field box — padding, a prefix icon, a clear button, or the multi-mode chip cluster — anchoring to the bare `<input>` makes the panel narrower than the visible field and offset from its edge. Wrap the field box in `[forComboboxAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:
 
 ```html
 <div forCombobox #combobox="forCombobox" [(query)]="query" [(value)]="value">
@@ -150,7 +150,7 @@ By default the listbox is positioned against `[forComboboxInput]`. When the inpu
     <button class="clear" (click)="combobox.clear()">×</button>
   </div>
   @if (combobox.open()) {
-  <div forComboboxContent style="width: var(--for-anchor-width)">
+  <div forComboboxContent style="width: var(--for-floating-anchor-width)">
     @for (it of filtered; track it.id) {
     <div forComboboxOption [value]="it.id" [label]="it.label">{{ it.label }}</div>
     }
@@ -633,13 +633,13 @@ forty-cdk ships no styles. Add your own class to each piece — the for\* select
 
 `[forComboboxContent]` is portaled to `document.body` and gets its position resolved by floating-ui. The resolved geometry is exposed as custom properties on the content host (cleared on close):
 
-| Custom property                  | Type / range        | Meaning                                                                                                    |
-| -------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `--for-anchor-width`             | px                  | Anchor (input / wrapper) width — match the listbox to the input with `width: var(--for-anchor-width)`.     |
-| `--for-anchor-height`            | px                  | Anchor height.                                                                                             |
-| `--for-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.            |
-| `--for-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                            |
-| `--for-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input. |
+| Custom property                           | Type / range        | Meaning                                                                                                         |
+| ----------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `--for-floating-anchor-width`             | px                  | Anchor (input / wrapper) width — match the listbox to the input with `width: var(--for-floating-anchor-width)`. |
+| `--for-floating-anchor-height`            | px                  | Anchor height.                                                                                                  |
+| `--for-floating-available-width`          | px                  | Space available along the inline axis (floating-ui `size` middleware) — clamp with `max-width`.                 |
+| `--for-floating-available-height`         | px                  | Space available along the block axis — clamp with `max-height`.                                                 |
+| `--for-floating-content-transform-origin` | `<origin>` keywords | `transform-origin` matching the resolved side / align, so a `scale` enter animation pivots from the input.      |
 
 > `[forComboboxContent]` is portaled to `document.body`, so it lives outside your component's view-encapsulated styles. Style it with global CSS (or a class you pass through) and the shared positioner properties above. See [Styling floating content](../../../docs/styling-floating-content.md) for the full positioner-variable list and the portal styling rules.
 

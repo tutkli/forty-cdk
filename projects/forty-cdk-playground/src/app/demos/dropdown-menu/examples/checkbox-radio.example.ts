@@ -248,7 +248,7 @@ import {
     }
 
     .dropdown-menu-cr-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: dropdown-menu-cr-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

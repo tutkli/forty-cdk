@@ -139,7 +139,7 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
       display: flex;
       flex-direction: column;
       gap: 2px;
-      width: var(--for-anchor-width);
+      width: var(--for-floating-anchor-width);
       max-height: 260px;
       overflow-y: auto;
       padding: 4px;
@@ -205,7 +205,7 @@ import { injectVirtualizer } from 'forty-cdk/virtualization';
     }
 
     .virt-select-pop-in {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: virt-select-pop-in 0.2s var(--pg-ease-spring) both;
     }
 

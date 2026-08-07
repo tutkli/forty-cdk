@@ -41,7 +41,7 @@ async function armLeaveSampler(page: Page): Promise<void> {
       return {
         translate: node.style.translate,
         transformOrigin: getComputedStyle(node).transformOrigin,
-        inlineOrigin: node.style.getPropertyValue('--for-content-transform-origin'),
+        inlineOrigin: node.style.getPropertyValue('--for-floating-content-transform-origin'),
         side: node.dataset['side'] ?? null,
         hasLeaveClass: node.classList.contains('popover-leaving'),
         opacity: Number(getComputedStyle(node).opacity),
@@ -198,7 +198,7 @@ test.describe('Popover leave stays anchored (#772)', () => {
       return {
         translate: el.style.translate,
         transformOrigin: getComputedStyle(el).transformOrigin,
-        inlineOrigin: el.style.getPropertyValue('--for-content-transform-origin'),
+        inlineOrigin: el.style.getPropertyValue('--for-floating-content-transform-origin'),
         side: el.dataset['side'] ?? null,
       };
     });

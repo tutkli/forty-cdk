@@ -5,6 +5,33 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Floating positioners (breaking, consumer CSS)** — the six CSS custom properties the shared
+  `core/floating` positioners publish are namespaced under a `--for-floating-*` family
+  ([#1507](https://github.com/tutkli/forty-cdk/issues/1507)). `--for-anchor-width`,
+  `--for-anchor-height`, `--for-available-width`, `--for-available-height`,
+  `--for-content-transform-origin` and `--for-arrow-offset` become `--for-floating-anchor-width`,
+  `--for-floating-anchor-height`, `--for-floating-available-width`,
+  `--for-floating-available-height`, `--for-floating-content-transform-origin` and
+  `--for-floating-arrow-offset`. They were the library's only `--for-*` properties without a
+  namespace segment, which the naming rule adopted in
+  [#1400](https://github.com/tutkli/forty-cdk/issues/1400) makes mandatory, and the segment after
+  `--for-` followed no rule of its own: `anchor-*` named the measured element, `content-*` the
+  styled one, `available-*` neither. A `<primitive>` segment is not available to them — the
+  positioners write on behalf of whichever of eleven primitives mounted the surface — so they take
+  the family name of the machinery that computes them. Nothing about the values, the direction, or
+  the cleared / retained lifecycle changes; only the names do.
+  **Migration:** rewrite every `var(--for-…)` read and every `--for-arrow-offset` declaration in
+  your stylesheets. A find-and-replace of the four stems — `--for-anchor-`, `--for-available-`,
+  `--for-content-transform-origin`, `--for-arrow-offset` — to their `--for-floating-` forms covers
+  it. **No aliases ship**, and an unmigrated `var(--for-available-height)` resolves to nothing
+  rather than erroring, so a surface silently loses its `max-height` instead of failing loudly —
+  grep before upgrading. Affects every primitive with floating content: Combobox, Context menu,
+  Date picker, Dropdown menu, Hover card, Menu, Menubar, Popover, Select, Time picker and Tooltip.
+
 ## [0.21.1] - 2026-08-07
 
 A bugfix release about pressing, holding and letting go. A touch or pen press that reports a non-zero

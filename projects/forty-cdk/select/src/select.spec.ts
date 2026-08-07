@@ -2537,10 +2537,10 @@ describe('ForSelect', () => {
 
       const content = document.querySelector<HTMLElement>('[forSelectContent]')!;
       expect(content.dataset['position']).toBe('item-aligned');
-      // Item-aligned exposes the shared `--for-available-height` for the
+      // Item-aligned exposes the shared `--for-floating-available-height` for the
       // consumer's `max-height: var(...)` recipe — same concept as popper,
       // computed viewport-wide instead of anchor-relative.
-      expect(content.style.getPropertyValue('--for-available-height')).not.toBe('');
+      expect(content.style.getPropertyValue('--for-floating-available-height')).not.toBe('');
       // Item-aligned does NOT emit popper's data-side / data-align — those
       // are only produced by `injectFloating`.
       expect(content.dataset['side']).toBeUndefined();

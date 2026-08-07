@@ -16,7 +16,7 @@ import { injectDatePickerContext } from './date-picker-context';
  * back to anchoring against the trigger, so existing usages are unaffected.
  *
  * A date picker's calendar has its own intrinsic width and ignores
- * `--for-anchor-width`, so the practical effect is mostly start / side
+ * `--for-floating-anchor-width`, so the practical effect is mostly start / side
  * alignment to the box edge.
  *
  * At most one `[forDatePickerAnchor]` may be registered per `[forDatePicker]`;

@@ -136,7 +136,7 @@ import {
       background: var(--pg-surface);
       border-top: 1px solid var(--pg-border);
       border-left: 1px solid var(--pg-border);
-      --for-arrow-offset: -6px;
+      --for-floating-arrow-offset: -6px;
     }
 
     .anchored-popover-arrow[data-side='bottom'] {
@@ -156,7 +156,7 @@ import {
     }
 
     .anchored-popover-enter {
-      transform-origin: var(--for-content-transform-origin, center);
+      transform-origin: var(--for-floating-content-transform-origin, center);
       animation: anchored-popover-enter 0.2s var(--pg-ease-spring) both;
     }
 
