@@ -82,6 +82,13 @@ export function wrapPreview(preview: {
  * Creates a default drag preview: a fixed-position clone of `source` appended to `doc.body`, sized to the
  * source's current bounding box, non-interactive, and hidden from assistive tech. Caller must gate on a
  * browser platform.
+ *
+ * `id` and `data-testid` are stripped from the clone root and from every descendant carrying one, so the
+ * preview is never reachable through a hook that identifies a single element: duplicating an `id` while the
+ * preview lives makes the document invalid (and `getElementById` ambiguous) regardless of `aria-hidden`.
+ * The clone still answers the source's own attribute selectors — a directive selector such as
+ * `[forDraggable]`, plus `data-index` where the source carries one — so code enumerating items by selector
+ * during a drag must exclude `[data-for-drag-preview]`.
  */
 export function createDragPreview(source: HTMLElement, doc: Document): DragPreview {
   const rect = source.getBoundingClientRect();
@@ -100,9 +107,13 @@ export function createDragPreview(source: HTMLElement, doc: Document): DragPrevi
   clone.setAttribute('data-for-drag-preview', '');
   clone.setAttribute('aria-hidden', 'true');
   clone.removeAttribute('data-testid');
+  clone.removeAttribute('id');
 
-  const descendants = clone.querySelectorAll('[data-testid]');
-  descendants.forEach((el) => el.removeAttribute('data-testid'));
+  const descendants = clone.querySelectorAll('[data-testid], [id]');
+  descendants.forEach((el) => {
+    el.removeAttribute('data-testid');
+    el.removeAttribute('id');
+  });
 
   doc.body.appendChild(clone);
 

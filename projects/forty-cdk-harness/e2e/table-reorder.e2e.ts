@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { el, expectFocused, expectRovingFocus, gotoFixture } from './_helpers';
+import { headerCell, headerOrder, rows } from './_table-helpers';
 
 test.describe('table column reorder', () => {
   test.beforeEach(async ({ page }) => {
@@ -82,6 +83,53 @@ test.describe('table column reorder', () => {
 
     const nameCell = page.locator('[forTableCell][data-column="name"]').first();
     await expect(nameCell).toHaveAttribute('aria-colindex', '2');
+  });
+});
+
+test.describe('table reorder — the preview clone stays out of the shared enumerators (#1691)', () => {
+  test.beforeEach(async ({ page }) => {
+    await gotoFixture(page, 'table-reorder');
+  });
+
+  test('the row enumerator reports the rendered rows while a row preview is mounted', async ({
+    page,
+  }) => {
+    await expect(rows(page)).toHaveCount(3);
+
+    const box = await el(page, 'row-0').boundingBox();
+    if (!box) throw new Error('Rows not found');
+    const startX = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, startY + 5);
+    await expect(page.locator('[data-for-drag-preview]')).toHaveCount(1);
+
+    await expect(page.locator('[forTableRow]')).toHaveCount(4);
+    await expect(rows(page)).toHaveCount(3);
+
+    await page.mouse.up();
+  });
+
+  test('the header enumerator reports the live column order while a header preview is mounted', async ({
+    page,
+  }) => {
+    const box = await headerCell(page, 'name').boundingBox();
+    if (!box) throw new Error('Header cells not found');
+    const startX = box.x + box.width / 2;
+    const startY = box.y + box.height / 2;
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 5, startY);
+    await expect(page.locator('[data-for-drag-preview]')).toHaveCount(1);
+
+    await expect(page.locator('[forTableHeaderCell]')).toHaveCount(4);
+    expect(await headerOrder(page)).toEqual(['name', 'role', 'dept']);
+    await expect(headerCell(page, 'name')).toHaveCount(1);
+
+    await page.mouse.up();
   });
 });
 
