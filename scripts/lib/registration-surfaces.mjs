@@ -1,14 +1,21 @@
 /**
- * The piece-registration surfaces: per entry point, the symbols that carry how a
- * primitive's pieces wire themselves into their root ([#1399]).
+ * The piece-coordination surfaces: per entry point, the symbols that carry how a
+ * primitive's pieces wire themselves into their root ([#1399]) and everything
+ * else they read off it that a consumer has no call to touch ([#1722]).
  *
  * A primitive's `FOR_<PRIMITIVE>_CONTEXT` interface is public — advanced
- * consumers legitimately inject it to read state or drive commands. The
- * registration protocol behind it is not: it is the code the library refactors
- * most freely, so it lives on a second interface that no entry point exports,
- * and `check-registration-surfaces.mjs` fails the build if one of these names
+ * consumers legitimately inject it to read state or drive commands. The wiring
+ * behind it is not: it is the code the library refactors most freely, so it
+ * lives on interfaces that no entry point exports, and
+ * `check-registration-surfaces.mjs` fails the build if one of these names
  * becomes public again (exported from the barrel, or referenced from an exported
  * declaration's signature).
+ *
+ * The `*PieceContext` entries are the #1722 half: the members the `register*` /
+ * `unregister*` / `set*` naming pattern the #1399 split searched for never
+ * matched — positioning mirrors, ARIA ids, label caches, navigation cursors,
+ * emit forwarders. `check-context-surfaces.mjs` is what keeps the split from
+ * eroding again; this list is what keeps the moved names from coming back.
  *
  * No split root carries a second **context** token any more ([#1593]): a
  * protocol that stays inside one entry point is reached by reading the public
@@ -29,13 +36,15 @@
  */
 export const REGISTRATION_SURFACES = {
   accordion: ['AccordionContext', 'ForAccordionTriggerHandle'],
+  avatar: ['AvatarContext', 'AvatarPieceContext'],
   carousel: [
     'CarouselContext',
+    'CarouselPieceContext',
     'ForCarouselIndicatorHandle',
     'ForCarouselSlideHandle',
     'ForCarouselViewportHandle',
   ],
-  combobox: ['ComboboxContext', 'ComboboxRegistrationContext'],
+  combobox: ['ComboboxContext', 'ComboboxPieceContext', 'ComboboxRegistrationContext'],
   'navigation-menu': [
     'NavigationMenuContext',
     'ForNavigationMenuContentHandle',
@@ -43,8 +52,15 @@ export const REGISTRATION_SURFACES = {
     'ForNavigationMenuViewportHandle',
   ],
   'radio-group': ['RadioGroupContext', 'ForRadioHandle'],
-  select: ['SelectContext', 'ForSelectOverlayContext'],
-  table: ['TableDefRegistration', 'TABLE_DEF_REGISTRATION', 'TableDefHandle', 'TableDefRegistry'],
+  select: ['SelectContext', 'SelectPieceContext', 'ForSelectOverlayContext'],
+  table: [
+    'TableContext',
+    'TablePieceContext',
+    'TableDefRegistration',
+    'TABLE_DEF_REGISTRATION',
+    'TableDefHandle',
+    'TableDefRegistry',
+  ],
   tabs: ['TabsContext', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
   toast: ['ToastContext', 'ForToastActionHandle', 'ForToastTextHandle'],
 };

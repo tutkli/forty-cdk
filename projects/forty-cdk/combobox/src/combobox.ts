@@ -413,10 +413,10 @@ export class ForCombobox<T = string>
   readonly hasEnabledActions = computed(() => this.#actions.items().some((a) => !a.disabled()));
 
   readonly #initialFocusState = new InitialFocusState<ForComboboxInitialFocus>('first');
-  readonly initialFocus = this.#initialFocusState.target;
+  private readonly initialFocus = this.#initialFocusState.target;
 
   readonly #closeReasonState = new CloseReasonState<ForComboboxCloseReason>();
-  readonly lastCloseReason = this.#closeReasonState.reason;
+  private readonly lastCloseReason = this.#closeReasonState.reason;
 
   /**
    * The activedescendant pointer. Built by {@link createActiveIdSignal} as a
@@ -644,7 +644,7 @@ export class ForCombobox<T = string>
     this.#actions.unregister(handle);
   }
 
-  moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void {
+  private moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void {
     const all = this.#actions.items();
     const inputEl = this.input();
     const stops: { key: number; focus: () => void }[] = [];
@@ -685,11 +685,11 @@ export class ForCombobox<T = string>
     this.value.set([v]);
   }
 
-  isActive(id: string): boolean {
+  private isActive(id: string): boolean {
     return this.#activeId() === id;
   }
 
-  isPointerSuppressed(): boolean {
+  private isPointerSuppressed(): boolean {
     return this.#pointerSuppression.isSuppressed();
   }
 
@@ -747,7 +747,7 @@ export class ForCombobox<T = string>
     this.value.set(current.filter((x) => !equals(x, v)));
   }
 
-  activateActive(): boolean {
+  private activateActive(): boolean {
     const id = this.#activeId();
     if (!id) {
       return false;
@@ -760,7 +760,7 @@ export class ForCombobox<T = string>
     return true;
   }
 
-  navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
+  private navigate(direction: 'next' | 'prev' | 'first' | 'last'): void {
     if (this.effectiveDisabled()) {
       return;
     }
@@ -793,7 +793,7 @@ export class ForCombobox<T = string>
     this.#lastPositionedId = target.id();
   }
 
-  setQueryFromInput(query: string): void {
+  private setQueryFromInput(query: string): void {
     if (this.effectiveDisabled() || this.readonly()) {
       return;
     }
@@ -835,7 +835,7 @@ export class ForCombobox<T = string>
    * never scrolls. No-op while virtualizing: the navigator owns the virtualized
    * scroll and the indexed seed is intentionally passive.
    */
-  scrollActiveOptionIntoView(): void {
+  private scrollActiveOptionIntoView(): void {
     if (this.totalCount() !== undefined) {
       return;
     }
@@ -851,7 +851,7 @@ export class ForCombobox<T = string>
     this.#lastPositionedId = id;
   }
 
-  selectedEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
+  private selectedEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
     return this.#labelCache.selectedEntries();
   }
 
@@ -867,7 +867,12 @@ export class ForCombobox<T = string>
     );
   });
 
-  completionEntries(): readonly { id: string; value: T; label: string; disabled: boolean }[] {
+  private completionEntries(): readonly {
+    id: string;
+    value: T;
+    label: string;
+    disabled: boolean;
+  }[] {
     return this.#completionEntriesMemo();
   }
 
@@ -922,16 +927,16 @@ export class ForCombobox<T = string>
   }
 
   /** Fire `(autoFocusOnOpen)` and report whether the consumer vetoed the focus move. */
-  emitAutoFocusOnOpen(): boolean {
+  private emitAutoFocusOnOpen(): boolean {
     return emitVetoableEvent(this.autoFocusOnOpen);
   }
 
   /** Fire `(autoFocusOnClose)` and report whether the consumer vetoed the return-focus. */
-  emitAutoFocusOnClose(): boolean {
+  private emitAutoFocusOnClose(): boolean {
     return emitVetoableEvent(this.autoFocusOnClose);
   }
 
-  emitEscapeKeyDown(event: KeyboardEvent): void {
+  private emitEscapeKeyDown(event: KeyboardEvent): void {
     const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
     if (!vetoed && this.dismissible()) {
       event.stopPropagation();
@@ -945,13 +950,13 @@ export class ForCombobox<T = string>
    * `interactOutside` lives in `injectOverlayShell`; these only fire the
    * matching output with the veto the shell built.
    */
-  emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
+  private emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
     this.pointerDownOutside.emit(veto);
   }
-  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
+  private emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
     this.focusOutside.emit(veto);
   }
-  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+  private emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
     this.interactOutside.emit(veto);
   }
 
@@ -960,7 +965,7 @@ export class ForCombobox<T = string>
    * interaction. Marks the control touched and closes with the channel's
    * reason.
    */
-  requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
+  private requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
     this.markTouched();
     this.closeMenu(reason);
   }

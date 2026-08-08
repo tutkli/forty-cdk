@@ -100,8 +100,8 @@ export class ForSelect<T = string>
   readonly #closedTypeahead = injectTypeahead();
   readonly #defaults = inject(FOR_SELECT_DEFAULTS);
 
-  /** The `[forSelect]` root element (see {@link ForSelectContext.host}). */
-  readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  /** The `[forSelect]` root element (see `SelectPieceContext.host`). */
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   /**
    * Two-way bindable. Selected option values. Single-mode keeps 0 or 1
@@ -474,7 +474,7 @@ export class ForSelect<T = string>
   });
 
   /** The active option's `id` in the virtualized path, `null` in the default path. */
-  readonly activeDescendantId = computed<string | null>(() =>
+  private readonly activeDescendantId = computed<string | null>(() =>
     this.#virtualized() ? this.#activeId() : null,
   );
 
@@ -563,7 +563,7 @@ export class ForSelect<T = string>
     return labels;
   });
 
-  readonly selectedOptionEl = computed<HTMLElement | null>(() => {
+  private readonly selectedOptionEl = computed<HTMLElement | null>(() => {
     const values = this.value();
     if (values.length === 0) {
       return null;
@@ -652,11 +652,11 @@ export class ForSelect<T = string>
     this.#controller.closeMenu('select');
   }
 
-  extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
+  private extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
     this.#rangeEngine.extendByArrow(currentOption, action);
   }
 
-  selectRangeToFocused(currentOption: HTMLElement): void {
+  private selectRangeToFocused(currentOption: HTMLElement): void {
     this.#rangeEngine.selectRangeToFocused(currentOption);
   }
 
@@ -664,11 +664,11 @@ export class ForSelect<T = string>
     this.#rangeEngine.selectAll();
   }
 
-  selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
+  private selectFromCurrentToEdge(currentOption: HTMLElement, edge: 'first' | 'last'): void {
     this.#rangeEngine.selectFromCurrentToEdge(currentOption, edge);
   }
 
-  handleTypeahead(event: KeyboardEvent): void {
+  private handleTypeahead(event: KeyboardEvent): void {
     const options = this.#controller.options();
     const { match } = resolveListTypeahead(this.#typeahead, event, {
       items: options,
@@ -679,7 +679,7 @@ export class ForSelect<T = string>
     match?.host.focus();
   }
 
-  handleClosedTypeahead(event: KeyboardEvent): boolean {
+  private handleClosedTypeahead(event: KeyboardEvent): boolean {
     // Only single-mode replicates native <select>'s "type-to-select" behavior.
     // Multi-select is ambiguous (which one wins?) — caller falls back to opening.
     if (this.multiple() || this.effectiveDisabled() || this.readonly()) {
@@ -708,7 +708,7 @@ export class ForSelect<T = string>
     return true;
   }
 
-  focusSelectedOption(): boolean {
+  private focusSelectedOption(): boolean {
     const values = this.value();
     if (values.length === 0) {
       return false;
@@ -725,14 +725,14 @@ export class ForSelect<T = string>
     return false;
   }
 
-  scrollSelectedOptionIntoView(): void {
+  private scrollSelectedOptionIntoView(): void {
     if (this.totalCount() !== undefined) {
       return;
     }
     this.selectedOptionEl()?.scrollIntoView?.({ block: 'nearest' });
   }
 
-  commitOnTab(value: T): void {
+  private commitOnTab(value: T): void {
     if (this.effectiveDisabled() || isUnset(value)) {
       return;
     }
@@ -752,7 +752,7 @@ export class ForSelect<T = string>
     super.markTouched();
   }
 
-  seedVirtualizedInitialFocus(): void {
+  private seedVirtualizedInitialFocus(): void {
     if (!this.#virtualized()) {
       return;
     }
@@ -770,7 +770,7 @@ export class ForSelect<T = string>
     navigator.navigate('first');
   }
 
-  handleVirtualizedKeydown(event: KeyboardEvent): void {
+  private handleVirtualizedKeydown(event: KeyboardEvent): void {
     if (!this.#virtualized() || this.effectiveDisabled()) {
       return;
     }
@@ -831,7 +831,7 @@ export class ForSelect<T = string>
     }
   }
 
-  notifyOptionClick(optionId: string): void {
+  private notifyOptionClick(optionId: string): void {
     if (!this.#virtualized()) {
       return;
     }

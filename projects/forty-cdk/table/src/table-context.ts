@@ -1,6 +1,7 @@
 import { booleanAttribute, inject, InjectionToken, isDevMode, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   fortyError,
   orphanContextError,
   TABLE_REGISTRATION_CONTEXT,
@@ -27,14 +28,14 @@ export type TableStickyValue = boolean | 'end';
 
 /**
  * Consumer-facing coordination surface owned by `ForTable`: the resolved ARIA
- * mode / direction / selection mode, the ARIA index arithmetic, the roving-grid
- * queries, and the selection / expansion commands.
+ * mode / direction / selection mode, the row counts, and the selection /
+ * expansion commands.
  *
- * It deliberately carries **no** piece-registration protocol. How header rows,
- * header cells, data rows, the declarative body's row count, the virtualization
- * seams and the resized column widths wire themselves into the root is the
- * library's own business and changes without notice, so it lives on a separate
- * `TABLE_REGISTRATION_CONTEXT` no entry point exports.
+ * It deliberately carries neither the piece-registration protocol nor the
+ * roving-grid model: how header rows, header cells, data rows, the declarative
+ * body's row count, the virtualization seams and the resized column widths wire
+ * themselves into the root, and where the grid's single tab stop currently
+ * sits, are the library's own business and change without notice.
  */
 export interface ForTableContext {
   /** The resolved ARIA mode; cells derive `role` (`cell` vs `gridcell`) from it, and navigation engages when it is not `'table'`. */
@@ -43,49 +44,6 @@ export interface ForTableContext {
   readonly dir: Signal<WritingDirection>;
   /** The active row-selection mode. `'none'` means selection is disabled. */
   readonly selectionMode: Signal<TableSelectionMode>;
-  /**
-   * 1-based `aria-rowindex` for the header row in `grid` / `treegrid` mode (always
-   * `1`, since ARIA counts the header row as the grid's first row), or `null` in
-   * `mode="table"` where no row index space exists.
-   */
-  readonly headerRowIndex: Signal<number | null>;
-  /**
-   * Offset ARIA adds to every data row's 1-based `aria-rowindex` so the numbering
-   * counts the header row: `1` when a header row participates in the row-index
-   * space (`grid` / `treegrid` mode with a registered header row), else `0`.
-   */
-  readonly dataRowIndexOffset: Signal<number>;
-  /** Roving `tabindex` (`0` for the single tab stop, `-1` otherwise) for a header cell in grid mode. */
-  headerCellTabIndex(host: HTMLElement): 0 | -1;
-  /** 0-based index of a header cell host among registered header cells in DOM order, or -1 if not registered. */
-  headerCellIndexOf(host: HTMLElement): number;
-  /**
-   * Whether the registered header cells form a complete row that joins the body's
-   * roving composite grid (`grid` / `treegrid` mode, header cell count matches the
-   * data column count). Draggable header cells (`[forTableColumnReorder]`) participate
-   * too, so a column-reorderable grid stays a single composite tab stop. `false` in
-   * `table` mode or when no header cells registered.
-   */
-  readonly headerParticipatesInRoving: Signal<boolean>;
-  /** 0-based index of a data row host in DOM order, or -1 if not registered. */
-  rowIndexOf(host: HTMLElement): number;
-  /** Roving `tabindex` (`0` for the single tab stop, `-1` otherwise) for a data cell in grid mode. */
-  cellTabIndex(host: HTMLElement): 0 | -1;
-  /** Whether a data cell is the currently roving-focused cell (drives `data-highlighted`). */
-  isCellHighlighted(host: HTMLElement): boolean;
-  /** Promotes a data cell to the active roving cell (called on the cell's `(focus)`). */
-  activateCell(host: HTMLElement): void;
-  /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
-  handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
-  /**
-   * Resolves grid navigation for a header cell that yields its host interaction to a
-   * co-located `[forDraggable]`. `[forTableColumnReorder]` calls this from a
-   * capture-phase listener for idle header cells so Arrow / Home / End / Page keys move
-   * roving focus across the composite header + body grid, while Space / Enter fall
-   * through to the draggable's lift. Returns `true` when the key was consumed as a grid
-   * action, `false` otherwise (including outside a participating `grid` / `treegrid`).
-   */
-  handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean;
   /** Returns whether `value` is currently in the selection. */
   isRowSelected(value: unknown): boolean;
   /** Toggles `value` in or out of the selection, respecting `selectionMode`. No-op in `'none'` mode. */
@@ -129,12 +87,94 @@ export interface ForTableContext {
   isRowExpanded(value: unknown): boolean;
   /** Toggles a parent row's expansion in/out of `[(expanded)]`. No-op when value is undefined. */
   toggleRowExpansion(value: unknown): void;
+}
+
+/**
+ * The table's piece-coordination surface: the 2D roving grid model the rows,
+ * cells and header cells resolve their `tabindex` / `data-highlighted` /
+ * keydown through, and the ARIA index arithmetic derived from it.
+ *
+ * Deliberately **not** part of {@link ForTableContext} and never exported from
+ * `public-api.ts`. A consumer reads the selection and expansion state off the
+ * token; where the grid's single tab stop currently sits is the library's own
+ * navigation model, refactored without notice.
+ */
+export interface TablePieceContext {
+  /**
+   * 1-based `aria-rowindex` for the header row in `grid` / `treegrid` mode (always
+   * `1`, since ARIA counts the header row as the grid's first row), or `null` in
+   * `mode="table"` where no row index space exists.
+   */
+  readonly headerRowIndex: Signal<number | null>;
+  /**
+   * Offset ARIA adds to every data row's 1-based `aria-rowindex` so the numbering
+   * counts the header row: `1` when a header row participates in the row-index
+   * space (`grid` / `treegrid` mode with a registered header row), else `0`.
+   */
+  readonly dataRowIndexOffset: Signal<number>;
+  /** Roving `tabindex` (`0` for the single tab stop, `-1` otherwise) for a header cell in grid mode. */
+  headerCellTabIndex(host: HTMLElement): 0 | -1;
+  /** 0-based index of a header cell host among registered header cells in DOM order, or -1 if not registered. */
+  headerCellIndexOf(host: HTMLElement): number;
+  /**
+   * Whether the registered header cells form a complete row that joins the body's
+   * roving composite grid (`grid` / `treegrid` mode, header cell count matches the
+   * data column count). Draggable header cells (`[forTableColumnReorder]`) participate
+   * too, so a column-reorderable grid stays a single composite tab stop. `false` in
+   * `table` mode or when no header cells registered.
+   */
+  readonly headerParticipatesInRoving: Signal<boolean>;
+  /** 0-based index of a data row host in DOM order, or -1 if not registered. */
+  rowIndexOf(host: HTMLElement): number;
+  /** Roving `tabindex` (`0` for the single tab stop, `-1` otherwise) for a data cell in grid mode. */
+  cellTabIndex(host: HTMLElement): 0 | -1;
+  /** Whether a data cell is the currently roving-focused cell (drives `data-highlighted`). */
+  isCellHighlighted(host: HTMLElement): boolean;
+  /** Promotes a data cell to the active roving cell (called on the cell's `(focus)`). */
+  activateCell(host: HTMLElement): void;
+  /** Resolves and applies a keydown originating on a data cell: 2D move + focus. */
+  handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void;
+  /**
+   * Resolves grid navigation for a header cell that yields its host interaction to a
+   * co-located `[forDraggable]`. `[forTableColumnReorder]` calls this from a
+   * capture-phase listener for idle header cells so Arrow / Home / End / Page keys move
+   * roving focus across the composite header + body grid, while Space / Enter fall
+   * through to the draggable's lift. Returns `true` when the key was consumed as a grid
+   * action, `false` otherwise (including outside a participating `grid` / `treegrid`).
+   */
+  handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean;
   /** 1-based `aria-posinset` for a row host among its same-level siblings (treegrid). */
   rowPosinset(host: HTMLElement): number;
   /** Total `aria-setsize` of a row host's same-level sibling set (treegrid). */
   rowSetsize(host: HTMLElement): number;
 }
 
+/**
+ * The table's internal coordination surface: everything {@link ForTableContext}
+ * publishes plus the {@link TablePieceContext} grid model.
+ *
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_TABLE_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while the pieces get the navigation model. `ForTable` declares
+ * those members TS-`private`, which keeps them out of the emitted `.d.ts` while
+ * `useExisting` still satisfies this contract at runtime.
+ *
+ * Distinct from the **piece-registration** protocol, which is the one surface
+ * that genuinely needs a second token: it lives in `forty-cdk/core` because
+ * `forty-cdk/table-virtualization` registers through it.
+ */
+export interface TableContext extends ForTableContext, TablePieceContext {}
+
+/**
+ * DI token for the table's coordination surface, provided by `[forTable]`.
+ *
+ * Publicly typed as the read surface {@link ForTableContext}, which is the whole of what
+ * the token promises a consumer. The pieces read the same token at an internal type that
+ * adds the roving grid model, so a wrapper re-providing it must alias it to the root:
+ * `{ provide: FOR_TABLE_CONTEXT, useExisting: MyTable }`, where `MyTable` extends
+ * `ForTable`. A value that merely satisfies the declared type resolves too, and is
+ * rejected in dev mode by the first piece to reach the model.
+ */
 export const FOR_TABLE_CONTEXT = new InjectionToken<ForTableContext>('FOR_TABLE_CONTEXT');
 
 /**
@@ -263,7 +303,7 @@ export function hostHasSortActivation(el: HTMLElement): boolean {
   return el.hasAttribute('data-sortable');
 }
 
-export function injectTableContext(piece: string): ForTableContext {
+export function injectTableContext(piece: string): TableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -273,7 +313,15 @@ export function injectTableContext(piece: string): ForTableContext {
       token: 'FOR_TABLE_CONTEXT',
     });
   }
-  return ctx;
+  const widened = ctx as TableContext;
+  assertRootContext({
+    entryPoint: 'table',
+    token: 'FOR_TABLE_CONTEXT',
+    root: '[forTable]',
+    piece,
+    probe: () => widened.cellTabIndex,
+  });
+  return widened;
 }
 
 export function injectTableRegistration(piece: string): TableRegistrationContext {

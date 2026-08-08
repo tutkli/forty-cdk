@@ -120,12 +120,12 @@ export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
 >;
 
 /**
- * Coordination contract owned by `[forSelect]`. Trigger, content, value,
- * options, groups and separators all inject this token to read state and
- * delegate behavior — they don't import the root class directly. The shared
- * overlay-listbox surface (trigger / anchor / content registration, navigation,
- * the open / close machine, dismiss forwarders) is reached through
- * {@link ForSelectContext.overlay}.
+ * Coordination contract owned by `[forSelect]` — the surface a consumer reads
+ * and drives. Advanced consumers inject the token to read the selection and the
+ * open state and to move them through the root's guards (`activate` /
+ * `selectAll`, plus the open / close commands on {@link ForSelectContext.overlay}).
+ * The wiring the library's own pieces read off the root is deliberately not
+ * part of it.
  *
  * Generic over the option value type `T` (default `string` at the public
  * root). When a consumer binds object items the directive infers `T` from
@@ -163,9 +163,50 @@ export interface ForSelectContext<T = unknown> {
   readonly invalid: Signal<boolean>;
   readonly pending: Signal<boolean>;
 
+  readonly dir: Signal<WritingDirection>;
+  readonly placeholder: Signal<string>;
+
+  /**
+   * The consumer-facing slice of the overlay surface: the trigger / content ids,
+   * the last close reason, and the open / close commands. The registration and
+   * navigation machinery behind it is internal — see
+   * {@link ForSelectOverlayFacade}.
+   */
+  readonly overlay: ForSelectOverlayFacade;
+
+  /** Resolved labels of the options whose value is in `value()`, in selection order. */
+  readonly selectedLabels: Signal<readonly string[]>;
+
+  isSelected(value: T): boolean;
+  /** Toggle in multi-mode, replace + close in single-mode. No-op on disabled / readonly. */
+  activate(value: T): void;
+
+  /**
+   * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Select every enabled
+   * option, or clear the selection when they are all already selected (toggle).
+   * No-op in single mode, disabled, readonly, or the virtualized path.
+   */
+  selectAll(): void;
+
+  /** Flip the `touched` model. Called by trigger on blur-to-outside and on dismiss events. */
+  markTouched(): void;
+}
+
+/**
+ * The select's piece-coordination surface: everything the library's own pieces
+ * read off the root that a consumer has no call to touch — the positioning
+ * mirrors `[forSelectContent]` feeds to floating-ui, the APG range-selection and
+ * typeahead handlers `[forSelectOption]` routes its keys through, and the
+ * virtualized activedescendant model.
+ *
+ * Deliberately **not** part of {@link ForSelectContext} and never exported from
+ * `public-api.ts`: these are the members a refactor of the anatomy moves, so
+ * freezing them at 1.0 would freeze the anatomy with them.
+ */
+export interface SelectPieceContext<T = unknown> {
   /**
    * When `true`, the listbox is a trapped / inert / scroll-locked modal
-   * surface (routed through `_internal/modal-shell`) instead of the anchored
+   * surface (routed through the core modal shell) instead of the anchored
    * popover. Read once when `[forSelectContent]` mounts; all anchored-
    * positioning state below is a no-op while modal.
    */
@@ -193,17 +234,7 @@ export interface ForSelectContext<T = unknown> {
   readonly clipUntilPositioned: Signal<boolean>;
   readonly loop: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
-  readonly dir: Signal<WritingDirection>;
   readonly selectionFollowsFocus: Signal<boolean>;
-  readonly placeholder: Signal<string>;
-
-  /**
-   * The consumer-facing slice of the overlay surface: the trigger / content ids,
-   * the last close reason, and the open / close commands. The registration and
-   * navigation machinery behind it is internal — see
-   * {@link ForSelectOverlayFacade}.
-   */
-  readonly overlay: ForSelectOverlayFacade;
 
   readonly ariaLabel: Signal<string | null>;
 
@@ -220,8 +251,6 @@ export interface ForSelectContext<T = unknown> {
   /** Serialize an item for the hidden input's `value` attribute. Defaults to `String(item)`. */
   readonly itemToFormValue: Signal<(item: T) => string>;
 
-  /** Resolved labels of the options whose value is in `value()`, in selection order. */
-  readonly selectedLabels: Signal<readonly string[]>;
   /**
    * Host element of the first enabled, currently-selected option, or `null`
    * when no selection exists. Used by `position="item-aligned"` to anchor
@@ -229,10 +258,6 @@ export interface ForSelectContext<T = unknown> {
    * inside the listbox when this is `null`.
    */
   readonly selectedOptionEl: Signal<HTMLElement | null>;
-
-  isSelected(value: T): boolean;
-  /** Toggle in multi-mode, replace + close in single-mode. No-op on disabled / readonly. */
-  activate(value: T): void;
 
   /**
    * Multi-select only (APG range keyboard). Move focus to the next / previous
@@ -250,12 +275,6 @@ export interface ForSelectContext<T = unknown> {
    * readonly, or the virtualized path.
    */
   selectRangeToFocused(currentOption: HTMLElement): void;
-  /**
-   * Multi-select only (APG range keyboard, Ctrl/Cmd+A). Select every enabled
-   * option, or clear the selection when they are all already selected (toggle).
-   * No-op in single mode, disabled, readonly, or the virtualized path.
-   */
-  selectAll(): void;
   /**
    * Multi-select only (APG range keyboard, Ctrl+Shift+Home / End). Add every
    * enabled option from the focused option to the first / last option to the
@@ -332,9 +351,6 @@ export interface ForSelectContext<T = unknown> {
    * content surface. No-op in the default path.
    */
   notifyOptionClick(optionId: string): void;
-
-  /** Flip the `touched` model. Called by trigger on blur-to-outside and on dismiss events. */
-  markTouched(): void;
 }
 
 /**
@@ -352,15 +368,17 @@ export const FOR_SELECT_CONTEXT = new InjectionToken<ForSelectContext>('FOR_SELE
 
 /**
  * The select's internal coordination surface: everything {@link ForSelectContext}
- * publishes, plus the full overlay state machine instead of the consumer facade.
+ * publishes, plus the {@link SelectPieceContext} members and the full overlay
+ * state machine instead of the consumer facade.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_SELECT_CONTEXT} at, so a consumer who injects that token gets the
  * read surface while the pieces get the wiring protocol. `ForSelect` declares
- * `overlay` with the narrow public type, which keeps the controller out of the
- * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
+ * `overlay` with the narrow public type and the piece members TS-`private`,
+ * which keeps both out of the emitted `.d.ts` while `useExisting` still
+ * satisfies this contract at runtime.
  */
-export interface SelectContext<T = unknown> extends ForSelectContext<T> {
+export interface SelectContext<T = unknown> extends ForSelectContext<T>, SelectPieceContext<T> {
   readonly overlay: ForSelectOverlayContext<T>;
 }
 

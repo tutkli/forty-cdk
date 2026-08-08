@@ -165,7 +165,7 @@ export class ForCarousel implements ForCarouselContext {
   readonly dir = injectTextDirection(this._dirInput);
 
   /** Roving tabindex tracker for the indicator group. */
-  readonly roving = new RovingTabindex(() => this.#indicators.items());
+  private readonly roving = new RovingTabindex(() => this.#indicators.items());
 
   readonly #destroyRef = inject(DestroyRef);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -303,7 +303,7 @@ export class ForCarousel implements ForCarouselContext {
    * target slide (automatic activation). Used by `ForCarouselIndicator`'s
    * keydown handler.
    */
-  navigate(currentIndicator: HTMLElement, action: ListNavigationAction): void {
+  private navigate(currentIndicator: HTMLElement, action: ListNavigationAction): void {
     const indicators = this.#indicators.items();
     if (indicators.length === 0) {
       return;
@@ -351,17 +351,17 @@ export class ForCarousel implements ForCarouselContext {
   }
 
   /** The id of the registered viewport element, or `null` if none is mounted. */
-  viewportId(): string | null {
+  private viewportId(): string | null {
     return this.#viewport.value()?.id ?? null;
   }
 
   /** DOM-order index of the registered slide whose host equals `host`, or -1. */
-  indexOfSlide(host: HTMLElement): number {
+  private indexOfSlide(host: HTMLElement): number {
     return this.#slides.indexOfHost(host);
   }
 
   /** DOM-order index of the registered indicator whose host equals `host`, or -1. */
-  indexOfIndicator(host: HTMLElement): number {
+  private indexOfIndicator(host: HTMLElement): number {
     return this.#indicators.indexOfHost(host);
   }
 
@@ -370,7 +370,7 @@ export class ForCarousel implements ForCarouselContext {
    * (`"N of M"` unless localized via `provideForCarouselDefaults`).
    * `position` is the 1-based slide index.
    */
-  slideLabel(position: number): string {
+  private slideLabel(position: number): string {
     return this.#defaults.slideLabel(position, this.slideCount());
   }
 
@@ -379,7 +379,7 @@ export class ForCarousel implements ForCarouselContext {
    * (`"Go to slide N"` unless localized via `provideForCarouselDefaults`).
    * `position` is the 1-based slide index.
    */
-  indicatorLabel(position: number): string {
+  private indicatorLabel(position: number): string {
     return this.#defaults.indicatorLabel(position);
   }
 
@@ -392,7 +392,7 @@ export class ForCarousel implements ForCarouselContext {
    * Returns `true` when `index` falls within the visible window
    * `[activeIndex, activeIndex + slidesPerView - 1]`.
    */
-  isInView(index: number): boolean {
+  private isInView(index: number): boolean {
     const start = this.activeIndex();
     return index >= start && index < start + Math.max(1, this.slidesPerView());
   }

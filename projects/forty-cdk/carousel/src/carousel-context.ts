@@ -52,7 +52,6 @@ export interface ForCarouselContext {
   readonly align: Signal<CarouselAlign>;
   readonly slidesPerView: Signal<number>;
   readonly slideCount: Signal<number>;
-  readonly roving: RovingTabindex;
 
   /** Whether auto-rotation is currently "on" (user intent). Drives the rotation control's label. */
   readonly playing: Signal<boolean>;
@@ -64,10 +63,28 @@ export interface ForCarouselContext {
   scrollPrev(): void;
   scrollNext(): void;
   scrollTo(index: number): void;
-  navigate(currentIndicator: HTMLElement, action: ListNavigationAction): void;
 
   /** Toggle auto-rotation on/off (the explicit, sticky user choice). Called by the rotation control. */
   toggleAutoplay(): void;
+
+  isCurrent(index: number): boolean;
+  isFirstEnabledIndicator(el: HTMLElement): boolean;
+  hasCurrentIndicator(): boolean;
+}
+
+/**
+ * The carousel's piece-coordination surface: the roving tracker the indicators
+ * share, the DOM-order index lookups, the viewport id the rotation control
+ * points `aria-controls` at, and the localizable positional labels.
+ *
+ * Deliberately **not** part of {@link ForCarouselContext} and never exported
+ * from `public-api.ts` — a consumer drives the carousel through `scrollTo` /
+ * `scrollNext`, never through the indicators' shared tab stop.
+ */
+export interface CarouselPieceContext {
+  readonly roving: RovingTabindex;
+
+  navigate(currentIndicator: HTMLElement, action: ListNavigationAction): void;
 
   viewportId(): string | null;
 
@@ -79,10 +96,7 @@ export interface ForCarouselContext {
   /** Resolve the indicator `aria-label` (`"Go to slide N"` by default). `position` is 1-based. */
   indicatorLabel(position: number): string;
 
-  isCurrent(index: number): boolean;
   isInView(index: number): boolean;
-  isFirstEnabledIndicator(el: HTMLElement): boolean;
-  hasCurrentIndicator(): boolean;
 }
 
 /**
@@ -100,9 +114,9 @@ export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_
 
 /**
  * The carousel's internal coordination surface: everything
- * {@link ForCarouselContext} publishes plus the slide / indicator / viewport
- * registration protocol the index lookups, geometry observer and roving
- * tabindex are driven from.
+ * {@link ForCarouselContext} publishes plus the {@link CarouselPieceContext}
+ * members and the slide / indicator / viewport registration protocol the index
+ * lookups, geometry observer and roving tabindex are driven from.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_CAROUSEL_CONTEXT} at, so a consumer who injects that token gets the
@@ -110,7 +124,7 @@ export const FOR_CAROUSEL_CONTEXT = new InjectionToken<ForCarouselContext>('FOR_
  * the protocol members TS-`private`, which keeps them out of the emitted
  * `.d.ts` while `useExisting` still satisfies this contract at runtime.
  */
-export interface CarouselContext extends ForCarouselContext {
+export interface CarouselContext extends ForCarouselContext, CarouselPieceContext {
   registerSlide(handle: ForCarouselSlideHandle): void;
   unregisterSlide(handle: ForCarouselSlideHandle): void;
   registerIndicator(handle: ForCarouselIndicatorHandle): void;

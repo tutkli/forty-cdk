@@ -5,6 +5,7 @@ import {
   type ForAccordionContext,
   ForAccordionItem,
 } from 'forty-cdk/accordion';
+import { FOR_AVATAR_CONTEXT, ForAvatarFallback } from 'forty-cdk/avatar';
 import { FOR_CAROUSEL_CONTEXT, ForCarouselPrevious } from 'forty-cdk/carousel';
 import {
   FOR_COMBOBOX_CONTEXT,
@@ -21,6 +22,7 @@ import {
   ForSelectValue,
 } from 'forty-cdk/select';
 import type { WritingDirection } from 'forty-cdk/shared';
+import { FOR_TABLE_CONTEXT, ForTableSelectAll } from 'forty-cdk/table';
 import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
 
@@ -35,12 +37,14 @@ import { renderHost } from '../test-utils/render';
  * **The derived property is "this entry point splits its context"** — a source
  * module declaring `interface <X>Context extends For<X>Context`, which is what
  * puts an unchecked cast inside its `inject<Primitive>Context`. It is exact in
- * both directions today: eight modules match, and Table (the one root still
- * carrying a second token, aliased to a separate provider in `forty-cdk/core`)
- * matches neither the pattern nor the hazard. So a ninth split root cannot land
- * without either calling the guard or turning this file red — which the
- * count-per-module case extends to a *second* resolver added to a module that
- * already calls it once.
+ * both directions today: ten modules match, Avatar and Table having joined with
+ * [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted default —
+ * Table's own second token is a *registration* protocol living in
+ * `forty-cdk/core`, aliased to a separate provider, and is a different surface
+ * from the roving-grid model its `FOR_TABLE_CONTEXT` now hides. So an eleventh
+ * split root cannot land without either calling the guard or turning this file
+ * red — which the count-per-module case extends to a *second* resolver added to
+ * a module that already calls it once.
  *
  * `useValue` is typed `any` by Angular's own `ValueProvider`, so the empty
  * object the sweep provides needs no cast to reach the piece — the compile-time
@@ -94,6 +98,14 @@ interface GuardedRoot {
 class ImpostorAccordionHost {}
 
 @Component({
+  imports: [ForAvatarFallback],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_AVATAR_CONTEXT, useValue: {} }],
+  template: `<span forAvatarFallback></span>`,
+})
+class ImpostorAvatarHost {}
+
+@Component({
   imports: [ForCarouselPrevious],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_CAROUSEL_CONTEXT, useValue: {} }],
@@ -134,6 +146,14 @@ class ImpostorRadioGroupHost {}
 class ImpostorSelectHost {}
 
 @Component({
+  imports: [ForTableSelectAll],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_TABLE_CONTEXT, useValue: {} }],
+  template: `<button type="button" forTableSelectAll></button>`,
+})
+class ImpostorTableHost {}
+
+@Component({
   imports: [ForTabsList],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_TABS_CONTEXT, useValue: {} }],
@@ -158,6 +178,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forAccordion]',
     piece: 'ForAccordionItem',
     host: ImpostorAccordionHost,
+  },
+  {
+    entryPoint: 'avatar',
+    source: 'avatar/src/avatar-context.ts',
+    calls: 2,
+    token: 'FOR_AVATAR_CONTEXT',
+    root: '[forAvatar]',
+    piece: 'ForAvatarFallback',
+    host: ImpostorAvatarHost,
   },
   {
     entryPoint: 'carousel',
@@ -203,6 +232,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forSelect]',
     piece: 'ForSelectValue',
     host: ImpostorSelectHost,
+  },
+  {
+    entryPoint: 'table',
+    source: 'table/src/table-context.ts',
+    calls: 1,
+    token: 'FOR_TABLE_CONTEXT',
+    root: '[forTable]',
+    piece: 'ForTableSelectAll',
+    host: ImpostorTableHost,
   },
   {
     entryPoint: 'tabs',

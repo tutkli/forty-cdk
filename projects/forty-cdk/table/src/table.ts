@@ -256,7 +256,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     return dataCols === 0 || headerCount === dataCols;
   });
 
-  readonly headerParticipatesInRoving = this.#headerParticipates;
+  private readonly headerParticipatesInRoving = this.#headerParticipates;
 
   /**
    * The composite roving grid: the header cells (as grid row 0, when they form a
@@ -311,9 +311,11 @@ export class ForTable<T = unknown> implements ForTableContext {
   );
 
   /** 1-based row offset ARIA applies to data rows because the header row occupies index 1. */
-  readonly dataRowIndexOffset = computed(() => (this.#hasHeaderRowIndex() ? 1 : 0));
+  private readonly dataRowIndexOffset = computed(() => (this.#hasHeaderRowIndex() ? 1 : 0));
 
-  readonly headerRowIndex = computed<number | null>(() => (this.#hasHeaderRowIndex() ? 1 : null));
+  private readonly headerRowIndex = computed<number | null>(() =>
+    this.#hasHeaderRowIndex() ? 1 : null,
+  );
 
   readonly #registeredValues = computed<readonly T[]>(() =>
     this.#registry
@@ -405,43 +407,43 @@ export class ForTable<T = unknown> implements ForTableContext {
     this.#expansion.toggle(value);
   }
 
-  rowPosinset(host: HTMLElement): number {
+  private rowPosinset(host: HTMLElement): number {
     const index = this.#registry.rowIndexOf(host);
     return index < 0 ? 1 : (this.#rowHierarchy()[index]?.posinset ?? 1);
   }
 
-  rowSetsize(host: HTMLElement): number {
+  private rowSetsize(host: HTMLElement): number {
     const index = this.#registry.rowIndexOf(host);
     return index < 0 ? 1 : (this.#rowHierarchy()[index]?.setsize ?? 1);
   }
 
-  rowIndexOf(host: HTMLElement): number {
+  private rowIndexOf(host: HTMLElement): number {
     return this.#registry.rowIndexOf(host);
   }
 
-  cellTabIndex(host: HTMLElement): 0 | -1 {
+  private cellTabIndex(host: HTMLElement): 0 | -1 {
     if (this.#roving.hasActive()) {
       return this.#roving.tabindexFor(host);
     }
     return this.#firstEnabledCell() === host ? 0 : -1;
   }
 
-  headerCellTabIndex(host: HTMLElement): 0 | -1 {
+  private headerCellTabIndex(host: HTMLElement): 0 | -1 {
     if (!this.#headerParticipates()) {
       return -1;
     }
     return this.cellTabIndex(host);
   }
 
-  headerCellIndexOf(host: HTMLElement): number {
+  private headerCellIndexOf(host: HTMLElement): number {
     return this.#registry.headerCellIndexOf(host);
   }
 
-  isCellHighlighted(host: HTMLElement): boolean {
+  private isCellHighlighted(host: HTMLElement): boolean {
     return this.#roving.active() === host;
   }
 
-  activateCell(host: HTMLElement): void {
+  private activateCell(host: HTMLElement): void {
     if (this.mode() !== 'table') {
       this.#roving.setActive(host);
     }
@@ -475,7 +477,7 @@ export class ForTable<T = unknown> implements ForTableContext {
     return undefined;
   }
 
-  handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void {
+  private handleCellKeydown(event: KeyboardEvent, host: HTMLElement): void {
     if (this.mode() === 'table') {
       return;
     }
@@ -504,7 +506,7 @@ export class ForTable<T = unknown> implements ForTableContext {
    * resolved to a grid action (and was consumed), `false` otherwise. No-op (returns `false`)
    * outside `grid` / `treegrid` mode or when the header row does not join the composite grid.
    */
-  handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
+  private handleHeaderCellKeydown(event: KeyboardEvent, host: HTMLElement): boolean {
     if (this.mode() === 'table' || !this.#headerParticipates()) {
       return false;
     }

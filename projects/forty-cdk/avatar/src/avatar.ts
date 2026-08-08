@@ -86,11 +86,7 @@ export class ForAvatar implements ForAvatarContext {
     return this.#timerElapsed();
   });
 
-  /**
-   * Reported by `[forAvatarImage]` so the root can transition its state
-   * machine. Consumers should not call this.
-   */
-  reportStatus(status: ForAvatarStatus): void {
+  private reportStatus(status: ForAvatarStatus): void {
     this.#status.set(status);
   }
 
