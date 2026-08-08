@@ -1,6 +1,6 @@
 import { Injector, computed, inject, runInInjectionContext, type Signal } from '@angular/core';
 
-import { injectMediaQuery } from 'forty-cdk/core';
+import { fortyError, injectMediaQuery } from 'forty-cdk/core';
 import { FOR_BREAKPOINTS_DEFAULTS, type TailwindBreakpointName } from './breakpoints-defaults';
 
 /**
@@ -113,11 +113,12 @@ export function injectBreakpoints(): ForBreakpoints {
   const thresholdOf = (name: string): number => {
     const value = map[name];
     if (value === undefined) {
-      throw new Error(
-        `[forty-cdk/breakpoints] Unknown breakpoint "${name}". Defined breakpoints: ${
-          names.join(', ') || '(none)'
-        }.`,
-      );
+      throw fortyError({
+        code: 'FORCDK-BREAKPOINTS-001',
+        message: `Unknown breakpoint "${name}".`,
+        cause: `The active breakpoint map defines: ${names.join(', ') || '(none)'}.`,
+        fix: 'Use one of the names above, or register yours with provideForBreakpointsDefaults().',
+      });
     }
     return value;
   };

@@ -54,16 +54,37 @@ describe('isRangeSelectShortcut', () => {
 });
 
 describe('throwUnsupportedVirtualizedRangeSelect', () => {
-  it('throws in dev mode with the primitive prefix and focus-model hint', () => {
+  it('throws in dev mode under the primitive prefix and its own code', () => {
     expect(() =>
       throwUnsupportedVirtualizedRangeSelect({
         primitive: 'listbox',
         focusModel: 'roving-tabindex',
+        collection: 'listbox',
+        alternative: 'Toggle options individually with Enter, Space, or click',
       }),
-    ).toThrow(/^\[forty-cdk\/listbox\] Multi-select range keyboard/);
+    ).toThrow(/^\[forty-cdk\/listbox\] FORCDK-CORE-008: Multi-select range keyboard/);
+  });
+
+  it('composes the per-primitive alternative with the shared focus-model hint', () => {
     expect(() =>
-      throwUnsupportedVirtualizedRangeSelect({ primitive: 'select', focusModel: 'DOM-focus' }),
-    ).toThrow(/non-virtualized DOM-focus listbox/);
+      throwUnsupportedVirtualizedRangeSelect({
+        primitive: 'select',
+        focusModel: 'DOM-focus',
+        collection: 'listbox',
+        alternative: 'Toggle options individually with Enter, Space, or click',
+      }),
+    ).toThrow(/Fix: Toggle options individually .*non-virtualized DOM-focus listbox/s);
+  });
+
+  it("carries the tree's own multi-select alternative rather than the listbox one", () => {
+    expect(() =>
+      throwUnsupportedVirtualizedRangeSelect({
+        primitive: 'tree',
+        focusModel: 'roving-tabindex',
+        collection: 'tree',
+        alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
+      }),
+    ).toThrow(/Fix: Use `selectionMode="checkbox"`.*non-virtualized roving-tabindex tree/s);
   });
 });
 
@@ -75,7 +96,7 @@ describe('throwUnsupportedVirtualizedSelectionFollowsFocus', () => {
         focusModel: 'roving-tabindex',
         collection: 'listbox',
       }),
-    ).toThrow(/^\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported/);
+    ).toThrow(/^\[forty-cdk\/listbox\] FORCDK-CORE-009: `selectionFollowsFocus` is not supported/);
     expect(() =>
       throwUnsupportedVirtualizedSelectionFollowsFocus({
         primitive: 'select',

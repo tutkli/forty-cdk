@@ -6,8 +6,10 @@ import {
   type CollectionHandle,
   type FloatingAlign,
   type FloatingSide,
-  type WritingDirection,
+  orphanContextError,
+  unresolvedRootError,
   type VetoableNativeEvent,
+  type WritingDirection,
 } from 'forty-cdk/core';
 
 /**
@@ -499,12 +501,12 @@ const ROOT_ASSERTION = {
 export function injectComboboxContext<T = unknown>(piece: string): ComboboxContext<T> {
   const ctx = inject(FOR_COMBOBOX_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/combobox] ${piece} must be used inside a [forCombobox] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forCombobox] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-COMBOBOX-003',
+      piece,
+      root: '[forCombobox]',
+      token: 'FOR_COMBOBOX_CONTEXT',
+    });
   }
   const widened = ctx as unknown as ComboboxContext<T>;
   assertRootContext({
@@ -537,13 +539,13 @@ export function injectComboboxTriggerContext<T = unknown>(
     const explicit = explicitRoot();
     const resolved = explicit === '' ? injected : explicit;
     if (!resolved) {
-      throw new Error(
-        '[forty-cdk/combobox] ForComboboxTrigger could not resolve its [forCombobox] root: ' +
-          'no FOR_COMBOBOX_CONTEXT provider is visible and no explicit root reference was passed. ' +
-          "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-          'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-          'root explicitly: [forComboboxTrigger]="root" with #root="forCombobox".',
-      );
+      throw unresolvedRootError({
+        code: 'FORCDK-COMBOBOX-004',
+        trigger: '[forComboboxTrigger]',
+        root: '[forCombobox]',
+        token: 'FOR_COMBOBOX_CONTEXT',
+        exportAs: 'forCombobox',
+      });
     }
     const widened = resolved as unknown as ComboboxContext<T>;
     assertRootContext({

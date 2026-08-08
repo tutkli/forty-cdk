@@ -1384,7 +1384,7 @@ describe('ForMenuItemIndicator', () => {
 
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/menu\] ForMenuItemIndicator must be used inside a \[forMenuCheckboxItem\] or \[forMenuRadioItem\] element\./,
+      /\[forty-cdk\/menu\] FORCDK-MENU-003: ForMenuItemIndicator must be used inside a \[forMenuCheckboxItem\] or \[forMenuRadioItem\] element\./,
     );
   });
 

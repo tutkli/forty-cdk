@@ -1,12 +1,13 @@
 import { booleanAttribute, computed, Directive, ElementRef, inject, input } from '@angular/core';
 
 import {
+  fortyError,
   hostButtonType,
-  registerHandle,
-  resolveListNavigation,
-  type MenuActivationModality,
   injectMenuContext,
   isHoverCapablePointer,
+  type MenuActivationModality,
+  registerHandle,
+  resolveListNavigation,
 } from 'forty-cdk/core';
 import { handleMenuTabOut } from './menu-tab-out';
 
@@ -84,9 +85,12 @@ export class ForMenuSubTrigger {
 
   constructor() {
     if (!this.submenu.parentMenu) {
-      throw new Error(
-        '[forty-cdk/menu] [forMenuSubTrigger] must be inside a [forMenuSub] inside a parent menu.',
-      );
+      throw fortyError({
+        code: 'FORCDK-MENU-005',
+        message: 'The [forMenuSub] holding this [forMenuSubTrigger] has no parent menu.',
+        cause: 'A submenu opens from an item of the menu above it, so it needs an enclosing menu.',
+        fix: 'Nest the [forMenuSub] inside a [forDropdownMenu], [forContextMenu], or another [forMenuSub].',
+      });
     }
     const parent = this.submenu.parentMenu;
     const handle = {

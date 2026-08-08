@@ -13,7 +13,8 @@ import {
   signal,
 } from '@angular/core';
 
-import { ForDrawerStack, injectModalShell, ModalSurfaceBase } from 'forty-cdk/core';
+import { ForDrawerStack, fortyError, injectModalShell, ModalSurfaceBase } from 'forty-cdk/core';
+import { validateCloseThreshold } from './snap-points';
 import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
 import {
   FOR_DRAWER_CONTEXT,
@@ -64,7 +65,7 @@ import { injectDrawerDrag } from './drawer-drag';
 export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements ForDrawerContext {
   readonly #defaults = inject(FOR_DRAWER_DEFAULTS);
 
-  protected readonly errorPrefix = '[forty-cdk/drawer]';
+  protected readonly entryPoint = 'drawer';
 
   /**
    * Edge the drawer is anchored to. Default `'bottom'` — the most common
@@ -347,10 +348,7 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
 
       // 2. closeThreshold validation. Throws here so consumers get a clear
       //    mount-time error instead of a silently-broken dismissal.
-      const ct = this.closeThreshold();
-      if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
-        throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
-      }
+      validateCloseThreshold(this.closeThreshold());
 
       // 3. Snap-point validation (shape + fadeFromIndex range + first
       //    live-dimension measurement) and mount-time `activeSnapPoint`
@@ -429,9 +427,11 @@ export class ForDrawer extends ModalSurfaceBase<ForDrawerCloseReason> implements
   registerHandle(el: HTMLElement | null): void {
     const current = this.#handleEl();
     if (el !== null && current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/drawer] Multiple [forDrawerHandle] inside the same [forDrawer]; only one is allowed.',
-      );
+      throw fortyError({
+        code: 'FORCDK-DRAWER-006',
+        message: 'A [forDrawer] registered a second [forDrawerHandle]; only one is allowed.',
+        fix: 'Keep a single [forDrawerHandle] per [forDrawer].',
+      });
     }
     this.#handleEl.set(el);
   }

@@ -948,7 +948,9 @@ describe('ForDrawer (declarative)', () => {
           captured.some(
             (e) =>
               e instanceof Error &&
-              /\[forty-cdk\/drawer\] Snap point must be a finite number/.test(e.message),
+              /\[forty-cdk\/drawer\] FORCDK-DRAWER-007: A numeric snap point must be finite/.test(
+                e.message,
+              ),
           ),
         ).toBe(true);
       });
@@ -989,7 +991,9 @@ describe('ForDrawer (declarative)', () => {
         captured.some(
           (e) =>
             e instanceof Error &&
-            e.message === '[forty-cdk/drawer] closeThreshold must be in [0, 1], got 2.',
+            e.message.startsWith(
+              '[forty-cdk/drawer] FORCDK-DRAWER-004: closeThreshold must be a fraction between 0 and 1, and it is 2.',
+            ),
         ),
       ).toBe(true);
     });
@@ -1030,7 +1034,9 @@ describe('ForDrawer (declarative)', () => {
         captured.some(
           (e) =>
             e instanceof Error &&
-            e.message === '[forty-cdk/drawer] closeThreshold must be in [0, 1], got NaN.',
+            e.message.startsWith(
+              '[forty-cdk/drawer] FORCDK-DRAWER-004: closeThreshold must be a fraction between 0 and 1, and it is NaN.',
+            ),
         ),
       ).toBe(true);
     });
@@ -1225,7 +1231,10 @@ describe('ForDrawer (declarative)', () => {
         template: `<h2 forDrawerTitle></h2>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/drawer\] ForDrawerTitle/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/drawer\] FORCDK-DRAWER-002: ForDrawerTitle must be used inside/,
+      );
     });
 
     it('throws from ForDrawerDescription', () => {
@@ -1234,7 +1243,10 @@ describe('ForDrawer (declarative)', () => {
         template: `<p forDrawerDescription></p>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/drawer\] ForDrawerDescription/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/drawer\] FORCDK-DRAWER-002: ForDrawerDescription must be used inside/,
+      );
     });
 
     it('throws from ForDrawerClose', () => {
@@ -1243,7 +1255,10 @@ describe('ForDrawer (declarative)', () => {
         template: `<button forDrawerClose></button>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/drawer\] ForDrawerClose/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/drawer\] FORCDK-DRAWER-002: ForDrawerClose must be used inside/,
+      );
     });
 
     it('throws from ForDrawerBackdrop', () => {
@@ -1252,7 +1267,10 @@ describe('ForDrawer (declarative)', () => {
         template: `<div forDrawerBackdrop></div>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/drawer\] ForDrawerBackdrop/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/drawer\] FORCDK-DRAWER-002: ForDrawerBackdrop must be used inside/,
+      );
     });
 
     it('throws from ForDrawerHandle', () => {
@@ -1261,7 +1279,10 @@ describe('ForDrawer (declarative)', () => {
         template: `<div forDrawerHandle></div>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/drawer\] ForDrawerHandle/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/drawer\] FORCDK-DRAWER-002: ForDrawerHandle must be used inside/,
+      );
     });
   });
 
@@ -1285,7 +1306,7 @@ describe('ForDrawer (declarative)', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoHandlesHost);
       expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/drawer\] Multiple \[forDrawerHandle\]/,
+        /\[forty-cdk\/drawer\] FORCDK-DRAWER-006: A \[forDrawer\] registered a second \[forDrawerHandle\]/,
       );
     });
 
@@ -1307,7 +1328,9 @@ describe('ForDrawer (declarative)', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoBackdropsHost);
-      expect(() => fixture.detectChanges()).toThrow(/\[forty-cdk\/drawer\] Multiple/);
+      expect(() => fixture.detectChanges()).toThrow(
+        /\[forty-cdk\/drawer\] FORCDK-CORE-001: A modal surface registered a second backdrop/,
+      );
     });
 
     it('does not throw when a handle is re-registered after the previous unmounted', async () => {

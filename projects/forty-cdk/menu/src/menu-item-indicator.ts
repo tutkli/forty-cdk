@@ -1,5 +1,6 @@
 import { booleanAttribute, computed, Directive, inject, input } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
 import { FOR_MENU_CHECKBOX_ITEM } from './menu-checkbox-item';
 import { FOR_MENU_RADIO_ITEM } from './menu-radio-item';
 
@@ -61,9 +62,12 @@ export class ForMenuItemIndicator {
 
   constructor() {
     if (!this.#checkbox && !this.#radio) {
-      throw new Error(
-        '[forty-cdk/menu] ForMenuItemIndicator must be used inside a [forMenuCheckboxItem] or [forMenuRadioItem] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-MENU-003',
+        piece: 'ForMenuItemIndicator',
+        root: '[forMenuCheckboxItem] or [forMenuRadioItem]',
+        token: 'FOR_MENU_CHECKBOX_ITEM or FOR_MENU_RADIO_ITEM',
+      });
     }
   }
 }

@@ -6,7 +6,6 @@ import {
   ElementRef,
   inject,
   input,
-  isDevMode,
   model,
   numberAttribute,
   output,
@@ -22,6 +21,7 @@ import {
   resolveListNavigation,
   resolveTreeExpandCollapse,
   runVirtualizedNavigatorBridge,
+  throwUnsupportedVirtualizedRangeSelect,
   throwUnsupportedVirtualizedSelectionFollowsFocus,
   type WritingDirection,
   RovingTabindex,
@@ -666,15 +666,12 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   }
 
   #throwUnsupportedVirtualizedMultiSelect(): void {
-    if (isDevMode()) {
-      throw new Error(
-        '[forty-cdk/tree] Multi-select range keyboard (Shift+Arrow, Shift+Space, Ctrl/Cmd+A) is not ' +
-          'supported together with virtualization (`totalCount` set). Range selection needs the full ' +
-          'set of enabled nodes across the range, which is unavailable while the list is partially ' +
-          'unmounted. Use `selectionMode="checkbox"` for multi-select over large virtualized trees, ' +
-          'or drop `totalCount` to use the non-virtualized roving-tabindex tree.',
-      );
-    }
+    throwUnsupportedVirtualizedRangeSelect({
+      primitive: 'tree',
+      focusModel: 'roving-tabindex',
+      collection: 'tree',
+      alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
+    });
   }
 
   registerItem(handle: ForTreeItemHandle): void {

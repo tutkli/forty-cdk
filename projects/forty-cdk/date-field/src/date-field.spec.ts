@@ -926,7 +926,7 @@ describe('ForDateField', () => {
       // granularity asks for (#1583) — the throw propagates out of the initial
       // render, never swallowed by the effect scheduler.
       expect(() => renderHost(DayOnlyHost)).toThrow(
-        /\[forty-cdk\/date-adapter\] ForDateField requires a time-capable DateAdapter/,
+        /\[forty-cdk\/core\] FORCDK-CORE-003: ForDateField requires a time-capable DateAdapter/,
       );
     });
   });

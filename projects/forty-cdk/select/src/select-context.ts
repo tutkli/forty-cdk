@@ -6,6 +6,8 @@ import {
   type FloatingAlign,
   type FloatingSide,
   type ListboxOverlayContext,
+  orphanContextError,
+  unresolvedRootError,
   type WritingDirection,
 } from 'forty-cdk/core';
 
@@ -377,12 +379,12 @@ const ROOT_ASSERTION = {
 export function injectSelectContext<T = unknown>(piece: string): SelectContext<T> {
   const ctx = inject(FOR_SELECT_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/select] ${piece} must be used inside a [forSelect] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forSelect] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-SELECT-001',
+      piece,
+      root: '[forSelect]',
+      token: 'FOR_SELECT_CONTEXT',
+    });
   }
   const widened = ctx as unknown as SelectContext<T>;
   assertRootContext({
@@ -416,13 +418,13 @@ export function injectSelectTriggerContext<T = unknown>(
     const explicit = explicitRoot();
     const resolved = explicit === '' ? injected : explicit;
     if (!resolved) {
-      throw new Error(
-        '[forty-cdk/select] ForSelectTrigger could not resolve its [forSelect] root: ' +
-          'no FOR_SELECT_CONTEXT provider is visible and no explicit root reference was passed. ' +
-          "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-          'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-          'root explicitly: [forSelectTrigger]="root" with #root="forSelect".',
-      );
+      throw unresolvedRootError({
+        code: 'FORCDK-SELECT-002',
+        trigger: '[forSelectTrigger]',
+        root: '[forSelect]',
+        token: 'FOR_SELECT_CONTEXT',
+        exportAs: 'forSelect',
+      });
     }
     const widened = resolved as unknown as SelectContext<T>;
     assertRootContext({

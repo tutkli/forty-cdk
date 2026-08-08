@@ -20,16 +20,17 @@ import {
   Collection,
   createSingleSlot,
   firstEnabledHost,
+  fortyWarn,
+  hostAriaLabel,
   injectElementSize,
+  injectPauseController,
+  injectPrefersReducedMotion,
+  injectTextDirection,
   type ListNavigationAction,
   moveIndex,
-  type WritingDirection,
-  injectPrefersReducedMotion,
-  injectPauseController,
   type PauseController,
   RovingTabindex,
-  injectTextDirection,
-  hostAriaLabel,
+  type WritingDirection,
 } from 'forty-cdk/core';
 import {
   type CarouselAlign,
@@ -249,11 +250,14 @@ export class ForCarousel implements ForCarouselContext {
           warned = false;
         } else if (!warned) {
           warned = true;
-          console.warn(
-            `[forty-cdk/carousel] ${indicators} [forCarouselIndicator] element(s) registered for ${slides} slide(s). ` +
-              `The picker assumes one indicator per slide (indicator at DOM index i targets slide i); a mismatched count ` +
-              `desynchronizes the active-indicator state. Render exactly one [forCarouselIndicator] per [forCarouselSlide].`,
-          );
+          fortyWarn({
+            code: 'FORCDK-CAROUSEL-002',
+            message: `${indicators} [forCarouselIndicator] element(s) are registered for ${slides} slide(s).`,
+            cause:
+              'The picker targets slide i from the indicator at DOM index i, so a mismatched count ' +
+              'desynchronizes the active-indicator state.',
+            fix: 'Render exactly one [forCarouselIndicator] per [forCarouselSlide].',
+          });
         }
       });
     }
@@ -408,7 +412,7 @@ export class ForCarousel implements ForCarouselContext {
    *
    * Assumes the one-indicator-per-slide mapping the rest of the picker is built
    * on: the indicator at DOM index `i` targets slide `i`. A mismatched indicator
-   * count is dev-guarded by a `console.warn` at construction.
+   * count is dev-guarded at construction by the `FORCDK-CAROUSEL-002` warning.
    */
   hasCurrentIndicator(): boolean {
     const active = this.activeIndex();

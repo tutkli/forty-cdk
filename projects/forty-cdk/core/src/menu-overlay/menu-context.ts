@@ -15,6 +15,7 @@ import type {
 } from '../keyboard-navigation/keyboard-navigation';
 import type { Point } from '../pointer/pointer-grace';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
+import { orphanContextError } from '../errors/orphan-context';
 
 /**
  * Minimal upward contract a menu uses to move between sibling menus of an
@@ -359,11 +360,12 @@ export const FOR_MENU_CONTEXT = new InjectionToken<ForMenuContext>('FOR_MENU_CON
 export function injectMenuContext(piece: string): ForMenuContext {
   const ctx = inject(FOR_MENU_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/menu] ${piece} must be used inside a [forMenu], [forDropdownMenu], [forContextMenu], [forMenubar], or [forMenuSub] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the menu root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-MENU-001',
+      piece,
+      root: '[forMenu], [forDropdownMenu], [forContextMenu], [forMenubar], or [forMenuSub]',
+      token: 'FOR_MENU_CONTEXT',
+    });
   }
   return ctx;
 }

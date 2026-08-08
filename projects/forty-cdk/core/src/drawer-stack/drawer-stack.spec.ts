@@ -126,7 +126,9 @@ describe('ForDrawerStack', () => {
     const rootHandle = stack.push(nodeOf({ host: root, parent: null }));
     stack.push(nodeOf({ host: child, parent: root }));
 
-    expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
+    expect(() => rootHandle.cleanup()).toThrow(
+      /FORCDK-DRAWER-001: A parent drawer was destroyed while a nested child drawer was still registered/,
+    );
   });
 
   it('parent → cleanup throws even for indirect descendants', async () => {
@@ -139,7 +141,9 @@ describe('ForDrawerStack', () => {
     stack.push(nodeOf({ host: child, parent: root }));
     stack.push(nodeOf({ host: grandchild, parent: child }));
 
-    expect(() => rootHandle.cleanup()).toThrow(/out-of-order cleanup/);
+    expect(() => rootHandle.cleanup()).toThrow(
+      /FORCDK-DRAWER-001: A parent drawer was destroyed while a nested child drawer was still registered/,
+    );
   });
 
   it('preserves node metadata (side, parent)', async () => {

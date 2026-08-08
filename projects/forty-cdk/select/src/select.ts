@@ -775,7 +775,12 @@ export class ForSelect<T = string>
       isRangeSelectShortcut(event, { orientation: this.orientation(), dir: this.dir() })
     ) {
       event.preventDefault();
-      throwUnsupportedVirtualizedRangeSelect({ primitive: 'select', focusModel: 'DOM-focus' });
+      throwUnsupportedVirtualizedRangeSelect({
+        primitive: 'select',
+        focusModel: 'DOM-focus',
+        collection: 'listbox',
+        alternative: 'Toggle options individually with Enter, Space, or click',
+      });
       return;
     }
     if (event.key === 'Tab') {

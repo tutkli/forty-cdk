@@ -1,6 +1,11 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningContext,
+  orphanContextError,
+  type Point,
+  unresolvedRootError,
+} from 'forty-cdk/core';
 
 /** Reason a show / hide was scheduled — `escape` and `press` bypass the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape' | 'press';
@@ -78,12 +83,12 @@ export const FOR_TOOLTIP_CONTEXT = new InjectionToken<ForTooltipContext>('FOR_TO
 export function injectTooltipContext(piece: string): ForTooltipContext {
   const ctx = inject(FOR_TOOLTIP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/tooltip] ${piece} must be used inside a [forTooltip] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forTooltip] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-TOOLTIP-001',
+      piece,
+      root: '[forTooltip]',
+      token: 'FOR_TOOLTIP_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -106,12 +111,12 @@ export function injectTooltipTriggerContext(
     if (injected) {
       return injected;
     }
-    throw new Error(
-      '[forty-cdk/tooltip] ForTooltipTrigger could not resolve its [forTooltip] root: ' +
-        'no FOR_TOOLTIP_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forTooltipTrigger]="root" with #root="forTooltip".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-TOOLTIP-002',
+      trigger: '[forTooltipTrigger]',
+      root: '[forTooltip]',
+      token: 'FOR_TOOLTIP_CONTEXT',
+      exportAs: 'forTooltip',
+    });
   });
 }

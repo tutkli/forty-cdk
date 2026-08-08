@@ -1,5 +1,7 @@
 import { InjectionToken, inject, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { type VirtualItem } from './virtualizer';
 
 /**
@@ -28,9 +30,12 @@ export const FOR_VIRTUAL_VIEWPORT_CONTEXT = new InjectionToken<ForVirtualViewpor
 export function injectVirtualViewportContext(consumer: string): ForVirtualViewportContext {
   const context = inject(FOR_VIRTUAL_VIEWPORT_CONTEXT, { optional: true });
   if (!context) {
-    throw new Error(
-      `[forty-cdk/virtualization] ${consumer} must be used inside a [forVirtualViewport].`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-VIRTUALIZATION-001',
+      piece: consumer,
+      root: '[forVirtualViewport]',
+      token: 'FOR_VIRTUAL_VIEWPORT_CONTEXT',
+    });
   }
   return context;
 }

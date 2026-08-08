@@ -1,5 +1,10 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
-import { type ListNavigationAction, type WritingDirection, type DragPreview } from 'forty-cdk/core';
+import {
+  type DragPreview,
+  type ListNavigationAction,
+  orphanContextError,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 /** A registered draggable item, as seen by its drop list. */
 export interface ForDraggableHandle {
@@ -153,7 +158,12 @@ export const FOR_DRAGGABLE_LIFT_GUARD = new InjectionToken<ForDraggableLiftGuard
 export function injectDropListContext(piece: string): ForDropListContext {
   const ctx = inject(FOR_DROP_LIST_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/drag-drop] ${piece} must be used inside a [forDropList] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-DRAG-DROP-001',
+      piece,
+      root: '[forDropList]',
+      token: 'FOR_DROP_LIST_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -203,9 +213,12 @@ export const FOR_DRAGGABLE_CONTEXT = new InjectionToken<ForDraggableContext>(
 export function injectDraggableContext(piece: string): ForDraggableContext {
   const ctx = inject(FOR_DRAGGABLE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/drag-drop] ${piece} must be used inside a [forDraggable] or [forFreeDrag] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-DRAG-DROP-002',
+      piece,
+      root: '[forDraggable] or [forFreeDrag]',
+      token: 'FOR_DRAGGABLE_CONTEXT',
+    });
   }
   return ctx;
 }

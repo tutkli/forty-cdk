@@ -2,8 +2,9 @@ import { inject, InjectionToken } from '@angular/core';
 
 import {
   type FieldSegment,
-  type SegmentHandle,
+  orphanContextError,
   type SegmentEditorContext,
+  type SegmentHandle,
   type TimeSegmentType,
 } from 'forty-cdk/core';
 
@@ -46,7 +47,12 @@ export const FOR_TIME_FIELD_CONTEXT = new InjectionToken<ForTimeFieldContext>(
 export function injectTimeFieldContext(piece: string): ForTimeFieldContext {
   const ctx = inject(FOR_TIME_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/time-field] ${piece} must be used inside a [forTimeField].`);
+    throw orphanContextError({
+      code: 'FORCDK-TIME-FIELD-001',
+      piece,
+      root: '[forTimeField]',
+      token: 'FOR_TIME_FIELD_CONTEXT',
+    });
   }
   return ctx;
 }

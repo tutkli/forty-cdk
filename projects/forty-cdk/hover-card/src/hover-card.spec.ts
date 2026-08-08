@@ -732,7 +732,9 @@ describe('ForHoverCard', () => {
       }
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
-      expect(message).toMatch(/\[forty-cdk\/hover-card\] ForHoverCardTrigger could not resolve/);
+      expect(message).toMatch(
+        /\[forty-cdk\/hover-card\] FORCDK-HOVER-CARD-002: \[forHoverCardTrigger\] could not resolve/,
+      );
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forHoverCardTrigger\]="root"/);
       expect(message).toMatch(/#root="forHoverCard"/);

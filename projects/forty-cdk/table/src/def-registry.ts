@@ -9,7 +9,7 @@ import {
   type Signal,
 } from '@angular/core';
 
-import { Collection, isUnset } from 'forty-cdk/core';
+import { Collection, fortyError, isUnset } from 'forty-cdk/core';
 
 import type {
   ForColumnDef,
@@ -252,14 +252,17 @@ export function provideForTableDefRegistry(): Provider[] {
 export function injectOwnTableDefRegistry(): TableDefRegistry {
   const registry = inject(TableDefRegistry, { optional: true });
   if (!registry) {
-    throw new Error(
-      `[forty-cdk/table] <for-table-body> found no def registry of its own. A subclass ` +
-        `declaring its own @Component replaces the providers it would have inherited, so it ` +
-        `must spread provideForTableDefRegistry() into them — but subclassing the body is not ` +
-        `a supported wrapping shape either, because a subclass inherits no template. Compose ` +
-        `<for-table-body> inside a wrapper's template instead, and give the wrapper its own ` +
-        `provideForTableDefRegistry() bound to the body's [defs].`,
-    );
+    throw fortyError({
+      code: 'FORCDK-TABLE-001',
+      message: '<for-table-body> found no def registry of its own.',
+      cause:
+        'A subclass declaring its own @Component replaces the providers it would have inherited. ' +
+        'Subclassing the body is not a supported wrapping shape anyway, because a subclass ' +
+        'inherits no template either.',
+      fix:
+        "Compose <for-table-body> inside a wrapper's template, and give the wrapper its own " +
+        "provideForTableDefRegistry() bound to the body's [defs].",
+    });
   }
   return registry;
 }
@@ -267,10 +270,14 @@ export function injectOwnTableDefRegistry(): TableDefRegistry {
 function injectTableDefRegistration(piece: string): TableDefRegistration {
   const registration = inject(TABLE_DEF_REGISTRATION, { optional: true });
   if (!registration) {
-    throw new Error(
-      `[forty-cdk/table] ${piece} must be used inside a <for-table-body>, or inside a component ` +
-        `providing provideForTableDefRegistry() whose registry is bound to a body's [defs].`,
-    );
+    throw fortyError({
+      code: 'FORCDK-TABLE-002',
+      message: `${piece} must be used inside a <for-table-body>.`,
+      cause: `No TABLE_DEF_REGISTRATION provider is visible from ${piece}.`,
+      fix:
+        `Move ${piece} inside a <for-table-body>, or into a component that provides ` +
+        "provideForTableDefRegistry() and binds that registry to a body's [defs].",
+    });
   }
   return registration;
 }
@@ -338,10 +345,14 @@ export function registerTablePlaceholderCellDefault(def: ForPlaceholderCellDefau
  */
 export function assertTableDefRegistry(registry: ForTableDefRegistry): TableDefRegistry {
   if (!(registry instanceof TableDefRegistry)) {
-    throw new Error(
-      `[forty-cdk/table] <for-table-body> [defs] must be a registry provided by ` +
-        `provideForTableDefRegistry(); received a value that is not one.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-TABLE-003',
+      message: '<for-table-body> [defs] was bound to a value that is not a library def registry.',
+      cause:
+        'The registration protocol is not public, so a hand-rolled ForTableDefRegistry has no way ' +
+        'to receive registrations.',
+      fix: 'Bind [defs] to the registry provideForTableDefRegistry() installs.',
+    });
   }
   return registry;
 }

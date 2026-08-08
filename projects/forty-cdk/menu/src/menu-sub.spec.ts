@@ -950,7 +950,9 @@ describe('ForMenuSub', () => {
       TestBed.configureTestingModule({
         providers: [provideZonelessChangeDetection()],
       });
-      expect(() => TestBed.createComponent(Orphan)).toThrow(/\[forMenuSub\] must be inside/);
+      expect(() => TestBed.createComponent(Orphan)).toThrow(
+        /FORCDK-MENU-006: \[forMenuSub\] must be used inside/,
+      );
     });
 
     it('throws when [forMenuSubTrigger] is used outside [forMenuSub]', () => {
@@ -976,7 +978,7 @@ describe('ForMenuSub', () => {
       });
       const fixture = TestBed.createComponent(Host);
       expect(() => fixture.detectChanges()).toThrow(
-        /\[forMenuSubTrigger\] must be inside a \[forMenuSub\]/,
+        /FORCDK-MENU-005: The \[forMenuSub\] holding this \[forMenuSubTrigger\] has no parent menu/,
       );
     });
   });

@@ -9,19 +9,25 @@ import {
   numberAttribute,
 } from '@angular/core';
 
-import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty-cdk/core';
+import {
+  orphanContextError,
+  TABLE_REGISTRATION_CONTEXT,
+  type TableRegistrationContext,
+} from 'forty-cdk/core';
 import { FOR_TABLE_CONTEXT, type ForTableContext } from 'forty-cdk/table';
 import { injectVirtualizer, type VirtualItem } from 'forty-cdk/virtualization';
 
 import { TableVirtualizedNavigator } from './table-virtualized-navigator';
 
-const ORPHAN_ERROR =
-  '[forty-cdk/table-virtualization] ForTableVirtualized must be used inside a [forTable] element.';
-
 function injectTableContext(): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(ORPHAN_ERROR);
+    throw orphanContextError({
+      code: 'FORCDK-TABLE-VIRTUALIZATION-001',
+      piece: 'ForTableVirtualized',
+      root: '[forTable]',
+      token: 'FOR_TABLE_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -29,7 +35,12 @@ function injectTableContext(): ForTableContext {
 function injectTableRegistration(): TableRegistrationContext {
   const registration = inject(TABLE_REGISTRATION_CONTEXT, { optional: true });
   if (!registration) {
-    throw new Error(ORPHAN_ERROR);
+    throw orphanContextError({
+      code: 'FORCDK-TABLE-VIRTUALIZATION-002',
+      piece: 'ForTableVirtualized',
+      root: '[forTable]',
+      token: 'TABLE_REGISTRATION_CONTEXT',
+    });
   }
   return registration;
 }

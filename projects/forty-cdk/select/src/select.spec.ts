@@ -2625,7 +2625,9 @@ describe('ForSelect', () => {
       }
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
-      expect(message).toMatch(/\[forty-cdk\/select\] ForSelectTrigger could not resolve/);
+      expect(message).toMatch(
+        /\[forty-cdk\/select\] FORCDK-SELECT-002: \[forSelectTrigger\] could not resolve/,
+      );
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forSelectTrigger\]="root"/);
       expect(message).toMatch(/#root="forSelect"/);
@@ -2640,7 +2642,7 @@ describe('ForSelect', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/select\] ForSelectGroupLabel must be used inside a \[forSelectGroup\] element\./,
+        /\[forty-cdk\/select\] FORCDK-SELECT-003: ForSelectGroupLabel must be used inside a \[forSelectGroup\] element\./,
       );
     });
 
@@ -2653,7 +2655,7 @@ describe('ForSelect', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/select\] ForSelectAnchor must be used inside a \[forSelect\] element\./,
+        /\[forty-cdk\/select\] FORCDK-SELECT-001: ForSelectAnchor must be used inside a \[forSelect\] element\./,
       );
     });
   });
@@ -2933,7 +2935,7 @@ describe('ForSelectIndicator', () => {
 
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/select\] ForSelectIndicator must be used inside a \[forSelectOption\] element\./,
+      /\[forty-cdk\/select\] FORCDK-SELECT-004: ForSelectIndicator must be used inside a \[forSelectOption\] element\./,
     );
   });
 
@@ -3681,7 +3683,7 @@ describe('ForSelectIndicator', () => {
       captured.some(
         (e) =>
           e instanceof Error &&
-          /\[forty-cdk\/select\] `selectionFollowsFocus` is not supported together with virtualization/.test(
+          /\[forty-cdk\/select\] FORCDK-CORE-009: `selectionFollowsFocus` is not supported together with virtualization/.test(
             e.message,
           ),
       );
@@ -3813,7 +3815,8 @@ describe('ForSelectIndicator', () => {
     const throwsUnsupported = (captured: readonly unknown[]) =>
       captured.some(
         (e) =>
-          e instanceof Error && /\[forty-cdk\/select\] Multi-select range keyboard/.test(e.message),
+          e instanceof Error &&
+          /\[forty-cdk\/select\] FORCDK-CORE-008: Multi-select range keyboard/.test(e.message),
       );
 
     it('throws in dev mode on Shift+ArrowDown in a virtualized multi-select select', async () => {
@@ -3970,7 +3973,7 @@ describe('ForSelect unwritten option value (issue #1601)', () => {
     const fixture = TestBed.createComponent(UnboundOptionHost);
 
     expect(() => fixture.detectChanges()).toThrowError(
-      /\[forty-cdk\/select\] \[forSelectOption\] has no \[value\] binding/,
+      /\[forty-cdk\/select\] FORCDK-CORE-010: \[forSelectOption\] has no \[value\] binding/,
     );
   });
 

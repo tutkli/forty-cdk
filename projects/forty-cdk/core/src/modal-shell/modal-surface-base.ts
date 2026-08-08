@@ -3,6 +3,7 @@ import { booleanAttribute, Directive, input, output, signal, type Signal } from 
 import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from '../host-attributes/host-aria';
 import { type ModalShellConfig } from './modal-shell';
 import { type VetoableEvent, type VetoableNativeEvent } from '../vetoable-event/vetoable-event';
+import { fortyError } from '../errors/errors';
 
 /**
  * Abstract base for free-floating modal-surface primitives — a directive that
@@ -139,7 +140,13 @@ export abstract class ModalSurfaceBase<Reason extends string> {
    */
   abstract readonly initialFocus: Signal<'first' | 'container'>;
 
-  protected abstract readonly errorPrefix: string;
+  /**
+   * Entry-point name the shared surface errors report under, e.g. `'dialog'`.
+   * The subclass supplies it because the shell's checks are shared while the
+   * `[forty-cdk/<scope>]` prefix a consumer reads must name the primitive they
+   * actually wrote.
+   */
+  protected abstract readonly entryPoint: string;
 
   /**
    * Emitted when the surface wants to close. Consumers wire this to flip the
@@ -228,9 +235,12 @@ export abstract class ModalSurfaceBase<Reason extends string> {
   registerBackdrop(el: HTMLElement | null): void {
     const current = this.#backdropEl();
     if (el !== null && current !== null && current !== el) {
-      throw new Error(
-        `${this.errorPrefix} Multiple backdrops inside the same surface; only one is allowed.`,
-      );
+      throw fortyError({
+        code: 'FORCDK-CORE-001',
+        scope: this.entryPoint,
+        message: 'A modal surface registered a second backdrop; only one is allowed.',
+        fix: 'Keep a single backdrop element inside the surface.',
+      });
     }
     this.#backdropEl.set(el);
   }

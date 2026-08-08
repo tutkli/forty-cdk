@@ -12,30 +12,31 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  Collection,
-  type FloatingAlign,
-  type FloatingSide,
-  FormUiControlBase,
-  injectHiddenInput,
-  type WritingDirection,
-  nextEnabledHandle,
-  createPointerSuppression,
-  type PointerSuppression,
-  defaultItemToFormValue,
-  isInArray,
-  isUnset,
-  singleSelected,
-  toggleInArray,
-  injectTextDirection,
-  ElementRegistry,
   CloseReasonState,
-  InitialFocusState,
+  Collection,
+  createPointerSuppression,
+  defaultItemToFormValue,
+  ElementRegistry,
   emitVetoableEvent,
   emitVetoableNativeEvent,
+  type FloatingAlign,
+  type FloatingSide,
+  formatFortyMessage,
+  FormUiControlBase,
+  InitialFocusState,
+  injectHiddenInput,
+  injectTextDirection,
+  isInArray,
+  isUnset,
   LabelCache,
   type LabelCacheEntry,
+  nextEnabledHandle,
+  type PointerSuppression,
+  singleSelected,
+  toggleInArray,
   type VetoableEvent,
   type VetoableNativeEvent,
+  type WritingDirection,
 } from 'forty-cdk/core';
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
@@ -369,7 +370,11 @@ export class ForCombobox<T = string>
   readonly #listSlot = this.#registry.identifiedSlot('for-combobox', 'list');
   readonly #triggerSlot = this.#registry.elementSlot();
   readonly #anchorSlot = this.#registry.anchorSlot(
-    '[forty-cdk/combobox] Multiple [forComboboxAnchor] inside the same [forCombobox]; only one is allowed.',
+    formatFortyMessage({
+      code: 'FORCDK-COMBOBOX-007',
+      message: 'A [forCombobox] registered a second [forComboboxAnchor]; only one is allowed.',
+      fix: 'Keep a single [forComboboxAnchor] per [forCombobox].',
+    }),
   );
 
   readonly inputId = this.#inputSlot.id;

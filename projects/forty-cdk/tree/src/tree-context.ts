@@ -2,8 +2,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type ListNavigationAction,
-  type WritingDirection,
+  orphanContextError,
   type RovingTabindex,
+  type WritingDirection,
 } from 'forty-cdk/core';
 
 /** A visible tree node plus its resolved parent host — the flattened list the root walks. */
@@ -206,7 +207,12 @@ export const FOR_TREE_ITEM_CONTEXT = new InjectionToken<ForTreeItemContext>(
 export function injectTreeContext(piece: string): ForTreeContext {
   const ctx = inject(FOR_TREE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/tree] ${piece} must be used inside a [forTree] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TREE-001',
+      piece,
+      root: '[forTree]',
+      token: 'FOR_TREE_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -215,9 +221,12 @@ export function injectTreeContext(piece: string): ForTreeContext {
 export function injectTreeContainerContext(piece: string): ForTreeContainerContext {
   const ctx = inject(FOR_TREE_CONTAINER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/tree] ${piece} must be used inside a [forTree] or [forTreeGroup] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-TREE-002',
+      piece,
+      root: '[forTree] or [forTreeGroup]',
+      token: 'FOR_TREE_CONTAINER_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -226,7 +235,12 @@ export function injectTreeContainerContext(piece: string): ForTreeContainerConte
 export function injectTreeItemContext(piece: string): ForTreeItemContext {
   const ctx = inject(FOR_TREE_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/tree] ${piece} must be used inside a [forTreeItem] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TREE-003',
+      piece,
+      root: '[forTreeItem]',
+      token: 'FOR_TREE_ITEM_CONTEXT',
+    });
   }
   return ctx;
 }

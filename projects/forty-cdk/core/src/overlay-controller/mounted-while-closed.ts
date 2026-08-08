@@ -1,4 +1,5 @@
 import { afterNextRender, isDevMode } from '@angular/core';
+import { fortyWarn } from '../errors/errors';
 
 /**
  * Identifies the piece in the dev-mode mounted-while-closed warning and tells
@@ -67,12 +68,15 @@ export function warnIfMountedWhileClosed(config: MountedWhileClosedConfig): void
     }
     const condition =
       typeof config.condition === 'function' ? config.condition() : config.condition;
-    console.warn(
-      `[forty-cdk/${config.primitive}] ${config.piece} is mounted while the surface is closed. ` +
-        `Presence in the DOM is the consumer's job: wrap it with \`@if (${condition})\` so it ` +
-        `unmounts on close. There is no forceMount input — a surface kept mounted while closed never ` +
-        `runs \`animate.enter\` / \`animate.leave\`, and the lifecycle it sets up on mount stays live ` +
-        `while closed. See the ${config.primitive} README.`,
-    );
+    fortyWarn({
+      code: 'FORCDK-CORE-006',
+      scope: config.primitive,
+      message: `${config.piece} is mounted while the surface is closed.`,
+      cause:
+        "Presence in the DOM is the consumer's job, and there is no forceMount input — a surface " +
+        'kept mounted while closed never runs `animate.enter` / `animate.leave`, and the lifecycle ' +
+        'it sets up on mount stays live while closed.',
+      fix: `Wrap it with \`@if (${condition})\` so it unmounts on close. See the ${config.primitive} README.`,
+    });
   });
 }

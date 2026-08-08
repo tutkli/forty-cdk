@@ -2,8 +2,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type ListNavigationAction,
-  type WritingDirection,
+  orphanContextError,
   type RovingTabindex,
+  type WritingDirection,
 } from 'forty-cdk/core';
 
 /** Activation timing for interactive-mode arrow navigation. */
@@ -245,7 +246,12 @@ export const FOR_STEPPER_ITEM_CONTEXT = new InjectionToken<ForStepperItemContext
 export function injectStepperContext(piece: string): ForStepperContext {
   const ctx = inject(FOR_STEPPER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/stepper] ${piece} must be used inside a [forStepper] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-STEPPER-001',
+      piece,
+      root: '[forStepper]',
+      token: 'FOR_STEPPER_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -253,7 +259,12 @@ export function injectStepperContext(piece: string): ForStepperContext {
 export function injectStepperItemContext(piece: string): ForStepperItemContext {
   const ctx = inject(FOR_STEPPER_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/stepper] ${piece} must be used inside a [forStepperItem] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-STEPPER-002',
+      piece,
+      root: '[forStepperItem]',
+      token: 'FOR_STEPPER_ITEM_CONTEXT',
+    });
   }
   return ctx;
 }

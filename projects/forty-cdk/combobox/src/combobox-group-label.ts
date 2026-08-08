@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { registerA11yName } from 'forty-cdk/core';
+import { orphanContextError, registerA11yName } from 'forty-cdk/core';
 import { ForComboboxGroup } from './combobox-group';
 
 /**
@@ -22,9 +22,12 @@ export class ForComboboxGroupLabel {
   constructor() {
     const group = inject(ForComboboxGroup, { optional: true });
     if (!group) {
-      throw new Error(
-        '[forty-cdk/combobox] ForComboboxGroupLabel must be used inside a [forComboboxGroup] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-COMBOBOX-005',
+        piece: 'ForComboboxGroupLabel',
+        root: '[forComboboxGroup]',
+        token: 'ForComboboxGroup',
+      });
     }
     this.id = registerA11yName(group, 'for-combobox-group-label');
   }

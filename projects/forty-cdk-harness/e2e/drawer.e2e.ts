@@ -274,11 +274,11 @@ test.describe('Drawer', () => {
     );
     const offending = errors.find(
       (msg) =>
-        msg.startsWith('[forty-cdk/drawer]') &&
+        msg.startsWith('[forty-cdk/drawer] FORCDK-DRAWER-010:') &&
         msg.includes('"200px"') &&
         msg.includes('150px') &&
         msg.includes('200px') &&
-        msg.includes('drawer dimension 300px'),
+        msg.includes('drawer dimension (300px)'),
     );
     expect(offending).toBeDefined();
   });

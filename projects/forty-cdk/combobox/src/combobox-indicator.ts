@@ -1,5 +1,7 @@
 import { Directive, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { FOR_COMBOBOX_OPTION, type ForComboboxOption } from './combobox-option';
 
 /**
@@ -40,9 +42,12 @@ export class ForComboboxIndicator {
 function injectParentOption(): ForComboboxOption {
   const option = inject(FOR_COMBOBOX_OPTION, { optional: true });
   if (!option) {
-    throw new Error(
-      '[forty-cdk/combobox] ForComboboxIndicator must be used inside a [forComboboxOption] element.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-COMBOBOX-006',
+      piece: 'ForComboboxIndicator',
+      root: '[forComboboxOption]',
+      token: 'FOR_COMBOBOX_OPTION',
+    });
   }
   return option;
 }

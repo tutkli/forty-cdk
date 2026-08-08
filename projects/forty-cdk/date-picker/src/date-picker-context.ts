@@ -1,7 +1,13 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import { type FloatingAlign, type FloatingSide, type VetoableNativeEvent } from 'forty-cdk/core';
+import {
+  type FloatingAlign,
+  type FloatingSide,
+  orphanContextError,
+  unresolvedRootError,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 
 /**
  * Coordination contract owned by `[forDatePicker]` (the root). The trigger,
@@ -150,12 +156,12 @@ export const FOR_DATE_PICKER_CONTEXT = new InjectionToken<ForDatePickerContext>(
 export function injectDatePickerContext(piece: string): ForDatePickerContext {
   const ctx = inject(FOR_DATE_PICKER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/date-picker] ${piece} must be used inside a [forDatePicker] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forDatePicker] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-DATE-PICKER-003',
+      piece,
+      root: '[forDatePicker]',
+      token: 'FOR_DATE_PICKER_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -179,12 +185,12 @@ export function injectDatePickerTriggerContext(
     if (injected) {
       return injected;
     }
-    throw new Error(
-      '[forty-cdk/date-picker] ForDatePickerTrigger could not resolve its [forDatePicker] root: ' +
-        'no FOR_DATE_PICKER_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forDatePickerTrigger]="root" with #root="forDatePicker".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-DATE-PICKER-004',
+      trigger: '[forDatePickerTrigger]',
+      root: '[forDatePicker]',
+      token: 'FOR_DATE_PICKER_CONTEXT',
+      exportAs: 'forDatePicker',
+    });
   });
 }

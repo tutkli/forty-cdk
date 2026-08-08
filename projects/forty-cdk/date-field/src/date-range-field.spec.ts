@@ -990,7 +990,7 @@ describe('ForDateRangeField', () => {
       // The segment-spec derivation raises while building the time segments the
       // granularity asks for (#1583) — observed, never swallowed.
       expect(() => renderHost(DayOnlyHost)).toThrow(
-        /\[forty-cdk\/date-adapter\] ForDateRangeField requires a time-capable DateAdapter/,
+        /\[forty-cdk\/core\] FORCDK-CORE-003: ForDateRangeField requires a time-capable DateAdapter/,
       );
     });
   });

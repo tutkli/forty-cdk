@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type WritingDirection } from 'forty-cdk/core';
+import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
 
 /**
  * One thumb registered with `ForSlider`. The handle exposes the host element
@@ -116,7 +116,12 @@ export const FOR_SLIDER_CONTEXT = new InjectionToken<ForSliderContext>('FOR_SLID
 export function injectSliderContext(piece: string): ForSliderContext {
   const ctx = inject(FOR_SLIDER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/slider] ${piece} must be used inside a [forSlider] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-SLIDER-001',
+      piece,
+      root: '[forSlider]',
+      token: 'FOR_SLIDER_CONTEXT',
+    });
   }
   return ctx;
 }

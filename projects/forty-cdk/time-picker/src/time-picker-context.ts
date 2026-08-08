@@ -5,6 +5,8 @@ import {
   type FloatingAlign,
   type FloatingSide,
   type ListboxOverlayContext,
+  orphanContextError,
+  unresolvedRootError,
   type WritingDirection,
 } from 'forty-cdk/core';
 import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
@@ -124,12 +126,12 @@ export const FOR_TIME_PICKER_CONTEXT = new InjectionToken<ForTimePickerContext>(
 export function injectTimePickerContext<D = unknown>(piece: string): ForTimePickerContext<D> {
   const ctx = inject(FOR_TIME_PICKER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/time-picker] ${piece} must be used inside a [forTimePicker] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forTimePicker] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-TIME-PICKER-001',
+      piece,
+      root: '[forTimePicker]',
+      token: 'FOR_TIME_PICKER_CONTEXT',
+    });
   }
   return ctx as unknown as ForTimePickerContext<D>;
 }
@@ -146,12 +148,12 @@ export function injectTimePickerTriggerContext<D = unknown>(
     if (injected) {
       return injected as unknown as ForTimePickerContext<D>;
     }
-    throw new Error(
-      '[forty-cdk/time-picker] ForTimePickerTrigger could not resolve its [forTimePicker] root: ' +
-        'no FOR_TIME_PICKER_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forTimePickerTrigger]="root" with #root="forTimePicker".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-TIME-PICKER-002',
+      trigger: '[forTimePickerTrigger]',
+      root: '[forTimePicker]',
+      token: 'FOR_TIME_PICKER_CONTEXT',
+      exportAs: 'forTimePicker',
+    });
   });
 }

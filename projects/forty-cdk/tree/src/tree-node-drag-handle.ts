@@ -1,5 +1,7 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
 
 /**
@@ -23,9 +25,12 @@ export class ForTreeNodeDragHandle {
   constructor() {
     const ctx = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
     if (!ctx) {
-      throw new Error(
-        '[forty-cdk/tree] [forTreeNodeDragHandle] must be used inside a [forTreeNodeDrag] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-TREE-004',
+        piece: '[forTreeNodeDragHandle]',
+        root: '[forTreeNodeDrag]',
+        token: 'FOR_TREE_NODE_DRAG_CONTEXT',
+      });
     }
     const el = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     ctx.registerHandle(el);

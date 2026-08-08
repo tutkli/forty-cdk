@@ -1,13 +1,17 @@
 import { DestroyRef, DOCUMENT, Directive, ElementRef, inject, signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
 import { ForScrollAreaScrollbar } from './scroll-area-scrollbar';
 
 function injectRequiredScrollbar(): ForScrollAreaScrollbar {
   const scrollbar = inject(ForScrollAreaScrollbar, { optional: true });
   if (!scrollbar) {
-    throw new Error(
-      '[forty-cdk/scroll-area] ForScrollAreaThumb must be used inside a [forScrollAreaScrollbar] element.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-SCROLL-AREA-002',
+      piece: 'ForScrollAreaThumb',
+      root: '[forScrollAreaScrollbar]',
+      token: 'ForScrollAreaScrollbar',
+    });
   }
   return scrollbar;
 }

@@ -412,7 +412,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
 
     it('throws when the wrapper also declares defs inside the body’s own tags', () => {
       expect(() => renderHost(LeakyScaffoldHost)).toThrow(
-        /\[forty-cdk\/table\].*declared inside its own tags are ignored/s,
+        /\[forty-cdk\/table\] FORCDK-TABLE-004:.*declared inside its own tags, which are ignored/s,
       );
     });
 
@@ -476,25 +476,25 @@ describe('ForTableBody def registration seam (#1372)', () => {
   describe('orphan defs', () => {
     it('throws for a [forColumnDef] with no reachable registry', () => {
       expect(() => renderHost(OrphanColumnHost)).toThrow(
-        /\[forty-cdk\/table\] ForColumnDef must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForColumnDef must be used inside a <for-table-body>/,
       );
     });
 
     it('throws for a [forRowDef] with no reachable registry', () => {
       expect(() => renderHost(OrphanRowHost)).toThrow(
-        /\[forty-cdk\/table\] ForRowDef must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForRowDef must be used inside a <for-table-body>/,
       );
     });
 
     it('throws for a [forColumnDragPlaceholder] with no reachable registry', () => {
       expect(() => renderHost(OrphanDragPlaceholderHost)).toThrow(
-        /\[forty-cdk\/table\] ForColumnDragPlaceholder must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForColumnDragPlaceholder must be used inside a <for-table-body>/,
       );
     });
 
     it('throws for a [forPlaceholderCellDefault] with no reachable registry', () => {
       expect(() => renderHost(OrphanPlaceholderDefaultHost)).toThrow(
-        /\[forty-cdk\/table\] ForPlaceholderCellDefault must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForPlaceholderCellDefault must be used inside a <for-table-body>/,
       );
     });
   });
@@ -564,7 +564,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
       const fixture = TestBed.createComponent(WidthOnlyDefHost);
 
       expect(() => fixture.detectChanges()).toThrowError(
-        /\[forty-cdk\/table\] \[forColumnDef\] has no \[forColumnDef\] binding/,
+        /\[forty-cdk\/table\] FORCDK-CORE-010: \[forColumnDef\] has no \[forColumnDef\] binding/,
       );
     });
   });

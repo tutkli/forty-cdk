@@ -3,8 +3,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
   type CollectionHandle,
   type ListNavigationAction,
-  type WritingDirection,
+  orphanContextError,
   type RovingTabindex,
+  type WritingDirection,
 } from 'forty-cdk/core';
 
 /**
@@ -69,9 +70,12 @@ export const FOR_TOGGLE_GROUP_CONTEXT = new InjectionToken<ForToggleGroupContext
 export function injectToggleGroupContext(piece: string): ForToggleGroupContext {
   const ctx = inject(FOR_TOGGLE_GROUP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/toggle-group] ${piece} must be used inside a [forToggleGroup] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-TOGGLE-001',
+      piece,
+      root: '[forToggleGroup]',
+      token: 'FOR_TOGGLE_GROUP_CONTEXT',
+    });
   }
   return ctx;
 }

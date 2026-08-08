@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * The coordination surface a `[forSearch]` exposes to its siblings. The
  * companion `[forSearchClear]` button reads it (through the group) to drive its
@@ -55,9 +57,12 @@ export const FOR_SEARCH_GROUP = new InjectionToken<ForSearchGroupContext>('FOR_S
 export function injectSearchGroup(piece: string): ForSearchGroupContext {
   const group = inject(FOR_SEARCH_GROUP, { optional: true });
   if (!group) {
-    throw new Error(
-      `[forty-cdk/search] ${piece} must be used inside a [forSearchGroup] that wraps a [forSearch].`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-SEARCH-001',
+      piece,
+      root: '[forSearchGroup] that wraps a [forSearch]',
+      token: 'FOR_SEARCH_GROUP',
+    });
   }
   return group;
 }

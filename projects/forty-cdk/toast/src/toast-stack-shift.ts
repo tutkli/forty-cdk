@@ -1,5 +1,7 @@
 import { isDevMode } from '@angular/core';
 
+import { fortyWarn } from 'forty-cdk/core';
+
 /**
  * Motion applied to the toasts a mutation of the stack pushes to a new
  * position. Set it on `[forToastViewport]` via `[stackShift]`, or per scope
@@ -177,11 +179,12 @@ export function createToastStackShifter(options: ToastStackShifterOptions): Toas
       return;
     }
     warnedRejected = true;
-    console.warn(
-      `[forty-cdk/toast] [stackShift] easing ${JSON.stringify(motion.easing)} was rejected: ` +
-        `${error instanceof Error ? error.message : String(error)}. The stack-shift glide is ` +
-        `skipped until it is a valid CSS easing function; the rows still reflow.`,
-    );
+    fortyWarn({
+      code: 'FORCDK-TOAST-002',
+      message: `[stackShift] easing ${JSON.stringify(motion.easing)} was rejected by the browser.`,
+      cause: error instanceof Error ? error.message : String(error),
+      fix: 'Use a valid CSS easing function. Until then the glide is skipped; the rows still reflow.',
+    });
   };
 
   const glide = (row: HTMLElement, distance: number, motion: ForToastStackShift): void => {

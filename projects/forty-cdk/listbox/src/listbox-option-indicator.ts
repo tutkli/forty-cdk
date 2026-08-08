@@ -1,5 +1,7 @@
 import { Directive, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { FOR_LISTBOX_OPTION, type ForListboxOption } from './listbox-option';
 
 /**
@@ -27,9 +29,12 @@ export class ForListboxOptionIndicator {
   constructor() {
     const parent = inject(FOR_LISTBOX_OPTION, { optional: true });
     if (!parent) {
-      throw new Error(
-        '[forty-cdk/listbox] ForListboxOptionIndicator must be used inside a [forListboxOption] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-LISTBOX-003',
+        piece: 'ForListboxOptionIndicator',
+        root: '[forListboxOption]',
+        token: 'FOR_LISTBOX_OPTION',
+      });
     }
     this.parent = parent;
   }

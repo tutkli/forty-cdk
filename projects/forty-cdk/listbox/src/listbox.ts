@@ -516,6 +516,8 @@ export class ForListbox<T = string>
       throwUnsupportedVirtualizedRangeSelect({
         primitive: 'listbox',
         focusModel: 'roving-tabindex',
+        collection: 'listbox',
+        alternative: 'Toggle options individually with Enter, Space, or click',
       });
       return;
     }

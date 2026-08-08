@@ -12,11 +12,12 @@ import {
 
 import {
   adoptHostId,
-  reflectDisabled,
-  hostLabelledBy,
-  IdGenerator,
   FOR_FIELDSET_CONTEXT,
   type ForFieldsetContext,
+  fortyWarn,
+  hostLabelledBy,
+  IdGenerator,
+  reflectDisabled,
 } from 'forty-cdk/core';
 
 /**
@@ -155,10 +156,12 @@ export class ForFieldset implements ForFieldsetContext {
     effect(() => {
       const registered = this.#legends();
       if (registered > 1) {
-        console.warn(
-          `[forty-cdk/fieldset] A [forFieldset] is labelled by a single [forFieldsetLegend], but ${registered} are registered. ` +
-            `They share one legendId, producing duplicate DOM ids and unstable aria wiring — keep one per fieldset.`,
-        );
+        fortyWarn({
+          code: 'FORCDK-FIELDSET-001',
+          message: `A [forFieldset] is labelled by a single [forFieldsetLegend], but ${registered} are registered.`,
+          cause: 'They share one legendId, producing duplicate DOM ids and unstable aria wiring.',
+          fix: 'Keep one [forFieldsetLegend] per [forFieldset].',
+        });
       }
     });
   }

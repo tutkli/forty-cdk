@@ -16,7 +16,7 @@ describe('assertRootContext', () => {
 
   it('rejects a context missing the probed member', () => {
     expect(() => assertRootContext({ ...ASSERTION, probe: () => undefined })).toThrow(
-      /\[forty-cdk\/accordion\] ForAccordionTrigger resolved a FOR_ACCORDION_CONTEXT provider that is not the \[forAccordion\] root/,
+      /\[forty-cdk\/accordion\] FORCDK-CORE-007: ForAccordionTrigger resolved a FOR_ACCORDION_CONTEXT provider that is not the \[forAccordion\] root/,
     );
   });
 
@@ -40,7 +40,7 @@ describe('assertRootContext', () => {
           throw new TypeError("Cannot read properties of undefined (reading 'setInitialFocus')");
         },
       }),
-    ).toThrow(/\[forty-cdk\/accordion\] ForAccordionTrigger resolved a/);
+    ).toThrow(/\[forty-cdk\/accordion\] FORCDK-CORE-007: ForAccordionTrigger resolved a/);
   });
 
   it('probes nothing once `ngDevMode` is cleared, as a production build does', () => {

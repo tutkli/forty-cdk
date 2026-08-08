@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type WritingDirection } from 'forty-cdk/core';
+import { orphanContextError, type WritingDirection } from 'forty-cdk/core';
 
 export type ForScrollAreaType = 'auto' | 'always' | 'scroll' | 'hover';
 export type ForScrollbarOrientation = 'horizontal' | 'vertical';
@@ -58,9 +58,12 @@ export const FOR_SCROLL_AREA_CONTEXT = new InjectionToken<ForScrollAreaContext>(
 export function injectScrollAreaContext(piece: string): ForScrollAreaContext {
   const ctx = inject(FOR_SCROLL_AREA_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/scroll-area] ${piece} must be used inside a [forScrollArea] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-SCROLL-AREA-001',
+      piece,
+      root: '[forScrollArea]',
+      token: 'FOR_SCROLL_AREA_CONTEXT',
+    });
   }
   return ctx;
 }

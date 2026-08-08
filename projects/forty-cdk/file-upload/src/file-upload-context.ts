@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * Shared state contract between the pieces of a FileUpload primitive.
  * Provided by `ForFileUpload`, consumed by `ForFileUploadInput` and
@@ -42,9 +44,12 @@ export const FOR_FILE_UPLOAD_CONTEXT = new InjectionToken<ForFileUploadContext>(
 export function injectFileUploadContext(piece: string): ForFileUploadContext {
   const ctx = inject(FOR_FILE_UPLOAD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/file-upload] ${piece} must be used inside a [forFileUpload] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-FILE-UPLOAD-001',
+      piece,
+      root: '[forFileUpload]',
+      token: 'FOR_FILE_UPLOAD_CONTEXT',
+    });
   }
   return ctx;
 }

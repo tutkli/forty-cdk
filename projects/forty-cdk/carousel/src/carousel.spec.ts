@@ -687,7 +687,7 @@ describe('ForCarousel', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/carousel\] ForCarouselViewport must be used inside a \[forCarousel\] element\./,
+        /\[forty-cdk\/carousel\] FORCDK-CAROUSEL-001: ForCarouselViewport must be used inside a \[forCarousel\] element\./,
       );
     });
 
@@ -698,7 +698,7 @@ describe('ForCarousel', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/carousel\] ForCarouselSlide must be used inside a \[forCarousel\] element\./,
+        /\[forty-cdk\/carousel\] FORCDK-CAROUSEL-001: ForCarouselSlide must be used inside a \[forCarousel\] element\./,
       );
     });
   });

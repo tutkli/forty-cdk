@@ -20,16 +20,17 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   Collection,
   createPointerDragSession,
+  decimalPlaces,
   FormUiControlBase,
+  fortyWarn,
   injectHiddenInput,
+  injectTextDirection,
   type PointerDragSession,
-  type WritingDirection,
+  roundToDecimals,
+  roundToStepPrecision,
   snapToStep,
   stepOnGrid,
-  roundToStepPrecision,
-  injectTextDirection,
-  decimalPlaces,
-  roundToDecimals,
+  type WritingDirection,
 } from 'forty-cdk/core';
 import {
   FOR_SLIDER_CONTEXT,
@@ -308,21 +309,27 @@ export class ForSlider
           warnedBounds = false;
         } else if (!warnedBounds) {
           warnedBounds = true;
-          console.warn(
-            `[forty-cdk/slider] [min]=${min} is greater than [max]=${max}. Every thumb pins to the ` +
-              `inverted bound and its aria-valuemin / aria-valuemax collapse to a single point, so the ` +
-              `slider is not operable. Set [min] <= [max].`,
-          );
+          fortyWarn({
+            code: 'FORCDK-SLIDER-002',
+            message: `[min]=${min} is greater than [max]=${max}.`,
+            cause:
+              'Every thumb pins to the inverted bound and its aria-valuemin / aria-valuemax ' +
+              'collapse to a single point, so the slider is not operable.',
+            fix: 'Set [min] <= [max].',
+          });
         }
         if (step > 0) {
           warnedStep = false;
         } else if (!warnedStep) {
           warnedStep = true;
-          console.warn(
-            `[forty-cdk/slider] [step]=${step} must be greater than 0. A non-positive step disables ` +
-              `grid snapping and makes arrow-key adjustment a no-op (each bump adds 0); a negative step ` +
-              `also inverts the [minStepsBetweenThumbs] gap. Use a positive [step].`,
-          );
+          fortyWarn({
+            code: 'FORCDK-SLIDER-003',
+            message: `[step]=${step} is not greater than 0.`,
+            cause:
+              'A non-positive step disables grid snapping and makes arrow-key adjustment a no-op ' +
+              '(each bump adds 0); a negative step also inverts the [minStepsBetweenThumbs] gap.',
+            fix: 'Use a positive [step].',
+          });
         }
       });
     }

@@ -3,6 +3,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
   assertRootContext,
   type ListNavigationAction,
+  orphanContextError,
   type WritingDirection,
 } from 'forty-cdk/core';
 
@@ -82,9 +83,12 @@ export interface RadioGroupContext extends ForRadioGroupContext {
 export function injectRadioGroupContext(piece: string): RadioGroupContext {
   const ctx = inject(FOR_RADIO_GROUP_CONTEXT, { optional: true }) as RadioGroupContext | null;
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/radio-group] ${piece} must be used inside a [forRadioGroup] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-RADIO-GROUP-001',
+      piece,
+      root: '[forRadioGroup]',
+      token: 'FOR_RADIO_GROUP_CONTEXT',
+    });
   }
   assertRootContext({
     entryPoint: 'radio-group',

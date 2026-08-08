@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type DateAdapter, type WritingDirection } from 'forty-cdk/core';
+import { type DateAdapter, orphanContextError, type WritingDirection } from 'forty-cdk/core';
 
 /** The active display mode of a `ForCalendar`. */
 export type CalendarView = 'day' | 'month' | 'year';
@@ -315,7 +315,12 @@ export const FOR_CALENDAR_CONTEXT = new InjectionToken<ForCalendarContext<unknow
 export function injectCalendarContext(piece: string): ForCalendarContext<unknown> {
   const ctx = inject(FOR_CALENDAR_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/calendar] ${piece} must be used inside a [forCalendar] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-CALENDAR-001',
+      piece,
+      root: '[forCalendar]',
+      token: 'FOR_CALENDAR_CONTEXT',
+    });
   }
   return ctx;
 }

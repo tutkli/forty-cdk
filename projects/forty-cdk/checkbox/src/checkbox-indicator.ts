@@ -1,5 +1,7 @@
 import { Directive, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { FOR_CHECKBOX, type ForCheckbox } from './checkbox';
 
 /**
@@ -26,9 +28,12 @@ export class ForCheckboxIndicator {
   constructor() {
     const parent = inject(FOR_CHECKBOX, { optional: true });
     if (!parent) {
-      throw new Error(
-        '[forty-cdk/checkbox] ForCheckboxIndicator must be used inside a [forCheckbox] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-CHECKBOX-001',
+        piece: 'ForCheckboxIndicator',
+        root: '[forCheckbox]',
+        token: 'FOR_CHECKBOX',
+      });
     }
     this.parent = parent;
   }

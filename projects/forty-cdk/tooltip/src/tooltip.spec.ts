@@ -1070,7 +1070,9 @@ describe('ForTooltip', () => {
       }
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
-      expect(message).toMatch(/\[forty-cdk\/tooltip\] ForTooltipTrigger could not resolve/);
+      expect(message).toMatch(
+        /\[forty-cdk\/tooltip\] FORCDK-TOOLTIP-002: \[forTooltipTrigger\] could not resolve/,
+      );
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forTooltipTrigger\]="root"/);
       expect(message).toMatch(/#root="forTooltip"/);
@@ -1088,7 +1090,7 @@ describe('ForTooltip', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanContent)).toThrow(
-        /\[forty-cdk\/tooltip\] ForTooltipContent must be used inside a \[forTooltip\] element\./,
+        /\[forty-cdk\/tooltip\] FORCDK-TOOLTIP-001: ForTooltipContent must be used inside a \[forTooltip\] element\./,
       );
     });
 
@@ -1104,7 +1106,7 @@ describe('ForTooltip', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanArrow)).toThrow(
-        /\[forty-cdk\/tooltip\] ForTooltipArrow must be used inside a \[forTooltip\] element\./,
+        /\[forty-cdk\/tooltip\] FORCDK-TOOLTIP-001: ForTooltipArrow must be used inside a \[forTooltip\] element\./,
       );
     });
   });

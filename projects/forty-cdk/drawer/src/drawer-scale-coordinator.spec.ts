@@ -192,7 +192,7 @@ describe('ForDrawerScaleCoordinator', () => {
     const second = makeWrapper();
     try {
       expect(() => coordinator.registerWrapper(second)).toThrow(
-        /Multiple \[forDrawerWrapper\] registered/,
+        /FORCDK-DRAWER-005: A second \[forDrawerWrapper\] registered/,
       );
     } finally {
       second.remove();

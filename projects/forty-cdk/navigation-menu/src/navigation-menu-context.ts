@@ -4,6 +4,7 @@ import {
   assertRootContext,
   type CollectionHandle,
   type ListNavigationAction,
+  orphanContextError,
   type WritingDirection,
 } from 'forty-cdk/core';
 
@@ -225,12 +226,12 @@ export function injectNavigationMenuContext(piece: string): NavigationMenuContex
     optional: true,
   }) as NavigationMenuContext | null;
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/navigation-menu] ${piece} must be used inside a [forNavigationMenu] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forNavigationMenu] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-NAVIGATION-MENU-001',
+      piece,
+      root: '[forNavigationMenu]',
+      token: 'FOR_NAVIGATION_MENU_CONTEXT',
+    });
   }
   assertRootContext({
     entryPoint: 'navigation-menu',
@@ -245,12 +246,12 @@ export function injectNavigationMenuContext(piece: string): NavigationMenuContex
 export function injectNavigationMenuItemContext(piece: string): ForNavigationMenuItemContext {
   const ctx = inject(FOR_NAVIGATION_MENU_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/navigation-menu] ${piece} must be used inside a [forNavigationMenuItem] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forNavigationMenuItem] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-NAVIGATION-MENU-002',
+      piece,
+      root: '[forNavigationMenuItem]',
+      token: 'FOR_NAVIGATION_MENU_ITEM_CONTEXT',
+    });
   }
   return ctx;
 }

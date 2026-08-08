@@ -1,6 +1,6 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type MenuActivationModality } from 'forty-cdk/core';
+import { type MenuActivationModality, unresolvedRootError } from 'forty-cdk/core';
 
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing
@@ -93,12 +93,12 @@ export function injectContextMenuContext(
     if (injected) {
       return injected;
     }
-    throw new Error(
-      '[forty-cdk/context-menu] ForContextMenuTrigger could not resolve its [forContextMenu] root: ' +
-        'no FOR_CONTEXT_MENU_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forContextMenuTrigger]="root" with #root="forContextMenu".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-CONTEXT-MENU-001',
+      trigger: '[forContextMenuTrigger]',
+      root: '[forContextMenu]',
+      token: 'FOR_CONTEXT_MENU_CONTEXT',
+      exportAs: 'forContextMenu',
+    });
   });
 }

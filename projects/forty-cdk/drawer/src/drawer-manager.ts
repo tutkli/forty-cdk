@@ -15,6 +15,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { validateCloseThreshold } from './snap-points';
 import {
   FOR_DRAWER_CONTEXT,
   type ForDrawerCloseReason,
@@ -328,10 +329,7 @@ export class ForDrawerManager extends OverlayManagerCore<ForDrawerEntry> {
     config: ForDrawerOpenConfig<D> = {},
   ): ForDrawerRef<R> {
     if (config.closeThreshold !== undefined) {
-      const ct = config.closeThreshold;
-      if (!Number.isFinite(ct) || ct < 0 || ct > 1) {
-        throw new Error(`[forty-cdk/drawer] closeThreshold must be in [0, 1], got ${ct}.`);
-      }
+      validateCloseThreshold(config.closeThreshold);
     }
 
     const { id, remove } = this.nextId();

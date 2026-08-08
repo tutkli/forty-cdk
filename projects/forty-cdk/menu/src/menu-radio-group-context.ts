@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * Coordination contract owned by `[forMenuRadioGroup]`. Radio items inject
  * it to read selection state and request a value change. Independent from
@@ -23,7 +25,12 @@ export const FOR_MENU_RADIO_GROUP_CONTEXT = new InjectionToken<ForMenuRadioGroup
 export function injectMenuRadioGroupContext(piece: string): ForMenuRadioGroupContext {
   const ctx = inject(FOR_MENU_RADIO_GROUP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/menu] ${piece} must be used inside a [forMenuRadioGroup] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-MENU-004',
+      piece,
+      root: '[forMenuRadioGroup]',
+      token: 'FOR_MENU_RADIO_GROUP_CONTEXT',
+    });
   }
   return ctx;
 }

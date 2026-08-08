@@ -74,7 +74,7 @@ export class ForDialog extends ModalSurfaceBase<ForDialogCloseReason> implements
    */
   readonly initialFocus = input<'first' | 'container'>(this.#defaults.initialFocus ?? 'first');
 
-  protected readonly errorPrefix = '[forty-cdk/dialog]';
+  protected readonly entryPoint = 'dialog';
 
   constructor() {
     // The shared modal-shell handles portal + dismissible layer (with the

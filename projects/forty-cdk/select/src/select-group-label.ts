@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { registerA11yName } from 'forty-cdk/core';
+import { orphanContextError, registerA11yName } from 'forty-cdk/core';
 import { ForSelectGroup } from './select-group';
 
 /**
@@ -23,9 +23,12 @@ export class ForSelectGroupLabel {
   constructor() {
     const group = inject(ForSelectGroup, { optional: true });
     if (!group) {
-      throw new Error(
-        '[forty-cdk/select] ForSelectGroupLabel must be used inside a [forSelectGroup] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-SELECT-003',
+        piece: 'ForSelectGroupLabel',
+        root: '[forSelectGroup]',
+        token: 'ForSelectGroup',
+      });
     }
     this.id = registerA11yName(group, 'for-select-group-label');
   }

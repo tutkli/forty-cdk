@@ -1460,7 +1460,7 @@ describe('ForTable', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/table\] ForTableHeaderRow must be used inside a \[forTable\] element\./,
+        /\[forty-cdk\/table\] FORCDK-TABLE-009: ForTableHeaderRow must be used inside a \[forTable\] element\./,
       );
     });
 
@@ -1471,7 +1471,7 @@ describe('ForTable', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/table\] ForTableRow must be used inside a \[forTable\] element\./,
+        /\[forty-cdk\/table\] FORCDK-TABLE-009: ForTableRow must be used inside a \[forTable\] element\./,
       );
     });
 
@@ -1482,7 +1482,7 @@ describe('ForTable', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/table\] ForTableHeaderCell must be used inside a \[forTable\] element\./,
+        /\[forty-cdk\/table\] FORCDK-TABLE-009: ForTableHeaderCell must be used inside a \[forTable\] element\./,
       );
     });
 
@@ -1493,7 +1493,7 @@ describe('ForTable', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/table\] ForTableCell must be used inside a \[forTable\] element\./,
+        /\[forty-cdk\/table\] FORCDK-TABLE-009: ForTableCell must be used inside a \[forTable\] element\./,
       );
     });
   });
@@ -3450,7 +3450,7 @@ describe('ForTable', () => {
 
     it('[forTableColumnLabel] outside a [forTableHeaderCell] throws a prefixed error', () => {
       expect(() => renderHost(OrphanColumnLabelHost)).toThrowError(
-        /\[forty-cdk\/table\] ForTableColumnLabel must be used inside a \[forTableHeaderCell\]/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-006: ForTableColumnLabel must be used inside a \[forTableHeaderCell\]/,
       );
     });
 

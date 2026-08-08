@@ -13,6 +13,7 @@ import { FOR_DRAG_DROP_DEFAULTS, ForDropList, type ForDragDropEvent } from 'fort
 import {
   createKeyboardDragMediator,
   createPointerDragSession,
+  fortyError,
   LiveAnnouncer,
   type PointerDragSession,
   resolveScrubReorder,
@@ -35,9 +36,14 @@ export interface ForVirtualReorderEvent {
 function injectViewport(): ForVirtualViewport {
   const viewport = inject(ForVirtualViewport, { optional: true });
   if (!viewport) {
-    throw new Error(
-      '[forty-cdk/virtual-reorder] ForVirtualReorder must be used on the same element as [forVirtualViewport].',
-    );
+    throw fortyError({
+      code: 'FORCDK-VIRTUAL-REORDER-001',
+      message: 'ForVirtualReorder is not on a [forVirtualViewport] element.',
+      cause:
+        'It reorders the viewport’s own window, so it resolves the viewport from its host rather ' +
+        'than from an ancestor.',
+      fix: 'Put [forVirtualReorder] on the same element as [forVirtualViewport].',
+    });
   }
   return viewport;
 }

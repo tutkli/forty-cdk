@@ -1,6 +1,11 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningContext,
+  orphanContextError,
+  type Point,
+  unresolvedRootError,
+} from 'forty-cdk/core';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';
@@ -61,12 +66,12 @@ export const FOR_HOVER_CARD_CONTEXT = new InjectionToken<ForHoverCardContext>(
 export function injectHoverCardContext(piece: string): ForHoverCardContext {
   const ctx = inject(FOR_HOVER_CARD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/hover-card] ${piece} must be used inside a [forHoverCard] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forHoverCard] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-HOVER-CARD-001',
+      piece,
+      root: '[forHoverCard]',
+      token: 'FOR_HOVER_CARD_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -90,12 +95,12 @@ export function injectHoverCardTriggerContext(
     if (injected) {
       return injected;
     }
-    throw new Error(
-      '[forty-cdk/hover-card] ForHoverCardTrigger could not resolve its [forHoverCard] root: ' +
-        'no FOR_HOVER_CARD_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forHoverCardTrigger]="root" with #root="forHoverCard".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-HOVER-CARD-002',
+      trigger: '[forHoverCardTrigger]',
+      root: '[forHoverCard]',
+      token: 'FOR_HOVER_CARD_CONTEXT',
+      exportAs: 'forHoverCard',
+    });
   });
 }

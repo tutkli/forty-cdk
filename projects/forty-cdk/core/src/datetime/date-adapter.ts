@@ -1,4 +1,5 @@
 import { inject, InjectionToken } from '@angular/core';
+import { fortyError } from '../errors/errors';
 
 /**
  * Pluggable, date-library-agnostic seam for `ForCalendar`. Every internal
@@ -257,11 +258,13 @@ export const FOR_DATE_ADAPTER = new InjectionToken<DateAdapter<unknown>>('FOR_DA
 export function injectDateAdapter<D>(piece: string): DateAdapter<D> {
   const adapter = inject(FOR_DATE_ADAPTER, { optional: true });
   if (!adapter) {
-    throw new Error(
-      `[forty-cdk/calendar] ${piece} requires a DateAdapter. Provide one with ` +
-        `provideInternationalizedDateAdapter() or provideNativeDateAdapter() in your ` +
-        `application or component providers.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-CORE-002',
+      message: `${piece} requires a DateAdapter, and none is provided.`,
+      fix:
+        'Add provideNativeDateAdapter() or provideInternationalizedDateAdapter() to your ' +
+        'application or component providers.',
+    });
   }
   return adapter as DateAdapter<D>;
 }
@@ -287,11 +290,16 @@ export function assertTimeCapable<D>(
     typeof adapter.getSeconds !== 'function' ||
     typeof adapter.setTime !== 'function'
   ) {
-    throw new Error(
-      `[forty-cdk/date-adapter] ${piece} requires a time-capable DateAdapter. Provide one with ` +
-        `provideNativeDateAdapter() or provideInternationalizedDateTimeAdapter() — the day-only ` +
-        `provideInternationalizedDateAdapter() (CalendarDate) cannot carry a time.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-CORE-003',
+      message: `${piece} requires a time-capable DateAdapter, and the active one is day-only.`,
+      cause:
+        'provideInternationalizedDateAdapter() supplies CalendarDate values, which carry no time ' +
+        'of day, so the adapter implements none of the time accessors.',
+      fix:
+        'Switch to provideNativeDateAdapter() or provideInternationalizedDateTimeAdapter() in the ' +
+        'providers that reach this piece.',
+    });
   }
   return adapter as TimeCapableDateAdapter<D>;
 }

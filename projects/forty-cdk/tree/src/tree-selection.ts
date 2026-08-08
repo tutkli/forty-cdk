@@ -1,6 +1,6 @@
 import { type Signal } from '@angular/core';
 
-import { moveIndex, type RovingTabindex } from 'forty-cdk/core';
+import { fortyError, moveIndex, type RovingTabindex } from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
 
 /**
@@ -198,9 +198,14 @@ export class TreeSelection {
   #resolveDescendants(value: string): readonly string[] {
     const fn = this.#deps.descendantsOf();
     if (!fn) {
-      throw new Error(
-        '[forty-cdk/tree] `cascade` requires a `descendantsOf` descriptor returning the descendant values of a node.',
-      );
+      throw fortyError({
+        code: 'FORCDK-TREE-005',
+        message: '`cascade` is enabled but no `descendantsOf` descriptor is bound.',
+        cause:
+          'Cascading a check to a subtree needs the descendant values of a node, which only the ' +
+          'consumer can supply — the tree never sees unmounted nodes.',
+        fix: 'Bind [descendantsOf] to a function returning the descendant values of a node.',
+      });
     }
     return fn(value);
   }

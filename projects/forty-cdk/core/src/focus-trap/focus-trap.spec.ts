@@ -966,7 +966,7 @@ describe('FocusTrap', () => {
         await Promise.resolve();
 
         expect(warned).toHaveLength(1);
-        expect(warned[0]).toContain('[forty-cdk/core] injectFocusTrap');
+        expect(warned[0]).toContain('[forty-cdk/core] FORCDK-CORE-004:');
         expect(warned[0]).toContain('`trap.deactivate({ returnFocus })`');
         expect(warned[0]).toContain('`DestroyRef.onDestroy`');
       });

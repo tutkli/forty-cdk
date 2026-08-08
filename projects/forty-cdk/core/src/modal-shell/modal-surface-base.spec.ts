@@ -22,7 +22,7 @@ class TestSurface extends ModalSurfaceBase<TestReason> {
   readonly returnFocus = input(true, { transform: booleanAttribute });
   readonly initialFocus = input<'first' | 'container'>('first');
 
-  protected readonly errorPrefix = '[forty-cdk/test-surface]';
+  protected readonly entryPoint = 'test-surface';
 
   constructor() {
     super();
@@ -164,7 +164,7 @@ describe('ModalSurfaceBase', () => {
   });
 
   describe('backdrop registry', () => {
-    it('throws with the subclass errorPrefix when a second backdrop is registered', async () => {
+    it("throws under the subclass's own entry point when a second backdrop is registered", async () => {
       const r = renderHost(SurfaceHost);
       await flush(r.fixture);
 
@@ -172,7 +172,7 @@ describe('ModalSurfaceBase', () => {
       const b = document.createElement('div');
       r.instance.surface()!.registerBackdrop(a);
       expect(() => r.instance.surface()!.registerBackdrop(b)).toThrow(
-        /\[forty-cdk\/test-surface\] Multiple/,
+        /\[forty-cdk\/test-surface\] FORCDK-CORE-001: /,
       );
     });
   });

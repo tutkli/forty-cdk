@@ -578,7 +578,7 @@ describe('ForSearch', () => {
 
     it('throws when [forSearchClear] is used without a [forSearchGroup]', () => {
       expect(() => renderHost(OrphanClearHost)).toThrow(
-        /\[forty-cdk\/search\] ForSearchClear must be used inside a \[forSearchGroup\]/,
+        /\[forty-cdk\/search\] FORCDK-SEARCH-001: ForSearchClear must be used inside a \[forSearchGroup\]/,
       );
     });
 

@@ -1,5 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
 import { ForTableHeaderCell } from './table-header-cell';
 
 /**
@@ -29,9 +30,12 @@ export class ForTableColumnLabel {
 
   constructor() {
     if (!this.#headerCell) {
-      throw new Error(
-        '[forty-cdk/table] ForTableColumnLabel must be used inside a [forTableHeaderCell] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-TABLE-006',
+        piece: 'ForTableColumnLabel',
+        root: '[forTableHeaderCell]',
+        token: 'ForTableHeaderCell',
+      });
     }
     this.#headerCell.registerLabel(this.#host);
     inject(DestroyRef).onDestroy(() => this.#headerCell?.unregisterLabel(this.#host));

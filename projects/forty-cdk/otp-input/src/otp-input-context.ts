@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * The coordination surface a `[forOtpInput]` exposes to its `[forOtpInputSlot]`
  * children. Each slot reads its own state through these methods, passing its
@@ -39,7 +41,12 @@ export const FOR_OTP_INPUT_CONTEXT = new InjectionToken<ForOtpInputContext>(
 export function injectOtpInputContext(piece: string): ForOtpInputContext {
   const ctx = inject(FOR_OTP_INPUT_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/otp-input] ${piece} must be used inside a [forOtpInput].`);
+    throw orphanContextError({
+      code: 'FORCDK-OTP-INPUT-001',
+      piece,
+      root: '[forOtpInput]',
+      token: 'FOR_OTP_INPUT_CONTEXT',
+    });
   }
   return ctx;
 }

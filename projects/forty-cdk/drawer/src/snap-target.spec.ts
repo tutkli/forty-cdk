@@ -63,7 +63,7 @@ describe('resolveSnapTarget', () => {
         velocity: 0,
         closeThreshold: 0.25,
       }),
-    ).toThrow(/at least one snap point/);
+    ).toThrow(/FORCDK-DRAWER-012: resolveSnapTarget received no snap points/);
   });
 
   it('does NOT dismiss when released past the threshold but a higher snap is closer', () => {

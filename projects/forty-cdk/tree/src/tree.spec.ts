@@ -1041,7 +1041,7 @@ describe('ForTree', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/tree\] ForTreeItem must be used inside a \[forTree\] element\./,
+        /\[forty-cdk\/tree\] FORCDK-TREE-001: ForTreeItem must be used inside a \[forTree\] element\./,
       );
     });
 
@@ -1054,7 +1054,7 @@ describe('ForTree', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/tree\] ForTreeGroup must be used inside a \[forTreeItem\] element\./,
+        /\[forty-cdk\/tree\] FORCDK-TREE-003: ForTreeGroup must be used inside a \[forTreeItem\] element\./,
       );
     });
   });
@@ -1567,7 +1567,7 @@ describe('ForTree', () => {
       captured.some(
         (e) =>
           e instanceof Error &&
-          /\[forty-cdk\/tree\] `selectionFollowsFocus` is not supported together with virtualization/.test(
+          /\[forty-cdk\/tree\] FORCDK-CORE-009: `selectionFollowsFocus` is not supported together with virtualization/.test(
             e.message,
           ),
       );
@@ -1728,7 +1728,8 @@ describe('ForTree', () => {
     const throwsUnsupported = (captured: readonly unknown[]) =>
       captured.some(
         (e) =>
-          e instanceof Error && /\[forty-cdk\/tree\] Multi-select range keyboard/.test(e.message),
+          e instanceof Error &&
+          /\[forty-cdk\/tree\] FORCDK-CORE-008: Multi-select range keyboard/.test(e.message),
       );
 
     it('throws in dev mode on Shift+ArrowDown in a virtualized multi-select tree', async () => {
@@ -1858,7 +1859,7 @@ describe('ForTree', () => {
       const fixture = TestBed.createComponent(UnboundItemHost);
 
       expect(() => fixture.detectChanges()).toThrowError(
-        /\[forty-cdk\/tree\] \[forTreeItem\] has no \[value\] binding/,
+        /\[forty-cdk\/tree\] FORCDK-CORE-010: \[forTreeItem\] has no \[value\] binding/,
       );
     });
 

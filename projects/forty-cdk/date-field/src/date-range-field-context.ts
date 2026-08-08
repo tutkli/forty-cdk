@@ -2,6 +2,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type FieldSegment,
+  orphanContextError,
   type SegmentEditorContext,
   type WritingDirection,
 } from 'forty-cdk/core';
@@ -67,7 +68,12 @@ export const FOR_DATE_RANGE_FIELD_SEGMENT_CONTEXT = new InjectionToken<SegmentEd
 export function injectDateRangeFieldContext(piece: string): ForDateRangeFieldContext {
   const ctx = inject(FOR_DATE_RANGE_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/date-field] ${piece} must be used inside a [forDateRangeField].`);
+    throw orphanContextError({
+      code: 'FORCDK-DATE-FIELD-002',
+      piece,
+      root: '[forDateRangeField]',
+      token: 'FOR_DATE_RANGE_FIELD_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -81,9 +87,12 @@ export function injectDateRangeFieldContext(piece: string): ForDateRangeFieldCon
 export function injectDateRangeFieldSegmentContext(piece: string): SegmentEditorContext {
   const ctx = inject(FOR_DATE_RANGE_FIELD_SEGMENT_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/date-field] ${piece} must be used inside a [forDateRangeFieldStart] or [forDateRangeFieldEnd].`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-DATE-FIELD-003',
+      piece,
+      root: '[forDateRangeFieldStart] or [forDateRangeFieldEnd]',
+      token: 'FOR_DATE_RANGE_FIELD_SEGMENT_CONTEXT',
+    });
   }
   return ctx;
 }

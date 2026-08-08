@@ -1336,7 +1336,7 @@ describe('ForListbox', () => {
         providers: [provideZonelessChangeDetection()],
       });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/listbox\] ForListboxOption must be used inside a \[forListbox\] element\./,
+        /\[forty-cdk\/listbox\] FORCDK-LISTBOX-001: ForListboxOption must be used inside a \[forListbox\] element\./,
       );
     });
   });
@@ -1487,7 +1487,7 @@ describe('ForListbox', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/listbox\] ForListboxGroupLabel must be used inside a \[forListboxGroup\] element\./,
+        /\[forty-cdk\/listbox\] FORCDK-LISTBOX-002: ForListboxGroupLabel must be used inside a \[forListboxGroup\] element\./,
       );
     });
   });
@@ -1586,7 +1586,7 @@ describe('ForListbox', () => {
       class Orphan {}
 
       expect(() => renderHost(Orphan)).toThrow(
-        /\[forty-cdk\/listbox\] ForListboxOptionIndicator must be used inside a \[forListboxOption\] element\./,
+        /\[forty-cdk\/listbox\] FORCDK-LISTBOX-003: ForListboxOptionIndicator must be used inside a \[forListboxOption\] element\./,
       );
     });
 
@@ -2352,7 +2352,7 @@ describe('ForListbox', () => {
       captured.some(
         (e) =>
           e instanceof Error &&
-          /\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported together with virtualization/.test(
+          /\[forty-cdk\/listbox\] FORCDK-CORE-009: `selectionFollowsFocus` is not supported together with virtualization/.test(
             e.message,
           ),
       );
@@ -2500,7 +2500,7 @@ describe('ForListbox', () => {
       captured.some(
         (e) =>
           e instanceof Error &&
-          /\[forty-cdk\/listbox\] Multi-select range keyboard/.test(e.message),
+          /\[forty-cdk\/listbox\] FORCDK-CORE-008: Multi-select range keyboard/.test(e.message),
       );
 
     it('throws in dev mode on Shift+ArrowDown in a virtualized multi-select listbox', async () => {
@@ -2657,7 +2657,7 @@ describe('ForListbox', () => {
       const fixture = TestBed.createComponent(UnboundOptionHost);
 
       expect(() => fixture.detectChanges()).toThrowError(
-        /\[forty-cdk\/listbox\] \[forListboxOption\] has no \[value\] binding/,
+        /\[forty-cdk\/listbox\] FORCDK-CORE-010: \[forListboxOption\] has no \[value\] binding/,
       );
     });
 

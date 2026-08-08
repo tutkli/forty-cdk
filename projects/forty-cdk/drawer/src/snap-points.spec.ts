@@ -15,14 +15,12 @@ describe('snapPointToFraction', () => {
 
   it('rejects NaN with the documented message', () => {
     expect(() => snapPointToFraction(Number.NaN, 1000)).toThrow(
-      /\[forty-cdk\/drawer\] Snap point must be a finite number, got NaN/,
+      /\[forty-cdk\/drawer\] FORCDK-DRAWER-007: A numeric snap point must be finite, and one is NaN/,
     );
   });
 
   it('rejects Infinity', () => {
-    expect(() => snapPointToFraction(Number.POSITIVE_INFINITY, 1000)).toThrow(
-      /must be a finite number/,
-    );
+    expect(() => snapPointToFraction(Number.POSITIVE_INFINITY, 1000)).toThrow(/must be finite/);
   });
 
   it('parses percent strings', () => {
@@ -42,7 +40,7 @@ describe('snapPointToFraction', () => {
 
   it('rejects malformed strings', () => {
     expect(() => snapPointToFraction('foo' as unknown as ForDrawerSnapPoint, 1000)).toThrow(
-      /must be a number, "NN%", or "NNpx"/,
+      /must be a number, an "NN%" string, or an "NNpx" string/,
     );
     expect(() => snapPointToFraction('200' as unknown as ForDrawerSnapPoint, 1000)).toThrow();
     expect(() => snapPointToFraction('px' as unknown as ForDrawerSnapPoint, 1000)).toThrow();
@@ -88,7 +86,7 @@ describe('validateSnapPointsShape', () => {
 
   it('rejects NaN entries before the monotonic check runs', () => {
     expect(() => validateSnapPointsShape([Number.NaN, 0.5])).toThrow(
-      /must be a finite number, got NaN/,
+      /must be finite, and one is NaN/,
     );
   });
 
@@ -105,7 +103,7 @@ describe('validateSnapPointsShape', () => {
   it('rejects single-entry arrays of malformed values', () => {
     expect(() =>
       validateSnapPointsShape(['bogus'] as unknown as ReadonlyArray<ForDrawerSnapPoint>),
-    ).toThrow(/must be a number, "NN%", or "NNpx"/);
+    ).toThrow(/must be a number, an "NN%" string, or an "NNpx" string/);
   });
 });
 
@@ -154,7 +152,7 @@ describe('validateSnapPositions', () => {
     expect(() =>
       validateSnapPositions(['200px', 0.5] as ReadonlyArray<ForDrawerSnapPoint>, [200, 150], 300),
     ).toThrow(
-      '[forty-cdk/drawer] snap point 0.5 at index 1 resolves to 150px which is <= snap point "200px" at 200px (drawer dimension 300px).',
+      '[forty-cdk/drawer] FORCDK-DRAWER-010: Snap point 0.5 at index 1 resolves to 150px, which is not past "200px" at 200px.',
     );
   });
 
@@ -165,7 +163,7 @@ describe('validateSnapPositions', () => {
         [100, 100],
         1000,
       ),
-    ).toThrow(/resolves to 100px which is <= snap point "100px" at 100px/);
+    ).toThrow(/resolves to 100px, which is not past "100px" at 100px/);
   });
 
   it('reports the first offending pair when multiple are out of order', () => {
@@ -176,7 +174,7 @@ describe('validateSnapPositions', () => {
         1000,
       ),
     ).toThrow(
-      '[forty-cdk/drawer] snap point 0.05 at index 1 resolves to 50px which is <= snap point 0.1 at 100px (drawer dimension 1000px).',
+      '[forty-cdk/drawer] FORCDK-DRAWER-010: Snap point 0.05 at index 1 resolves to 50px, which is not past 0.1 at 100px.',
     );
   });
 

@@ -1,5 +1,7 @@
 import { inject, InjectionToken } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * Coordination contract owned by `[forMenuGroup]` and `[forMenuRadioGroup]`.
  * `[forMenuGroupLabel]` registers its generated id so the group wires
@@ -17,9 +19,12 @@ export const FOR_MENU_GROUP_CONTEXT = new InjectionToken<ForMenuGroupContext>(
 export function injectMenuGroupContext(piece: string): ForMenuGroupContext {
   const ctx = inject(FOR_MENU_GROUP_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/menu] ${piece} must be used inside a [forMenuGroup] or [forMenuRadioGroup] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-MENU-002',
+      piece,
+      root: '[forMenuGroup] or [forMenuRadioGroup]',
+      token: 'FOR_MENU_GROUP_CONTEXT',
+    });
   }
   return ctx;
 }
