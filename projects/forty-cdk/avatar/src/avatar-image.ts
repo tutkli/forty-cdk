@@ -9,8 +9,7 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 
-import { orphanContextError } from 'forty-cdk/core';
-import { FOR_AVATAR_CONTEXT, type ForAvatarStatus } from './avatar-context';
+import { type ForAvatarStatus, injectAvatarImageContext } from './avatar-context';
 
 /**
  * Wraps an `<img>` and reports its load lifecycle to the surrounding
@@ -32,7 +31,7 @@ import { FOR_AVATAR_CONTEXT, type ForAvatarStatus } from './avatar-context';
 })
 export class ForAvatarImage {
   readonly #host = inject<ElementRef<HTMLImageElement>>(ElementRef).nativeElement;
-  readonly #parent = inject(FOR_AVATAR_CONTEXT, { optional: true });
+  readonly #parent = injectAvatarImageContext();
 
   /**
    * Emits whenever the image lifecycle transitions to a new state. Useful
@@ -42,14 +41,6 @@ export class ForAvatarImage {
   readonly loadStatusChange = output<ForAvatarStatus>();
 
   constructor() {
-    if (!this.#parent) {
-      throw orphanContextError({
-        code: 'FORCDK-AVATAR-002',
-        piece: 'ForAvatarImage',
-        root: '[forAvatar]',
-        token: 'FOR_AVATAR_CONTEXT',
-      });
-    }
     const parent = this.#parent;
     const host = this.#host;
 
@@ -87,7 +78,7 @@ export class ForAvatarImage {
   }
 
   protected status(): ForAvatarStatus {
-    return this.#parent!.status();
+    return this.#parent.status();
   }
 
   protected onLoad(): void {

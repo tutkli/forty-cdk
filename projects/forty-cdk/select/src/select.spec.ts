@@ -27,6 +27,7 @@ import {
 } from '../../src/test-utils/contract';
 import { ForField, ForFieldDescription, ForFieldError, ForLabel } from 'forty-cdk/field';
 import { ForSelect } from './select';
+import { FOR_SELECT_CONTEXT, type SelectContext } from './select-context';
 import { ForSelectAnchor } from './select-anchor';
 import { ForSelectContent } from './select-content';
 import { ForSelectGroup } from './select-group';
@@ -3980,11 +3981,13 @@ describe('ForSelect unwritten option value (issue #1601)', () => {
   it('ignores a sentinel handed to activate() or commitOnTab() instead of committing it', async () => {
     const r = renderHost(BoundHost);
     await flush(r.fixture);
-    const select = r.fixture.debugElement.query(By.directive(ForSelect)).injector.get(ForSelect);
+    const injector = r.fixture.debugElement.query(By.directive(ForSelect)).injector;
+    const select = injector.get(ForSelect);
+    const ctx = injector.get(FOR_SELECT_CONTEXT) as unknown as SelectContext<string>;
     r.instance.compareWith.mockClear();
 
     select.activate(unsetInput<string>());
-    select.commitOnTab(unsetInput<string>());
+    ctx.commitOnTab(unsetInput<string>());
     await flush(r.fixture);
 
     expect(r.instance.value()).toEqual(['apple']);

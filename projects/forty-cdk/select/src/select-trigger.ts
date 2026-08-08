@@ -1,7 +1,11 @@
 import { computed, Directive, effect, ElementRef, inject, input, type Signal } from '@angular/core';
 
 import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
-import { type ForSelectContext, injectSelectTriggerContext } from './select-context';
+import {
+  type ForSelectContext,
+  injectSelectTriggerContext,
+  type SelectContext,
+} from './select-context';
 
 /**
  * Combobox button that opens the listbox. Apply on a `<button>` so
@@ -81,7 +85,7 @@ export class ForSelectTrigger<T = unknown> {
   readonly forSelectTrigger = input<ForSelectContext<T> | ''>('');
 
   readonly #root = injectSelectTriggerContext<T>(this.forSelectTrigger);
-  protected readonly ctx: Signal<ForSelectContext<T>> = this.#root;
+  protected readonly ctx: Signal<SelectContext<T>> = this.#root;
 
   constructor() {
     const el = this.#host.nativeElement;

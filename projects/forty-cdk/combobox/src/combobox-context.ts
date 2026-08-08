@@ -95,10 +95,16 @@ export interface ForComboboxActionHandle extends CollectionHandle {
 }
 
 /**
- * Coordination contract owned by `[forCombobox]`. Input, content, options,
- * groups, separators, the empty-state directive, the clear button, and the
- * multi-mode chip pieces all inject this token to read state and delegate
- * behavior.
+ * Coordination contract owned by `[forCombobox]` — the surface a consumer
+ * reads and drives. Advanced consumers inject the token to read the selection,
+ * the query and the open state, and to move them through the root's guards
+ * (`activate` / `removeValue` / `clear` / `openMenu` / `closeMenu`).
+ *
+ * Everything the library's own pieces call — the positioning mirrors the
+ * content surface feeds to floating-ui, the ids the ARIA wiring points at, the
+ * label caches, the outside-interaction forwarders, the navigation cursors —
+ * is deliberately absent. It lives on the unexported {@link ComboboxContext},
+ * so the wiring stays refactorable after 1.0.
  *
  * The value model is always an array — single mode (`multiple=false`,
  * default) keeps 0 or 1 element, multi mode keeps any number. This mirrors
@@ -114,9 +120,9 @@ export interface ForComboboxActionHandle extends CollectionHandle {
  */
 export interface ForComboboxContext<T = unknown> {
   /**
-   * The typed query, as a read-only signal. Mutate it through
-   * `setQueryFromInput` / `clear` or the root's `[(query)]` binding — a direct
-   * write would skip the inline-completion / open-on-query side-effects.
+   * The typed query, as a read-only signal. Mutate it through `clear` or the
+   * root's `[(query)]` binding — a direct write would skip the
+   * inline-completion / open-on-query side-effects.
    */
   readonly query: Signal<string>;
   /**
@@ -145,6 +151,72 @@ export interface ForComboboxContext<T = unknown> {
   readonly pending: Signal<boolean>;
   readonly dir: Signal<WritingDirection>;
 
+  /**
+   * Registers the element the listbox is positioned against, instead of the
+   * input. The declarative `[forComboboxAnchor]` covers the common case; call
+   * this directly when the anchor element is only reachable imperatively — it
+   * lives in an ancestor component's template, so a directive placed on it would
+   * resolve DI outside this root. At most one anchor may be registered per
+   * `[forCombobox]`; a second one throws.
+   */
+  registerAnchor(el: HTMLElement): void;
+  /**
+   * Unregisters the positioning anchor, restoring the input fallback.
+   * Reference-based, so an anchor torn down inside `@if` unwinds cleanly.
+   */
+  unregisterAnchor(el: HTMLElement): void;
+
+  readonly options: Signal<readonly ForComboboxOptionHandle<T>[]>;
+
+  /**
+   * Selected entries paired with their resolved label (from the option
+   * cache) — convenient for rendering chips with `@for`. Falls back to
+   * `itemToStringLabel(value)` when no matching option is registered (and
+   * to the raw string when `T` is `string`).
+   */
+  readonly selected: Signal<readonly { value: T; label: string }[]>;
+
+  /** Id of the currently active option (drives `aria-activedescendant` on the input). */
+  readonly activeId: Signal<string | null>;
+
+  /** True when `value` includes `v` per the active equality function. */
+  isSelected(value: T): boolean;
+
+  /**
+   * Activate by handle. Single mode replaces + closes + commits label. Multi
+   * mode toggles in/out + stays open + (when `commitOnSelect`) clears the
+   * query so the user can search the next item. No-op on disabled / readonly.
+   */
+  activate(handle: ForComboboxOptionHandle<T>): void;
+
+  /** Remove a value from `value()`. Used by chip-remove and Backspace heuristics. */
+  removeValue(value: T): void;
+
+  /**
+   * Clear value and (optionally) query. Used by `[forComboboxClear]` and
+   * by the Backspace-on-empty-input heuristic. The query is reset only
+   * when `clearQuery` is true.
+   */
+  clear(clearQuery?: boolean): void;
+
+  toggle(): void;
+  openMenu(initialFocus?: ForComboboxInitialFocus): void;
+  closeMenu(reason: ForComboboxCloseReason): void;
+}
+
+/**
+ * The combobox's piece-coordination surface: everything the library's own
+ * pieces read off the root that a consumer has no call to touch — the
+ * positioning mirrors `[forComboboxContent]` feeds to floating-ui, the ids the
+ * ARIA wiring points at, the element slots, the label caches behind chip and
+ * inline-completion rendering, the navigation and activation cursors, and the
+ * outside-interaction emit forwarders `injectOverlayShell` drives.
+ *
+ * Deliberately **not** part of {@link ForComboboxContext} and never exported
+ * from `public-api.ts`: these are the members a refactor of the anatomy moves,
+ * so freezing them at 1.0 would freeze the anatomy with them.
+ */
+export interface ComboboxPieceContext<T = unknown> {
   readonly autocompleteMode: Signal<ForComboboxAutocomplete>;
   readonly openOnFocus: Signal<boolean>;
   readonly openOnQuery: Signal<boolean>;
@@ -195,20 +267,6 @@ export interface ForComboboxContext<T = unknown> {
    * exemption regardless of where the listbox paints.
    */
   readonly anchor: Signal<ReferenceElement | null>;
-  /**
-   * Registers the element the listbox is positioned against, instead of the
-   * input. The declarative `[forComboboxAnchor]` covers the common case; call
-   * this directly when the anchor element is only reachable imperatively — it
-   * lives in an ancestor component's template, so a directive placed on it would
-   * resolve DI outside this root. At most one anchor may be registered per
-   * `[forCombobox]`; a second one throws.
-   */
-  registerAnchor(el: HTMLElement): void;
-  /**
-   * Unregisters the positioning anchor, restoring the input fallback.
-   * Reference-based, so an anchor torn down inside `@if` unwinds cleanly.
-   */
-  unregisterAnchor(el: HTMLElement): void;
   readonly input: Signal<HTMLInputElement | null>;
 
   /**
@@ -229,14 +287,13 @@ export interface ForComboboxContext<T = unknown> {
   readonly list: Signal<HTMLElement | null>;
   /** True when a `[forComboboxList]` is registered (picker anatomy). */
   readonly hasList: Signal<boolean>;
-  readonly options: Signal<readonly ForComboboxOptionHandle<T>[]>;
 
   /** Multi-mode chip collection. Order follows DOM (= `value()` order in practice). */
   readonly chips: Signal<readonly ForComboboxChipHandle<T>[]>;
 
   /**
    * Non-selecting action collection (`[forComboboxAction]`), kept separate from
-   * {@link options} so an action never appears in `value()`, `aria-setsize`, or
+   * `options` so an action never appears in `value()`, `aria-setsize`, or
    * `aria-posinset`. Order follows DOM.
    */
   readonly actions: Signal<readonly ForComboboxActionHandle[]>;
@@ -262,14 +319,6 @@ export interface ForComboboxContext<T = unknown> {
    */
   moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void;
 
-  /**
-   * Selected entries paired with their resolved label (from the option
-   * cache) — convenient for rendering chips with `@for`. Falls back to
-   * `itemToStringLabel(value)` when no matching option is registered (and
-   * to the raw string when `T` is `string`).
-   */
-  readonly selected: Signal<readonly { value: T; label: string }[]>;
-
   /** Compare two items for equality. Defaults to `===`; overridden for object values. */
   readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** Render an item as a string label. Drives chip labels and `commitOnSelect` writes into the input. */
@@ -277,19 +326,17 @@ export interface ForComboboxContext<T = unknown> {
   /** Serialize an item for the hidden input's `value` attribute. */
   readonly itemToFormValue: Signal<(item: T) => string>;
 
-  /** Id of the currently active option (drives `aria-activedescendant` on the input). */
-  readonly activeId: Signal<string | null>;
   /**
    * Scroll the current activedescendant option into view. Called by
    * `[forComboboxContent]` from the positioner's first-resolved-position hook so
    * the open-time auto-highlight seed survives the content portal move (which
    * resets `scrollTop`) and lands after the surface is sized. No-op while
-   * virtualizing. See `scrollActiveOptionIntoView` on `ForCombobox`.
+   * virtualizing.
    */
   scrollActiveOptionIntoView(): void;
   /**
    * Cached entries for the currently selected values, in selection order.
-   * Consumed by the chip label resolution and `ForCombobox.selected` fallback,
+   * Consumed by the chip label resolution and the root's `selected` fallback,
    * both of which must keep resolving a selected value's label after its option
    * leaves the rendered set — including across a query rebuild that no longer
    * contains it. A selected value whose option was never observed is absent
@@ -315,8 +362,6 @@ export interface ForComboboxContext<T = unknown> {
   /** Inclusive-exclusive [start, end) range of options currently rendered when virtualizing. */
   readonly visibleRange: Signal<readonly [number, number] | undefined>;
 
-  /** True when `value` includes `v` per the active equality function. */
-  isSelected(value: T): boolean;
   /** True when `id` is the activedescendant. */
   isActive(id: string): boolean;
 
@@ -330,16 +375,6 @@ export interface ForComboboxContext<T = unknown> {
    */
   isPointerSuppressed(): boolean;
 
-  /**
-   * Activate by handle. Single mode replaces + closes + commits label. Multi
-   * mode toggles in/out + stays open + (when `commitOnSelect`) clears the
-   * query so the user can search the next item. No-op on disabled / readonly.
-   */
-  activate(handle: ForComboboxOptionHandle<T>): void;
-
-  /** Remove a value from `value()`. Used by chip-remove and Backspace heuristics. */
-  removeValue(value: T): void;
-
   /** Move the activedescendant to the first / last / next / prev enabled option. */
   navigate(direction: 'next' | 'prev' | 'first' | 'last'): void;
   /** Activate the option currently marked as activedescendant (Enter from the input). */
@@ -348,19 +383,8 @@ export interface ForComboboxContext<T = unknown> {
   /** Set the typed query. Emits inline completion / openOnQuery side-effects via the input directive. */
   setQueryFromInput(query: string): void;
 
-  /**
-   * Clear value and (optionally) query. Used by `[forComboboxClear]` and
-   * by the Backspace-on-empty-input heuristic. The query is reset only
-   * when `clearQuery` is true.
-   */
-  clear(clearQuery?: boolean): void;
-
   /** Where focus should land after the listbox opens. The input directive sets this before flipping `open`. */
   readonly initialFocus: Signal<ForComboboxInitialFocus>;
-
-  toggle(): void;
-  openMenu(initialFocus?: ForComboboxInitialFocus): void;
-  closeMenu(reason: ForComboboxCloseReason): void;
 
   /**
    * The reason of the most recent close (or `null` before any close / after a
@@ -470,17 +494,18 @@ export interface ComboboxRegistrationContext<T = unknown> {
 
 /**
  * The combobox's internal coordination surface: everything
- * {@link ForComboboxContext} publishes plus the
- * {@link ComboboxRegistrationContext} protocol.
+ * {@link ForComboboxContext} publishes plus the {@link ComboboxPieceContext}
+ * members and the {@link ComboboxRegistrationContext} protocol.
  *
  * Never exported from `public-api.ts`. It is the type the pieces read
  * {@link FOR_COMBOBOX_CONTEXT} at, so a consumer who injects that token gets the
  * read surface while the pieces get the wiring protocol. `ForCombobox` declares
- * the protocol members TS-`private`, which keeps them out of the emitted
- * `.d.ts` while `useExisting` still satisfies this contract at runtime.
+ * the members neither interface publishes TS-`private`, which keeps them out of
+ * the emitted `.d.ts` while `useExisting` still satisfies this contract at
+ * runtime.
  */
 export interface ComboboxContext<T = unknown>
-  extends ForComboboxContext<T>, ComboboxRegistrationContext<T> {}
+  extends ForComboboxContext<T>, ComboboxPieceContext<T>, ComboboxRegistrationContext<T> {}
 
 /**
  * The constant half of both resolvers' {@link assertRootContext} calls, so the

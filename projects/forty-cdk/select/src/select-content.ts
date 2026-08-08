@@ -9,7 +9,7 @@ import {
   type OverlayShellPositionerConfig,
   warnIfMountedWhileClosed,
 } from 'forty-cdk/core';
-import { type ForSelectContext, injectSelectContext } from './select-context';
+import { injectSelectContext, type SelectContext } from './select-context';
 
 /**
  * The listbox surface. Carries `role="listbox"`, is portaled to
@@ -74,7 +74,7 @@ import { type ForSelectContext, injectSelectContext } from './select-context';
 })
 export class ForSelectContent {
   readonly #select = injectSelectContext('ForSelectContent');
-  protected readonly ctx: ForSelectContext = this.#select;
+  protected readonly ctx: SelectContext = this.#select;
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly resolvedAriaLabel = hostAriaLabel(() => this.ctx.ariaLabel());
