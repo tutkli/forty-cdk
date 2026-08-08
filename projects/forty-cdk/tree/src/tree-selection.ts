@@ -1,7 +1,14 @@
 import { type Signal } from '@angular/core';
 
-import { fortyError, moveIndex, type RovingTabindex } from 'forty-cdk/core';
+import {
+  fortyError,
+  isInArray,
+  moveIndex,
+  type RovingTabindex,
+  toggleInArray,
+} from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
+import { dedupeTreeValues, treeMembership } from './tree-identity';
 
 /**
  * Wiring for {@link TreeSelection}. Bridges the engine to `ForTree`'s signal
@@ -16,6 +23,8 @@ export interface TreeSelectionDeps<T> {
   readonly selectionMode: Signal<'highlight' | 'checkbox'>;
   readonly cascade: Signal<boolean>;
   readonly descendantsOf: Signal<((value: T) => readonly T[]) | undefined>;
+  /** Equality comparator for node values, resolving every membership question. */
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   /** Flattened visible nodes (each with its resolved parent host). */
   readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
   /** Visible node handles in flattened order. */
@@ -50,17 +59,18 @@ export class TreeSelection<T> {
 
   checkState(value: T): 'true' | 'false' | 'mixed' {
     const current = this.#deps.value();
+    const equals = this.#deps.compareWith();
     if (this.#deps.selectionMode() !== 'checkbox' || !this.#deps.cascade()) {
-      return current.includes(value) ? 'true' : 'false';
+      return isInArray(current, value, equals) ? 'true' : 'false';
     }
     const descendants = this.#resolveDescendants(value);
     if (descendants.length === 0) {
-      return current.includes(value) ? 'true' : 'false';
+      return isInArray(current, value, equals) ? 'true' : 'false';
     }
-    const selected = new Set(current);
+    const selected = treeMembership(current, equals);
     let checked = 0;
     for (const d of descendants) {
-      if (selected.has(d)) {
+      if (selected(d)) {
         checked += 1;
       }
     }
@@ -74,18 +84,20 @@ export class TreeSelection<T> {
     if (this.#deps.disabled()) {
       return;
     }
+    const equals = this.#deps.compareWith();
     if (this.#deps.selectionMode() === 'checkbox' && this.#deps.cascade()) {
-      const group = new Set([value, ...this.#resolveDescendants(value)]);
+      const group = dedupeTreeValues([value, ...this.#resolveDescendants(value)], equals);
       const current = this.#deps.value();
-      const allChecked = [...group].every((v) => current.includes(v));
+      const isChecked = treeMembership(current, equals);
+      const inGroup = treeMembership(group, equals);
+      const allChecked = group.every(isChecked);
       this.#deps.setValue(
-        allChecked ? current.filter((v) => !group.has(v)) : [...new Set([...current, ...group])],
+        allChecked
+          ? current.filter((v) => !inGroup(v))
+          : dedupeTreeValues([...current, ...group], equals),
       );
     } else if (this.#deps.multiple() || this.#deps.selectionMode() === 'checkbox') {
-      const current = this.#deps.value();
-      this.#deps.setValue(
-        current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
-      );
+      this.#deps.setValue(toggleInArray(this.#deps.value(), value, equals));
     } else {
       this.#deps.setValue([value]);
     }
@@ -101,12 +113,13 @@ export class TreeSelection<T> {
     if (!current) {
       return;
     }
+    const equals = this.#deps.compareWith();
     const next = [...this.#deps.expanded()];
     for (const entry of entries) {
       if (
         entry.parentHost === current.parentHost &&
         entry.handle.expandable() &&
-        !next.includes(entry.handle.value())
+        !isInArray(next, entry.handle.value(), equals)
       ) {
         next.push(entry.handle.value());
       }
@@ -142,10 +155,8 @@ export class TreeSelection<T> {
       this.#deps.setAnchorValue(items[currentIndex]!.value());
     }
     this.#deps.roving.focusActive(target.host);
-    const value = target.value();
-    const current = this.#deps.value();
     this.#deps.setValue(
-      current.includes(value) ? current.filter((v) => v !== value) : [...current, value],
+      toggleInArray(this.#deps.value(), target.value(), this.#deps.compareWith()),
     );
   }
 
@@ -158,9 +169,10 @@ export class TreeSelection<T> {
     if (currentIndex < 0) {
       return;
     }
+    const equals = this.#deps.compareWith();
     const anchorValue = this.#deps.anchorValue();
     const anchorIndex =
-      anchorValue === null ? currentIndex : items.findIndex((i) => i.value() === anchorValue);
+      anchorValue === null ? currentIndex : items.findIndex((i) => equals(i.value(), anchorValue));
     const start = anchorIndex < 0 ? currentIndex : anchorIndex;
     const [lo, hi] = start <= currentIndex ? [start, currentIndex] : [currentIndex, start];
 
@@ -171,7 +183,7 @@ export class TreeSelection<T> {
         continue;
       }
       const value = item.value();
-      if (!next.includes(value)) {
+      if (!isInArray(next, value, equals)) {
         next.push(value);
       }
     }
@@ -190,9 +202,10 @@ export class TreeSelection<T> {
     if (values.length === 0) {
       return;
     }
+    const equals = this.#deps.compareWith();
     const current = this.#deps.value();
-    const allSelected = values.every((v) => current.includes(v));
-    this.#deps.setValue(allSelected ? [] : [...new Set([...current, ...values])]);
+    const allSelected = values.every(treeMembership(current, equals));
+    this.#deps.setValue(allSelected ? [] : dedupeTreeValues([...current, ...values], equals));
   }
 
   #resolveDescendants(value: T): readonly T[] {

@@ -161,7 +161,8 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
    */
   protected readonly _dropPosition = computed<'before' | 'after' | null>(() => {
     const indicator = this.#drag?.dropIndicator();
-    if (!indicator || indicator.anchor !== this.value()) {
+    const equals = this.#tree.compareWith() as (a: unknown, b: unknown) => boolean;
+    if (!indicator || !equals(indicator.anchor, this.value())) {
       return null;
     }
     return indicator.position;

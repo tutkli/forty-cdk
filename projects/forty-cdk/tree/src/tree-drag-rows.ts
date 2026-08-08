@@ -22,13 +22,15 @@ export interface TreeLiftContext<T = unknown> {
  *
  * @param visible The tree's currently visible nodes, in DOM order.
  * @param liftedValue The value of the node being dragged, filtered out of the result.
+ * @param equals The tree's node-value comparator.
  */
 export function buildTreeDropRows<T>(
   visible: readonly ForTreeVisibleNode<T>[],
   liftedValue: T | null,
+  equals: (a: T, b: T) => boolean,
 ): TreeDropRow<T>[] {
   return visible
-    .filter((e) => e.handle.value() !== liftedValue)
+    .filter((e) => liftedValue === null || !equals(e.handle.value(), liftedValue))
     .map((e) => {
       const rect = e.handle.host.getBoundingClientRect();
       return {
@@ -73,11 +75,12 @@ export function isInsideGrabArea(
 export function treeParentLabel<T>(
   visible: readonly ForTreeVisibleNode<T>[],
   parentValue: T | null,
+  equals: (a: T, b: T) => boolean,
 ): string | null {
   if (parentValue === null) {
     return null;
   }
-  const entry = visible.find((e) => e.handle.value() === parentValue);
+  const entry = visible.find((e) => equals(e.handle.value(), parentValue));
   return entry ? treeNodeLabel(entry) : null;
 }
 
@@ -118,18 +121,20 @@ export function resolveTreeLiftContext<T>(
  * @param visibleAfter The visible nodes after the collapse.
  * @param visibleIdx The lifted node's index before the collapse.
  * @param mode Whether the lift was started by pointer or keyboard.
+ * @param equals The tree's node-value comparator.
  */
 export function resolveLiftGap<T>(
   rows: readonly TreeDropRow<T>[],
   visibleAfter: readonly ForTreeVisibleNode<T>[],
   visibleIdx: number,
   mode: 'keyboard' | 'pointer',
+  equals: (a: T, b: T) => boolean,
 ): number {
   if (mode === 'pointer') {
     return Math.min(visibleIdx, rows.length);
   }
   const gap = rows.findIndex((r) => {
-    const nextEntry = visibleAfter.find((e) => e.handle.value() === r.value);
+    const nextEntry = visibleAfter.find((e) => equals(e.handle.value(), r.value));
     return nextEntry && visibleAfter.indexOf(nextEntry) >= visibleIdx;
   });
   return gap < 0 ? rows.length : gap;

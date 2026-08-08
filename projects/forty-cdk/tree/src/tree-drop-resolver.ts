@@ -51,11 +51,13 @@ function clamp(value: number, min: number, max: number): number {
  *   it is the running target the arrows step.
  * @param desiredLevel Caller's desired depth (pointer: nearest level to the pointer x; keyboard:
  *   the running level the Left/Right arrows adjust). Clamped to the gap's allowed band.
+ * @param equals The tree's node-value comparator.
  */
 export function resolveTreeDrop<T>(
   rows: readonly TreeDropRow<T>[],
   gapIndex: number,
   desiredLevel: number,
+  equals: (a: T, b: T) => boolean,
 ): TreeDropTarget<T> {
   if (rows.length === 0) {
     return { parentValue: null, index: 0, level: 1, siblingCount: 0 };
@@ -86,7 +88,7 @@ export function resolveTreeDrop<T>(
   let index = 0;
   let siblingCount = 0;
   for (let i = 0; i < rows.length; i++) {
-    if (!isSiblingUnder(rows, i, level, parentValue)) {
+    if (!isSiblingUnder(rows, i, level, parentValue, equals)) {
       continue;
     }
     siblingCount++;
@@ -108,6 +110,7 @@ function isSiblingUnder<T>(
   rowIndex: number,
   level: number,
   parentValue: T | null,
+  equals: (a: T, b: T) => boolean,
 ): boolean {
   const row = rows[rowIndex]!;
   if (row.level !== level) {
@@ -118,7 +121,7 @@ function isSiblingUnder<T>(
   }
   for (let j = rowIndex - 1; j >= 0; j--) {
     if (rows[j]!.level === level - 1) {
-      return rows[j]!.value === parentValue;
+      return parentValue !== null && equals(rows[j]!.value, parentValue);
     }
   }
   return parentValue === null;

@@ -16,6 +16,7 @@ import {
 import {
   Collection,
   firstEnabledHost,
+  isInArray,
   isUnset,
   type ListNavigationAction,
   resolveListNavigation,
@@ -39,6 +40,7 @@ import {
   type ForTreeVisibleNode,
 } from './tree-context';
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
+import { defaultTreeCompareWith, treeMembership } from './tree-identity';
 import { TreeSelection } from './tree-selection';
 
 type VisibleEntry<T> = ForTreeVisibleNode<T>;
@@ -110,6 +112,15 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * internal expand / collapse, never on consumer writes via `[(expanded)]`.
    */
   readonly expanded = model<readonly T[]>([]);
+
+  /**
+   * Equality comparator for node values, resolving every identity question the
+   * tree asks — selection and expansion membership, cascade descendants, the
+   * range anchor, and drag-drop drop resolution. Defaults to `===`, which is
+   * correct for the default `string` node values; supply an id-based comparator
+   * for object values: `[compareWith]="(a, b) => a.id === b.id"`.
+   */
+  readonly compareWith = input<(a: T, b: T) => boolean>(defaultTreeCompareWith);
 
   /**
    * When true, multiple nodes can be selected. Single mode (default) replaces.
@@ -243,7 +254,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   readonly items = this.#items.items;
 
   readonly #visibleEntries = computed<readonly VisibleEntry<T>[]>(() => {
-    const expanded = this.expanded();
+    const isOpen = treeMembership(this.expanded(), this.compareWith());
     const result: VisibleEntry<T>[] = [];
     const walk = (container: ForTreeContainerContext<T>, parentHost: HTMLElement | null): void => {
       for (const handle of container.items()) {
@@ -252,7 +263,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
           continue;
         }
         result.push({ handle, parentHost });
-        if (expanded.includes(value)) {
+        if (isOpen(value)) {
           const child = handle.childContainer();
           if (child) {
             walk(child, handle.host);
@@ -281,11 +292,12 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     if (selected.length === 0) {
       return null;
     }
+    const isSelected = treeMembership(selected, this.compareWith());
     for (const handle of this.#visibleHandles()) {
       if (handle.disabled()) {
         continue;
       }
-      if (selected.includes(handle.value())) {
+      if (isSelected(handle.value())) {
         return handle.host;
       }
     }
@@ -320,6 +332,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   readonly #selection = new TreeSelection<T>({
     value: this.value,
     expanded: this.expanded,
+    compareWith: this.compareWith,
     multiple: this.multiple,
     disabled: this.disabled,
     selectionMode: this.selectionMode,
@@ -402,11 +415,11 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   isExpanded(value: T): boolean {
-    return this.expanded().includes(value);
+    return isInArray(this.expanded(), value, this.compareWith());
   }
 
   isSelected(value: T): boolean {
-    return this.value().includes(value);
+    return isInArray(this.value(), value, this.compareWith());
   }
 
   /**
@@ -435,12 +448,13 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       return;
     }
     const current = this.expanded();
-    const has = current.includes(value);
+    const equals = this.compareWith();
+    const has = isInArray(current, value, equals);
     if (open && !has) {
       this.expanded.set([...current, value]);
     } else if (!open && has) {
       this.#relocateActiveOnCollapse(value);
-      this.expanded.set(current.filter((v) => v !== value));
+      this.expanded.set(current.filter((v) => !equals(v, value)));
     }
   }
 
@@ -463,7 +477,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
       return;
     }
     const visible = this.#visibleEntries();
-    const collapsing = visible.find((e) => e.handle.value() === value);
+    const equals = this.compareWith();
+    const collapsing = visible.find((e) => equals(e.handle.value(), value));
     if (!collapsing) {
       return;
     }
@@ -609,8 +624,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
     const items = this.#items.items();
     if (items.length === 0) return;
     const ordered = [...items].sort((a, b) => (a.itemIndex() ?? 0) - (b.itemIndex() ?? 0));
-    const value = this.value();
-    const selectedFirst = ordered.find((h) => !h.disabled() && value.includes(h.value()));
+    const isSelected = treeMembership(this.value(), this.compareWith());
+    const selectedFirst = ordered.find((h) => !h.disabled() && isSelected(h.value()));
     const target = selectedFirst ?? ordered.find((h) => !h.disabled());
     if (target) this.#setActiveId(target.id());
   }

@@ -60,13 +60,19 @@ export interface ForTreeItemHandle<T = unknown> {
  * Generic over the node value type. The contract itself defaults to `unknown`,
  * which is how the token is declared; `ForTree<T = string>` instantiates it at
  * its own `T`, the one type that keys `[(value)]`, `[(expanded)]` and
- * `[forTreeItem][value]`. Node identity is resolved by `===`.
+ * `[forTreeItem][value]`. Node identity is resolved by {@link ForTreeContext.compareWith}.
  */
 export interface ForTreeContext<T = unknown> {
   /** Selected node values. Single mode keeps the array at length <= 1. */
   readonly value: Signal<readonly T[]>;
   /** Open (expanded) parent node values. Always multi — no single mode. */
   readonly expanded: Signal<readonly T[]>;
+  /**
+   * Equality comparator for node values, resolving every identity question the
+   * tree asks — selection and expansion membership, cascade descendants, the
+   * range anchor, and drag-drop drop resolution. Defaults to `===`.
+   */
+  readonly compareWith: Signal<(a: T, b: T) => boolean>;
   readonly multiple: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
