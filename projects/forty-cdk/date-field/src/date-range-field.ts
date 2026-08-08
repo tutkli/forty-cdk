@@ -100,7 +100,9 @@ export class ForDateRangeField<D>
   readonly #defaults = inject(FOR_DATE_RANGE_FIELD_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangeField');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangeField', {
+    scope: 'date-field',
+  });
 
   /**
    * Two-way bindable committed date range, or `null` while either endpoint is
@@ -225,6 +227,7 @@ export class ForDateRangeField<D>
       source: this.#composer.startSource,
       onCommit: () => this.#composer.recompose(),
       piece: 'ForDateRangeField',
+      scope: 'date-field',
     });
     this.#endEngine = new DateFieldEngine<D>({
       adapter: this.adapter,
@@ -241,6 +244,7 @@ export class ForDateRangeField<D>
       source: this.#composer.endSource,
       onCommit: () => this.#composer.recompose(),
       piece: 'ForDateRangeField',
+      scope: 'date-field',
     });
     this.#startContext = this.#composer.makeEndpointContext(this.#startEngine, 'start');
     this.#endContext = this.#composer.makeEndpointContext(this.#endEngine, 'end');

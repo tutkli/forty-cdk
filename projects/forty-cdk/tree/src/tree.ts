@@ -665,11 +665,18 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     }
   }
 
+  /**
+   * The shortcut list is the trio `#isMultiSelectShortcut` detects, which is
+   * also the trio `[forTreeItem]` implements on the non-virtualized path — the
+   * tree spends `Ctrl+Shift+Home/End` on a plain focus move in both, so naming
+   * it here would report a restriction virtualization does not impose.
+   */
   #throwUnsupportedVirtualizedMultiSelect(): void {
     throwUnsupportedVirtualizedRangeSelect({
       primitive: 'tree',
       focusModel: 'roving-tabindex',
       collection: 'tree',
+      shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A',
       alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
     });
   }

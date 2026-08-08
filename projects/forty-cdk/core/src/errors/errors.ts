@@ -53,9 +53,11 @@ function scopeOf(code: string): string {
  * consumer skimming a stack trace, and a search for the code, both land on it.
  * `Cause` and `Fix` are appended only when supplied.
  *
- * Exposed separately from {@link fortyError} for the two seams that take a
- * pre-built message string from their caller (`AnchorSlot`'s duplicate-anchor
- * guard); prefer `fortyError` / `fortyWarn` everywhere else.
+ * Exposed separately from {@link fortyError} for the one seam that takes a
+ * pre-built message string from its caller — `AnchorSlot`'s duplicate-anchor
+ * guard, reached by Combobox, Select and TimePicker, each of which owns the
+ * `FORCDK-*` code for its own anchor. Prefer `fortyError` / `fortyWarn`
+ * everywhere else.
  */
 export function formatFortyMessage(spec: FortyMessageSpec): string {
   const scope = spec.scope ?? scopeOf(spec.code);

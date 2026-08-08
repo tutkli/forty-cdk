@@ -12,6 +12,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   assertTimeCapable,
+  formatFortyMessage,
   injectDateAdapter,
   type TimeCapableDateAdapter,
   IdGenerator,
@@ -83,8 +84,9 @@ export class ForTimePicker<D>
    * day-only.
    */
   readonly adapter: TimeCapableDateAdapter<D> = assertTimeCapable(
-    injectDateAdapter<D>('ForTimePicker'),
+    injectDateAdapter<D>('ForTimePicker', { scope: 'time-picker' }),
     'ForTimePicker',
+    { scope: 'time-picker' },
   );
 
   /**
@@ -271,8 +273,11 @@ export class ForTimePicker<D>
     ForTimePickerCloseReason
   >(this.#idGen, {
     idPrefix: 'for-time-picker',
-    multipleAnchorsError:
-      '[forty-cdk/time-picker] Multiple [forTimePickerAnchor] inside the same [forTimePicker]; only one is allowed.',
+    multipleAnchorsError: formatFortyMessage({
+      code: 'FORCDK-TIME-PICKER-003',
+      message: 'A [forTimePicker] registered a second [forTimePickerAnchor]; only one is allowed.',
+      fix: 'Keep a single [forTimePickerAnchor] per [forTimePicker].',
+    }),
     defaultInitialFocus: 'selected',
     effectiveDisabled: this.effectiveDisabled,
     setOpen: (open) => this.open.set(open),

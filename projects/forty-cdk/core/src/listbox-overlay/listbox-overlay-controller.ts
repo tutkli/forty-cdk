@@ -59,7 +59,12 @@ export interface ListboxOverlayControllerDeps<
 > {
   /** Id-generator prefix base, e.g. `'for-select'` (suffixed with `-trigger` / `-content`). */
   readonly idPrefix: string;
-  /** Full `[forty-cdk/<primitive>]`-prefixed error thrown when a second anchor registers. */
+  /**
+   * Message thrown when a second anchor registers. Pass `formatFortyMessage(…)`
+   * — the `FORCDK-*` code belongs to the primitive that owns the anchor, so the
+   * caller supplies the whole message rather than a prefix this shared
+   * controller would have to build by hand.
+   */
   readonly multipleAnchorsError: string;
   /** Default initial-focus target when none is set explicitly. */
   readonly defaultInitialFocus: Focus;

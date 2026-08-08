@@ -110,7 +110,9 @@ export class ForDatePicker<D>
   readonly #defaults = inject(FOR_DATE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker', {
+    scope: 'date-picker',
+  });
 
   readonly triggerId = signal(this.idGen.next('for-date-picker-trigger'));
   readonly contentId = signal(this.idGen.next('for-date-picker-content'));
@@ -324,6 +326,6 @@ export class ForDatePicker<D>
 
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
-    return assertTimeCapable(this.adapter, 'ForDatePicker');
+    return assertTimeCapable(this.adapter, 'ForDatePicker', { scope: 'date-picker' });
   }
 }

@@ -517,6 +517,7 @@ export class ForListbox<T = string>
         primitive: 'listbox',
         focusModel: 'roving-tabindex',
         collection: 'listbox',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
         alternative: 'Toggle options individually with Enter, Space, or click',
       });
       return;

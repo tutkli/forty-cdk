@@ -254,12 +254,23 @@ export const FOR_DATE_ADAPTER = new InjectionToken<DateAdapter<unknown>>('FOR_DA
  * primitive-prefixed error when no adapter has been provided.
  *
  * @param piece Name of the calling directive, used in the error message.
+ * @param options `scope` is the entry point the error reports under, e.g.
+ *   `'date-field'`. Omit it from shared machinery that does not know one — the
+ *   check then reports under `[forty-cdk/core]` and `piece` carries the
+ *   attribution alone. The type stays inline on purpose: a named interface here
+ *   would be a core symbol reached from a blessed public signature, so it would
+ *   have to be published from `forty-cdk/shared` and carry that guarantee
+ *   forever, for one optional string.
  */
-export function injectDateAdapter<D>(piece: string): DateAdapter<D> {
+export function injectDateAdapter<D>(
+  piece: string,
+  options?: { readonly scope?: string },
+): DateAdapter<D> {
   const adapter = inject(FOR_DATE_ADAPTER, { optional: true });
   if (!adapter) {
     throw fortyError({
       code: 'FORCDK-CORE-002',
+      scope: options?.scope,
       message: `${piece} requires a DateAdapter, and none is provided.`,
       fix:
         'Add provideNativeDateAdapter() or provideInternationalizedDateAdapter() to your ' +
@@ -279,10 +290,13 @@ export function injectDateAdapter<D>(piece: string): DateAdapter<D> {
  *
  * @param adapter The active adapter, typically from {@link injectDateAdapter}.
  * @param piece Name of the calling directive, used in the error message.
+ * @param options `scope` is the entry point the error reports under — same
+ *   contract, and same inline-type reasoning, as {@link injectDateAdapter}.
  */
 export function assertTimeCapable<D>(
   adapter: DateAdapter<D>,
   piece: string,
+  options?: { readonly scope?: string },
 ): TimeCapableDateAdapter<D> {
   if (
     typeof adapter.getHours !== 'function' ||
@@ -292,6 +306,7 @@ export function assertTimeCapable<D>(
   ) {
     throw fortyError({
       code: 'FORCDK-CORE-003',
+      scope: options?.scope,
       message: `${piece} requires a time-capable DateAdapter, and the active one is day-only.`,
       cause:
         'provideInternationalizedDateAdapter() supplies CalendarDate values, which carry no time ' +

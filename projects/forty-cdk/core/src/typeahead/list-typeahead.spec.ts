@@ -60,6 +60,7 @@ describe('throwUnsupportedVirtualizedRangeSelect', () => {
         primitive: 'listbox',
         focusModel: 'roving-tabindex',
         collection: 'listbox',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
         alternative: 'Toggle options individually with Enter, Space, or click',
       }),
     ).toThrow(/^\[forty-cdk\/listbox\] FORCDK-CORE-008: Multi-select range keyboard/);
@@ -71,6 +72,7 @@ describe('throwUnsupportedVirtualizedRangeSelect', () => {
         primitive: 'select',
         focusModel: 'DOM-focus',
         collection: 'listbox',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
         alternative: 'Toggle options individually with Enter, Space, or click',
       }),
     ).toThrow(/Fix: Toggle options individually .*non-virtualized DOM-focus listbox/s);
@@ -82,9 +84,32 @@ describe('throwUnsupportedVirtualizedRangeSelect', () => {
         primitive: 'tree',
         focusModel: 'roving-tabindex',
         collection: 'tree',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A',
         alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
       }),
     ).toThrow(/Fix: Use `selectionMode="checkbox"`.*non-virtualized roving-tabindex tree/s);
+  });
+
+  it('names only the shortcuts the caller detects, so the tree omits Ctrl+Shift+Home/End', () => {
+    const message = (shortcuts: string): string => {
+      try {
+        throwUnsupportedVirtualizedRangeSelect({
+          primitive: 'tree',
+          focusModel: 'roving-tabindex',
+          collection: 'tree',
+          shortcuts,
+          alternative: 'Use `selectionMode="checkbox"`',
+        });
+      } catch (error) {
+        return (error as Error).message;
+      }
+      return '';
+    };
+
+    expect(message('Shift+Arrow, Shift+Space, Ctrl/Cmd+A')).not.toContain('Ctrl+Shift+Home/End');
+    expect(message('Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End')).toContain(
+      'Ctrl+Shift+Home/End',
+    );
   });
 });
 

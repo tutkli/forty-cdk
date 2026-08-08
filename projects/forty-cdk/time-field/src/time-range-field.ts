@@ -110,8 +110,9 @@ export class ForTimeRangeField<D>
    * (shared with `ForCalendar`). Throws when the provided adapter is day-only.
    */
   readonly adapter: TimeCapableDateAdapter<D> = assertTimeCapable(
-    injectDateAdapter<D>('ForTimeRangeField'),
+    injectDateAdapter<D>('ForTimeRangeField', { scope: 'time-field' }),
     'ForTimeRangeField',
+    { scope: 'time-field' },
   );
 
   /**

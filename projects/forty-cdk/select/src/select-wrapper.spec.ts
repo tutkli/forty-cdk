@@ -67,7 +67,7 @@ describe('ForSelect subclass wrapper (#1593)', () => {
       .injector.get(WrapperSelect);
 
     expect(() => wrapper.overlay.registerAnchor(document.createElement('div'))).toThrowError(
-      '[forty-cdk/select] Multiple [forSelectAnchor] inside the same [forSelect]; only one is allowed.',
+      /\[forty-cdk\/select\] FORCDK-SELECT-005: A \[forSelect\] registered a second \[forSelectAnchor\]/,
     );
   });
 });

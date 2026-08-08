@@ -890,7 +890,7 @@ describe('ForTimeRangeField', () => {
       class DayOnlyHost {}
 
       expect(() => renderHost(DayOnlyHost)).toThrow(
-        /\[forty-cdk\/core\] FORCDK-CORE-003: ForTimeRangeField requires a time-capable DateAdapter/,
+        /\[forty-cdk\/time-field\] FORCDK-CORE-003: ForTimeRangeField requires a time-capable DateAdapter/,
       );
     });
   });

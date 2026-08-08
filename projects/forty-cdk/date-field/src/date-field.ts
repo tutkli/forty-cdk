@@ -92,7 +92,9 @@ export class ForDateField<D>
   readonly #defaults = inject(FOR_DATE_FIELD_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateField');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateField', {
+    scope: 'date-field',
+  });
 
   /**
    * Two-way bindable entered date, or `null` while any segment is empty.
@@ -198,6 +200,7 @@ export class ForDateField<D>
       source: this.value,
       onCommit: (next) => this.value.set(next),
       piece: 'ForDateField',
+      scope: 'date-field',
     });
     this.delegate = this.#engine;
     this.segments = this.#engine.segments;

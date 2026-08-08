@@ -96,7 +96,9 @@ export class ForDateRangePicker<D>
   readonly #defaults = inject(FOR_DATE_RANGE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangePicker');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangePicker', {
+    scope: 'date-picker',
+  });
 
   readonly triggerId = signal(this.idGen.next('for-date-range-picker-trigger'));
   readonly contentId = signal(this.idGen.next('for-date-range-picker-content'));

@@ -2795,7 +2795,7 @@ describe('ForSelect', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoAnchorsHost);
       expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/select\] Multiple \[forSelectAnchor\]/,
+        /\[forty-cdk\/select\] FORCDK-SELECT-005: A \[forSelect\] registered a second \[forSelectAnchor\]/,
       );
     });
   });

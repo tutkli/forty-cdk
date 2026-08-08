@@ -120,13 +120,13 @@ Fix: Move ForDialogTitle inside a [forDialog] element, declaring any ng-template
 
 **Never build that string by hand.** `core/src/errors/` owns the layout, and everything the library reports goes through it:
 
-| Helper                      | For                                                                                                            |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `fortyError(spec)`          | returns the `Error` a call site throws — the general case                                                      |
-| `fortyWarn(spec)`           | a recoverable mistake, same layout, **dev-gated inside the helper**                                            |
-| `orphanContextError(spec)`  | a piece that resolved no coordination context — the library's most common report, ~70 call sites               |
-| `unresolvedRootError(spec)` | an overlay trigger that resolved its root through neither DI nor its own input — 9 call sites                  |
-| `formatFortyMessage(spec)`  | the raw string, for the one seam that takes a pre-built message from its caller (`ElementRegistry.anchorSlot`) |
+| Helper                      | For                                                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fortyError(spec)`          | returns the `Error` a call site throws — the general case                                                                                                 |
+| `fortyWarn(spec)`           | a recoverable mistake, same layout, **dev-gated inside the helper**                                                                                       |
+| `orphanContextError(spec)`  | a piece that resolved no coordination context — the library's most common report, ~70 call sites                                                          |
+| `unresolvedRootError(spec)` | an overlay trigger that resolved its root through neither DI nor its own input — 9 call sites                                                             |
+| `formatFortyMessage(spec)`  | the raw string, for the one seam that takes a pre-built message from its caller (`ElementRegistry.anchorSlot`, reached by Combobox / Select / TimePicker) |
 
 Six rules govern a new message:
 
@@ -134,10 +134,19 @@ Six rules govern a new message:
 - **The area is the entry point the consumer imported from**, kebab-case, upper-cased into the code: `forty-cdk/date-picker` → `FORCDK-DATE-PICKER-003`. The `[forty-cdk/<scope>]` prefix is **derived** from it, so there is one field to get right rather than two that can disagree.
 - **`FORCDK-CORE-*` is for infrastructure that is genuinely no primitive's** — the root-context guard, the unset-input assert, the modal shell's backdrop registry, the virtualization/selection incompatibilities. Do not invent an area to make the scheme look tidier.
 - **A shared check reports under the primitive that ran it**, via the `scope` override. `assertRootContext` is `FORCDK-CORE-007` and prints `[forty-cdk/accordion]`; the code says which check fired, the prefix says which primitive the consumer wrote. Two modules in core instead carry a _primitive's_ area because that is whose concern they are (`drawer-stack` → `DRAWER`, `menu-overlay/menu-context` → `MENU`); both are named conditions in the guard, not a blanket licence.
+
+  **The override is a hand-typed entry-point name, so it is the one field the derived prefix did not remove** — and a typo in it prints `[forty-cdk/date_picker]` with nothing to notice. Every literal one is therefore checked against the set of directories the scan already walks, in the five shapes they are written in (`scope:` / `primitive:` / `entryPoint:` properties, an `entryPoint = '…'` field on a `ModalSurfaceBase` subclass, and `assertInputBound`'s second argument). A scope reaching a helper some other way is uncovered, and that is a known gap rather than a closed one. **Two blessed helpers take the override as an option rather than a positional string** — `injectDateAdapter(piece, { scope })` and `assertTimeCapable(adapter, piece, { scope })`, with an inline type so no new core symbol has to be blessed for one optional field — and both fall back to `core` for a caller that genuinely does not know an entry point: `serializeISODate`, whose branch is unreachable until `DateFieldEngine.specs` has already thrown the same code under the field's own scope.
+
 - **`Cause` and `Fix` are omitted when they would restate the message.** A longer error is not a better one. `Cause` earns its place when the mechanism is not evident (which token resolved nothing, why a lazy fold is empty, why an ordering valid on paper collapses at this size); `Fix` when there is a concrete action. Several messages ship with a `Fix` and no `Cause`, and that is the intended shape, not an omission.
 - **The gating does not change because the formatting did.** An orphan context throws unconditionally — without it the consumer gets a bare `TypeError` one line later in production — while a pure assertion stays gated on `isDevMode()` inside its own `assert*` / `throw*` helper, per the section above. `fortyError` deliberately does not gate; `fortyWarn` does, because a warning's whole audience is the developer.
 
-The roster is **derived, never declared** — a hand-written list of a hundred-plus codes is the shape that rots. [`src/lib/error-codes.spec.ts`](../../projects/forty-cdk/src/lib/error-codes.spec.ts) scans library source and fails on a malformed code, a duplicated one, an area that does not name its entry point, an emitter call with no code, a hand-built `[forty-cdk/…]` string, and a bare `console.warn`. It strips comments before scanning, for the reason the marker rules learned the hard way: a JSDoc example quoting a real code is prose, and counting it would report the helper as a second claimant of the code it illustrates. `grep -rn "FORCDK-" projects/forty-cdk` is the complete ledger.
+The roster is **derived, never declared** — a hand-written list of a hundred-plus codes is the shape that rots. [`src/lib/error-codes.spec.ts`](../../projects/forty-cdk/src/lib/error-codes.spec.ts) scans library source and fails on a malformed code, a duplicated one, an area that does not name its entry point, a scope override that names no entry point, an emitter call with no code, a hand-built `[forty-cdk/…]` string, and a bare `console.warn`. It strips comments before scanning, for the reason the marker rules learned the hard way: a JSDoc example quoting a real code is prose, and counting it would report the helper as a second claimant of the code it illustrates. `grep -rn "FORCDK-" projects/forty-cdk` is the complete ledger.
+
+Three of those cases are worth reading before trusting the guard, because each was a way it could have reported nothing:
+
+- **The emitter scan reads a bounded body window, so the bound is pinned against the raw call count.** At 400 characters it silently skipped 18 of 128 calls — every one a message carrying both a `cause` and a `fix`, which is exactly where a field is easiest to forget — and the vacuum check (`> 100`, 110 at the time) could not tell. A window that is too small does not fail, it stops looking; the equality is what makes that loud.
+- **Duplicate detection counts every site, not the set of files.** Two distinct failures sharing a code inside one module are the same defect for a consumer as two across modules, and deduping by file hid that half.
+- **The hand-built-prefix case reports any `[forty-cdk/` literal outside the layout module**, not only one inside a `throw new Error(`. The throw-shaped version could not see the two that survived the first migration pass, because both were passed as an _argument_ to a core seam (`multipleAnchorsError`) and thrown one file away — with no code at all.
 
 Nothing here reserves a URL. A future `/errors/FORCDK-DIALOG-001` page can key off the same codes without touching a call site, which is why no message embeds a link today.
 
