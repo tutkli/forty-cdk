@@ -5,17 +5,23 @@
  * A `_`-prefixed member is internal, and `protected` is how the library states
  * that to the compiler rather than to a reader — every other one in the emit
  * says it that way. The raw field of an aliased input is the single member that
- * cannot: `strictInputAccessModifiers` (which `strictTemplates` turns on by
- * default, so every modern consumer has it) makes the template type-check block
- * assign to the **field**, not to the alias, so `protected readonly _dirInput`
- * fails a consumer's `[dir]="…"` binding with TS2445. Narrowing the visibility
- * would not even shrink the emit: TypeScript writes `protected` members into the
- * `.d.ts` with their full type, and only TS-`private` collapses to a typeless
- * placeholder.
+ * cannot, and the reason that holds unconditionally is that narrowing it buys
+ * nothing: TypeScript writes `protected` members into the `.d.ts` with their
+ * full type, and only TS-`private` collapses to a typeless placeholder. What it
+ * does buy is a break. `strictInputAccessModifiers` makes the template
+ * type-check block assign to the **field**, not to the alias, so a
+ * `protected readonly _dirInput` fails a consumer's `[dir]="…"` binding with
+ * TS2445. That option is **not** implied by `strictTemplates` — it is the one
+ * member of the family that stays `false` when `strictTemplates` is `true`, so a
+ * consumer opts into it; this repo does, explicitly beside `strictTemplates` in
+ * the root `tsconfig.json`, which is why the sweep turns the library's own specs
+ * red. Opt-in is what makes it worse rather than better: the sweep would break
+ * exactly the consumers who asked for the strictest checking, and hand the rest
+ * an identical `.d.ts`.
  *
- * So the 56 fields below are public because Angular requires it, and the point
- * of the roster is that they are a 1.0 commitment made **by decision** rather
- * than by default. `check-alias-input-surface.mjs` reads it in both directions:
+ * So the 56 fields below stay public, and the point of the roster is that they
+ * are a 1.0 commitment made **by decision** rather than by default.
+ * `check-alias-input-surface.mjs` reads it in both directions:
  * it fails when a new `_`-prefixed public member appears without an entry here,
  * **and** when an entry outlives the member it names. Every other `_`-prefixed
  * public member is a plain failure with no entry available — those are the ones

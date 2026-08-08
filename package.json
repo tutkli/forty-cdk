@@ -14,7 +14,7 @@
     "check:registration": "node scripts/check-entrypoint-registration.mjs",
     "check:registration-surfaces": "node scripts/check-registration-surfaces.mjs",
     "check:context-surfaces": "node scripts/check-context-surfaces.mjs",
-    "check:alias-inputs": "node scripts/check-alias-input-surface.mjs",
+    "check:alias-input-surface": "node scripts/check-alias-input-surface.mjs",
     "check:matrices": "node scripts/check-convention-matrices.mjs",
     "watch": "ng build forty-cdk --watch --configuration development",
     "gen:example-sources": "node scripts/gen-example-sources.mjs",
