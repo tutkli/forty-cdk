@@ -1068,7 +1068,7 @@ describe('ForStepper', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan).detectChanges()).toThrow(
-        /\[forty-cdk\/stepper\] ForStepperList must be used inside a \[forStepper\] element/,
+        /\[forty-cdk\/stepper\] FORCDK-STEPPER-001: ForStepperList must be used inside a \[forStepper\] element/,
       );
     });
 
@@ -1081,7 +1081,7 @@ describe('ForStepper', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(OrphanCompleted).detectChanges()).toThrow(
-        /\[forty-cdk\/stepper\] ForStepperCompletedContent must be used inside a \[forStepper\] element/,
+        /\[forty-cdk\/stepper\] FORCDK-STEPPER-001: ForStepperCompletedContent must be used inside a \[forStepper\] element/,
       );
     });
 
@@ -1100,7 +1100,7 @@ describe('ForStepper', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(OrphanTrigger).detectChanges()).toThrow(
-        /\[forty-cdk\/stepper\] ForStepperTrigger must be used inside a \[forStepperItem\] element/,
+        /\[forty-cdk\/stepper\] FORCDK-STEPPER-002: ForStepperTrigger must be used inside a \[forStepperItem\] element/,
       );
     });
 
@@ -1119,7 +1119,7 @@ describe('ForStepper', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(OrphanIndicator).detectChanges()).toThrow(
-        /\[forty-cdk\/stepper\] ForStepperIndicator must be used inside a \[forStepperItem\] element/,
+        /\[forty-cdk\/stepper\] FORCDK-STEPPER-002: ForStepperIndicator must be used inside a \[forStepperItem\] element/,
       );
     });
   });
@@ -1520,7 +1520,7 @@ describe('ForStepperProgress', () => {
 
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     expect(() => TestBed.createComponent(OrphanProgress).detectChanges()).toThrow(
-      /\[forty-cdk\/stepper\] ForStepperProgress must be used inside a \[forStepper\] element/,
+      /\[forty-cdk\/stepper\] FORCDK-STEPPER-001: ForStepperProgress must be used inside a \[forStepper\] element/,
     );
   });
 });

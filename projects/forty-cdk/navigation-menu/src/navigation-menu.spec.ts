@@ -1424,7 +1424,7 @@ describe('ForNavigationMenu', () => {
       const fixture = TestBed.createComponent(UnboundItemHost);
 
       expect(() => fixture.detectChanges()).toThrowError(
-        /\[forty-cdk\/navigation-menu\] \[forNavigationMenuItem\] has no \[value\] binding/,
+        /\[forty-cdk\/navigation-menu\] FORCDK-CORE-010: \[forNavigationMenuItem\] has no \[value\] binding/,
       );
     });
 

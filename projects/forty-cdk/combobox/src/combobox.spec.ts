@@ -2572,7 +2572,7 @@ describe('ForCombobox', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/combobox\] ForComboboxInput must be used inside a \[forCombobox\] element\./,
+        /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-003: ForComboboxInput must be used inside a \[forCombobox\] element\./,
       );
     });
 
@@ -2585,7 +2585,7 @@ describe('ForCombobox', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/combobox\] ForComboboxGroupLabel must be used inside a \[forComboboxGroup\] element\./,
+        /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-005: ForComboboxGroupLabel must be used inside a \[forComboboxGroup\] element\./,
       );
     });
 
@@ -2598,7 +2598,7 @@ describe('ForCombobox', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/combobox\] ForComboboxAnchor must be used inside a \[forCombobox\] element\./,
+        /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-003: ForComboboxAnchor must be used inside a \[forCombobox\] element\./,
       );
     });
   });
@@ -2751,7 +2751,7 @@ describe('ForCombobox', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoAnchorsHost);
       expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/combobox\] Multiple \[forComboboxAnchor\]/,
+        /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-007: A \[forCombobox\] registered a second \[forComboboxAnchor\]/,
       );
     });
   });
@@ -3028,7 +3028,9 @@ describe('ForCombobox trigger + list (picker anatomy, issue #675)', () => {
       }
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
-      expect(message).toMatch(/\[forty-cdk\/combobox\] ForComboboxTrigger could not resolve/);
+      expect(message).toMatch(
+        /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-004: \[forComboboxTrigger\] could not resolve/,
+      );
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forComboboxTrigger\]="root"/);
       expect(message).toMatch(/#root="forCombobox"/);
@@ -3894,7 +3896,7 @@ describe('ForComboboxStatus', () => {
 
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/combobox\] ForComboboxStatus must be used inside a \[forCombobox\] element\./,
+      /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-003: ForComboboxStatus must be used inside a \[forCombobox\] element\./,
     );
   });
 
@@ -4007,7 +4009,7 @@ describe('ForComboboxIndicator', () => {
 
     TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
     expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/combobox\] ForComboboxIndicator must be used inside a \[forComboboxOption\] element\./,
+      /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-006: ForComboboxIndicator must be used inside a \[forComboboxOption\] element\./,
     );
   });
 
@@ -4771,7 +4773,7 @@ describe('ForCombobox unwritten option value (issue #1601)', () => {
     const fixture = TestBed.createComponent(UnboundOptionHost);
 
     expect(() => fixture.detectChanges()).toThrowError(
-      /\[forty-cdk\/combobox\] \[forComboboxOption\] has no \[value\] binding/,
+      /\[forty-cdk\/combobox\] FORCDK-CORE-010: \[forComboboxOption\] has no \[value\] binding/,
     );
   });
 

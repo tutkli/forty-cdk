@@ -83,7 +83,9 @@ describe('warnIfMountedWhileClosed', () => {
     await flush(fixture);
 
     expect(warned).toHaveLength(1);
-    expect(warned[0]).toContain('[forty-cdk/probe] [probeSurface] is mounted while the surface');
+    expect(warned[0]).toContain(
+      '[forty-cdk/probe] FORCDK-CORE-006: [probeSurface] is mounted while the surface',
+    );
     expect(warned[0]).toContain('@if (probe.open())');
     expect(warned[0]).toContain('probe README');
   });

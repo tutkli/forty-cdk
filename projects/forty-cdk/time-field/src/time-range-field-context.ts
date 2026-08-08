@@ -2,6 +2,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type FieldSegment,
+  orphanContextError,
   type SegmentEditorContext,
   type TimeSegmentType,
   type WritingDirection,
@@ -68,7 +69,12 @@ export const FOR_TIME_RANGE_FIELD_SEGMENT_CONTEXT = new InjectionToken<SegmentEd
 export function injectTimeRangeFieldContext(piece: string): ForTimeRangeFieldContext {
   const ctx = inject(FOR_TIME_RANGE_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/time-field] ${piece} must be used inside a [forTimeRangeField].`);
+    throw orphanContextError({
+      code: 'FORCDK-TIME-FIELD-002',
+      piece,
+      root: '[forTimeRangeField]',
+      token: 'FOR_TIME_RANGE_FIELD_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -82,9 +88,12 @@ export function injectTimeRangeFieldContext(piece: string): ForTimeRangeFieldCon
 export function injectTimeRangeFieldSegmentContext(piece: string): SegmentEditorContext {
   const ctx = inject(FOR_TIME_RANGE_FIELD_SEGMENT_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/time-field] ${piece} must be used inside a [forTimeRangeFieldStart] or [forTimeRangeFieldEnd].`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-TIME-FIELD-003',
+      piece,
+      root: '[forTimeRangeFieldStart] or [forTimeRangeFieldEnd]',
+      token: 'FOR_TIME_RANGE_FIELD_SEGMENT_CONTEXT',
+    });
   }
   return ctx;
 }

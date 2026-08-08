@@ -77,7 +77,7 @@ describe('ForCombobox subclass wrapper (#1593)', () => {
       .injector.get(WrapperCombobox);
 
     expect(() => wrapper.registerAnchor(document.createElement('div'))).toThrowError(
-      '[forty-cdk/combobox] Multiple [forComboboxAnchor] inside the same [forCombobox]; only one is allowed.',
+      '[forty-cdk/combobox] FORCDK-COMBOBOX-007: A [forCombobox] registered a second [forComboboxAnchor]; only one is allowed.',
     );
   });
 });

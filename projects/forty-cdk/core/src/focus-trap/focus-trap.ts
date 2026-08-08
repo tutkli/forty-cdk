@@ -15,6 +15,7 @@ import {
   isTabbableCandidate,
   queryFocusableCandidates,
 } from './focusable-candidate';
+import { fortyWarn } from '../errors/errors';
 
 /**
  * Returns the first focusable descendant of `container`, or `null` if none exists.
@@ -287,13 +288,16 @@ function warnIfNeverDeactivated(trap: FocusTrap): void {
   if (!trap.isActive) {
     return;
   }
-  console.warn(
-    `[forty-cdk/core] injectFocusTrap: a focus trap was still active when its owner was ` +
-      `destroyed, so the owner never called \`deactivate()\`. The teardown safety net released ` +
-      `the keyboard channel (the \`document\` keydown listener and the stack entry), but focus ` +
-      `was not returned — only the owner can decide where it goes. Call ` +
-      `\`trap.deactivate({ returnFocus })\` from the owner's own \`DestroyRef.onDestroy\`.`,
-  );
+  fortyWarn({
+    code: 'FORCDK-CORE-004',
+    message:
+      'A focus trap was still active when its owner was destroyed, so focus was not returned.',
+    cause:
+      'The owner never called `deactivate()`. The teardown safety net released the keyboard ' +
+      'channel (the `document` keydown listener and the stack entry), but only the owner can ' +
+      'decide where focus goes.',
+    fix: "Call `trap.deactivate({ returnFocus })` from the owner's own `DestroyRef.onDestroy`.",
+  });
 }
 
 /**

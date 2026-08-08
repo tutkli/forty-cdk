@@ -40,6 +40,12 @@ export interface DateFieldEngineConfig<D> extends BaseFieldEngineConfig<D> {
   readonly maxDate: Signal<D | null>;
   /** Name of the owning directive, used in the time-capability error message. */
   readonly piece: string;
+  /**
+   * Entry point that error reports under, e.g. `'date-field'`. The engine is
+   * shared, but the consumer who combined a time `granularity` with a day-only
+   * adapter wrote a field, so the prefix must name theirs.
+   */
+  readonly scope: string;
 }
 
 /**
@@ -79,7 +85,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
   protected readonly specs = computed<readonly FieldSpec[]>(() => {
     const granularity = this.#config.granularity();
     if (granularity !== 'day') {
-      assertTimeCapable(this.#config.adapter, this.#config.piece);
+      assertTimeCapable(this.#config.adapter, this.#config.piece, { scope: this.#config.scope });
     }
     return buildDateTimeSegments(this.#config.locale() ?? undefined, granularity, this.cycle());
   });
@@ -175,7 +181,9 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
 
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time(): TimeCapableDateAdapter<D> {
-    return assertTimeCapable(this.#config.adapter, this.#config.piece);
+    return assertTimeCapable(this.#config.adapter, this.#config.piece, {
+      scope: this.#config.scope,
+    });
   }
 
   #preserveSourceTime(day: D): D {
@@ -184,7 +192,7 @@ export class DateFieldEngine<D> extends DateTimeFieldEngineBase<D, DateTimeParts
       return day;
     }
     return composeWithTime(
-      assertTimeCapable(this.#config.adapter, this.#config.piece),
+      assertTimeCapable(this.#config.adapter, this.#config.piece, { scope: this.#config.scope }),
       day,
       source,
     );

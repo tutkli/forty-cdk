@@ -1,4 +1,4 @@
-import { FLICK_VELOCITY_PX_PER_MS } from 'forty-cdk/core';
+import { FLICK_VELOCITY_PX_PER_MS, fortyError } from 'forty-cdk/core';
 
 /**
  * Resolved snap target. The caller decides what to do with it: either close
@@ -82,14 +82,20 @@ export interface ResolveSnapTargetOptions<S> {
 export function resolveSnapTarget<S>(opts: ResolveSnapTargetOptions<S>): SnapResolution<S> {
   const { snapPoints, snapPositions, activeSnapPoint, position, velocity } = opts;
   if (snapPositions.length !== snapPoints.length) {
-    throw new Error(
-      '[forty-cdk/drawer] resolveSnapTarget: snapPoints and snapPositions must have the same length.',
-    );
+    throw fortyError({
+      code: 'FORCDK-DRAWER-011',
+      message: 'resolveSnapTarget received snapPoints and snapPositions of different lengths.',
+      fix: 'Pass one resolved position per snap point.',
+    });
   }
   if (snapPoints.length === 0) {
-    throw new Error(
-      '[forty-cdk/drawer] resolveSnapTarget: requires at least one snap point; callers must guard snapPoints.length > 0 (the no-snap-points dismissal is the caller’s responsibility).',
-    );
+    throw fortyError({
+      code: 'FORCDK-DRAWER-012',
+      message: 'resolveSnapTarget received no snap points.',
+      cause:
+        'With no snap points there is no target to resolve to, and dismissal is the caller’s decision.',
+      fix: 'Guard on snapPoints.length > 0 before calling, handling the no-snap-points dismissal yourself.',
+    });
   }
 
   // 1) Closest snap by position.

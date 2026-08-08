@@ -17,6 +17,7 @@ import {
   accessibleTextContent,
   type FloatingAlign,
   type FloatingSide,
+  formatFortyMessage,
   FormUiControlBase,
   injectHiddenInput,
   IdGenerator,
@@ -405,8 +406,11 @@ export class ForSelect<T = string>
     ForSelectCloseReason
   >(this.#idGen, {
     idPrefix: 'for-select',
-    multipleAnchorsError:
-      '[forty-cdk/select] Multiple [forSelectAnchor] inside the same [forSelect]; only one is allowed.',
+    multipleAnchorsError: formatFortyMessage({
+      code: 'FORCDK-SELECT-005',
+      message: 'A [forSelect] registered a second [forSelectAnchor]; only one is allowed.',
+      fix: 'Keep a single [forSelectAnchor] per [forSelect].',
+    }),
     defaultInitialFocus: 'selected',
     effectiveDisabled: this.effectiveDisabled,
     setOpen: (open) => this.open.set(open),
@@ -775,7 +779,13 @@ export class ForSelect<T = string>
       isRangeSelectShortcut(event, { orientation: this.orientation(), dir: this.dir() })
     ) {
       event.preventDefault();
-      throwUnsupportedVirtualizedRangeSelect({ primitive: 'select', focusModel: 'DOM-focus' });
+      throwUnsupportedVirtualizedRangeSelect({
+        primitive: 'select',
+        focusModel: 'DOM-focus',
+        collection: 'listbox',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
+        alternative: 'Toggle options individually with Enter, Space, or click',
+      });
       return;
     }
     if (event.key === 'Tab') {

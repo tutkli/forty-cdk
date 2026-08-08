@@ -768,7 +768,7 @@ describe('ForToggleGroup', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/toggle-group\] ForToggleGroupItem/,
+        /\[forty-cdk\/toggle\] FORCDK-TOGGLE-001: ForToggleGroupItem must be used inside a \[forToggleGroup\] element\./,
       );
     });
   });

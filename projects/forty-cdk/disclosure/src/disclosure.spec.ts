@@ -312,7 +312,7 @@ describe('ForDisclosure', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanTrigger)).toThrow(
-        /\[forty-cdk\/disclosure\] ForDisclosureTrigger must be used inside a \[forDisclosure\] element\./,
+        /\[forty-cdk\/disclosure\] FORCDK-DISCLOSURE-001: ForDisclosureTrigger must be used inside a \[forDisclosure\] element\./,
       );
     });
 
@@ -328,7 +328,7 @@ describe('ForDisclosure', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanContent)).toThrow(
-        /\[forty-cdk\/disclosure\] ForDisclosureContent must be used inside a \[forDisclosure\] element\./,
+        /\[forty-cdk\/disclosure\] FORCDK-DISCLOSURE-001: ForDisclosureContent must be used inside a \[forDisclosure\] element\./,
       );
     });
   });

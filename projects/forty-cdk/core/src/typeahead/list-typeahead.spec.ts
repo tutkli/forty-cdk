@@ -54,16 +54,62 @@ describe('isRangeSelectShortcut', () => {
 });
 
 describe('throwUnsupportedVirtualizedRangeSelect', () => {
-  it('throws in dev mode with the primitive prefix and focus-model hint', () => {
+  it('throws in dev mode under the primitive prefix and its own code', () => {
     expect(() =>
       throwUnsupportedVirtualizedRangeSelect({
         primitive: 'listbox',
         focusModel: 'roving-tabindex',
+        collection: 'listbox',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
+        alternative: 'Toggle options individually with Enter, Space, or click',
       }),
-    ).toThrow(/^\[forty-cdk\/listbox\] Multi-select range keyboard/);
+    ).toThrow(/^\[forty-cdk\/listbox\] FORCDK-CORE-008: Multi-select range keyboard/);
+  });
+
+  it('composes the per-primitive alternative with the shared focus-model hint', () => {
     expect(() =>
-      throwUnsupportedVirtualizedRangeSelect({ primitive: 'select', focusModel: 'DOM-focus' }),
-    ).toThrow(/non-virtualized DOM-focus listbox/);
+      throwUnsupportedVirtualizedRangeSelect({
+        primitive: 'select',
+        focusModel: 'DOM-focus',
+        collection: 'listbox',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End',
+        alternative: 'Toggle options individually with Enter, Space, or click',
+      }),
+    ).toThrow(/Fix: Toggle options individually .*non-virtualized DOM-focus listbox/s);
+  });
+
+  it("carries the tree's own multi-select alternative rather than the listbox one", () => {
+    expect(() =>
+      throwUnsupportedVirtualizedRangeSelect({
+        primitive: 'tree',
+        focusModel: 'roving-tabindex',
+        collection: 'tree',
+        shortcuts: 'Shift+Arrow, Shift+Space, Ctrl/Cmd+A',
+        alternative: 'Use `selectionMode="checkbox"` for multi-select over large virtualized trees',
+      }),
+    ).toThrow(/Fix: Use `selectionMode="checkbox"`.*non-virtualized roving-tabindex tree/s);
+  });
+
+  it('names only the shortcuts the caller detects, so the tree omits Ctrl+Shift+Home/End', () => {
+    const message = (shortcuts: string): string => {
+      try {
+        throwUnsupportedVirtualizedRangeSelect({
+          primitive: 'tree',
+          focusModel: 'roving-tabindex',
+          collection: 'tree',
+          shortcuts,
+          alternative: 'Use `selectionMode="checkbox"`',
+        });
+      } catch (error) {
+        return (error as Error).message;
+      }
+      return '';
+    };
+
+    expect(message('Shift+Arrow, Shift+Space, Ctrl/Cmd+A')).not.toContain('Ctrl+Shift+Home/End');
+    expect(message('Shift+Arrow, Shift+Space, Ctrl/Cmd+A, Ctrl+Shift+Home/End')).toContain(
+      'Ctrl+Shift+Home/End',
+    );
   });
 });
 
@@ -75,7 +121,7 @@ describe('throwUnsupportedVirtualizedSelectionFollowsFocus', () => {
         focusModel: 'roving-tabindex',
         collection: 'listbox',
       }),
-    ).toThrow(/^\[forty-cdk\/listbox\] `selectionFollowsFocus` is not supported/);
+    ).toThrow(/^\[forty-cdk\/listbox\] FORCDK-CORE-009: `selectionFollowsFocus` is not supported/);
     expect(() =>
       throwUnsupportedVirtualizedSelectionFollowsFocus({
         primitive: 'select',

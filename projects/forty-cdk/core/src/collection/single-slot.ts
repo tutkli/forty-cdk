@@ -1,4 +1,5 @@
-import { computed, isDevMode, type Signal, signal } from '@angular/core';
+import { computed, type Signal, signal } from '@angular/core';
+import { fortyWarn } from '../errors/errors';
 
 /**
  * Identifies a {@link SingleSlot} in its dev-mode duplicate-registration
@@ -66,12 +67,14 @@ export function createSingleSlot<T>(config: SingleSlotConfig): SingleSlot<T> {
     register(occupant: T): void {
       const next = [...occupants(), occupant];
       occupants.set(next);
-      if (isDevMode() && next.length > 1) {
-        console.warn(
-          `[forty-cdk/${config.primitive}] A ${config.owner} coordinates a single ${config.claimant}, ` +
-            `but ${next.length} are registered. Only the most recently registered one is coordinated — ` +
-            `keep one per ${config.owner}.`,
-        );
+      if (next.length > 1) {
+        fortyWarn({
+          code: 'FORCDK-CORE-005',
+          scope: config.primitive,
+          message: `A ${config.owner} coordinates a single ${config.claimant}, but ${next.length} are registered.`,
+          cause: 'Only the most recently registered one is coordinated; the rest are inert.',
+          fix: `Keep one ${config.claimant} per ${config.owner}.`,
+        });
       }
     },
     unregister(occupant: T): void {

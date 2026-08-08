@@ -1,6 +1,10 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type HostRovingContext, type HostRovingItemHandle } from 'forty-cdk/core';
+import {
+  type HostRovingContext,
+  type HostRovingItemHandle,
+  orphanContextError,
+} from 'forty-cdk/core';
 
 /**
  * Per-item handle stored in the toolbar's `Collection`. Buttons, links, and
@@ -33,7 +37,12 @@ export const FOR_TOOLBAR_CONTEXT = new InjectionToken<ForToolbarContext>('FOR_TO
 export function injectToolbarContext(piece: string): ForToolbarContext {
   const ctx = inject(FOR_TOOLBAR_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/toolbar] ${piece} must be used inside a [forToolbar] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TOOLBAR-001',
+      piece,
+      root: '[forToolbar]',
+      token: 'FOR_TOOLBAR_CONTEXT',
+    });
   }
   return ctx;
 }

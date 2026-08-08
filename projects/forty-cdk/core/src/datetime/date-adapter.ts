@@ -1,4 +1,5 @@
 import { inject, InjectionToken } from '@angular/core';
+import { fortyError } from '../errors/errors';
 
 /**
  * Pluggable, date-library-agnostic seam for `ForCalendar`. Every internal
@@ -253,15 +254,28 @@ export const FOR_DATE_ADAPTER = new InjectionToken<DateAdapter<unknown>>('FOR_DA
  * primitive-prefixed error when no adapter has been provided.
  *
  * @param piece Name of the calling directive, used in the error message.
+ * @param options `scope` is the entry point the error reports under, e.g.
+ *   `'date-field'`. Omit it from shared machinery that does not know one — the
+ *   check then reports under `[forty-cdk/core]` and `piece` carries the
+ *   attribution alone. The type stays inline on purpose: a named interface here
+ *   would be a core symbol reached from a blessed public signature, so it would
+ *   have to be published from `forty-cdk/shared` and carry that guarantee
+ *   forever, for one optional string.
  */
-export function injectDateAdapter<D>(piece: string): DateAdapter<D> {
+export function injectDateAdapter<D>(
+  piece: string,
+  options?: { readonly scope?: string },
+): DateAdapter<D> {
   const adapter = inject(FOR_DATE_ADAPTER, { optional: true });
   if (!adapter) {
-    throw new Error(
-      `[forty-cdk/calendar] ${piece} requires a DateAdapter. Provide one with ` +
-        `provideInternationalizedDateAdapter() or provideNativeDateAdapter() in your ` +
-        `application or component providers.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-CORE-002',
+      scope: options?.scope,
+      message: `${piece} requires a DateAdapter, and none is provided.`,
+      fix:
+        'Add provideNativeDateAdapter() or provideInternationalizedDateAdapter() to your ' +
+        'application or component providers.',
+    });
   }
   return adapter as DateAdapter<D>;
 }
@@ -276,10 +290,13 @@ export function injectDateAdapter<D>(piece: string): DateAdapter<D> {
  *
  * @param adapter The active adapter, typically from {@link injectDateAdapter}.
  * @param piece Name of the calling directive, used in the error message.
+ * @param options `scope` is the entry point the error reports under — same
+ *   contract, and same inline-type reasoning, as {@link injectDateAdapter}.
  */
 export function assertTimeCapable<D>(
   adapter: DateAdapter<D>,
   piece: string,
+  options?: { readonly scope?: string },
 ): TimeCapableDateAdapter<D> {
   if (
     typeof adapter.getHours !== 'function' ||
@@ -287,11 +304,17 @@ export function assertTimeCapable<D>(
     typeof adapter.getSeconds !== 'function' ||
     typeof adapter.setTime !== 'function'
   ) {
-    throw new Error(
-      `[forty-cdk/date-adapter] ${piece} requires a time-capable DateAdapter. Provide one with ` +
-        `provideNativeDateAdapter() or provideInternationalizedDateTimeAdapter() — the day-only ` +
-        `provideInternationalizedDateAdapter() (CalendarDate) cannot carry a time.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-CORE-003',
+      scope: options?.scope,
+      message: `${piece} requires a time-capable DateAdapter, and the active one is day-only.`,
+      cause:
+        'provideInternationalizedDateAdapter() supplies CalendarDate values, which carry no time ' +
+        'of day, so the adapter implements none of the time accessors.',
+      fix:
+        'Switch to provideNativeDateAdapter() or provideInternationalizedDateTimeAdapter() in the ' +
+        'providers that reach this piece.',
+    });
   }
   return adapter as TimeCapableDateAdapter<D>;
 }

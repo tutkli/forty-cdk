@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import type { PaginationItem } from './pagination-range';
 
 /**
@@ -47,9 +49,12 @@ export const FOR_PAGINATION_CONTEXT = new InjectionToken<ForPaginationContext>(
 export function injectPaginationContext(piece: string): ForPaginationContext {
   const ctx = inject(FOR_PAGINATION_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/pagination] ${piece} must be used inside a [forPagination] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-PAGINATION-001',
+      piece,
+      root: '[forPagination]',
+      token: 'FOR_PAGINATION_CONTEXT',
+    });
   }
   return ctx;
 }

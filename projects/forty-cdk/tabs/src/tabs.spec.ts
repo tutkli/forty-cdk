@@ -764,7 +764,7 @@ describe('ForTabs', () => {
       @Component({ imports: [ForTabsList], template: `<div forTabsList></div>` })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/tabs\] ForTabsList must be used inside a \[forTabs\] element\./,
+        /\[forty-cdk\/tabs\] FORCDK-TABS-001: ForTabsList must be used inside a \[forTabs\] element\./,
       );
     });
 
@@ -775,7 +775,7 @@ describe('ForTabs', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/tabs\] ForTabsTrigger must be used inside a \[forTabs\] element\./,
+        /\[forty-cdk\/tabs\] FORCDK-TABS-001: ForTabsTrigger must be used inside a \[forTabs\] element\./,
       );
     });
 
@@ -786,7 +786,7 @@ describe('ForTabs', () => {
       })
       class Orphan {}
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/tabs\] ForTabsContent must be used inside a \[forTabs\] element\./,
+        /\[forty-cdk\/tabs\] FORCDK-TABS-001: ForTabsContent must be used inside a \[forTabs\] element\./,
       );
     });
   });

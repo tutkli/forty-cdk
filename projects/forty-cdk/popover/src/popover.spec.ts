@@ -655,7 +655,9 @@ describe('ForPopover', () => {
       }
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
-      expect(message).toMatch(/\[forty-cdk\/popover\] ForPopoverTrigger could not resolve/);
+      expect(message).toMatch(
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-002: \[forPopoverTrigger\] could not resolve/,
+      );
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forPopoverTrigger\]="root"/);
       expect(message).toMatch(/#root="forPopover"/);
@@ -667,7 +669,10 @@ describe('ForPopover', () => {
         template: `<div forPopoverContent></div>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverContent/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-001: ForPopoverContent must be used inside/,
+      );
     });
 
     it('throws from ForPopoverTitle', () => {
@@ -676,7 +681,10 @@ describe('ForPopover', () => {
         template: `<h2 forPopoverTitle></h2>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverTitle/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-001: ForPopoverTitle must be used inside/,
+      );
     });
 
     it('throws from ForPopoverDescription', () => {
@@ -685,7 +693,10 @@ describe('ForPopover', () => {
         template: `<p forPopoverDescription></p>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverDescription/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-001: ForPopoverDescription must be used inside/,
+      );
     });
 
     it('throws from ForPopoverClose', () => {
@@ -694,7 +705,10 @@ describe('ForPopover', () => {
         template: `<button forPopoverClose></button>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverClose/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-001: ForPopoverClose must be used inside/,
+      );
     });
 
     it('throws from ForPopoverArrow', () => {
@@ -703,7 +717,10 @@ describe('ForPopover', () => {
         template: `<span forPopoverArrow></span>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverArrow/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-001: ForPopoverArrow must be used inside/,
+      );
     });
 
     it('throws from ForPopoverAnchor', () => {
@@ -712,7 +729,10 @@ describe('ForPopover', () => {
         template: `<span forPopoverAnchor></span>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/popover\] ForPopoverAnchor/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/popover\] FORCDK-POPOVER-001: ForPopoverAnchor must be used inside/,
+      );
     });
   });
 

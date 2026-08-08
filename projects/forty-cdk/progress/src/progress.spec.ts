@@ -254,7 +254,7 @@ describe('ForProgress', () => {
       });
 
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/progress\] ForProgressIndicator must be used inside a \[forProgress\] element\./,
+        /\[forty-cdk\/progress\] FORCDK-PROGRESS-001: ForProgressIndicator must be used inside a \[forProgress\] element\./,
       );
     });
   });

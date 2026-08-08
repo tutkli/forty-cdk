@@ -488,7 +488,7 @@ describe('ForToolbar', () => {
       class Orphan {}
 
       expect(() => renderHost(Orphan)).toThrowError(
-        /\[forty-cdk\/toolbar\] ForToolbarButton must be used inside a \[forToolbar\] element\./,
+        /\[forty-cdk\/toolbar\] FORCDK-TOOLBAR-001: ForToolbarButton must be used inside a \[forToolbar\] element\./,
       );
     });
 
@@ -500,7 +500,7 @@ describe('ForToolbar', () => {
       class Orphan {}
 
       expect(() => renderHost(Orphan)).toThrowError(
-        /\[forty-cdk\/toolbar\] ForToolbarLink must be used inside a \[forToolbar\] element\./,
+        /\[forty-cdk\/toolbar\] FORCDK-TOOLBAR-001: ForToolbarLink must be used inside a \[forToolbar\] element\./,
       );
     });
 
@@ -512,7 +512,7 @@ describe('ForToolbar', () => {
       class Orphan {}
 
       expect(() => renderHost(Orphan)).toThrowError(
-        /\[forty-cdk\/toolbar\] ForToolbarSeparator must be used inside a \[forToolbar\] element\./,
+        /\[forty-cdk\/toolbar\] FORCDK-TOOLBAR-001: ForToolbarSeparator must be used inside a \[forToolbar\] element\./,
       );
     });
   });

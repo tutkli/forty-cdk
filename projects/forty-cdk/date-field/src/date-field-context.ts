@@ -1,6 +1,11 @@
 import { inject, InjectionToken } from '@angular/core';
 
-import { type FieldSegment, type SegmentHandle, type SegmentEditorContext } from 'forty-cdk/core';
+import {
+  type FieldSegment,
+  orphanContextError,
+  type SegmentEditorContext,
+  type SegmentHandle,
+} from 'forty-cdk/core';
 
 /**
  * A rendered segment descriptor exposed by `ForDateField.segments()` for the
@@ -41,7 +46,12 @@ export const FOR_DATE_FIELD_CONTEXT = new InjectionToken<ForDateFieldContext>(
 export function injectDateFieldContext(piece: string): ForDateFieldContext {
   const ctx = inject(FOR_DATE_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/date-field] ${piece} must be used inside a [forDateField].`);
+    throw orphanContextError({
+      code: 'FORCDK-DATE-FIELD-001',
+      piece,
+      root: '[forDateField]',
+      token: 'FOR_DATE_FIELD_CONTEXT',
+    });
   }
   return ctx;
 }

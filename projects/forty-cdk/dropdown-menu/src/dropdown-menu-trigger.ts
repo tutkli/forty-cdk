@@ -11,13 +11,14 @@ import {
 
 import {
   asMenuOpenerRegistration,
-  hostButtonType,
-  hostId,
-  reflectDisabled,
-  type MenuActivationModality,
-  type MenuOpenerPositioning,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
+  hostButtonType,
+  hostId,
+  type MenuActivationModality,
+  type MenuOpenerPositioning,
+  reflectDisabled,
+  unresolvedRootError,
 } from 'forty-cdk/core';
 
 /**
@@ -38,13 +39,13 @@ function injectDropdownMenuTriggerContext(
     if (injected) {
       return injected;
     }
-    throw new Error(
-      '[forty-cdk/dropdown-menu] ForDropdownMenuTrigger could not resolve its [forDropdownMenu] root: ' +
-        'no FOR_MENU_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forDropdownMenuTrigger]="root" with #root="forDropdownMenu".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-DROPDOWN-MENU-001',
+      trigger: '[forDropdownMenuTrigger]',
+      root: '[forDropdownMenu]',
+      token: 'FOR_MENU_CONTEXT',
+      exportAs: 'forDropdownMenu',
+    });
   });
 }
 

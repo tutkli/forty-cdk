@@ -1,6 +1,11 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type AnchoredPositioningContext, type VetoableNativeEvent } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningContext,
+  orphanContextError,
+  unresolvedRootError,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
 
 /**
  * Why a popover requested close. The popover is non-modal, so there is no
@@ -125,12 +130,12 @@ export const FOR_POPOVER_CONTEXT = new InjectionToken<ForPopoverContext>('FOR_PO
 export function injectPopoverContext(piece: string): ForPopoverContext {
   const ctx = inject(FOR_POPOVER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/popover] ${piece} must be used inside a [forPopover] element. ` +
-        "If it is declared inside an ng-template, DI resolves at the template's declaration site — " +
-        'not where it is stamped (e.g. via ngTemplateOutlet) — so declare the template inside the ' +
-        '[forPopover] root.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-POPOVER-001',
+      piece,
+      root: '[forPopover]',
+      token: 'FOR_POPOVER_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -153,12 +158,12 @@ export function injectPopoverTriggerContext(
     if (injected) {
       return injected;
     }
-    throw new Error(
-      '[forty-cdk/popover] ForPopoverTrigger could not resolve its [forPopover] root: ' +
-        'no FOR_POPOVER_CONTEXT provider is visible and no explicit root reference was passed. ' +
-        "If this trigger is declared inside an ng-template, DI resolves at the template's declaration " +
-        'site — not where it is stamped — so either declare the template inside the root or pass the ' +
-        'root explicitly: [forPopoverTrigger]="root" with #root="forPopover".',
-    );
+    throw unresolvedRootError({
+      code: 'FORCDK-POPOVER-002',
+      trigger: '[forPopoverTrigger]',
+      root: '[forPopover]',
+      token: 'FOR_POPOVER_CONTEXT',
+      exportAs: 'forPopover',
+    });
   });
 }

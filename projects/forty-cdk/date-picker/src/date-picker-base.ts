@@ -16,18 +16,19 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  adoptHostId,
+  createVetoableNativeEvent,
   type DateAdapter,
+  emitVetoableEvent,
   type FloatingAlign,
   type FloatingSide,
   FormUiControlBase,
-  adoptHostId,
+  fortyError,
   IdGenerator,
-  type WritingDirection,
   injectTextDirection,
-  createVetoableNativeEvent,
-  emitVetoableEvent,
   type VetoableEvent,
   type VetoableNativeEvent,
+  type WritingDirection,
 } from 'forty-cdk/core';
 import { ForCalendar } from 'forty-cdk/calendar';
 import type { ForDatePickerContext } from './date-picker-context';
@@ -246,9 +247,14 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
    */
   protected assertSameAdapter(calendar: ForCalendar<unknown>): void {
     if (isDevMode() && calendar.adapter !== (this.adapter as DateAdapter<unknown>)) {
-      throw new Error(
-        '[forty-cdk/date-picker] The projected ForCalendar must use the same DateAdapter as the date picker.',
-      );
+      throw fortyError({
+        code: 'FORCDK-DATE-PICKER-001',
+        message: 'The projected ForCalendar uses a different DateAdapter than the date picker.',
+        cause:
+          'The calendar is read through a generic-erased contentChild, so a second adapter would ' +
+          'leak a wrong-shaped date value into the picker.',
+        fix: 'Provide one DateAdapter for both, or move the calendar under the picker’s providers.',
+      });
     }
   }
 
@@ -265,9 +271,11 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
   registerAnchor(el: HTMLElement): void {
     const current = this.#anchorEl();
     if (current !== null && current !== el) {
-      throw new Error(
-        '[forty-cdk/date-picker] Multiple [forDatePickerAnchor] inside the same picker root; only one is allowed.',
-      );
+      throw fortyError({
+        code: 'FORCDK-DATE-PICKER-002',
+        message: 'A picker root registered a second [forDatePickerAnchor]; only one is allowed.',
+        fix: 'Keep a single [forDatePickerAnchor] per picker root.',
+      });
     }
     this.#anchorEl.set(el);
   }

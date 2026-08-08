@@ -1,5 +1,7 @@
 import { Directive, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { FOR_SELECT_OPTION, type ForSelectOption } from './select-option';
 
 /**
@@ -37,9 +39,12 @@ export class ForSelectIndicator {
 function injectParentOption(): ForSelectOption {
   const option = inject(FOR_SELECT_OPTION, { optional: true });
   if (!option) {
-    throw new Error(
-      '[forty-cdk/select] ForSelectIndicator must be used inside a [forSelectOption] element.',
-    );
+    throw orphanContextError({
+      code: 'FORCDK-SELECT-004',
+      piece: 'ForSelectIndicator',
+      root: '[forSelectOption]',
+      token: 'FOR_SELECT_OPTION',
+    });
   }
   return option;
 }

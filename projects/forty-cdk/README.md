@@ -51,6 +51,24 @@ Two packages are regular dependencies, installed automatically and never declare
 
 `forty-cdk/core` resolves too, but it is **not** public: it holds the engines and DI singletons the library refactors freely, and it exists so every primitive resolves that shared implementation to one compiled module. If a symbol you need is not exported by the three specifiers above, it is internal by design — [open an issue](https://github.com/tutkli/forty-cdk/issues) rather than importing from `core`.
 
+## Errors
+
+Every error and warning the library reports carries a stable code and, where they add something, the cause and the fix:
+
+```text
+[forty-cdk/dialog] FORCDK-DIALOG-001: ForDialogTitle must be used inside a [forDialog] element.
+
+Cause: No FOR_DIALOG_CONTEXT provider is visible from ForDialogTitle. Angular resolves a
+directive's dependencies at the template's declaration site rather than where it is stamped, so a
+piece declared in an ng-template outside the root resolves nothing even when it renders inside it.
+
+Fix: Move ForDialogTitle inside a [forDialog] element, declaring any ng-template it lives in there too.
+```
+
+The code is `FORCDK-<AREA>-<NUMBER>`, where the area is the entry point you imported from — so `FORCDK-DATE-PICKER-003` came from `forty-cdk/date-picker`, and `FORCDK-CORE-*` from machinery shared across primitives (those still print the prefix of the primitive you actually wrote). **A code is stable and always means the same failure**, so it is safe to search for, quote in an issue, or match on in your own error handling; a retired code is never reused for something else.
+
+Warnings are dev-mode only. Errors are not: a piece that resolved no context would fail one line later anyway, so it throws in production too and says why.
+
 ## Primitives
 
 Every primitive ships as its own secondary entry point, and each lives in its own folder under `projects/forty-cdk/` with its own `README.md` documenting its anatomy, API, keyboard interaction and styling hooks. Standalone directives plus `"sideEffects": false` mean your bundle only ever includes the primitives you import.

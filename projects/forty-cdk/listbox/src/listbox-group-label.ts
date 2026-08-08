@@ -1,6 +1,6 @@
 import { Directive, inject } from '@angular/core';
 
-import { registerA11yName } from 'forty-cdk/core';
+import { orphanContextError, registerA11yName } from 'forty-cdk/core';
 import { ForListboxGroup } from './listbox-group';
 
 /**
@@ -24,9 +24,12 @@ export class ForListboxGroupLabel {
   constructor() {
     const group = inject(ForListboxGroup, { optional: true });
     if (!group) {
-      throw new Error(
-        '[forty-cdk/listbox] ForListboxGroupLabel must be used inside a [forListboxGroup] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-LISTBOX-002',
+        piece: 'ForListboxGroupLabel',
+        root: '[forListboxGroup]',
+        token: 'ForListboxGroup',
+      });
     }
     this.id = registerA11yName(group, 'for-listbox-group-label');
   }

@@ -14,6 +14,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   type DateAdapter,
   type DateRange,
+  fortyError,
   injectDateAdapter,
   injectHiddenInput,
   serializeISODate,
@@ -95,7 +96,9 @@ export class ForDateRangePicker<D>
   readonly #defaults = inject(FOR_DATE_RANGE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangePicker');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangePicker', {
+    scope: 'date-picker',
+  });
 
   readonly triggerId = signal(this.idGen.next('for-date-range-picker-trigger'));
   readonly contentId = signal(this.idGen.next('for-date-range-picker-content'));
@@ -190,9 +193,13 @@ export class ForDateRangePicker<D>
       }
       this.assertSameAdapter(calendar);
       if (isDevMode() && calendar.selectionMode() !== 'range') {
-        throw new Error(
-          '[forty-cdk/date-picker] ForDateRangePicker requires its projected ForCalendar to use selectionMode="range".',
-        );
+        throw fortyError({
+          code: 'FORCDK-DATE-PICKER-006',
+          message: 'ForDateRangePicker projects a ForCalendar that is not in range selection mode.',
+          cause:
+            'The range picker reads the calendar’s `range` output, which only a range calendar emits.',
+          fix: 'Set selectionMode="range" on the projected [forCalendar].',
+        });
       }
       const sub = (calendar as ForCalendar<D>).range.subscribe((next) => {
         if (this.readonly() || this.effectiveDisabled()) {

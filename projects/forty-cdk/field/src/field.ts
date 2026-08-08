@@ -1,6 +1,6 @@
 import { computed, Directive, effect, inject, isDevMode, type Signal, signal } from '@angular/core';
 
-import { adoptHostId, IdGenerator, FOR_FIELDSET_CONTEXT } from 'forty-cdk/core';
+import { adoptHostId, FOR_FIELDSET_CONTEXT, fortyWarn, IdGenerator } from 'forty-cdk/core';
 import { FOR_FIELD_CONTEXT, type FieldControlHandle, type ForFieldContext } from './field-context';
 
 /**
@@ -201,10 +201,12 @@ export class ForField implements ForFieldContext {
     effect(() => {
       const registered = count();
       if (registered > 1) {
-        console.warn(
-          `[forty-cdk/field] A [forField] supports a single ${slot}, but ${registered} are registered. ` +
-            `They share one ${idName}, producing duplicate DOM ids and unstable aria wiring — keep one per field.`,
-        );
+        fortyWarn({
+          code: 'FORCDK-FIELD-002',
+          message: `A [forField] supports a single ${slot}, but ${registered} are registered.`,
+          cause: `They share one ${idName}, producing duplicate DOM ids and unstable aria wiring.`,
+          fix: `Keep one ${slot} per [forField].`,
+        });
       }
     });
   }

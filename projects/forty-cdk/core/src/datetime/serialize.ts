@@ -56,6 +56,11 @@ export function clampToBounds<D>(
  * @param date The value to serialize.
  * @param granularity The serialization granularity.
  * @param piece Name of the calling directive, used in the time-capability error.
+ *   That error keeps the `[forty-cdk/core]` prefix rather than taking a `scope`
+ *   of its own: a day-only adapter under a time granularity already threw from
+ *   `DateFieldEngine.specs` — the derivation that asked for a time segment —
+ *   before any value reaches serialization, so this branch is a second line of
+ *   defence rather than a report a consumer reads first.
  */
 export function serializeISODate<D>(
   adapter: DateAdapter<D>,

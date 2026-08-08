@@ -3,6 +3,7 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
   assertRootContext,
   type ListNavigationAction,
+  orphanContextError,
   type WritingDirection,
 } from 'forty-cdk/core';
 
@@ -98,7 +99,12 @@ export interface AccordionContext extends ForAccordionContext {
 export function injectAccordionContext(piece: string): AccordionContext {
   const ctx = inject(FOR_ACCORDION_CONTEXT, { optional: true }) as AccordionContext | null;
   if (!ctx) {
-    throw new Error(`[forty-cdk/accordion] ${piece} must be used inside a [forAccordion] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-ACCORDION-001',
+      piece,
+      root: '[forAccordion]',
+      token: 'FOR_ACCORDION_CONTEXT',
+    });
   }
   assertRootContext({
     entryPoint: 'accordion',
@@ -113,9 +119,12 @@ export function injectAccordionContext(piece: string): AccordionContext {
 export function injectAccordionItemContext(piece: string): ForAccordionItemContext {
   const ctx = inject(FOR_ACCORDION_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/accordion] ${piece} must be used inside a [forAccordionItem] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-ACCORDION-002',
+      piece,
+      root: '[forAccordionItem]',
+      token: 'FOR_ACCORDION_ITEM_CONTEXT',
+    });
   }
   return ctx;
 }

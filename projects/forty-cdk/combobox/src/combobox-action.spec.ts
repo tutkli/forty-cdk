@@ -387,7 +387,9 @@ describe('ForComboboxAction', () => {
       return errors.some(
         (e) =>
           e instanceof Error &&
-          /\[forty-cdk\/combobox\] \[forComboboxAction\] must be nested/.test(e.message),
+          /\[forty-cdk\/combobox\] FORCDK-COMBOBOX-001: \[forComboboxAction\] must sit inside/.test(
+            e.message,
+          ),
       );
     }
 

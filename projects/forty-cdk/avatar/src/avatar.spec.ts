@@ -257,7 +257,7 @@ describe('ForAvatar', () => {
       });
 
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/avatar\] ForAvatarImage must be used inside a \[forAvatar\] element\./,
+        /\[forty-cdk\/avatar\] FORCDK-AVATAR-002: ForAvatarImage must be used inside a \[forAvatar\] element\./,
       );
     });
   });
@@ -359,7 +359,7 @@ describe('ForAvatar', () => {
       });
 
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/avatar\] ForAvatarFallback must be used inside a \[forAvatar\] element\./,
+        /\[forty-cdk\/avatar\] FORCDK-AVATAR-001: ForAvatarFallback must be used inside a \[forAvatar\] element\./,
       );
     });
   });

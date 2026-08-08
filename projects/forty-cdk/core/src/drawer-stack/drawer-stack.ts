@@ -1,6 +1,7 @@
 import { Injectable, type Signal, signal } from '@angular/core';
 
 import { type ForDrawerSide } from './drawer-side';
+import { fortyError } from '../errors/errors';
 
 /**
  * Snapshot of a single drawer registered with {@link ForDrawerStack}. The
@@ -126,9 +127,14 @@ export class ForDrawerStack {
       (other) => other !== node && this.#isDescendant(other, node, current),
     );
     if (hasDescendant) {
-      throw new Error(
-        '[forty-cdk/drawer] DrawerStack out-of-order cleanup: a parent drawer was destroyed while a nested child is still registered. Make sure the child @if is wrapped inside the parent @if so the child unmounts first.',
-      );
+      throw fortyError({
+        code: 'FORCDK-DRAWER-001',
+        message: 'A parent drawer was destroyed while a nested child drawer was still registered.',
+        cause:
+          'The drawer stack unwinds last-in-first-out, so a child must unmount before its parent. ' +
+          'Sibling @if blocks unmount in template order instead.',
+        fix: "Wrap the child drawer's @if inside the parent's, so the child unmounts first.",
+      });
     }
     const next = current.slice();
     next.splice(idx, 1);

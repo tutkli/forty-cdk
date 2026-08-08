@@ -85,6 +85,10 @@ export class ElementSlot<E extends HTMLElement = HTMLElement> {
  * without an explicit anchor keeps its behaviour. A second, different anchor is
  * rejected with the controller-supplied error, matching the single-anchor
  * contract each overlay used to enforce inline.
+ *
+ * The message is supplied rather than built here because its `FORCDK-*` code
+ * belongs to the primitive that owns the anchor; pass `formatFortyMessage(…)`
+ * so it carries one.
  */
 export class AnchorSlot {
   readonly #el = signal<HTMLElement | null>(null);

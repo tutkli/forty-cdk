@@ -3,8 +3,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
   assertRootContext,
   type ListNavigationAction,
-  type WritingDirection,
+  orphanContextError,
   type RovingTabindex,
+  type WritingDirection,
 } from 'forty-cdk/core';
 
 export type TabsActivationMode = 'automatic' | 'manual';
@@ -113,7 +114,12 @@ export interface TabsContext extends ForTabsContext {
 export function injectTabsContext(piece: string): TabsContext {
   const ctx = inject(FOR_TABS_CONTEXT, { optional: true }) as TabsContext | null;
   if (!ctx) {
-    throw new Error(`[forty-cdk/tabs] ${piece} must be used inside a [forTabs] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TABS-001',
+      piece,
+      root: '[forTabs]',
+      token: 'FOR_TABS_CONTEXT',
+    });
   }
   assertRootContext({
     entryPoint: 'tabs',

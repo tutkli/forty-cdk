@@ -489,14 +489,18 @@ describe('ForDrawerManager (programmatic)', () => {
       const { drawers } = setup();
       expect(() =>
         drawers.open(SheetDrawer, { data: { message: 'x' }, closeThreshold: 2 }),
-      ).toThrow('[forty-cdk/drawer] closeThreshold must be in [0, 1], got 2.');
+      ).toThrow(
+        '[forty-cdk/drawer] FORCDK-DRAWER-004: closeThreshold must be a fraction between 0 and 1, and it is 2.',
+      );
     });
 
     it('throws when closeThreshold is NaN', () => {
       const { drawers } = setup();
       expect(() =>
         drawers.open(SheetDrawer, { data: { message: 'x' }, closeThreshold: Number.NaN }),
-      ).toThrow('[forty-cdk/drawer] closeThreshold must be in [0, 1], got NaN.');
+      ).toThrow(
+        '[forty-cdk/drawer] FORCDK-DRAWER-004: closeThreshold must be a fraction between 0 and 1, and it is NaN.',
+      );
     });
 
     it('accepts a valid closeThreshold of 0.5', () => {

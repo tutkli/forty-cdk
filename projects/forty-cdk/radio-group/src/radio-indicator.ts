@@ -1,5 +1,7 @@
 import { Directive, inject } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 import { FOR_RADIO, type ForRadio } from './radio';
 
 /**
@@ -25,9 +27,12 @@ export class ForRadioIndicator {
   constructor() {
     const parent = inject(FOR_RADIO, { optional: true });
     if (!parent) {
-      throw new Error(
-        '[forty-cdk/radio-group] ForRadioIndicator must be used inside a [forRadio] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-RADIO-GROUP-002',
+        piece: 'ForRadioIndicator',
+        root: '[forRadio]',
+        token: 'FOR_RADIO',
+      });
     }
     this.parent = parent;
   }

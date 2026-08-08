@@ -342,7 +342,8 @@ const entryFor = (entryPoint: string): GuardedRoot => {
 
 const expectedFailure = (entry: GuardedRoot): RegExp =>
   new RegExp(
-    `${escaped(`[forty-cdk/${entry.entryPoint}]`)} ${entry.piece} resolved a ${entry.token} ` +
+    `${escaped(`[forty-cdk/${entry.entryPoint}]`)} FORCDK-CORE-007: ` +
+      `${entry.piece} resolved a ${entry.token} ` +
       `provider that is not the ${escaped(entry.root)} root.*` +
       `\\{ provide: ${entry.token}, useExisting: MyRoot \\}`,
     's',
@@ -423,7 +424,7 @@ describe('split-root context guard', () => {
 
   it('fails a value satisfying the public read surface in full', () => {
     expect(() => renderHost(ReadSurfaceAccordionHost)).toThrow(
-      /\[forty-cdk\/accordion\] ForAccordionItem resolved a FOR_ACCORDION_CONTEXT provider that is not the \[forAccordion\] root/,
+      /\[forty-cdk\/accordion\] FORCDK-CORE-007: ForAccordionItem resolved a FOR_ACCORDION_CONTEXT provider that is not the \[forAccordion\] root/,
     );
   });
 

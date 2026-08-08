@@ -11,14 +11,15 @@ import {
 } from '@angular/core';
 
 import {
-  injectPrefersReducedMotion,
   attachSwipeDismiss,
-  type SwipeDirection,
-  type SwipeEventDetail,
-  isScrollableAtEdge,
-  flickVelocity,
   FLICK_STALE_VELOCITY_MS,
   FLICK_VELOCITY_PX_PER_MS,
+  flickVelocity,
+  fortyError,
+  injectPrefersReducedMotion,
+  isScrollableAtEdge,
+  type SwipeDirection,
+  type SwipeEventDetail,
 } from 'forty-cdk/core';
 import {
   type ForDrawerSide,
@@ -242,9 +243,11 @@ export function injectDrawerDrag(config: DrawerDragConfig): DrawerDragHandle {
     validateSnapPointsShape(points);
     const idx = fadeFromIndex();
     if (idx !== undefined && (idx < 0 || idx >= points.length)) {
-      throw new Error(
-        `[forty-cdk/drawer] fadeFromIndex (${idx}) is out of range for snapPoints (length ${points.length}).`,
-      );
+      throw fortyError({
+        code: 'FORCDK-DRAWER-003',
+        message: `fadeFromIndex is ${idx}, which is out of range for ${points.length} snapPoints.`,
+        fix: `Set fadeFromIndex between 0 and ${points.length - 1}, or leave it unset.`,
+      });
     }
   }
 

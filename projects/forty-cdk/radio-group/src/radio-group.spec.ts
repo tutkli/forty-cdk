@@ -709,7 +709,7 @@ describe('ForRadioGroup', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanRadio)).toThrow(
-        /\[forty-cdk\/radio-group\] ForRadio must be used inside a \[forRadioGroup\] element\./,
+        /\[forty-cdk\/radio-group\] FORCDK-RADIO-GROUP-001: ForRadio must be used inside a \[forRadioGroup\] element\./,
       );
     });
   });
@@ -770,7 +770,7 @@ describe('ForRadioGroup', () => {
       class Orphan {}
 
       expect(() => renderHost(Orphan)).toThrow(
-        /\[forty-cdk\/radio-group\] ForRadioIndicator must be used inside a \[forRadio\] element\./,
+        /\[forty-cdk\/radio-group\] FORCDK-RADIO-GROUP-002: ForRadioIndicator must be used inside a \[forRadio\] element\./,
       );
     });
 

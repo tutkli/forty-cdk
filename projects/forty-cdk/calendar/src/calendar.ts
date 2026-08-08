@@ -96,7 +96,7 @@ export class ForCalendar<D> implements ForCalendarContext<D> {
   readonly #announcer = inject(LiveAnnouncer);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER`. */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForCalendar');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForCalendar', { scope: 'calendar' });
 
   /**
    * Two-way bindable selected date, or `null`. The `model()` change emitter

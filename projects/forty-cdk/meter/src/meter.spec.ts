@@ -222,7 +222,7 @@ describe('ForMeter', () => {
       });
 
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/meter\] ForMeterIndicator must be used inside a \[forMeter\] element\./,
+        /\[forty-cdk\/meter\] FORCDK-METER-001: ForMeterIndicator must be used inside a \[forMeter\] element\./,
       );
     });
   });

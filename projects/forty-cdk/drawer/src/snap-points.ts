@@ -22,6 +22,7 @@
  * Internal to the drawer primitive — not re-exported through `index.ts` /
  * `public-api.ts`.
  */
+import { fortyError } from 'forty-cdk/core';
 import type { ForDrawerSnapPoint } from './drawer-context';
 
 const SNAP_POINT_PERCENT_RE = /^(-?\d+(?:\.\d+)?)%$/;
@@ -48,7 +49,11 @@ function classifySnapPoint(p: ForDrawerSnapPoint): SnapPointKind {
 export function snapPointToFraction(p: ForDrawerSnapPoint, dimension: number): number {
   if (typeof p === 'number') {
     if (!Number.isFinite(p)) {
-      throw new Error(`[forty-cdk/drawer] Snap point must be a finite number, got ${p}.`);
+      throw fortyError({
+        code: 'FORCDK-DRAWER-007',
+        message: `A numeric snap point must be finite, and one is ${p}.`,
+        fix: 'Use a finite fraction of the drawer dimension, e.g. 0.5.',
+      });
     }
     return p;
   }
@@ -62,9 +67,11 @@ export function snapPointToFraction(p: ForDrawerSnapPoint, dimension: number): n
     const n = Number.parseFloat(pxMatch[1]!);
     return dimension === 0 ? 0 : n / dimension;
   }
-  throw new Error(
-    `[forty-cdk/drawer] Snap point must be a number, "NN%", or "NNpx" string. Got: ${String(p)}.`,
-  );
+  throw fortyError({
+    code: 'FORCDK-DRAWER-008',
+    message: `A snap point must be a number, an "NN%" string, or an "NNpx" string, and one is ${String(p)}.`,
+    fix: 'Use 0.5, "50%", or "320px".',
+  });
 }
 
 /**
@@ -105,9 +112,11 @@ export function validateSnapPointsShape(snapPoints: ReadonlyArray<ForDrawerSnapP
   });
   for (let i = 1; i < positions.length; i++) {
     if (positions[i]! <= positions[i - 1]!) {
-      throw new Error(
-        '[forty-cdk/drawer] snapPoints must be strictly increasing (closest-to-edge first).',
-      );
+      throw fortyError({
+        code: 'FORCDK-DRAWER-009',
+        message: 'snapPoints must be strictly increasing.',
+        fix: 'Order them closest-to-edge first, with no repeated value.',
+      });
     }
   }
 }
@@ -143,9 +152,28 @@ export function validateSnapPositions(
     if (cur <= prev) {
       const curConfig = JSON.stringify(snapPoints[i]);
       const prevConfig = JSON.stringify(snapPoints[i - 1]);
-      throw new Error(
-        `[forty-cdk/drawer] snap point ${curConfig} at index ${i} resolves to ${cur}px which is <= snap point ${prevConfig} at ${prev}px (drawer dimension ${dimension}px).`,
-      );
+      throw fortyError({
+        code: 'FORCDK-DRAWER-010',
+        message: `Snap point ${curConfig} at index ${i} resolves to ${cur}px, which is not past ${prevConfig} at ${prev}px.`,
+        cause: `Mixed units resolve against the live drawer dimension (${dimension}px), so an ordering valid on paper can collapse at this size.`,
+        fix: 'Order snapPoints so each resolves strictly further from the edge than the one before it.',
+      });
     }
+  }
+}
+
+/**
+ * Validates a `closeThreshold` — the fraction of the drawer's dimension a drag
+ * must cross to dismiss it. Shared by `[forDrawer]`'s mount-time check and
+ * `ForDrawerManager.open`, which validate the same value arriving through two
+ * channels; the message and its code live here so the two cannot drift.
+ */
+export function validateCloseThreshold(value: number): void {
+  if (!Number.isFinite(value) || value < 0 || value > 1) {
+    throw fortyError({
+      code: 'FORCDK-DRAWER-004',
+      message: `closeThreshold must be a fraction between 0 and 1, and it is ${value}.`,
+      fix: 'Pass a value in [0, 1] — e.g. 0.25 to dismiss after a quarter of the drawer.',
+    });
   }
 }

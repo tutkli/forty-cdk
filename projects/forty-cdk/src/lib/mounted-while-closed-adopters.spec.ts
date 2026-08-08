@@ -275,7 +275,9 @@ describe('mounted-while-closed warning adopters (#1591)', () => {
 
         const reported = mountWarnings();
         expect(reported).toHaveLength(1);
-        expect(reported[0]).toContain(`[forty-cdk/${primitive}] ${piece} ${MOUNT_WARNING}`);
+        expect(reported[0]).toContain(
+          `[forty-cdk/${primitive}] FORCDK-CORE-006: ${piece} ${MOUNT_WARNING}`,
+        );
         expect(reported[0]).toContain(`@if (${condition})`);
       });
     }
@@ -287,7 +289,9 @@ describe('mounted-while-closed warning adopters (#1591)', () => {
 
     const reported = mountWarnings();
     expect(reported).toHaveLength(1);
-    expect(reported[0]).toContain(`[forty-cdk/menu] [forMenuSubContent] ${MOUNT_WARNING}`);
+    expect(reported[0]).toContain(
+      `[forty-cdk/menu] FORCDK-CORE-006: [forMenuSubContent] ${MOUNT_WARNING}`,
+    );
     expect(reported[0]).toContain('@if (sub.open())');
   });
 

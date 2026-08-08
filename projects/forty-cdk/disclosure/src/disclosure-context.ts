@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * Shared state contract between the pieces of a Disclosure primitive.
  * Provided by `ForDisclosure`, consumed by `ForDisclosureTrigger` and
@@ -28,9 +30,12 @@ export const FOR_DISCLOSURE_CONTEXT = new InjectionToken<ForDisclosureContext>(
 export function injectDisclosureContext(piece: string): ForDisclosureContext {
   const ctx = inject(FOR_DISCLOSURE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(
-      `[forty-cdk/disclosure] ${piece} must be used inside a [forDisclosure] element.`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-DISCLOSURE-001',
+      piece,
+      root: '[forDisclosure]',
+      token: 'FOR_DISCLOSURE_CONTEXT',
+    });
   }
   return ctx;
 }

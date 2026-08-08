@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 
-import { FOR_FIELD_CONTEXT, type ForFieldContext } from 'forty-cdk/core';
+import { FOR_FIELD_CONTEXT, type ForFieldContext, orphanContextError } from 'forty-cdk/core';
 
 export {
   FOR_FIELD_CONTEXT,
@@ -16,7 +16,12 @@ export {
 export function injectFieldContext(piece: string): ForFieldContext {
   const ctx = inject(FOR_FIELD_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/field] ${piece} must be used inside a [forField] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-FIELD-001',
+      piece,
+      root: '[forField]',
+      token: 'FOR_FIELD_CONTEXT',
+    });
   }
   return ctx;
 }

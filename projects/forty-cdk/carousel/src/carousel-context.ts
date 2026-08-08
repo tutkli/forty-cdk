@@ -3,8 +3,9 @@ import { inject, InjectionToken, type Signal } from '@angular/core';
 import {
   assertRootContext,
   type ListNavigationAction,
-  type WritingDirection,
+  orphanContextError,
   type RovingTabindex,
+  type WritingDirection,
 } from 'forty-cdk/core';
 
 /** Alignment of the active slide within the viewport. */
@@ -121,7 +122,12 @@ export interface CarouselContext extends ForCarouselContext {
 export function injectCarouselContext(piece: string): CarouselContext {
   const ctx = inject(FOR_CAROUSEL_CONTEXT, { optional: true }) as CarouselContext | null;
   if (!ctx) {
-    throw new Error(`[forty-cdk/carousel] ${piece} must be used inside a [forCarousel] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-CAROUSEL-001',
+      piece,
+      root: '[forCarousel]',
+      token: 'FOR_CAROUSEL_CONTEXT',
+    });
   }
   assertRootContext({
     entryPoint: 'carousel',

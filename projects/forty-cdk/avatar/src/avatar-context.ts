@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * Lifecycle stages of the avatar's image:
  * - `idle`: no `src` set yet.
@@ -36,7 +38,12 @@ export const FOR_AVATAR_CONTEXT = new InjectionToken<ForAvatarContext>('FOR_AVAT
 export function injectAvatarContext(piece: string): ForAvatarContext {
   const ctx = inject(FOR_AVATAR_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/avatar] ${piece} must be used inside a [forAvatar] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-AVATAR-001',
+      piece,
+      root: '[forAvatar]',
+      token: 'FOR_AVATAR_CONTEXT',
+    });
   }
   return ctx;
 }

@@ -15,7 +15,12 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
 
-import { hostAriaLabel, injectPrefersReducedMotion, resolveConfigClass } from 'forty-cdk/core';
+import {
+  fortyWarn,
+  hostAriaLabel,
+  injectPrefersReducedMotion,
+  resolveConfigClass,
+} from 'forty-cdk/core';
 import {
   DEFAULT_TOAST_REGION,
   type ForToastCloseReason,
@@ -330,10 +335,12 @@ export class ForToastViewport {
           warned = false;
         } else if (!warned) {
           warned = true;
-          console.warn(
-            `[forty-cdk/toast] A <for-toast-viewport> for region "${this.region()}" is already mounted; ` +
-              `this one stays inactive to avoid duplicate toasts. Give it a distinct [region] for an independent toast region.`,
-          );
+          fortyWarn({
+            code: 'FORCDK-TOAST-003',
+            message: `A <for-toast-viewport> for region "${this.region()}" is already mounted.`,
+            cause: 'This one stays inactive so the region does not render duplicate toasts.',
+            fix: 'Give it a distinct [region] for an independent toast region.',
+          });
         }
       });
     }

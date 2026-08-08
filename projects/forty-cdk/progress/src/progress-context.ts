@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /** State of a progress bar reflected on `data-state`. */
 export type ForProgressState = 'indeterminate' | 'loading' | 'complete';
 
@@ -40,7 +42,12 @@ export const FOR_PROGRESS_CONTEXT = new InjectionToken<ForProgressContext>('FOR_
 export function injectProgressContext(piece: string): ForProgressContext {
   const ctx = inject(FOR_PROGRESS_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/progress] ${piece} must be used inside a [forProgress] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-PROGRESS-001',
+      piece,
+      root: '[forProgress]',
+      token: 'FOR_PROGRESS_CONTEXT',
+    });
   }
   return ctx;
 }

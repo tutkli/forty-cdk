@@ -393,7 +393,7 @@ describe('ForCheckbox', () => {
       class Orphan {}
 
       expect(() => renderHost(Orphan)).toThrow(
-        /\[forty-cdk\/checkbox\] ForCheckboxIndicator must be used inside a \[forCheckbox\] element\./,
+        /\[forty-cdk\/checkbox\] FORCDK-CHECKBOX-001: ForCheckboxIndicator must be used inside a \[forCheckbox\] element\./,
       );
     });
 

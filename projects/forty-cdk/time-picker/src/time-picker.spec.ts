@@ -1004,7 +1004,7 @@ describe('ForTimePicker', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoAnchorsHost);
       expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/time-picker\] Multiple \[forTimePickerAnchor\]/,
+        /\[forty-cdk\/time-picker\] FORCDK-TIME-PICKER-003: A \[forTimePicker\] registered a second \[forTimePickerAnchor\]/,
       );
     });
   });

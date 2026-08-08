@@ -14,25 +14,26 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  attachPointerGrace,
+  buildSubmenuGracePolygon,
+  createDebouncedAction,
+  createMenuOverlay,
+  emitVetoableEvent,
   type FloatingAlign,
   type FloatingFallbackAxisSideDirection,
   type FloatingSide,
-  createDebouncedAction,
-  type WritingDirection,
-  createMenuOverlay,
-  MenuOverlayHost,
-  MENU_POSITIONING_DEFAULTS,
-  attachPointerGrace,
-  buildSubmenuGracePolygon,
-  type Point,
-  resolveGraceSide,
-  isHoverCapablePointer,
-  emitVetoableEvent,
-  type VetoableEvent,
-  type VetoableNativeEvent,
   FOR_MENU_CONTEXT,
   type ForMenuCloseReason,
   type ForMenuContext,
+  isHoverCapablePointer,
+  MENU_POSITIONING_DEFAULTS,
+  MenuOverlayHost,
+  orphanContextError,
+  type Point,
+  resolveGraceSide,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+  type WritingDirection,
 } from 'forty-cdk/core';
 import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
@@ -320,9 +321,12 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
     super();
     const parent = inject(FOR_MENU_CONTEXT, { skipSelf: true, optional: true });
     if (!parent) {
-      throw new Error(
-        '[forty-cdk/menu] [forMenuSub] must be inside a [forDropdownMenu], [forContextMenu], or another [forMenuSub] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-MENU-006',
+        piece: '[forMenuSub]',
+        root: '[forDropdownMenu], [forContextMenu], or another [forMenuSub]',
+        token: 'FOR_MENU_CONTEXT',
+      });
     }
     this.parentMenu = parent;
 

@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { hostButtonType, hostId, registerHandle } from 'forty-cdk/core';
+import { fortyError, hostButtonType, hostId, registerHandle } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 
 /**
@@ -122,9 +122,17 @@ export class ForComboboxAction {
 
     afterNextRender(() => {
       if (!this.#ctx.hasList()) {
-        throw new Error(
-          '[forty-cdk/combobox] [forComboboxAction] must be nested inside a [forComboboxContent] that also contains a [forComboboxList]. In the editable anatomy [forComboboxContent] carries role="listbox", so a role="button" action placed directly inside it is an invalid listbox child (aria-required-owned). Wrap the options in a <div forComboboxList> so the action becomes a sibling of the listbox.',
-        );
+        throw fortyError({
+          code: 'FORCDK-COMBOBOX-001',
+          message:
+            '[forComboboxAction] must sit inside a [forComboboxContent] that also contains a ' +
+            '[forComboboxList].',
+          cause:
+            'In the editable anatomy [forComboboxContent] carries role="listbox", so a ' +
+            'role="button" action placed directly inside it is an invalid listbox child ' +
+            '(aria-required-owned).',
+          fix: 'Wrap the options in a <div forComboboxList> so the action becomes a sibling of the listbox.',
+        });
       }
     });
   }

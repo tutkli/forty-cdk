@@ -30,7 +30,7 @@ describe('ForTableVirtualized', () => {
     });
 
     expect(() => TestBed.createComponent(Orphan)).toThrow(
-      /\[forty-cdk\/table-virtualization\] ForTableVirtualized must be used inside a \[forTable\] element\./,
+      /\[forty-cdk\/table-virtualization\] FORCDK-TABLE-VIRTUALIZATION-001: ForTableVirtualized must be used inside a \[forTable\] element\./,
     );
   });
 });

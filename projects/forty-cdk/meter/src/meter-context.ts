@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * Quality bucket reflected on `data-quality`. Mirrors the HTML5 `<meter>`
  * algorithm:
@@ -44,7 +46,12 @@ export const FOR_METER_CONTEXT = new InjectionToken<ForMeterContext>('FOR_METER_
 export function injectMeterContext(piece: string): ForMeterContext {
   const ctx = inject(FOR_METER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/meter] ${piece} must be used inside a [forMeter] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-METER-001',
+      piece,
+      root: '[forMeter]',
+      token: 'FOR_METER_CONTEXT',
+    });
   }
   return ctx;
 }

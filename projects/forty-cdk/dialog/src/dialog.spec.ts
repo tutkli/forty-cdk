@@ -507,7 +507,7 @@ describe('ForDialog (declarative)', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(DoubleBackdropHost)).toThrow(
-        /\[forty-cdk\/dialog\] Multiple/,
+        /\[forty-cdk\/dialog\] FORCDK-CORE-001: A modal surface registered a second backdrop/,
       );
     });
   });
@@ -617,7 +617,10 @@ describe('ForDialog (declarative)', () => {
         template: `<h2 forDialogTitle></h2>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogTitle/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/dialog\] FORCDK-DIALOG-001: ForDialogTitle must be used inside/,
+      );
     });
 
     it('throws from ForDialogDescription', () => {
@@ -626,7 +629,10 @@ describe('ForDialog (declarative)', () => {
         template: `<p forDialogDescription></p>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogDescription/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/dialog\] FORCDK-DIALOG-001: ForDialogDescription must be used inside/,
+      );
     });
 
     it('throws from ForDialogClose', () => {
@@ -635,7 +641,10 @@ describe('ForDialog (declarative)', () => {
         template: `<button forDialogClose></button>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogClose/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/dialog\] FORCDK-DIALOG-001: ForDialogClose must be used inside/,
+      );
     });
 
     it('throws from ForDialogBackdrop', () => {
@@ -644,7 +653,10 @@ describe('ForDialog (declarative)', () => {
         template: `<div forDialogBackdrop></div>`,
       })
       class Orphan {}
-      expectThrows(Orphan, /\[forty-cdk\/dialog\] ForDialogBackdrop/);
+      expectThrows(
+        Orphan,
+        /\[forty-cdk\/dialog\] FORCDK-DIALOG-001: ForDialogBackdrop must be used inside/,
+      );
     });
   });
 

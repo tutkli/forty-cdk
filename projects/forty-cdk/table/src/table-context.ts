@@ -1,6 +1,8 @@
 import { booleanAttribute, inject, InjectionToken, isDevMode, type Signal } from '@angular/core';
 
 import {
+  fortyError,
+  orphanContextError,
   TABLE_REGISTRATION_CONTEXT,
   TABLE_ROW_REGISTRATION_CONTEXT,
   type TableRegistrationContext,
@@ -177,12 +179,15 @@ const COLUMN_NAME_PATTERN = /^[-_A-Za-z0-9]+$/;
  */
 export function assertColumnName(name: string, piece: string): void {
   if (isDevMode() && !COLUMN_NAME_PATTERN.test(name)) {
-    throw new Error(
-      `[forty-cdk/table] Invalid column name ${JSON.stringify(name)} declared on ${piece}. ` +
-        `Column names are interpolated into CSS custom-property names ` +
-        `(--for-table-col-<name>-width) and grid-template-columns, so they may contain ` +
-        `only letters, digits, hyphens, and underscores.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-TABLE-007',
+      message: `Invalid column name ${JSON.stringify(name)} declared on ${piece}.`,
+      cause:
+        'Column names are interpolated into the --for-table-col-<name>-width custom property and ' +
+        'into grid-template-columns, where anything else silently produces an invalid ' +
+        'declaration and collapses the layout.',
+      fix: 'Use only letters, digits, hyphens, and underscores.',
+    });
   }
 }
 
@@ -206,12 +211,14 @@ export function assertColumnTrack(track: string, input: string, piece: string): 
   }
   const reason = columnTrackDefect(track);
   if (reason) {
-    throw new Error(
-      `[forty-cdk/table] Invalid ${input} ${JSON.stringify(track)} declared on ${piece}: ` +
-        `${reason}. A track fragment is interpolated into the grid-template-columns string ` +
-        `derived by ForTableBody, where it would silently produce an invalid declaration and ` +
-        `collapse the layout with no error.`,
-    );
+    throw fortyError({
+      code: 'FORCDK-TABLE-008',
+      message: `Invalid ${input} ${JSON.stringify(track)} declared on ${piece}: ${reason}.`,
+      cause:
+        'A track fragment is interpolated into the grid-template-columns string ForTableBody ' +
+        'derives, where a fragment that escapes its slot collapses the whole track with no error.',
+      fix: 'Use a self-contained track value, or omit the input (or pass null) to leave it unset.',
+    });
   }
 }
 
@@ -259,7 +266,12 @@ export function hostHasSortActivation(el: HTMLElement): boolean {
 export function injectTableContext(piece: string): ForTableContext {
   const ctx = inject(FOR_TABLE_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/table] ${piece} must be used inside a [forTable] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TABLE-009',
+      piece,
+      root: '[forTable]',
+      token: 'FOR_TABLE_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -267,7 +279,12 @@ export function injectTableContext(piece: string): ForTableContext {
 export function injectTableRegistration(piece: string): TableRegistrationContext {
   const ctx = inject(TABLE_REGISTRATION_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/table] ${piece} must be used inside a [forTable] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TABLE-010',
+      piece,
+      root: '[forTable]',
+      token: 'TABLE_REGISTRATION_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -275,7 +292,12 @@ export function injectTableRegistration(piece: string): TableRegistrationContext
 export function injectTableRowRegistration(piece: string): TableRowRegistrationContext {
   const ctx = inject(TABLE_ROW_REGISTRATION_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/table] ${piece} must be used inside a [forTableRow] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TABLE-011',
+      piece,
+      root: '[forTableRow]',
+      token: 'TABLE_ROW_REGISTRATION_CONTEXT',
+    });
   }
   return ctx;
 }
@@ -283,7 +305,12 @@ export function injectTableRowRegistration(piece: string): TableRowRegistrationC
 export function injectTableRowContext(piece: string): ForTableRowContext {
   const ctx = inject(FOR_TABLE_ROW_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/table] ${piece} must be used inside a [forTableRow] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-TABLE-012',
+      piece,
+      root: '[forTableRow]',
+      token: 'FOR_TABLE_ROW_CONTEXT',
+    });
   }
   return ctx;
 }

@@ -1,4 +1,5 @@
 import { isDevMode } from '@angular/core';
+import { fortyError } from '../errors/errors';
 
 /**
  * Identity of the piece asserting its root context, plus the probe that tells
@@ -67,12 +68,15 @@ export function assertRootContext(assertion: RootContextAssertion): void {
   if (typeof readProbe(assertion.probe) === 'function') {
     return;
   }
-  throw new Error(
-    `[forty-cdk/${assertion.entryPoint}] ${assertion.piece} resolved a ${assertion.token} ` +
-      `provider that is not the ${assertion.root} root. The token is publicly typed as the ` +
-      `consumer read surface, but the pieces read it at the root's internal registration ` +
-      `protocol — so it must be aliased to the root itself: ` +
-      `{ provide: ${assertion.token}, useExisting: MyRoot }, where MyRoot is ${assertion.root} ` +
-      `or a subclass of it.`,
-  );
+  throw fortyError({
+    code: 'FORCDK-CORE-007',
+    scope: assertion.entryPoint,
+    message: `${assertion.piece} resolved a ${assertion.token} provider that is not the ${assertion.root} root.`,
+    cause:
+      'The token is publicly typed as the consumer read surface, but the pieces read it at the ' +
+      "root's internal registration protocol, which only the root implements.",
+    fix:
+      `Alias the token to the root itself: { provide: ${assertion.token}, useExisting: MyRoot }, ` +
+      `where MyRoot is ${assertion.root} or a subclass of it.`,
+  });
 }

@@ -9,6 +9,7 @@ import {
   PLATFORM_ID,
 } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
 import { FOR_AVATAR_CONTEXT, type ForAvatarStatus } from './avatar-context';
 
 /**
@@ -42,9 +43,12 @@ export class ForAvatarImage {
 
   constructor() {
     if (!this.#parent) {
-      throw new Error(
-        '[forty-cdk/avatar] ForAvatarImage must be used inside a [forAvatar] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-AVATAR-002',
+        piece: 'ForAvatarImage',
+        root: '[forAvatar]',
+        token: 'FOR_AVATAR_CONTEXT',
+      });
     }
     const parent = this.#parent;
     const host = this.#host;

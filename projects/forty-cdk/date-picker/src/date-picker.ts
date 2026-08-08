@@ -14,14 +14,15 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   assertTimeCapable,
-  type DateAdapter,
-  type FieldGranularity,
-  injectDateAdapter,
-  injectHiddenInput,
   clampToBounds,
   composeWithTime,
-  serializeISODate,
+  type DateAdapter,
+  type FieldGranularity,
   FOR_TIME_VALUE_SOURCE,
+  fortyError,
+  injectDateAdapter,
+  injectHiddenInput,
+  serializeISODate,
 } from 'forty-cdk/core';
 import { DatePickerBase } from './date-picker-base';
 import { FOR_DATE_PICKER_CONTEXT, type ForDatePickerContext } from './date-picker-context';
@@ -109,7 +110,9 @@ export class ForDatePicker<D>
   readonly #defaults = inject(FOR_DATE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
-  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker');
+  readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker', {
+    scope: 'date-picker',
+  });
 
   readonly triggerId = signal(this.idGen.next('for-date-picker-trigger'));
   readonly contentId = signal(this.idGen.next('for-date-picker-content'));
@@ -287,9 +290,16 @@ export class ForDatePicker<D>
         return;
       }
       if (isDevMode() && timeSource.adapter !== this.adapter) {
-        throw new Error(
-          '[forty-cdk/date-picker] The projected time source (ForTimeField / ForTimePicker) must use the same DateAdapter as the ForDatePicker.',
-        );
+        throw fortyError({
+          code: 'FORCDK-DATE-PICKER-005',
+          message:
+            'The projected time source (ForTimeField / ForTimePicker) uses a different DateAdapter ' +
+            'than the ForDatePicker.',
+          cause:
+            'The picker composes the time source’s value into its own date, so the two must agree ' +
+            'on the date representation.',
+          fix: 'Provide one DateAdapter for both the picker and its time source.',
+        });
       }
       const sub = timeSource.value.subscribe((value) => {
         if (this.readonly() || this.effectiveDisabled()) {
@@ -316,6 +326,6 @@ export class ForDatePicker<D>
 
   /** The active adapter, narrowed to a time-capable one; throws when it is day-only. */
   #time() {
-    return assertTimeCapable(this.adapter, 'ForDatePicker');
+    return assertTimeCapable(this.adapter, 'ForDatePicker', { scope: 'date-picker' });
   }
 }

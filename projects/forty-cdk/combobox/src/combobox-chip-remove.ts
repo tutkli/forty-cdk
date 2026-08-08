@@ -1,6 +1,6 @@
 import { computed, Directive, inject } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { hostButtonType, orphanContextError, reflectDisabled } from 'forty-cdk/core';
 import { injectComboboxContext } from './combobox-context';
 import { ForComboboxChip } from './combobox-chip';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
@@ -49,9 +49,12 @@ export class ForComboboxChipRemove {
 
   constructor() {
     if (!this.#chip) {
-      throw new Error(
-        '[forty-cdk/combobox] ForComboboxChipRemove must be used inside a [forComboboxChip] element.',
-      );
+      throw orphanContextError({
+        code: 'FORCDK-COMBOBOX-002',
+        piece: 'ForComboboxChipRemove',
+        root: '[forComboboxChip]',
+        token: 'ForComboboxChip',
+      });
     }
     reflectDisabled(this.isDisabled);
   }

@@ -319,7 +319,7 @@ Three accepted shapes:
 - `'NN%'` — equivalent to a fraction (`'50%' === 0.5`).
 - `'NNpx'` — absolute pixel size measured from the anchored edge.
 
-Pass them in **strictly increasing** order (closest-to-edge first). The directive throws `[forty-cdk/drawer] snapPoints must be strictly increasing (closest-to-edge first).` otherwise. `fadeFromIndex` must be a valid index into `snapPoints`.
+Pass them in **strictly increasing** order (closest-to-edge first); the directive throws `FORCDK-DRAWER-009` otherwise. Mixed units (`'200px'` next to `0.5`) can only be ordered against the live drawer size, so they are re-checked on first measurement and fail with `FORCDK-DRAWER-010`, which names the offending point and the dimension it resolved against. `fadeFromIndex` must be a valid index into `snapPoints`.
 
 ```ts
 [snapPoints] =

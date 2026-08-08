@@ -1,7 +1,12 @@
 import { isPlatformBrowser } from '@angular/common';
 import { computed, DOCUMENT, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
-import { type ForDrawerSide, ForDrawerStack, injectPrefersReducedMotion } from 'forty-cdk/core';
+import {
+  type ForDrawerSide,
+  ForDrawerStack,
+  fortyError,
+  injectPrefersReducedMotion,
+} from 'forty-cdk/core';
 
 /**
  * Per-drawer configuration consumed by {@link ForDrawerScaleCoordinator}.
@@ -221,9 +226,12 @@ export class ForDrawerScaleCoordinator {
       return () => {};
     }
     if (this.#wrapperEl() !== null && this.#wrapperEl() !== host) {
-      throw new Error(
-        '[forty-cdk/drawer] Multiple [forDrawerWrapper] registered; only one wrapper is allowed per viewport.',
-      );
+      throw fortyError({
+        code: 'FORCDK-DRAWER-005',
+        message: 'A second [forDrawerWrapper] registered; only one is allowed per viewport.',
+        cause: 'The wrapper owns the viewport-wide scale transform, which has a single owner.',
+        fix: 'Keep one [forDrawerWrapper] around the scaled content.',
+      });
     }
     this.#wrapperEl.set(host);
     return () => {

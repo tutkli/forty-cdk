@@ -614,7 +614,7 @@ describe('ForAccordion', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanItem)).toThrow(
-        /\[forty-cdk\/accordion\] ForAccordionItem must be used inside a \[forAccordion\] element\./,
+        /\[forty-cdk\/accordion\] FORCDK-ACCORDION-001: ForAccordionItem must be used inside a \[forAccordion\] element\./,
       );
     });
 
@@ -634,7 +634,7 @@ describe('ForAccordion', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanTrigger)).toThrow(
-        /\[forty-cdk\/accordion\] ForAccordionTrigger must be used inside a \[forAccordionItem\] element\./,
+        /\[forty-cdk\/accordion\] FORCDK-ACCORDION-002: ForAccordionTrigger must be used inside a \[forAccordionItem\] element\./,
       );
     });
 
@@ -654,7 +654,7 @@ describe('ForAccordion', () => {
       });
 
       expect(() => TestBed.createComponent(OrphanContent)).toThrow(
-        /\[forty-cdk\/accordion\] ForAccordionContent must be used inside a \[forAccordionItem\] element\./,
+        /\[forty-cdk\/accordion\] FORCDK-ACCORDION-002: ForAccordionContent must be used inside a \[forAccordionItem\] element\./,
       );
     });
   });

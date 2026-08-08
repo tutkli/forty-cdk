@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 /**
  * The coordination surface a `[forNumberInput]` exposes to its siblings. The
  * auxiliary `[forNumberInputIncrement]` / `[forNumberInputDecrement]` buttons
@@ -79,9 +81,12 @@ export const FOR_NUMBER_INPUT_GROUP = new InjectionToken<ForNumberInputGroupCont
 export function injectNumberInputGroup(piece: string): ForNumberInputGroupContext {
   const group = inject(FOR_NUMBER_INPUT_GROUP, { optional: true });
   if (!group) {
-    throw new Error(
-      `[forty-cdk/number-input] ${piece} must be used inside a [forNumberInputGroup] that wraps a [forNumberInput].`,
-    );
+    throw orphanContextError({
+      code: 'FORCDK-NUMBER-INPUT-001',
+      piece,
+      root: '[forNumberInputGroup] that wraps a [forNumberInput]',
+      token: 'FOR_NUMBER_INPUT_GROUP',
+    });
   }
   return group;
 }

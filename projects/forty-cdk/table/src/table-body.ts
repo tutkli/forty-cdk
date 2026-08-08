@@ -16,6 +16,8 @@ import {
   viewChildren,
 } from '@angular/core';
 
+import { fortyError } from 'forty-cdk/core';
+
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
 import { assertColumnDefConfig, type ForColumnDef } from './column-def';
@@ -569,11 +571,16 @@ export class ForTableBody<T = unknown> {
     }
     const registry = assertTableDefRegistry(external);
     if (!this.#ownDefs.isEmpty()) {
-      throw new Error(
-        `[forty-cdk/table] <for-table-body> renders the [defs] registry it was given, so the ` +
-          `def(s) declared inside its own tags are ignored. Declare them alongside the projected ` +
-          `defs — outside the <for-table-body> element — so they register with the same registry.`,
-      );
+      throw fortyError({
+        code: 'FORCDK-TABLE-004',
+        message:
+          '<for-table-body> was given a [defs] registry and also has def(s) declared inside its ' +
+          'own tags, which are ignored.',
+        cause: 'The body renders exactly one registry: the one bound to [defs].',
+        fix:
+          'Declare those defs alongside the projected ones, outside the <for-table-body> element, ' +
+          'so they register with the same registry.',
+      });
     }
     return registry;
   });
@@ -698,9 +705,11 @@ export class ForTableBody<T = unknown> {
     const hasCell = def.cell() != null;
     const hasPlaceholder = def.placeholderCells();
     if (hasCell === hasPlaceholder) {
-      throw new Error(
-        `[forty-cdk/table] A [forRowDef] must declare exactly one of a [forRowCell] template or the placeholderCells flag (this def declares ${hasCell ? 'both' : 'neither'}).`,
-      );
+      throw fortyError({
+        code: 'FORCDK-TABLE-005',
+        message: `A [forRowDef] declares ${hasCell ? 'both' : 'neither'} of a [forRowCell] template and the placeholderCells flag.`,
+        fix: 'Declare exactly one of the two on every [forRowDef].',
+      });
     }
   }
 

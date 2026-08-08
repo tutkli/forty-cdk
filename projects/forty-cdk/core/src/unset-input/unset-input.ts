@@ -1,4 +1,5 @@
 import { effect, isDevMode, type Signal } from '@angular/core';
+import { fortyError } from '../errors/errors';
 
 const UNSET: unique symbol = Symbol('forty-cdk:unset-input');
 
@@ -75,11 +76,16 @@ export function assertInputBound<T>(
   }
   effect(() => {
     if (isUnset(value())) {
-      throw new Error(
-        `[forty-cdk/${primitive}] ${piece} has no [${inputName}] binding. The input is ` +
-          `declared optional so the parent can skip a piece whose binding is not written ` +
-          `yet; left unbound, the piece never joins its parent.`,
-      );
+      throw fortyError({
+        code: 'FORCDK-CORE-010',
+        scope: primitive,
+        message: `${piece} has no [${inputName}] binding.`,
+        cause:
+          'The input is declared optional so the parent can skip a piece whose binding is not ' +
+          'written yet, which means a permanently unbound piece never joins its parent instead ' +
+          'of failing to compile.',
+        fix: `Bind [${inputName}] on every ${piece}.`,
+      });
     }
   });
 }

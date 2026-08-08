@@ -394,7 +394,9 @@ describe('ForDatePicker', () => {
       }
       expect(error).toBeInstanceOf(Error);
       const message = (error as Error).message;
-      expect(message).toMatch(/\[forty-cdk\/date-picker\] ForDatePickerTrigger could not resolve/);
+      expect(message).toMatch(
+        /\[forty-cdk\/date-picker\] FORCDK-DATE-PICKER-004: \[forDatePickerTrigger\] could not resolve/,
+      );
       expect(message).toMatch(/declaration site/);
       expect(message).toMatch(/\[forDatePickerTrigger\]="root"/);
       expect(message).toMatch(/#root="forDatePicker"/);
@@ -409,7 +411,7 @@ describe('ForDatePicker', () => {
 
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       expect(() => TestBed.createComponent(Orphan)).toThrow(
-        /\[forty-cdk\/date-picker\] ForDatePickerAnchor must be used inside a \[forDatePicker\] element\./,
+        /\[forty-cdk\/date-picker\] FORCDK-DATE-PICKER-003: ForDatePickerAnchor must be used inside a \[forDatePicker\] element\./,
       );
     });
   });
@@ -516,7 +518,7 @@ describe('ForDatePicker', () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(TwoAnchorsHost);
       expect(() => fixture.detectChanges()).toThrow(
-        /\[forty-cdk\/date-picker\] Multiple \[forDatePickerAnchor\]/,
+        /\[forty-cdk\/date-picker\] FORCDK-DATE-PICKER-002: A picker root registered a second \[forDatePickerAnchor\]/,
       );
     });
   });

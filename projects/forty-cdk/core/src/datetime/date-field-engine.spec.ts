@@ -57,6 +57,7 @@ function setup(options: Options = {}): Harness {
     source: value,
     onCommit: (v) => value.set(v),
     piece: 'ForDateField',
+    scope: 'date-field',
   });
   return {
     engine,

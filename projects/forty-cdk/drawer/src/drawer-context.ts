@@ -1,6 +1,6 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type ForDrawerSide } from 'forty-cdk/core';
+import { type ForDrawerSide, orphanContextError } from 'forty-cdk/core';
 
 export { type ForDrawerSide };
 
@@ -134,7 +134,12 @@ export const FOR_DRAWER_INSTANCE_ID = new InjectionToken<string>('FOR_DRAWER_INS
 export function injectDrawerContext(piece: string): ForDrawerContext {
   const ctx = inject(FOR_DRAWER_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/drawer] ${piece} must be used inside a [forDrawer] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-DRAWER-002',
+      piece,
+      root: '[forDrawer]',
+      token: 'FOR_DRAWER_CONTEXT',
+    });
   }
   return ctx;
 }

@@ -131,6 +131,13 @@ export {
   ForDrawerStack,
 } from './drawer-stack/drawer-stack';
 export { type ElementBox, injectElementSize } from './element-size/element-size';
+export { formatFortyMessage, fortyError, type FortyMessageSpec, fortyWarn } from './errors/errors';
+export {
+  orphanContextError,
+  type OrphanContextSpec,
+  unresolvedRootError,
+  type UnresolvedRootSpec,
+} from './errors/orphan-context';
 export {
   type FieldControlHandle,
   FOR_FIELD_CONTEXT,

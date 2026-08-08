@@ -1,6 +1,10 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type ListNavigationAction, type WritingDirection } from 'forty-cdk/core';
+import {
+  type ListNavigationAction,
+  orphanContextError,
+  type WritingDirection,
+} from 'forty-cdk/core';
 
 export interface ForListboxOptionHandle<T = unknown> {
   readonly host: HTMLElement;
@@ -133,7 +137,12 @@ export const FOR_LISTBOX_CONTEXT = new InjectionToken<ForListboxContext>('FOR_LI
 export function injectListboxContext<T = unknown>(piece: string): ForListboxContext<T> {
   const ctx = inject(FOR_LISTBOX_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/listbox] ${piece} must be used inside a [forListbox] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-LISTBOX-001',
+      piece,
+      root: '[forListbox]',
+      token: 'FOR_LISTBOX_CONTEXT',
+    });
   }
   return ctx as unknown as ForListboxContext<T>;
 }

@@ -9,7 +9,7 @@ import {
   model,
 } from '@angular/core';
 
-import { hostButtonType, reflectDisabled } from 'forty-cdk/core';
+import { fortyWarn, hostButtonType, reflectDisabled } from 'forty-cdk/core';
 
 /**
  * Button that toggles the dialog when clicked. Apply on a focusable element —
@@ -79,9 +79,14 @@ export class ForDialogTrigger {
     if (isDevMode()) {
       effect(() => {
         if (this.open() && this.controls() === null) {
-          console.warn(
-            '[forty-cdk/dialog] [forDialogTrigger] is open but has no [controls] — aria-controls is omitted. Set [controls] to the id on [forDialog] so assistive tech links the trigger to its dialog.',
-          );
+          fortyWarn({
+            code: 'FORCDK-DIALOG-002',
+            message:
+              '[forDialogTrigger] is open but has no [controls], so aria-controls is omitted.',
+            cause:
+              'The trigger and its dialog are separate elements, so only the consumer knows the id.',
+            fix: 'Set [controls] to the id on [forDialog] so assistive tech links the two.',
+          });
         }
       });
     }

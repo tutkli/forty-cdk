@@ -1,5 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
+import { orphanContextError } from 'forty-cdk/core';
+
 export type ForDialogCloseReason =
   | 'escape'
   | 'backdrop'
@@ -80,7 +82,12 @@ export const FOR_DIALOG_INSTANCE_ID = new InjectionToken<string>('FOR_DIALOG_INS
 export function injectDialogContext(piece: string): ForDialogContext {
   const ctx = inject(FOR_DIALOG_CONTEXT, { optional: true });
   if (!ctx) {
-    throw new Error(`[forty-cdk/dialog] ${piece} must be used inside a [forDialog] element.`);
+    throw orphanContextError({
+      code: 'FORCDK-DIALOG-001',
+      piece,
+      root: '[forDialog]',
+      token: 'FOR_DIALOG_CONTEXT',
+    });
   }
   return ctx;
 }
