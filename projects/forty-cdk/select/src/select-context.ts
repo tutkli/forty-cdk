@@ -124,12 +124,8 @@ export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
  * and drives. Advanced consumers inject the token to read the selection and the
  * open state and to move them through the root's guards (`activate` /
  * `selectAll`, plus the open / close commands on {@link ForSelectContext.overlay}).
- *
- * Everything the library's own pieces call — the positioning mirrors
- * `[forSelectContent]` feeds to floating-ui, the APG range-selection and
- * typeahead handlers `[forSelectOption]` routes its keys through, the
- * virtualized activedescendant model — is deliberately absent. It lives on the
- * unexported {@link SelectContext}, so the wiring stays refactorable after 1.0.
+ * The wiring the library's own pieces read off the root is deliberately not
+ * part of it.
  *
  * Generic over the option value type `T` (default `string` at the public
  * root). When a consumer binds object items the directive infers `T` from

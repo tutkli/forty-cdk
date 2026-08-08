@@ -32,7 +32,11 @@ export const CONTEXT_SURFACE_CEILING = 25;
  * before reading them as a ranking. The count is the **flattened** surface, so
  * the three anchored overlays each carry the eleven positioning members of the
  * blessed `AnchoredPositioningContext` they inherit — genuinely consumer-facing,
- * and counted three times. And a wide context is not by itself a defect: what
+ * and counted three times. Flattening follows **inheritance only**: a member
+ * typed with a facade counts as one however wide that facade is
+ * (`ForSelectContext.overlay`), so retyping members behind a new interface
+ * lowers the number without narrowing what a consumer reaches, and is not a way
+ * to drain an entry. And a wide context is not by itself a defect: what
  * the number detects is a surface that has stopped describing what a consumer
  * does with the primitive, which is a judgement the entry below has to make.
  */

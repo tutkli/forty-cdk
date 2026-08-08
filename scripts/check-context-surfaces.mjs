@@ -158,8 +158,9 @@ if (failures.length) {
 
 const listed = Object.keys(CONTEXT_SURFACE_EXCEPTIONS).length;
 const widest = measured.find(({ name }) => !CONTEXT_SURFACE_EXCEPTIONS[name]);
+const widestNote = widest ? `(widest: ${widest.name} at ${widest.size}), ` : '';
 console.log(
   `[check-context-surfaces] OK — ${measured.length - listed} published For*Context interfaces at or ` +
-    `under ${CONTEXT_SURFACE_CEILING} members (widest: ${widest.name} at ${widest.size}), plus the ` +
+    `under ${CONTEXT_SURFACE_CEILING} members ${widestNote}plus the ` +
     `${listed} pinned at their current size in scripts/lib/context-surfaces.mjs.`,
 );

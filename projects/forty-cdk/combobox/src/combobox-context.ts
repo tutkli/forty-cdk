@@ -98,13 +98,9 @@ export interface ForComboboxActionHandle extends CollectionHandle {
  * Coordination contract owned by `[forCombobox]` — the surface a consumer
  * reads and drives. Advanced consumers inject the token to read the selection,
  * the query and the open state, and to move them through the root's guards
- * (`activate` / `removeValue` / `clear` / `openMenu` / `closeMenu`).
- *
- * Everything the library's own pieces call — the positioning mirrors the
- * content surface feeds to floating-ui, the ids the ARIA wiring points at, the
- * label caches, the outside-interaction forwarders, the navigation cursors —
- * is deliberately absent. It lives on the unexported {@link ComboboxContext},
- * so the wiring stays refactorable after 1.0.
+ * (`activate` / `removeValue` / `clear` / `openMenu` / `closeMenu`). The
+ * wiring the library's own pieces read off the root is deliberately not part
+ * of it.
  *
  * The value model is always an array — single mode (`multiple=false`,
  * default) keeps 0 or 1 element, multi mode keeps any number. This mirrors

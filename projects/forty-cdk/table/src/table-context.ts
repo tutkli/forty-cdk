@@ -32,12 +32,10 @@ export type TableStickyValue = boolean | 'end';
  * expansion commands.
  *
  * It deliberately carries neither the piece-registration protocol nor the
- * roving-grid model. How header rows, header cells, data rows, the declarative
+ * roving-grid model: how header rows, header cells, data rows, the declarative
  * body's row count, the virtualization seams and the resized column widths wire
- * themselves into the root is the library's own business and changes without
- * notice, so it lives on a separate `TABLE_REGISTRATION_CONTEXT` no entry point
- * exports; where the grid's single tab stop currently sits lives on
- * {@link TablePieceContext}.
+ * themselves into the root, and where the grid's single tab stop currently
+ * sits, are the library's own business and change without notice.
  */
 export interface ForTableContext {
   /** The resolved ARIA mode; cells derive `role` (`cell` vs `gridcell`) from it, and navigation engages when it is not `'table'`. */
