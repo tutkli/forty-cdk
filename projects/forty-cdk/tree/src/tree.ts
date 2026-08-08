@@ -41,7 +41,7 @@ import {
 import { FOR_TREE_DEFAULTS } from './tree-defaults';
 import { TreeSelection } from './tree-selection';
 
-type VisibleEntry = ForTreeVisibleNode;
+type VisibleEntry<T> = ForTreeVisibleNode<T>;
 
 /**
  * Headless implementation of the
@@ -52,7 +52,8 @@ type VisibleEntry = ForTreeVisibleNode;
  * DOM focus rides the `treeitem`), typeahead, RTL arrow mirroring, and full
  * `aria-level` / `aria-setsize` / `aria-posinset` wiring.
  *
- * Two orthogonal models:
+ * Two orthogonal models, both keyed by the node value type `T` (default
+ * `string`, inferred from `[(value)]` / `[(expanded)]`):
  * - `value` — selected node values; single mode (default) keeps 0 or 1
  *   element, multi mode accumulates.
  * - `expanded` — open parent node values; always multi (no single mode).
@@ -89,7 +90,7 @@ type VisibleEntry = ForTreeVisibleNode;
     { provide: FOR_TREE_CONTAINER_CONTEXT, useExisting: ForTree },
   ],
 })
-export class ForTree implements ForTreeContext, ForTreeContainerContext {
+export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerContext<T> {
   readonly #defaults = inject(FOR_TREE_DEFAULTS);
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
@@ -99,15 +100,16 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * internal selection changes (node activation or `selectionFollowsFocus`
    * navigation), never on consumer writes via `[(value)]`.
    */
-  readonly value = model<readonly string[]>([]);
+  readonly value = model<readonly T[]>([]);
 
   /**
-   * Two-way bindable. Open (expanded) parent node values. Always multi — any
-   * number of nodes can be open. The `model()` change emitter
-   * (`(expandedChange)`) fires only on internal expand / collapse, never on
-   * consumer writes via `[(expanded)]`.
+   * Two-way bindable. Open (expanded) parent node values, keyed by the same
+   * node value type as {@link ForTree.value} — the shape `ForTable.expanded`
+   * uses for its open parent rows. Always multi — any number of nodes can be
+   * open. The `model()` change emitter (`(expandedChange)`) fires only on
+   * internal expand / collapse, never on consumer writes via `[(expanded)]`.
    */
-  readonly expanded = model<readonly string[]>([]);
+  readonly expanded = model<readonly T[]>([]);
 
   /**
    * When true, multiple nodes can be selected. Single mode (default) replaces.
@@ -148,7 +150,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * possibly unmounted — subtrees. **Required** when {@link ForTree.cascade} is
    * `true`; the tree throws a `[forty-cdk/tree]` error otherwise.
    */
-  readonly descendantsOf = input<(value: string) => readonly string[]>();
+  readonly descendantsOf = input<(value: T) => readonly T[]>();
 
   /**
    * Total number of nodes in the flattened visible-node list. When set, enables
@@ -225,7 +227,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * sole selected value when exactly one node is selected, otherwise `null`
    * (empty selection, or multiple selections in `multiple` mode).
    */
-  readonly selected = computed<string | null>(() => {
+  readonly selected = computed<T | null>(() => {
     const v = this.value();
     return v.length === 1 ? v[0]! : null;
   });
@@ -235,15 +237,15 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
   readonly roving = new RovingTabindex(() => this.#visibleHandles(), { fallback: 'first-enabled' });
 
   readonly #typeahead = injectTypeahead();
-  readonly #items = new Collection<ForTreeItemHandle>();
-  readonly #anchorValue = signal<string | null>(null);
+  readonly #items = new Collection<ForTreeItemHandle<T>>();
+  readonly #anchorValue = signal<T | null>(null);
 
   readonly items = this.#items.items;
 
-  readonly #visibleEntries = computed<readonly VisibleEntry[]>(() => {
+  readonly #visibleEntries = computed<readonly VisibleEntry<T>[]>(() => {
     const expanded = this.expanded();
-    const result: VisibleEntry[] = [];
-    const walk = (container: ForTreeContainerContext, parentHost: HTMLElement | null): void => {
+    const result: VisibleEntry<T>[] = [];
+    const walk = (container: ForTreeContainerContext<T>, parentHost: HTMLElement | null): void => {
       for (const handle of container.items()) {
         const value = handle.value();
         if (isUnset(value)) {
@@ -268,7 +270,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * and so is an item whose `[value]` binding is not written yet — it folds in on the run that
    * writes it.
    */
-  readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]> = this.#visibleEntries;
+  readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]> = this.#visibleEntries;
 
   readonly #visibleHandles = computed(() => this.#visibleEntries().map((entry) => entry.handle));
 
@@ -315,7 +317,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     return this.#virtualized() ? '0' : null;
   });
 
-  readonly #selection = new TreeSelection({
+  readonly #selection = new TreeSelection<T>({
     value: this.value,
     expanded: this.expanded,
     multiple: this.multiple,
@@ -332,11 +334,11 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     setAnchorValue: (value) => this.#anchorValue.set(value),
   });
 
-  #rovingModel: RovingFocusModel | null = null;
-  #activeDescendantModel: ActiveDescendantFocusModel | null = null;
+  #rovingModel: RovingFocusModel<T> | null = null;
+  #activeDescendantModel: ActiveDescendantFocusModel<T> | null = null;
 
-  #requireActiveDescendantModel(): ActiveDescendantFocusModel {
-    return (this.#activeDescendantModel ??= new ActiveDescendantFocusModel({
+  #requireActiveDescendantModel(): ActiveDescendantFocusModel<T> {
+    return (this.#activeDescendantModel ??= new ActiveDescendantFocusModel<T>({
       items: this.#items.items,
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,
@@ -370,11 +372,11 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     this.#activeId.set(id);
   }
 
-  #focusModel(): FocusModel {
+  #focusModel(): FocusModel<T> {
     if (this.#virtualized()) {
       return this.#requireActiveDescendantModel();
     }
-    return (this.#rovingModel ??= new RovingFocusModel({
+    return (this.#rovingModel ??= new RovingFocusModel<T>({
       roving: this.roving,
       visibleNodes: this.#visibleEntries,
       visibleHandles: this.#visibleHandles,
@@ -399,11 +401,11 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     });
   }
 
-  isExpanded(value: string): boolean {
+  isExpanded(value: T): boolean {
     return this.expanded().includes(value);
   }
 
-  isSelected(value: string): boolean {
+  isSelected(value: T): boolean {
     return this.value().includes(value);
   }
 
@@ -417,7 +419,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * cascade branch hands the value to the consumer's `descendantsOf`, which must
    * never see the `unsetInput` sentinel.
    */
-  checkState(value: string): 'true' | 'false' | 'mixed' {
+  checkState(value: T): 'true' | 'false' | 'mixed' {
     if (isUnset(value)) {
       return 'false';
     }
@@ -428,7 +430,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * Open or close a node. Ignores an item whose `[value]` binding is not written
    * yet, so the `unsetInput` sentinel never enters the `expanded` model.
    */
-  setExpanded(value: string, open: boolean): void {
+  setExpanded(value: T, open: boolean): void {
     if (isUnset(value)) {
       return;
     }
@@ -448,14 +450,14 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
    * `[value]` binding is not written yet is dropped instead of committing the
    * `unsetInput` sentinel.
    */
-  select(value: string): void {
+  select(value: T): void {
     if (isUnset(value)) {
       return;
     }
     this.#selection.select(value);
   }
 
-  #relocateActiveOnCollapse(value: string): void {
+  #relocateActiveOnCollapse(value: T): void {
     const active = this.roving.active();
     if (active === null) {
       return;
@@ -681,7 +683,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     });
   }
 
-  registerItem(handle: ForTreeItemHandle): void {
+  registerItem(handle: ForTreeItemHandle<T>): void {
     this.#items.register(handle);
   }
 
@@ -691,7 +693,7 @@ export class ForTree implements ForTreeContext, ForTreeContainerContext {
     this.#host.nativeElement.focus();
   }
 
-  unregisterItem(handle: ForTreeItemHandle): void {
+  unregisterItem(handle: ForTreeItemHandle<T>): void {
     this.#items.unregister(handle);
     this.roving.unregister(handle.host);
     if (this.#virtualized() && this.#activeId() === handle.id()) {

@@ -7,9 +7,13 @@ import {
   type WritingDirection,
 } from 'forty-cdk/core';
 
-/** A visible tree node plus its resolved parent host — the flattened list the root walks. */
-export interface ForTreeVisibleNode {
-  readonly handle: ForTreeItemHandle;
+/**
+ * A visible tree node plus its resolved parent host — the flattened list the root walks.
+ *
+ * Generic over the node value type, which `ForTree` instantiates at its own `T`.
+ */
+export interface ForTreeVisibleNode<T = unknown> {
+  readonly handle: ForTreeItemHandle<T>;
   readonly parentHost: HTMLElement | null;
 }
 
@@ -19,7 +23,7 @@ export interface ForTreeVisibleNode {
  * roving-tabindex entry point — all from registered handles plus the
  * `expanded` set, never from the DOM.
  */
-export interface ForTreeItemHandle {
+export interface ForTreeItemHandle<T = unknown> {
   /** The `role="treeitem"` host element. */
   readonly host: HTMLElement;
   /**
@@ -29,13 +33,13 @@ export interface ForTreeItemHandle {
    * `afterNextRender`. Guard with `isUnset` before the value leaves the read
    * site (a `descendantsOf` call) or reaches either writable model.
    */
-  readonly value: Signal<string>;
+  readonly value: Signal<T>;
   /** Effective disabled state (own `disabled` OR the root's `disabled`). */
   readonly disabled: Signal<boolean>;
   /** Whether a `[forTreeItemToggle]` is registered, marking the item a parent. */
   readonly expandable: Signal<boolean>;
   /** Nested `[forTreeGroup]` container, present only while the item is expanded. */
-  readonly childContainer: Signal<ForTreeContainerContext | null>;
+  readonly childContainer: Signal<ForTreeContainerContext<T> | null>;
   /** Typeahead text override; empty when the default label text should be used. */
   readonly textValue: Signal<string>;
   /** The `[forTreeItemLabel]` element, used as the default typeahead text source. */
@@ -52,12 +56,17 @@ export interface ForTreeItemHandle {
  * Root-only coordination contract owned by `ForTree`. Items derive their
  * selection / expansion state from it; keyboard and pointer handlers route
  * navigation, selection, and expansion through it.
+ *
+ * Generic over the node value type. The contract itself defaults to `unknown`,
+ * which is how the token is declared; `ForTree<T = string>` instantiates it at
+ * its own `T`, the one type that keys `[(value)]`, `[(expanded)]` and
+ * `[forTreeItem][value]`. Node identity is resolved by `===`.
  */
-export interface ForTreeContext {
+export interface ForTreeContext<T = unknown> {
   /** Selected node values. Single mode keeps the array at length <= 1. */
-  readonly value: Signal<readonly string[]>;
+  readonly value: Signal<readonly T[]>;
   /** Open (expanded) parent node values. Always multi — no single mode. */
-  readonly expanded: Signal<readonly string[]>;
+  readonly expanded: Signal<readonly T[]>;
   readonly multiple: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly orientation: Signal<'horizontal' | 'vertical'>;
@@ -89,17 +98,17 @@ export interface ForTreeContext {
    */
   notifyItemClick(itemId: string): void;
 
-  isExpanded(value: string): boolean;
-  isSelected(value: string): boolean;
+  isExpanded(value: T): boolean;
+  isSelected(value: T): boolean;
   /**
    * Tri-state check status of a node in checkbox mode: `'true'` / `'false'`, or
    * `'mixed'` for a cascade parent with some-but-not-all descendants checked.
    */
-  checkState(value: string): 'true' | 'false' | 'mixed';
+  checkState(value: T): 'true' | 'false' | 'mixed';
   /** Open or close a node, mutating the `expanded` array immutably. */
-  setExpanded(value: string, open: boolean): void;
+  setExpanded(value: T, open: boolean): void;
   /** Single mode replaces the selection; multi mode toggles the value. */
-  select(value: string): void;
+  select(value: T): void;
   /**
    * Move roving focus from `currentItem` to the next / previous / first /
    * last enabled node in visible (flattened) order. In single mode with
@@ -147,7 +156,7 @@ export interface ForTreeContext {
    * and so is an item whose `[value]` binding is not written yet (see
    * {@link ForTreeItemHandle.value}) — it folds in on the run that writes it.
    */
-  readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]>;
+  readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
 }
 
 export const FOR_TREE_CONTEXT = new InjectionToken<ForTreeContext>('FOR_TREE_CONTEXT');
@@ -158,11 +167,11 @@ export const FOR_TREE_CONTEXT = new InjectionToken<ForTreeContext>('FOR_TREE_CON
  * to get their `aria-level` / `aria-posinset` / `aria-setsize`, and the root
  * walks containers recursively to flatten the visible nodes.
  */
-export interface ForTreeContainerContext {
+export interface ForTreeContainerContext<T = unknown> {
   readonly level: Signal<number>;
-  readonly items: Signal<readonly ForTreeItemHandle[]>;
-  registerItem(handle: ForTreeItemHandle): void;
-  unregisterItem(handle: ForTreeItemHandle): void;
+  readonly items: Signal<readonly ForTreeItemHandle<T>[]>;
+  registerItem(handle: ForTreeItemHandle<T>): void;
+  unregisterItem(handle: ForTreeItemHandle<T>): void;
   indexOfHost(el: HTMLElement): number;
 }
 
@@ -176,8 +185,8 @@ export const FOR_TREE_CONTAINER_CONTEXT = new InjectionToken<ForTreeContainerCon
  * nested group reads `level` and registers itself as the item's child
  * container.
  */
-export interface ForTreeItemContext {
-  readonly value: Signal<string>;
+export interface ForTreeItemContext<T = unknown> {
+  readonly value: Signal<T>;
   readonly level: Signal<number>;
   readonly expanded: Signal<boolean>;
   readonly expandable: Signal<boolean>;
@@ -188,7 +197,7 @@ export interface ForTreeItemContext {
   /** Register a toggle. Presence makes the item expandable (D4). Returns an unregister fn. */
   registerToggle(): () => void;
   /** Set (or clear, on collapse) the nested `[forTreeGroup]` container. */
-  setChildContainer(container: ForTreeContainerContext | null): void;
+  setChildContainer(container: ForTreeContainerContext<T> | null): void;
   /** Set (or clear) the `[forTreeItemLabel]` element used for typeahead text. */
   setLabel(el: HTMLElement | null): void;
   /** Toggle expansion. No-op on leaves or when disabled. */
@@ -204,7 +213,7 @@ export const FOR_TREE_ITEM_CONTEXT = new InjectionToken<ForTreeItemContext>(
 );
 
 /** Injects the nearest {@link ForTreeContext}, throwing a prefixed error if absent. */
-export function injectTreeContext(piece: string): ForTreeContext {
+export function injectTreeContext<T = unknown>(piece: string): ForTreeContext<T> {
   const ctx = inject(FOR_TREE_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -214,11 +223,11 @@ export function injectTreeContext(piece: string): ForTreeContext {
       token: 'FOR_TREE_CONTEXT',
     });
   }
-  return ctx;
+  return ctx as unknown as ForTreeContext<T>;
 }
 
 /** Injects the nearest {@link ForTreeContainerContext} (the root or a group). */
-export function injectTreeContainerContext(piece: string): ForTreeContainerContext {
+export function injectTreeContainerContext<T = unknown>(piece: string): ForTreeContainerContext<T> {
   const ctx = inject(FOR_TREE_CONTAINER_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -228,11 +237,11 @@ export function injectTreeContainerContext(piece: string): ForTreeContainerConte
       token: 'FOR_TREE_CONTAINER_CONTEXT',
     });
   }
-  return ctx;
+  return ctx as unknown as ForTreeContainerContext<T>;
 }
 
 /** Injects the nearest enclosing {@link ForTreeItemContext}. */
-export function injectTreeItemContext(piece: string): ForTreeItemContext {
+export function injectTreeItemContext<T = unknown>(piece: string): ForTreeItemContext<T> {
   const ctx = inject(FOR_TREE_ITEM_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -242,5 +251,5 @@ export function injectTreeItemContext(piece: string): ForTreeItemContext {
       token: 'FOR_TREE_ITEM_CONTEXT',
     });
   }
-  return ctx;
+  return ctx as unknown as ForTreeItemContext<T>;
 }

@@ -6,6 +6,8 @@ A nested `role="tree"` → `treeitem` → `group` → `treeitem` widget (file ex
 
 Selection and expansion are two independent models: `value` (selected nodes) and `expanded` (open nodes). Expansion is always multi; only `value` honours `multiple`.
 
+Both models are `readonly T[]` over the node value type, which `ForTree<T = string>` infers from `[(value)]` / `[(expanded)]` — the same shape `ForTable` uses for its selected and open rows. Node identity is resolved by `===`, so bind a stable value (an id) when your nodes are objects you re-create.
+
 ## Anatomy
 
 ```html
@@ -294,26 +296,26 @@ readonly expanded = linkedSignal<readonly string[], readonly string[]>({
 ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the path */ };
 ```
 
-`expandToReveal` accepts any `Iterable<string>` (array, `Set`, generator). Root-level matches contribute nothing — a root has no ancestors to expand.
+`expandToReveal` accepts any `Iterable<T>` (array, `Set`, generator) of node values. Root-level matches contribute nothing — a root has no ancestors to expand.
 
 ## API
 
 ### `ForTree`
 
-| Property                | Type                                          | Description                                                                                                                                                                                                                                                |
-| ----------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `value`                 | `model<readonly string[]>`                    | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number.<br>**Default:** `[]`                                                                                                                                                   |
-| `expanded`              | `model<readonly string[]>`                    | Two-way bindable. Open (expanded) parent node values. Always multi.<br>**Default:** `[]`                                                                                                                                                                   |
-| `selected`              | `Signal<string \| null>`                      | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.<br>**Default:** —                                                                                                                   |
-| `multiple`              | `input<boolean>`                              | When true, multiple nodes can be selected.<br>**Default:** `false`                                                                                                                                                                                         |
-| `disabled`              | `input<boolean>`                              | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.<br>**Default:** —                                                                                                                                                                 |
-| `orientation`           | `input<'vertical' \| 'horizontal'>`           | Navigation axis. `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.<br>**Default:** `'vertical'`                                                                                     |
-| `ariaLabel`             | `input<string \| null>`                       | Reactive accessible name, reflected as `aria-label`. Prefer native `aria-labelledby` when a visible label exists.<br>**Default:** `null` (and empty) emits no attribute                                                                                    |
-| `dir`                   | `input<'ltr' \| 'rtl' \| null>`               | Writing direction. `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL.<br>**Default:** `null`                                                    |
-| `selectionFollowsFocus` | `input<boolean>`                              | Single-mode only. When true, arrow navigation also selects the focused node.<br>**Default:** from `provideForTreeDefaults`                                                                                                                                 |
-| `selectionMode`         | `input<'highlight' \| 'checkbox'>`            | Selection presentation. `'highlight'` uses `aria-selected`; `'checkbox'` uses `aria-checked` and renders the checkbox anatomy (inherently multi-select).<br>**Default:** `'highlight'`                                                                     |
-| `cascade`               | `input<boolean>`                              | Enables cascade selection in `selectionMode="checkbox"`: checking / unchecking a node propagates to all descendants, and a parent reports `aria-checked="mixed"` when only some descendants are checked. Requires `descendantsOf`.<br>**Default:** `false` |
-| `descendantsOf`         | `input<(value: string) => readonly string[]>` | Returns the selectable descendant values of a node (excluding the node itself). Required when `cascade` is `true`; the tree throws a `[forty-cdk/tree]` error otherwise.<br>**Default:** —                                                                 |
+| Property                | Type                                | Description                                                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value`                 | `model<readonly T[]>`               | Two-way bindable. Selected node values. Single mode keeps 0 or 1; multi any number.<br>**Default:** `[]`                                                                                                                                                   |
+| `expanded`              | `model<readonly T[]>`               | Two-way bindable. Open (expanded) parent node values. Always multi.<br>**Default:** `[]`                                                                                                                                                                   |
+| `selected`              | `Signal<T \| null>`                 | Read-only single-select convenience view of `value`: the sole selected value, or `null` when none / many are selected.<br>**Default:** —                                                                                                                   |
+| `multiple`              | `input<boolean>`                    | When true, multiple nodes can be selected.<br>**Default:** `false`                                                                                                                                                                                         |
+| `disabled`              | `input<boolean>`                    | Disables the whole tree. Reflected as `aria-disabled` / `data-disabled`.<br>**Default:** —                                                                                                                                                                 |
+| `orientation`           | `input<'vertical' \| 'horizontal'>` | Navigation axis. `'vertical'` (ArrowUp/Down move; ArrowLeft/Right expand/collapse). Reflected as `aria-orientation` / `data-orientation`.<br>**Default:** `'vertical'`                                                                                     |
+| `ariaLabel`             | `input<string \| null>`             | Reactive accessible name, reflected as `aria-label`. Prefer native `aria-labelledby` when a visible label exists.<br>**Default:** `null` (and empty) emits no attribute                                                                                    |
+| `dir`                   | `input<'ltr' \| 'rtl' \| null>`     | Writing direction. `null` resolves the inherited ambient direction; an explicit value wins. Reflected to the host `dir` attribute and mirrors the expand/collapse arrows in RTL.<br>**Default:** `null`                                                    |
+| `selectionFollowsFocus` | `input<boolean>`                    | Single-mode only. When true, arrow navigation also selects the focused node.<br>**Default:** from `provideForTreeDefaults`                                                                                                                                 |
+| `selectionMode`         | `input<'highlight' \| 'checkbox'>`  | Selection presentation. `'highlight'` uses `aria-selected`; `'checkbox'` uses `aria-checked` and renders the checkbox anatomy (inherently multi-select).<br>**Default:** `'highlight'`                                                                     |
+| `cascade`               | `input<boolean>`                    | Enables cascade selection in `selectionMode="checkbox"`: checking / unchecking a node propagates to all descendants, and a parent reports `aria-checked="mixed"` when only some descendants are checked. Requires `descendantsOf`.<br>**Default:** `false` |
+| `descendantsOf`         | `input<(value: T) => readonly T[]>` | Returns the selectable descendant values of a node (excluding the node itself). Required when `cascade` is `true`; the tree throws a `[forty-cdk/tree]` error otherwise.<br>**Default:** —                                                                 |
 
 | Data attribute     | Values                     |
 | ------------------ | -------------------------- |
@@ -322,11 +324,11 @@ ancestorsOf = (id: string): readonly string[] => { /* walk roots, return the pat
 
 ### `ForTreeItem`
 
-| Property    | Type                     | Description                                                                                                |
-| ----------- | ------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `value`     | `input.required<string>` | The node's value. Must be unique within the tree.<br>**Default:** —                                        |
-| `disabled`  | `input<boolean>`         | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                      |
-| `textValue` | `input<string>`          | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** — |
+| Property    | Type                | Description                                                                                                |
+| ----------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `value`     | `input.required<T>` | The node's value. Must be unique within the tree.<br>**Default:** —                                        |
+| `disabled`  | `input<boolean>`    | Disables this node: not selectable, skipped by keyboard navigation.<br>**Default:** —                      |
+| `textValue` | `input<string>`     | Typeahead text override. Falls back to the `[forTreeItemLabel]` text content when empty.<br>**Default:** — |
 
 | Data attribute     | Values                                                  |
 | ------------------ | ------------------------------------------------------- |
@@ -554,11 +556,11 @@ Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and
 
 ### Inputs / outputs
 
-| API        | Type                                              | Description                                                                                             |
-| ---------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `disabled` | `input<boolean>`                                  | Disables all drag interactions. Default `false`.                                                        |
-| `canDrop`  | `input<(event: ForTreeDragDropEvent) => boolean>` | Optional veto callback. Return `false` to reject a specific move. When omitted, all drops are accepted. |
-| `nodeDrop` | `output<ForTreeDragDropEvent>`                    | Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data.               |
+| API        | Type                                                 | Description                                                                                             |
+| ---------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `disabled` | `input<boolean>`                                     | Disables all drag interactions. Default `false`.                                                        |
+| `canDrop`  | `input<(event: ForTreeDragDropEvent<T>) => boolean>` | Optional veto callback. Return `false` to reject a specific move. When omitted, all drops are accepted. |
+| `nodeDrop` | `output<ForTreeDragDropEvent<T>>`                    | Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data.               |
 
 ### Keyboard interaction
 
@@ -717,7 +719,7 @@ Pair it with the root's `--for-tree-drop-level` (the resolved depth) to indent t
 }
 ```
 
-Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator | null>` on `ForTreeNodeDragContext` (`{ anchor, position, level }`, `null` when idle).
+Advanced consumers can read the same resolved position programmatically: `[forTreeNodeDrag]` exposes a read-only `dropIndicator: Signal<ForTreeDropIndicator<T> | null>` (`{ anchor, position, level }`, `null` when idle). Injecting it through `ForTreeNodeDragContext` reads the same signal at `ForTreeDropIndicator<unknown>`, since a token cannot carry the node value type.
 
 On lift the dragged node's subtree is collapsed (and restored on drop / cancel). This keeps the drop geometry tractable and structurally prevents dropping a node into its own descendant; `[canDrop]` adds consumer-defined vetoes on top.
 

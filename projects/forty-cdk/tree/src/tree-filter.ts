@@ -21,11 +21,11 @@
  * @returns The unique ancestor values to expand. Empty when `matches` is empty
  *   or every match is a root.
  */
-export function expandToReveal(
-  matches: Iterable<string>,
-  ancestorsOf: (value: string) => readonly string[],
-): readonly string[] {
-  const reveal = new Set<string>();
+export function expandToReveal<T = string>(
+  matches: Iterable<T>,
+  ancestorsOf: (value: T) => readonly T[],
+): readonly T[] {
+  const reveal = new Set<T>();
   for (const match of matches) {
     for (const ancestor of ancestorsOf(match)) {
       reveal.add(ancestor);

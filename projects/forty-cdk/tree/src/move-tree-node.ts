@@ -1,19 +1,22 @@
 import type { ForTreeDragDropEvent } from './tree-drag-drop-event';
 
-/** Options for {@link moveTreeNode}. */
-export interface MoveTreeNodeOptions<T> {
-  /** The move descriptor as emitted by `(nodeDrop)`. Carries the tree's string node values. */
-  readonly event: ForTreeDragDropEvent;
-  /** Stable id of a node — must return the same string used as the tree item `[value]`. */
-  readonly trackBy: (node: T) => string;
+/**
+ * Options for {@link moveTreeNode}. Generic over the consumer's node type `T` and the
+ * tree's node value type `V` (default `string`, matching `ForTree`'s own default).
+ */
+export interface MoveTreeNodeOptions<T, V = string> {
+  /** The move descriptor as emitted by `(nodeDrop)`. Carries the tree's node values. */
+  readonly event: ForTreeDragDropEvent<V>;
+  /** Stable id of a node — must return the same value used as the tree item `[value]`. */
+  readonly trackBy: (node: T) => V;
   /** A node's children, or `undefined` / `[]` for a leaf. */
   readonly children: (node: T) => readonly T[] | undefined;
   /** Returns a copy of `node` with its children replaced. MUST NOT mutate `node`. */
   readonly withChildren: (node: T, children: readonly T[]) => T;
 }
 
-function collectSubtreeIds<T>(node: T, options: MoveTreeNodeOptions<T>): Set<string> {
-  const ids = new Set<string>();
+function collectSubtreeIds<T, V>(node: T, options: MoveTreeNodeOptions<T, V>): Set<V> {
+  const ids = new Set<V>();
   ids.add(options.trackBy(node));
   const kids = options.children(node) ?? [];
   for (const child of kids) {
@@ -26,10 +29,10 @@ function collectSubtreeIds<T>(node: T, options: MoveTreeNodeOptions<T>): Set<str
 
 type DetachResult<T> = { found: T; roots: readonly T[] } | null;
 
-function detachNode<T>(
+function detachNode<T, V>(
   roots: readonly T[],
-  targetId: string,
-  options: MoveTreeNodeOptions<T>,
+  targetId: V,
+  options: MoveTreeNodeOptions<T, V>,
 ): DetachResult<T> {
   for (let i = 0; i < roots.length; i++) {
     const node = roots[i]!;
@@ -50,12 +53,12 @@ function detachNode<T>(
   return null;
 }
 
-function insertNode<T>(
+function insertNode<T, V>(
   roots: readonly T[],
-  parentId: string | null,
+  parentId: V | null,
   index: number,
   nodeToInsert: T,
-  options: MoveTreeNodeOptions<T>,
+  options: MoveTreeNodeOptions<T, V>,
 ): readonly T[] | null {
   if (parentId === null) {
     const clamped = Math.max(0, Math.min(index, roots.length));
@@ -90,7 +93,10 @@ function insertNode<T>(
  * `roots` unchanged when the move is a no-op or invalid (node not found, or `newParent` is the node
  * itself or one of its descendants).
  */
-export function moveTreeNode<T>(roots: readonly T[], options: MoveTreeNodeOptions<T>): T[] {
+export function moveTreeNode<T, V = string>(
+  roots: readonly T[],
+  options: MoveTreeNodeOptions<T, V>,
+): T[] {
   const { event } = options;
 
   const detachResult = detachNode(roots, event.node, options);

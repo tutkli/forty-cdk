@@ -48,9 +48,9 @@ const POINTER_ARM_THRESHOLD_PX = 5;
 /**
  * Where the lifted node will land, for rendering an insertion indicator. `null` when idle.
  */
-export interface ForTreeDropIndicator {
+export interface ForTreeDropIndicator<T = string> {
   /** The visible row the indicator anchors to (the node value). */
-  readonly anchor: string;
+  readonly anchor: T;
   /** Whether the line sits just before or just after the anchor row in DOM order. */
   readonly position: 'before' | 'after';
   /** Resolved 1-based depth of the drop (mirror of `--for-tree-drop-level`). */
@@ -64,7 +64,7 @@ export interface ForTreeNodeDragContext {
   /** Unregister a previously registered handle element. */
   unregisterHandle(el: HTMLElement): void;
   /** Resolved drop indicator while a drag is live; `null` when idle. */
-  readonly dropIndicator: Signal<ForTreeDropIndicator | null>;
+  readonly dropIndicator: Signal<ForTreeDropIndicator<unknown> | null>;
 }
 
 /** InjectionToken for the `[forTreeNodeDrag]` coordinator. */
@@ -86,6 +86,10 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  *
  * The `(nodeDrop)` output fires once per committed move. Apply `moveTreeNode` in the handler to
  * update the consumer's data. Provide a `[canDrop]` function to veto specific moves.
+ *
+ * Generic over the tree's node value type `T`, which defaults to `string` like `ForTree`'s
+ * own. A tree whose node values are not `string` binds `[canDrop]` to carry the inference,
+ * or annotates the directive reference.
  */
 @Directive({
   selector: '[forTreeNodeDrag]',
@@ -97,8 +101,8 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
     '[style.--for-tree-drop-level]': '_dropLevel()',
   },
 })
-export class ForTreeNodeDrag implements ForTreeNodeDragContext {
-  readonly #ctx = injectTreeContext('ForTreeNodeDrag');
+export class ForTreeNodeDrag<T = string> implements ForTreeNodeDragContext {
+  readonly #ctx = injectTreeContext<T>('ForTreeNodeDrag');
   readonly #hostEl = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly #document = inject(DOCUMENT);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -113,25 +117,25 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
    * Optional veto callback. Return `false` to reject a specific drop — the node is returned to its
    * original position and an announcement is made. When omitted, all drops are accepted.
    */
-  readonly canDrop = input<((event: ForTreeDragDropEvent) => boolean) | undefined>(undefined);
+  readonly canDrop = input<((event: ForTreeDragDropEvent<T>) => boolean) | undefined>(undefined);
 
   /** Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data. */
-  readonly nodeDrop = output<ForTreeDragDropEvent>();
+  readonly nodeDrop = output<ForTreeDragDropEvent<T>>();
 
   protected readonly _dragging = signal(false);
   protected readonly _dropTargetValid = signal(false);
   protected readonly _dropLevel = signal<number | null>(null);
 
-  readonly #dropIndicator = signal<ForTreeDropIndicator | null>(null);
+  readonly #dropIndicator = signal<ForTreeDropIndicator<T> | null>(null);
 
   /** Resolved drop indicator while a drag is live; `null` when idle. */
-  readonly dropIndicator: Signal<ForTreeDropIndicator | null> = this.#dropIndicator.asReadonly();
+  readonly dropIndicator: Signal<ForTreeDropIndicator<T> | null> = this.#dropIndicator.asReadonly();
 
   readonly #handles = new Set<HTMLElement>();
 
   #mode: DragMode = 'idle';
-  #liftedValue: string | null = null;
-  #previousParent: string | null = null;
+  #liftedValue: T | null = null;
+  #previousParent: T | null = null;
   #previousIndex = 0;
   #gapIndex = 0;
   #desiredLevel = 1;
@@ -260,8 +264,8 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     return true;
   }
 
-  #resolveVisibleNodeFromTarget(target: Element): ForTreeVisibleNode | null {
-    const hosts = new Map<Element, ForTreeVisibleNode>(
+  #resolveVisibleNodeFromTarget(target: Element): ForTreeVisibleNode<T> | null {
+    const hosts = new Map<Element, ForTreeVisibleNode<T>>(
       this.#ctx.visibleNodes().map((e) => [e.handle.host, e]),
     );
     let node: Element | null = target;
@@ -292,7 +296,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     return true;
   }
 
-  #applyPointerPosition(event: PointerEvent): TreeDropRow[] {
+  #applyPointerPosition(event: PointerEvent): TreeDropRow<T>[] {
     const rows = buildTreeDropRows(this.#ctx.visibleNodes(), this.#liftedValue);
     this.#gapIndex = gapFromPointerY(rows, event.clientY);
     this.#desiredLevel = levelFromPointerX(rows, this.#gapIndex, event.clientX);
@@ -321,7 +325,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
   #lift(
     host: HTMLElement,
     visibleIdx: number,
-    visible: readonly ForTreeVisibleNode[],
+    visible: readonly ForTreeVisibleNode<T>[],
     mode: 'keyboard' | 'pointer',
     point?: PreviewPoint,
   ): void {
@@ -365,7 +369,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#announcer.announce(this.#defaults.dragAnnounceLift(this.#label), 'assertive');
   }
 
-  #publishDropTarget(rows: TreeDropRow[], level: number): void {
+  #publishDropTarget(rows: TreeDropRow<T>[], level: number): void {
     this._dropTargetValid.set(true);
     this._dropLevel.set(level);
     this.#dropIndicator.set(resolveDropIndicator(rows, this.#gapIndex, level));
@@ -381,7 +385,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
 
     const parentLabel = treeParentLabel(visible, target.parentValue);
 
-    const event: ForTreeDragDropEvent = {
+    const event: ForTreeDragDropEvent<T> = {
       node: this.#liftedValue,
       previousParent: this.#previousParent,
       newParent: target.parentValue,
@@ -447,7 +451,7 @@ export class ForTreeNodeDrag implements ForTreeNodeDragContext {
     this.#dropIndicator.set(null);
   }
 
-  #resolveAndAnnounceMove(visible: readonly ForTreeVisibleNode[]): void {
+  #resolveAndAnnounceMove(visible: readonly ForTreeVisibleNode<T>[]): void {
     const rows = buildTreeDropRows(visible, this.#liftedValue);
     const target = resolveTreeDrop(rows, this.#gapIndex, this.#desiredLevel);
     this.#desiredLevel = target.level;

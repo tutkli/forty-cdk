@@ -439,6 +439,87 @@ describe('ForTree', () => {
     });
   });
 
+  describe('expansion keyed by a non-string node value', () => {
+    interface FileNode {
+      readonly id: string;
+      readonly name: string;
+    }
+
+    const documentsNode: FileNode = { id: 'documents', name: 'Documents' };
+    const reportNode: FileNode = { id: 'report', name: 'Report' };
+    const readmeNode: FileNode = { id: 'readme', name: 'Readme' };
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
+      template: `
+        <ul forTree [(value)]="picked" [(expanded)]="open">
+          <li forTreeItem [value]="documents" data-test-id="documents">
+            <div forTreeItemLabel data-test-label="documents">
+              <span forTreeItemToggle data-test-toggle="documents">▸</span>
+              <span>Documents</span>
+            </div>
+            @if (open().includes(documents)) {
+              <ul forTreeGroup>
+                <li forTreeItem [value]="report" data-test-id="report">
+                  <div forTreeItemLabel data-test-label="report"><span>Report</span></div>
+                </li>
+              </ul>
+            }
+          </li>
+          <li forTreeItem [value]="readme" data-test-id="readme">
+            <div forTreeItemLabel data-test-label="readme"><span>Readme</span></div>
+          </li>
+        </ul>
+      `,
+    })
+    class ObjectValueHost {
+      readonly documents = documentsNode;
+      readonly report = reportNode;
+      readonly readme = readmeNode;
+      readonly picked = signal<readonly FileNode[]>([]);
+      readonly open = signal<readonly FileNode[]>([]);
+    }
+
+    async function setupObjectValues() {
+      const result = renderHost(ObjectValueHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('commits the node value itself into expanded and mounts its group', async () => {
+      const { el, fixture, instance } = await setupObjectValues();
+      expect(itemOf(el, 'documents').querySelector('[forTreeGroup]')).toBeNull();
+
+      toggleOf(el, 'documents').click();
+      await flush(fixture);
+
+      expect(instance.open()).toHaveLength(1);
+      expect(instance.open()[0]).toBe(documentsNode);
+      expect(itemOf(el, 'documents').getAttribute('aria-expanded')).toBe('true');
+      expect(itemOf(el, 'report')).not.toBeNull();
+    });
+
+    it('resolves expansion by identity, leaving an equal-but-distinct value closed', async () => {
+      const { el, fixture, instance } = await setupObjectValues();
+      instance.open.set([{ ...documentsNode }]);
+      await flush(fixture);
+
+      expect(itemOf(el, 'documents').getAttribute('aria-expanded')).toBe('false');
+      expect(itemOf(el, 'documents').querySelector('[forTreeGroup]')).toBeNull();
+    });
+
+    it('commits the node value itself into the selection', async () => {
+      const { el, fixture, instance } = await setupObjectValues();
+
+      labelOf(el, 'readme').click();
+      await flush(fixture);
+
+      expect(instance.picked()).toHaveLength(1);
+      expect(instance.picked()[0]).toBe(readmeNode);
+      expect(itemOf(el, 'readme').getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
   describe('selection (aria-selected always emitted, data-selected present/absent)', () => {
     it('emits aria-selected=false / no data-selected by default', async () => {
       const { el } = await setup();

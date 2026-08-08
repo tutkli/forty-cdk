@@ -8,28 +8,28 @@ import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
  * graph and the two writable models (`value`, `expanded`) plus the shared
  * range anchor and roving-tabindex tracker.
  */
-export interface TreeSelectionDeps {
-  readonly value: Signal<readonly string[]>;
-  readonly expanded: Signal<readonly string[]>;
+export interface TreeSelectionDeps<T> {
+  readonly value: Signal<readonly T[]>;
+  readonly expanded: Signal<readonly T[]>;
   readonly multiple: Signal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly selectionMode: Signal<'highlight' | 'checkbox'>;
   readonly cascade: Signal<boolean>;
-  readonly descendantsOf: Signal<((value: string) => readonly string[]) | undefined>;
+  readonly descendantsOf: Signal<((value: T) => readonly T[]) | undefined>;
   /** Flattened visible nodes (each with its resolved parent host). */
-  readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]>;
+  readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
   /** Visible node handles in flattened order. */
-  readonly visibleHandles: Signal<readonly ForTreeItemHandle[]>;
+  readonly visibleHandles: Signal<readonly ForTreeItemHandle<T>[]>;
   /** The shared roving-tabindex tracker, used to move focus on shift-extend. */
   readonly roving: RovingTabindex;
   /** Replace the selection value. */
-  readonly setValue: (next: readonly string[]) => void;
+  readonly setValue: (next: readonly T[]) => void;
   /** Replace the expanded set. */
-  readonly setExpanded: (next: readonly string[]) => void;
+  readonly setExpanded: (next: readonly T[]) => void;
   /** Read the current range anchor value. */
-  readonly anchorValue: () => string | null;
+  readonly anchorValue: () => T | null;
   /** Write the range anchor value. */
-  readonly setAnchorValue: (value: string | null) => void;
+  readonly setAnchorValue: (value: T | null) => void;
 }
 
 /**
@@ -41,14 +41,14 @@ export interface TreeSelectionDeps {
  *
  * Internal — not re-exported from `tree/index.ts` or `public-api.ts`.
  */
-export class TreeSelection {
-  readonly #deps: TreeSelectionDeps;
+export class TreeSelection<T> {
+  readonly #deps: TreeSelectionDeps<T>;
 
-  constructor(deps: TreeSelectionDeps) {
+  constructor(deps: TreeSelectionDeps<T>) {
     this.#deps = deps;
   }
 
-  checkState(value: string): 'true' | 'false' | 'mixed' {
+  checkState(value: T): 'true' | 'false' | 'mixed' {
     const current = this.#deps.value();
     if (this.#deps.selectionMode() !== 'checkbox' || !this.#deps.cascade()) {
       return current.includes(value) ? 'true' : 'false';
@@ -70,7 +70,7 @@ export class TreeSelection {
     return checked === descendants.length ? 'true' : 'mixed';
   }
 
-  select(value: string): void {
+  select(value: T): void {
     if (this.#deps.disabled()) {
       return;
     }
@@ -195,7 +195,7 @@ export class TreeSelection {
     this.#deps.setValue(allSelected ? [] : [...new Set([...current, ...values])]);
   }
 
-  #resolveDescendants(value: string): readonly string[] {
+  #resolveDescendants(value: T): readonly T[] {
     const fn = this.#deps.descendantsOf();
     if (!fn) {
       throw fortyError({
