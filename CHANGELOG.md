@@ -7,8 +7,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-08-09
+
+A release about what the library tells you and where you reach it from. Every error and warning now
+carries a stable `FORCDK-<AREA>-<NNN>` code with a `Cause` and a `Fix`, so a message is something you
+can look up and assert on instead of a string that reads differently in each primitive. The context
+tokens stop advertising the machinery a primitive coordinates itself with — `ForComboboxContext` went
+from 77 members to 22 — so what a consumer can inject is what a consumer was meant to use. The two
+range-field entry points fold into their bases, the floating positioners' CSS custom properties take
+a `--for-floating-*` namespace, and `ForTree` finally keys expansion and selection by the node value
+like `ForTable` does. Five breaking changes, all of them a find-and-replace or a type argument.
+
+### Added
+
+- **Stable error codes across every developer-facing message**
+  ([#1721](https://github.com/tutkli/forty-cdk/issues/1721)). Every error and warning the library
+  reports now carries a `FORCDK-<AREA>-<NNN>` code, plus a `Cause` and a `Fix` line where they add
+  something — 129 codes across 48 areas, with one layout definition and nothing building a
+  `[forty-cdk/…]` prefix by hand. The prefix is derived from the code's area, so the two can never
+  disagree, and a shared check that runs on behalf of a primitive reports under that primitive
+  (`FORCDK-CORE-007` prints `[forty-cdk/accordion]` when an accordion piece resolved no root). The
+  codes are the stable handle: numbering is arbitrary and immutable, retiring a failure frees its
+  number rather than renumbering the rest. Two consequences worth knowing: the `ng-template` caveat
+  that is the actual cause of an orphan-context error shipped in 10 of ~55 resolvers and is now on
+  all of them, and the four `[forTable]` context resolvers that used to emit two indistinguishable
+  messages now name the token that failed. The 12 `console.warn` sites follow the same layout, so the
+  console surface is not split in two.
+- **Tree** — `ForTree<T = string>` keys expansion and selection by the node value
+  ([#1738](https://github.com/tutkli/forty-cdk/issues/1738)). `expanded` named the same concept on
+  `ForTree` and `ForTable` and carried two shapes — `readonly string[]` on a tree that was not
+  generic at all, `readonly T[]` on the table — so a tree over object nodes had to maintain a second
+  identity vocabulary of string keys. `ForTree` now takes the type parameter: `value` / `expanded`
+  are `model<readonly T[]>`, `selected` is `Signal<T | null>`, `descendantsOf` is
+  `input<(value: T) => readonly T[]>`, and `T` is inferred from `[(value)]` / `[(expanded)]`. It
+  ships with the `compareWith` input the selection contract mandates (`(a: T, b: T) => boolean`,
+  defaulting to `===` and mirrored on `ForTreeContext`), routing every identity question through it —
+  selection and expansion membership, the cascade tri-state, the range anchor, the visible-node fold
+  and the drag resolver's comparisons — because a generic parameter without a comparator would
+  resolve object nodes by reference and report a fully-checked subtree as unchecked. The `= string`
+  defaults keep every existing tree compiling and behaving as before, and the string case keeps its
+  old complexity through a hashed fast path. One requirement to know when you leave `string`:
+  `[forTreeNodeDrag]` has no input carrying `T` except `[canDrop]`, so a non-string tree that omits
+  it leaves the directive at the `string` default and `(nodeDrop)` reports the wrong event type — a
+  `() => true` veto is enough, its only job is to carry the inference.
+
 ### Changed
 
+- **Date field / Time field (breaking, import specifiers)** — the `forty-cdk/date-range-field` and
+  `forty-cdk/time-range-field` entry points are folded into their bases
+  ([#1716](https://github.com/tutkli/forty-cdk/issues/1716)). Both specifiers stop resolving; all 16
+  symbols of each — `ForDateRangeField`, `ForDateRangeFieldEndpoint`, `FOR_DATE_RANGE_FIELD_CONTEXT`,
+  `provideForDateRangeFieldDefaults` and their time-field twins among them — are now exported from
+  `forty-cdk/date-field` and `forty-cdk/time-field`. Nothing is renamed and no signature moves: a
+  range field is a variant of its base the way `ForDateRangePicker` is a variant of `ForDatePicker`,
+  and it never imported anything from the base, so it never earned an entry point of its own. Their
+  error prefixes follow the entry point too, so a range field now reports `[forty-cdk/date-field]` /
+  `[forty-cdk/time-field]`. **Migration:** rewrite the two import specifiers; the symbol names and
+  everything you bind to them are unchanged.
 - **Floating positioners (breaking, consumer CSS)** — the six CSS custom properties the shared
   `core/floating` positioners publish are namespaced under a `--for-floating-*` family
   ([#1507](https://github.com/tutkli/forty-cdk/issues/1507)). `--for-anchor-width`,
@@ -31,6 +86,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rather than erroring, so a surface silently loses its `max-height` instead of failing loudly —
   grep before upgrading. Affects every primitive with floating content: Combobox, Context menu,
   Date picker, Dropdown menu, Hover card, Menu, Menubar, Popover, Select, Time picker and Tooltip.
+
+- **Errors and warnings (breaking, message text)** — every message changed shape to carry its code,
+  and two prefixes were corrected ([#1721](https://github.com/tutkli/forty-cdk/issues/1721)).
+  `[forty-cdk/toggle-group]` becomes `[forty-cdk/toggle]`, which is the entry point that exists, and
+  the date adapter's split `[forty-cdk/calendar]` / `[forty-cdk/date-adapter]` — one file, one
+  concern, neither of them an entry point — now reports under the entry point the caller belongs to,
+  so a `forty-cdk/date-field` consumer missing an adapter reads `[forty-cdk/date-field]`.
+  **Migration:** only a consumer asserting on message text is affected; match on the
+  `FORCDK-<AREA>-<NNN>` code instead, which is what it is there for. Dev/production gating is
+  unchanged — an orphan context still throws unconditionally, pure assertions stay behind
+  `isDevMode()`, `fortyWarn` is dev-only.
+- **Combobox / Select / Carousel / Table / Avatar contexts (breaking)** — a `For<X>Context` now lists
+  only the signals a consumer reads and the commands a consumer invokes
+  ([#1722](https://github.com/tutkli/forty-cdk/issues/1722)). The
+  [#1399](https://github.com/tutkli/forty-cdk/issues/1399) split was stated as a naming pattern, so
+  it caught only the members whose identifiers matched it and `ForComboboxContext` shipped 77 members
+  to describe a widget with a handful of consumer-facing ones. The default is inverted: every member
+  whose sole caller is a piece of the same primitive moves to an unexported internal context and goes
+  private on the root. **Combobox 77 → 22** (positioning mirrors, ARIA ids, element slots, label
+  caches, navigation cursors, the outside-interaction forwarders), **Select 51 → 16** (positioning
+  mirrors, the APG range-selection and typeahead handlers, the virtualized activedescendant model),
+  **Carousel 26 → 18** (roving tabindex, DOM-order lookups, viewport id, positional labels), **Table
+  26 → 13** (the 2D roving grid model and the ARIA index arithmetic), and **Avatar** loses
+  `reportStatus`, whose own JSDoc said consumers should not call it. Root inputs and outputs are
+  untouched — only the context surface narrowed — and a published surface is now capped at 25
+  members by a build gate that can only ever drain its exception list. **Migration:** a consumer
+  injecting `FOR_COMBOBOX_CONTEXT`, `FOR_SELECT_CONTEXT`, `FOR_CAROUSEL_CONTEXT`,
+  `FOR_TABLE_CONTEXT` or `FOR_AVATAR_CONTEXT` to reach a moved member — or calling one off an
+  `exportAs` template reference — no longer compiles; drive the primitive through its inputs and
+  outputs. As a side effect every `[forTable]` and avatar piece now checks its root in dev mode, so a
+  piece mounted outside its root reports a prefixed error instead of failing further downstream.
+- **Tree contracts (breaking, type argument)** — reading `FOR_TREE_CONTEXT` without a type argument
+  now yields `unknown` node values ([#1738](https://github.com/tutkli/forty-cdk/issues/1738)). The
+  same holds for every other generic contract the barrel exports — `ForTreeItemHandle`,
+  `ForTreeVisibleNode`, `ForTreeContainerContext`, `ForTreeItemContext` — and for
+  `ForTreeNodeDragContext.dropIndicator`; `ForTreeContext` additionally gains a `compareWith` member.
+  **Migration:** pass the node value type where you inject the context (`injectTreeContext<string>()`
+  restores the old shape exactly). Every other public signature is source-compatible thanks to the
+  `= string` defaults on `ForTreeDragDropEvent`, `ForTreeDropIndicator`, `ForTreeNodeDrag`,
+  `moveTreeNode` and `expandToReveal`.
 
 ## [0.21.1] - 2026-08-07
 
@@ -1888,7 +1983,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.21.1...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.22.0...HEAD
+[0.22.0]: https://github.com/tutkli/forty-cdk/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/tutkli/forty-cdk/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/tutkli/forty-cdk/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/tutkli/forty-cdk/compare/v0.19.0...v0.20.0
