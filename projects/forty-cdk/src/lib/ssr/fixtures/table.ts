@@ -1,23 +1,23 @@
 import { Component } from '@angular/core';
 import { ForDraggable } from 'forty-cdk/drag-drop';
 import {
-  ForColumnDef,
-  ForColumnDragPlaceholder,
-  ForDataCell,
-  ForHeaderCell,
-  ForPlaceholderCell,
-  ForPlaceholderCellDefault,
-  ForRowCell,
-  ForRowDef,
   ForTable,
   ForTableBody,
   ForTableCell,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableColumnDragPlaceholder,
   ForTableColumnLabel,
   ForTableColumnReorder,
   ForTableColumnResizer,
   ForTableHeaderCell,
+  ForTableHeaderCellDef,
   ForTableHeaderRow,
+  ForTablePlaceholderCellDef,
+  ForTablePlaceholderCellDefault,
   ForTableRow,
+  ForTableRowCellDef,
+  ForTableRowDef,
   ForTableRowReorder,
   ForTableSortHeader,
 } from 'forty-cdk/table';
@@ -90,17 +90,21 @@ export class TableFixture {}
 export class TableGridFixture {}
 
 @Component({
-  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <div forTable mode="grid" aria-label="People">
       <for-table-body [rows]="rows" [rowKey]="rowKey">
-        <ng-container forColumnDef="name" sticky>
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name" sticky>
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
-        <ng-container forColumnDef="role">
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role">
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>
@@ -118,25 +122,31 @@ export class TableBodyFixture {
   imports: [
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForRowDef,
-    ForRowCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTableRowDef,
+    ForTableRowCellDef,
   ],
   template: `
     <div forTable mode="grid" aria-label="Grouped">
       <for-table-body [rows]="rows" [rowKey]="rowKey">
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
-        <ng-container forColumnDef="role">
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role">
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
-        <ng-container forRowDef [when]="isGroup">
-          <ng-template forRowCell [forRowCellRow]="rows" let-row>Group: {{ row.name }}</ng-template>
+        <ng-container forTableRowDef [when]="isGroup">
+          <ng-template forTableRowCellDef [forTableRowCellDefRow]="rows" let-row
+            >Group: {{ row.name }}</ng-template
+          >
         </ng-container>
       </for-table-body>
     </div>
@@ -156,27 +166,33 @@ export class TableBodyRowVariantFixture {
   imports: [
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForPlaceholderCell,
-    ForPlaceholderCellDefault,
-    ForRowDef,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTablePlaceholderCellDef,
+    ForTablePlaceholderCellDefault,
+    ForTableRowDef,
   ],
   template: `
     <div forTable mode="grid" aria-label="Feed">
       <for-table-body [rows]="rows" [rowKey]="rowKey">
-        <ng-template forPlaceholderCellDefault><span class="skeleton-default">…</span></ng-template>
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
-          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        <ng-template forTablePlaceholderCellDefault
+          ><span class="skeleton-default">…</span></ng-template
+        >
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.name
+          }}</ng-template>
+          <ng-template forTablePlaceholderCellDef><span class="skeleton">…</span></ng-template>
         </ng-container>
-        <ng-container forColumnDef="role">
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role">
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
-        <ng-container forRowDef [when]="isPending" placeholderCells />
+        <ng-container forTableRowDef [when]="isPending" placeholderCells />
       </for-table-body>
     </div>
   `,
@@ -191,7 +207,7 @@ export class TableBodyPlaceholderVariantFixture {
 }
 
 @Component({
-  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <div forTable mode="table" aria-label="Nav">
       <for-table-body
@@ -201,9 +217,11 @@ export class TableBodyPlaceholderVariantFixture {
         [rowClass]="rowClass"
         [rowAttrs]="rowAttrs"
       >
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>
@@ -224,24 +242,28 @@ export class TableBodyRowInteractionFixture {
   imports: [
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForColumnDragPlaceholder,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTableColumnDragPlaceholder,
   ],
   template: `
     <div forTable mode="grid" aria-label="Reorderable">
       <for-table-body [rows]="rows" [rowKey]="rowKey">
-        <ng-container forColumnDef="name" sortable reorderable>
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name" sortable reorderable>
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
-        <ng-container forColumnDef="role" reorderable>
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role" reorderable>
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
 
-        <ng-template forColumnDragPlaceholder>
+        <ng-template forTableColumnDragPlaceholder>
           <span class="col-ghost"></span>
         </ng-template>
       </for-table-body>
@@ -334,13 +356,20 @@ export class TableVirtualizedFixture {}
 export class TableVirtualizedUnknownTotalFixture {}
 
 @Component({
-  imports: [ForTable, ForTableVirtualized, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableBody,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+  ],
   template: `
     <div forTable forTableVirtualized mode="grid" aria-label="Big" [rowCount]="1000">
       <for-table-body [rows]="rows">
-        <ng-container forColumnDef="a">
-          <ng-template forHeaderCell>#</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows" let-row>{{ row }}</ng-template>
+        <ng-container forTableColumnDef="a">
+          <ng-template forTableHeaderCellDef>#</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows" let-row>{{ row }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>

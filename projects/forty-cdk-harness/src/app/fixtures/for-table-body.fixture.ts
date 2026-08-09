@@ -1,12 +1,12 @@
 import { JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
 import {
-  ForColumnDef,
-  ForDataCell,
-  ForHeaderCell,
   ForTable,
   ForTableBody,
+  ForTableCellDef,
+  ForTableColumnDef,
   ForTableColumnLabel,
+  ForTableHeaderCellDef,
   ForTableRowSelector,
   ForTableSelectAll,
   type TableSortDescriptor,
@@ -53,9 +53,9 @@ const PEOPLE: readonly Person[] = [
     JsonPipe,
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
     ForTableColumnLabel,
     ForTableRowSelector,
     ForTableSelectAll,
@@ -132,8 +132,8 @@ const PEOPLE: readonly Person[] = [
         [(columnWidths)]="widths"
         (sortChange)="onSort($event)"
       >
-        <ng-container forColumnDef="sel" sticky width="48px">
-          <ng-template forHeaderCell>
+        <ng-container forTableColumnDef="sel" sticky width="48px">
+          <ng-template forTableHeaderCellDef>
             <button
               type="button"
               forTableSelectAll
@@ -142,20 +142,20 @@ const PEOPLE: readonly Person[] = [
               data-testid="select-all"
             ></button>
           </ng-template>
-          <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>
+          <ng-template forTableCellDef [forTableCellDefRow]="sortedRows()" let-row>
             <span forTableRowSelector></span>
           </ng-template>
         </ng-container>
 
-        <ng-container forColumnDef="id" width="80px">
-          <ng-template forHeaderCell>#</ng-template>
-          <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>{{
+        <ng-container forTableColumnDef="id" width="80px">
+          <ng-template forTableHeaderCellDef>#</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="sortedRows()" let-row>{{
             row.id
           }}</ng-template>
         </ng-container>
 
         <ng-container
-          forColumnDef="name"
+          forTableColumnDef="name"
           sticky
           sortable
           resizable
@@ -164,29 +164,29 @@ const PEOPLE: readonly Person[] = [
           [resizeMax]="600"
           [resizeStep]="24"
         >
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>{{
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="sortedRows()" let-row>{{
             row.name
           }}</ng-template>
         </ng-container>
 
-        <ng-container forColumnDef="role" sortable>
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>{{
+        <ng-container forTableColumnDef="role" sortable>
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="sortedRows()" let-row>{{
             row.role
           }}</ng-template>
         </ng-container>
 
         <ng-container
-          forColumnDef="dept"
+          forTableColumnDef="dept"
           resizable
           fitIncludesHeader
           resizeAriaLabel="Resize Department"
         >
-          <ng-template forHeaderCell>
+          <ng-template forTableHeaderCellDef>
             <span forTableColumnLabel>Department of Engineering</span>
           </ng-template>
-          <ng-template forDataCell [forDataCellRow]="sortedRows()" let-row>{{
+          <ng-template forTableCellDef [forTableCellDefRow]="sortedRows()" let-row>{{
             row.dept
           }}</ng-template>
         </ng-container>

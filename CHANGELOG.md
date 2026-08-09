@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Table (breaking, renames)** — the declarative def layer carries the `Table` segment like every
+  other piece in the entry point ([#1728](https://github.com/tutkli/forty-cdk/issues/1728)).
+  `forty-cdk/table` shipped two vocabularies one word apart: `ng-template[forHeaderCell]` beside
+  `[forTableHeaderCell]`, `ng-template[forDataCell]` beside `[forTableCell]`, `[forRowDef]` beside
+  `[forTableRow]`. Both sets were exported, so an editor's auto-import offered both, and a consumer
+  who reached for the wrong one got a directive that registers a cell handle where the body expected
+  a template. Every other entry point carries the primitive segment on every piece
+  (`ForComboboxOption`, `ForTreeItemToggle`), so `table` was the only place where the segment was
+  optional and its presence changed meaning. The `Def` suffix is what now disambiguates the template
+  from the piece it feeds. **Migration:** rename the eight selectors, their classes, and the four
+  type-inference alias inputs; nothing else moves and no behaviour changes.
+
+  | Old selector                | New selector                     | Old class                   | New class                        |
+  | --------------------------- | -------------------------------- | --------------------------- | -------------------------------- |
+  | `forColumnDef`              | `forTableColumnDef`              | `ForColumnDef`              | `ForTableColumnDef`              |
+  | `forHeaderCell`             | `forTableHeaderCellDef`          | `ForHeaderCell`             | `ForTableHeaderCellDef`          |
+  | `forDataCell`               | `forTableCellDef`                | `ForDataCell`               | `ForTableCellDef`                |
+  | `forPlaceholderCell`        | `forTablePlaceholderCellDef`     | `ForPlaceholderCell`        | `ForTablePlaceholderCellDef`     |
+  | `forPlaceholderCellDefault` | `forTablePlaceholderCellDefault` | `ForPlaceholderCellDefault` | `ForTablePlaceholderCellDefault` |
+  | `forColumnDragPlaceholder`  | `forTableColumnDragPlaceholder`  | `ForColumnDragPlaceholder`  | `ForTableColumnDragPlaceholder`  |
+  | `forRowDef`                 | `forTableRowDef`                 | `ForRowDef`                 | `ForTableRowDef`                 |
+  | `forRowCell`                | `forTableRowCellDef`             | `ForRowCell`                | `ForTableRowCellDef`             |
+
+  The exported template-context type follows its directive — `ForDataCellContext` becomes
+  `ForTableCellDefContext` — and so do the four alias inputs that exist only to type `let-row`:
+  `[forDataCellRow]` → `[forTableCellDefRow]`, `[forDataCellUnless]` → `[forTableCellDefUnless]`,
+  `[forRowCellRow]` → `[forTableRowCellDefRow]`, `[forRowCellWhen]` → `[forTableRowCellDefWhen]`.
+
 ## [0.22.0] - 2026-08-09
 
 A release about what the library tells you and where you reach it from. Every error and warning now

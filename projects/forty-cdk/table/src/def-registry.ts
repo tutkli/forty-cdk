@@ -12,16 +12,16 @@ import {
 import { Collection, fortyError, isUnset } from 'forty-cdk/core';
 
 import type {
-  ForColumnDef,
-  ForColumnDragPlaceholder,
-  ForPlaceholderCellDefault,
+  ForTableColumnDef,
+  ForTableColumnDragPlaceholder,
+  ForTablePlaceholderCellDefault,
 } from './column-def';
-import type { ForRowDef } from './row-def';
+import type { ForTableRowDef } from './row-def';
 
 /**
  * The def registry a `<for-table-body>` renders from — the seam that lets a
  * **scaffold wrapper** own the table shell while its consumers keep declaring
- * plain `[forColumnDef]` / `[forRowDef]` blocks.
+ * plain `[forTableColumnDef]` / `[forTableRowDef]` blocks.
  *
  * Defs discover their registry through DI at construction, and element DI follows
  * the **declaration** tree: a def projected through a wrapper's `<ng-content>` is
@@ -45,7 +45,7 @@ import type { ForRowDef } from './row-def';
  */
 export interface ForTableDefRegistry {
   /**
-   * The `name` of every registered `[forColumnDef]`, in document order — the
+   * The `name` of every registered `[forTableColumnDef]`, in document order — the
    * default column order a bound `<for-table-body>` renders. A wrapper can seed
    * its own `[displayedColumns]` from it (say, to move a fixed action column to
    * the end) without knowing which defs its consumer projected.
@@ -89,21 +89,21 @@ export interface TableDefRegistration {
   /** Whether nothing at all has registered — the body's guard against defs registered on the wrong registry. */
   readonly isEmpty: Signal<boolean>;
   /** Registers a column def. */
-  registerColumnDef(handle: TableDefHandle<ForColumnDef>): void;
+  registerColumnDef(handle: TableDefHandle<ForTableColumnDef>): void;
   /** Unregisters a column def. Reference-based. */
-  unregisterColumnDef(handle: TableDefHandle<ForColumnDef>): void;
+  unregisterColumnDef(handle: TableDefHandle<ForTableColumnDef>): void;
   /** Registers a row variant def. */
-  registerRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void;
+  registerRowDef(handle: TableDefHandle<ForTableRowDef<unknown>>): void;
   /** Unregisters a row variant def. Reference-based. */
-  unregisterRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void;
+  unregisterRowDef(handle: TableDefHandle<ForTableRowDef<unknown>>): void;
   /** Registers the shared column drag placeholder template. */
-  registerColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void;
+  registerColumnDragPlaceholder(handle: TableDefHandle<ForTableColumnDragPlaceholder>): void;
   /** Unregisters the shared column drag placeholder template. Reference-based. */
-  unregisterColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void;
+  unregisterColumnDragPlaceholder(handle: TableDefHandle<ForTableColumnDragPlaceholder>): void;
   /** Registers the body-level default placeholder-cell template. */
-  registerPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void;
+  registerPlaceholderCellDefault(handle: TableDefHandle<ForTablePlaceholderCellDefault>): void;
   /** Unregisters the body-level default placeholder-cell template. Reference-based. */
-  unregisterPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void;
+  unregisterPlaceholderCellDefault(handle: TableDefHandle<ForTablePlaceholderCellDefault>): void;
 }
 
 export const TABLE_DEF_REGISTRATION = new InjectionToken<TableDefRegistration>(
@@ -123,10 +123,10 @@ export const TABLE_DEF_REGISTRATION = new InjectionToken<TableDefRegistration>(
  */
 @Injectable()
 export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistration {
-  readonly #columns = new Collection<TableDefHandle<ForColumnDef>>();
-  readonly #rowDefs = new Collection<TableDefHandle<ForRowDef<unknown>>>();
-  readonly #dragPlaceholders = new Collection<TableDefHandle<ForColumnDragPlaceholder>>();
-  readonly #placeholderDefaults = new Collection<TableDefHandle<ForPlaceholderCellDefault>>();
+  readonly #columns = new Collection<TableDefHandle<ForTableColumnDef>>();
+  readonly #rowDefs = new Collection<TableDefHandle<ForTableRowDef<unknown>>>();
+  readonly #dragPlaceholders = new Collection<TableDefHandle<ForTableColumnDragPlaceholder>>();
+  readonly #placeholderDefaults = new Collection<TableDefHandle<ForTablePlaceholderCellDefault>>();
 
   /**
    * Registered column defs, in document order.
@@ -137,7 +137,7 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
    * until its name can be read. Reading the unwritten input tracks it, so the
    * binding's write folds the def in. See `unsetInput`.
    */
-  readonly columnDefs: Signal<readonly ForColumnDef[]> = computed(() =>
+  readonly columnDefs: Signal<readonly ForTableColumnDef[]> = computed(() =>
     this.#columns
       .items()
       .map((handle) => handle.def)
@@ -149,7 +149,7 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
    * Held back until the def's `when` predicate can be read, exactly like
    * {@link columnDefs}.
    */
-  readonly rowDefs: Signal<readonly ForRowDef<unknown>[]> = computed(() =>
+  readonly rowDefs: Signal<readonly ForTableRowDef<unknown>[]> = computed(() =>
     this.#rowDefs
       .items()
       .map((handle) => handle.def)
@@ -157,12 +157,12 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
   );
 
   /** The shared column drag placeholder (the first in document order), or `null`. */
-  readonly columnDragPlaceholder: Signal<ForColumnDragPlaceholder | null> = computed(
+  readonly columnDragPlaceholder: Signal<ForTableColumnDragPlaceholder | null> = computed(
     () => this.#dragPlaceholders.items()[0]?.def ?? null,
   );
 
   /** The body-level default placeholder-cell template (the first in document order), or `null`. */
-  readonly placeholderCellDefault: Signal<ForPlaceholderCellDefault | null> = computed(
+  readonly placeholderCellDefault: Signal<ForTablePlaceholderCellDefault | null> = computed(
     () => this.#placeholderDefaults.items()[0]?.def ?? null,
   );
 
@@ -181,42 +181,42 @@ export class TableDefRegistry implements ForTableDefRegistry, TableDefRegistrati
   );
 
   /** Registers a column def so it joins the rendered columns at its document position. */
-  registerColumnDef(handle: TableDefHandle<ForColumnDef>): void {
+  registerColumnDef(handle: TableDefHandle<ForTableColumnDef>): void {
     this.#columns.register(handle);
   }
 
   /** Unregisters a column def. Reference-based. */
-  unregisterColumnDef(handle: TableDefHandle<ForColumnDef>): void {
+  unregisterColumnDef(handle: TableDefHandle<ForTableColumnDef>): void {
     this.#columns.unregister(handle);
   }
 
   /** Registers a row variant def so its matched data rows render the variant. */
-  registerRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void {
+  registerRowDef(handle: TableDefHandle<ForTableRowDef<unknown>>): void {
     this.#rowDefs.register(handle);
   }
 
   /** Unregisters a row variant def. Reference-based. */
-  unregisterRowDef(handle: TableDefHandle<ForRowDef<unknown>>): void {
+  unregisterRowDef(handle: TableDefHandle<ForTableRowDef<unknown>>): void {
     this.#rowDefs.unregister(handle);
   }
 
   /** Registers the shared drag placeholder stamped into every reorderable header cell. */
-  registerColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void {
+  registerColumnDragPlaceholder(handle: TableDefHandle<ForTableColumnDragPlaceholder>): void {
     this.#dragPlaceholders.register(handle);
   }
 
   /** Unregisters the shared column drag placeholder. Reference-based. */
-  unregisterColumnDragPlaceholder(handle: TableDefHandle<ForColumnDragPlaceholder>): void {
+  unregisterColumnDragPlaceholder(handle: TableDefHandle<ForTableColumnDragPlaceholder>): void {
     this.#dragPlaceholders.unregister(handle);
   }
 
   /** Registers the default placeholder-cell template columns fall back to. */
-  registerPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void {
+  registerPlaceholderCellDefault(handle: TableDefHandle<ForTablePlaceholderCellDefault>): void {
     this.#placeholderDefaults.register(handle);
   }
 
   /** Unregisters the default placeholder-cell template. Reference-based. */
-  unregisterPlaceholderCellDefault(handle: TableDefHandle<ForPlaceholderCellDefault>): void {
+  unregisterPlaceholderCellDefault(handle: TableDefHandle<ForTablePlaceholderCellDefault>): void {
     this.#placeholderDefaults.unregister(handle);
   }
 }
@@ -287,52 +287,52 @@ function injectDefHost(): Node {
 }
 
 /**
- * Registers a `[forColumnDef]` with the surrounding registry for the def's
+ * Registers a `[forTableColumnDef]` with the surrounding registry for the def's
  * lifetime. Call it from the def's constructor — it resolves the registry, the
  * host node, and the `DestroyRef` from the ambient injection context.
  */
-export function registerTableColumnDef(def: ForColumnDef): void {
-  const registration = injectTableDefRegistration('ForColumnDef');
-  const handle: TableDefHandle<ForColumnDef> = { host: injectDefHost(), def };
+export function registerTableColumnDef(def: ForTableColumnDef): void {
+  const registration = injectTableDefRegistration('ForTableColumnDef');
+  const handle: TableDefHandle<ForTableColumnDef> = { host: injectDefHost(), def };
   registration.registerColumnDef(handle);
   inject(DestroyRef).onDestroy(() => registration.unregisterColumnDef(handle));
 }
 
 /**
- * Registers a `[forRowDef]` with the surrounding registry for the def's
+ * Registers a `[forTableRowDef]` with the surrounding registry for the def's
  * lifetime, type-erased over the def's row type — the same erasure the
- * `contentChildren(ForRowDef)` query performed implicitly before defs registered
+ * `contentChildren(ForTableRowDef)` query performed implicitly before defs registered
  * themselves. The body only ever matches a def against data from the same `rows`
  * input, so the erasure is sound.
  */
-export function registerTableRowDef<T>(def: ForRowDef<T>): void {
-  const registration = injectTableDefRegistration('ForRowDef');
-  const handle: TableDefHandle<ForRowDef<unknown>> = {
+export function registerTableRowDef<T>(def: ForTableRowDef<T>): void {
+  const registration = injectTableDefRegistration('ForTableRowDef');
+  const handle: TableDefHandle<ForTableRowDef<unknown>> = {
     host: injectDefHost(),
-    def: def as unknown as ForRowDef<unknown>,
+    def: def as unknown as ForTableRowDef<unknown>,
   };
   registration.registerRowDef(handle);
   inject(DestroyRef).onDestroy(() => registration.unregisterRowDef(handle));
 }
 
 /**
- * Registers a `[forColumnDragPlaceholder]` with the surrounding registry for the
+ * Registers a `[forTableColumnDragPlaceholder]` with the surrounding registry for the
  * template's lifetime.
  */
-export function registerTableColumnDragPlaceholder(def: ForColumnDragPlaceholder): void {
-  const registration = injectTableDefRegistration('ForColumnDragPlaceholder');
-  const handle: TableDefHandle<ForColumnDragPlaceholder> = { host: injectDefHost(), def };
+export function registerTableColumnDragPlaceholder(def: ForTableColumnDragPlaceholder): void {
+  const registration = injectTableDefRegistration('ForTableColumnDragPlaceholder');
+  const handle: TableDefHandle<ForTableColumnDragPlaceholder> = { host: injectDefHost(), def };
   registration.registerColumnDragPlaceholder(handle);
   inject(DestroyRef).onDestroy(() => registration.unregisterColumnDragPlaceholder(handle));
 }
 
 /**
- * Registers a `[forPlaceholderCellDefault]` with the surrounding registry for the
+ * Registers a `[forTablePlaceholderCellDefault]` with the surrounding registry for the
  * template's lifetime.
  */
-export function registerTablePlaceholderCellDefault(def: ForPlaceholderCellDefault): void {
-  const registration = injectTableDefRegistration('ForPlaceholderCellDefault');
-  const handle: TableDefHandle<ForPlaceholderCellDefault> = { host: injectDefHost(), def };
+export function registerTablePlaceholderCellDefault(def: ForTablePlaceholderCellDefault): void {
+  const registration = injectTableDefRegistration('ForTablePlaceholderCellDefault');
+  const handle: TableDefHandle<ForTablePlaceholderCellDefault> = { host: injectDefHost(), def };
   registration.registerPlaceholderCellDefault(handle);
   inject(DestroyRef).onDestroy(() => registration.unregisterPlaceholderCellDefault(handle));
 }

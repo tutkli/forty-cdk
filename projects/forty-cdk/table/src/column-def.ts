@@ -23,10 +23,10 @@ import {
 } from './table-context';
 
 /**
- * Template context handed to each `[forDataCell]` stamped by `ForTableBody`:
+ * Template context handed to each `[forTableCellDef]` stamped by `ForTableBody`:
  * the row datum (`let-row`) and its 0-based dataset index (`let-i="index"`).
  */
-export interface ForDataCellContext<T> {
+export interface ForTableCellDefContext<T> {
   /** The row datum for this cell (`let-row`). */
   $implicit: T;
   /**
@@ -40,75 +40,75 @@ export interface ForDataCellContext<T> {
 
 /**
  * Marks the header-cell template of a column definition. Place on an
- * `<ng-template forHeaderCell>` inside a `[forColumnDef]`; its content is
+ * `<ng-template forTableHeaderCellDef>` inside a `[forTableColumnDef]`; its content is
  * stamped into the column's `[forTableHeaderCell]` by `ForTableBody`.
  */
-@Directive({ selector: 'ng-template[forHeaderCell]' })
-export class ForHeaderCell {
+@Directive({ selector: 'ng-template[forTableHeaderCellDef]' })
+export class ForTableHeaderCellDef {
   /** The captured header-cell template. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
 }
 
 /**
  * Marks the data-cell template of a column definition. Place on an
- * `<ng-template forDataCell>` inside a `[forColumnDef]`; its content is stamped
+ * `<ng-template forTableCellDef>` inside a `[forTableColumnDef]`; its content is stamped
  * into the column's `[forTableCell]` for every rendered row, with the row datum
- * and index exposed through `ForDataCellContext`.
+ * and index exposed through `ForTableCellDefContext`.
  *
- * Bind `[forDataCellRow]` to the same array passed to `ForTableBody`'s `rows`
+ * Bind `[forTableCellDefRow]` to the same array passed to `ForTableBody`'s `rows`
  * to type `let-row` — the input is read only for type inference, never at
  * runtime.
  *
  * When the row type is a discriminated union whose variant members render
- * through a `[forRowDef]` instead of the per-column cells, bind
- * `[forDataCellUnless]` to the same type guard(s) used on those defs' `[when]`
+ * through a `[forTableRowDef]` instead of the per-column cells, bind
+ * `[forTableCellDefUnless]` to the same type guard(s) used on those defs' `[when]`
  * so `let-row` is narrowed to the variant-excluded members (`Exclude<T, V>`).
  */
-@Directive({ selector: 'ng-template[forDataCell]' })
-export class ForDataCell<T, V extends T = never> {
-  /** The captured data-cell template, typed with `ForDataCellContext<T>`. */
-  readonly template = inject<TemplateRef<ForDataCellContext<T>>>(TemplateRef);
+@Directive({ selector: 'ng-template[forTableCellDef]' })
+export class ForTableCellDef<T, V extends T = never> {
+  /** The captured data-cell template, typed with `ForTableCellDefContext<T>`. */
+  readonly template = inject<TemplateRef<ForTableCellDefContext<T>>>(TemplateRef);
 
   /**
    * Type-inference hint: bind to the same collection as `ForTableBody`'s `rows`
    * so `let-row` is typed as the row type. Read only by the compiler; the
    * directive never touches its value.
    */
-  readonly rowType = input<readonly T[]>([], { alias: 'forDataCellRow' });
+  readonly rowType = input<readonly T[]>([], { alias: 'forTableCellDefRow' });
 
   /**
    * Type-inference hint: bind the type guard(s) that match the variant rows
-   * rendered by `[forRowDef]` (the same predicate used on their `[when]`) so
+   * rendered by `[forTableRowDef]` (the same predicate used on their `[when]`) so
    * `let-row` is narrowed to `Exclude<T, V>` — the members this per-column
    * template actually receives. Compose several variants into one union guard
    * (`(r): r is A | B => …`). Read only by the compiler; the directive never
    * touches its value. Omitting it leaves `let-row` typed as the full `T`.
    */
   readonly excludeType = input<((row: T, index: number) => row is V) | null>(null, {
-    alias: 'forDataCellUnless',
+    alias: 'forTableCellDefUnless',
   });
 
   /** Narrows the template context type for `let-row` under strict template checking. */
   static ngTemplateContextGuard<T, V extends T>(
-    _directive: ForDataCell<T, V>,
+    _directive: ForTableCellDef<T, V>,
     _context: unknown,
-  ): _context is ForDataCellContext<Exclude<T, V>> {
+  ): _context is ForTableCellDefContext<Exclude<T, V>> {
     return true;
   }
 }
 
 /**
  * Marks the placeholder/skeleton template of a column definition. Optional;
- * place on an `<ng-template forPlaceholderCell>` inside a `[forColumnDef]`. When
+ * place on an `<ng-template forTablePlaceholderCellDef>` inside a `[forTableColumnDef]`. When
  * `ForTableBody` is in its `loading` state it stamps this into the column's
  * `[forTableCell]` for each placeholder row.
  *
  * It is the first step of a three-step resolution: a column's own
- * `[forPlaceholderCell]` wins, else the body-level
- * `[forPlaceholderCellDefault]`, else the cell stays empty.
+ * `[forTablePlaceholderCellDef]` wins, else the body-level
+ * `[forTablePlaceholderCellDefault]`, else the cell stays empty.
  */
-@Directive({ selector: 'ng-template[forPlaceholderCell]' })
-export class ForPlaceholderCell {
+@Directive({ selector: 'ng-template[forTablePlaceholderCellDef]' })
+export class ForTablePlaceholderCellDef {
   /** The captured placeholder-cell template. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
 }
@@ -116,22 +116,22 @@ export class ForPlaceholderCell {
 /**
  * Marks the **body-level default** placeholder/skeleton template. Optional and
  * declared **once per body** (not per column); place on an
- * `<ng-template forPlaceholderCellDefault>` among the `[forColumnDef]`s.
+ * `<ng-template forTablePlaceholderCellDefault>` among the `[forTableColumnDef]`s.
  * `ForTableBody` stamps it into every displayed column that declares no
- * `[forPlaceholderCell]` of its own — most columns of a table share one skeleton
+ * `[forTablePlaceholderCellDef]` of its own — most columns of a table share one skeleton
  * shape, so it is declared once rather than repeated per def.
  *
  * Resolution order per column, in both stamping paths (`[loading]` placeholder
  * rows and `placeholderCells` row variants): the column's own
- * `[forPlaceholderCell]` → this default → an empty cell when neither exists.
- * The template receives no context, exactly like `[forPlaceholderCell]`.
+ * `[forTablePlaceholderCellDef]` → this default → an empty cell when neither exists.
+ * The template receives no context, exactly like `[forTablePlaceholderCellDef]`.
  *
  * It registers itself with the surrounding body's def registry at construction,
  * so a wrapping component can declare it (or project it) — see
  * {@link ForTableDefRegistry}. Declared outside any registry it throws.
  */
-@Directive({ selector: 'ng-template[forPlaceholderCellDefault]' })
-export class ForPlaceholderCellDefault {
+@Directive({ selector: 'ng-template[forTablePlaceholderCellDefault]' })
+export class ForTablePlaceholderCellDefault {
   /** The captured default placeholder-cell template. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
 
@@ -143,7 +143,7 @@ export class ForPlaceholderCellDefault {
 /**
  * Marks the shared drag placeholder for the reorderable columns of a
  * `<for-table-body>`. Optional and declared **once per body** (not per column);
- * place on an `<ng-template forColumnDragPlaceholder>` among the `[forColumnDef]`s.
+ * place on an `<ng-template forTableColumnDragPlaceholder>` among the `[forTableColumnDef]`s.
  * `ForTableBody` stamps it as every reorderable header cell's
  * `[forDragPlaceholder]`, so during a pointer reorder the dragged column's slot
  * shows this template. Omit it to keep drag-drop's default placeholder behaviour.
@@ -152,8 +152,8 @@ export class ForPlaceholderCellDefault {
  * so a wrapping component can declare it (or project it) — see
  * {@link ForTableDefRegistry}. Declared outside any registry it throws.
  */
-@Directive({ selector: 'ng-template[forColumnDragPlaceholder]' })
-export class ForColumnDragPlaceholder {
+@Directive({ selector: 'ng-template[forTableColumnDragPlaceholder]' })
+export class ForTableColumnDragPlaceholder {
   /** The captured placeholder template rendered in a reordered column's slot. */
   readonly template = inject<TemplateRef<unknown>>(TemplateRef);
 
@@ -165,7 +165,7 @@ export class ForColumnDragPlaceholder {
 /**
  * Declarative definition of a single table column, co-locating its header,
  * data, and (optional) placeholder templates plus its per-column config in one
- * place. Place `[forColumnDef]` on an `<ng-container>` inside a `<for-table-body>`;
+ * place. Place `[forTableColumnDef]` on an `<ng-container>` inside a `<for-table-body>`;
  * the container renders nothing itself — `ForTableBody` harvests the defs and
  * stamps the header row and data rows from them.
  *
@@ -178,14 +178,14 @@ export class ForColumnDragPlaceholder {
  *
  * @example
  * ```html
- * <ng-container forColumnDef="name" sticky sortable resizable resizeAriaLabel="Resize name">
- *   <ng-template forHeaderCell>Name</ng-template>
- *   <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+ * <ng-container forTableColumnDef="name" sticky sortable resizable resizeAriaLabel="Resize name">
+ *   <ng-template forTableHeaderCellDef>Name</ng-template>
+ *   <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.name }}</ng-template>
  * </ng-container>
  * ```
  */
-@Directive({ selector: '[forColumnDef]' })
-export class ForColumnDef {
+@Directive({ selector: '[forTableColumnDef]' })
+export class ForTableColumnDef {
   /**
    * Column identifier — reflected as `data-column` on the stamped cells and used
    * to key the resize width var. Mandatory: it is seeded with the `unsetInput`
@@ -193,7 +193,7 @@ export class ForColumnDef {
    * that has registered but not been bound yet, and an unbound def throws in dev
    * mode.
    */
-  readonly name = input(unsetInput<string>(), { alias: 'forColumnDef' });
+  readonly name = input(unsetInput<string>(), { alias: 'forTableColumnDef' });
 
   /**
    * Sticky placement forwarded to both the header cell and every data cell:
@@ -269,7 +269,7 @@ export class ForColumnDef {
    * Whether header-inclusive auto-fit also accounts for the column header's label
    * (only meaningful with `resizable` + `autoFit`). Forwarded to the stamped
    * `[forTableColumnResizer]`'s `fitIncludesHeader`; isolate the header text with a
-   * `[forTableColumnLabel]` inside the `[forHeaderCell]` template. Default `false`.
+   * `[forTableColumnLabel]` inside the `[forTableHeaderCellDef]` template. Default `false`.
    */
   readonly fitIncludesHeader = input(false, { transform: booleanAttribute });
 
@@ -324,17 +324,17 @@ export class ForColumnDef {
   readonly cellClass = input<string | null>(null);
 
   /** The column's header-cell template. */
-  readonly header = contentChild.required(ForHeaderCell);
+  readonly header = contentChild.required(ForTableHeaderCellDef);
   /** The column's data-cell template. */
-  readonly dataCell = contentChild.required(ForDataCell);
+  readonly dataCell = contentChild.required(ForTableCellDef);
   /**
    * The column's optional placeholder-cell template. When absent, `ForTableBody`
-   * falls back to its `[forPlaceholderCellDefault]`, then to an empty cell.
+   * falls back to its `[forTablePlaceholderCellDefault]`, then to an empty cell.
    */
-  readonly placeholderCell = contentChild(ForPlaceholderCell);
+  readonly placeholderCell = contentChild(ForTablePlaceholderCellDef);
 
   constructor() {
-    assertInputBound(this.name, 'table', '[forColumnDef]', 'forColumnDef');
+    assertInputBound(this.name, 'table', '[forTableColumnDef]', 'forTableColumnDef');
     registerTableColumnDef(this);
   }
 }
@@ -353,14 +353,14 @@ export class ForColumnDef {
  *
  * @param def The column definition to check.
  */
-export function assertColumnDefConfig(def: ForColumnDef): void {
+export function assertColumnDefConfig(def: ForTableColumnDef): void {
   if (!isDevMode()) {
     return;
   }
   const name = def.name();
-  const piece = isUnset(name) ? '[forColumnDef]' : `forColumnDef="${name}"`;
+  const piece = isUnset(name) ? '[forTableColumnDef]' : `forTableColumnDef="${name}"`;
   if (!isUnset(name)) {
-    assertColumnName(name, 'ForColumnDef');
+    assertColumnName(name, 'ForTableColumnDef');
   }
   const width = def.width();
   if (width !== null) {
