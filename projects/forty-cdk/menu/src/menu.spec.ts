@@ -2,7 +2,11 @@ import { Component, Directive, provideZonelessChangeDetection, signal } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { afterEachOverlayCleanup, flush, pressKey, renderHost } from '../../src/test-utils';
-import { assertDataStateContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertSingleValueModelContract,
+} from '../../src/test-utils/contract';
+import type { VetoableEvent } from 'forty-cdk/core';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
 import { FOR_MENU_CHECKBOX_ITEM, ForMenuCheckboxItem } from './menu-checkbox-item';
@@ -63,7 +67,7 @@ class MenuHost {
   readonly open = signal(false);
   readonly bold = signal(false);
   readonly italic = signal(false);
-  readonly alignment = signal('left');
+  readonly alignment = signal<string | null>('left');
   readonly lastSelected = signal<string | null>(null);
   readonly selects: string[] = [];
 
@@ -138,7 +142,7 @@ class GroupedMenuHost {
 class TypeaheadOverrideHost {
   readonly open = signal(true);
   readonly bold = signal(false);
-  readonly alignment = signal('left');
+  readonly alignment = signal<string | null>('left');
 }
 
 @Component({
@@ -191,7 +195,48 @@ class CheckboxFirstHost {
 })
 class RadioFirstHost {
   readonly open = signal(false);
-  readonly alignment = signal('left');
+  readonly alignment = signal<string | null>('left');
+}
+
+@Component({
+  imports: [
+    ForDropdownMenu,
+    ForDropdownMenuTrigger,
+    ForMenuContent,
+    ForMenuRadioGroup,
+    ForMenuRadioItem,
+  ],
+  template: `
+    <div forDropdownMenu [(open)]="open">
+      <button forDropdownMenuTrigger>Sort</button>
+      @if (open()) {
+        <div forMenuContent>
+          <div forMenuRadioGroup [value]="sort()" (valueChange)="onSortChange($event)">
+            <button id="sort-none" forMenuRadioItem value="" (activate)="keepOpen($event)">
+              None
+            </button>
+            <button id="sort-asc" forMenuRadioItem value="asc" (activate)="keepOpen($event)">
+              Ascending
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenuRadioEmptyValueHost {
+  readonly open = signal(true);
+  readonly sort = signal<string | null>(null);
+  changes = 0;
+
+  onSortChange(value: string | null): void {
+    this.sort.set(value);
+    this.changes++;
+  }
+
+  keepOpen(event: VetoableEvent): void {
+    event.preventDefault();
+  }
 }
 
 @Component({
@@ -215,6 +260,57 @@ class MenuSeparatorHost {
 
 describe('Menu items / content', () => {
   afterEachOverlayCleanup();
+
+  assertSingleValueModelContract(
+    {
+      mount: async () => {
+        const r = renderHost(MenuRadioEmptyValueHost);
+        await flush(r.fixture);
+        const itemOf = (value: string) =>
+          document.querySelector<HTMLElement>(value === '' ? '#sort-none' : '#sort-asc');
+        return {
+          value: () => r.instance.sort(),
+          items: () => ({
+            '': itemOf(''),
+            asc: itemOf('asc'),
+          }),
+          activate: (value) => itemOf(value)?.click(),
+          clear: () => r.instance.sort.set(null),
+          flush: r.flush,
+        };
+      },
+    },
+    { selectionAttribute: 'aria-checked', label: '[forMenuRadioGroup]' },
+  );
+
+  describe('[forMenuRadioGroup] value model', () => {
+    it('reports a ""-valued item as unchecked before any selection', async () => {
+      const r = renderHost(MenuRadioEmptyValueHost);
+      await flush(r.fixture);
+
+      const none = document.querySelector<HTMLElement>('#sort-none')!;
+      expect(r.instance.sort()).toBeNull();
+      expect(none.getAttribute('aria-checked')).toBe('false');
+      expect(none.getAttribute('data-state')).toBe('unchecked');
+    });
+
+    it('emits valueChange once and checks exactly one item on selection', async () => {
+      const r = renderHost(MenuRadioEmptyValueHost);
+      await flush(r.fixture);
+
+      document.querySelector<HTMLElement>('#sort-asc')!.click();
+      await flush(r.fixture);
+
+      const none = document.querySelector<HTMLElement>('#sort-none')!;
+      const asc = document.querySelector<HTMLElement>('#sort-asc')!;
+      expect(r.instance.changes).toBe(1);
+      expect(r.instance.sort()).toBe('asc');
+      expect(asc.getAttribute('aria-checked')).toBe('true');
+      expect(asc.getAttribute('data-state')).toBe('checked');
+      expect(none.getAttribute('aria-checked')).toBe('false');
+      expect(none.getAttribute('data-state')).toBe('unchecked');
+    });
+  });
 
   describe('a11y baseline', () => {
     it('sets role=menu on content and aria-labelledby to the trigger', async () => {
@@ -1118,7 +1214,7 @@ describe('Menu items / content', () => {
       })
       class RadioGroupLabelHost {
         readonly open = signal(true);
-        readonly sort = signal('name');
+        readonly sort = signal<string | null>('name');
       }
 
       const r = renderHost(RadioGroupLabelHost);
@@ -1157,7 +1253,7 @@ describe('Menu items / content', () => {
       })
       class RadioGroupNoLabelHost {
         readonly open = signal(true);
-        readonly sort = signal('name');
+        readonly sort = signal<string | null>('name');
       }
 
       const r = renderHost(RadioGroupNoLabelHost);
@@ -1292,7 +1388,7 @@ describe('ForMenuItemIndicator', () => {
     readonly open = signal(true);
     readonly bold = signal(false);
     readonly italic = signal(false);
-    readonly alignment = signal('left');
+    readonly alignment = signal<string | null>('left');
     readonly forceMount = signal(false);
   }
 
@@ -1461,7 +1557,7 @@ describe('ForMenuItemIndicator', () => {
     })
     class SubclassHost {
       readonly open = signal(true);
-      readonly alignment = signal('left');
+      readonly alignment = signal<string | null>('left');
     }
 
     const r = renderHost(SubclassHost);

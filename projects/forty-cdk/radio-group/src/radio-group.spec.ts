@@ -7,6 +7,7 @@ import {
   assertDataStateContract,
   assertFormControlContract,
   assertRovingTabindexContract,
+  assertSingleValueModelContract,
   type FormControlMountResult,
 } from '../../src/test-utils/contract';
 import { FOR_RADIO, ForRadio } from './radio';
@@ -86,6 +87,19 @@ class RadioGroupFormControlHost {
   readonly isDirty = signal(false);
 }
 
+@Component({
+  imports: [...RADIO_IMPORTS],
+  template: `
+    <div forRadioGroup [(value)]="color">
+      <button type="button" forRadio value="" data-test-id="empty">None</button>
+      <button type="button" forRadio value="red" data-test-id="red">Red</button>
+    </div>
+  `,
+})
+class RadioGroupEmptyValueHost {
+  readonly color = signal<string | null>(null);
+}
+
 const radioOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
@@ -131,6 +145,26 @@ describe('ForRadioGroup', () => {
       return result;
     },
     { flags: ['readonly', 'required', 'invalid', 'pending', 'touched', 'dirty'] },
+  );
+
+  assertSingleValueModelContract(
+    {
+      mount: () => {
+        const r = renderHost(RadioGroupEmptyValueHost);
+        const testIdOf = (value: string) => (value === '' ? 'empty' : value);
+        return {
+          value: () => r.instance.color(),
+          items: () => ({
+            '': radioOf(r.el, 'empty'),
+            red: radioOf(r.el, 'red'),
+          }),
+          activate: (value) => radioOf(r.el, testIdOf(value)).click(),
+          clear: () => r.instance.color.set(null),
+          flush: r.flush,
+        };
+      },
+    },
+    { selectionAttribute: 'aria-checked' },
   );
 
   assertRovingTabindexContract(

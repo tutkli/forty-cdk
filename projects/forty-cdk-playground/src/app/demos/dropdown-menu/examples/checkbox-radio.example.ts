@@ -270,5 +270,5 @@ export class DropdownMenuCheckboxRadioExample {
   protected readonly showToolbar = signal(true);
   protected readonly showStatusBar = signal(true);
   protected readonly wordWrap = signal(false);
-  protected readonly theme = signal('system');
+  protected readonly theme = signal<string | null>('system');
 }

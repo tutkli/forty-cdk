@@ -305,5 +305,5 @@ import {
 })
 export class ContextMenuRichContentExample {
   protected readonly showBookmarks = signal(true);
-  protected readonly encoding = signal('utf-8');
+  protected readonly encoding = signal<string | null>('utf-8');
 }
