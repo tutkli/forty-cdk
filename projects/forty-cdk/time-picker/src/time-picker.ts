@@ -11,16 +11,14 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  AnchoredFormValueControlBase,
   assertTimeCapable,
   formatFortyMessage,
   injectDateAdapter,
   type TimeCapableDateAdapter,
   IdGenerator,
-  type FloatingAlign,
-  type FloatingSide,
   type WritingDirection,
   ListboxOverlayController,
-  FormUiControlBase,
   injectHiddenInput,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -73,11 +71,11 @@ import { FOR_TIME_PICKER_DEFAULTS } from './time-picker-defaults';
   ],
 })
 export class ForTimePicker<D>
-  extends FormUiControlBase
+  extends AnchoredFormValueControlBase
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
   readonly #idGen = inject(IdGenerator);
-  readonly #defaults = inject(FOR_TIME_PICKER_DEFAULTS);
+  protected readonly positioningDefaults = inject(FOR_TIME_PICKER_DEFAULTS);
 
   /**
    * The active, time-capable date adapter. Throws when the provided adapter is
@@ -176,52 +174,6 @@ export class ForTimePicker<D>
 
   /** Orientation of the listbox for keyboard navigation. Default `'vertical'`. */
   readonly orientation = input<'vertical' | 'horizontal'>('vertical');
-
-  /**
-   * Side the listbox is anchored to. Defaults to `'bottom'`. Ignored in
-   * `modal` mode.
-   */
-  readonly side = input<FloatingSide | undefined>('bottom');
-
-  /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>('start');
-
-  /**
-   * Gap (px) between trigger and listbox along the main axis. Default `4`.
-   * The default is read from `provideForTimePickerDefaults` for the surrounding
-   * scope.
-   */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
-
-  /** When `true` (default), `flip` and `shift` keep the listbox inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
-
-  /**
-   * Padding (px) applied uniformly to flip / shift / size. Default `8`.
-   * The default is read from `provideForTimePickerDefaults` for the surrounding
-   * scope.
-   */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
-
-  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner.
-   */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
 
   /**
    * Writing direction. When unset (default `null`), the inherited ambient

@@ -1,6 +1,12 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant menubars in the surrounding injector
@@ -8,7 +14,17 @@ import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cd
  * application root or in any component's `providers` array; partial
  * overrides merge with the parent scope.
  */
-export interface ForMenubarDefaults {
+export interface ForMenubarDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side a menubar trigger's menu is anchored to, for triggers that don't
+   * override `side` locally. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side`, for triggers that don't override
+   * `align` locally. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Distance (px) between a menubar trigger and its floating menu along the
    * resolved `side` axis.
@@ -36,6 +52,8 @@ export interface ForMenubarDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_MENUBAR_FALLBACK_DEFAULTS: ForMenubarDefaults = {
+  side: 'bottom',
+  align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',

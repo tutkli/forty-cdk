@@ -6,7 +6,6 @@ import {
   input,
   isDevMode,
   model,
-  numberAttribute,
   signal,
   contentChild,
 } from '@angular/core';
@@ -107,7 +106,7 @@ export class ForDatePicker<D>
   extends DatePickerBase<D>
   implements FormValueControl<D | null>, ForDatePickerContext
 {
-  readonly #defaults = inject(FOR_DATE_PICKER_DEFAULTS);
+  protected readonly positioningDefaults = inject(FOR_DATE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDatePicker', {
@@ -124,14 +123,6 @@ export class ForDatePicker<D>
    * writes via `[(value)]`.
    */
   readonly value = model<D | null>(null);
-
-  /** Gap (px) between trigger and surface along the main axis. Default from `provideForDatePickerDefaults`. */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Padding (px) applied uniformly to flip / shift / size. Default from `provideForDatePickerDefaults`. */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
 
   /**
    * Date-time precision. `'day'` (default, **non-breaking**) keeps a pure

@@ -330,6 +330,63 @@ function sanctionedPulls(files) {
 }
 
 /**
+ * The trigger-anchored overlay roots, split by whether they **inherit** the
+ * shared floating-ui positioning block or declare it themselves.
+ *
+ * The second row is the load-bearing one and it is expected to stay empty:
+ * before [#1726](https://github.com/tutkli/forty-cdk/issues/1726) ten of the
+ * thirteen roots hand-rolled the ten inputs, which cost ~400 copied lines and —
+ * the part that reached consumers — left `side` / `align` scope-defaultable for
+ * three roots and not for the other ten. A new root that copies the block
+ * instead of extending a base appears there, the generated table drifts, and
+ * `pnpm check:matrices` fails.
+ *
+ * `sideOffset` / `alignOffset` / `collisionPadding` are unambiguous names, but
+ * `side` / `align` are not — `[forDrawer]` and `[forCarousel]` own inputs by
+ * those names with unrelated value sets — so those two only count when typed
+ * with the floating unions.
+ *
+ * The adopter row names the two intermediate bases (`MenuOverlayHost`,
+ * `DatePickerBase`) alongside the roots, because extending one is how four menu
+ * roots and both date pickers reach the block; they are what a future sibling
+ * would extend.
+ */
+function anchoredPositioningAdopters(files) {
+  const declarationSites = [
+    'core/floating/anchored-overlay-positioning-base',
+    'core/floating/anchored-form-value-control-base',
+  ];
+  const inherits =
+    /extends\s+(?:AnchoredOverlayPositioningBase|AnchoredFormValueControlBase|MenuOverlayHost|DatePickerBase)\b/;
+  const declaresLocally = [
+    /readonly _?(?:sideOffset|alignOffset|collisionPadding)(?:Input)? = input/,
+    /readonly _?(?:side|align)(?:Input)? = input<Floating(?:Side|Align)/,
+  ];
+  const inherited = [];
+  const local = [];
+  for (const { id, text } of files) {
+    if (inherits.test(text)) {
+      inherited.push(id);
+    }
+    if (!declarationSites.includes(id) && declaresLocally.some((re) => re.test(text))) {
+      local.push(id);
+    }
+  }
+  return [
+    {
+      key: 'anchored positioning block, inherited',
+      count: inherited.length,
+      members: inherited,
+    },
+    {
+      key: 'anchored positioning block, declared locally',
+      count: local.length,
+      members: local,
+    },
+  ];
+}
+
+/**
  * The brace-matched body opening at the first `{` at or after `from`, or `null`.
  * Naive by design: no assertion helper in the library takes an object-literal
  * default parameter, and if one ever does the mis-read lands it in the visible
@@ -412,6 +469,7 @@ const EXTRACTORS = [
   { extract: dataStateVocabularies },
   { extract: closedInertPanels },
   { extract: mountedWhileClosedAdopters },
+  { extract: anchoredPositioningAdopters, includeCore: true },
   { extract: sanctionedPulls, includeCore: true },
   { extract: assertionHelpers, includeCore: true },
 ];

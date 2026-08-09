@@ -30,6 +30,7 @@ export const FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS = [
   'align',
   'alignOffset',
   'ariaLabel',
+  'arrowPadding',
   'avoidCollisions',
   'clipUntilPositioned',
   'closeOnSelect',

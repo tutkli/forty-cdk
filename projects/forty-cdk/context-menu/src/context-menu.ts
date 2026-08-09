@@ -1,23 +1,11 @@
-import {
-  booleanAttribute,
-  computed,
-  Directive,
-  inject,
-  input,
-  model,
-  numberAttribute,
-  output,
-  signal,
-} from '@angular/core';
+import { booleanAttribute, Directive, inject, input, model, output, signal } from '@angular/core';
 
 import {
-  type FloatingAlign,
+  type AnchoredPositioningOverride,
   type FloatingFallbackAxisSideDirection,
-  type FloatingSide,
   type WritingDirection,
   createMenuOverlay,
   MenuOverlayHost,
-  MENU_POSITIONING_DEFAULTS,
   injectTextDirection,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -73,7 +61,7 @@ export class ForContextMenu
   extends MenuOverlayHost
   implements ForMenuContext, ForContextMenuContext
 {
-  readonly #defaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
+  protected readonly positioningDefaults = inject(FOR_CONTEXT_MENU_DEFAULTS);
 
   /**
    * Two-way bindable. Whether the menu is currently shown. The `model()` change emitter fires only
@@ -81,44 +69,6 @@ export class ForContextMenu
    * `[(open)]`.
    */
   readonly open = model<boolean>(false);
-
-  /**
-   * Side the menu is anchored to relative to the pointer. Defaults to
-   * `'bottom'`. Pair with `align` for the full positioning API.
-   *
-   * One of the floating-ui positioning inputs shared verbatim across the
-   * three menu roots — their non-seed defaults come from the single
-   * `MENU_POSITIONING_DEFAULTS` source and `menu-positioning-inputs.spec.ts`
-   * guards the three roots against drift.
-   */
-  readonly _sideInput = input<FloatingSide | undefined>(MENU_POSITIONING_DEFAULTS.side, {
-    alias: 'side',
-  });
-
-  /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly _alignInput = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align, {
-    alias: 'align',
-  });
-
-  /**
-   * Gap (px) along the main axis. Default `0`. The default is read from
-   * `provideForContextMenuDefaults` for the surrounding scope.
-   */
-  readonly _sideOffsetInput = input(this.#defaults.sideOffset, {
-    transform: numberAttribute,
-    alias: 'sideOffset',
-  });
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly _alignOffsetInput = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
-    transform: numberAttribute,
-    alias: 'alignOffset',
-  });
-
-  /** When `true` (default), `flip` and `shift` keep the menu inside the viewport. */
-  readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
-    transform: booleanAttribute,
-  });
 
   /**
    * Direction `flip` falls back to on the perpendicular axis when both sides of
@@ -131,39 +81,8 @@ export class ForContextMenu
    * rather than a per-menu one.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
-    this.#defaults.fallbackAxisSideDirection,
+    this.positioningDefaults.fallbackAxisSideDirection,
   );
-
-  /**
-   * Padding (px) applied uniformly to flip / shift / size. Default `8`.
-   * The default is read from `provideForContextMenuDefaults` for the
-   * surrounding scope.
-   */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(MENU_POSITIONING_DEFAULTS.arrowPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>(MENU_POSITIONING_DEFAULTS.sticky);
-
-  /** When `true`, sets `data-detached=""` while the virtual anchor is off-screen. */
-  readonly hideWhenDetached = input(MENU_POSITIONING_DEFAULTS.hideWhenDetached, {
-    transform: booleanAttribute,
-  });
-
-  /**
-   * When `true` (default), the menu is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame.
-   */
-  readonly clipUntilPositioned = input(MENU_POSITIONING_DEFAULTS.clipUntilPositioned, {
-    transform: booleanAttribute,
-  });
 
   /**
    * When `true` (default), arrow-key navigation wraps from the last enabled
@@ -266,26 +185,15 @@ export class ForContextMenu
   readonly anchor = this._overlay.openerVirtualAnchor;
 
   /**
-   * Side the surface is anchored to: the region's own `[menuPositioning]`
-   * override when it declared one, else this root's `[side]`. The four
-   * placement values resolve through the opener registry so a trigger carries
-   * the same override here as it does under a shared `[forMenu]` root;
-   * with no override the value is this root's input verbatim.
+   * The region's own `[menuPositioning]` override, resolved by the base ahead
+   * of this root's `[side]` / `[align]` / `[sideOffset]` / `[alignOffset]`. It
+   * runs through the opener registry so a trigger carries the same override
+   * here as it does under a shared `[forMenu]` root; with no override the four
+   * values are this root's inputs verbatim.
    */
-  readonly side = computed(() => this._overlay.openerPositioning()?.side ?? this._sideInput());
-
-  /** Alignment: the region's `[menuPositioning]` override, else this root's `[align]`. */
-  readonly align = computed(() => this._overlay.openerPositioning()?.align ?? this._alignInput());
-
-  /** Main-axis gap: the region's `[menuPositioning]` override, else this root's `[sideOffset]`. */
-  readonly sideOffset = computed(
-    () => this._overlay.openerPositioning()?.sideOffset ?? this._sideOffsetInput(),
-  );
-
-  /** Cross-axis gap: the region's `[menuPositioning]` override, else this root's `[alignOffset]`. */
-  readonly alignOffset = computed(
-    () => this._overlay.openerPositioning()?.alignOffset ?? this._alignOffsetInput(),
-  );
+  protected override positioningOverride(): AnchoredPositioningOverride | null {
+    return this._overlay.openerPositioning();
+  }
 
   /**
    * ContextMenu exempts nothing — a left-click on the right-click region

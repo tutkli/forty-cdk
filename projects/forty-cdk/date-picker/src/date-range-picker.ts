@@ -6,7 +6,6 @@ import {
   input,
   isDevMode,
   model,
-  numberAttribute,
   signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
@@ -93,7 +92,7 @@ export class ForDateRangePicker<D>
   extends DatePickerBase<D>
   implements FormValueControl<DateRange<D> | null>, ForDateRangePickerContext
 {
-  readonly #defaults = inject(FOR_DATE_RANGE_PICKER_DEFAULTS);
+  protected readonly positioningDefaults = inject(FOR_DATE_RANGE_PICKER_DEFAULTS);
 
   /** The active date adapter, resolved from `FOR_DATE_ADAPTER` (shared with `ForCalendar`). */
   readonly adapter: DateAdapter<D> = injectDateAdapter<D>('ForDateRangePicker', {
@@ -111,14 +110,6 @@ export class ForDateRangePicker<D>
    * range, never on consumer writes via `[(value)]`.
    */
   readonly value = model<DateRange<D> | null>(null);
-
-  /** Gap (px) between trigger and surface along the main axis. Default from `provideForDateRangePickerDefaults`. */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Padding (px) applied uniformly to flip / shift / size. Default from `provideForDateRangePickerDefaults`. */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
 
   /**
    * Minimum inclusive day count for a committed range. Forward to the projected

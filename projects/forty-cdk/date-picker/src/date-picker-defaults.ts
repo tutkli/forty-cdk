@@ -1,6 +1,11 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant date pickers in the surrounding injector
@@ -8,7 +13,17 @@ import { createDefaults } from 'forty-cdk/core';
  * application root or in any component's `providers` array; partial overrides
  * merge with the parent scope.
  */
-export interface ForDatePickerDefaults {
+export interface ForDatePickerDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side the surface is anchored to for pickers that don't override `side`
+   * locally. Ignored in `modal` mode. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for pickers that don't override `align`
+   * locally. Ignored in `modal` mode. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Distance (px) between the trigger and the floating surface along the
    * resolved `side` axis. Ignored in `modal`
@@ -29,6 +44,8 @@ export interface ForDatePickerDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_DATE_PICKER_FALLBACK_DEFAULTS: ForDatePickerDefaults = {
+  side: 'bottom',
+  align: 'start',
   sideOffset: 8,
   collisionPadding: 8,
 };

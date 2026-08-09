@@ -1,6 +1,11 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant time pickers in the surrounding injector
@@ -8,7 +13,17 @@ import { createDefaults } from 'forty-cdk/core';
  * application root or in any component's `providers` array; partial overrides
  * merge with the parent scope.
  */
-export interface ForTimePickerDefaults {
+export interface ForTimePickerDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side the listbox is anchored to for time pickers that don't override
+   * `side` locally. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for time pickers that don't override
+   * `align` locally. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Distance (px) between the time picker trigger and the floating content
    * along the resolved `side` axis.
@@ -28,6 +43,8 @@ export interface ForTimePickerDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_TIME_PICKER_FALLBACK_DEFAULTS: ForTimePickerDefaults = {
+  side: 'bottom',
+  align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
 };

@@ -5,22 +5,17 @@ import type { FloatingAlign, FloatingConfig, FloatingSide } from './floating';
 
 /**
  * Single source of truth for the floating-ui positioning defaults shared by
- * the three trigger-anchored overlay roots — `[forPopover]`, `[forTooltip]`,
- * and `[forHoverCard]`.
- *
- * Angular's compiler requires every `input()` to be declared directly in a
- * class member initializer (NG8110), so the inputs themselves can't be
- * produced by a shared factory. To stop the (already-drifted) defaults from
- * diverging again, each root reads its non-seed defaults from this object and
- * the `anchored-positioning-inputs.spec.ts` guard asserts the three roots keep
- * an identical positioning input set.
+ * every trigger-anchored overlay root. It is read once, by the two bases the
+ * roots inherit their positioning block from
+ * (`AnchoredOverlayPositioningBase` / `AnchoredFormValueControlBase`), so no
+ * root spells a non-seed default itself.
  *
  * Only `side` / `align` / `sideOffset` / `collisionPadding` are seeded from
- * each root's defaults provider (`provideForPopoverDefaults` /
- * `provideForTooltipDefaults` / `provideForHoverCardDefaults`) so a scope
- * override flows through — and of those only `side` legitimately varies per
- * root (popover anchors `'bottom'`, tooltip / hover-card `'top'`). Everything
- * below is identical across all three roots.
+ * each root's own defaults provider (`provideForPopoverDefaults`,
+ * `provideForSelectDefaults`, …) so a scope override flows through — those are
+ * the placement values a design system tunes, and they legitimately vary per
+ * root. Everything below is identical for every anchored overlay in the
+ * library.
  */
 export const ANCHORED_POSITIONING_DEFAULTS = {
   /** Default gap (px) along the cross axis (parallel to `side`). */

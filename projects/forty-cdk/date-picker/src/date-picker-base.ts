@@ -7,7 +7,6 @@ import {
   input,
   isDevMode,
   model,
-  numberAttribute,
   output,
   signal,
   type Signal,
@@ -17,12 +16,10 @@ import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   adoptHostId,
+  AnchoredFormValueControlBase,
   createVetoableNativeEvent,
   type DateAdapter,
   emitVetoableEvent,
-  type FloatingAlign,
-  type FloatingSide,
-  FormUiControlBase,
   fortyError,
   IdGenerator,
   injectTextDirection,
@@ -41,10 +38,9 @@ import type { ForDatePickerContext } from './date-picker-context';
  * content registration, return-focus, and the vetoable dismiss / auto-focus
  * outputs live in one place instead of being duplicated per root.
  *
- * It implements the full {@link ForDatePickerContext} except the two members
- * that depend on the concrete value type — `formattedValue` (single date vs
- * `start – end`) — and the two whose default flows from a per-root defaults
- * token (`sideOffset` / `collisionPadding`). Those, plus the `adapter` and the
+ * It implements the full {@link ForDatePickerContext} except `formattedValue`,
+ * which depends on the concrete value type (single date vs `start – end`).
+ * That, plus the `adapter`, the per-root `positioningDefaults` token, and the
  * generated `triggerId` / `contentId`, are declared abstract so each concrete
  * root owns them; everything else is concrete and inherited.
  *
@@ -57,7 +53,10 @@ import type { ForDatePickerContext } from './date-picker-context';
  * @typeParam D The adapter's immutable date type.
  */
 @Directive()
-export abstract class DatePickerBase<D> extends FormUiControlBase implements ForDatePickerContext {
+export abstract class DatePickerBase<D>
+  extends AnchoredFormValueControlBase
+  implements ForDatePickerContext
+{
   /** Shared id generator; concrete roots seed {@link triggerId} / {@link contentId} from it. */
   protected readonly idGen = inject(IdGenerator);
 
@@ -127,39 +126,6 @@ export abstract class DatePickerBase<D> extends FormUiControlBase implements For
 
   /** Text rendered by `[forDatePickerValue]` when nothing is selected. */
   readonly placeholder = input<string>('');
-
-  /** Side the surface is anchored to. Defaults to `'bottom'`. Ignored in `modal` mode. */
-  readonly side = input<FloatingSide | undefined>('bottom');
-
-  /** Alignment along the chosen `side`. Defaults to `'start'`. Ignored in `modal` mode. */
-  readonly align = input<FloatingAlign | undefined>('start');
-
-  /** Gap (px) between trigger and surface along the main axis. */
-  abstract readonly sideOffset: Signal<number>;
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
-
-  /** When `true` (default), `flip` and `shift` keep the surface inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
-
-  /** Padding (px) applied uniformly to flip / shift / size. */
-  abstract readonly collisionPadding: Signal<number>;
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
-
-  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame (the
-   * surface may flash briefly at the unresolved position while positioning
-   * computes).
-   */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
 
   /** Accessible name for the dialog surface. Emits no `aria-label` while `null`. */
   readonly ariaLabel = input<string | null>(null);

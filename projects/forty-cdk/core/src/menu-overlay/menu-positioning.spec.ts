@@ -15,7 +15,7 @@ import {
   MenubarMenuContext,
   type MenubarMenuHost,
 } from '../../../menubar/src/menubar-menu-context';
-import { MENU_POSITIONING_DEFAULTS } from './menu-positioning-inputs';
+import { ANCHORED_POSITIONING_DEFAULTS } from '../floating/anchored-positioning-inputs';
 
 @Component({
   imports: [ForDropdownMenu, ForContextMenu, ForMenu, ForMenuSub],
@@ -53,18 +53,18 @@ class PinnedFallbackAxisHost {}
 class MenubarTriggerPositioningHost {}
 
 /**
- * Guard for issue #575 (decision D10): Angular's NG8110 restriction stops the
- * menu roots from declaring their positioning inputs through a shared
- * factory, so each declares them inline. This asserts the inputs they share
- * keep identical default values — the place the audit found real copy-paste
- * drift (`[forMenuSub]`'s hardcoded `0` offsets that diverged from the
- * provider-backed roots). The shared `MENU_POSITIONING_DEFAULTS` source is the
- * single source for the non-seed defaults; the seeds (`sideOffset`,
- * `collisionPadding`, `fallbackAxisSideDirection`) come from each root's
- * defaults provider. The menubar's `[forMenubarTrigger]` and its multiplexed
- * context are covered by the two companion suites below.
+ * Guard for the one positioning input the menu family carries beyond the shared
+ * anchored block: `fallbackAxisSideDirection`. It stays declared per root rather
+ * than moving onto `AnchoredOverlayPositioningBase` because no other anchored
+ * overlay exposes it — dropping to the perpendicular axis is a menu-specific
+ * viewport-degradation lever, and its default lives on each menu primitive's own
+ * `ForXDefaults` beside the four shared seeds.
+ *
+ * The ten shared inputs are guarded once for all thirteen roots in
+ * [`floating/anchored-positioning-inputs.spec.ts`](../floating/anchored-positioning-inputs.spec.ts);
+ * this suite deliberately does not restate them.
  */
-describe('menu positioning inputs drift guard', () => {
+describe('menu fallback-axis positioning input', () => {
   function setup(providers: Provider[] = []): {
     dropdown: ForDropdownMenu;
     context: ForContextMenu;
@@ -87,52 +87,18 @@ describe('menu positioning inputs drift guard', () => {
     return { dropdown, context, menu, sub };
   }
 
-  it('keeps the non-seed positioning defaults identical across the roots', () => {
+  it('seeds the collision fallback from each root defaults provider (no silent drift)', () => {
     const { dropdown, context, menu, sub } = setup();
 
-    for (const root of [dropdown, context, menu, sub]) {
-      expect(root.align()).toBe(MENU_POSITIONING_DEFAULTS.align);
-      expect(root.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
-      expect(root.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
-      expect(root.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
-      expect(root.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
-      expect(root.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);
-      expect(root.clipUntilPositioned()).toBe(MENU_POSITIONING_DEFAULTS.clipUntilPositioned);
-    }
-  });
-
-  it('shares the top-level `side` default, with the submenu resolving from dir', () => {
-    const { dropdown, context, menu, sub } = setup();
-
-    expect(dropdown.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
-    expect(context.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
-    expect(menu.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
-    expect(sub.side()).toBe('right');
-  });
-
-  it('seeds the per-root offsets and collision fallback from the defaults providers (no silent drift)', () => {
-    const { dropdown, context, menu, sub } = setup();
-
-    expect(dropdown.sideOffset()).toBe(4);
-    expect(dropdown.collisionPadding()).toBe(8);
     expect(dropdown.fallbackAxisSideDirection()).toBe(
       FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS.fallbackAxisSideDirection,
     );
-
-    expect(context.sideOffset()).toBe(0);
-    expect(context.collisionPadding()).toBe(8);
     expect(context.fallbackAxisSideDirection()).toBe(
       FOR_CONTEXT_MENU_FALLBACK_DEFAULTS.fallbackAxisSideDirection,
     );
-
-    expect(menu.sideOffset()).toBe(0);
-    expect(menu.collisionPadding()).toBe(8);
     expect(menu.fallbackAxisSideDirection()).toBe(
       FOR_MENU_FALLBACK_DEFAULTS.fallbackAxisSideDirection,
     );
-
-    expect(sub.sideOffset()).toBe(0);
-    expect(sub.collisionPadding()).toBe(8);
     expect(sub.fallbackAxisSideDirection()).toBe(
       FOR_MENU_FALLBACK_DEFAULTS.fallbackAxisSideDirection,
     );
@@ -184,11 +150,11 @@ describe('menu positioning inputs drift guard', () => {
 /**
  * Companion guard for the menubar's multiplexed `ForMenuContext`. It derives
  * positioning from the active trigger, falling back to the shared
- * `MENU_POSITIONING_DEFAULTS` for the non-seed inputs — and to the
- * `provideForMenubarDefaults`-seeded `sideOffset` / `collisionPadding` /
- * `fallbackAxisSideDirection` — when no trigger is open. This pins those
- * fallbacks to the single sources so the bar can't drift away from the three
- * roots (the audit's original copy-paste failure mode).
+ * `ANCHORED_POSITIONING_DEFAULTS` for the non-seed inputs — and to the
+ * `provideForMenubarDefaults`-seeded `side` / `align` / `sideOffset` /
+ * `collisionPadding` / `fallbackAxisSideDirection` — when no trigger is open.
+ * This pins those fallbacks to the single sources so the bar can't drift away
+ * from the roots (the audit's original copy-paste failure mode).
  */
 describe('menubar menu context positioning fallback drift guard', () => {
   function host(): MenubarMenuHost {
@@ -217,17 +183,19 @@ describe('menubar menu context positioning fallback drift guard', () => {
   it('falls back to the shared non-seed defaults with no active trigger', () => {
     const ctx = createContext();
 
-    expect(ctx.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
-    expect(ctx.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
-    expect(ctx.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
-    expect(ctx.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
-    expect(ctx.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);
-    expect(ctx.clipUntilPositioned()).toBe(MENU_POSITIONING_DEFAULTS.clipUntilPositioned);
+    expect(ctx.alignOffset()).toBe(ANCHORED_POSITIONING_DEFAULTS.alignOffset);
+    expect(ctx.avoidCollisions()).toBe(ANCHORED_POSITIONING_DEFAULTS.avoidCollisions);
+    expect(ctx.arrowPadding()).toBe(ANCHORED_POSITIONING_DEFAULTS.arrowPadding);
+    expect(ctx.sticky()).toBe(ANCHORED_POSITIONING_DEFAULTS.sticky);
+    expect(ctx.hideWhenDetached()).toBe(ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached);
+    expect(ctx.clipUntilPositioned()).toBe(ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned);
   });
 
-  it('seeds the per-root offsets and collision fallback from the menubar defaults provider', () => {
+  it('seeds the placement and collision fallback from the menubar defaults provider', () => {
     const ctx = createContext();
 
+    expect(ctx.side()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.side);
+    expect(ctx.align()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.align);
     expect(ctx.sideOffset()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.sideOffset);
     expect(ctx.collisionPadding()).toBe(FOR_MENUBAR_FALLBACK_DEFAULTS.collisionPadding);
     expect(ctx.fallbackAxisSideDirection()).toBe(
@@ -241,10 +209,12 @@ describe('menubar menu context positioning fallback drift guard', () => {
       () =>
         new MenubarMenuContext(host(), {
           ...FOR_MENUBAR_FALLBACK_DEFAULTS,
+          side: 'top',
           fallbackAxisSideDirection: 'end',
         }),
     );
 
+    expect(ctx.side()).toBe('top');
     expect(ctx.fallbackAxisSideDirection()).toBe('end');
   });
 
@@ -269,9 +239,9 @@ describe('menubar menu context positioning fallback drift guard', () => {
 /**
  * Companion guard for `[forMenubarTrigger]`, the real producer of the menubar's
  * positioning values (the multiplexed `MenubarMenuContext` only forwards them).
- * Pins its non-seed defaults to the shared `MENU_POSITIONING_DEFAULTS` source
- * and its `sideOffset` / `collisionPadding` seeds to
- * `provideForMenubarDefaults`, so the bar can't drift away from the three roots.
+ * Its shared block now comes from `AnchoredOverlayPositioningBase` like every
+ * other anchored root, so what stays here is the menubar-specific tuning
+ * `provideForMenubarDefaults` owns.
  */
 describe('menubar trigger positioning inputs drift guard', () => {
   function setup(providers: Provider[] = []): ForMenubarTrigger {
@@ -284,19 +254,6 @@ describe('menubar trigger positioning inputs drift guard', () => {
       .query(By.directive(ForMenubarTrigger))
       .injector.get(ForMenubarTrigger);
   }
-
-  it('keeps the non-seed positioning defaults identical to the shared source', () => {
-    const trigger = setup();
-
-    expect(trigger.side()).toBe(MENU_POSITIONING_DEFAULTS.side);
-    expect(trigger.align()).toBe(MENU_POSITIONING_DEFAULTS.align);
-    expect(trigger.alignOffset()).toBe(MENU_POSITIONING_DEFAULTS.alignOffset);
-    expect(trigger.avoidCollisions()).toBe(MENU_POSITIONING_DEFAULTS.avoidCollisions);
-    expect(trigger.arrowPadding()).toBe(MENU_POSITIONING_DEFAULTS.arrowPadding);
-    expect(trigger.sticky()).toBe(MENU_POSITIONING_DEFAULTS.sticky);
-    expect(trigger.hideWhenDetached()).toBe(MENU_POSITIONING_DEFAULTS.hideWhenDetached);
-    expect(trigger.clipUntilPositioned()).toBe(MENU_POSITIONING_DEFAULTS.clipUntilPositioned);
-  });
 
   it('seeds sideOffset / collisionPadding / fallbackAxisSideDirection from the menubar defaults provider', () => {
     const trigger = setup();

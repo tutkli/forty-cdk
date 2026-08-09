@@ -1,5 +1,6 @@
-import { type Signal } from '@angular/core';
+import { Directive, type Signal } from '@angular/core';
 
+import { AnchoredOverlayPositioningBase } from '../floating/anchored-overlay-positioning-base';
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import type { VetoableNativeEvent } from '../vetoable-event/vetoable-event';
 import type { ForMenuCloseReason } from './menu-context';
@@ -24,8 +25,17 @@ import type { MenuActivationModality, MenuOverlay } from './menu-overlay';
  *
  * Kept generic over the item handle so the subclass's `MenuOverlay<H>` flows
  * through `registerItem` / `unregisterItem` without a cast.
+ *
+ * It also carries `AnchoredOverlayPositioningBase` for its subclasses: every
+ * menu root is a trigger-anchored overlay, so inheriting the shared positioning
+ * block here is what keeps the four of them from redeclaring it. The
+ * `@Directive()` decorator is required for that inheritance — Angular only
+ * collects signal inputs through a decorated chain.
  */
-export abstract class MenuOverlayHost<H extends MenuItemHandle = MenuItemHandle> {
+@Directive()
+export abstract class MenuOverlayHost<
+  H extends MenuItemHandle = MenuItemHandle,
+> extends AnchoredOverlayPositioningBase {
   /** The subclass's `MenuOverlay` instance the base forwards to. */
   protected abstract readonly _overlay: MenuOverlay<H>;
 
