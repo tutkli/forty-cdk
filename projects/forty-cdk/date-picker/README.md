@@ -322,7 +322,7 @@ readonly booking = form(this.model, (p) => required(p.stay));
 - **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
 - **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker` — and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
-Defaults are configured with `provideForDateRangePickerDefaults` (`sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `align` / `sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 

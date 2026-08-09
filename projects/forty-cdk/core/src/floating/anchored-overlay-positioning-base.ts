@@ -55,8 +55,9 @@ export interface AnchoredPositioningOverride {
 
 /**
  * Abstract base for the trigger-anchored overlay roots. It single-sources the
- * ten shared floating-ui positioning inputs and the four effective computeds,
- * so the declarations live in one place instead of being copied per root.
+ * ten shared floating-ui positioning inputs and the five effective computeds
+ * over them, so the declarations live in one place instead of being copied per
+ * root.
  *
  * Each of the four placement values resolves in the same three steps — the
  * per-open {@link positioningOverride}, then the root's own input, then the
