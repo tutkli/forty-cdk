@@ -11,8 +11,8 @@ import {
 
 import { composedContains, resolveActiveElement } from '../composed-tree/composed-tree';
 import {
+  findTabbableEdges,
   isFocusableCandidate,
-  isTabbableCandidate,
   queryFocusableCandidates,
 } from './focusable-candidate';
 import { fortyWarn } from '../errors/errors';
@@ -162,7 +162,7 @@ export class FocusTrap {
 
     const initial = options.initialFocus ?? 'first';
     if (initial === 'first') {
-      const first = this.#focusables()[0];
+      const first = findFirstFocusable(this.#container);
       if (first) {
         first.focus();
       } else {
@@ -238,17 +238,15 @@ export class FocusTrap {
     if (!this.#stack.isTopmost(this)) {
       return;
     }
-    const tabbables = this.#tabbables();
+    const { first, last } = findTabbableEdges(this.#container);
     const active = resolveActiveElement(this.#document);
-    if (tabbables.length === 0) {
+    if (first === null || last === null) {
       event.preventDefault();
       if (!composedContains(this.#container, active)) {
         this.#focusContainer();
       }
       return;
     }
-    const first = tabbables[0]!;
-    const last = tabbables[tabbables.length - 1]!;
 
     if (!composedContains(this.#container, active)) {
       // Focus jumped outside the trap (e.g. user clicked address bar then
@@ -264,16 +262,6 @@ export class FocusTrap {
       event.preventDefault();
       first.focus();
     }
-  }
-
-  #focusables(): HTMLElement[] {
-    const all = queryFocusableCandidates(this.#container);
-    return all.filter((el) => isFocusableCandidate(el, this.#container));
-  }
-
-  #tabbables(): HTMLElement[] {
-    const all = queryFocusableCandidates(this.#container);
-    return all.filter((el) => isTabbableCandidate(el, this.#container));
   }
 }
 

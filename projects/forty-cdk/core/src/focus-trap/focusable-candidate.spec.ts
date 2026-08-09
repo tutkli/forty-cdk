@@ -1,5 +1,6 @@
 import {
   FOCUSABLE_SELECTOR,
+  findTabbableEdges,
   isFocusableCandidate,
   isTabbableCandidate,
   queryFocusableCandidates,
@@ -228,6 +229,86 @@ describe('focusable-candidate filter', () => {
       root.innerHTML = '<div tabindex="-1"><span>cell</span></div>';
 
       expect(queryFocusableCandidates(root)).toEqual([]);
+    });
+  });
+
+  describe('findTabbableEdges', () => {
+    function middleButtons(count: number): string {
+      return Array.from({ length: count }, (_, i) => `<button>middle ${i}</button>`).join('');
+    }
+
+    it('resolves the first and last tabbable, skipping tabindex="-1" candidates at both ends', () => {
+      root.innerHTML = `
+        <button id="rov-first" tabindex="-1">roving</button>
+        <button id="t1">one</button>
+        <button id="t2">two</button>
+        <button id="rov-last" tabindex="-1">roving</button>
+      `;
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('t1');
+      expect(last?.id).toBe('t2');
+    });
+
+    it('reports the same element as both ends when only one candidate is tabbable', () => {
+      root.innerHTML = '<button id="only">one</button><button tabindex="-1">roving</button>';
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('only');
+      expect(last).toBe(first);
+    });
+
+    it('reports both ends as null when no candidate is tabbable', () => {
+      root.innerHTML = '<button tabindex="-1">roving</button><span>text</span>';
+
+      expect(findTabbableEdges(root)).toEqual({ first: null, last: null });
+    });
+
+    it('skips CSS-hidden candidates at both ends', () => {
+      root.innerHTML = `
+        <button id="hidden-first" style="display:none">hidden</button>
+        <button id="t1">one</button>
+        <button id="t2">two</button>
+        <button id="hidden-last" style="visibility:hidden">hidden</button>
+      `;
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('t1');
+      expect(last?.id).toBe('t2');
+    });
+
+    it('resolves an end that lives inside an open shadow root', () => {
+      root.innerHTML = '<button id="light">light</button><shadow-widget id="host"></shadow-widget>';
+      const host = root.querySelector<HTMLElement>('#host')!;
+      host.attachShadow({ mode: 'open' }).innerHTML = '<button id="shadow-last">last</button>';
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('light');
+      expect(last?.id).toBe('shadow-last');
+    });
+
+    it('enumerates the subtree once, however many candidates it holds', () => {
+      root.innerHTML = `<button id="t1">one</button>${middleButtons(40)}<button id="t2">two</button>`;
+      const enumerate = vi.spyOn(root, 'querySelectorAll');
+
+      findTabbableEdges(root);
+
+      expect(enumerate.mock.calls.filter(([selector]) => selector === '*')).toHaveLength(1);
+    });
+
+    it('reads a computed style for the candidate at each end only, never for the 40 in between', () => {
+      root.innerHTML = `<button id="t1">one</button>${middleButtons(40)}<button id="t2">two</button>`;
+      const computed = vi.spyOn(window, 'getComputedStyle');
+
+      const { first, last } = findTabbableEdges(root);
+
+      expect(first?.id).toBe('t1');
+      expect(last?.id).toBe('t2');
+      expect(computed).toHaveBeenCalledTimes(2);
     });
   });
 
