@@ -6,7 +6,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ForColumnDef, ForDataCell, ForHeaderCell, ForTable, ForTableBody } from 'forty-cdk/table';
+import {
+  ForTable,
+  ForTableBody,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableHeaderCellDef,
+} from 'forty-cdk/table';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
 const ROW_COUNT = 10_000;
@@ -24,7 +30,14 @@ function buildRows(): readonly Row[] {
 @Component({
   selector: 'app-for-table-body-virtualized-fixture',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForTable, ForTableVirtualized, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [
+    ForTable,
+    ForTableVirtualized,
+    ForTableBody,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+  ],
   styles: [
     `
       :host {
@@ -74,13 +87,17 @@ function buildRows(): readonly Row[] {
       [scrollElement]="scrollEl()"
     >
       <for-table-body [rows]="data()" [rowKey]="rowKey">
-        <ng-container forColumnDef="id" width="80px">
-          <ng-template forHeaderCell>#</ng-template>
-          <ng-template forDataCell [forDataCellRow]="data()" let-row>{{ row.id }}</ng-template>
+        <ng-container forTableColumnDef="id" width="80px">
+          <ng-template forTableHeaderCellDef>#</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="data()" let-row>{{
+            row.id
+          }}</ng-template>
         </ng-container>
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="data()" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="data()" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>

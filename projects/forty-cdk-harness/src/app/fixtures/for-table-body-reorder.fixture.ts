@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 
 import {
-  ForColumnDef,
-  ForColumnDragPlaceholder,
-  ForDataCell,
-  ForHeaderCell,
   ForTable,
   ForTableBody,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableColumnDragPlaceholder,
+  ForTableHeaderCellDef,
   type TableColumnReorderDescriptor,
   type TableSortDescriptor,
 } from 'forty-cdk/table';
@@ -25,10 +25,10 @@ interface Row {
   imports: [
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForColumnDragPlaceholder,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTableColumnDragPlaceholder,
   ],
   styles: `
     :host {
@@ -61,22 +61,28 @@ interface Row {
         (sortChange)="sort.set($event)"
         (columnReorder)="onReorder($event)"
       >
-        <ng-container forColumnDef="name" width="140px" sortable reorderable>
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name" width="140px" sortable reorderable>
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
 
-        <ng-container forColumnDef="role" width="140px" reorderable>
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role" width="140px" reorderable>
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
 
-        <ng-container forColumnDef="dept" width="140px" reorderable>
-          <ng-template forHeaderCell>Dept</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.dept }}</ng-template>
+        <ng-container forTableColumnDef="dept" width="140px" reorderable>
+          <ng-template forTableHeaderCellDef>Dept</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.dept
+          }}</ng-template>
         </ng-container>
 
-        <ng-template forColumnDragPlaceholder>
+        <ng-template forTableColumnDragPlaceholder>
           <div class="col-ghost" data-testid="col-ghost"></div>
         </ng-template>
       </for-table-body>

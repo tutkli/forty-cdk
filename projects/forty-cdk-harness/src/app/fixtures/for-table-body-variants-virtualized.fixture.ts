@@ -7,13 +7,13 @@ import {
   viewChild,
 } from '@angular/core';
 import {
-  ForColumnDef,
-  ForDataCell,
-  ForHeaderCell,
-  ForRowCell,
-  ForRowDef,
   ForTable,
   ForTableBody,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableHeaderCellDef,
+  ForTableRowCellDef,
+  ForTableRowDef,
 } from 'forty-cdk/table';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
@@ -51,11 +51,11 @@ function buildRows(): readonly Row[] {
     ForTable,
     ForTableVirtualized,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForRowDef,
-    ForRowCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTableRowDef,
+    ForTableRowCellDef,
   ],
   styles: [
     `
@@ -111,17 +111,23 @@ function buildRows(): readonly Row[] {
       [scrollElement]="scrollEl()"
     >
       <for-table-body [rows]="data()" [rowKey]="rowKey">
-        <ng-container forColumnDef="id" width="80px">
-          <ng-template forHeaderCell>#</ng-template>
-          <ng-template forDataCell [forDataCellRow]="data()" let-row>{{ row.id }}</ng-template>
+        <ng-container forTableColumnDef="id" width="80px">
+          <ng-template forTableHeaderCellDef>#</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="data()" let-row>{{
+            row.id
+          }}</ng-template>
         </ng-container>
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="data()" let-row>{{ row.label }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="data()" let-row>{{
+            row.label
+          }}</ng-template>
         </ng-container>
 
-        <ng-container forRowDef [when]="isVariant">
-          <ng-template forRowCell [forRowCellRow]="data()" let-row>{{ row.label }}</ng-template>
+        <ng-container forTableRowDef [when]="isVariant">
+          <ng-template forTableRowCellDef [forTableRowCellDefRow]="data()" let-row>{{
+            row.label
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>

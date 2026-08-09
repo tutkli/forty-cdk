@@ -1,14 +1,14 @@
 export { ForTable, provideForTable } from './table';
 export {
-  ForColumnDef,
-  ForHeaderCell,
-  ForDataCell,
-  ForPlaceholderCell,
-  ForPlaceholderCellDefault,
-  ForColumnDragPlaceholder,
-  type ForDataCellContext,
+  ForTableColumnDef,
+  ForTableHeaderCellDef,
+  ForTableCellDef,
+  ForTablePlaceholderCellDef,
+  ForTablePlaceholderCellDefault,
+  ForTableColumnDragPlaceholder,
+  type ForTableCellDefContext,
 } from './column-def';
-export { ForRowDef, ForRowCell } from './row-def';
+export { ForTableRowDef, ForTableRowCellDef } from './row-def';
 export {
   FOR_TABLE_DEF_REGISTRY,
   type ForTableDefRegistry,

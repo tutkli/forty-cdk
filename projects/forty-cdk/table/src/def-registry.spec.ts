@@ -16,19 +16,19 @@ import { unsetInput } from 'forty-cdk/core';
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 
 import {
-  ForColumnDef,
-  ForColumnDragPlaceholder,
-  ForDataCell,
-  ForHeaderCell,
-  ForPlaceholderCell,
-  ForPlaceholderCellDefault,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableColumnDragPlaceholder,
+  ForTableHeaderCellDef,
+  ForTablePlaceholderCellDef,
+  ForTablePlaceholderCellDefault,
 } from './column-def';
 import {
   FOR_TABLE_DEF_REGISTRY,
   provideForTableDefRegistry,
   TableDefRegistry,
 } from './def-registry';
-import { ForRowCell, ForRowDef } from './row-def';
+import { ForTableRowCellDef, ForTableRowDef } from './row-def';
 import { ForTable } from './table';
 import { ForTableBody } from './table-body';
 import { type TableSortDescriptor } from './table-sort-header';
@@ -50,18 +50,20 @@ function buildRows(): Row[] {
 @Component({
   selector: 'preset-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForColumnDef, ForHeaderCell, ForDataCell, ForPlaceholderCell],
+  imports: [ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef, ForTablePlaceholderCellDef],
   template: `
     <ng-container
-      [forColumnDef]="name()"
+      [forTableColumnDef]="name()"
       [sortable]="sortable()"
       [resizable]="resizable()"
       [reorderable]="reorderable()"
       [resizeAriaLabel]="'Resize ' + name()"
     >
-      <ng-template forHeaderCell>{{ header() }}</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ pick()(row) }}</ng-template>
-      <ng-template forPlaceholderCell><span class="skeleton">loading</span></ng-template>
+      <ng-template forTableHeaderCellDef>{{ header() }}</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+        pick()(row)
+      }}</ng-template>
+      <ng-template forTablePlaceholderCellDef><span class="skeleton">loading</span></ng-template>
     </ng-container>
   `,
 })
@@ -78,13 +80,20 @@ class PresetColumn {
 @Component({
   selector: 'preset-group-row',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForRowDef, ForRowCell, ForColumnDragPlaceholder, ForPlaceholderCellDefault],
+  imports: [
+    ForTableRowDef,
+    ForTableRowCellDef,
+    ForTableColumnDragPlaceholder,
+    ForTablePlaceholderCellDefault,
+  ],
   template: `
-    <ng-container forRowDef [when]="isGroup">
-      <ng-template forRowCell [forRowCellRow]="rows()" let-row>Group: {{ row.name }}</ng-template>
+    <ng-container forTableRowDef [when]="isGroup">
+      <ng-template forTableRowCellDef [forTableRowCellDefRow]="rows()" let-row
+        >Group: {{ row.name }}</ng-template
+      >
     </ng-container>
-    <ng-template forColumnDragPlaceholder><div class="col-ghost">ghost</div></ng-template>
-    <ng-template forPlaceholderCellDefault><span class="shared-skeleton">…</span></ng-template>
+    <ng-template forTableColumnDragPlaceholder><div class="col-ghost">ghost</div></ng-template>
+    <ng-template forTablePlaceholderCellDefault><span class="shared-skeleton">…</span></ng-template>
   `,
 })
 class PresetGroupRow {
@@ -98,9 +107,9 @@ class PresetGroupRow {
     ForTableBody,
     PresetColumn,
     PresetGroupRow,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
   ],
   template: `
     <div forTable mode="grid" ariaLabel="Preset">
@@ -121,9 +130,11 @@ class PresetGroupRow {
           [resizable]="true"
           [reorderable]="true"
         />
-        <ng-container forColumnDef="role" reorderable>
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role" reorderable>
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
         <preset-group-row [rows]="rows()" />
       </for-table-body>
@@ -160,16 +171,20 @@ class ScaffoldTable {
 }
 
 @Component({
-  imports: [ScaffoldTable, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ScaffoldTable, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <scaffold-table [rows]="rows()">
-      <ng-container forColumnDef="name">
-        <ng-template forHeaderCell>Name</ng-template>
-        <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+      <ng-container forTableColumnDef="name">
+        <ng-template forTableHeaderCellDef>Name</ng-template>
+        <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+          row.name
+        }}</ng-template>
       </ng-container>
-      <ng-container forColumnDef="role">
-        <ng-template forHeaderCell>Role</ng-template>
-        <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+      <ng-container forTableColumnDef="role">
+        <ng-template forTableHeaderCellDef>Role</ng-template>
+        <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+          row.role
+        }}</ng-template>
       </ng-container>
     </scaffold-table>
   `,
@@ -182,13 +197,15 @@ class ScaffoldHost {
   selector: 'leaky-scaffold-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: provideForTableDefRegistry(),
-  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <div forTable mode="grid" ariaLabel="Leaky scaffold">
       <for-table-body [rows]="rows()" [defs]="defs">
-        <ng-container forColumnDef="baked">
-          <ng-template forHeaderCell>Baked</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.id }}</ng-template>
+        <ng-container forTableColumnDef="baked">
+          <ng-template forTableHeaderCellDef>Baked</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.id
+          }}</ng-template>
         </ng-container>
         <ng-content />
       </for-table-body>
@@ -201,12 +218,14 @@ class LeakyScaffoldTable {
 }
 
 @Component({
-  imports: [LeakyScaffoldTable, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [LeakyScaffoldTable, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <leaky-scaffold-table [rows]="rows()">
-      <ng-container forColumnDef="name">
-        <ng-template forHeaderCell>Name</ng-template>
-        <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+      <ng-container forTableColumnDef="name">
+        <ng-template forTableHeaderCellDef>Name</ng-template>
+        <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+          row.name
+        }}</ng-template>
       </ng-container>
     </leaky-scaffold-table>
   `,
@@ -216,13 +235,15 @@ class LeakyScaffoldHost {
 }
 
 @Component({
-  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <div forTable mode="grid" ariaLabel="Foreign registry">
       <for-table-body [rows]="rows()" [defs]="foreign">
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>
@@ -234,23 +255,29 @@ class ForeignRegistryHost {
 }
 
 @Component({
-  imports: [ForTable, ForTableBody, ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTable, ForTableBody, ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
     <div forTable mode="grid" ariaLabel="Mounted">
       <for-table-body [rows]="rows()" [displayedColumns]="displayed()">
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
         @if (extra()) {
-          <ng-container forColumnDef="extra" [width]="'80px'">
-            <ng-template forHeaderCell>Extra</ng-template>
-            <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.id }}</ng-template>
+          <ng-container forTableColumnDef="extra" [width]="'80px'">
+            <ng-template forTableHeaderCellDef>Extra</ng-template>
+            <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+              row.id
+            }}</ng-template>
           </ng-container>
         }
-        <ng-container forColumnDef="role">
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role">
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>
@@ -263,21 +290,21 @@ class MountedDefHost {
 }
 
 @Component({
-  imports: [ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
-    <ng-container forColumnDef="orphan">
-      <ng-template forHeaderCell>Orphan</ng-template>
-      <ng-template forDataCell>x</ng-template>
+    <ng-container forTableColumnDef="orphan">
+      <ng-template forTableHeaderCellDef>Orphan</ng-template>
+      <ng-template forTableCellDef>x</ng-template>
     </ng-container>
   `,
 })
 class OrphanColumnHost {}
 
 @Component({
-  imports: [ForRowDef, ForRowCell],
+  imports: [ForTableRowDef, ForTableRowCellDef],
   template: `
-    <ng-container forRowDef [when]="always">
-      <ng-template forRowCell>x</ng-template>
+    <ng-container forTableRowDef [when]="always">
+      <ng-template forTableRowCellDef>x</ng-template>
     </ng-container>
   `,
 })
@@ -286,14 +313,14 @@ class OrphanRowHost {
 }
 
 @Component({
-  imports: [ForColumnDragPlaceholder],
-  template: `<ng-template forColumnDragPlaceholder>ghost</ng-template>`,
+  imports: [ForTableColumnDragPlaceholder],
+  template: `<ng-template forTableColumnDragPlaceholder>ghost</ng-template>`,
 })
 class OrphanDragPlaceholderHost {}
 
 @Component({
-  imports: [ForPlaceholderCellDefault],
-  template: `<ng-template forPlaceholderCellDefault>…</ng-template>`,
+  imports: [ForTablePlaceholderCellDefault],
+  template: `<ng-template forTablePlaceholderCellDefault>…</ng-template>`,
 })
 class OrphanPlaceholderDefaultHost {}
 
@@ -474,27 +501,27 @@ describe('ForTableBody def registration seam (#1372)', () => {
   });
 
   describe('orphan defs', () => {
-    it('throws for a [forColumnDef] with no reachable registry', () => {
+    it('throws for a [forTableColumnDef] with no reachable registry', () => {
       expect(() => renderHost(OrphanColumnHost)).toThrow(
-        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForColumnDef must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForTableColumnDef must be used inside a <for-table-body>/,
       );
     });
 
-    it('throws for a [forRowDef] with no reachable registry', () => {
+    it('throws for a [forTableRowDef] with no reachable registry', () => {
       expect(() => renderHost(OrphanRowHost)).toThrow(
-        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForRowDef must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForTableRowDef must be used inside a <for-table-body>/,
       );
     });
 
-    it('throws for a [forColumnDragPlaceholder] with no reachable registry', () => {
+    it('throws for a [forTableColumnDragPlaceholder] with no reachable registry', () => {
       expect(() => renderHost(OrphanDragPlaceholderHost)).toThrow(
-        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForColumnDragPlaceholder must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForTableColumnDragPlaceholder must be used inside a <for-table-body>/,
       );
     });
 
-    it('throws for a [forPlaceholderCellDefault] with no reachable registry', () => {
+    it('throws for a [forTablePlaceholderCellDefault] with no reachable registry', () => {
       expect(() => renderHost(OrphanPlaceholderDefaultHost)).toThrow(
-        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForPlaceholderCellDefault must be used inside a <for-table-body>/,
+        /\[forty-cdk\/table\] FORCDK-TABLE-002: ForTablePlaceholderCellDefault must be used inside a <for-table-body>/,
       );
     });
   });
@@ -509,7 +536,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
 
     it('holds a column def back until its name binding lands', () => {
       const bound = signal<string | null>(null);
-      const def = { name: () => bound() ?? unsetInput<string>() } as unknown as ForColumnDef;
+      const def = { name: () => bound() ?? unsetInput<string>() } as unknown as ForTableColumnDef;
       const target = registry();
       target.registerColumnDef({ host: document.createElement('div'), def });
 
@@ -526,7 +553,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
       const bound = signal<(() => boolean) | null>(null);
       const def = {
         when: () => bound() ?? unsetInput<() => boolean>(),
-      } as unknown as ForRowDef<unknown>;
+      } as unknown as ForTableRowDef<unknown>;
       const target = registry();
       target.registerRowDef({ host: document.createElement('div'), def });
 
@@ -541,7 +568,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
       template: '',
       changeDetection: ChangeDetectionStrategy.OnPush,
       providers: [...provideForTableDefRegistry()],
-      hostDirectives: [{ directive: ForColumnDef, inputs: ['width'] }],
+      hostDirectives: [{ directive: ForTableColumnDef, inputs: ['width'] }],
     })
     class WidthOnlyDef {}
 
@@ -564,7 +591,7 @@ describe('ForTableBody def registration seam (#1372)', () => {
       const fixture = TestBed.createComponent(WidthOnlyDefHost);
 
       expect(() => fixture.detectChanges()).toThrowError(
-        /\[forty-cdk\/table\] FORCDK-CORE-010: \[forColumnDef\] has no \[forColumnDef\] binding/,
+        /\[forty-cdk\/table\] FORCDK-CORE-010: \[forTableColumnDef\] has no \[forTableColumnDef\] binding/,
       );
     });
   });

@@ -7,8 +7,13 @@ import { TABLE_REGISTRATION_CONTEXT, type TableRegistrationContext } from 'forty
 import { installObserverPolyfills, renderHost } from '../../src/test-utils';
 import { ForTableVirtualized } from 'forty-cdk/table-virtualization';
 
-import { ForColumnDef, ForDataCell, ForHeaderCell, ForPlaceholderCell } from './column-def';
-import { ForRowCell, ForRowDef } from './row-def';
+import {
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableHeaderCellDef,
+  ForTablePlaceholderCellDef,
+} from './column-def';
+import { ForTableRowCellDef, ForTableRowDef } from './row-def';
 import { ForTable } from './table';
 import { ForTableBody } from './table-body';
 import { type TableColumnReorderDescriptor } from './table-column-reorder';
@@ -36,12 +41,12 @@ function buildMatrixRows(): MatrixRow[] {
   imports: [
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForPlaceholderCell,
-    ForRowDef,
-    ForRowCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTablePlaceholderCellDef,
+    ForTableRowDef,
+    ForTableRowCellDef,
   ],
   template: `
     <div forTable [mode]="mode()" ariaLabel="Matrix" [rowCount]="rows().length">
@@ -52,19 +57,27 @@ function buildMatrixRows(): MatrixRow[] {
         [measureRows]="measureRows()"
         (columnReorder)="lastReorder.set($event)"
       >
-        <ng-container forColumnDef="name" [resizable]="resizable()" [reorderable]="reorderable()">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
-          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        <ng-container
+          forTableColumnDef="name"
+          [resizable]="resizable()"
+          [reorderable]="reorderable()"
+        >
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
+          <ng-template forTablePlaceholderCellDef><span class="skeleton">…</span></ng-template>
         </ng-container>
-        <ng-container forColumnDef="role" [reorderable]="reorderable()">
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
-          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        <ng-container forTableColumnDef="role" [reorderable]="reorderable()">
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.role
+          }}</ng-template>
+          <ng-template forTablePlaceholderCellDef><span class="skeleton">…</span></ng-template>
         </ng-container>
 
-        <ng-container forRowDef [when]="variantWhen()">
-          <ng-template forRowCell [forRowCellRow]="rows()" let-row
+        <ng-container forTableRowDef [when]="variantWhen()">
+          <ng-template forTableRowCellDef [forTableRowCellDefRow]="rows()" let-row
             >Group {{ row.name }}</ng-template
           >
         </ng-container>
@@ -93,12 +106,12 @@ class MatrixHost {
     ForTable,
     ForTableVirtualized,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForPlaceholderCell,
-    ForRowDef,
-    ForRowCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTablePlaceholderCellDef,
+    ForTableRowDef,
+    ForTableRowCellDef,
   ],
   template: `
     <div forTable forTableVirtualized mode="grid" ariaLabel="Real" [rowCount]="rows().length">
@@ -108,18 +121,22 @@ class MatrixHost {
         [measureRows]="true"
         (columnReorder)="lastReorder.set($event)"
       >
-        <ng-container forColumnDef="name" resizable reorderable resizeAriaLabel="Resize name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
-          <ng-template forPlaceholderCell><span class="skeleton">…</span></ng-template>
+        <ng-container forTableColumnDef="name" resizable reorderable resizeAriaLabel="Resize name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
+          <ng-template forTablePlaceholderCellDef><span class="skeleton">…</span></ng-template>
         </ng-container>
-        <ng-container forColumnDef="role" reorderable>
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role" reorderable>
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
 
-        <ng-container forRowDef [when]="isGroup">
-          <ng-template forRowCell [forRowCellRow]="rows()" let-row
+        <ng-container forTableRowDef [when]="isGroup">
+          <ng-template forTableRowCellDef [forTableRowCellDefRow]="rows()" let-row
             >Group {{ row.name }}</ng-template
           >
         </ng-container>

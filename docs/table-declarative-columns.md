@@ -1,6 +1,6 @@
 # Table: declarative columns
 
-The optional ergonomic layer over `forty-cdk/table` — author one `[forColumnDef]` per column and
+The optional ergonomic layer over `forty-cdk/table` — author one `[forTableColumnDef]` per column and
 let `<for-table-body>` stamp the header row and one data row per item. Split out of the table
 README in [#1401](https://github.com/tutkli/forty-cdk/issues/1401); the raw
 `[forTableCell]` / `[forTableHeaderCell]` primitives it builds on are documented in
@@ -8,7 +8,7 @@ README in [#1401](https://github.com/tutkli/forty-cdk/issues/1401); the raw
 
 Hand-writing every cell in the header row **and** the data row keeps the two in sync by hand and
 smears a single column across several places. The optional ergonomic layer lets you author one
-`[forColumnDef]` per column and have `<for-table-body>` stamp the header row and one data row per item
+`[forTableColumnDef]` per column and have `<for-table-body>` stamp the header row and one data row per item
 out of the same cell primitives. Place it inside a `[forTable]`; it is additive — the raw
 `[forTableRow]` / `[forTableCell]` primitives in
 [the table README](../projects/forty-cdk/table/README.md) keep working unchanged, and a table that
@@ -28,25 +28,27 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 <div forTable mode="grid" ariaLabel="People" selectionMode="multiple">
   <for-table-body [rows]="rows()" [rowKey]="rowKey" [sort]="sort()" (sortChange)="sort.set($event)">
     <!-- selection column: drop the raw selector primitives into the cell templates -->
-    <ng-container forColumnDef="sel" sticky width="48px">
-      <ng-template forHeaderCell
+    <ng-container forTableColumnDef="sel" sticky width="48px">
+      <ng-template forTableHeaderCellDef
         ><span forTableSelectAll ariaLabel="Select all"></span
       ></ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>
         <span forTableRowSelector></span>
       </ng-template>
     </ng-container>
 
-    <ng-container forColumnDef="name" sticky sortable resizable resizeAriaLabel="Resize Name">
-      <ng-template forHeaderCell>Name</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row let-i="index"
+    <ng-container forTableColumnDef="name" sticky sortable resizable resizeAriaLabel="Resize Name">
+      <ng-template forTableHeaderCellDef>Name</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row let-i="index"
         >{{ row.name }}</ng-template
       >
     </ng-container>
 
-    <ng-container forColumnDef="status" width="140px">
-      <ng-template forHeaderCell>Status</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.status }}</ng-template>
+    <ng-container forTableColumnDef="status" width="140px">
+      <ng-template forTableHeaderCellDef>Status</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.status }}</ng-template
+      >
     </ng-container>
   </for-table-body>
 </div>
@@ -55,8 +57,8 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 - **`<for-table-body>`** takes `[rows]` (already sorted / filtered / paged by you — BYO-data),
   optional `[rowKey]` (row identity used for `@for` tracking **and** each row's selection `[value]`),
   optional `[displayedColumns]` (which columns render, in order; defaults to declaration order), and
-  `[loading]` / `[placeholderRows]` (render `forPlaceholderCell` skeletons — or the body-level
-  `forPlaceholderCellDefault` — for the initial full-replace load; see
+  `[loading]` / `[placeholderRows]` (render `forTablePlaceholderCellDef` skeletons — or the body-level
+  `forTablePlaceholderCellDefault` — for the initial full-replace load; see
   [Interleaved placeholder rows](#interleaved-placeholder-rows) for the infinite-scroll shape
   that keeps loaded rows and appends trailing skeletons). It **owns
   `grid-template-columns`**: each column contributes its `[width]`, falling back to the published
@@ -64,27 +66,27 @@ stamps no expansion affordances. The examples below use `mode="grid"`, but each 
 - **Auto-wired from per-column flags:** `sortable` wires `[forTableSortHeader]` (the body derives each
   header's direction from its `[sort]` input and re-emits `(sortChange)`), and `resizable` wires
   `[forTableColumnResizer]` (re-emitted through `(resizeCommit)`; give `resizeAriaLabel` so the handle
-  is named). Tune the handle per column on `[forColumnDef]`: `[resizeMin]` / `[resizeMax]` (bounds,
+  is named). Tune the handle per column on `[forTableColumnDef]`: `[resizeMin]` / `[resizeMax]` (bounds,
   driving `aria-valuemin` / `aria-valuemax`), `[resizeStep]` (arrow-key increment), `autoFit`
   (double-click size-to-content, **on by default**; set `[autoFit]="false"` to disable), and
   `fitIncludesHeader` (also account for the header label, isolated with a `[forTableColumnLabel]` inside
-  the `[forHeaderCell]` template). Let the body own width **state** with `[(columnWidths)]` — see
+  the `[forTableHeaderCellDef]` template). Let the body own width **state** with `[(columnWidths)]` — see
   [Persisting column widths](#persisting-column-widths-columnwidths) — or keep applying widths yourself
   from `(resizeCommit)`.
 - **Consumer-placed in templates:** selection (`[forTableRowSelector]` / `[forTableSelectAll]`) and any
   interactive widget go straight into the cell templates. Row-context primitives resolve their
   `[forTableRow]` because the body stamps content with the cell's own injector.
 - **Styling the stamped cells:** the body owns the header / data cell elements, so add a class to them
-  per column with `[headerClass]` / `[cellClass]` on `[forColumnDef]` (see
+  per column with `[headerClass]` / `[cellClass]` on `[forTableColumnDef]` (see
   [Styling the stamped cells](#styling-the-stamped-cells) below).
-- **Typing `let-row`:** bind `[forDataCellRow]` to the same array you pass to `[rows]` — it is read only
+- **Typing `let-row`:** bind `[forTableCellDefRow]` to the same array you pass to `[rows]` — it is read only
   for type inference, so `let-row` is typed as your row type. With a discriminated-union row type,
-  bind `[forDataCellUnless]` (and `[forRowCellWhen]` on variants) to narrow it further — see
+  bind `[forTableCellDefUnless]` (and `[forTableRowCellDefWhen]` on variants) to narrow it further — see
   [Typing a discriminated-union row](#typing-a-discriminated-union-row) below.
 
 `<for-table-body>`'s host is `display: contents`, so it adds no box between `[forTable]` and its rows;
 all visual styling stays yours off the same `data-*` / role hooks the raw primitives emit. Full-span
-**row variants** (group headers, separators, summary rows) are covered below via `[forRowDef]`, and
+**row variants** (group headers, separators, summary rows) are covered below via `[forTableRowDef]`, and
 drag **column reordering** via the `reorderable` flag — see
 [Column reordering](#column-reordering-reorderable--columnreorder).
 
@@ -104,9 +106,9 @@ placeholder row). Both are static strings applied alongside the cells' existing 
 leaving them unset adds no `class` attribute at all.
 
 ```html
-<ng-container forColumnDef="amount" headerClass="num-header" cellClass="num-cell text-right">
-  <ng-template forHeaderCell>Amount</ng-template>
-  <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.amount }}</ng-template>
+<ng-container forTableColumnDef="amount" headerClass="num-header" cellClass="num-cell text-right">
+  <ng-template forTableHeaderCellDef>Amount</ng-template>
+  <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.amount }}</ng-template>
 </ng-container>
 ```
 
@@ -134,14 +136,16 @@ two-way binding plus one storage write:
     <div forTable mode="grid" ariaLabel="People">
       <for-table-body [rows]="rows()" [rowKey]="rowKey" [(columnWidths)]="widths">
         <ng-container
-          forColumnDef="name"
+          forTableColumnDef="name"
           resizable
           resizeAriaLabel="Resize Name"
           [resizeMin]="80"
           [resizeMax]="480"
         >
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
         <!-- … -->
       </for-table-body>
@@ -186,13 +190,15 @@ one. `[fallbackWidth]` supplies the track fragment used as the **resize var's fa
 
 ```html
 <ng-container
-  forColumnDef="description"
+  forTableColumnDef="description"
   resizable
   resizeAriaLabel="Resize description"
   fallbackWidth="minmax(120px, 2.5fr)"
 >
-  <ng-template forHeaderCell>Description</ng-template>
-  <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.description }}</ng-template>
+  <ng-template forTableHeaderCellDef>Description</ng-template>
+  <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+    >{{ row.description }}</ng-template
+  >
 </ng-container>
 ```
 
@@ -230,17 +236,21 @@ re-emits every committed reorder — pointer drop **or** keyboard drop — throu
     [displayedColumns]="order()"
     (columnReorder)="order.set($event.columns)"
   >
-    <ng-container forColumnDef="name" sortable reorderable>
-      <ng-template forHeaderCell>Name</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    <ng-container forTableColumnDef="name" sortable reorderable>
+      <ng-template forTableHeaderCellDef>Name</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.name }}</ng-template
+      >
     </ng-container>
-    <ng-container forColumnDef="role" reorderable>
-      <ng-template forHeaderCell>Role</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+    <ng-container forTableColumnDef="role" reorderable>
+      <ng-template forTableHeaderCellDef>Role</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.role }}</ng-template
+      >
     </ng-container>
 
     <!-- Optional: one shared placeholder for the reordered column's slot during a pointer drag. -->
-    <ng-template forColumnDragPlaceholder>
+    <ng-template forTableColumnDragPlaceholder>
       <div class="col-ghost"></div>
     </ng-template>
   </for-table-body>
@@ -259,7 +269,7 @@ protected readonly order = signal<readonly string[]>(['name', 'role']);
   lists the **reorderable** columns in their new order — equal to the full displayed order when every
   displayed column is `reorderable`. Non-reorderable columns stay static (not draggable) and keep their
   slots, so a table that mixes them merges the reorderable subset back into its own full order.
-- **`forColumnDragPlaceholder`** is optional and declared **once per body**; it is stamped as every
+- **`forTableColumnDragPlaceholder`** is optional and declared **once per body**; it is stamped as every
   reorderable column's pointer-drag placeholder. Omit it to keep drag-drop's default placeholder.
 - This is the declarative twin of the raw `[forTableColumnReorder]` / `[forDraggable]` composition; it
   bundles `forty-cdk/drag-drop` (~14 KB gz) into every `<for-table-body>` — see the bundle note above.
@@ -291,13 +301,15 @@ and only the visible slice mounts.
   [estimateRowSize]="44"
 >
   <for-table-body [rows]="rows()" [rowKey]="rowKey">
-    <ng-container forColumnDef="id" width="80px">
-      <ng-template forHeaderCell>#</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.id }}</ng-template>
+    <ng-container forTableColumnDef="id" width="80px">
+      <ng-template forTableHeaderCellDef>#</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.id }}</ng-template>
     </ng-container>
-    <ng-container forColumnDef="name">
-      <ng-template forHeaderCell>Name</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    <ng-container forTableColumnDef="name">
+      <ng-template forTableHeaderCellDef>Name</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.name }}</ng-template
+      >
     </ng-container>
   </for-table-body>
 </div>
@@ -330,13 +342,17 @@ rows below — so the window stays contiguous no matter how the row heights vary
 ```html
 <div class="scroll-root" forTable forTableVirtualized mode="grid" ariaLabel="People">
   <for-table-body [rows]="rows()" [rowKey]="rowKey" measureRows>
-    <ng-container forColumnDef="name">
-      <ng-template forHeaderCell>Name</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    <ng-container forTableColumnDef="name">
+      <ng-template forTableHeaderCellDef>Name</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.name }}</ng-template
+      >
     </ng-container>
 
-    <ng-container forRowDef [when]="isGroupHeader">
-      <ng-template forRowCell [forRowCellRow]="rows()" let-row>{{ row.group }}</ng-template>
+    <ng-container forTableRowDef [when]="isGroupHeader">
+      <ng-template forTableRowCellDef [forTableRowCellDefRow]="rows()" let-row
+        >{{ row.group }}</ng-template
+      >
     </ng-container>
   </for-table-body>
 </div>
@@ -356,15 +372,15 @@ window contiguous on its own; you only pass the data through `[rows]`.
 
 ## Row variants
 
-Declare one or more `[forRowDef]` alongside the columns to render a **full-span row** for the data it
+Declare one or more `[forTableRowDef]` alongside the columns to render a **full-span row** for the data it
 matches — group headers, section separators, full-width summary or empty-state rows. For each datum the
-body picks the first `[forRowDef]` whose `[when]` predicate returns `true` and stamps a row whose single
-cell spans every column and renders the `[forRowCell]` template; unmatched data renders the standard
-per-column row. (A `[forRowDef]` can instead carry the `placeholderCells` flag — no `[forRowCell]` — to
+body picks the first `[forTableRowDef]` whose `[when]` predicate returns `true` and stamps a row whose single
+cell spans every column and renders the `[forTableRowCellDef]` template; unmatched data renders the standard
+per-column row. (A `[forTableRowDef]` can instead carry the `placeholderCells` flag — no `[forTableRowCellDef]` — to
 stamp per-column skeleton cells rather than a full-span cell; see
 [Interleaved placeholder rows](#interleaved-placeholder-rows).) Type `let-row` by binding
-`[forRowCellRow]` to the same array you pass to `[rows]` — and,
-for a discriminated-union row type, narrow it with `[forRowCellWhen]` / `[forDataCellUnless]` (see
+`[forTableRowCellDefRow]` to the same array you pass to `[rows]` — and,
+for a discriminated-union row type, narrow it with `[forTableRowCellDefWhen]` / `[forTableCellDefUnless]` (see
 [Typing a discriminated-union row](#typing-a-discriminated-union-row)).
 
 Variant rows are **presentational**: the spanning cell carries the row `role` (`gridcell` in grid /
@@ -388,9 +404,9 @@ Three requirements when a table mixes row variants with selection or virtualizat
   [total-aware select-all pattern](../projects/forty-cdk/table/README.md#total-aware-aggregates-under-virtualization-selectablevalues) passes
   the whole dataset as `[selectableValues]`. Variant rows are non-selectable, so leaving their data in
   makes them phantom selectable values: the select-all tri-state never reaches `'all'` and `[(value)]`
-  accumulates values no row reflects. Filter them out with the same predicate the `[forRowDef]` matches
+  accumulates values no row reflects. Filter them out with the same predicate the `[forTableRowDef]` matches
   on (e.g. `rows().filter((r) => !isGroupHeader(r))`).
-- **Keep the `[forRowCell]` template presentational.** Its content spans the row but stays out of the
+- **Keep the `[forTableRowCellDef]` template presentational.** Its content spans the row but stays out of the
   grid's single tab stop, so it must contain no interactive content (buttons, links, form controls —
   they become keyboard-unreachable) and no `[forTableCell]` (it would register a cell handle on the
   variant row and make the roving grid ragged).
@@ -398,17 +414,23 @@ Three requirements when a table mixes row variants with selection or virtualizat
 ```html
 <div forTable mode="grid" ariaLabel="Grouped people">
   <for-table-body [rows]="rows()" [rowKey]="rowKey">
-    <ng-container forColumnDef="name">
-      <ng-template forHeaderCell>Name</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    <ng-container forTableColumnDef="name">
+      <ng-template forTableHeaderCellDef>Name</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.name }}</ng-template
+      >
     </ng-container>
-    <ng-container forColumnDef="role">
-      <ng-template forHeaderCell>Role</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.role }}</ng-template>
+    <ng-container forTableColumnDef="role">
+      <ng-template forTableHeaderCellDef>Role</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.role }}</ng-template
+      >
     </ng-container>
 
-    <ng-container forRowDef [when]="isGroupHeader">
-      <ng-template forRowCell [forRowCellRow]="rows()" let-row>{{ row.group }}</ng-template>
+    <ng-container forTableRowDef [when]="isGroupHeader">
+      <ng-template forTableRowCellDef [forTableRowCellDefRow]="rows()" let-row
+        >{{ row.group }}</ng-template
+      >
     </ng-container>
   </for-table-body>
 </div>
@@ -447,49 +469,53 @@ protected readonly selectableIds = computed(() =>
 ## Interleaved placeholder rows
 
 `[loading]` is the **full-replace** skeleton: it swaps the whole dataset for `[placeholderRows]`
-skeleton rows built from each column's `[forPlaceholderCell]` — the right shape for the _initial_ load,
+skeleton rows built from each column's `[forTablePlaceholderCellDef]` — the right shape for the _initial_ load,
 when there are no rows yet.
 
 Paginated / infinite-scroll tables load differently: they keep the rows already loaded and show a few
 **trailing** (or interleaved) skeleton rows while the next page fetches. Model that with a
-`placeholderCells` [row variant](#row-variants) — a `[forRowDef]` that matches your placeholder data and
-stamps one skeleton cell per column from the same `[forPlaceholderCell]` templates, in place among the
+`placeholderCells` [row variant](#row-variants) — a `[forTableRowDef]` that matches your placeholder data and
+stamps one skeleton cell per column from the same `[forTablePlaceholderCellDef]` templates, in place among the
 real rows:
 
 - The matched rows are **non-selectable**, and their cells are stamped **disabled** — so grid-mode arrow
   navigation steps over them while the roving grid stays rectangular (one cell per column, unlike a
   full-span variant).
-- A column that omits `[forPlaceholderCell]` falls back to the body-level
-  [`[forPlaceholderCellDefault]`](#shared-skeleton-forplaceholdercelldefault), then to an empty cell —
+- A column that omits `[forTablePlaceholderCellDef]` falls back to the body-level
+  [`[forTablePlaceholderCellDefault]`](#shared-skeleton-forplaceholdercelldefault), then to an empty cell —
   so you mark only the columns whose skeleton shape differs from the shared one (a circle for an avatar
   column, a bar for text).
 - It composes with `[forTableVirtualized]` for free: placeholder rows are ordinary data — they count in
   the total and get windowed and positioned like any row.
 
-A `[forRowDef]` must declare **exactly one** of a `[forRowCell]` template (full-span variant) or the
+A `[forTableRowDef]` must declare **exactly one** of a `[forTableRowCellDef]` template (full-span variant) or the
 `placeholderCells` flag; declaring both or neither throws a `[forty-cdk/table]` error. `[loading]` /
 `[placeholderRows]` stay unchanged as the sugar for the initial full-replace state.
 
 ```html
 <for-table-body [rows]="rows()" [rowKey]="rowKey">
-  <ng-container forColumnDef="avatar" width="48px">
-    <ng-template forHeaderCell></ng-template>
-    <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+  <ng-container forTableColumnDef="avatar" width="48px">
+    <ng-template forTableHeaderCellDef></ng-template>
+    <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>
       <img [src]="row.avatar" alt="" />
     </ng-template>
     <!-- circle skeleton for the avatar column -->
-    <ng-template forPlaceholderCell><span class="skeleton skeleton--circle"></span></ng-template>
+    <ng-template forTablePlaceholderCellDef
+      ><span class="skeleton skeleton--circle"></span
+    ></ng-template>
   </ng-container>
 
-  <ng-container forColumnDef="name">
-    <ng-template forHeaderCell>Name</ng-template>
-    <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+  <ng-container forTableColumnDef="name">
+    <ng-template forTableHeaderCellDef>Name</ng-template>
+    <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.name }}</ng-template>
     <!-- bar skeleton for the text column -->
-    <ng-template forPlaceholderCell><span class="skeleton skeleton--bar"></span></ng-template>
+    <ng-template forTablePlaceholderCellDef
+      ><span class="skeleton skeleton--bar"></span
+    ></ng-template>
   </ng-container>
 
   <!-- trailing skeleton rows appended to rows() while the next page loads -->
-  <ng-container forRowDef [when]="isPlaceholder" placeholderCells />
+  <ng-container forTableRowDef [when]="isPlaceholder" placeholderCells />
 </for-table-body>
 ```
 
@@ -509,18 +535,18 @@ protected readonly isPlaceholder = (row: Row): boolean => row.pending === true;
 protected readonly rowKey = (row: Row): number => row.id;
 ```
 
-### Shared skeleton: `[forPlaceholderCellDefault]`
+### Shared skeleton: `[forTablePlaceholderCellDefault]`
 
-Most columns of a table share one skeleton shape, and repeating the same `[forPlaceholderCell]` in every
+Most columns of a table share one skeleton shape, and repeating the same `[forTablePlaceholderCellDef]` in every
 def is duplication for what is a table-level concern. Declare it **once per body** on an
-`<ng-template forPlaceholderCellDefault>` among the column defs; every displayed column that declares no
-`[forPlaceholderCell]` of its own stamps it instead.
+`<ng-template forTablePlaceholderCellDefault>` among the column defs; every displayed column that declares no
+`[forTablePlaceholderCellDef]` of its own stamps it instead.
 
 Each cell resolves its placeholder in three steps, identically in **both** stamping paths (`[loading]`
 rows and `placeholderCells` variant rows):
 
-1. the column's own `[forPlaceholderCell]`, if it has one;
-2. else the body-level `[forPlaceholderCellDefault]`, if declared;
+1. the column's own `[forTablePlaceholderCellDef]`, if it has one;
+2. else the body-level `[forTablePlaceholderCellDefault]`, if declared;
 3. else an empty cell.
 
 So the default never overrides a column that opted into its own shape, and a table with neither template
@@ -530,20 +556,24 @@ per-column template.
 ```html
 <for-table-body [rows]="rows()" [rowKey]="rowKey" [loading]="loading()">
   <!-- the shape 6 of these 7 columns share -->
-  <ng-template forPlaceholderCellDefault><span class="skeleton skeleton--bar"></span></ng-template>
+  <ng-template forTablePlaceholderCellDefault
+    ><span class="skeleton skeleton--bar"></span
+  ></ng-template>
 
-  <ng-container forColumnDef="avatar" width="48px">
-    <ng-template forHeaderCell></ng-template>
-    <ng-template forDataCell [forDataCellRow]="rows()" let-row
+  <ng-container forTableColumnDef="avatar" width="48px">
+    <ng-template forTableHeaderCellDef></ng-template>
+    <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
       ><img [src]="row.avatar" alt=""
     /></ng-template>
     <!-- this one column overrides it -->
-    <ng-template forPlaceholderCell><span class="skeleton skeleton--circle"></span></ng-template>
+    <ng-template forTablePlaceholderCellDef
+      ><span class="skeleton skeleton--circle"></span
+    ></ng-template>
   </ng-container>
 
-  <ng-container forColumnDef="name">
-    <ng-template forHeaderCell>Name</ng-template>
-    <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+  <ng-container forTableColumnDef="name">
+    <ng-template forTableHeaderCellDef>Name</ng-template>
+    <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.name }}</ng-template>
   </ng-container>
 </for-table-body>
 ```
@@ -558,7 +588,7 @@ data row becomes a focusable tab stop (`tabindex="0"`), and a pointer click or `
 datum, its dataset index, and the originating event. Bind `(rowContextMenu)` for the right-click / menu
 key. These are **scoped to the default `mode="table"`**: `role="grid"` announces a cell-interaction
 model a navigation list does not have, and whole-row activation would clash with grid roving navigation
-and cell-entry. Full-span `[forRowDef]` variant rows stay non-interactive.
+and cell-entry. Full-span `[forTableRowDef]` variant rows stay non-interactive.
 
 ```html
 <div forTable mode="table" ariaLabel="Requests">
@@ -570,13 +600,17 @@ and cell-entry. Full-span `[forRowDef]` variant rows stay non-interactive.
     (rowActivate)="openDetail($event.row)"
     (rowContextMenu)="openRowMenu($event)"
   >
-    <ng-container forColumnDef="name">
-      <ng-template forHeaderCell>Name</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+    <ng-container forTableColumnDef="name">
+      <ng-template forTableHeaderCellDef>Name</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.name }}</ng-template
+      >
     </ng-container>
-    <ng-container forColumnDef="status">
-      <ng-template forHeaderCell>Status</ng-template>
-      <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.status }}</ng-template>
+    <ng-container forTableColumnDef="status">
+      <ng-template forTableHeaderCellDef>Status</ng-template>
+      <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row
+        >{{ row.status }}</ng-template
+      >
     </ng-container>
   </for-table-body>
 </div>
@@ -613,9 +647,9 @@ text, the gaps between cells, and the focused row itself. `(rowContextMenu)` is 
 menu, matching native list UIs.
 
 ```html
-<ng-container forColumnDef="actions">
-  <ng-template forHeaderCell>Actions</ng-template>
-  <ng-template forDataCell [forDataCellRow]="rows()" let-row>
+<ng-container forTableColumnDef="actions">
+  <ng-template forTableHeaderCellDef>Actions</ng-template>
+  <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>
     <!-- Click / Enter here runs the button; the row is not activated. -->
     <button type="button" (click)="editRow(row)">Edit</button>
   </ng-template>
@@ -624,7 +658,7 @@ menu, matching native list UIs.
 
 ### Styling a row from its datum (`[rowClass]` / `[rowAttrs]`)
 
-`[headerClass]` / `[cellClass]` on `[forColumnDef]` style a stamped **cell** by column, but a row's
+`[headerClass]` / `[cellClass]` on `[forTableColumnDef]` style a stamped **cell** by column, but a row's
 appearance often depends on its **data** — an error row, a dimmed row, the "menu-open" highlight above.
 `[rowClass]` and `[rowAttrs]` are the seam for that: both take a `(row, index) => …` function the body
 calls per stamped row, and — unlike the activation hooks — apply in **every** mode (grid tables need
@@ -652,17 +686,17 @@ protected readonly rowAttrs = (row: Row): Record<string, string | null> => ({
 
 ## Typing a discriminated-union row
 
-When rows are a discriminated union whose variant members render through a `[forRowDef]`, `let-row`
-would otherwise type as the full union in every template — a per-column `[forDataCell]` only ever
-receives the non-variant members, and a `[forRowCell]` only ever receives its matched variant. Bind
+When rows are a discriminated union whose variant members render through a `[forTableRowDef]`, `let-row`
+would otherwise type as the full union in every template — a per-column `[forTableCellDef]` only ever
+receives the non-variant members, and a `[forTableRowCellDef]` only ever receives its matched variant. Bind
 the **same type guard** you use on the def's `[when]` to the compiler-only inference inputs so each
 `let-row` is narrowed to exactly what it receives:
 
-- **`[forDataCellUnless]`** on a `[forDataCell]` narrows `let-row` to `Exclude<Row, V>` — the members
+- **`[forTableCellDefUnless]`** on a `[forTableCellDef]` narrows `let-row` to `Exclude<Row, V>` — the members
   _not_ rendered as a variant. Compose several variants into one union guard.
-- **`[forRowCellWhen]`** on a `[forRowCell]` narrows `let-row` to the matched variant `V`.
+- **`[forTableRowCellDefWhen]`** on a `[forTableRowCellDef]` narrows `let-row` to the matched variant `V`.
 
-Both are read only by the compiler, exactly like `[forDataCellRow]` / `[forRowCellRow]`; omitting them
+Both are read only by the compiler, exactly like `[forTableCellDefRow]` / `[forTableRowCellDefRow]`; omitting them
 leaves `let-row` as the full row type (no behavioural or type change for existing tables). This
 replaces the filtered-computed-per-template workaround (`dataRows()` / `separatorRows()` copies of
 `rows()` kept only to satisfy the compiler) — bind `rows()` directly and let the guard narrow.
@@ -684,17 +718,27 @@ protected readonly isSeparator = (row: Row): row is SeparatorRow => row.kind ===
 
 ```html
 <for-table-body [rows]="rows()">
-  <ng-container forColumnDef="name">
-    <ng-template forHeaderCell>Name</ng-template>
+  <ng-container forTableColumnDef="name">
+    <ng-template forTableHeaderCellDef>Name</ng-template>
     <!-- row: DataRow -->
-    <ng-template forDataCell [forDataCellRow]="rows()" [forDataCellUnless]="isSeparator" let-row>
+    <ng-template
+      forTableCellDef
+      [forTableCellDefRow]="rows()"
+      [forTableCellDefUnless]="isSeparator"
+      let-row
+    >
       {{ row.name }} — {{ row.amount }}
     </ng-template>
   </ng-container>
 
-  <ng-container forRowDef [when]="isSeparator">
+  <ng-container forTableRowDef [when]="isSeparator">
     <!-- row: SeparatorRow -->
-    <ng-template forRowCell [forRowCellRow]="rows()" [forRowCellWhen]="isSeparator" let-row>
+    <ng-template
+      forTableRowCellDef
+      [forTableRowCellDefRow]="rows()"
+      [forTableRowCellDefWhen]="isSeparator"
+      let-row
+    >
       {{ row.label }}
     </ng-template>
   </ng-container>
@@ -707,8 +751,8 @@ A design system layered on forty eventually wants to hide the low-level defs beh
 authoring shapes: a **preset column component** collapsing a column's header / data / placeholder
 templates into one line, and a **scaffold wrapper table** that bakes in the `[forTable]` root,
 virtualization wiring and shared row defs so a consumer only declares columns. Both work, because
-`<for-table-body>` does **not** content-query its building blocks: each `[forColumnDef]`,
-`[forRowDef]`, `[forColumnDragPlaceholder]` and `[forPlaceholderCellDefault]` **registers itself**
+`<for-table-body>` does **not** content-query its building blocks: each `[forTableColumnDef]`,
+`[forTableRowDef]`, `[forTableColumnDragPlaceholder]` and `[forTablePlaceholderCellDefault]` **registers itself**
 with the surrounding def registry through DI at construction (and unregisters when destroyed).
 
 Registered defs are exposed in **document order**, so a def that constructs late — one declared in a
@@ -723,16 +767,16 @@ the def in the preset's own view resolve the body's registry. No providers, no r
 
 ```ts
 import { booleanAttribute, ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { ForColumnDef, ForDataCell, ForHeaderCell } from 'forty-cdk/table';
+import { ForTableColumnDef, ForTableCellDef, ForTableHeaderCellDef } from 'forty-cdk/table';
 
 @Component({
   selector: 'ds-text-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ForColumnDef, ForHeaderCell, ForDataCell],
+  imports: [ForTableColumnDef, ForTableHeaderCellDef, ForTableCellDef],
   template: `
-    <ng-container [forColumnDef]="name()" [sortable]="sortable()" [width]="width()">
-      <ng-template forHeaderCell>{{ header() }}</ng-template>
-      <ng-template forDataCell let-row>{{ value()(row) }}</ng-template>
+    <ng-container [forTableColumnDef]="name()" [sortable]="sortable()" [width]="width()">
+      <ng-template forTableHeaderCellDef>{{ header() }}</ng-template>
+      <ng-template forTableCellDef let-row>{{ value()(row) }}</ng-template>
     </ng-container>
   `,
 })
@@ -793,9 +837,9 @@ export class DsDataTable<T> {
 
 ```html
 <ds-data-table [rows]="rows()" [rowKey]="rowKey" ariaLabel="People">
-  <ng-container forColumnDef="name" sortable>
-    <ng-template forHeaderCell>Name</ng-template>
-    <ng-template forDataCell [forDataCellRow]="rows()" let-row>{{ row.name }}</ng-template>
+  <ng-container forTableColumnDef="name" sortable>
+    <ng-template forTableHeaderCellDef>Name</ng-template>
+    <ng-template forTableCellDef [forTableCellDefRow]="rows()" let-row>{{ row.name }}</ng-template>
   </ng-container>
 </ds-data-table>
 ```

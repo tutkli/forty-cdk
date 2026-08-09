@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import {
-  ForColumnDef,
-  ForDataCell,
-  ForHeaderCell,
-  ForRowCell,
-  ForRowDef,
   ForTable,
   ForTableBody,
+  ForTableCellDef,
+  ForTableColumnDef,
+  ForTableHeaderCellDef,
+  ForTableRowCellDef,
+  ForTableRowDef,
 } from 'forty-cdk/table';
 
 interface Row {
@@ -31,11 +31,11 @@ const ROWS: readonly Row[] = [
   imports: [
     ForTable,
     ForTableBody,
-    ForColumnDef,
-    ForHeaderCell,
-    ForDataCell,
-    ForRowDef,
-    ForRowCell,
+    ForTableColumnDef,
+    ForTableHeaderCellDef,
+    ForTableCellDef,
+    ForTableRowDef,
+    ForTableRowCellDef,
   ],
   styles: [
     `
@@ -74,18 +74,24 @@ const ROWS: readonly Row[] = [
   template: `
     <div class="table-root" data-testid="root" forTable mode="grid" ariaLabel="Grouped people">
       <for-table-body [rows]="data()" [rowKey]="rowKey">
-        <ng-container forColumnDef="name">
-          <ng-template forHeaderCell>Name</ng-template>
-          <ng-template forDataCell [forDataCellRow]="data()" let-row>{{ row.name }}</ng-template>
+        <ng-container forTableColumnDef="name">
+          <ng-template forTableHeaderCellDef>Name</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="data()" let-row>{{
+            row.name
+          }}</ng-template>
         </ng-container>
 
-        <ng-container forColumnDef="role">
-          <ng-template forHeaderCell>Role</ng-template>
-          <ng-template forDataCell [forDataCellRow]="data()" let-row>{{ row.role }}</ng-template>
+        <ng-container forTableColumnDef="role">
+          <ng-template forTableHeaderCellDef>Role</ng-template>
+          <ng-template forTableCellDef [forTableCellDefRow]="data()" let-row>{{
+            row.role
+          }}</ng-template>
         </ng-container>
 
-        <ng-container forRowDef [when]="isGroup">
-          <ng-template forRowCell [forRowCellRow]="data()" let-row>{{ row.group }}</ng-template>
+        <ng-container forTableRowDef [when]="isGroup">
+          <ng-template forTableRowCellDef [forTableRowCellDefRow]="data()" let-row>{{
+            row.group
+          }}</ng-template>
         </ng-container>
       </for-table-body>
     </div>

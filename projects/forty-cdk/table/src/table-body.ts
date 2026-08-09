@@ -20,7 +20,7 @@ import { fortyError } from 'forty-cdk/core';
 
 import { ForDraggable, ForDragPlaceholder } from 'forty-cdk/drag-drop';
 
-import { assertColumnDefConfig, type ForColumnDef } from './column-def';
+import { assertColumnDefConfig, type ForTableColumnDef } from './column-def';
 import {
   assertTableDefRegistry,
   type ForTableDefRegistry,
@@ -29,7 +29,7 @@ import {
   type TableDefRegistry,
 } from './def-registry';
 import { eventFromInteractiveDescendant } from './interactive-descendant';
-import { type ForRowDef } from './row-def';
+import { type ForTableRowDef } from './row-def';
 import { ForTableCell } from './table-cell';
 import { ForTableColumnReorder, type TableColumnReorderDescriptor } from './table-column-reorder';
 import { ForTableColumnResizer, type TableResizeDescriptor } from './table-column-resizer';
@@ -85,13 +85,13 @@ interface RenderRow<T> {
   /** `@for` tracking key: the selection identity, falling back to the dataset index. */
   readonly key: unknown;
   /** The matched full-span row variant, or `null` for a standard per-column row. */
-  readonly variant: ForRowDef<unknown> | null;
+  readonly variant: ForTableRowDef<unknown> | null;
 }
 
 /**
  * Ergonomic declarative renderer for the columns of a `[forTable]`.
  * Place `<for-table-body>` inside a `[forTable]` element and declare one
- * `[forColumnDef]` per column; the body harvests the defs and stamps the header
+ * `[forTableColumnDef]` per column; the body harvests the defs and stamps the header
  * row and one data row per item out of the raw cell primitives, so a column is
  * authored in a single block instead of being smeared across header, data, and
  * placeholder rows.
@@ -133,14 +133,15 @@ interface RenderRow<T> {
  * `measureRows` for variable heights, which feeds each rendered row's real height back to the
  * virtualizer.
  *
- * **Row variants.** Declare one or more `[forRowDef]` alongside the columns; for each datum the
- * body picks the first whose `[when]` predicate returns `true`, and unmatched data renders the
- * standard per-column row. A `[forRowCell]` template stamps a full-span row whose single cell spans
- * every column, while the `placeholderCells` flag stamps per-column skeleton cells from each
- * column's `[forPlaceholderCell]`, falling back to `[forPlaceholderCellDefault]`. Variant rows are
- * presentational and non-selectable but still count towards `aria-rowindex` / `aria-rowcount`. A
- * full-span cell registers no cell handle, so arrow keys step over the row; placeholder cells keep
- * the grid rectangular but are stamped disabled, so navigation steps over them too.
+ * **Row variants.** Declare one or more `[forTableRowDef]` alongside the columns; for each datum
+ * the body picks the first whose `[when]` predicate returns `true`, and unmatched data renders the
+ * standard per-column row. A `[forTableRowCellDef]` template stamps a full-span row whose single
+ * cell spans every column, while the `placeholderCells` flag stamps per-column skeleton cells from
+ * each column's `[forTablePlaceholderCellDef]`, falling back to `[forTablePlaceholderCellDefault]`.
+ * Variant rows are presentational and non-selectable but still count towards `aria-rowindex` /
+ * `aria-rowcount`. A full-span cell registers no cell handle, so arrow keys step over the row;
+ * placeholder cells keep the grid rectangular but are stamped disabled, so navigation steps over
+ * them too.
  */
 @Component({
   selector: 'for-table-body',
@@ -410,7 +411,7 @@ export class ForTableBody<T = unknown> {
   readonly rowKey = input<(row: T, index: number) => unknown>();
 
   /**
-   * Which columns render, in order. Defaults to every registered `[forColumnDef]`
+   * Which columns render, in order. Defaults to every registered `[forTableColumnDef]`
    * in document order. Names not matching a registered column are skipped.
    */
   readonly displayedColumns = input<readonly string[] | null>(null);
@@ -424,8 +425,8 @@ export class ForTableBody<T = unknown> {
 
   /**
    * When set, render `placeholderRows` skeleton rows instead of data. Each cell
-   * stamps the column's own `[forPlaceholderCell]`, else the body-level
-   * `[forPlaceholderCellDefault]`, else nothing.
+   * stamps the column's own `[forTablePlaceholderCellDef]`, else the body-level
+   * `[forTablePlaceholderCellDefault]`, else nothing.
    */
   readonly loading = input(false);
 
@@ -468,7 +469,7 @@ export class ForTableBody<T = unknown> {
    * reorderable columns in their new order (equal to the full displayed order only when
    * every displayed column is `reorderable`) — setting `displayedColumns` directly to
    * `columns` is valid only in that all-reorderable case, otherwise the fixed columns
-   * are dropped. Only present when at least one `[forColumnDef]` is `reorderable`.
+   * are dropped. Only present when at least one `[forTableColumnDef]` is `reorderable`.
    */
   readonly columnReorder = output<TableColumnReorderDescriptor>();
 
@@ -494,7 +495,7 @@ export class ForTableBody<T = unknown> {
    * default `mode="table"`. When set, each data row becomes a focusable tab stop
    * (`tabindex="0"`) and a pointer click or `Enter` emits `rowActivate`, while a
    * `contextmenu` (right-click or the context-menu key) emits `rowContextMenu`.
-   * Full-span `[forRowDef]` variant rows stay non-interactive. Ignored in `grid`
+   * Full-span `[forTableRowDef]` variant rows stay non-interactive. Ignored in `grid`
    * / `treegrid` mode, where roving 2D navigation and cell-entry own the keyboard
    * and whole-row activation would conflict.
    *
@@ -548,7 +549,7 @@ export class ForTableBody<T = unknown> {
   /**
    * An external def registry to render from, for a **scaffold wrapper**: a
    * component whose template owns the `[forTable]` shell and this body, and whose
-   * consumers declare their `[forColumnDef]` / `[forRowDef]` blocks as projected
+   * consumers declare their `[forTableColumnDef]` / `[forTableRowDef]` blocks as projected
    * content. Those defs are content of the wrapper, not of this body, so they
    * register with the wrapper's own registry — provide one with
    * `provideForTableDefRegistry()` and bind `inject(FOR_TABLE_DEF_REGISTRY)` here.
@@ -599,10 +600,10 @@ export class ForTableBody<T = unknown> {
 
   /**
    * Resolves the placeholder template a column stamps into its cell, in both
-   * stamping paths: the column's own `[forPlaceholderCell]`, else the body-level
-   * `[forPlaceholderCellDefault]`, else `null` for an empty cell.
+   * stamping paths: the column's own `[forTablePlaceholderCellDef]`, else the body-level
+   * `[forTablePlaceholderCellDefault]`, else `null` for an empty cell.
    */
-  protected placeholderTemplateFor(col: ForColumnDef): TemplateRef<unknown> | null {
+  protected placeholderTemplateFor(col: ForTableColumnDef): TemplateRef<unknown> | null {
     return col.placeholderCell()?.template ?? this.placeholderCellDefault()?.template ?? null;
   }
 
@@ -612,14 +613,16 @@ export class ForTableBody<T = unknown> {
   );
 
   /** The columns to render, resolved from `displayedColumns` (or all defs, in order). */
-  protected readonly orderedColumns = computed<readonly ForColumnDef[]>(() => {
+  protected readonly orderedColumns = computed<readonly ForTableColumnDef[]>(() => {
     const defs = this.columns();
     const order = this.displayedColumns();
     if (!order) {
       return defs;
     }
     const byName = new Map(defs.map((def) => [def.name(), def]));
-    return order.map((name) => byName.get(name)).filter((def): def is ForColumnDef => def != null);
+    return order
+      .map((name) => byName.get(name))
+      .filter((def): def is ForTableColumnDef => def != null);
   });
 
   /**
@@ -662,7 +665,7 @@ export class ForTableBody<T = unknown> {
     for (const def of variants) {
       this.#assertRowDefConfig(def);
     }
-    const matchVariant = (datum: T, index: number): ForRowDef<unknown> | null =>
+    const matchVariant = (datum: T, index: number): ForTableRowDef<unknown> | null =>
       variants.find((def) => def.when()(datum, index)) ?? null;
     if (window) {
       const out: RenderRow<T>[] = [];
@@ -700,15 +703,18 @@ export class ForTableBody<T = unknown> {
     });
   });
 
-  /** Enforces that each `[forRowDef]` declares exactly one of `[forRowCell]` / `placeholderCells`. */
-  #assertRowDefConfig(def: ForRowDef<unknown>): void {
+  /**
+   * Enforces that each `[forTableRowDef]` declares exactly one of
+   * `[forTableRowCellDef]` / `placeholderCells`.
+   */
+  #assertRowDefConfig(def: ForTableRowDef<unknown>): void {
     const hasCell = def.cell() != null;
     const hasPlaceholder = def.placeholderCells();
     if (hasCell === hasPlaceholder) {
       throw fortyError({
         code: 'FORCDK-TABLE-005',
-        message: `A [forRowDef] declares ${hasCell ? 'both' : 'neither'} of a [forRowCell] template and the placeholderCells flag.`,
-        fix: 'Declare exactly one of the two on every [forRowDef].',
+        message: `A [forTableRowDef] declares ${hasCell ? 'both' : 'neither'} of a [forTableRowCellDef] template and the placeholderCells flag.`,
+        fix: 'Declare exactly one of the two on every [forTableRowDef].',
       });
     }
   }

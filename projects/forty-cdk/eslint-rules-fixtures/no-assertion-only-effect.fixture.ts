@@ -40,7 +40,7 @@ effect(() => {
 // The same fault behind an `assert*` helper rather than an inline `throw` —
 // dev-gating it changes nothing about where the error surfaces.
 effect(() => {
-  assertColumnName(columnName(), 'ForColumnDef');
+  assertColumnName(columnName(), 'ForTableColumnDef');
 });
 
 // Expected: 1× forty-cdk/no-assertion-only-effect
@@ -49,7 +49,7 @@ effect(() => {
 effect(() => {
   const name = columnName();
   if (name !== '') {
-    assertColumnName(name, 'ForColumnDef');
+    assertColumnName(name, 'ForTableColumnDef');
   }
 });
 
@@ -65,7 +65,7 @@ effect(() => {
 
 // Expected: 1× forty-cdk/no-assertion-only-effect
 // The concise-body flavour, which has no block to inspect.
-effect(() => assertColumnName(columnName(), 'ForColumnDef'));
+effect(() => assertColumnName(columnName(), 'ForTableColumnDef'));
 
 // Allowed: an assertion *beside* real work. `[forTableColumnResizer]` asserts
 // its column name inside the effect that publishes the width var — which is the
@@ -92,7 +92,7 @@ export function assertBoundLikeCore(value: Signal<string>): void {
   }
   effect(() => {
     if (value() === '') {
-      throw new Error('[forty-cdk/table] [forColumnDef] has no binding.');
+      throw new Error('[forty-cdk/table] [forTableColumnDef] has no binding.');
     }
   });
 }
@@ -102,6 +102,6 @@ export function assertBoundLikeCore(value: Signal<string>): void {
 // wraps the anti-pattern under some other name is still reported.
 export function watchColumnName(value: Signal<string>): void {
   effect(() => {
-    assertColumnName(value(), 'ForColumnDef');
+    assertColumnName(value(), 'ForTableColumnDef');
   });
 }
