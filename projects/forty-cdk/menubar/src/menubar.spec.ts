@@ -15,6 +15,7 @@ import {
   assertDismissibleLayerContract,
   assertOverlayTriggerAriaContract,
   assertRovingTabindexContract,
+  assertSingleValueModelContract,
 } from '../../src/test-utils/contract';
 import type { VetoableEvent, VetoableNativeEvent } from 'forty-cdk/core';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
@@ -115,6 +116,29 @@ class MenubarHost {
 class MenubarWithSubmenuHost {
   readonly open = signal<string | null>(null);
   readonly recent = signal(false);
+}
+
+@Component({
+  imports: IMPORTS,
+  template: `
+    <div forMenubar [(value)]="open">
+      <button forMenubarTrigger value="" data-test-id="empty">Any</button>
+      @if (open() === '') {
+        <div forMenuContent>
+          <button forMenuItem>Anything</button>
+        </div>
+      }
+      <button forMenubarTrigger value="file" data-test-id="file">File</button>
+      @if (open() === 'file') {
+        <div forMenuContent>
+          <button forMenuItem>New</button>
+        </div>
+      }
+    </div>
+  `,
+})
+class MenubarEmptyValueHost {
+  readonly open = signal<string | null>(null);
 }
 
 @Component({
@@ -450,6 +474,27 @@ describe('ForMenubar', () => {
       };
     },
   });
+
+  assertSingleValueModelContract(
+    {
+      mount: () => {
+        const r = renderHost(MenubarEmptyValueHost);
+        const triggerOf = (value: string) =>
+          r.query<HTMLElement>(`[data-test-id="${value === '' ? 'empty' : value}"]`);
+        return {
+          value: () => r.instance.open(),
+          items: () => ({
+            '': triggerOf(''),
+            file: triggerOf('file'),
+          }),
+          activate: (value) => triggerOf(value)?.click(),
+          clear: () => r.instance.open.set(null),
+          flush: r.flush,
+        };
+      },
+    },
+    { selectionAttribute: 'aria-expanded' },
+  );
 
   assertDismissibleLayerContract({
     mount: async (options = {}) => {

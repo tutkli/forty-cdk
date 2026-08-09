@@ -66,7 +66,7 @@ import type { StaticAdoptionAdopter } from './mount';
 class DropdownMenuAdopted {
   readonly open = signal(true);
   readonly subOpen = signal(true);
-  readonly choice = signal('');
+  readonly choice = signal<string | null>(null);
 }
 
 @Component({
@@ -108,7 +108,7 @@ class DropdownMenuAdopted {
 class DropdownMenuBare {
   readonly open = signal(true);
   readonly subOpen = signal(true);
-  readonly choice = signal('');
+  readonly choice = signal<string | null>(null);
 }
 
 @Component({

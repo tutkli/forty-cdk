@@ -2,7 +2,10 @@ import { Component, provideZonelessChangeDetection, signal, viewChild } from '@a
 import { TestBed } from '@angular/core/testing';
 
 import { flush, pressKey, renderHost, TestStackedLayer } from '../../src/test-utils';
-import { assertDataStateContract } from '../../src/test-utils/contract';
+import {
+  assertDataStateContract,
+  assertSingleValueModelContract,
+} from '../../src/test-utils/contract';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
 import { ForNavigationMenuItem } from './navigation-menu-item';
@@ -138,6 +141,37 @@ class StackedLayerNavMenuHost {
   readonly stacked = viewChild.required(TestStackedLayer);
 }
 
+@Component({
+  imports: [
+    ForNavigationMenu,
+    ForNavigationMenuList,
+    ForNavigationMenuItem,
+    ForNavigationMenuTrigger,
+    ForNavigationMenuContent,
+  ],
+  template: `
+    <nav forNavigationMenu [(value)]="open">
+      <ul forNavigationMenuList>
+        <li forNavigationMenuItem value="">
+          <button forNavigationMenuTrigger data-test-id="empty">Any</button>
+          @if (open() === '') {
+            <div forNavigationMenuContent>any panel</div>
+          }
+        </li>
+        <li forNavigationMenuItem value="products">
+          <button forNavigationMenuTrigger data-test-id="products">Products</button>
+          @if (open() === 'products') {
+            <div forNavigationMenuContent>products panel</div>
+          }
+        </li>
+      </ul>
+    </nav>
+  `,
+})
+class NavMenuEmptyValueHost {
+  readonly open = signal<string | null>(null);
+}
+
 function pointer(
   type: 'pointerenter' | 'pointerleave' | 'pointerdown',
   pointerType?: string,
@@ -165,6 +199,27 @@ describe('ForNavigationMenu', () => {
       };
     },
   });
+
+  assertSingleValueModelContract(
+    {
+      mount: () => {
+        const r = renderHost(NavMenuEmptyValueHost);
+        const triggerOf = (value: string) =>
+          r.query<HTMLElement>(`[data-test-id="${value === '' ? 'empty' : value}"]`);
+        return {
+          value: () => r.instance.open(),
+          items: () => ({
+            '': triggerOf(''),
+            products: triggerOf('products'),
+          }),
+          activate: (value) => triggerOf(value)?.click(),
+          clear: () => r.instance.open.set(null),
+          flush: r.flush,
+        };
+      },
+    },
+    { selectionAttribute: 'aria-expanded' },
+  );
 
   describe('basic rendering', () => {
     it('reflects aria-label, data-orientation, and trigger ↔ content ids', async () => {

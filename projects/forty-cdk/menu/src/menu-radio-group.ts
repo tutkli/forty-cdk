@@ -29,10 +29,13 @@ import {
 })
 export class ForMenuRadioGroup implements ForMenuRadioGroupContext, ForMenuGroupContext {
   /**
-   * Two-way bindable. The selected radio item's `value`. The `model()`
-   * change emitter (`(valueChange)`) fires only on internal selection.
+   * Two-way bindable. The selected radio item's `value`, or `null` when
+   * nothing is selected. `null` is the canonical unset state — distinct from
+   * an item whose `value` is the empty string `''`, which is a legal,
+   * selectable value. The `model()` change emitter (`(valueChange)`) fires
+   * only on internal selection.
    */
-  readonly value = model<string>('');
+  readonly value = model<string | null>(null);
 
   readonly #labelIds = signal<readonly string[]>([]);
 

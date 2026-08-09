@@ -293,5 +293,5 @@ import {
 export class MenuDefaultExample {
   protected readonly showToolbar = signal(true);
   protected readonly showSidebar = signal(false);
-  protected readonly sortBy = signal('name');
+  protected readonly sortBy = signal<string | null>('name');
 }

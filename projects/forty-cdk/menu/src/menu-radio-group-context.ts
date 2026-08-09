@@ -10,10 +10,11 @@ import { orphanContextError } from 'forty-cdk/core';
  */
 export interface ForMenuRadioGroupContext {
   /**
-   * The selected value, as a read-only signal. Mutate it through `select` or
-   * the root's `[(value)]` binding rather than writing it directly.
+   * The selected value, or `null` when nothing is selected, as a read-only
+   * signal. Mutate it through `select` or the root's `[(value)]` binding
+   * rather than writing it directly.
    */
-  readonly value: Signal<string>;
+  readonly value: Signal<string | null>;
   isSelected(value: string): boolean;
   select(value: string): void;
 }

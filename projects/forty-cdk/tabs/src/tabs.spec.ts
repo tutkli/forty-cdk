@@ -5,6 +5,7 @@ import { pressKey, renderHost, withReducedMotion } from '../../src/test-utils';
 import {
   assertDataStateContract,
   assertRovingTabindexContract,
+  assertSingleValueModelContract,
 } from '../../src/test-utils/contract';
 import { ForTabs } from './tabs';
 import { ForTabsContent } from './tabs-content';
@@ -61,6 +62,21 @@ class TabsHost {
   ]);
 }
 
+@Component({
+  imports: [ForTabs, ForTabsList, ForTabsTrigger],
+  template: `
+    <div forTabs [(value)]="active">
+      <div forTabsList>
+        <button type="button" forTabsTrigger value="" data-test-id="empty">Any</button>
+        <button type="button" forTabsTrigger value="a" data-test-id="a">A</button>
+      </div>
+    </div>
+  `,
+})
+class TabsEmptyValueHost {
+  readonly active = signal<string | null>(null);
+}
+
 const triggerOf = (host: HTMLElement, id: string) =>
   host.querySelector<HTMLButtonElement>(`button[data-test-id="${id}"]`)!;
 
@@ -87,6 +103,26 @@ describe('ForTabs', () => {
       };
     },
   });
+
+  assertSingleValueModelContract(
+    {
+      mount: () => {
+        const r = renderHost(TabsEmptyValueHost);
+        const testIdOf = (value: string) => (value === '' ? 'empty' : value);
+        return {
+          value: () => r.instance.active(),
+          items: () => ({
+            '': triggerOf(r.el, 'empty'),
+            a: triggerOf(r.el, 'a'),
+          }),
+          activate: (value) => triggerOf(r.el, testIdOf(value)).click(),
+          clear: () => r.instance.active.set(null),
+          flush: r.flush,
+        };
+      },
+    },
+    { selectionAttribute: 'aria-selected' },
+  );
 
   describe('static accessibility & wiring', () => {
     it('sets role=tablist with aria-orientation, role=tab on triggers, role=tabpanel on contents', () => {

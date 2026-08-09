@@ -69,7 +69,7 @@ import {
   `,
 })
 export class DemoOptions {
-  readonly alignment = signal<string>('left');
+  readonly alignment = signal<string | null>('left');
   cut() {
     /* ... */
   }
