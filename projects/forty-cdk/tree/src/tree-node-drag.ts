@@ -87,9 +87,16 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  * The `(nodeDrop)` output fires once per committed move. Apply `moveTreeNode` in the handler to
  * update the consumer's data. Provide a `[canDrop]` function to veto specific moves.
  *
- * Generic over the tree's node value type `T`, which defaults to `string` like `ForTree`'s
- * own. A tree whose node values are not `string` binds `[canDrop]` to carry the inference,
- * or annotates the directive reference.
+ * Generic over the tree's node value type `T`, which defaults to `string` like `ForTree`'s own.
+ * Unlike `ForTree`, this directive has no input that carries `T` on its own, so **a tree whose
+ * node values are not `string` must bind `[canDrop]` typed at the node value** — that is the one
+ * channel Angular's template type checker can infer `T` from. Without it `T` stays `string` and
+ * `(nodeDrop)` reports `ForTreeDragDropEvent<string>` while the runtime carries the node value:
+ * a handler typed at the real node fails with `TS2345`, and retyping that handler to `string` to
+ * satisfy the diagnostic is what makes `moveTreeNode` silently return its `roots` unchanged.
+ * A `[canDrop]` that vetoes nothing (`() => true`) is enough to carry the inference. Note that
+ * annotating a `@ViewChild` / `viewChild` reference recovers `T` only for reading
+ * {@link ForTreeNodeDrag.dropIndicator} from TypeScript — it cannot retype a template binding.
  */
 @Directive({
   selector: '[forTreeNodeDrag]',

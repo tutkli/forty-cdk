@@ -563,6 +563,31 @@ Add `[forTreeNodeDrag]` on the same element as `[forTree]` to enable pointer and
 | `canDrop`  | `input<(event: ForTreeDragDropEvent<T>) => boolean>` | Optional veto callback. Return `false` to reject a specific move. When omitted, all drops are accepted. |
 | `nodeDrop` | `output<ForTreeDragDropEvent<T>>`                    | Emitted once per committed move. Apply `moveTreeNode` in the handler to update your data.               |
 
+### A non-string tree must bind `[canDrop]`
+
+`ForTreeNodeDrag<T = string>` is generic over the same node value type as `ForTree`, but — unlike the root, which infers `T` from `[(value)]` / `[(expanded)]` — it has **no input that carries `T` on its own** except `[canDrop]`. So if your node values are not `string`, bind it, typed at the node value:
+
+```ts
+readonly canDrop = (event: ForTreeDragDropEvent<FileNode>): boolean => true;
+```
+
+```html
+<ul forTree forTreeNodeDrag [(value)]="picked" [canDrop]="canDrop" (nodeDrop)="onDrop($event)"></ul>
+```
+
+A callback that vetoes nothing is enough — its only job here is to carry the inference.
+
+**Read the diagnostic you get without it carefully, because the obvious fix is the wrong one.** With no `[canDrop]`, `T` stays at its `string` default, so `(nodeDrop)` reports `ForTreeDragDropEvent<string>` while the runtime hands you the node value you actually bound. A handler typed at your real node type fails to compile:
+
+```
+TS2345: Argument of type 'ForTreeDragDropEvent<string>' is not assignable to
+        parameter of type 'ForTreeDragDropEvent<FileNode>'.
+```
+
+The error points at your handler, not at the missing input — and retyping the handler to `string` to satisfy it is what turns a compile error into a silent one: `moveTreeNode` then infers its own `V` as `string`, your `trackBy` returns a `string` id, and the comparison against the object the event really carries never matches, so the helper returns your `roots` unchanged. The drag completes, the announcement fires, and nothing moves.
+
+Annotating a `viewChild` / `@ViewChild` reference (`ForTreeNodeDrag<FileNode>`) recovers `T` for reading `dropIndicator` from TypeScript, but it cannot retype a template binding — `[canDrop]` is the only channel that fixes `(nodeDrop)`.
+
 ### Keyboard interaction
 
 | Key               | Behavior while **not** lifted | Behavior while **lifted**                                        |
