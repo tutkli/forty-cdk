@@ -466,6 +466,54 @@ describe('FocusTrap', () => {
     });
   });
 
+  describe('cost of a Tab keypress', () => {
+    function fillWithRows(rows: number): void {
+      const cells = Array.from(
+        { length: rows },
+        (_, i) => `<div><span>text ${i}</span><button>cell ${i}</button></div>`,
+      ).join('');
+      container.innerHTML = `<button id="edge-first">first</button>${cells}<button id="edge-last">last</button>`;
+    }
+
+    it('enumerates the trap subtree once', () => {
+      fillWithRows(50);
+      trap = new FocusTrap(container, stack);
+      trap.activate();
+      container.querySelector<HTMLElement>('#edge-last')!.focus();
+      const enumerate = vi.spyOn(container, 'querySelectorAll');
+
+      document.dispatchEvent(tab());
+
+      expect(document.activeElement?.id).toBe('edge-first');
+      expect(enumerate.mock.calls.filter(([selector]) => selector === '*')).toHaveLength(1);
+    });
+
+    it('reads the same number of computed styles for 50 rows as for one', () => {
+      const readsPerWrap = (rows: number): number => {
+        fillWithRows(rows);
+        trap = new FocusTrap(container, stack);
+        trap.activate();
+        container.querySelector<HTMLElement>('#edge-last')!.focus();
+
+        const computed = vi.spyOn(window, 'getComputedStyle');
+        document.dispatchEvent(tab());
+        const count = computed.mock.calls.length;
+        computed.mockRestore();
+
+        expect(document.activeElement?.id).toBe('edge-first');
+        trap.deactivate({ returnFocus: false });
+        trap = null;
+        return count;
+      };
+
+      const small = readsPerWrap(1);
+      const large = readsPerWrap(50);
+
+      expect(small).toBeGreaterThan(0);
+      expect(large).toBe(small);
+    });
+  });
+
   describe('CSS-hidden candidates', () => {
     it('skips a display:none focusable on activate', () => {
       container.innerHTML = `

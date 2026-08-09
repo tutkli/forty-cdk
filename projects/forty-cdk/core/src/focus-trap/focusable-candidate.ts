@@ -84,6 +84,45 @@ export function isTabbableCandidate(el: HTMLElement, root: HTMLElement): boolean
   return el.tabIndex >= 0 && isFocusableCandidate(el, root);
 }
 
+/** The two ends of a container's Tab cycle, as resolved by {@link findTabbableEdges}. */
+export interface TabbableEdges {
+  /** First tabbable descendant in candidate order, or `null` when the container has none. */
+  first: HTMLElement | null;
+  /** Last tabbable descendant; the same element as `first` when only one qualifies. */
+  last: HTMLElement | null;
+}
+
+/**
+ * The first and last tabbable descendants of `container`, resolved from a single
+ * {@link queryFocusableCandidates} enumeration.
+ *
+ * Only the two ends are ever needed to cycle Tab, so the filter runs from each end and stops on the
+ * first candidate that qualifies instead of resolving the whole set. That is what keeps the cost of
+ * a keystroke off the size of the surface: `isFocusableCandidate` climbs the composed ancestor chain
+ * calling `getComputedStyle` at every level, so filtering N candidates to read two of them costs
+ * O(N × depth) forced style recalculations where O(depth) will do. The cheap `tabIndex` half of the
+ * test is what makes the scan short on a roving collection too — every item carrying
+ * `tabindex="-1"` is rejected without a style read.
+ *
+ * Both ends are `null` only when the container has no tabbable descendant at all, which is the one
+ * case that still walks every candidate.
+ */
+export function findTabbableEdges(container: HTMLElement): TabbableEdges {
+  const candidates = queryFocusableCandidates(container);
+  const firstIndex = candidates.findIndex((el) => isTabbableCandidate(el, container));
+  if (firstIndex === -1) {
+    return { first: null, last: null };
+  }
+  const first = candidates[firstIndex]!;
+  for (let i = candidates.length - 1; i > firstIndex; i--) {
+    const candidate = candidates[i]!;
+    if (isTabbableCandidate(candidate, container)) {
+      return { first, last: candidate };
+    }
+  }
+  return { first, last: first };
+}
+
 /**
  * The ten local names {@link FOCUSABLE_SELECTOR} anchors a clause on. Lowercase
  * and compared against `localName` rather than `tagName`, so the two agree on a
