@@ -1,6 +1,12 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant dropdown menus in the surrounding
@@ -8,7 +14,17 @@ import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cd
  * at the application root or in any component's `providers` array; partial
  * overrides merge with the parent scope.
  */
-export interface ForDropdownMenuDefaults {
+export interface ForDropdownMenuDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side the menu is anchored to for dropdowns that don't override `side`
+   * locally. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for dropdowns that don't override
+   * `align` locally. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Distance (px) between the dropdown trigger and the floating content
    * along the resolved `side` axis.
@@ -36,6 +52,8 @@ export interface ForDropdownMenuDefaults {
  * contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_DROPDOWN_MENU_FALLBACK_DEFAULTS: ForDropdownMenuDefaults = {
+  side: 'bottom',
+  align: 'start',
   sideOffset: 4,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',

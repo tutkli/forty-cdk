@@ -123,6 +123,35 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 
 `data-highlighted` marks the keyboard-focused option (shared vocabulary with the listbox / menu / combobox primitives). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../docs/styling-floating-content.md).
 
+## Scoped defaults
+
+`provideForSelectDefaults` configures positioning defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                | Library fallback | Meaning                                                                     |
+| ------------------ | ---------------- | --------------------------------------------------------------------------- |
+| `side`             | `'bottom'`       | Anchor side for selects that don't set `side` themselves.                   |
+| `align`            | `'start'`        | Alignment along `side` for selects that don't set `align` themselves.       |
+| `sideOffset`       | `4`              | Main-axis gap (px) for selects that don't set `sideOffset` themselves.      |
+| `collisionPadding` | `8`              | Collision-middleware padding (px) for selects that don't set it themselves. |
+
+Per-instance inputs always win over the scope defaults. `side` / `align` / `sideOffset` are no-ops under `position="item-aligned"`, where only `collisionPadding` is honored, and every one of the four is a no-op in modal mode — see [macOS-style alignment](#macos-style-alignment) and [Modal touch presentation](#modal-touch-presentation).
+
+```ts
+import { provideForSelectDefaults } from 'forty-cdk/select';
+
+// Every select in the app opens above its trigger, aligned to the end edge
+bootstrapApplication(App, {
+  providers: [provideForSelectDefaults({ side: 'top', align: 'end' })],
+});
+
+// component-level override layers on top, per key
+@Component({
+  providers: [provideForSelectDefaults({ sideOffset: 0 })],
+  ...
+})
+class CompactToolbar {}
+```
+
 ## Mount/visibility convention
 
 `[forSelectContent]` follows the floating-overlay convention: the consumer's signal drives `@if`, the directive emits dismiss events (forwarded by the root primitive) when it wants to be unmounted. No `[hidden]`. The trigger's own click toggles the same signal — `[forSelect]` exposes `open` as a `model<boolean>` so two-way binding works out of the box.

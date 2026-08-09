@@ -143,7 +143,7 @@ Partial overrides inherit unspecified keys from the parent scope (or the library
 
 ### Narrow-viewport fallback
 
-A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in RTL). On a narrow / mobile viewport both horizontal sides can overflow — `flip` only tries the opposite same-axis placement by default, so the submenu ends up clipped or overlapping the parent. Opt a submenu into dropping to a **vertical** side (`top` / `bottom`) when both horizontal sides are blocked with `[fallbackAxisSideDirection]` (default `'none'`), typically bound to a media-query signal:
+A submenu opens beside its parent item (`side="right"` in LTR, `side="left"` in RTL — `provideForMenuDefaults({ side })` pins it for a whole scope, and its default `null` is what "follow the writing direction here, `'bottom'` on the `[forMenu]` root" is spelled as). On a narrow / mobile viewport both horizontal sides can overflow — `flip` only tries the opposite same-axis placement by default, so the submenu ends up clipped or overlapping the parent. Opt a submenu into dropping to a **vertical** side (`top` / `bottom`) when both horizontal sides are blocked with `[fallbackAxisSideDirection]` (default `'none'`), typically bound to a media-query signal:
 
 ```html
 <div forMenuSub #sub="forMenuSub" [fallbackAxisSideDirection]="isNarrow() ? 'start' : 'none'">
@@ -239,8 +239,8 @@ Selector `[forMenu]`, `exportAs: 'forMenu'`.
 | Input                       | Type                                | Default          | Notes                                                      |
 | --------------------------- | ----------------------------------- | ---------------- | ---------------------------------------------------------- |
 | `open`                      | `model<boolean>`                    | `false`          | Two-way. `(openChange)` fires on internal transitions only |
-| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | Overridable per opener via `[menuPositioning]`             |
-| `align`                     | `FloatingAlign \| undefined`        | `'start'`        | Overridable per opener via `[menuPositioning]`             |
+| `side`                      | `FloatingSide \| undefined`         | `'bottom'`       | From `provideForMenuDefaults`; overridable per opener      |
+| `align`                     | `FloatingAlign \| undefined`        | `'start'`        | From `provideForMenuDefaults`; overridable per opener      |
 | `sideOffset`                | `number`                            | `0`              | From `provideForMenuDefaults`; overridable per opener      |
 | `alignOffset`               | `number`                            | `0`              | Overridable per opener via `[menuPositioning]`             |
 | `avoidCollisions`           | `boolean`                           | `true`           |                                                            |

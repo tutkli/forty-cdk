@@ -1,87 +1,31 @@
 import { booleanAttribute, computed, Directive, input, numberAttribute } from '@angular/core';
 
+import { FormUiControlBase } from '../form-ui-control/form-ui-control-base';
 import { ANCHORED_POSITIONING_DEFAULTS } from './anchored-positioning-inputs';
+import type {
+  AnchoredPositioningOverride,
+  AnchoredPositioningSeedDefaults,
+} from './anchored-overlay-positioning-base';
 import type { FloatingAlign, FloatingSide } from './floating';
 
 /**
- * The four positioning seeds a trigger-anchored overlay root resolves from its
- * own scoped defaults provider (`provideForPopoverDefaults`,
- * `provideForSelectDefaults`, …), rather than from the shared
- * {@link ANCHORED_POSITIONING_DEFAULTS} constant. A root's `ForXDefaults`
- * interface `extends` this whenever all four keys are plain values, so the
- * shared seed contract stays typed identically across roots, and every concrete
- * {@link AnchoredOverlayPositioningBase} subclass supplies an instance of it
- * through its `positioningDefaults` accessor.
+ * `AnchoredOverlayPositioningBase` for the anchored roots that are also form
+ * values — `[forSelect]`, `[forCombobox]`, `[forTimePicker]`, and both
+ * date-picker roots through `DatePickerBase`. They must extend
+ * `FormUiControlBase` for the Signal Forms contract, and TypeScript has single
+ * inheritance, so the positioning block cannot reach them by extending the
+ * other base as the remaining eight roots do.
  *
- * A root whose library fallback for one seed is *derived* rather than fixed —
- * Combobox's writing-direction `align`, MenuSub's writing-direction `side` —
- * declares that key nullable on its own defaults interface and resolves it
- * inside `positioningDefaults`, so what the base reads is always a settled
- * value.
- */
-export interface AnchoredPositioningSeedDefaults {
-  /** Side the overlay is anchored to when the `side` input is unset. */
-  side: FloatingSide;
-  /** Alignment along the chosen `side` when the `align` input is unset. */
-  align: FloatingAlign;
-  /** Gap (px) between trigger and content along the main axis when the `sideOffset` input is unset. */
-  sideOffset: number;
-  /** Padding (px) applied uniformly to `flip` / `shift` / `size` when the `collisionPadding` input is unset. */
-  collisionPadding: number;
-}
-
-/**
- * Per-open override of the four **placement** values, resolved ahead of the
- * root's own inputs. It exists for the menu roots, where one surface is shared
- * by heterogeneous openers and the opener that fired legitimately decides the
- * placement (`MenuOpenerPositioning` is the shape flowing through
- * `[menuPositioning]`); every other root inherits the base's `null` and
- * resolves its inputs directly.
- *
- * Only the four placement values are overridable. The rest of the surface
- * (`avoidCollisions`, `collisionPadding`, `sticky`, …) is collision / viewport
- * policy for the overlay rather than a property of what opened it.
- */
-export interface AnchoredPositioningOverride {
-  /** Side the overlay is anchored to for this open. */
-  readonly side?: FloatingSide;
-  /** Alignment along the chosen `side` for this open. */
-  readonly align?: FloatingAlign;
-  /** Gap (px) along the main axis for this open. */
-  readonly sideOffset?: number;
-  /** Gap (px) along the cross axis for this open. */
-  readonly alignOffset?: number;
-}
-
-/**
- * Abstract base for the trigger-anchored overlay roots. It single-sources the
- * ten shared floating-ui positioning inputs and the five effective computeds
- * over them, so the declarations live in one place instead of being copied per
- * root.
- *
- * Each of the four placement values resolves in the same three steps — the
- * per-open {@link positioningOverride}, then the root's own input, then the
- * scope default read through {@link positioningDefaults}. The six non-placement
- * inputs (`avoidCollisions` / `arrowPadding` / `sticky` / `hideWhenDetached` /
- * `clipUntilPositioned`, plus `alignOffset`'s own library fallback) default from
- * the shared {@link ANCHORED_POSITIONING_DEFAULTS} constant. The fallback is
- * read lazily inside each `computed()` factory — which runs only on first
- * evaluation, after the subclass field initializer has assigned
- * `positioningDefaults` — so the base never touches the still-uninitialized
- * subclass field during construction.
- *
- * Implemented as an `@Directive()`-decorated abstract class because Angular
- * recognises signal inputs only when `input()` calls appear directly in a
- * class-field initializer (NG8110); a factory returning the bundle would not be
- * detected. Inheritance is the supported mechanism for sharing initializer-API
- * declarations across directives — and because TypeScript has single
- * inheritance, the five roots that must also extend `FormUiControlBase` reach
- * the identical block through `AnchoredFormValueControlBase` instead. The two
- * declarations are pinned character-for-character by
- * `anchored-positioning-inputs.spec.ts`.
+ * This class is therefore the **second and last** declaration site of that
+ * block, and it is a verbatim copy on purpose:
+ * `anchored-positioning-inputs.spec.ts` reads both files and fails when the two
+ * regions stop matching character-for-character, so a change to one is a change
+ * to both. Everything the block means is documented on
+ * {@link AnchoredOverlayPositioningBase}; do not restate it here, and do not add
+ * a member to one base without adding it to the other.
  */
 @Directive()
-export abstract class AnchoredOverlayPositioningBase {
+export abstract class AnchoredFormValueControlBase extends FormUiControlBase {
   /**
    * The four positioning seeds this root resolves from its own scoped defaults
    * provider. Concrete roots implement it with

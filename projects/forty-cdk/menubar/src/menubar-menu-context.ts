@@ -2,17 +2,19 @@ import { computed, type OutputEmitterRef, type Signal, signal } from '@angular/c
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  ANCHORED_POSITIONING_DEFAULTS,
   CloseReasonState,
   InitialFocusState,
   createMenuItemList,
   emitVetoableEvent,
   emitVetoableNativeEvent,
-  MENU_POSITIONING_DEFAULTS,
   type MenuActivationModality,
   type ListNavigationAction,
+  type FloatingAlign,
   type ForMenuCloseReason,
   type ForMenuContext,
   type FloatingFallbackAxisSideDirection,
+  type FloatingSide,
   type ForMenuItemHandle,
   type MenuSiblingNavigator,
   type VetoableEvent,
@@ -26,6 +28,8 @@ import type { ForMenubarTriggerHandle } from './menubar-context';
  * the values `[forMenubarTrigger]` seeds its own inputs from.
  */
 export interface MenubarPositioningSeeds {
+  readonly side: FloatingSide;
+  readonly align: FloatingAlign;
   readonly sideOffset: number;
   readonly collisionPadding: number;
   readonly fallbackAxisSideDirection: FloatingFallbackAxisSideDirection;
@@ -115,17 +119,18 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly dismissible: Signal<boolean>;
   readonly returnFocus = signal(true).asReadonly();
   readonly dir: ForMenuContext['dir'];
-  readonly side = computed(() => this.#host.activeTrigger()?.side());
-  readonly align = computed(() => this.#host.activeTrigger()?.align());
+  readonly side = computed(() => this.#host.activeTrigger()?.side() ?? this.#positioning.side);
+  readonly align = computed(() => this.#host.activeTrigger()?.align() ?? this.#positioning.align);
   readonly sideOffset = computed(
     () => this.#host.activeTrigger()?.sideOffset() ?? this.#positioning.sideOffset,
   );
   readonly alignOffset = computed(
-    () => this.#host.activeTrigger()?.alignOffset() ?? MENU_POSITIONING_DEFAULTS.alignOffset,
+    () => this.#host.activeTrigger()?.alignOffset() ?? ANCHORED_POSITIONING_DEFAULTS.alignOffset,
   );
   readonly avoidCollisions = computed(
     () =>
-      this.#host.activeTrigger()?.avoidCollisions() ?? MENU_POSITIONING_DEFAULTS.avoidCollisions,
+      this.#host.activeTrigger()?.avoidCollisions() ??
+      ANCHORED_POSITIONING_DEFAULTS.avoidCollisions,
   );
   readonly fallbackAxisSideDirection = computed(
     () =>
@@ -136,19 +141,20 @@ export class MenubarMenuContext implements ForMenuContext {
     () => this.#host.activeTrigger()?.collisionPadding() ?? this.#positioning.collisionPadding,
   );
   readonly arrowPadding = computed(
-    () => this.#host.activeTrigger()?.arrowPadding() ?? MENU_POSITIONING_DEFAULTS.arrowPadding,
+    () => this.#host.activeTrigger()?.arrowPadding() ?? ANCHORED_POSITIONING_DEFAULTS.arrowPadding,
   );
   readonly sticky = computed(
-    () => this.#host.activeTrigger()?.sticky() ?? MENU_POSITIONING_DEFAULTS.sticky,
+    () => this.#host.activeTrigger()?.sticky() ?? ANCHORED_POSITIONING_DEFAULTS.sticky,
   );
   readonly hideWhenDetached = computed(
     () =>
-      this.#host.activeTrigger()?.hideWhenDetached() ?? MENU_POSITIONING_DEFAULTS.hideWhenDetached,
+      this.#host.activeTrigger()?.hideWhenDetached() ??
+      ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached,
   );
   readonly clipUntilPositioned = computed(
     () =>
       this.#host.activeTrigger()?.clipUntilPositioned() ??
-      MENU_POSITIONING_DEFAULTS.clipUntilPositioned,
+      ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned,
   );
   readonly loop: Signal<boolean>;
   readonly initialFocus = this.#initialFocusState.target;

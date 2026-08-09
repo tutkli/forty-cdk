@@ -582,7 +582,7 @@ When `[totalCount]` is omitted, the directive falls back to `options().length` a
 `[forCombobox]` exposes a `dir: 'ltr' | 'rtl'` input (default `'ltr'`). It drives:
 
 - **Chip keyboard navigation** — ArrowLeft / ArrowRight roles swap so they follow the visual order of the chip cluster, not the DOM order. See _Chip keyboard_ above.
-- **Default popover placement** — `align` defaults to `'start'` in LTR and `'end'` in RTL so the listbox anchors to the visually-leading edge of the input (`side` defaults to `'bottom'` in both). A consumer-provided `[align]` is honoured as-is — no automatic flip — so advanced layouts can pin an alignment regardless of writing direction.
+- **Default popover placement** — `align` defaults to `'start'` in LTR and `'end'` in RTL so the listbox anchors to the visually-leading edge of the input (`side` defaults to `'bottom'` in both). A consumer-provided `[align]` is honoured as-is — no automatic flip — so advanced layouts can pin an alignment regardless of writing direction. `provideForComboboxDefaults({ align })` pins it for a whole scope the same way; its default is `null`, which is what "follow the writing direction" is spelled as there. `side` is scope-defaultable through the same provider, with the plain `'bottom'` fallback — writing direction does not enter into it.
 
 The native `<input>` handles caret movement and BiDi from the document's CSS `direction` already, so there's nothing extra to do for the typed text itself.
 

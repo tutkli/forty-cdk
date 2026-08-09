@@ -145,11 +145,14 @@ export {
   injectFieldWiring,
 } from './field/field-wiring';
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './field/fieldset-context';
+export { AnchoredFormValueControlBase } from './floating/anchored-form-value-control-base';
 export {
   AnchoredOverlayPositioningBase,
+  type AnchoredPositioningOverride,
   type AnchoredPositioningSeedDefaults,
 } from './floating/anchored-overlay-positioning-base';
 export {
+  ANCHORED_POSITIONING_DEFAULTS,
   type AnchoredPositioningContext,
   toFloatingPositioner,
 } from './floating/anchored-positioning-inputs';
@@ -213,7 +216,6 @@ export {
 } from './menu-overlay/menu-opener-registry';
 export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
 export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
-export { MENU_POSITIONING_DEFAULTS } from './menu-overlay/menu-positioning-inputs';
 export { injectModalShell } from './modal-shell/modal-shell';
 export { ModalSurfaceBase } from './modal-shell/modal-surface-base';
 export {

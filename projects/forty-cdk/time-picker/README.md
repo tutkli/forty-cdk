@@ -118,6 +118,35 @@ Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invali
 
 `data-highlighted` marks the keyboard-focused slot (shared vocabulary with the listbox / menu / select primitives). `[forTimePickerContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active) — see [Styling floating content](../../../docs/styling-floating-content.md).
 
+## Scoped defaults
+
+`provideForTimePickerDefaults` configures positioning defaults for an injector subtree — at the application root or in any component's `providers` array. Partial overrides inherit unspecified keys from the parent scope (or the library fallbacks at the root).
+
+| Key                | Library fallback | Meaning                                                                          |
+| ------------------ | ---------------- | -------------------------------------------------------------------------------- |
+| `side`             | `'bottom'`       | Anchor side for time pickers that don't set `side` themselves.                   |
+| `align`            | `'start'`        | Alignment along `side` for time pickers that don't set `align` themselves.       |
+| `sideOffset`       | `4`              | Main-axis gap (px) for time pickers that don't set `sideOffset` themselves.      |
+| `collisionPadding` | `8`              | Collision-middleware padding (px) for time pickers that don't set it themselves. |
+
+Per-instance inputs always win over the scope defaults. All four are no-ops when `modal` is set: `[forTimePickerContent]` mounts the modal shell instead of the anchored positioner, so the surface is never positioned against the trigger and the consumer's own CSS places it.
+
+```ts
+import { provideForTimePickerDefaults } from 'forty-cdk/time-picker';
+
+// Every time picker in the app opens above its trigger, aligned to the end edge
+bootstrapApplication(App, {
+  providers: [provideForTimePickerDefaults({ side: 'top', align: 'end' })],
+});
+
+// component-level override layers on top, per key
+@Component({
+  providers: [provideForTimePickerDefaults({ sideOffset: 0 })],
+  ...
+})
+class CompactToolbar {}
+```
+
 ## Anchoring to a field box
 
 By default the listbox is positioned against `[forTimePickerTrigger]`. When the trigger lives inside a decorated field box — padding, a prefix icon, a clear / chevron button — anchoring to the inner button makes the panel offset from the visible field's edge. Wrap the field box in `[forTimePickerAnchor]` so floating-ui positions (and sizes, via `--for-floating-anchor-width`) the listbox against the box instead:

@@ -157,7 +157,7 @@ The library is styleless: presence in the DOM is the consumer's job (`@if (open(
 | `formatOptions`     | `input<Intl.DateTimeFormatOptions>`              | Options for the text rendered by `[forDatePickerValue]`.<br>**Default:** `{ year: 'numeric', month: 'long', day: 'numeric' }`                                             |
 | `locale`            | `input<string \| null>`                          | BCP 47 locale for the text rendered by `[forDatePickerValue]`. Not forwarded to the projected calendar — bind its `[locale]` too.<br>**Default:** `null` → runtime locale |
 | `placeholder`       | `input<string>`                                  | Fallback text for `[forDatePickerValue]` when empty.<br>**Default:** `''`                                                                                                 |
-| `side` / `align`    | `input`                                          | Anchored placement (popover mode only).<br>**Default:** `'bottom'` / `'start'`                                                                                            |
+| `side` / `align`    | `input`                                          | Anchored placement (popover mode only). Defaults from `provideForDatePickerDefaults` / `provideForDateRangePickerDefaults`.<br>**Default:** `'bottom'` / `'start'`        |
 | `dir`               | `input<'ltr' \| 'rtl' \| null>`                  | Writing direction.<br>**Default:** `null` resolves the ambient direction; reflected to the host `dir`                                                                     |
 
 Plus the shared `FormUiControl` inputs from the base (`disabled`, `readonly`, `required`, `invalid`, `pending`, `dirty`, `name`, `errors`, and the `touched` model) and the floating tunables (`sideOffset`, `alignOffset`, `avoidCollisions`, `collisionPadding`, `sticky`, `hideWhenDetached`).
@@ -322,7 +322,7 @@ readonly booking = form(this.model, (p) => required(p.stay));
 - **Native submission.** When `name` is set, two hidden inputs `<name>-start` / `<name>-end` mirror the committed endpoints as ISO `YYYY-MM-DD` for native `<form>` posts.
 - **Bounds naming.** `minDate` / `maxDate` (not `min` / `max`) for the same reason as `ForDatePicker` — and additionally because `FormUiControl.min` / `max` are typed `NonNullable<TValue>` (the range object itself), which is meaningless as a bound.
 
-Defaults are configured with `provideForDateRangePickerDefaults` (`sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
+Defaults are configured with `provideForDateRangePickerDefaults` (`side` / `align` / `sideOffset` / `collisionPadding`), and both wrapper patterns work via the exported `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_INPUTS` / `FOR_DATE_RANGE_PICKER_HOST_DIRECTIVE_OUTPUTS` tuples — see [Wrapping form primitives](../../../docs/wrapping-form-primitives.md).
 
 ## Keyboard
 

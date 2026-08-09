@@ -1,6 +1,11 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant date range pickers in the surrounding
@@ -8,7 +13,17 @@ import { createDefaults } from 'forty-cdk/core';
  * the application root or in any component's `providers` array; partial
  * overrides merge with the parent scope.
  */
-export interface ForDateRangePickerDefaults {
+export interface ForDateRangePickerDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side the surface is anchored to for pickers that don't override `side`
+   * locally. Ignored in `modal` mode. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for pickers that don't override `align`
+   * locally. Ignored in `modal` mode. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Distance (px) between the trigger and the floating surface along the
    * resolved `side` axis. Ignored in `modal` mode (the dialog is centered, not
@@ -30,6 +45,8 @@ export interface ForDateRangePickerDefaults {
  * public entry.
  */
 export const FOR_DATE_RANGE_PICKER_FALLBACK_DEFAULTS: ForDateRangePickerDefaults = {
+  side: 'bottom',
+  align: 'start',
   sideOffset: 8,
   collisionPadding: 8,
 };

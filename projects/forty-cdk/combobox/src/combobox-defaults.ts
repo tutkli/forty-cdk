@@ -1,6 +1,6 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults } from 'forty-cdk/core';
+import { createDefaults, type FloatingAlign, type FloatingSide } from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant comboboxes in the surrounding injector
@@ -9,6 +9,19 @@ import { createDefaults } from 'forty-cdk/core';
  * overrides merge with the parent scope.
  */
 export interface ForComboboxDefaults {
+  /**
+   * Side the listbox is anchored to for comboboxes that don't override `side`
+   * locally. Library fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for comboboxes that don't override
+   * `align` locally. `null` (the library fallback) follows the writing
+   * direction — `'start'` in LTR, `'end'` in RTL, so the listbox stays anchored
+   * to the input's leading edge. Set a value here to pin one alignment for the
+   * whole scope regardless of direction.
+   */
+  align: FloatingAlign | null;
   /**
    * Distance (px) between the combobox input/trigger and the floating
    * content along the resolved `side` axis, for comboboxes that don't
@@ -50,6 +63,8 @@ export interface ForComboboxDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_COMBOBOX_FALLBACK_DEFAULTS: ForComboboxDefaults = {
+  side: 'bottom',
+  align: null,
   sideOffset: 4,
   collisionPadding: 8,
   chipsAriaLabel: 'Selected items',

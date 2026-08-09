@@ -12,6 +12,8 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
+  AnchoredFormValueControlBase,
+  type AnchoredPositioningSeedDefaults,
   CloseReasonState,
   Collection,
   createPointerSuppression,
@@ -19,10 +21,7 @@ import {
   ElementRegistry,
   emitVetoableEvent,
   emitVetoableNativeEvent,
-  type FloatingAlign,
-  type FloatingSide,
   formatFortyMessage,
-  FormUiControlBase,
   InitialFocusState,
   injectHiddenInput,
   injectTextDirection,
@@ -95,7 +94,7 @@ import { VirtualizedNavigator } from './combobox-virtualized-navigator';
   providers: [{ provide: FOR_COMBOBOX_CONTEXT, useExisting: ForCombobox }],
 })
 export class ForCombobox<T = string>
-  extends FormUiControlBase
+  extends AnchoredFormValueControlBase
   implements FormValueControl<readonly T[]>, ForComboboxContext<T>
 {
   readonly #registry = inject(ElementRegistry);
@@ -103,6 +102,22 @@ export class ForCombobox<T = string>
   readonly #items = new Collection<ForComboboxOptionHandle<T>>();
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
   readonly #actions = new Collection<ForComboboxActionHandle>();
+
+  /**
+   * The scope's `align` is nullable — `null` means "follow the writing
+   * direction" — so the seed the base reads resolves it here, where `dir()` is
+   * available. Every other seed passes through unchanged.
+   */
+  readonly #positioningDefaults = computed<AnchoredPositioningSeedDefaults>(() => ({
+    side: this.#defaults.side,
+    align: this.#defaults.align ?? (this.dir() === 'rtl' ? 'end' : 'start'),
+    sideOffset: this.#defaults.sideOffset,
+    collisionPadding: this.#defaults.collisionPadding,
+  }));
+
+  protected get positioningDefaults(): AnchoredPositioningSeedDefaults {
+    return this.#positioningDefaults();
+  }
 
   /**
    * Two-way bindable. Visible input text. The `model()` change emitter
@@ -224,56 +239,6 @@ export class ForCombobox<T = string>
   readonly _dirInput = input<WritingDirection | null>(null, { alias: 'dir' });
   readonly dir = injectTextDirection(this._dirInput);
 
-  /**
-   * Side the listbox is anchored to. Defaults to `'bottom'`. Pair with
-   * `align` for the full positioning API.
-   */
-  readonly side = input<FloatingSide | undefined>('bottom');
-
-  /**
-   * Alignment along the chosen `side`. When unset, defaults to `'start'`
-   * in LTR and `'end'` in RTL (per `dir`). Set explicitly to pin an
-   * alignment regardless of writing direction.
-   *
-   * The input is aliased to `align`; consumers bind `[align]="..."` and
-   * read the effective value via the public `align` computed below.
-   */
-  readonly _alignInput = input<FloatingAlign | undefined>(undefined, { alias: 'align' });
-  readonly align = computed<FloatingAlign>(
-    () => this._alignInput() ?? (this.dir() === 'rtl' ? 'end' : 'start'),
-  );
-
-  /** Gap (px) between input and listbox along the main axis. Default `4`. */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
-
-  /** When `true` (default), `flip` and `shift` keep the listbox inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
-
-  /** Padding (px) applied uniformly to flip / shift / size. Default `8`. */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
-
-  /** When `true`, sets `data-detached=""` while the input is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame (the
-   * surface may flash briefly at the unresolved position while positioning
-   * computes).
-   */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
   /**
    * Whether arrow navigation wraps past the first / last enabled option.
    */

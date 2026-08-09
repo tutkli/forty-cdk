@@ -7,26 +7,23 @@ import {
   inject,
   input,
   model,
-  numberAttribute,
   output,
   PLATFORM_ID,
 } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  type AnchoredPositioningSeedDefaults,
   attachPointerGrace,
   buildSubmenuGracePolygon,
   createDebouncedAction,
   createMenuOverlay,
   emitVetoableEvent,
-  type FloatingAlign,
   type FloatingFallbackAxisSideDirection,
-  type FloatingSide,
   FOR_MENU_CONTEXT,
   type ForMenuCloseReason,
   type ForMenuContext,
   isHoverCapablePointer,
-  MENU_POSITIONING_DEFAULTS,
   MenuOverlayHost,
   orphanContextError,
   type Point,
@@ -96,6 +93,23 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   readonly #defaults = inject(FOR_MENU_DEFAULTS);
   readonly #isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
+  /**
+   * `ForMenuDefaults.side` is shared with the `[forMenu]` root, whose own
+   * fallback is `'bottom'`, so `null` is what "each root keeps its own" looks
+   * like in the scope. Here that resolves against the writing direction, so a
+   * submenu opens away from its parent item.
+   */
+  readonly #positioningDefaults = computed<AnchoredPositioningSeedDefaults>(() => ({
+    side: this.#defaults.side ?? (this.dir() === 'rtl' ? 'left' : 'right'),
+    align: this.#defaults.align,
+    sideOffset: this.#defaults.sideOffset,
+    collisionPadding: this.#defaults.collisionPadding,
+  }));
+
+  protected get positioningDefaults(): AnchoredPositioningSeedDefaults {
+    return this.#positioningDefaults();
+  }
+
   /** The enclosing menu — required (orphan throws). */
   readonly parentMenu: ForMenuContext;
 
@@ -119,46 +133,6 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
   readonly dir = computed<WritingDirection>(() => this._dirInput() ?? this.parentMenu.dir());
 
   /**
-   * Side the submenu opens on. When unset, defaults to `'right'` in LTR
-   * and `'left'` in RTL (per `dir`). Set explicitly to pin a side
-   * regardless of writing direction.
-   *
-   * The input is aliased to `side`; consumers bind `[side]="..."` and read
-   * the effective value via the public `side` computed below.
-   */
-  readonly _sideInput = input<FloatingSide | undefined>(undefined, { alias: 'side' });
-  readonly side = computed<FloatingSide>(
-    () => this._sideInput() ?? (this.dir() === 'rtl' ? 'left' : 'right'),
-  );
-
-  /**
-   * Gap (px) along the main axis. Defaults to `0` from `provideForMenuDefaults`
-   * — a submenu sits flush against its parent item. Now read from the defaults
-   * provider (like `[forDropdownMenu]` / `[forContextMenu]`) rather than
-   * hardcoded, so it can't drift.
-   */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /**
-   * Alignment along the chosen `side`. Defaults to `'start'`.
-   *
-   * Shares the single `MENU_POSITIONING_DEFAULTS` source with the two
-   * top-level roots; `menu-positioning-inputs.spec.ts` guards the three roots
-   * against drift.
-   */
-  readonly align = input<FloatingAlign | undefined>(MENU_POSITIONING_DEFAULTS.align);
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(MENU_POSITIONING_DEFAULTS.alignOffset, {
-    transform: numberAttribute,
-  });
-
-  /** When `true` (default), `flip` and `shift` keep the submenu inside the viewport. */
-  readonly avoidCollisions = input(MENU_POSITIONING_DEFAULTS.avoidCollisions, {
-    transform: booleanAttribute,
-  });
-
-  /**
    * Direction `flip` falls back to on the perpendicular axis when both sides of
    * the preferred axis overflow. `'none'` (default) keeps only the opposite
    * same-axis placement; `'start'` / `'end'` let the submenu drop to a vertical
@@ -168,42 +142,11 @@ export class ForMenuSub extends MenuOverlayHost implements ForMenuContext {
    *
    * The default is read from `provideForMenuDefaults` for the surrounding scope,
    * since dropping to a vertical side is a design-system-wide
-   * viewport-degradation policy rather than a per-submenu one;
-   * `menu-positioning-inputs.spec.ts` guards the roots against drift.
+   * viewport-degradation policy rather than a per-submenu one.
    */
   readonly fallbackAxisSideDirection = input<FloatingFallbackAxisSideDirection>(
     this.#defaults.fallbackAxisSideDirection,
   );
-
-  /**
-   * Padding (px) applied uniformly to flip / shift / size. Defaults to `8`
-   * from `provideForMenuDefaults` for the surrounding scope.
-   */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(MENU_POSITIONING_DEFAULTS.arrowPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>(MENU_POSITIONING_DEFAULTS.sticky);
-
-  /** When `true`, sets `data-detached=""` while the parent item is scrolled off-screen. */
-  readonly hideWhenDetached = input(MENU_POSITIONING_DEFAULTS.hideWhenDetached, {
-    transform: booleanAttribute,
-  });
-
-  /**
-   * When `true` (default), the menu is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame.
-   */
-  readonly clipUntilPositioned = input(MENU_POSITIONING_DEFAULTS.clipUntilPositioned, {
-    transform: booleanAttribute,
-  });
 
   /**
    * When `true` (default), arrow-key navigation wraps from the last enabled

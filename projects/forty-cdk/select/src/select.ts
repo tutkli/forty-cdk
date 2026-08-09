@@ -15,10 +15,8 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   accessibleTextContent,
-  type FloatingAlign,
-  type FloatingSide,
+  AnchoredFormValueControlBase,
   formatFortyMessage,
-  FormUiControlBase,
   injectHiddenInput,
   IdGenerator,
   isRangeSelectShortcut,
@@ -92,13 +90,13 @@ import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
   providers: [{ provide: FOR_SELECT_CONTEXT, useExisting: ForSelect }],
 })
 export class ForSelect<T = string>
-  extends FormUiControlBase
+  extends AnchoredFormValueControlBase
   implements FormValueControl<readonly T[]>, ForSelectContext<T>
 {
   readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
-  readonly #defaults = inject(FOR_SELECT_DEFAULTS);
+  protected readonly positioningDefaults = inject(FOR_SELECT_DEFAULTS);
 
   /** The `[forSelect]` root element (see `SelectPieceContext.host`). */
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
@@ -213,56 +211,6 @@ export class ForSelect<T = string>
    *   this mode; only `collisionPadding` is honored.
    */
   readonly position = input<'popper' | 'item-aligned'>('popper');
-
-  /**
-   * Side the listbox is anchored to. Defaults to `'bottom'`. Pair with
-   * `align` for the full positioning API. Ignored when
-   * `position="item-aligned"`.
-   */
-  readonly side = input<FloatingSide | undefined>('bottom');
-
-  /** Alignment along the chosen `side`. Defaults to `'start'`. */
-  readonly align = input<FloatingAlign | undefined>('start');
-
-  /**
-   * Gap (px) between trigger and listbox along the main axis. Default `4`.
-   * The default is read from
-   * `provideForSelectDefaults` for the surrounding scope.
-   */
-  readonly sideOffset = input(this.#defaults.sideOffset, { transform: numberAttribute });
-
-  /** Gap (px) along the cross axis. Default `0`. */
-  readonly alignOffset = input(0, { transform: numberAttribute });
-
-  /** When `true` (default), `flip` and `shift` keep the listbox inside the viewport. */
-  readonly avoidCollisions = input(true, { transform: booleanAttribute });
-
-  /**
-   * Padding (px) applied uniformly to flip / shift / size. Default `8`.
-   * The default is read from `provideForSelectDefaults` for the surrounding
-   * scope.
-   */
-  readonly collisionPadding = input(this.#defaults.collisionPadding, {
-    transform: numberAttribute,
-  });
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(0, { transform: numberAttribute });
-
-  /** Stickiness behaviour for `shift`. Default `'partial'`. */
-  readonly sticky = input<'partial' | 'always' | false>('partial');
-
-  /** When `true`, sets `data-detached=""` while the trigger is scrolled off-screen. */
-  readonly hideWhenDetached = input(false, { transform: booleanAttribute });
-
-  /**
-   * When `true` (default), the content is clipped until floating-ui resolves
-   * its first position, preventing a flash at the viewport corner. Set to
-   * `false` so a dramatic `animate.enter` plays from its first frame (the
-   * surface may flash briefly at the unresolved position while positioning
-   * computes).
-   */
-  readonly clipUntilPositioned = input(true, { transform: booleanAttribute });
 
   /** Whether arrow navigation wraps past the first / last enabled option. */
   readonly loop = input(true, { transform: booleanAttribute });

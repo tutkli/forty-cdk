@@ -1,6 +1,11 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
+import {
+  createDefaults,
+  type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant menus in the surrounding injector
@@ -18,6 +23,19 @@ import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cd
  * Click / Enter / Space / ArrowRight semantics are unaffected by these values.
  */
 export interface ForMenuDefaults {
+  /**
+   * Side the menu is anchored to, for both `[forMenuSub]` and the `[forMenu]`
+   * root. `null` (the library fallback) keeps each root's own: `'bottom'` for
+   * `[forMenu]`, and the writing-direction side for `[forMenuSub]` (`'right'`
+   * in LTR, `'left'` in RTL, so a submenu opens away from its parent). Set a
+   * value here to pin both roots in the scope to one side.
+   */
+  side: FloatingSide | null;
+  /**
+   * Alignment along the chosen `side`, for both `[forMenuSub]` and the
+   * `[forMenu]` root. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Delay (ms) before a hovered `[forMenuSubTrigger]` opens its submenu.
    * A short intent delay avoids opening every submenu the pointer merely
@@ -67,6 +85,8 @@ export interface ForMenuDefaults {
  * defaults contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_MENU_FALLBACK_DEFAULTS: ForMenuDefaults = {
+  side: null,
+  align: 'start',
   subMenuOpenDelay: 100,
   subMenuCloseDelay: 100,
   subMenuPointerGraceDuration: 300,

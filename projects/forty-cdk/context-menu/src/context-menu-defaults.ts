@@ -1,6 +1,12 @@
 import { type Provider } from '@angular/core';
 
-import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cdk/core';
+import {
+  type AnchoredPositioningSeedDefaults,
+  createDefaults,
+  type FloatingAlign,
+  type FloatingFallbackAxisSideDirection,
+  type FloatingSide,
+} from 'forty-cdk/core';
 
 /**
  * Defaults inherited by descendant context menus in the surrounding
@@ -8,7 +14,18 @@ import { createDefaults, type FloatingFallbackAxisSideDirection } from 'forty-cd
  * at the application root or in any component's `providers` array; partial
  * overrides merge with the parent scope.
  */
-export interface ForContextMenuDefaults {
+export interface ForContextMenuDefaults extends AnchoredPositioningSeedDefaults {
+  /**
+   * Side the menu is anchored to, relative to the virtual anchor at the
+   * pointer, for context menus that don't override `side` locally. Library
+   * fallback `'bottom'`.
+   */
+  side: FloatingSide;
+  /**
+   * Alignment along the chosen `side` for context menus that don't override
+   * `align` locally. Library fallback `'start'`.
+   */
+  align: FloatingAlign;
   /**
    * Distance (px) between the virtual anchor (pointer position) and the
    * floating content along the resolved `side` axis. Defaults to `0`
@@ -37,6 +54,8 @@ export interface ForContextMenuDefaults {
  * contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_CONTEXT_MENU_FALLBACK_DEFAULTS: ForContextMenuDefaults = {
+  side: 'bottom',
+  align: 'start',
   sideOffset: 0,
   collisionPadding: 8,
   fallbackAxisSideDirection: 'none',
