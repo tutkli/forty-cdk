@@ -32,6 +32,44 @@ async function waitForOverflowMeasured(page: Page): Promise<void> {
     .toBeGreaterThan(0);
 }
 
+/**
+ * The vertical thumb's box once it has both moved off `fromY` and stopped
+ * moving — the precondition for any claim about where a track press left it.
+ *
+ * `scrollToPosition` writes `viewport.scrollTop` synchronously from the
+ * pointer handler, but the thumb follows three steps later: the browser fires
+ * `scroll`, the handler updates `scrollPosition`, the `thumbOffset` computed
+ * re-derives, and the zoneless render flushes the `translateY` host binding.
+ * A `scrollTopOf` poll therefore clears while the thumb is still painted at
+ * its previous offset, which is how a geometry claim gated on `scrollTop`
+ * read the wrong box under CI contention ([#1750](https://github.com/tutkli/forty-cdk/issues/1750)).
+ *
+ * Both halves of the wait are load-bearing: "moved" alone can catch the thumb
+ * mid-flight, and "two equal reads" alone is satisfied by two reads that both
+ * land before the move starts. Neither weakens the assertion that follows — a
+ * genuine positioning regression settles at the wrong offset and still fails.
+ */
+async function settledThumbBox(
+  page: Page,
+  fromY: number,
+): Promise<{ x: number; y: number; width: number; height: number }> {
+  let previousY: number | null = null;
+  await expect
+    .poll(
+      async () => {
+        const next = await el(page, 'thumb-vertical').boundingBox();
+        if (!next) return false;
+        const moved = next.y !== fromY;
+        const stable = previousY !== null && Math.abs(next.y - previousY) < 0.5;
+        previousY = next.y;
+        return moved && stable;
+      },
+      { message: 'thumb-vertical never settled at an offset away from where it started' },
+    )
+    .toBe(true);
+  return (await el(page, 'thumb-vertical').boundingBox())!;
+}
+
 test.describe('ScrollArea (geometry + drag)', () => {
   test('vertical thumb is visible when content overflows; scrollbar is in the visible state', async ({
     page,
@@ -509,6 +547,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await waitForOverflowMeasured(page);
 
       const at = await trackPoint(page, 'scrollbar-vertical', 185, 'y');
+      const restY = (await el(page, 'thumb-vertical').boundingBox())!.y;
       await page.mouse.move(at.x, at.y);
       await page.mouse.down();
 
@@ -523,7 +562,7 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await page.waitForTimeout(400);
       expect(await scrollTopOf(page)).toBe(afterRepeat);
 
-      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      const thumbBox = await settledThumbBox(page, restY);
       expect(thumbBox.y).toBeLessThanOrEqual(at.y + 2);
       expect(thumbBox.y + thumbBox.height).toBeGreaterThanOrEqual(at.y - 2);
 
@@ -547,11 +586,10 @@ test.describe('ScrollArea (geometry + drag)', () => {
       await waitForOverflowMeasured(page);
 
       const at = await trackPoint(page, 'scrollbar-vertical', 150, 'y');
+      const restY = (await el(page, 'thumb-vertical').boundingBox())!.y;
       await pressAndRelease(page, at);
 
-      await expect.poll(() => scrollTopOf(page)).toBeGreaterThan(0);
-
-      const thumbBox = (await el(page, 'thumb-vertical').boundingBox())!;
+      const thumbBox = await settledThumbBox(page, restY);
       const centre = thumbBox.y + thumbBox.height / 2;
       expect(centre).toBeGreaterThanOrEqual(at.y - 4);
       expect(centre).toBeLessThanOrEqual(at.y + 4);
