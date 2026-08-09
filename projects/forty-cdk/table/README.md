@@ -164,7 +164,7 @@ The root emits `aria-rowcount` and `aria-colcount`. Per ARIA 1.2 and the APG Dat
 
 - **`[level]`** — 1-based tree depth, reflected as `aria-level`. Default `1`.
 - **`[expandable]`** — marks a row as a parent; emits `aria-expanded="true"|"false"` and `data-state="open"|"closed"`. Leaf rows emit neither.
-- **`[(expanded)]`** — two-way bindable array of open parent-row values (keyed by row `[value]`). Use `compareWith` for object values.
+- **`[(expanded)]`** — two-way bindable `readonly T[]` of open parent-row values (keyed by row `[value]`), the same shape `ForTree.expanded` uses for its open nodes. Use `compareWith` for object values.
 - **`aria-posinset` / `aria-setsize`** — auto-recomputed from the rendered flat list on every expand/collapse.
 - **ArrowRight** — expands a collapsed parent (RTL: collapses); if already expanded or the row is a leaf, falls through to grid cell navigation.
 - **ArrowLeft** — collapses an expanded parent (RTL: expands); otherwise navigates left.
@@ -193,9 +193,9 @@ The root emits `aria-rowcount` and `aria-colcount`. Per ARIA 1.2 and the APG Dat
 ```
 
 ```ts
-readonly expanded = signal<readonly unknown[]>([]);
+readonly expanded = signal<readonly string[]>([]);
 readonly visibleRows = computed(() => {
-  const openIds = this.expanded() as readonly string[];
+  const openIds = this.expanded();
   return this.allRows.filter((row) => row.parentId === null || openIds.includes(row.parentId));
 });
 ```

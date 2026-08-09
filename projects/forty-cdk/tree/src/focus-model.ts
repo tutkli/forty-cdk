@@ -16,9 +16,9 @@ import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
  * regardless of whether focus rides the DOM (roving) or an
  * `aria-activedescendant` pointer (virtualized).
  */
-export interface TreeFocusEntry {
+export interface TreeFocusEntry<T = unknown> {
   /** Stable node value. */
-  readonly value: string;
+  readonly value: T;
   /** Whether the node is an expandable parent. */
   readonly expandable: boolean;
   /** Effective disabled state. */
@@ -35,11 +35,11 @@ export interface TreeFocusEntry {
  * - {@link ActiveDescendantFocusModel} — focus stays on the container and an
  *   `aria-activedescendant` pointer tracks the active node (virtualized path).
  */
-export interface FocusModel {
+export interface FocusModel<T = unknown> {
   /** Move focus to a specific node. */
-  focusTarget(handle: ForTreeItemHandle): void;
+  focusTarget(handle: ForTreeItemHandle<T>): void;
   /** Resolve the currently-focused node, or `null` when nothing is focused. */
-  current(): TreeFocusEntry | null;
+  current(): TreeFocusEntry<T> | null;
   /** Move focus to the next / previous / first / last enabled node. */
   navigate(action: ListNavigationAction): void;
   /** Move focus to the first child of the current node (an open parent). */
@@ -47,23 +47,23 @@ export interface FocusModel {
   /** Move focus to the current node's parent. */
   moveToParent(): void;
   /** Move focus to a typeahead match. */
-  typeaheadTo(handle: ForTreeItemHandle): void;
+  typeaheadTo(handle: ForTreeItemHandle<T>): void;
 }
 
 /** Wiring for {@link RovingFocusModel}. */
-export interface RovingFocusModelDeps {
+export interface RovingFocusModelDeps<T = unknown> {
   /** The shared roving-tabindex tracker driving the single tab stop. */
   readonly roving: RovingTabindex;
   /** Flattened visible nodes (each with its resolved parent host). */
-  readonly visibleNodes: Signal<readonly ForTreeVisibleNode[]>;
+  readonly visibleNodes: Signal<readonly ForTreeVisibleNode<T>[]>;
   /** Visible node handles in flattened order. */
-  readonly visibleHandles: Signal<readonly ForTreeItemHandle[]>;
+  readonly visibleHandles: Signal<readonly ForTreeItemHandle<T>[]>;
   /**
    * Selection-follows-focus hook. Called with the destination value after a
    * `navigate` when single-mode selection should track focus; a no-op when the
    * tree is multi-select or the option is off.
    */
-  readonly selectOnFocus: (value: string) => void;
+  readonly selectOnFocus: (value: T) => void;
 }
 
 /**
@@ -73,18 +73,18 @@ export interface RovingFocusModelDeps {
  *
  * Internal — not re-exported from `tree/index.ts` or `public-api.ts`.
  */
-export class RovingFocusModel implements FocusModel {
-  readonly #deps: RovingFocusModelDeps;
+export class RovingFocusModel<T = unknown> implements FocusModel<T> {
+  readonly #deps: RovingFocusModelDeps<T>;
 
-  constructor(deps: RovingFocusModelDeps) {
+  constructor(deps: RovingFocusModelDeps<T>) {
     this.#deps = deps;
   }
 
-  focusTarget(handle: ForTreeItemHandle): void {
+  focusTarget(handle: ForTreeItemHandle<T>): void {
     this.#deps.roving.focusActive(handle.host);
   }
 
-  current(): TreeFocusEntry | null {
+  current(): TreeFocusEntry<T> | null {
     const entry = this.#currentNode();
     if (!entry) {
       return null;
@@ -134,11 +134,11 @@ export class RovingFocusModel implements FocusModel {
     }
   }
 
-  typeaheadTo(handle: ForTreeItemHandle): void {
+  typeaheadTo(handle: ForTreeItemHandle<T>): void {
     this.#deps.roving.focusActive(handle.host);
   }
 
-  #currentNode(): ForTreeVisibleNode | null {
+  #currentNode(): ForTreeVisibleNode<T> | null {
     const active = this.#deps.roving.active();
     if (active === null) {
       return null;
@@ -148,18 +148,18 @@ export class RovingFocusModel implements FocusModel {
 }
 
 /** Position-snapshot entry carried by the tree's virtualized navigation engine. */
-interface PositionEntry {
+interface PositionEntry<T> {
   readonly id: string;
   readonly disabled: boolean;
   readonly level: number;
   readonly expandable: boolean;
-  readonly value: string;
+  readonly value: T;
 }
 
 /** Wiring for {@link ActiveDescendantFocusModel}. */
-export interface ActiveDescendantFocusModelDeps {
+export interface ActiveDescendantFocusModelDeps<T = unknown> {
   /** Live registered tree items — the rendered window when virtualizing. */
-  readonly items: Signal<readonly ForTreeItemHandle[]>;
+  readonly items: Signal<readonly ForTreeItemHandle<T>[]>;
   /** Total node count for the virtualized path. */
   readonly totalCount: Signal<number | undefined>;
   /** Inclusive-exclusive range of currently rendered nodes when virtualizing. */
@@ -196,12 +196,12 @@ export interface ActiveDescendantFocusModelDeps {
  *
  * Internal — not re-exported from `tree/index.ts` or `public-api.ts`.
  */
-export class ActiveDescendantFocusModel implements FocusModel {
-  readonly #deps: ActiveDescendantFocusModelDeps;
+export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
+  readonly #deps: ActiveDescendantFocusModelDeps<T>;
 
-  readonly #core: VirtualizedNavigator<ForTreeItemHandle, PositionEntry>;
+  readonly #core: VirtualizedNavigator<ForTreeItemHandle<T>, PositionEntry<T>>;
 
-  constructor(deps: ActiveDescendantFocusModelDeps) {
+  constructor(deps: ActiveDescendantFocusModelDeps<T>) {
     this.#deps = deps;
     this.#core = new VirtualizedNavigator(
       { ...deps, loop: () => false, dataVersion: deps.dataVersion },
@@ -240,11 +240,11 @@ export class ActiveDescendantFocusModel implements FocusModel {
     this.#core.invalidateSnapshot();
   }
 
-  focusTarget(handle: ForTreeItemHandle): void {
+  focusTarget(handle: ForTreeItemHandle<T>): void {
     this.#deps.setActiveId(handle.id());
   }
 
-  current(): TreeFocusEntry | null {
+  current(): TreeFocusEntry<T> | null {
     const cur = this.#currentEntry();
     if (!cur) {
       return null;
@@ -289,7 +289,7 @@ export class ActiveDescendantFocusModel implements FocusModel {
     }
   }
 
-  typeaheadTo(handle: ForTreeItemHandle): void {
+  typeaheadTo(handle: ForTreeItemHandle<T>): void {
     this.#deps.setActiveId(handle.id());
     handle.host.scrollIntoView?.({ block: 'nearest' });
   }
@@ -301,7 +301,7 @@ export class ActiveDescendantFocusModel implements FocusModel {
    */
   #currentEntry(): {
     pos: number;
-    value: string;
+    value: T;
     level: number;
     expandable: boolean;
     disabled: boolean;

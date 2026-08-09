@@ -1,18 +1,20 @@
 import { levelFromPointerX, resolveTreeDrop, type TreeDropRow } from './tree-drop-resolver';
 
+const byIdentity = (a: unknown, b: unknown): boolean => a === b;
+
 function row(value: string, level: number, top: number, left = level * 16): TreeDropRow {
   return { value, level, left, top, bottom: top + 32 };
 }
 
 describe('resolveTreeDrop', () => {
   it('returns root index 0 for empty rows', () => {
-    const result = resolveTreeDrop([], 0, 1);
+    const result = resolveTreeDrop([], 0, 1, byIdentity);
     expect(result).toEqual({ parentValue: null, index: 0, level: 1, siblingCount: 0 });
   });
 
   it('drops between two same-level siblings (reorder)', () => {
     const rows: TreeDropRow[] = [row('a', 1, 0), row('b', 1, 32), row('c', 1, 64)];
-    const result = resolveTreeDrop(rows, 1, 1);
+    const result = resolveTreeDrop(rows, 1, 1, byIdentity);
     expect(result.parentValue).toBeNull();
     expect(result.level).toBe(1);
     expect(result.index).toBe(1);
@@ -20,7 +22,7 @@ describe('resolveTreeDrop', () => {
 
   it('drops after the last row at root level', () => {
     const rows: TreeDropRow[] = [row('a', 1, 0), row('b', 1, 32)];
-    const result = resolveTreeDrop(rows, 2, 1);
+    const result = resolveTreeDrop(rows, 2, 1, byIdentity);
     expect(result.parentValue).toBeNull();
     expect(result.level).toBe(1);
     expect(result.index).toBe(2);
@@ -28,7 +30,7 @@ describe('resolveTreeDrop', () => {
 
   it('drops at gap 0 (before all rows)', () => {
     const rows: TreeDropRow[] = [row('a', 1, 0), row('b', 1, 32)];
-    const result = resolveTreeDrop(rows, 0, 1);
+    const result = resolveTreeDrop(rows, 0, 1, byIdentity);
     expect(result.parentValue).toBeNull();
     expect(result.level).toBe(1);
     expect(result.index).toBe(0);
@@ -36,7 +38,7 @@ describe('resolveTreeDrop', () => {
 
   it('re-parents into a parent at child depth', () => {
     const rows: TreeDropRow[] = [row('parent', 1, 0), row('sibling', 1, 32)];
-    const result = resolveTreeDrop(rows, 1, 2);
+    const result = resolveTreeDrop(rows, 1, 2, byIdentity);
     expect(result.parentValue).toBe('parent');
     expect(result.level).toBe(2);
     expect(result.index).toBe(0);
@@ -48,7 +50,7 @@ describe('resolveTreeDrop', () => {
       row('existing-child', 2, 32),
       row('sibling', 1, 64),
     ];
-    const result = resolveTreeDrop(rows, 2, 2);
+    const result = resolveTreeDrop(rows, 2, 2, byIdentity);
     expect(result.parentValue).toBe('parent');
     expect(result.level).toBe(2);
     expect(result.index).toBe(1);
@@ -60,7 +62,7 @@ describe('resolveTreeDrop', () => {
       row('child', 2, 32),
       row('grandchild', 3, 64),
     ];
-    const result = resolveTreeDrop(rows, 3, 1);
+    const result = resolveTreeDrop(rows, 3, 1, byIdentity);
     expect(result.parentValue).toBeNull();
     expect(result.level).toBe(1);
     expect(result.index).toBe(1);
@@ -68,7 +70,7 @@ describe('resolveTreeDrop', () => {
 
   it('clamps up to the following row level (cannot be shallower than next)', () => {
     const rows: TreeDropRow[] = [row('parent', 1, 0), row('child', 2, 32)];
-    const result = resolveTreeDrop(rows, 1, 1);
+    const result = resolveTreeDrop(rows, 1, 1, byIdentity);
     expect(result.parentValue).toBe('parent');
     expect(result.level).toBe(2);
     expect(result.index).toBe(0);
@@ -76,13 +78,13 @@ describe('resolveTreeDrop', () => {
 
   it('clamps to maxLevel when desired level is too deep', () => {
     const rows: TreeDropRow[] = [row('a', 1, 0), row('b', 1, 32)];
-    const result = resolveTreeDrop(rows, 1, 5);
+    const result = resolveTreeDrop(rows, 1, 5, byIdentity);
     expect(result.level).toBe(2);
   });
 
   it('resolves shallow level (out to root / shallower parent) when desired is 1', () => {
     const rows: TreeDropRow[] = [row('parent', 1, 0), row('child', 2, 32), row('sibling', 1, 64)];
-    const result = resolveTreeDrop(rows, 2, 1);
+    const result = resolveTreeDrop(rows, 2, 1, byIdentity);
     expect(result.parentValue).toBeNull();
     expect(result.level).toBe(1);
     expect(result.index).toBe(1);
@@ -90,7 +92,7 @@ describe('resolveTreeDrop', () => {
 
   it('correctly counts index among siblings under same parent', () => {
     const rows: TreeDropRow[] = [row('parent', 1, 0), row('child1', 2, 32), row('child2', 2, 64)];
-    const result = resolveTreeDrop(rows, 3, 2);
+    const result = resolveTreeDrop(rows, 3, 2, byIdentity);
     expect(result.parentValue).toBe('parent');
     expect(result.level).toBe(2);
     expect(result.index).toBe(2);
@@ -103,7 +105,7 @@ describe('resolveTreeDrop', () => {
       row('grandchild1', 3, 64),
       row('root2', 1, 96),
     ];
-    const result = resolveTreeDrop(rows, 3, 2);
+    const result = resolveTreeDrop(rows, 3, 2, byIdentity);
     expect(result.parentValue).toBe('root1');
     expect(result.level).toBe(2);
     expect(result.index).toBe(1);
@@ -111,7 +113,7 @@ describe('resolveTreeDrop', () => {
 
   it('handles single row case', () => {
     const rows: TreeDropRow[] = [row('a', 1, 0)];
-    const result = resolveTreeDrop(rows, 1, 1);
+    const result = resolveTreeDrop(rows, 1, 1, byIdentity);
     expect(result.parentValue).toBeNull();
     expect(result.level).toBe(1);
     expect(result.index).toBe(1);
@@ -119,7 +121,7 @@ describe('resolveTreeDrop', () => {
 
   it('minLevel = maxLevel when defensive clamp applies', () => {
     const rows: TreeDropRow[] = [row('a', 2, 0), row('b', 3, 32)];
-    const result = resolveTreeDrop(rows, 1, 1);
+    const result = resolveTreeDrop(rows, 1, 1, byIdentity);
     expect(result.level).toBeGreaterThanOrEqual(1);
     expect(result.level).toBeLessThanOrEqual(3);
   });
@@ -127,7 +129,7 @@ describe('resolveTreeDrop', () => {
   describe('siblingCount', () => {
     it('counts all root-level siblings regardless of the gap', () => {
       const rows: TreeDropRow[] = [row('a', 1, 0), row('b', 1, 32), row('c', 1, 64)];
-      const result = resolveTreeDrop(rows, 1, 1);
+      const result = resolveTreeDrop(rows, 1, 1, byIdentity);
       expect(result.siblingCount).toBe(3);
     });
 
@@ -138,7 +140,7 @@ describe('resolveTreeDrop', () => {
         row('child2', 2, 64),
         row('other', 1, 96),
       ];
-      const result = resolveTreeDrop(rows, 3, 2);
+      const result = resolveTreeDrop(rows, 3, 2, byIdentity);
       expect(result.parentValue).toBe('parent');
       expect(result.level).toBe(2);
       expect(result.siblingCount).toBe(2);
@@ -146,7 +148,7 @@ describe('resolveTreeDrop', () => {
 
     it('is 0 when no existing row sits at the resolved level under the parent', () => {
       const rows: TreeDropRow[] = [row('parent', 1, 0), row('sibling', 1, 32)];
-      const result = resolveTreeDrop(rows, 1, 2);
+      const result = resolveTreeDrop(rows, 1, 2, byIdentity);
       expect(result.parentValue).toBe('parent');
       expect(result.level).toBe(2);
       expect(result.siblingCount).toBe(0);

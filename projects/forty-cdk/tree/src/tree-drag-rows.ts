@@ -7,11 +7,11 @@ import { type TreeDropRow } from './tree-drop-resolver';
  */
 
 /** The origin bookkeeping captured when a node is lifted. */
-export interface TreeLiftContext {
+export interface TreeLiftContext<T = unknown> {
   /** The lifted node's value. */
-  readonly value: string;
+  readonly value: T;
   /** The lifted node's parent value, or `null` at the root. */
-  readonly parentValue: string | null;
+  readonly parentValue: T | null;
   /** The lifted node's index among its siblings before the move. */
   readonly previousIndex: number;
 }
@@ -22,13 +22,15 @@ export interface TreeLiftContext {
  *
  * @param visible The tree's currently visible nodes, in DOM order.
  * @param liftedValue The value of the node being dragged, filtered out of the result.
+ * @param equals The tree's node-value comparator.
  */
-export function buildTreeDropRows(
-  visible: readonly ForTreeVisibleNode[],
-  liftedValue: string | null,
-): TreeDropRow[] {
+export function buildTreeDropRows<T>(
+  visible: readonly ForTreeVisibleNode<T>[],
+  liftedValue: T | null,
+  equals: (a: T, b: T) => boolean,
+): TreeDropRow<T>[] {
   return visible
-    .filter((e) => e.handle.value() !== liftedValue)
+    .filter((e) => liftedValue === null || !equals(e.handle.value(), liftedValue))
     .map((e) => {
       const rect = e.handle.host.getBoundingClientRect();
       return {
@@ -42,7 +44,7 @@ export function buildTreeDropRows(
 }
 
 /** The visible row's trimmed accessible label (its label element, else its text content). */
-export function treeNodeLabel(entry: ForTreeVisibleNode): string {
+export function treeNodeLabel(entry: ForTreeVisibleNode<unknown>): string {
   const labelEl = entry.handle.labelEl();
   return (labelEl?.textContent ?? entry.handle.host.textContent ?? '').trim();
 }
@@ -70,14 +72,15 @@ export function isInsideGrabArea(
 }
 
 /** The trimmed label for `parentValue`, or `null` when it has no row (root drop). */
-export function treeParentLabel(
-  visible: readonly ForTreeVisibleNode[],
-  parentValue: string | null,
+export function treeParentLabel<T>(
+  visible: readonly ForTreeVisibleNode<T>[],
+  parentValue: T | null,
+  equals: (a: T, b: T) => boolean,
 ): string | null {
   if (parentValue === null) {
     return null;
   }
-  const entry = visible.find((e) => e.handle.value() === parentValue);
+  const entry = visible.find((e) => equals(e.handle.value(), parentValue));
   return entry ? treeNodeLabel(entry) : null;
 }
 
@@ -88,10 +91,10 @@ export function treeParentLabel(
  * @param visible The visible nodes at lift time, in DOM order.
  * @param visibleIdx The lifted node's index within `visible`.
  */
-export function resolveTreeLiftContext(
-  visible: readonly ForTreeVisibleNode[],
+export function resolveTreeLiftContext<T>(
+  visible: readonly ForTreeVisibleNode<T>[],
   visibleIdx: number,
-): TreeLiftContext | null {
+): TreeLiftContext<T> | null {
   const entry = visible[visibleIdx];
   if (!entry) {
     return null;
@@ -118,18 +121,20 @@ export function resolveTreeLiftContext(
  * @param visibleAfter The visible nodes after the collapse.
  * @param visibleIdx The lifted node's index before the collapse.
  * @param mode Whether the lift was started by pointer or keyboard.
+ * @param equals The tree's node-value comparator.
  */
-export function resolveLiftGap(
-  rows: readonly TreeDropRow[],
-  visibleAfter: readonly ForTreeVisibleNode[],
+export function resolveLiftGap<T>(
+  rows: readonly TreeDropRow<T>[],
+  visibleAfter: readonly ForTreeVisibleNode<T>[],
   visibleIdx: number,
   mode: 'keyboard' | 'pointer',
+  equals: (a: T, b: T) => boolean,
 ): number {
   if (mode === 'pointer') {
     return Math.min(visibleIdx, rows.length);
   }
   const gap = rows.findIndex((r) => {
-    const nextEntry = visibleAfter.find((e) => e.handle.value() === r.value);
+    const nextEntry = visibleAfter.find((e) => equals(e.handle.value(), r.value));
     return nextEntry && visibleAfter.indexOf(nextEntry) >= visibleIdx;
   });
   return gap < 0 ? rows.length : gap;

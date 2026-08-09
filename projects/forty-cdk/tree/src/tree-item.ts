@@ -62,9 +62,9 @@ import { FOR_TREE_NODE_DRAG_CONTEXT } from './tree-node-drag';
   },
   providers: [{ provide: FOR_TREE_ITEM_CONTEXT, useExisting: ForTreeItem }],
 })
-export class ForTreeItem implements ForTreeItemContext {
-  readonly #tree = injectTreeContext('ForTreeItem');
-  readonly #container = injectTreeContainerContext('ForTreeItem');
+export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
+  readonly #tree = injectTreeContext<T>('ForTreeItem');
+  readonly #container = injectTreeContainerContext<T>('ForTreeItem');
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
   readonly #drag = inject(FOR_TREE_NODE_DRAG_CONTEXT, { optional: true });
 
@@ -82,7 +82,7 @@ export class ForTreeItem implements ForTreeItemContext {
    * `aria-posinset="0"` / `aria-setsize="0"`, values WAI-ARIA defines no meaning
    * for.
    */
-  readonly value = input(unsetInput<string>());
+  readonly value = input(unsetInput<T>());
 
   /** Disables this node: not selectable, skipped by keyboard navigation. */
   readonly disabled = input(false, { transform: booleanAttribute });
@@ -121,7 +121,7 @@ export class ForTreeItem implements ForTreeItemContext {
   readonly _posInSetInput = input<number | null>(null, { alias: 'posInSet' });
 
   readonly #toggleCount = signal(0);
-  readonly #childContainer = signal<ForTreeContainerContext | null>(null);
+  readonly #childContainer = signal<ForTreeContainerContext<T> | null>(null);
   readonly #labelEl = signal<HTMLElement | null>(null);
 
   readonly id = hostId('for-tree-item');
@@ -161,7 +161,8 @@ export class ForTreeItem implements ForTreeItemContext {
    */
   protected readonly _dropPosition = computed<'before' | 'after' | null>(() => {
     const indicator = this.#drag?.dropIndicator();
-    if (!indicator || indicator.anchor !== this.value()) {
+    const equals = this.#tree.compareWith() as (a: unknown, b: unknown) => boolean;
+    if (!indicator || !equals(indicator.anchor, this.value())) {
       return null;
     }
     return indicator.position;
@@ -196,7 +197,7 @@ export class ForTreeItem implements ForTreeItemContext {
 
   constructor() {
     assertInputBound(this.value, 'tree', '[forTreeItem]', 'value');
-    const handle: ForTreeItemHandle = {
+    const handle: ForTreeItemHandle<T> = {
       host: this.#host.nativeElement,
       value: this.value,
       disabled: this.effectiveDisabled,
@@ -220,7 +221,7 @@ export class ForTreeItem implements ForTreeItemContext {
     return () => this.#toggleCount.update((n) => n - 1);
   }
 
-  setChildContainer(container: ForTreeContainerContext | null): void {
+  setChildContainer(container: ForTreeContainerContext<T> | null): void {
     this.#childContainer.set(container);
   }
 

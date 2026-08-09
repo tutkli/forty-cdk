@@ -439,6 +439,229 @@ describe('ForTree', () => {
     });
   });
 
+  describe('expansion keyed by a non-string node value', () => {
+    interface FileNode {
+      readonly id: string;
+      readonly name: string;
+    }
+
+    const documentsNode: FileNode = { id: 'documents', name: 'Documents' };
+    const reportNode: FileNode = { id: 'report', name: 'Report' };
+    const readmeNode: FileNode = { id: 'readme', name: 'Readme' };
+
+    @Component({
+      imports: [ForTree, ForTreeItem, ForTreeItemLabel, ForTreeItemToggle, ForTreeGroup],
+      template: `
+        <ul forTree [(value)]="picked" [(expanded)]="open">
+          <li forTreeItem [value]="documents" data-test-id="documents">
+            <div forTreeItemLabel data-test-label="documents">
+              <span forTreeItemToggle data-test-toggle="documents">▸</span>
+              <span>Documents</span>
+            </div>
+            @if (open().includes(documents)) {
+              <ul forTreeGroup>
+                <li forTreeItem [value]="report" data-test-id="report">
+                  <div forTreeItemLabel data-test-label="report"><span>Report</span></div>
+                </li>
+              </ul>
+            }
+          </li>
+          <li forTreeItem [value]="readme" data-test-id="readme">
+            <div forTreeItemLabel data-test-label="readme"><span>Readme</span></div>
+          </li>
+        </ul>
+      `,
+    })
+    class ObjectValueHost {
+      readonly documents = documentsNode;
+      readonly report = reportNode;
+      readonly readme = readmeNode;
+      readonly picked = signal<readonly FileNode[]>([]);
+      readonly open = signal<readonly FileNode[]>([]);
+    }
+
+    async function setupObjectValues() {
+      const result = renderHost(ObjectValueHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('commits the node value itself into expanded and mounts its group', async () => {
+      const { el, fixture, instance } = await setupObjectValues();
+      expect(itemOf(el, 'documents').querySelector('[forTreeGroup]')).toBeNull();
+
+      toggleOf(el, 'documents').click();
+      await flush(fixture);
+
+      expect(instance.open()).toHaveLength(1);
+      expect(instance.open()[0]).toBe(documentsNode);
+      expect(itemOf(el, 'documents').getAttribute('aria-expanded')).toBe('true');
+      expect(itemOf(el, 'report')).not.toBeNull();
+    });
+
+    it('resolves expansion by identity, leaving an equal-but-distinct value closed', async () => {
+      const { el, fixture, instance } = await setupObjectValues();
+      instance.open.set([{ ...documentsNode }]);
+      await flush(fixture);
+
+      expect(itemOf(el, 'documents').getAttribute('aria-expanded')).toBe('false');
+      expect(itemOf(el, 'documents').querySelector('[forTreeGroup]')).toBeNull();
+    });
+
+    it('commits the node value itself into the selection', async () => {
+      const { el, fixture, instance } = await setupObjectValues();
+
+      labelOf(el, 'readme').click();
+      await flush(fixture);
+
+      expect(instance.picked()).toHaveLength(1);
+      expect(instance.picked()[0]).toBe(readmeNode);
+      expect(itemOf(el, 'readme').getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
+  describe('node identity resolved by compareWith', () => {
+    interface TreeNode {
+      readonly id: string;
+    }
+
+    const node = (id: string): TreeNode => ({ id });
+
+    @Component({
+      imports: [
+        ForTree,
+        ForTreeItem,
+        ForTreeItemLabel,
+        ForTreeItemToggle,
+        ForTreeGroup,
+        ForTreeItemCheckbox,
+      ],
+      template: `
+        <ul
+          forTree
+          selectionMode="checkbox"
+          cascade
+          [compareWith]="compareWith"
+          [descendantsOf]="descendantsFn"
+          [(value)]="picked"
+          [(expanded)]="open"
+          aria-label="Groups"
+        >
+          <li forTreeItem [value]="parent" data-test-id="parent">
+            <div forTreeItemLabel>
+              <span forTreeItemToggle data-test-toggle="parent">▸</span>
+              <span forTreeItemCheckbox data-test-checkbox="parent">✓</span>
+              Parent
+            </div>
+            @if (isOpen(parent)) {
+              <ul forTreeGroup>
+                <li forTreeItem [value]="childA" data-test-id="a">
+                  <div forTreeItemLabel>
+                    <span forTreeItemCheckbox data-test-checkbox="a">✓</span>
+                    A
+                  </div>
+                </li>
+                <li forTreeItem [value]="childB" data-test-id="b">
+                  <div forTreeItemLabel>
+                    <span forTreeItemCheckbox data-test-checkbox="b">✓</span>
+                    B
+                  </div>
+                </li>
+              </ul>
+            }
+          </li>
+        </ul>
+      `,
+    })
+    class CompareWithHost {
+      readonly parent = node('parent');
+      readonly childA = node('a');
+      readonly childB = node('b');
+      readonly picked = signal<readonly TreeNode[]>([]);
+      readonly open = signal<readonly TreeNode[]>([]);
+      readonly compareWith = (a: TreeNode, b: TreeNode): boolean => a.id === b.id;
+      readonly descendantsFn = (value: TreeNode): readonly TreeNode[] =>
+        value.id === 'parent' ? [node('a'), node('b')] : [];
+      readonly isOpen = (value: TreeNode): boolean =>
+        this.open().some((open) => open.id === value.id);
+    }
+
+    const idItemOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-id="${id}"]`)!;
+    const idCheckboxOf = (host: HTMLElement, id: string) =>
+      host.querySelector<HTMLElement>(`[data-test-checkbox="${id}"]`)!;
+
+    async function setupCompareWith() {
+      const result = renderHost(CompareWithHost);
+      await flush(result.fixture);
+      return result;
+    }
+
+    it('resolves expansion against an equal-but-distinct value', async () => {
+      const { el, fixture, instance } = await setupCompareWith();
+      instance.open.set([{ id: 'parent' }]);
+      await flush(fixture);
+
+      expect(idItemOf(el, 'parent').getAttribute('aria-expanded')).toBe('true');
+      expect(idItemOf(el, 'a')).not.toBeNull();
+    });
+
+    it('resolves selection against an equal-but-distinct value', async () => {
+      const { el, fixture, instance } = await setupCompareWith();
+      instance.open.set([{ id: 'parent' }]);
+      instance.picked.set([{ id: 'a' }]);
+      await flush(fixture);
+
+      expect(idItemOf(el, 'a').getAttribute('aria-checked')).toBe('true');
+      expect(idItemOf(el, 'b').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('cascade reports mixed when descendantsOf returns re-created values', async () => {
+      const { el, fixture, instance } = await setupCompareWith();
+      instance.open.set([{ id: 'parent' }]);
+      await flush(fixture);
+
+      idCheckboxOf(el, 'a').click();
+      await flush(fixture);
+
+      expect(idItemOf(el, 'a').getAttribute('aria-checked')).toBe('true');
+      expect(idItemOf(el, 'b').getAttribute('aria-checked')).toBe('false');
+      expect(idItemOf(el, 'parent').getAttribute('aria-checked')).toBe('mixed');
+    });
+
+    it('cascade checks the whole subtree and reports the parent true', async () => {
+      const { el, fixture, instance } = await setupCompareWith();
+      instance.open.set([{ id: 'parent' }]);
+      await flush(fixture);
+
+      idCheckboxOf(el, 'parent').click();
+      await flush(fixture);
+
+      expect(
+        instance
+          .picked()
+          .map((v) => v.id)
+          .sort(),
+      ).toEqual(['a', 'b', 'parent']);
+      expect(idItemOf(el, 'parent').getAttribute('aria-checked')).toBe('true');
+      expect(idItemOf(el, 'b').getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('unchecking a fully-checked subtree clears it under the comparator', async () => {
+      const { el, fixture, instance } = await setupCompareWith();
+      instance.open.set([{ id: 'parent' }]);
+      await flush(fixture);
+
+      idCheckboxOf(el, 'parent').click();
+      await flush(fixture);
+      idCheckboxOf(el, 'parent').click();
+      await flush(fixture);
+
+      expect(instance.picked()).toEqual([]);
+      expect(idItemOf(el, 'parent').getAttribute('aria-checked')).toBe('false');
+    });
+  });
+
   describe('selection (aria-selected always emitted, data-selected present/absent)', () => {
     it('emits aria-selected=false / no data-selected by default', async () => {
       const { el } = await setup();

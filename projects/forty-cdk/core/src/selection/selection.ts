@@ -10,12 +10,13 @@ import { computed, type Signal } from '@angular/core';
  * their own selection logic, and the shared definition keeps a fix from
  * drifting across the three copies.
  *
- * Scope note: these helpers are NOT a universal selection contract. Other
- * array-backed primitives keep their own selection/expansion logic — `ForTree`
- * (string-keyed select / expand / extend-by-arrow), `Accordion`, and
- * `ToggleGroup` all manage their arrays directly rather than routing through
- * here, because their value semantics (string keys, no equality comparator, no
- * single-mode `T | null` view) differ. Treat this module as "the
+ * Scope note: these helpers are NOT a universal selection contract. `ForTree`
+ * composes the two membership helpers (it gained a `compareWith` in #1738's
+ * follow-up) but keeps its own select / expand / extend-by-arrow logic, and
+ * hashes repeated probes behind `tree/src/tree-identity.ts` rather than calling
+ * `isInArray` per item. `Accordion` and `ToggleGroup` manage their arrays
+ * directly, because their value semantics (string keys, no equality comparator,
+ * no single-mode `T | null` view) differ. Treat this module as "the
  * Select/Listbox/Combobox helper set", not "the library's one true selection
  * source".
  */
