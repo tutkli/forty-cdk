@@ -278,6 +278,13 @@ export const routes: Routes = [
     loadComponent: () => import('./fixtures/table-perf.fixture').then((m) => m.TablePerfFixture),
   },
   {
+    path: 'table-perf-virtualized',
+    loadComponent: () =>
+      import('./fixtures/table-perf-virtualized.fixture').then(
+        (m) => m.TablePerfVirtualizedFixture,
+      ),
+  },
+  {
     path: 'table-resizer-wrapped',
     loadComponent: () =>
       import('./fixtures/table-resizer-wrapped.fixture').then((m) => m.TableResizerWrappedFixture),
