@@ -1,11 +1,15 @@
-import { type OutputEmitterRef, type Signal, signal, type WritableSignal } from '@angular/core';
+import { type OutputEmitterRef, type Signal, type WritableSignal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { Collection } from '../collection/collection';
 import { firstEnabledHost, nextEnabledHandle } from '../collection/enabled-handle-navigation';
-import type { IdGenerator } from '../id-generator/id-generator';
 import { type ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
-import { AnchorSlot, IdentifiedElementSlot } from '../overlay-controller/element-registry';
+import {
+  anchorSlot,
+  type AnchorSlot,
+  type IdentifiedElementSlot,
+  injectIdentifiedSlot,
+} from '../overlay-controller/element-registry';
 import { CloseReasonState } from '../overlay-controller/close-reason-state';
 import { InitialFocusState } from '../overlay-controller/initial-focus-state';
 import {
@@ -182,6 +186,9 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.
  *
+ * Construct it from a directive's field initializer, so the slot factories'
+ * `inject()` calls resolve through the directive's injector.
+ *
  * @typeParam H Primitive option-handle type.
  * @typeParam Focus Initial-focus union.
  * @typeParam CloseReason Close-reason union.
@@ -221,11 +228,11 @@ export class ListboxOverlayController<
   /** All registered options in DOM order. */
   readonly options: Signal<readonly H[]>;
 
-  constructor(idGen: IdGenerator, deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>) {
+  constructor(deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>) {
     this.#deps = deps;
-    this.#triggerSlot = new IdentifiedElementSlot(signal(idGen.next(`${deps.idPrefix}-trigger`)));
-    this.#contentSlot = new IdentifiedElementSlot(signal(idGen.next(`${deps.idPrefix}-content`)));
-    this.#anchorSlot = new AnchorSlot(deps.multipleAnchorsError);
+    this.#triggerSlot = injectIdentifiedSlot(deps.idPrefix, 'trigger');
+    this.#contentSlot = injectIdentifiedSlot(deps.idPrefix, 'content');
+    this.#anchorSlot = anchorSlot(deps.multipleAnchorsError);
     this.triggerId = this.#triggerSlot.id;
     this.contentId = this.#contentSlot.id;
     this.trigger = this.#triggerSlot.element;

@@ -227,7 +227,12 @@ export {
   stepOnGrid,
 } from './numeric-step/numeric-step';
 export { CloseReasonState } from './overlay-controller/close-reason-state';
-export { ElementRegistry } from './overlay-controller/element-registry';
+export {
+  anchorSlot,
+  elementSlot,
+  injectIdentifiedSlot,
+  injectSlotId,
+} from './overlay-controller/element-registry';
 export { InitialFocusState } from './overlay-controller/initial-focus-state';
 export {
   type MountedWhileClosedConfig,

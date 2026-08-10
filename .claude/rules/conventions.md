@@ -120,13 +120,13 @@ Fix: Move ForDialogTitle inside a [forDialog] element, declaring any ng-template
 
 **Never build that string by hand.** `core/src/errors/` owns the layout, and everything the library reports goes through it:
 
-| Helper                      | For                                                                                                                                                       |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `fortyError(spec)`          | returns the `Error` a call site throws — the general case                                                                                                 |
-| `fortyWarn(spec)`           | a recoverable mistake, same layout, **dev-gated inside the helper**                                                                                       |
-| `orphanContextError(spec)`  | a piece that resolved no coordination context — the library's most common report, ~70 call sites                                                          |
-| `unresolvedRootError(spec)` | an overlay trigger that resolved its root through neither DI nor its own input — 9 call sites                                                             |
-| `formatFortyMessage(spec)`  | the raw string, for the one seam that takes a pre-built message from its caller (`ElementRegistry.anchorSlot`, reached by Combobox / Select / TimePicker) |
+| Helper                      | For                                                                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `fortyError(spec)`          | returns the `Error` a call site throws — the general case                                                                                 |
+| `fortyWarn(spec)`           | a recoverable mistake, same layout, **dev-gated inside the helper**                                                                       |
+| `orphanContextError(spec)`  | a piece that resolved no coordination context — the library's most common report, ~70 call sites                                          |
+| `unresolvedRootError(spec)` | an overlay trigger that resolved its root through neither DI nor its own input — 9 call sites                                             |
+| `formatFortyMessage(spec)`  | the raw string, for the one seam that takes a pre-built message from its caller (`anchorSlot`, reached by Combobox / Select / TimePicker) |
 
 Six rules govern a new message:
 

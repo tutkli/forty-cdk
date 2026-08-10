@@ -16,7 +16,6 @@ import {
   formatFortyMessage,
   injectDateAdapter,
   type TimeCapableDateAdapter,
-  IdGenerator,
   type WritingDirection,
   ListboxOverlayController,
   injectHiddenInput,
@@ -74,7 +73,6 @@ export class ForTimePicker<D>
   extends AnchoredFormValueControlBase
   implements FormValueControl<D | null>, ForTimePickerContext<D>
 {
-  readonly #idGen = inject(IdGenerator);
   protected readonly positioningDefaults = inject(FOR_TIME_PICKER_DEFAULTS);
 
   /**
@@ -223,7 +221,7 @@ export class ForTimePicker<D>
     ForTimePickerOptionHandle,
     ForTimePickerInitialFocus,
     ForTimePickerCloseReason
-  >(this.#idGen, {
+  >({
     idPrefix: 'for-time-picker',
     multipleAnchorsError: formatFortyMessage({
       code: 'FORCDK-TIME-PICKER-003',

@@ -14,16 +14,18 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   AnchoredFormValueControlBase,
   type AnchoredPositioningSeedDefaults,
+  anchorSlot,
   CloseReasonState,
   Collection,
   createPointerSuppression,
   defaultItemToFormValue,
-  ElementRegistry,
+  elementSlot,
   emitVetoableEvent,
   emitVetoableNativeEvent,
   formatFortyMessage,
   InitialFocusState,
   injectHiddenInput,
+  injectIdentifiedSlot,
   injectTextDirection,
   isInArray,
   isUnset,
@@ -100,7 +102,6 @@ export class ForCombobox<T = string>
   extends AnchoredFormValueControlBase
   implements FormValueControl<readonly T[]>, ForComboboxContext<T>
 {
-  readonly #registry = inject(ElementRegistry);
   readonly #defaults = inject(FOR_COMBOBOX_DEFAULTS);
   readonly #items = new Collection<ForComboboxOptionHandle<T>>();
   readonly #chips = new Collection<ForComboboxChipHandle<T>>();
@@ -333,11 +334,11 @@ export class ForCombobox<T = string>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
-  readonly #inputSlot = this.#registry.identifiedSlot<HTMLInputElement>('for-combobox', 'input');
-  readonly #contentSlot = this.#registry.identifiedSlot('for-combobox', 'content');
-  readonly #listSlot = this.#registry.identifiedSlot('for-combobox', 'list');
-  readonly #triggerSlot = this.#registry.elementSlot();
-  readonly #anchorSlot = this.#registry.anchorSlot(
+  readonly #inputSlot = injectIdentifiedSlot<HTMLInputElement>('for-combobox', 'input');
+  readonly #contentSlot = injectIdentifiedSlot('for-combobox', 'content');
+  readonly #listSlot = injectIdentifiedSlot('for-combobox', 'list');
+  readonly #triggerSlot = elementSlot();
+  readonly #anchorSlot = anchorSlot(
     formatFortyMessage({
       code: 'FORCDK-COMBOBOX-007',
       message: 'A [forCombobox] registered a second [forComboboxAnchor]; only one is allowed.',

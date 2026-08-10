@@ -6,7 +6,6 @@ import {
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { IdGenerator } from '../id-generator/id-generator';
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import {
   createVetoableEvent,
@@ -92,8 +91,7 @@ function createHarness(opts: { withNavigateFocus?: boolean } = {}): Harness {
       autoFocusOnClose,
     };
 
-    const idGen = TestBed.inject(IdGenerator);
-    const controller = new ListboxOverlayController<FakeHandle, Focus, CloseReason>(idGen, {
+    const controller = new ListboxOverlayController<FakeHandle, Focus, CloseReason>({
       idPrefix: 'for-listbox-test',
       multipleAnchorsError: '[forty-cdk/test] Multiple anchors; only one is allowed.',
       defaultInitialFocus: 'selected',
