@@ -50,7 +50,10 @@ import {
 } from './combobox-context';
 import { FOR_COMBOBOX_DEFAULTS } from './combobox-defaults';
 import { mergeOffWindowEntries } from './combobox-off-window-merge';
-import { VirtualizedNavigator } from './combobox-virtualized-navigator';
+import {
+  type ComboboxVirtualizedNavigator,
+  createComboboxVirtualizedNavigator,
+} from './combobox-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA combobox with listbox popup pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/).
@@ -429,20 +432,22 @@ export class ForCombobox<T = string>
    * the position-map machinery. Powers keyboard navigation past the rendered
    * window and the scrolled-out-of-view label fallback.
    */
-  #navigator: VirtualizedNavigator<T> | null = null;
+  #navigator: ComboboxVirtualizedNavigator<T> | null = null;
 
-  #requireNavigator(): VirtualizedNavigator<T> {
-    return (this.#navigator ??= new VirtualizedNavigator<T>({
-      items: this.#items.items,
-      totalCount: this.totalCount,
-      visibleRange: this.visibleRange,
-      loop: this.loop,
-      getActiveId: () => this.#activeId(),
-      setActiveId: (id) => this.#activeId.set(id),
-      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-      scrollActiveIntoView: (host) => this.#scrollActiveIntoView(host),
-      dataVersion: this.dataVersion,
-    }));
+  #requireNavigator(): ComboboxVirtualizedNavigator<T> {
+    return (this.#navigator ??= createComboboxVirtualizedNavigator<T>(
+      {
+        items: this.#items.items,
+        totalCount: this.totalCount,
+        visibleRange: this.visibleRange,
+        loop: this.loop,
+        getActiveId: () => this.#activeId(),
+        setActiveId: (id) => this.#activeId.set(id),
+        emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+        dataVersion: this.dataVersion,
+      },
+      (host) => this.#scrollActiveIntoView(host),
+    ));
   }
 
   /**

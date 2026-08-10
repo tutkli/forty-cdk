@@ -45,7 +45,10 @@ import {
   type ForListboxOptionHandle,
 } from './listbox-context';
 import { FOR_LISTBOX_DEFAULTS } from './listbox-defaults';
-import { ListboxVirtualizedNavigator } from './listbox-virtualized-navigator';
+import {
+  createListboxVirtualizedNavigator,
+  type ListboxVirtualizedNavigator,
+} from './listbox-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/).
@@ -331,7 +334,7 @@ export class ForListbox<T = string>
   #navigator: ListboxVirtualizedNavigator<T> | null = null;
 
   #requireNavigator(): ListboxVirtualizedNavigator<T> {
-    return (this.#navigator ??= new ListboxVirtualizedNavigator<T>({
+    return (this.#navigator ??= createListboxVirtualizedNavigator<T>({
       items: this.#options.items,
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,

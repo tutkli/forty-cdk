@@ -3,7 +3,7 @@ import { computed, signal, type Signal } from '@angular/core';
 import { unsetInput } from 'forty-cdk/core';
 
 import type { ForComboboxOptionHandle } from './combobox-context';
-import { VirtualizedNavigator } from './combobox-virtualized-navigator';
+import { createComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 
 function makeHandle(
   id: string,
@@ -23,19 +23,21 @@ function makeHandle(
 
 function createNavigator(items: readonly ForComboboxOptionHandle<string>[]) {
   const active = signal<string | null>(null);
-  return new VirtualizedNavigator<string>({
-    items: signal(items),
-    totalCount: signal<number | undefined>(100),
-    visibleRange: signal<readonly [number, number] | undefined>([0, 10]),
-    loop: signal(false),
-    getActiveId: () => active(),
-    setActiveId: (id) => active.set(id),
-    emitScrollToIndex: () => {},
-    scrollActiveIntoView: () => {},
-  });
+  return createComboboxVirtualizedNavigator<string>(
+    {
+      items: signal(items),
+      totalCount: signal<number | undefined>(100),
+      visibleRange: signal<readonly [number, number] | undefined>([0, 10]),
+      loop: signal(false),
+      getActiveId: () => active(),
+      setActiveId: (id) => active.set(id),
+      emitScrollToIndex: () => {},
+    },
+    () => {},
+  );
 }
 
-describe('combobox VirtualizedNavigator', () => {
+describe('createComboboxVirtualizedNavigator', () => {
   it('skips an option whose value binding is unwritten, folding it in on the re-run', () => {
     const bound = signal<string | null>(null);
     const value = computed(() => bound() ?? unsetInput<string>());

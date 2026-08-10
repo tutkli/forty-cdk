@@ -1,9 +1,9 @@
 /**
- * The two members every primitive's navigator adapter exposes for its bridge
- * effect: the position-map pull and the pending-navigation resolve. Structural
- * on purpose — Select, Listbox and Combobox each own a thin adapter class over
- * the shared engine, and Tree reaches the same pair through its
- * activedescendant focus model.
+ * The two members a bridge effect needs from the navigation engine: the
+ * position-map pull and the pending-navigation resolve. Structural on purpose —
+ * Select, Listbox and Combobox hold a {@link VirtualizedNavigator} directly,
+ * while Tree reaches the same pair through its activedescendant focus model,
+ * which wraps one.
  */
 export interface VirtualizedNavigatorBridgeTarget {
   /** @see VirtualizedNavigator.prime */
@@ -23,7 +23,7 @@ export interface VirtualizedNavigatorBridgeDeps<N extends VirtualizedNavigatorBr
   /** Whether the consumer set `totalCount` (the virtualized path). */
   readonly virtualized: () => boolean;
   /**
-   * Resolve the navigator adapter, constructing it on first use. Called only on
+   * Resolve the navigation engine, constructing it on first use. Called only on
    * the virtualized branch so a plain collection never builds the position-map
    * machinery.
    */

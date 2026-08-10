@@ -50,7 +50,10 @@ import {
   type ForSelectOverlayFacade,
 } from './select-context';
 import { FOR_SELECT_DEFAULTS } from './select-defaults';
-import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
+import {
+  createSelectVirtualizedNavigator,
+  type SelectVirtualizedNavigator,
+} from './select-virtualized-navigator';
 
 /**
  * Headless implementation of the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/).
@@ -428,7 +431,7 @@ export class ForSelect<T = string>
 
   #navigator: SelectVirtualizedNavigator<T> | null = null;
   #requireNavigator(): SelectVirtualizedNavigator<T> {
-    return (this.#navigator ??= new SelectVirtualizedNavigator<T>({
+    return (this.#navigator ??= createSelectVirtualizedNavigator<T>({
       items: this.#controller.options,
       totalCount: this.totalCount,
       visibleRange: this.visibleRange,

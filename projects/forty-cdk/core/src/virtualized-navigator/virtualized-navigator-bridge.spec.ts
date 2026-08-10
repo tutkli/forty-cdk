@@ -144,6 +144,7 @@ describe('runVirtualizedNavigatorBridge window tracking', () => {
         posOf: (h) => h.pos(),
         idOf: (h) => h.id(),
         hostOf: (h) => h.host,
+        isDisabled: (h) => h.disabled(),
         readEntry: (h) => ({ id: h.id(), disabled: h.disabled() }),
       },
     );
