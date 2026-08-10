@@ -1,6 +1,8 @@
 import {
+  inject,
   type OutputEmitterRef,
   provideZonelessChangeDetection,
+  type Signal,
   signal,
   type WritableSignal,
 } from '@angular/core';
@@ -9,6 +11,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   createVetoableEvent,
   createVetoableNativeEvent,
+  IdGenerator,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
@@ -16,6 +19,7 @@ import { IdentifiedElementSlot } from './element-registry';
 import {
   OverlayController,
   type OverlayEmitTargets,
+  type OverlaySlot,
   type OverlayTransitionOptions,
 } from './overlay-controller';
 
@@ -41,6 +45,27 @@ interface Harness {
   readonly dismissals: number[];
   readonly setOpenCalls: boolean[];
   readonly seededTriggerIds: string[];
+  /** How many ids the controller's construction minted off the shared generator. */
+  readonly idsMinted: number;
+}
+
+/**
+ * An element side that brings its own id — the shape `[forMenubar]`'s multiplexed
+ * context and `[forCombobox]`'s trigger supply, so the controller mints nothing
+ * for it.
+ */
+function suppliedSlot(id: Signal<string>): OverlaySlot {
+  const el = signal<HTMLElement | null>(null);
+  return {
+    id,
+    element: el.asReadonly(),
+    register: (node) => el.set(node),
+    unregister: (node) => {
+      if (el() === node) {
+        el.set(null);
+      }
+    },
+  };
 }
 
 function makeOutput<T>(sink: T[]): OutputEmitterRef<T> {
@@ -54,7 +79,7 @@ function makeOutput<T>(sink: T[]): OutputEmitterRef<T> {
   } as unknown as OutputEmitterRef<T>;
 }
 
-function createHarness(opts: { withDismissHook?: boolean } = {}): Harness {
+function createHarness(opts: { withDismissHook?: boolean; suppliedIds?: boolean } = {}): Harness {
   TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
 
   const open = signal(false);
@@ -84,12 +109,19 @@ function createHarness(opts: { withDismissHook?: boolean } = {}): Harness {
 
   let harness!: Harness;
   TestBed.runInInjectionContext(() => {
+    const idGen = inject(IdGenerator);
+    const probe = () => Number(idGen.next('probe').split('-').pop());
+    const before = probe();
     const controller = new OverlayController<Focus, CloseReason>({
       idPrefix: 'for-test-overlay',
-      createTrigger: (id) => {
-        seededTriggerIds.push(id());
-        return new IdentifiedElementSlot(id);
-      },
+      createTrigger: opts.suppliedIds
+        ? () => suppliedSlot(signal('supplied-trigger'))
+        : (mintId) => {
+            const id = mintId();
+            seededTriggerIds.push(id());
+            return new IdentifiedElementSlot(id);
+          },
+      createContent: opts.suppliedIds ? () => suppliedSlot(signal('supplied-content')) : undefined,
       defaultInitialFocus: 'selected',
       disabled,
       dismissible,
@@ -117,6 +149,7 @@ function createHarness(opts: { withDismissHook?: boolean } = {}): Harness {
       dismissals,
       setOpenCalls,
       seededTriggerIds,
+      idsMinted: probe() - before - 1,
     };
   });
   return harness;
@@ -125,7 +158,8 @@ function createHarness(opts: { withDismissHook?: boolean } = {}): Harness {
 describe('OverlayController', () => {
   describe('slots and ids', () => {
     it('seeds the trigger id before the content id, both off the configured prefix', () => {
-      const { controller, seededTriggerIds } = createHarness();
+      const { controller, seededTriggerIds, idsMinted } = createHarness();
+      expect(idsMinted).toBe(2);
       expect(seededTriggerIds).toHaveLength(1);
       expect(seededTriggerIds[0]).toContain('for-test-overlay-trigger');
       expect(controller.triggerId()).toBe(seededTriggerIds[0]);
@@ -158,6 +192,31 @@ describe('OverlayController', () => {
 
       controller.unregisterContent(content);
       expect(controller.content()).toBeNull();
+    });
+
+    it('mints no id when both element sides supply one, exposing what they gave', () => {
+      const { controller, idsMinted } = createHarness({ suppliedIds: true });
+      expect(idsMinted).toBe(0);
+      expect(controller.triggerId()).toBe('supplied-trigger');
+      expect(controller.contentId()).toBe('supplied-content');
+    });
+
+    it('registers both supplied sides and unwinds them by identity', () => {
+      const { controller } = createHarness({ suppliedIds: true });
+      const trigger = document.createElement('button');
+      const content = document.createElement('div');
+      controller.registerTrigger(trigger);
+      controller.registerContent(content);
+      expect(controller.trigger()).toBe(trigger);
+      expect(controller.content()).toBe(content);
+
+      controller.unregisterContent(document.createElement('div'));
+      expect(controller.content()).toBe(content);
+
+      controller.unregisterContent(content);
+      controller.unregisterTrigger(trigger);
+      expect(controller.content()).toBeNull();
+      expect(controller.trigger()).toBeNull();
     });
 
     it('rests at the configured default initial-focus target', () => {

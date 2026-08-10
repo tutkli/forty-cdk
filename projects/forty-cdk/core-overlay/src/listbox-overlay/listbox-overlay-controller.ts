@@ -222,7 +222,7 @@ export class ListboxOverlayController<
     this.#deps = deps;
     this.#controller = new OverlayController<Focus, CloseReason>({
       idPrefix: deps.idPrefix,
-      createTrigger: (id) => new IdentifiedElementSlot(id),
+      createTrigger: (mintId) => new IdentifiedElementSlot(mintId()),
       defaultInitialFocus: deps.defaultInitialFocus,
       disabled: deps.effectiveDisabled,
       dismissible: deps.dismissible,
