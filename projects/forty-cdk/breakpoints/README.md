@@ -82,6 +82,27 @@ Now `injectBreakpoints()` autocompletes `'mobile' | 'tablet' | 'laptop' | 'deskt
 | `active`         | the largest breakpoint whose `min-width` matches, or `null` below the smallest |
 | `matches(query)` | escape hatch for an arbitrary media query (orientation, `prefers-*`, …)        |
 
+### `injectPrefersReducedMotion`
+
+The same shape for a different query: `injectPrefersReducedMotion()` returns a `Signal<boolean>` that is `true` while the user has asked their OS to suppress animation, and flips if they change the setting mid-session. Call it from an injection context, like `injectBreakpoints()`.
+
+```ts
+import { computed } from '@angular/core';
+import { injectPrefersReducedMotion } from 'forty-cdk/breakpoints';
+
+export class Panel {
+  private readonly reducedMotion = injectPrefersReducedMotion();
+
+  protected readonly transition = computed(() =>
+    this.reducedMotion() ? 'none' : 'transform 200ms ease-out',
+  );
+}
+```
+
+It is published here because forty-cdk ships no styles: the animation on a `data-state` change is yours, so honouring the preference is yours too — and a signal is what a `computed()` or a `[style]` binding can branch on, which a CSS `@media` block cannot. Treat `true` as "skip the animated path entirely", not "shorten the duration": the setting asks for no motion, not less of it.
+
+`bp.matches('(prefers-reduced-motion: reduce)')` resolves to the same thing. Prefer the named helper — it is the one the library's own motion-bearing primitives (drag gestures, carousel, drawer) read, so the query string stays spelled in one place.
+
 ## SSR
 
-On the server (or where `matchMedia` is unavailable) every query signal reads `false` and `active` reads `null`. No `matchMedia` access happens server-side, so the helper is safe under Angular Universal.
+On the server (or where `matchMedia` is unavailable) every query signal reads `false` and `active` reads `null`. No `matchMedia` access happens server-side, so the helper is safe under Angular Universal. `injectPrefersReducedMotion()` reads `false` there for the same reason: the server render takes the animated branch, and the client applies the real preference on its first observation.

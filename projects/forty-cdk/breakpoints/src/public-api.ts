@@ -12,3 +12,4 @@ export {
   type BreakpointRegistry,
   type ForBreakpoints,
 } from './breakpoints';
+export { injectPrefersReducedMotion } from 'forty-cdk/core';

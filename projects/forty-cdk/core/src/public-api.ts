@@ -33,12 +33,14 @@
  * in `scripts/lib/core-blessed-tier.mjs` — contract types and tokens the
  * library commits to, each published by exactly one public entry point
  * (`forty-cdk/shared` for the cross-primitive ones; `forty-cdk/visually-hidden`,
- * `forty-cdk/drawer`, and `forty-cdk/field` for the few whose semantic home is a
- * primitive). Everything else is INTERNAL. `scripts/check-entrypoint-public-types.mjs`
- * (run in `postbuild`) fails the build when an internal-tier symbol reaches a
- * public entry point's public signature, and when a blessed symbol is
- * re-exported from an entry point other than the one that publishes it — so
- * neither the tier nor the canonical import path can erode by accident.
+ * `forty-cdk/breakpoints`, `forty-cdk/drawer`, and `forty-cdk/field` for the few
+ * whose semantic home is a primitive). Everything else is INTERNAL.
+ * `scripts/check-entrypoint-public-types.mjs` (run in `postbuild`) fails the
+ * build when an internal-tier symbol reaches a public entry point's public
+ * signature, when a blessed symbol is re-exported from an entry point other
+ * than the one that publishes it, and when a blessed symbol's own JSDoc still
+ * calls itself internal tier — so neither the tier, the canonical import path,
+ * nor the promise the consumer reads can erode by accident.
  *
  * Class bases that public directives merely `extends` (`FormUiControlBase`,
  * `ModalSurfaceBase`, `MenuOverlayHost`, …) are deliberately internal —

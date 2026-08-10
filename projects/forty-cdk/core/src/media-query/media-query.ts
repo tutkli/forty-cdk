@@ -34,18 +34,31 @@ export function injectMediaQuery(query: string): Signal<boolean> {
 }
 
 /**
- * Convenience wrapper around {@link injectMediaQuery} for the
- * `prefers-reduced-motion: reduce` query — the standard hook for users who
- * have asked their OS to suppress animations. Returns a `Signal<boolean>`
- * that flips reactively if the preference changes mid-session.
+ * Reflects the `prefers-reduced-motion: reduce` media query as a signal — the
+ * standard hook for users who have asked their OS to suppress animations. The
+ * signal flips reactively if the preference changes mid-session.
  *
- * Used by primitives whose default behaviour involves motion that may be
- * hostile to vestibular sensitivity (drag gestures, large transforms,
- * parallax). Consumers should treat a `true` result as a hard signal to
- * skip the animated path entirely, not just to shorten the duration.
+ * Because forty-cdk ships no styles, every animation is the consumer's, and so
+ * is honouring this preference. Treat a `true` result as a hard signal to skip
+ * the animated path entirely, not just to shorten the duration. The primitives
+ * whose own default behaviour involves motion (drag gestures, large transforms,
+ * parallax) read the same signal.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Must be called from an injection context. SSR-safe: on the server the
+ * returned signal is a frozen `false`, so the server render takes the animated
+ * path's markup and the preference is applied once the client observes it.
+ *
+ * @example
+ * ```ts
+ * private readonly reducedMotion = injectPrefersReducedMotion();
+ *
+ * protected readonly transition = computed(() =>
+ *   this.reducedMotion() ? 'none' : 'transform 200ms ease-out',
+ * );
+ * ```
+ *
+ * @returns A `Signal<boolean>` that is `true` while the user asks for reduced
+ * motion.
  */
 export function injectPrefersReducedMotion(): Signal<boolean> {
   return injectMediaQuery('(prefers-reduced-motion: reduce)');

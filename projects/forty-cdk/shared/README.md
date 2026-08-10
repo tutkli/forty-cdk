@@ -29,7 +29,7 @@ There is nothing to install and — unless you mount more than one forty-cdk app
 | **Id generation**          | `FOR_ID_SALT`, `provideForIdSalt`                                                                                                                                                                                                                                                                |
 | **Other**                  | `ListboxOverlayContext`, `DragPreview`, `SwipeDirection`, `SwipeEventDetail`                                                                                                                                                                                                                     |
 
-Six blessed symbols are **not** here, because a primitive is their semantic home rather than a second path to the same symbol: `ForVisuallyHidden` ships from [`forty-cdk/visually-hidden`](../visually-hidden), `ForDrawerSide` from [`forty-cdk/drawer`](../drawer), and the field-wiring set `FOR_FIELD_CONTEXT` / `ForFieldContext` / `FieldControlHandle` / `injectFieldWiring` from [`forty-cdk/field`](../field).
+Eight blessed symbols are **not** here, because a primitive is their semantic home rather than a second path to the same symbol: `ForVisuallyHidden` and `LiveAnnouncer` ship from [`forty-cdk/visually-hidden`](../visually-hidden), `ForDrawerSide` from [`forty-cdk/drawer`](../drawer), `injectPrefersReducedMotion` from [`forty-cdk/breakpoints`](../breakpoints), and the field-wiring set `FOR_FIELD_CONTEXT` / `ForFieldContext` / `FieldControlHandle` / `injectFieldWiring` from [`forty-cdk/field`](../field).
 
 ## Reading a control's accessible text
 

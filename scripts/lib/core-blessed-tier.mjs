@@ -43,9 +43,10 @@ export const CORE_PUBLISHERS = {
     'VetoableNativeEvent',
     'WritingDirection',
   ],
+  breakpoints: ['injectPrefersReducedMotion'],
   drawer: ['ForDrawerSide'],
   field: ['FieldControlHandle', 'FOR_FIELD_CONTEXT', 'ForFieldContext', 'injectFieldWiring'],
-  'visually-hidden': ['ForVisuallyHidden'],
+  'visually-hidden': ['ForVisuallyHidden', 'LiveAnnouncer'],
 };
 
 export const SHARED_ENTRY_POINT = 'shared';
