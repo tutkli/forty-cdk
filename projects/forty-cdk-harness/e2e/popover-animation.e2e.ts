@@ -90,7 +90,7 @@ async function leaveStart(page: Page): Promise<SurfaceState> {
     undefined,
     { timeout: 3000 },
   );
-  return (await handle.jsonValue()).atStart;
+  return (await handle.jsonValue())!.atStart;
 }
 
 /**
@@ -108,7 +108,7 @@ async function leaveSample(
     undefined,
     { timeout: 3000 },
   );
-  const sample = await handle.jsonValue();
+  const sample = (await handle.jsonValue())!;
   return { atStart: sample.atStart, midFlight: sample.midFlight! };
 }
 

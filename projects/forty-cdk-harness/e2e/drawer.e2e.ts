@@ -417,14 +417,16 @@ test.describe('Drawer', () => {
       await el(page, 'trigger').click();
       await expect(el(page, 'drawer')).toBeVisible();
 
-      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 40, release: false });
+      await dragFrom(page, el(page, 'handle'), { dx: 0, dy: 40 }, { release: false });
 
+      await expect(el(page, 'drawer')).toHaveAttribute('data-dragging', '');
       const progressText = await el(page, 'last-swipe-progress').textContent();
       const progress = Number(progressText);
       expect(progress).toBeGreaterThan(0);
       expect(progress).toBeLessThanOrEqual(1);
 
       await page.mouse.up();
+      await expect(el(page, 'drawer')).not.toHaveAttribute('data-dragging', '');
       await expect(el(page, 'drawer')).toBeVisible();
       await expect(el(page, 'last-swipe-will-close')).toHaveText('false');
     });
