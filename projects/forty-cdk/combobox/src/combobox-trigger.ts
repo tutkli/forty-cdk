@@ -90,12 +90,12 @@ export class ForComboboxTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.ctx().openMenu('first');
+      this.ctx().openOverlay('first');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      this.ctx().openMenu('last');
+      this.ctx().openOverlay('last');
     }
   }
 }

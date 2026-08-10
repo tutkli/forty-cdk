@@ -97,7 +97,7 @@ export interface ForComboboxActionHandle extends CollectionHandle {
  * Coordination contract owned by `[forCombobox]` — the surface a consumer
  * reads and drives. Advanced consumers inject the token to read the selection,
  * the query and the open state, and to move them through the root's guards
- * (`activate` / `removeValue` / `clear` / `openMenu` / `closeMenu`). The
+ * (`activate` / `removeValue` / `clear` / `openOverlay` / `closeOverlay`). The
  * wiring the library's own pieces read off the root is deliberately not part
  * of it.
  *
@@ -128,7 +128,7 @@ export interface ForComboboxContext<T = unknown> {
   readonly value: Signal<readonly T[]>;
   /**
    * Whether the listbox is open, as a read-only signal. Mutate it through
-   * `toggle` / `openMenu` / `closeMenu` or the root's `[(open)]` binding.
+   * `toggle` / `openOverlay` / `closeOverlay` or the root's `[(open)]` binding.
    */
   readonly open: Signal<boolean>;
 
@@ -195,8 +195,8 @@ export interface ForComboboxContext<T = unknown> {
   clear(clearQuery?: boolean): void;
 
   toggle(): void;
-  openMenu(initialFocus?: ForComboboxInitialFocus): void;
-  closeMenu(reason: ForComboboxCloseReason): void;
+  openOverlay(initialFocus?: ForComboboxInitialFocus): void;
+  closeOverlay(reason: ForComboboxCloseReason): void;
 }
 
 /**

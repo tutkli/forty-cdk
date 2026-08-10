@@ -23,7 +23,7 @@ const PRESELECTED = 'item-30';
       ariaLabel="Pick an item"
     >
       <input data-testid="input" forComboboxInput placeholder="Search…" />
-      <button data-testid="open-selected" type="button" (click)="cb.openMenu('selected')">
+      <button data-testid="open-selected" type="button" (click)="cb.openOverlay('selected')">
         Open
       </button>
       @if (open()) {

@@ -739,7 +739,7 @@ export class ForCombobox<T = string>
       this.query.set(handle.label());
       this.#syncInputValue(handle.label());
     }
-    this.closeMenu('select');
+    this.closeOverlay('select');
   }
 
   /**
@@ -825,7 +825,7 @@ export class ForCombobox<T = string>
     const mode = this.autocompleteMode();
     const hasListbox = mode === 'list' || mode === 'both';
     if (this.openOnQuery() && hasListbox && query.length > 0 && !this.open()) {
-      this.openMenu();
+      this.openOverlay();
     }
   }
 
@@ -923,7 +923,7 @@ export class ForCombobox<T = string>
    * finds the surface mounted leaves the current activedescendant where the
    * user navigated it.
    */
-  openMenu(initialFocus: ForComboboxInitialFocus = 'first'): void {
+  openOverlay(initialFocus: ForComboboxInitialFocus = 'first'): void {
     if (this.open()) {
       return;
     }
@@ -933,11 +933,11 @@ export class ForCombobox<T = string>
   /**
    * Closes the listbox, recording `reason` as the {@link lastCloseReason} the
    * content reads. Idempotent, unlike the shared machine's own close: this is a
-   * consumer-facing method, so a `closeMenu` on an already-closed listbox must
+   * consumer-facing method, so a `closeOverlay` on an already-closed listbox must
    * not overwrite the previous reason (a `'tab'` close has to survive so the
    * content skips its return-focus) nor re-run the close side effects.
    */
-  closeMenu(reason: ForComboboxCloseReason): void {
+  closeOverlay(reason: ForComboboxCloseReason): void {
     if (!this.open()) {
       return;
     }

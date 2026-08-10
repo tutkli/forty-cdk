@@ -364,7 +364,7 @@ export class ForTimePicker<D>
     }
     this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), v));
     if (this.closeOnSelect()) {
-      this.#controller.closeMenu('select');
+      this.#controller.closeOverlay('select');
     }
   }
 
@@ -396,7 +396,7 @@ export class ForTimePicker<D>
       this.value.set(composeWithTime(this.adapter, this.value() ?? this.#sentinel(), value));
     }
     this.#controller.focusTrigger();
-    this.#controller.closeMenu('tab');
+    this.#controller.closeOverlay('tab');
   }
 
   override markTouched(): void {

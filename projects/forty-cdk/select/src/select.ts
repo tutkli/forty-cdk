@@ -597,7 +597,7 @@ export class ForSelect<T = string>
     }
     this.#rangeEngine.selectSingle(v);
     this.#rangeEngine.setAnchor(v);
-    this.#controller.closeMenu('select');
+    this.#controller.closeOverlay('select');
   }
 
   private extendByArrow(currentOption: HTMLElement, action: 'next' | 'prev'): void {
@@ -693,7 +693,7 @@ export class ForSelect<T = string>
     // its own re-focus — otherwise it would steal focus back from wherever
     // the browser advanced it.
     this.#controller.focusTrigger();
-    this.#controller.closeMenu('tab');
+    this.#controller.closeOverlay('tab');
   }
 
   override markTouched(): void {
@@ -835,7 +835,7 @@ export class ForSelect<T = string>
       this.commitOnTab(handle.value());
       return;
     }
-    this.#controller.closeMenu('tab');
+    this.#controller.closeOverlay('tab');
   }
 
   #typeaheadVirtualized(event: KeyboardEvent): void {

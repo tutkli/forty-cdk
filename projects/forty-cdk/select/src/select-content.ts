@@ -141,7 +141,7 @@ export class ForSelectContent {
           // the anchored path's touched-on-dismiss behaviour.
           requestClose: (reason) => {
             ctx.markTouched();
-            ctx.overlay.closeMenu(reason);
+            ctx.overlay.closeOverlay(reason);
           },
           emitEscapeKeyDown: (veto) => ctx.overlay.forwardEscapeKeyDown(veto),
           emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
@@ -185,7 +185,7 @@ export class ForSelectContent {
         // Mirror the modal path's touched-on-dismiss behaviour.
         requestClose: (reason) => {
           ctx.markTouched();
-          ctx.overlay.closeMenu(reason);
+          ctx.overlay.closeOverlay(reason);
         },
         emitEscapeKeyDown: (event) => ctx.overlay.emitEscapeKeyDown(event),
         emitPointerDownOutside: (veto) => ctx.overlay.emitPointerDownOutside(veto),
