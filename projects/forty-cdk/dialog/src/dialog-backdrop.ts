@@ -1,6 +1,6 @@
 import { DestroyRef, Directive, ElementRef, inject } from '@angular/core';
 
-import { injectPortal } from 'forty-cdk/core';
+import { injectPortal } from 'forty-cdk/core-overlay';
 import { FOR_DIALOG_INSTANCE_ID, injectDialogContext } from './dialog-context';
 
 /**

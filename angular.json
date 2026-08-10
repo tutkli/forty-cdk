@@ -83,6 +83,7 @@
               "../toggle/src/**/*.spec.ts",
               "../search/src/**/*.spec.ts",
               "../core/src/**/*.spec.ts",
+              "../core-overlay/src/**/*.spec.ts",
               "../shared/src/**/*.spec.ts",
               "../button/src/**/*.spec.ts",
               "../dialog/src/**/*.spec.ts",

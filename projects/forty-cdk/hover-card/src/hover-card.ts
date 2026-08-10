@@ -10,19 +10,21 @@ import {
 } from '@angular/core';
 
 import {
+  emitVetoableNativeEvent,
+  injectPrefersReducedMotion,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
+import {
   AnchoredOverlayPositioningBase,
   forceCloseWhenDisabled,
   createHoverIntent,
   type HoverIntentScheduler,
-  emitVetoableNativeEvent,
-  injectPrefersReducedMotion,
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
   ScrollDismissDispatcher,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import {
   FOR_HOVER_CARD_CONTEXT,
   type ForHoverCardContext,

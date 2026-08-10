@@ -11,14 +11,16 @@ import {
 import {
   hostButtonType,
   adoptHostId,
-  AnchoredOverlayPositioningBase,
   registerHandle,
-  type FloatingFallbackAxisSideDirection,
   hostId,
   IdGenerator,
   resolveListNavigation,
-  type MenuActivationModality,
 } from 'forty-cdk/core';
+import {
+  AnchoredOverlayPositioningBase,
+  type FloatingFallbackAxisSideDirection,
+  type MenuActivationModality,
+} from 'forty-cdk/core-overlay';
 import { injectMenubarContext } from './menubar-context';
 import { FOR_MENUBAR_DEFAULTS } from './menubar-defaults';
 

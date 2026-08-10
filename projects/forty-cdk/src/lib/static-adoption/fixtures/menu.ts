@@ -247,7 +247,7 @@ export const MENU_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forMenuContent]',
         channel: 'id',
-        source: 'core/src/menu-overlay/menu-opener-registry.ts',
+        source: 'core-overlay/src/menu-overlay/menu-opener-registry.ts',
         seam: 'adoptHostId',
         probe: 'probe-content',
         fallback: { generated: 'for-dropdown-menu-content' },
@@ -295,7 +295,7 @@ export const MENU_FAMILY_ADOPTERS: readonly StaticAdoptionAdopter[] = [
       {
         key: '[forMenuSubTrigger]',
         channel: 'id',
-        source: 'core/src/menu-overlay/menu-opener-registry.ts',
+        source: 'core-overlay/src/menu-overlay/menu-opener-registry.ts',
         seam: 'adoptHostId',
         probe: 'probe-sub-trigger',
         fallback: { generated: 'for-menu-sub-trigger' },

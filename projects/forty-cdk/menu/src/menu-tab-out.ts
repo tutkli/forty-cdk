@@ -1,4 +1,4 @@
-import { type ForMenuContext } from 'forty-cdk/core';
+import { type ForMenuContext } from 'forty-cdk/core-overlay';
 
 /**
  * Handle Tab from inside a menu (regular item, checkbox / radio item, or a

@@ -16,7 +16,6 @@ import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   adoptHostId,
-  AnchoredFormValueControlBase,
   createVetoableNativeEvent,
   type DateAdapter,
   emitVetoableEvent,
@@ -27,6 +26,7 @@ import {
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { AnchoredFormValueControlBase } from 'forty-cdk/core-overlay';
 import { ForCalendar } from 'forty-cdk/calendar';
 import type { ForDatePickerContext } from './date-picker-context';
 
@@ -95,7 +95,7 @@ export abstract class DatePickerBase<D>
 
   /**
    * When `true`, the surface is a trapped / inert / scroll-locked modal dialog
-   * (routed through `core/modal-shell`) instead of the default non-modal
+   * (routed through `core-overlay/modal-shell`) instead of the default non-modal
    * anchored popover. Read once when the content mounts.
    */
   readonly modal = input(false, { transform: booleanAttribute });

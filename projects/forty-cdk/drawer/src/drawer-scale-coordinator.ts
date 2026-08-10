@@ -1,12 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
 import { computed, DOCUMENT, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 
-import {
-  type ForDrawerSide,
-  ForDrawerStack,
-  fortyError,
-  injectPrefersReducedMotion,
-} from 'forty-cdk/core';
+import { fortyError, injectPrefersReducedMotion } from 'forty-cdk/core';
+import { type ForDrawerSide, ForDrawerStack } from 'forty-cdk/core-overlay';
 
 /**
  * Per-drawer configuration consumed by {@link ForDrawerScaleCoordinator}.

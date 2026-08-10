@@ -11,13 +11,11 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  AnchoredFormValueControlBase,
   assertTimeCapable,
   formatFortyMessage,
   injectDateAdapter,
   type TimeCapableDateAdapter,
   type WritingDirection,
-  ListboxOverlayController,
   injectHiddenInput,
   type VetoableEvent,
   type VetoableNativeEvent,
@@ -27,6 +25,7 @@ import {
   timeSentinel,
   composeWithTime,
 } from 'forty-cdk/core';
+import { AnchoredFormValueControlBase, ListboxOverlayController } from 'forty-cdk/core-overlay';
 import {
   buildTimeSlots,
   timeOfDaySeconds,

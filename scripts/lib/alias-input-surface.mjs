@@ -36,14 +36,14 @@ export const ALIAS_INPUT_SURFACE = {
   'carousel/ForCarousel': ['_dirInput'],
   'combobox/ForCombobox': ['_dirInput'],
   'context-menu/ForContextMenu': ['_dirInput'],
-  'core/AnchoredFormValueControlBase': [
+  'core-overlay/AnchoredFormValueControlBase': [
     '_sideInput',
     '_alignInput',
     '_sideOffsetInput',
     '_alignOffsetInput',
     '_collisionPaddingInput',
   ],
-  'core/AnchoredOverlayPositioningBase': [
+  'core-overlay/AnchoredOverlayPositioningBase': [
     '_sideInput',
     '_alignInput',
     '_sideOffsetInput',

@@ -1,16 +1,24 @@
 /*
  * Internal shared surface of forty-cdk — the `forty-cdk/core` entry point.
  *
- * This entry point holds everything formerly under `src/lib/_internal/`: the
- * cross-primitive DI singletons (`LiveAnnouncer`, focus-trap / dismissible-layer
- * / inert-siblings / drawer stacks, the id-generator salt, the defaults
- * registry), the framework-free geometry / interaction / overlay helpers, and
- * the cross-cutting public tokens.
+ * This entry point holds the cross-primitive DI singletons (`LiveAnnouncer`,
+ * the focus-trap stack, the id-generator salt, the defaults registry), the
+ * framework-free geometry / interaction helpers, and the cross-cutting public
+ * tokens.
  *
  * It exists so that every primitive entry point can import the shared core by
  * the `forty-cdk/core` specifier and the bundler compiles it exactly ONCE —
  * never duplicated per primitive, which would split the DI singletons into
  * multiple instances and break cross-primitive coordination.
+ *
+ * The overlay machinery — the positioning engine, both shells, the
+ * dismissible-layer / inert-siblings / body-scroll-lock / drawer stacks, the
+ * menu and listbox overlay controllers, the imperative manager core, the
+ * portal and the hover-intent schedulers — is NOT here. It ships as
+ * `forty-cdk/core-overlay`, whose barrel header records why
+ * ([#1723](https://github.com/tutkli/forty-cdk/issues/1723)). The edge runs
+ * one way only: that entry point imports this one, and nothing here may import
+ * it back — a single reverse edge merges the two chunks and undoes the split.
  *
  * THIS ENTRY POINT IS NOT PUBLIC. It carries no semver guarantees and is
  * exported only so forty-cdk's own entry points share one compiled module.
@@ -19,7 +27,9 @@
  * implementation surface refactorable without notice.
  *
  * Stability: this barrel is split into two tiers, and the boundary is
- * mechanical rather than advisory. The BLESSED tier is the curated set listed
+ * mechanical rather than advisory — and it spans `forty-cdk/core-overlay`'s
+ * barrel too, which is why the gate reads both. The BLESSED tier is the
+ * curated set listed
  * in `scripts/lib/core-blessed-tier.mjs` — contract types and tokens the
  * library commits to, each published by exactly one public entry point
  * (`forty-cdk/shared` for the cross-primitive ones; `forty-cdk/visually-hidden`,
@@ -35,7 +45,10 @@
  * subclassing them is not a supported contract.
  *
  * Scope: this barrel lists only what actually crosses the entry point's
- * boundary. Modules inside `core` import each other by relative path, so a
+ * boundary — which now includes what `forty-cdk/core-overlay` reads, so a
+ * symbol exported solely for that entry point (`injectFocusTrap`, the
+ * `composed-tree` walkers, `MODAL_PEER_ATTRIBUTE`) belongs here. Modules
+ * inside `core` import each other by relative path, so a
  * symbol used only within `core` does not belong here — it would enlarge the
  * internal tier every audit has to read without making anything reachable.
  * A symbol that no entry point, spec or app imports stays exported only when
@@ -50,7 +63,6 @@
 
 export { accessibleTextContent } from './accessible-text/accessible-text';
 export { afterNextRenderCancellable } from './after-next-render-cancellable/after-next-render-cancellable';
-export { BodyScrollLock } from './body-scroll-lock/body-scroll-lock';
 export { Collection, type CollectionHandle } from './collection/collection';
 export { firstEnabledHost, nextEnabledHandle } from './collection/enabled-handle-navigation';
 export {
@@ -65,6 +77,13 @@ export {
   registerHandle,
 } from './collection/register-handle';
 export { createSingleSlot } from './collection/single-slot';
+export {
+  composedClosest,
+  composedContains,
+  composedParentElement,
+  resolveActiveElement,
+  resolveEventTarget,
+} from './composed-tree/composed-tree';
 export {
   assertTimeCapable,
   compareDateOf,
@@ -101,10 +120,6 @@ export { type TimeGranularity } from './datetime/time-segments';
 export { FOR_TIME_VALUE_SOURCE } from './datetime/time-value-source';
 export { createDefaults } from './defaults/defaults';
 export {
-  DismissibleLayerStack,
-  injectDismissibleLayer,
-} from './dismissible-layer/dismissible-layer';
-export {
   clampPreviewPosition,
   type PreviewPoint,
   resolveBoundaryElement,
@@ -124,12 +139,6 @@ export {
 } from './drag-session/pointer-session';
 export { PreviewController } from './drag-session/preview-controller';
 export { resolveScrubReorder, translateWindowReorder } from './drag-session/window-index-map';
-export { type ForDrawerSide } from './drawer-stack/drawer-side';
-export {
-  type DrawerStackHandle,
-  type DrawerStackNode,
-  ForDrawerStack,
-} from './drawer-stack/drawer-stack';
 export { type ElementBox, injectElementSize } from './element-size/element-size';
 export { formatFortyMessage, fortyError, type FortyMessageSpec, fortyWarn } from './errors/errors';
 export {
@@ -145,41 +154,19 @@ export {
   injectFieldWiring,
 } from './field/field-wiring';
 export { FOR_FIELDSET_CONTEXT, type ForFieldsetContext } from './field/fieldset-context';
-export { AnchoredFormValueControlBase } from './floating/anchored-form-value-control-base';
-export {
-  AnchoredOverlayPositioningBase,
-  type AnchoredPositioningOverride,
-  type AnchoredPositioningSeedDefaults,
-} from './floating/anchored-overlay-positioning-base';
-export {
-  ANCHORED_POSITIONING_DEFAULTS,
-  type AnchoredPositioningContext,
-  toFloatingPositioner,
-} from './floating/anchored-positioning-inputs';
-export {
-  type FloatingAlign,
-  type FloatingFallbackAxisSideDirection,
-  type FloatingSide,
-} from './floating/floating';
-export { findFirstFocusable } from './focus-trap/focus-trap';
+export { findFirstFocusable, injectFocusTrap } from './focus-trap/focus-trap';
 export { injectHasFocusableContent } from './focus-trap/focusable-content';
 export { FormUiControlBase } from './form-ui-control/form-ui-control-base';
 export { injectHiddenInput } from './form-ui-control/hidden-input';
 export { TextValueControlBase } from './form-ui-control/text-value-control-base';
 export { mirrorUnfocusedValue } from './form-ui-control/unfocused-value-mirror';
+export { resolveConfigClass } from './host-attributes/config-class';
 export { reflectDisabled } from './host-attributes/disabled-reflection';
 export { hostAriaLabel, hostDescribedBy, hostLabelledBy } from './host-attributes/host-aria';
 export { adoptHostId, hostId, resolveHostId } from './host-attributes/host-id';
 export { hostButtonType } from './host-attributes/host-type';
-export { createDebouncedAction, type DebouncedAction } from './hover-intent/debounced-action';
-export {
-  createHoverIntent,
-  forceCloseWhenDisabled,
-  type HoverIntentScheduler,
-} from './hover-intent/hover-intent';
-export { createSkipDelayWindow, SkipDelayCoordinator } from './hover-intent/skip-delay';
+export { MODAL_EXEMPT_ATTRIBUTE, MODAL_PEER_ATTRIBUTE } from './host-attributes/modal-attributes';
 export { FOR_ID_SALT, IdGenerator, provideForIdSalt } from './id-generator/id-generator';
-export { InertSiblingsStack } from './inert-siblings/inert-siblings';
 export {
   type GridNavigationAction,
   type ListNavigationAction,
@@ -191,33 +178,8 @@ export {
   resolveTreegridExpandCollapse,
   type WritingDirection,
 } from './keyboard-navigation/keyboard-navigation';
-export {
-  type ListboxOverlayContext,
-  ListboxOverlayController,
-} from './listbox-overlay/listbox-overlay-controller';
 export { LiveAnnouncer } from './live-announcer/live-announcer';
 export { injectMediaQuery, injectPrefersReducedMotion } from './media-query/media-query';
-export {
-  FOR_MENU_CONTEXT,
-  type ForMenuCloseReason,
-  type ForMenuContext,
-  type ForMenuItemHandle,
-  injectMenuContext,
-  type MenuActivationModality,
-  menuLayerNesting,
-  type MenuSiblingNavigator,
-} from './menu-overlay/menu-context';
-export { createMenuItemList, type MenuItemHandle } from './menu-overlay/menu-item-list';
-export {
-  asMenuOpenerRegistration,
-  type MenuOpenerOptions,
-  type MenuOpenerPositioning,
-  type MenuOpenerRegistration,
-} from './menu-overlay/menu-opener-registry';
-export { createMenuOverlay, MenuOverlay } from './menu-overlay/menu-overlay';
-export { MenuOverlayHost } from './menu-overlay/menu-overlay-host';
-export { injectModalShell } from './modal-shell/modal-shell';
-export { ModalSurfaceBase } from './modal-shell/modal-surface-base';
 export {
   clamp,
   decimalPlaces,
@@ -226,42 +188,9 @@ export {
   snapToStep,
   stepOnGrid,
 } from './numeric-step/numeric-step';
-export { CloseReasonState } from './overlay-controller/close-reason-state';
-export {
-  anchorSlot,
-  elementSlot,
-  injectIdentifiedSlot,
-  injectSlotId,
-} from './overlay-controller/element-registry';
-export { InitialFocusState } from './overlay-controller/initial-focus-state';
-export {
-  type MountedWhileClosedConfig,
-  warnIfMountedWhileClosed,
-} from './overlay-controller/mounted-while-closed';
-export {
-  injectOverlayShell,
-  type OverlayShellConfig,
-  type OverlayShellPositionerConfig,
-} from './overlay-controller/overlay-shell';
-export {
-  OverlayManagerCore,
-  type OverlayManagerEntry,
-  type OverlayManagerOutlet,
-  type OverlayManagerOutletHost,
-  type OverlaySurface,
-} from './overlay-manager/overlay-manager';
-export { OverlayRef } from './overlay-manager/overlay-ref';
-export { resolveConfigClass } from './overlay-manager/resolve-config-class';
 export { injectPauseController, type PauseController } from './pausable/pause-controller';
 export { isHoverCapablePointer, isNonTouchPointer } from './pointer/pointer-capability';
-export {
-  attachPointerGrace,
-  buildSubmenuGracePolygon,
-  type Point,
-  resolveGraceSide,
-} from './pointer/pointer-grace';
 export { createPointerSuppression, type PointerSuppression } from './pointer/pointer-suppression';
-export { injectPortal } from './portal/portal';
 export { assertRootContext } from './root-context/root-context';
 export {
   FOR_HOST_ROVING_CONTEXT,
@@ -274,7 +203,6 @@ export {
   selectionTabStop,
 } from './roving-tabindex/roving-list-navigation';
 export { RovingTabindex } from './roving-tabindex/roving-tabindex';
-export { ScrollDismissDispatcher } from './scroll-dismiss/scroll-dismiss-dispatcher';
 export { RangeSelectionEngine } from './selection/range-selection-engine';
 export {
   defaultItemToFormValue,
@@ -315,7 +243,7 @@ export {
   throwUnsupportedVirtualizedSelectionFollowsFocus,
 } from './typeahead/list-typeahead';
 export { findTypeaheadMatch, foldTypeaheadText } from './typeahead/match-options';
-export { injectTypeahead } from './typeahead/typeahead';
+export { injectTypeahead, type Typeahead } from './typeahead/typeahead';
 export { assertInputBound, isUnset, unsetInput } from './unset-input/unset-input';
 export {
   createVetoableEvent,

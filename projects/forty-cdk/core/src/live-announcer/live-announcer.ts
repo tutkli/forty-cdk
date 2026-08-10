@@ -1,7 +1,7 @@
 import { DOCUMENT, DestroyRef, Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
-import { MODAL_EXEMPT_ATTRIBUTE } from '../inert-siblings/inert-siblings';
+import { MODAL_EXEMPT_ATTRIBUTE } from '../host-attributes/modal-attributes';
 import { VISUALLY_HIDDEN_STYLE } from '../visually-hidden/visually-hidden';
 
 type Politeness = 'polite' | 'assertive';

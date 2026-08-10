@@ -15,10 +15,7 @@ import {
 
 import {
   Collection,
-  injectDismissibleLayer,
-  createDebouncedAction,
   createPointerSuppression,
-  createSkipDelayWindow,
   type ListNavigationAction,
   type WritingDirection,
   isUnset,
@@ -26,6 +23,11 @@ import {
   injectTextDirection,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import {
+  injectDismissibleLayer,
+  createDebouncedAction,
+  createSkipDelayWindow,
+} from 'forty-cdk/core-overlay';
 import {
   FOR_NAVIGATION_MENU_CONTEXT,
   type ForNavigationMenuContentHandle,

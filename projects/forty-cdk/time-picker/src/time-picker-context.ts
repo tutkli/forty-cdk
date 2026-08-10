@@ -2,13 +2,15 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
   type CollectionHandle,
-  type FloatingAlign,
-  type FloatingSide,
-  type ListboxOverlayContext,
   orphanContextError,
   unresolvedRootError,
   type WritingDirection,
 } from 'forty-cdk/core';
+import {
+  type FloatingAlign,
+  type FloatingSide,
+  type ListboxOverlayContext,
+} from 'forty-cdk/core-overlay';
 import type { ForTimeSlot, TimePickerGranularity } from './build-time-slots';
 
 /**

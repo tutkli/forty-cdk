@@ -1,11 +1,11 @@
 import { type Provider } from '@angular/core';
 
+import { createDefaults } from 'forty-cdk/core';
 import {
   type AnchoredPositioningSeedDefaults,
-  createDefaults,
   type FloatingAlign,
   type FloatingSide,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 
 /**
  * Defaults inherited by descendant date range pickers in the surrounding

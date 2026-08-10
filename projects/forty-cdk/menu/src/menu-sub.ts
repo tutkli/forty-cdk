@@ -13,25 +13,27 @@ import {
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  emitVetoableEvent,
+  isHoverCapablePointer,
+  orphanContextError,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+  type WritingDirection,
+} from 'forty-cdk/core';
+import {
   type AnchoredPositioningSeedDefaults,
   attachPointerGrace,
   buildSubmenuGracePolygon,
   createDebouncedAction,
   createMenuOverlay,
-  emitVetoableEvent,
   type FloatingFallbackAxisSideDirection,
   FOR_MENU_CONTEXT,
   type ForMenuCloseReason,
   type ForMenuContext,
-  isHoverCapablePointer,
   MenuOverlayHost,
-  orphanContextError,
   type Point,
   resolveGraceSide,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-  type WritingDirection,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import { FOR_MENU_DEFAULTS } from './menu-defaults';
 
 /**

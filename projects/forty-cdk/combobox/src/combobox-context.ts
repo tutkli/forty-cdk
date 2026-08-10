@@ -4,13 +4,12 @@ import type { ReferenceElement } from '@floating-ui/dom';
 import {
   assertRootContext,
   type CollectionHandle,
-  type FloatingAlign,
-  type FloatingSide,
   orphanContextError,
   unresolvedRootError,
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
+import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
 
 /**
  * Why the combobox closed. Mirrors the menu / select vocabulary so consumers

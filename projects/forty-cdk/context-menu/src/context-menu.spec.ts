@@ -7,7 +7,8 @@ import {
   assertDataStateContract,
   assertDismissibleLayerContract,
 } from '../../src/test-utils/contract';
-import { FOR_MENU_CONTEXT, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
 import { ForMenuContent, ForMenuItem, ForMenuSub, ForMenuSubTrigger } from 'forty-cdk/menu';
 
 import { ForContextMenu } from './context-menu';

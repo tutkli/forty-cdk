@@ -1,5 +1,5 @@
 import { type Signal, type WritableSignal } from '@angular/core';
-import { OverlayRef } from 'forty-cdk/core';
+import { OverlayRef } from 'forty-cdk/core-overlay';
 
 import type { ForDrawerCloseReason, ForDrawerSnapPoint } from './drawer-context';
 

@@ -1,11 +1,7 @@
 import { ElementRef, inject, signal, type Signal } from '@angular/core';
 
-import {
-  registerHandle,
-  resolveListNavigation,
-  type ForMenuContext,
-  isHoverCapablePointer,
-} from 'forty-cdk/core';
+import { registerHandle, resolveListNavigation, isHoverCapablePointer } from 'forty-cdk/core';
+import { type ForMenuContext } from 'forty-cdk/core-overlay';
 import { handleMenuHorizontalArrow } from './menu-horizontal-arrow';
 import { handleMenuTabOut } from './menu-tab-out';
 

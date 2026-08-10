@@ -1,12 +1,12 @@
 import { type Provider } from '@angular/core';
 
+import { createDefaults } from 'forty-cdk/core';
 import {
   type AnchoredPositioningSeedDefaults,
-  createDefaults,
   type FloatingAlign,
   type FloatingFallbackAxisSideDirection,
   type FloatingSide,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 
 /**
  * Defaults inherited by descendant dropdown menus in the surrounding

@@ -9,13 +9,8 @@ import {
   signal,
 } from '@angular/core';
 
-import {
-  registerHandle,
-  hostId,
-  hostLabelledBy,
-  isHoverCapablePointer,
-  warnIfMountedWhileClosed,
-} from 'forty-cdk/core';
+import { registerHandle, hostId, hostLabelledBy, isHoverCapablePointer } from 'forty-cdk/core';
+import { warnIfMountedWhileClosed } from 'forty-cdk/core-overlay';
 import {
   injectNavigationMenuContext,
   injectNavigationMenuItemContext,

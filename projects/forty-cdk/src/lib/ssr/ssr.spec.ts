@@ -2,12 +2,8 @@ import { ɵPLATFORM_SERVER_ID, isPlatformServer } from '@angular/common';
 import { PLATFORM_ID, type Type, provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import {
-  BodyScrollLock,
-  DismissibleLayerStack,
-  IdGenerator,
-  InertSiblingsStack,
-} from 'forty-cdk/core';
+import { IdGenerator } from 'forty-cdk/core';
+import { BodyScrollLock, DismissibleLayerStack, InertSiblingsStack } from 'forty-cdk/core-overlay';
 
 import * as collectionFixtures from './fixtures/collection';
 import * as datetimeFixtures from './fixtures/datetime';

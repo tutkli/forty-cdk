@@ -13,8 +13,8 @@ import {
   createVetoableEvent,
   emitVetoableEvent,
   type VetoableEvent,
-  injectMenuContext,
 } from 'forty-cdk/core';
+import { injectMenuContext } from 'forty-cdk/core-overlay';
 import { createMenuItemInteraction } from './menu-item-interaction';
 
 /**

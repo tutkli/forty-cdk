@@ -39,20 +39,27 @@ const CODE_PATTERN = /^FORCDK-[A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{3}$/;
 const LAYOUT_MODULE = 'core/src/errors/errors.ts';
 
 /**
- * Modules in `forty-cdk/core` that report on behalf of a concern other than
- * `core`, with the reason. Core hosts machinery that is shared by
+ * The internal-tier entry points. Both declare `FORCDK-CORE-*` — the area is
+ * the consumer-facing concern, and `forty-cdk/core-overlay` is no more a
+ * concern a consumer imported from than `forty-cdk/core` is.
+ */
+const INTERNAL_TIER: ReadonlySet<string> = new Set(['core', 'core-overlay']);
+
+/**
+ * Modules in the internal tier that report on behalf of a concern other than
+ * `core`, with the reason. The tier hosts machinery that is shared by
  * implementation but belongs, from a consumer's point of view, to one
  * primitive — so its codes carry that primitive's area while the file lives
- * here. Everything else in core declares `CORE`.
+ * here. Everything else in the tier declares `CORE`.
  *
  * A named condition rather than a blanket "core may declare anything": the
  * final case fails on a stale entry, so a module that stops declaring the area
  * claimed for it cannot leave the exemption behind.
  */
 const CORE_CROSS_CONCERN: Readonly<Record<string, string>> = {
-  'core/src/drawer-stack/drawer-stack.ts':
+  'core-overlay/src/drawer-stack/drawer-stack.ts':
     'the drawer stack is drawer-only machinery that lives in core so nesting is coordinated app-wide',
-  'core/src/menu-overlay/menu-context.ts':
+  'core-overlay/src/menu-overlay/menu-context.ts':
     'the shared menu context backs every menu-family root, and a consumer reads it as `menu`',
 };
 
@@ -207,17 +214,17 @@ describe('FORCDK error codes', () => {
     expect(duplicated).toEqual([]);
   });
 
-  it("names the consumer's own entry point in the area, outside core", () => {
+  it("names the consumer's own entry point in the area, outside the internal tier", () => {
     const mismatched = sites
-      .filter((site) => site.entryPoint !== 'core' && site.area !== site.entryPoint)
+      .filter((site) => !INTERNAL_TIER.has(site.entryPoint) && site.area !== site.entryPoint)
       .map((site) => `${site.source} → ${site.code} (area "${site.area}")`);
 
     expect(mismatched).toEqual([]);
   });
 
-  it('keeps core on CORE, except for the modules whose concern is a named primitive', () => {
+  it('keeps the internal tier on CORE, except for the modules whose concern is a named primitive', () => {
     const offenders = sites
-      .filter((site) => site.entryPoint === 'core' && site.area !== 'core')
+      .filter((site) => INTERNAL_TIER.has(site.entryPoint) && site.area !== 'core')
       .filter((site) => !(site.source in CORE_CROSS_CONCERN))
       .map((site) => `${site.source} → ${site.code}`);
 

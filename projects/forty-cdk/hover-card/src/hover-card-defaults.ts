@@ -1,12 +1,12 @@
 import { inject, Injectable, type Provider } from '@angular/core';
 
+import { createDefaults } from 'forty-cdk/core';
 import {
   type AnchoredPositioningSeedDefaults,
-  createDefaults,
   type FloatingAlign,
   type FloatingSide,
   SkipDelayCoordinator,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 
 /**
  * Defaults inherited by descendant hover-cards in the surrounding injector

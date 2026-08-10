@@ -1,6 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type MenuActivationModality, unresolvedRootError } from 'forty-cdk/core';
+import { unresolvedRootError } from 'forty-cdk/core';
+import { type MenuActivationModality } from 'forty-cdk/core-overlay';
 
 /**
  * Coordination contract `[forContextMenuTrigger]` resolves from its enclosing

@@ -3,7 +3,8 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
 import { ForContextMenuTrigger } from 'forty-cdk/context-menu';
-import type { MenuOpenerPositioning, VetoableNativeEvent } from 'forty-cdk/core';
+import type { VetoableNativeEvent } from 'forty-cdk/core';
+import type { MenuOpenerPositioning } from 'forty-cdk/core-overlay';
 import { ForDropdownMenu, ForDropdownMenuTrigger } from 'forty-cdk/dropdown-menu';
 
 import {

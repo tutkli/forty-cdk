@@ -1,17 +1,19 @@
 import { booleanAttribute, Directive, inject, input, model, output, signal } from '@angular/core';
 
 import {
-  type AnchoredPositioningOverride,
-  type FloatingFallbackAxisSideDirection,
   type WritingDirection,
-  createMenuOverlay,
-  MenuOverlayHost,
   injectTextDirection,
   type VetoableEvent,
   type VetoableNativeEvent,
+} from 'forty-cdk/core';
+import {
+  type AnchoredPositioningOverride,
+  type FloatingFallbackAxisSideDirection,
+  createMenuOverlay,
+  MenuOverlayHost,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import { FOR_CONTEXT_MENU_CONTEXT, type ForContextMenuContext } from './context-menu-context';
 import { FOR_CONTEXT_MENU_DEFAULTS } from './context-menu-defaults';
 

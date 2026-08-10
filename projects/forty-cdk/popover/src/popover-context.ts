@@ -1,11 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import {
-  type AnchoredPositioningContext,
-  orphanContextError,
-  unresolvedRootError,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+import { orphanContextError, unresolvedRootError, type VetoableNativeEvent } from 'forty-cdk/core';
+import { type AnchoredPositioningContext } from 'forty-cdk/core-overlay';
 
 /**
  * Why a popover requested close. The popover is non-modal, so there is no

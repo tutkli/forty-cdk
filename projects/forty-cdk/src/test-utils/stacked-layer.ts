@@ -1,5 +1,5 @@
 import { Directive, signal } from '@angular/core';
-import { injectDismissibleLayer } from 'forty-cdk/core';
+import { injectDismissibleLayer } from 'forty-cdk/core-overlay';
 
 /**
  * Stands in for a second overlay stacked over the primitive under test — a
