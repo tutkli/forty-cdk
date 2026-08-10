@@ -320,7 +320,10 @@ export {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from './vetoable-event/vetoable-event';
-export { VirtualizedNavigator } from './virtualized-navigator/virtualized-navigator';
+export {
+  VirtualizedNavigator,
+  type VirtualizedNavigatorDeps,
+} from './virtualized-navigator/virtualized-navigator';
 export {
   runVirtualizedNavigatorBridge,
   type VirtualizedNavigatorBridgeDeps,

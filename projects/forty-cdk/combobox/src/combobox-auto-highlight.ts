@@ -2,7 +2,7 @@ import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
 import { isUnset, runVirtualizedNavigatorBridge } from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
-import type { VirtualizedNavigator } from './combobox-virtualized-navigator';
+import type { ComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 
 /**
  * Inputs for {@link resolveAutoHighlightSeed}. Mirror the tracked source of the
@@ -190,7 +190,7 @@ function findSelectedEnabled<T>(
  */
 export interface AutoHighlightBridgeDeps<T> {
   /** Lazily build the virtualization navigator (only when `totalCount` is set). */
-  readonly requireNavigator: () => VirtualizedNavigator<T>;
+  readonly requireNavigator: () => ComboboxVirtualizedNavigator<T>;
   /** Live registered options in DOM order. */
   readonly items: () => readonly ForComboboxOptionHandle<T>[];
   /** Whether the listbox is open. */
@@ -217,7 +217,7 @@ export interface AutoHighlightBridgeDeps<T> {
  *
  * When virtualized, it resolves a pending `(scrollToIndex)` navigation: once the option for the
  * requested `posInSet` mounts, activedescendant is seeded to its id and scrolled into view. That
- * write takes precedence over the auto-highlight seed. The passive `seedFromIndexedSnapshot` then
+ * write takes precedence over the auto-highlight seed. The passive `seedFirstRenderedEnabled` then
  * points at the topmost or bottommost rendered enabled option without touching the consumer's
  * scroll position.
  *
@@ -249,7 +249,7 @@ export function runAutoHighlightBridge<T>(deps: AutoHighlightBridgeDeps<T>): voi
       return;
     }
     if (autoHighlight && open && untracked(() => deps.getActiveId()) === null && items.length > 0) {
-      navigator.seedFromIndexedSnapshot(deps.initialFocus() === 'last' ? 'last' : 'first');
+      navigator.seedFirstRenderedEnabled(deps.initialFocus() === 'last' ? 'last' : 'first');
     }
     return;
   }

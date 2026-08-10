@@ -7,6 +7,7 @@ import {
   moveIndex,
   type RovingTabindex,
   VirtualizedNavigator,
+  type VirtualizedNavigatorDeps,
 } from 'forty-cdk/core';
 import type { ForTreeItemHandle, ForTreeVisibleNode } from './tree-context';
 
@@ -156,41 +157,30 @@ interface PositionEntry<T> {
   readonly value: T;
 }
 
-/** Wiring for {@link ActiveDescendantFocusModel}. */
-export interface ActiveDescendantFocusModelDeps<T = unknown> {
-  /** Live registered tree items — the rendered window when virtualizing. */
-  readonly items: Signal<readonly ForTreeItemHandle<T>[]>;
-  /** Total node count for the virtualized path. */
-  readonly totalCount: Signal<number | undefined>;
-  /** Inclusive-exclusive range of currently rendered nodes when virtualizing. */
-  readonly visibleRange: Signal<readonly [number, number] | undefined>;
-  /** Read the host's current activedescendant id. */
-  readonly getActiveId: () => string | null;
-  /** Write the host's `aria-activedescendant` to a node id. */
-  readonly setActiveId: (id: string | null) => void;
-  /** Forward a `(scrollToIndex)` request to the consumer's virtualizer. */
-  readonly emitScrollToIndex: (idx: number) => void;
+/**
+ * Wiring for {@link ActiveDescendantFocusModel} — the shared engine's own
+ * dependencies, minus `loop` (a tree never wraps, so the model pins it to
+ * `false`) and with `getResumePos` mandatory rather than optional, because the
+ * tree clears its dangling activedescendant on unmount and always resumes from
+ * the retained position.
+ */
+export type ActiveDescendantFocusModelDeps<T = unknown> = Omit<
+  VirtualizedNavigatorDeps<ForTreeItemHandle<T>>,
+  'loop' | 'getResumePos'
+> & {
   /**
    * Last active absolute position, retained when the active node unmounts so
    * navigation resumes from it instead of restarting at the edge. Returns `null`
    * when there is nothing to resume from.
    */
   readonly getResumePos: () => number | null;
-  /**
-   * Optional monotonic "the dataset changed" signal. When provided and its
-   * value changes, the position snapshot rebuilds from empty — the seam a
-   * consumer wires to `[dataVersion]` so a same-length re-sort / refresh of the
-   * flattened node list purges stale off-window entries. See
-   * {@link ActiveDescendantFocusModel.invalidateSnapshot}.
-   */
-  readonly dataVersion?: Signal<unknown>;
-}
+};
 
 /**
  * Focus engine for the virtualized tree: DOM focus stays on the container and
  * an `aria-activedescendant` pointer tracks the active node. Owns the shared
- * `_internal/virtualized-navigator` engine directly — a tree never wraps, so it
- * pins `loop` to `false`, and its snapshot entry carries `level` / `expandable`
+ * `forty-cdk/core` navigation engine directly — a tree never wraps, so it pins
+ * `loop` to `false`, and its snapshot entry carries `level` / `expandable`
  * / `value` so the tree-specific enter-child / go-to-parent moves can resolve
  * levels outside the rendered window. Selection never follows focus here.
  *
@@ -209,6 +199,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
         hostOf: (n) => n.host,
+        isDisabled: (n) => n.disabled(),
         readEntry: (n) => {
           const value = n.value();
           return isUnset(value)

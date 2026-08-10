@@ -79,6 +79,7 @@ function createNavigator(
       posOf: (h) => h.pos(),
       idOf: (h) => h.id(),
       hostOf: (h) => h.host,
+      isDisabled: (h) => h.disabled(),
       readEntry: (h) => {
         const id = h.id();
         const value = h.value();
@@ -378,6 +379,83 @@ describe('VirtualizedNavigator', () => {
       h.setRange([50, 51]);
       expect(h.navigator.tryResolvePending()).toBe(true);
       expect(h.getActive()).toBe('r-50');
+    });
+  });
+
+  describe('seedFirstRenderedEnabled', () => {
+    it('seeds the first enabled rendered handle, ordered by absolute position', () => {
+      const h = createNavigator({ range: [0, 5] });
+      h.setItems([
+        makeHandle({ id: 'r-2', pos: 2 }),
+        makeHandle({ id: 'r-0', pos: 0, disabled: true }),
+        makeHandle({ id: 'r-1', pos: 1 }),
+      ]);
+      h.navigator.prime();
+
+      h.navigator.seedFirstRenderedEnabled('first');
+      expect(h.getActive()).toBe('r-1');
+    });
+
+    it('seeds the last enabled rendered handle for a last seed', () => {
+      const h = createNavigator({ range: [0, 5] });
+      h.setItems([
+        makeHandle({ id: 'r-0', pos: 0 }),
+        makeHandle({ id: 'r-1', pos: 1 }),
+        makeHandle({ id: 'r-2', pos: 2, disabled: true }),
+      ]);
+      h.navigator.prime();
+
+      h.navigator.seedFirstRenderedEnabled('last');
+      expect(h.getActive()).toBe('r-1');
+    });
+
+    it('seeds the topmost rendered handle without requesting a scroll', () => {
+      const h = createNavigator({ total: 1000, range: [30, 44] });
+      h.setItems(
+        Array.from({ length: 14 }, (_, i) => makeHandle({ id: `r-${30 + i}`, pos: 30 + i })),
+      );
+      h.navigator.prime();
+
+      h.navigator.seedFirstRenderedEnabled('first');
+      expect(h.getActive()).toBe('r-30');
+      expect(h.emitted).toEqual([]);
+    });
+
+    it('seeds a handle the fold skipped because its value binding is unwritten', () => {
+      const h = createNavigator({ range: [0, 5] });
+      const handle: FakeHandle = {
+        id: signal('r-0'),
+        pos: signal<number | null>(0),
+        disabled: signal(false),
+        value: () => unsetInput<string>(),
+        host: document.createElement('div'),
+      };
+      h.setItems([handle]);
+      h.navigator.prime();
+      expect(h.navigator.snapshotByPos().has(0)).toBe(false);
+
+      h.navigator.seedFirstRenderedEnabled('first');
+      expect(h.getActive()).toBe('r-0');
+    });
+
+    it('leaves activedescendant alone when nothing is rendered or every handle is disabled', () => {
+      const h = createNavigator({ range: [0, 5] });
+      h.navigator.seedFirstRenderedEnabled('first');
+      expect(h.getActive()).toBeNull();
+
+      h.setItems([makeHandle({ id: 'r-0', pos: 0, disabled: true })]);
+      h.navigator.prime();
+      h.navigator.seedFirstRenderedEnabled('first');
+      expect(h.getActive()).toBeNull();
+    });
+
+    it('leaves activedescendant alone when totalCount is unset', () => {
+      const h = createNavigator();
+      h.setItems([makeHandle({ id: 'r-0', pos: 0 })]);
+      h.setTotal(undefined);
+
+      h.navigator.seedFirstRenderedEnabled('first');
+      expect(h.getActive()).toBeNull();
     });
   });
 

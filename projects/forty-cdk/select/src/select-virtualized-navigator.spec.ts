@@ -3,7 +3,7 @@ import { computed, signal, type Signal } from '@angular/core';
 import { unsetInput } from 'forty-cdk/core';
 
 import type { ForSelectOptionHandle } from './select-context';
-import { SelectVirtualizedNavigator } from './select-virtualized-navigator';
+import { createSelectVirtualizedNavigator } from './select-virtualized-navigator';
 
 function makeHandle(id: string, value: Signal<string>, pos: number): ForSelectOptionHandle<string> {
   return {
@@ -18,7 +18,7 @@ function makeHandle(id: string, value: Signal<string>, pos: number): ForSelectOp
 
 function createNavigator(items: readonly ForSelectOptionHandle<string>[]) {
   const active = signal<string | null>(null);
-  return new SelectVirtualizedNavigator<string>({
+  return createSelectVirtualizedNavigator<string>({
     items: signal(items),
     totalCount: signal<number | undefined>(100),
     visibleRange: signal<readonly [number, number] | undefined>([0, 10]),
@@ -29,7 +29,7 @@ function createNavigator(items: readonly ForSelectOptionHandle<string>[]) {
   });
 }
 
-describe('SelectVirtualizedNavigator', () => {
+describe('createSelectVirtualizedNavigator', () => {
   it('skips an option whose value binding is unwritten, folding it in on the re-run', () => {
     const bound = signal<string | null>(null);
     const value = computed(() => bound() ?? unsetInput<string>());

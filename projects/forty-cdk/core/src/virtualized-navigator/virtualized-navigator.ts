@@ -29,6 +29,14 @@ export interface VirtualizedNavigatorAccessors<H, E extends VirtualizedNavigator
   /** Host element of a live handle, scrolled into view when it becomes active. */
   readonly hostOf: (item: H) => HTMLElement;
   /**
+   * Whether a live handle is disabled, read without going through the position
+   * snapshot. {@link VirtualizedNavigator.seedFirstRenderedEnabled} needs the
+   * flag for handles the fold may have skipped, so the snapshot cannot answer
+   * it: {@link readEntry} returns `null` for an option whose `[value]` binding
+   * is not written yet, and such an option is still a legitimate seed target.
+   */
+  readonly isDisabled: (item: H) => boolean;
+  /**
    * Build the position-snapshot entry for a live handle, or `null` to skip it
    * this fold. The unwritten-binding guard is injected here: a
    * statically-rendered option that registers before its `[value]` binding is
@@ -113,11 +121,11 @@ interface SnapshotSource<H> {
 /**
  * The single activedescendant-over-absolute-index navigation engine shared by
  * every virtualized collection primitive (Select, Listbox, Combobox, Tree).
- * Constructed lazily by each primitive's thin adapter — only once the consumer
- * sets `totalCount()` — so a non-virtualized collection never pulls this
- * position-map machinery into its hot path. Encapsulates two pieces of state
- * that make keyboard navigation work across a virtualized window where the
- * active item may be unmounted at any time:
+ * Constructed lazily by each primitive's root through its own accessor factory —
+ * only once the consumer sets `totalCount()` — so a non-virtualized collection
+ * never pulls this position-map machinery into its hot path. Encapsulates two
+ * pieces of state that make keyboard navigation work across a virtualized window
+ * where the active item may be unmounted at any time:
  *
  * - **Snapshot by position** — entry data keyed by absolute position. Drives
  *   navigation past the rendered window so `moveIndex` knows about disabled
@@ -129,8 +137,8 @@ interface SnapshotSource<H> {
  *   {@link invalidateSnapshot} or the optional `deps.dataVersion` signal.
  * - **Pending active position** — when navigation lands outside the visible
  *   window, the engine emits `(scrollToIndex)` and remembers the target. The
- *   adapter's bridge effect calls `tryResolvePending` once the freshly-mounted
- *   item carries that position.
+ *   root's bridge effect calls `tryResolvePending` once the freshly-mounted item
+ *   carries that position.
  *
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee.
@@ -214,7 +222,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
 
   /**
    * Pull the position-map so its `linkedSignal` `prev` slot gets seeded while
-   * the items are tracked. Called from the adapter's bridge effect.
+   * the items are tracked. Called from the root's bridge effect.
    */
   prime(): void {
     this.#snapshotByPos();
@@ -252,7 +260,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * activedescendant on a disabled id. Returns `true` if a pending request was
    * resolved (or continued), `false` otherwise.
    *
-   * Called from the adapter's bridge effect, whose documented reactive trigger
+   * Called from the root's bridge effect, whose documented reactive trigger
    * is `items()`. The pending slot is read **untracked**: this method writes it
    * back to `null` on a successful resolve, and tracking the read would make
    * that write re-invalidate the calling effect — a self-invalidation that
@@ -352,7 +360,44 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
     this.#deps.emitScrollToIndex(index);
   }
 
-  /** Clear any pending navigation (called by the adapter on close). */
+  /**
+   * Seed activedescendant on the first or last enabled handle that is
+   * **currently rendered**, ordered by absolute position. No-op when
+   * `totalCount` is unset / zero, when nothing is rendered, or when every
+   * rendered handle is disabled.
+   *
+   * Deliberately *passive*: it only ever moves activedescendant, never the
+   * consumer's scroll position, so it emits no `(scrollToIndex)`. The Combobox
+   * auto-highlight bridge — its one caller — re-seeds every time the
+   * activedescendant is cleared, and scrolling the active option out of the
+   * rendered window clears it. A seed that targeted the absolute first position
+   * would therefore snap the listbox back to the top on every wheel tick that
+   * unmounted the active row. Off-window targets are reached only through
+   * {@link navigate} / {@link seedActive}, which own scroll-into-view.
+   */
+  seedFirstRenderedEnabled(direction: 'first' | 'last'): void {
+    const total = this.#deps.totalCount();
+    if (total === undefined || total <= 0) {
+      return;
+    }
+    const items = this.#deps.items();
+    if (items.length === 0) {
+      return;
+    }
+    const ordered = [...items].sort((a, b) => {
+      const pa = this.#accessors.posOf(a) ?? 0;
+      const pb = this.#accessors.posOf(b) ?? 0;
+      return direction === 'last' ? pb - pa : pa - pb;
+    });
+    for (const item of ordered) {
+      if (!this.#accessors.isDisabled(item)) {
+        this.#deps.setActiveId(this.#accessors.idOf(item));
+        return;
+      }
+    }
+  }
+
+  /** Clear any pending navigation (called by the root on close). */
   resetPending(): void {
     this.#pendingActivePos.set(null);
   }

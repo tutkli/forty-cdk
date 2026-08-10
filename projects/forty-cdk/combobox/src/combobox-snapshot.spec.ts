@@ -6,7 +6,10 @@ import { LabelCache, type LabelCacheEntry } from 'forty-cdk/core';
 import { afterEachOverlayCleanup } from '../../src/test-utils';
 import type { ForComboboxOptionHandle } from './combobox-context';
 import { mergeOffWindowEntries } from './combobox-off-window-merge';
-import { VirtualizedNavigator } from './combobox-virtualized-navigator';
+import {
+  type ComboboxVirtualizedNavigator,
+  createComboboxVirtualizedNavigator,
+} from './combobox-virtualized-navigator';
 
 interface FakeOption {
   readonly handle: ForComboboxOptionHandle<string>;
@@ -69,7 +72,7 @@ function createLabelCache(): LabelCacheHarness {
 }
 
 interface NavigatorHarness {
-  readonly navigator: VirtualizedNavigator<string>;
+  readonly navigator: ComboboxVirtualizedNavigator<string>;
   readonly setItems: (items: readonly ForComboboxOptionHandle<string>[]) => void;
   readonly setTotal: (n: number | undefined) => void;
   readonly setRange: (r: readonly [number, number] | undefined) => void;
@@ -93,18 +96,20 @@ function createNavigator(
   const active = signal<string | null>(null);
   const emitted: number[] = [];
 
-  const navigator = new VirtualizedNavigator<string>({
-    items,
-    totalCount: total,
-    visibleRange: range,
-    loop,
-    getActiveId: () => active(),
-    setActiveId: (id) => active.set(id),
-    emitScrollToIndex: (idx) => {
-      emitted.push(idx);
+  const navigator = createComboboxVirtualizedNavigator<string>(
+    {
+      items,
+      totalCount: total,
+      visibleRange: range,
+      loop,
+      getActiveId: () => active(),
+      setActiveId: (id) => active.set(id),
+      emitScrollToIndex: (idx) => {
+        emitted.push(idx);
+      },
     },
-    scrollActiveIntoView: () => undefined,
-  });
+    () => undefined,
+  );
 
   return {
     navigator,
@@ -370,7 +375,7 @@ describe('VirtualizedNavigator', () => {
       expect(h.getActive()).toBe('r-2');
     });
 
-    it('seedFromIndexedSnapshot picks the first enabled position', () => {
+    it('seedFirstRenderedEnabled picks the first enabled position', () => {
       const h = createNavigator({ range: [0, 5] });
       const items = [
         makeHandle({ id: 'r-0', value: 'a', label: 'a', posInSet: 0, disabled: true }),
@@ -380,7 +385,7 @@ describe('VirtualizedNavigator', () => {
       h.setItems(items.map((it) => it.handle));
       h.navigator.prime();
 
-      h.navigator.seedFromIndexedSnapshot('first');
+      h.navigator.seedFirstRenderedEnabled('first');
       expect(h.getActive()).toBe('r-1');
     });
 
@@ -392,7 +397,7 @@ describe('VirtualizedNavigator', () => {
       );
       h.setItems(initial.map((it) => it.handle));
       h.navigator.prime();
-      h.navigator.seedFromIndexedSnapshot('first');
+      h.navigator.seedFirstRenderedEnabled('first');
       expect(h.getActive()).toBe('r-0');
 
       // User scrolls down: the window advances and index 0 unmounts. The host
@@ -411,7 +416,7 @@ describe('VirtualizedNavigator', () => {
       h.setActive(null);
       h.resetEmitted();
 
-      h.navigator.seedFromIndexedSnapshot('first');
+      h.navigator.seedFirstRenderedEnabled('first');
 
       // Seeds the topmost *rendered* row, not absolute index 0, and requests
       // no scroll — emitting scrollToIndex(0) here is what snapped a
