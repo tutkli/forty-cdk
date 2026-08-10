@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "../../out-tsc/harness-e2e",
+    "noEmit": true,
+    "declaration": false,
+    "types": ["node"]
+  },
+  "include": ["e2e/**/*.ts", "../../playwright.config.ts"]
+}

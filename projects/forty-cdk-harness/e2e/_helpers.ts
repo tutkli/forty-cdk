@@ -500,12 +500,12 @@ export async function rovingFirst(page: Page, testid: string, maxAttempts = 20):
   for (let i = 0; i < maxAttempts; i++) {
     await page.keyboard.press('Tab');
     const current = await page.evaluate(
-      () => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null,
+      () => (document.activeElement as HTMLElement | null)?.dataset['testid'] ?? null,
     );
     if (current === testid) return;
   }
   const last = await page.evaluate(
-    () => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null,
+    () => (document.activeElement as HTMLElement | null)?.dataset['testid'] ?? null,
   );
   throw new Error(
     `rovingFirst: did not land on data-testid="${testid}" after ${maxAttempts} Tab presses (last focused: ${last ?? 'none'})`,

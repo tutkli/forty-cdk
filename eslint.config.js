@@ -3701,8 +3701,12 @@ module.exports = tseslint.config(
   // ---------- Playwright E2E specs + root config ----------
   // These run inside @playwright/test (Node + browser), not Angular. They
   // freely poke at `document`/`window` via page.evaluate, and there is no
-  // SSR concern. They also live outside any Angular tsconfig project, so
-  // disable typed linting to avoid adding them to a project just for ESLint.
+  // SSR concern. Typed linting stays off here by choice, not for want of a
+  // project: since #1758 they are covered by
+  // `projects/forty-cdk-harness/tsconfig.e2e.json`, which `pnpm typecheck`
+  // runs, so the compiler already gates them. Pointing ESLint at that project
+  // would switch the whole type-aware rule set on over 84 files at once —
+  // its own change, with its own fallout, rather than a rider on the gate.
   {
     files: ['projects/forty-cdk-harness/e2e/**/*.ts', 'playwright.config.ts'],
     languageOptions: {

@@ -113,7 +113,7 @@ test.describe('Table virtualized', () => {
 
       const rangeAttr = await el(page, 'virt-range').getAttribute('data-range');
       const [start, end] = rangeAttr!.split(',').map((n) => parseInt(n, 10));
-      expect(end).toBeGreaterThan(start);
+      expect(end!).toBeGreaterThan(start!);
     });
   });
 
