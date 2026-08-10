@@ -618,31 +618,57 @@ export class ForCombobox<T = string>
   private moveActionFocus(fromActionId: string | null, direction: 'next' | 'prev'): void {
     const all = this.#actions.items();
     const inputEl = this.input();
-    const stops: { key: number; focus: () => void }[] = [];
-    if (inputEl) {
-      stops.push({ key: -1, focus: () => inputEl.focus() });
-    }
-    for (let i = 0; i < all.length; i++) {
-      const a = all[i]!;
-      if (!a.disabled()) {
-        stops.push({ key: i, focus: () => a.host.focus() });
+    let sourceKey = -1;
+    if (fromActionId !== null) {
+      const idx = all.findIndex((a) => a.id() === fromActionId);
+      if (idx !== -1) {
+        sourceKey = idx;
       }
     }
-    if (stops.length === 0) {
+
+    if (direction === 'next') {
+      const after = this.#scanEnabledAction(all, sourceKey + 1, 1);
+      if (after) {
+        after.host.focus();
+        return;
+      }
+      if (inputEl) {
+        inputEl.focus();
+        return;
+      }
+      this.#scanEnabledAction(all, 0, 1)?.host.focus();
       return;
     }
-    let sourceKey: number;
-    if (fromActionId === null) {
-      sourceKey = -1;
-    } else {
-      const idx = all.findIndex((a) => a.id() === fromActionId);
-      sourceKey = idx === -1 ? -1 : idx;
+
+    const before = this.#scanEnabledAction(all, sourceKey - 1, -1);
+    if (before) {
+      before.host.focus();
+      return;
     }
-    const target =
-      direction === 'next'
-        ? (stops.find((s) => s.key > sourceKey) ?? stops[0]!)
-        : ([...stops].reverse().find((s) => s.key < sourceKey) ?? stops[stops.length - 1]!);
-    target.focus();
+    if (inputEl && sourceKey > -1) {
+      inputEl.focus();
+      return;
+    }
+    const last = this.#scanEnabledAction(all, all.length - 1, -1);
+    if (last) {
+      last.host.focus();
+      return;
+    }
+    inputEl?.focus();
+  }
+
+  #scanEnabledAction(
+    actions: readonly ForComboboxActionHandle[],
+    from: number,
+    step: 1 | -1,
+  ): ForComboboxActionHandle | null {
+    for (let i = from; i >= 0 && i < actions.length; i += step) {
+      const action = actions[i]!;
+      if (!action.disabled()) {
+        return action;
+      }
+    }
+    return null;
   }
 
   isSelected(v: T): boolean {
