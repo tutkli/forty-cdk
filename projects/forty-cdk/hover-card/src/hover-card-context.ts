@@ -1,11 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import {
-  type AnchoredPositioningContext,
-  orphanContextError,
-  type Point,
-  unresolvedRootError,
-} from 'forty-cdk/core';
+import { orphanContextError, unresolvedRootError } from 'forty-cdk/core';
+import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
 
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';

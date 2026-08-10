@@ -1,4 +1,4 @@
-import { type ForMenuContext } from 'forty-cdk/core';
+import { type ForMenuContext } from 'forty-cdk/core-overlay';
 
 /**
  * Handle ArrowLeft / ArrowRight on a menu item (regular, checkbox, radio,

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { type ForDrawerSide, type VetoableEvent } from 'forty-cdk/core';
+import { type VetoableEvent } from 'forty-cdk/core';
+import { type ForDrawerSide } from 'forty-cdk/core-overlay';
 import {
   ForDrawer,
   ForDrawerBackdrop,

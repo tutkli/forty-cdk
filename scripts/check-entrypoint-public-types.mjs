@@ -13,9 +13,23 @@ import { repoRoot } from './lib/repo-path.mjs';
 import { UNNAMEABLE_PUBLIC_TYPES } from './lib/unnameable-public-types.mjs';
 
 const TYPES_DIR = join(repoRoot, 'dist', 'forty-cdk', 'types');
-const CORE_BARREL = join(repoRoot, 'projects', 'forty-cdk', 'core', 'src', 'public-api.ts');
-const CORE_SPECIFIER = 'forty-cdk/core';
-const IGNORED_FILES = new Set(['forty-cdk.d.ts', 'forty-cdk-core.d.ts']);
+
+/**
+ * The internal tier ships as two entry points since
+ * [#1723](https://github.com/tutkli/forty-cdk/issues/1723) — `forty-cdk/core`
+ * and the overlay slice it was cut into — so every rule below reads both. A
+ * blessed symbol is blessed regardless of which of the two barrels declares it;
+ * what the tier fixes is the single public entry point that publishes it.
+ */
+const CORE_BARRELS = ['core', 'core-overlay'].map((entry) =>
+  join(repoRoot, 'projects', 'forty-cdk', entry, 'src', 'public-api.ts'),
+);
+const CORE_SPECIFIERS = new Set(['forty-cdk/core', 'forty-cdk/core-overlay']);
+const IGNORED_FILES = new Set([
+  'forty-cdk.d.ts',
+  'forty-cdk-core.d.ts',
+  'forty-cdk-core-overlay.d.ts',
+]);
 
 if (!existsSync(TYPES_DIR)) {
   console.error(
@@ -41,17 +55,19 @@ function isNonPublicMember(node) {
 }
 
 function coreBarrelExportNames() {
-  const sf = ts.createSourceFile(
-    CORE_BARREL,
-    readFileSync(CORE_BARREL, 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-  );
   const names = new Set();
-  for (const stmt of sf.statements) {
-    if (!ts.isExportDeclaration(stmt) || !stmt.exportClause) continue;
-    if (!ts.isNamedExports(stmt.exportClause)) continue;
-    for (const el of stmt.exportClause.elements) names.add(el.name.text);
+  for (const barrel of CORE_BARRELS) {
+    const sf = ts.createSourceFile(
+      barrel,
+      readFileSync(barrel, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    for (const stmt of sf.statements) {
+      if (!ts.isExportDeclaration(stmt) || !stmt.exportClause) continue;
+      if (!ts.isNamedExports(stmt.exportClause)) continue;
+      for (const el of stmt.exportClause.elements) names.add(el.name.text);
+    }
   }
   return names;
 }
@@ -125,7 +141,7 @@ function analyze(fileName, text) {
 
   for (const stmt of sf.statements) {
     if (ts.isImportDeclaration(stmt)) {
-      if (moduleSpecifierText(stmt) !== CORE_SPECIFIER) continue;
+      if (!CORE_SPECIFIERS.has(moduleSpecifierText(stmt))) continue;
       const bindings = stmt.importClause?.namedBindings;
       if (bindings && ts.isNamespaceImport(bindings)) {
         namespaceLocals.add(bindings.name.text);
@@ -135,7 +151,7 @@ function analyze(fileName, text) {
       continue;
     }
     if (ts.isExportDeclaration(stmt)) {
-      if (moduleSpecifierText(stmt) === CORE_SPECIFIER) {
+      if (CORE_SPECIFIERS.has(moduleSpecifierText(stmt))) {
         if (!stmt.exportClause) reexportsAll = true;
         else if (ts.isNamedExports(stmt.exportClause)) {
           for (const el of stmt.exportClause.elements) reexported.add(sourceName(el));
@@ -236,7 +252,7 @@ const staleBlessed = [...BLESSED_CORE_SYMBOLS].filter((name) => !coreExports.has
 
 if (staleBlessed.length) {
   console.error(
-    `[check-entrypoint-public-types] FAIL — ${staleBlessed.length} blessed symbol(s) in scripts/lib/core-blessed-tier.mjs are no longer exported from forty-cdk/core:`,
+    `[check-entrypoint-public-types] FAIL — ${staleBlessed.length} blessed symbol(s) in scripts/lib/core-blessed-tier.mjs are exported from neither forty-cdk/core nor forty-cdk/core-overlay:`,
   );
   for (const name of staleBlessed) console.error(`  ${name}`);
   console.error(
@@ -322,11 +338,11 @@ if (foreignFailures.length) {
 
 if (starReexports.length) {
   console.error(
-    `[check-entrypoint-public-types] FAIL — ${starReexports.length} entry point(s) star-re-export forty-cdk/core:`,
+    `[check-entrypoint-public-types] FAIL — ${starReexports.length} entry point(s) star-re-export an internal-tier entry point:`,
   );
   for (const entry of starReexports.sort()) console.error(`  forty-cdk/${entry}`);
   console.error(
-    `\n\`export * from 'forty-cdk/core'\` publishes the whole internal tier and cannot be audited per symbol. Re-export the blessed symbols this entry point publishes by name.`,
+    `\n\`export * from 'forty-cdk/core'\` — or from 'forty-cdk/core-overlay' — publishes the whole internal tier and cannot be audited per symbol. Re-export the blessed symbols this entry point publishes by name.`,
   );
 }
 
@@ -378,7 +394,7 @@ if (
   process.exit(1);
 
 console.log(
-  `[check-entrypoint-public-types] OK — ${checkedEntries.size} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core and published by exactly one entry point (${Object.entries(
+  `[check-entrypoint-public-types] OK — ${checkedEntries.size} entry points; ${BLESSED_CORE_SYMBOLS.size} blessed core symbols, every one exported from forty-cdk/core or forty-cdk/core-overlay and published by exactly one entry point (${Object.entries(
     CORE_PUBLISHERS,
   )
     .map(([entry, symbols]) => `${entry}: ${symbols.length}`)

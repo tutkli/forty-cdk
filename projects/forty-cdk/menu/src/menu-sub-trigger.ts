@@ -3,12 +3,11 @@ import { booleanAttribute, computed, Directive, ElementRef, inject, input } from
 import {
   fortyError,
   hostButtonType,
-  injectMenuContext,
   isHoverCapablePointer,
-  type MenuActivationModality,
   registerHandle,
   resolveListNavigation,
 } from 'forty-cdk/core';
+import { injectMenuContext, type MenuActivationModality } from 'forty-cdk/core-overlay';
 import { handleMenuTabOut } from './menu-tab-out';
 
 /**

@@ -13,14 +13,13 @@ import {
 } from '@angular/core';
 import { NgComponentOutlet } from '@angular/common';
 
+import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
   type OverlayManagerEntry,
   type OverlayManagerOutlet,
   type OverlayManagerOutletHost,
   type OverlaySurface,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import { ForDrawer } from './drawer';
 import type {
   ForDrawerCloseReason,

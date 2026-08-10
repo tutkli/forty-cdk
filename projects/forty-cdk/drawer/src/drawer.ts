@@ -13,7 +13,8 @@ import {
   signal,
 } from '@angular/core';
 
-import { ForDrawerStack, fortyError, injectModalShell, ModalSurfaceBase } from 'forty-cdk/core';
+import { fortyError } from 'forty-cdk/core';
+import { ForDrawerStack, injectModalShell, ModalSurfaceBase } from 'forty-cdk/core-overlay';
 import { validateCloseThreshold } from './snap-points';
 import { ForDrawerScaleCoordinator } from './drawer-scale-coordinator';
 import {

@@ -4,8 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import {
   type InertSiblingsHandle,
   InertSiblingsStack,
-  MODAL_EXEMPT_ATTRIBUTE,
-} from '../inert-siblings/inert-siblings';
+} from '../../../core-overlay/src/inert-siblings/inert-siblings';
+import { MODAL_EXEMPT_ATTRIBUTE } from '../host-attributes/modal-attributes';
 import { LiveAnnouncer } from './live-announcer';
 
 // LiveAnnouncer schedules every text write through `setTimeout(…, 0)` (a

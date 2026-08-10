@@ -16,15 +16,14 @@ import {
   type ListNavigationAction,
   type WritingDirection,
   nextEnabledHandle,
-  type MenuActivationModality,
   RovingTabindex,
   injectTextDirection,
   injectTypeahead,
-  FOR_MENU_CONTEXT,
   type VetoableEvent,
   type VetoableNativeEvent,
   hostAriaLabel,
 } from 'forty-cdk/core';
+import { type MenuActivationModality, FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
 import { MenubarMenuContext } from './menubar-menu-context';
 import {
   FOR_MENUBAR_CONTEXT,

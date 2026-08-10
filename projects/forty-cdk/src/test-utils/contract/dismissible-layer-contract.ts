@@ -17,7 +17,7 @@
  * topmost-only dispatch, declared-nesting depth order, Escape-only layer
  * transparency, `stopPropagation`'s one-layer-per-Escape — is a property of
  * `DismissibleLayerStack`, asserted once over synthetic layers in
- * `core/src/dismissible-layer/dismissible-layer.spec.ts` and over two real
+ * `core-overlay/src/dismissible-layer/dismissible-layer.spec.ts` and over two real
  * layers with real focus in the composition E2E routes. Adding it here would
  * re-run one stack's behaviour once per adopter and still could not state the
  * interesting cases, which need two layers.

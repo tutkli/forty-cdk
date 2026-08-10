@@ -10,9 +10,7 @@ import {
 } from '@angular/core';
 
 import {
-  AnchoredOverlayPositioningBase,
   adoptHostId,
-  CloseReasonState,
   IdGenerator,
   injectPrefersReducedMotion,
   emitVetoableEvent,
@@ -20,6 +18,7 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import { AnchoredOverlayPositioningBase, CloseReasonState } from 'forty-cdk/core-overlay';
 import {
   FOR_POPOVER_CONTEXT,
   type ForPopoverCloseReason,

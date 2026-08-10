@@ -7,9 +7,9 @@ import {
   assertTimeCapable as coreAssertTimeCapable,
   FOR_DATE_ADAPTER as CORE_FOR_DATE_ADAPTER,
   FOR_FIELDSET_CONTEXT as CORE_FOR_FIELDSET_CONTEXT,
-  FOR_MENU_CONTEXT as CORE_FOR_MENU_CONTEXT,
   injectDateAdapter as coreInjectDateAdapter,
 } from 'forty-cdk/core';
+import { FOR_MENU_CONTEXT as CORE_FOR_MENU_CONTEXT } from 'forty-cdk/core-overlay';
 import {
   accessibleTextContent,
   assertTimeCapable,

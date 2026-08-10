@@ -10,13 +10,13 @@ import {
   input,
 } from '@angular/core';
 
+import { hostId } from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   createDebouncedAction,
-  hostId,
   type DebouncedAction,
   type MenuOpenerPositioning,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import { type ForContextMenuContext, injectContextMenuContext } from './context-menu-context';
 
 const LONG_PRESS_DELAY_MS = 500;

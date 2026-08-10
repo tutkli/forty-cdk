@@ -9,12 +9,8 @@ import {
   type Type,
 } from '@angular/core';
 
-import {
-  resolveConfigClass,
-  OverlayManagerCore,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+import { resolveConfigClass, type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
+import { OverlayManagerCore } from 'forty-cdk/core-overlay';
 import { validateCloseThreshold } from './snap-points';
 import {
   FOR_DRAWER_CONTEXT,

@@ -2,7 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideZonelessChangeDetection } from '@angular/core';
 
 import { createPointerDragSession, type PointerDragSession } from './pointer-session';
-import { DismissibleLayer, DismissibleLayerStack } from '../dismissible-layer/dismissible-layer';
+import {
+  DismissibleLayer,
+  DismissibleLayerStack,
+} from '../../../core-overlay/src/dismissible-layer/dismissible-layer';
 
 function pointer(type: string, x: number, y: number, button = 0, pointerId = 1): PointerEvent {
   return new PointerEvent(type, {

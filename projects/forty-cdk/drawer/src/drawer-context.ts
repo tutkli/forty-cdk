@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
-import { type ForDrawerSide, orphanContextError } from 'forty-cdk/core';
+import { orphanContextError } from 'forty-cdk/core';
+import { type ForDrawerSide } from 'forty-cdk/core-overlay';
 
 export { type ForDrawerSide };
 

@@ -2,14 +2,18 @@ import { computed, type OutputEmitterRef, type Signal, signal } from '@angular/c
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
+  emitVetoableEvent,
+  emitVetoableNativeEvent,
+  type ListNavigationAction,
+  type VetoableEvent,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
+import {
   ANCHORED_POSITIONING_DEFAULTS,
   CloseReasonState,
   InitialFocusState,
   createMenuItemList,
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
   type MenuActivationModality,
-  type ListNavigationAction,
   type FloatingAlign,
   type ForMenuCloseReason,
   type ForMenuContext,
@@ -17,9 +21,7 @@ import {
   type FloatingSide,
   type ForMenuItemHandle,
   type MenuSiblingNavigator,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import type { ForMenubarTriggerHandle } from './menubar-context';
 
 /**

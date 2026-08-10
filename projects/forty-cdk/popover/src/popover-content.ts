@@ -1,13 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
+import { hostAriaLabel, hostDescribedBy, hostLabelledBy } from 'forty-cdk/core';
 import {
   toFloatingPositioner,
-  hostAriaLabel,
-  hostDescribedBy,
-  hostLabelledBy,
   injectOverlayShell,
   warnIfMountedWhileClosed,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import { injectPopoverContext } from './popover-context';
 
 /**

@@ -1,11 +1,7 @@
 import { booleanAttribute, computed, Directive, input, output } from '@angular/core';
 
-import {
-  hostButtonType,
-  emitVetoableEvent,
-  type VetoableEvent,
-  injectMenuContext,
-} from 'forty-cdk/core';
+import { hostButtonType, emitVetoableEvent, type VetoableEvent } from 'forty-cdk/core';
+import { injectMenuContext } from 'forty-cdk/core-overlay';
 import { createMenuItemInteraction } from './menu-item-interaction';
 
 /**

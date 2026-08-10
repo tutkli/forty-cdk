@@ -4,11 +4,12 @@ import { join } from 'node:path';
 import { repoRoot } from './repo-path.mjs';
 
 const LIB_DIR = join(repoRoot, 'projects', 'forty-cdk');
-const CORE_ENTRY_POINT = 'core';
+const CORE_ENTRY_POINTS = ['core', 'core-overlay'];
 
 /**
  * Every secondary entry point (a folder carrying its own `ng-package.json`),
- * excluding `core` — the internal tier is not part of the consumer-facing
+ * excluding the two internal-tier entry points (`core` and the overlay slice
+ * #1723 cut it into) — the internal tier is not part of the consumer-facing
  * conventions these matrices govern. The matrices that track an *internal*
  * authoring convention read `coreSourceFiles()` on top of this set.
  */
@@ -16,7 +17,7 @@ export function entryPoints() {
   return readdirSync(LIB_DIR, { withFileTypes: true })
     .filter((e) => e.isDirectory() && existsSync(join(LIB_DIR, e.name, 'ng-package.json')))
     .map((e) => e.name)
-    .filter((name) => name !== CORE_ENTRY_POINT)
+    .filter((name) => !CORE_ENTRY_POINTS.includes(name))
     .sort();
 }
 
@@ -60,12 +61,15 @@ export function allSourceFiles() {
 }
 
 /**
- * The same, for `forty-cdk/core`. Walked **recursively** because core's `src/`
- * is one directory per concern rather than flat, so ids carry it
- * (`core/<concern>/<file>`) and stay greppable like every other row.
+ * The same, for the internal tier — both `forty-cdk/core` and
+ * `forty-cdk/core-overlay`. Walked **recursively** because their `src/` is one
+ * directory per concern rather than flat, so ids carry it
+ * (`<entry>/<concern>/<file>`) and stay greppable like every other row.
  */
 export function coreSourceFiles() {
-  return collect(CORE_ENTRY_POINT, join(LIB_DIR, CORE_ENTRY_POINT, 'src'), '', true);
+  return CORE_ENTRY_POINTS.flatMap((entry) =>
+    collect(entry, join(LIB_DIR, entry, 'src'), '', true),
+  );
 }
 
 /**
@@ -353,8 +357,8 @@ function sanctionedPulls(files) {
  */
 function anchoredPositioningAdopters(files) {
   const declarationSites = [
-    'core/floating/anchored-overlay-positioning-base',
-    'core/floating/anchored-form-value-control-base',
+    'core-overlay/floating/anchored-overlay-positioning-base',
+    'core-overlay/floating/anchored-form-value-control-base',
   ];
   const inherits =
     /extends\s+(?:AnchoredOverlayPositioningBase|AnchoredFormValueControlBase|MenuOverlayHost|DatePickerBase)\b/;

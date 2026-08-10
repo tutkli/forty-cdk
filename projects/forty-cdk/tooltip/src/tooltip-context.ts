@@ -1,11 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
-import {
-  type AnchoredPositioningContext,
-  orphanContextError,
-  type Point,
-  unresolvedRootError,
-} from 'forty-cdk/core';
+import { orphanContextError, unresolvedRootError } from 'forty-cdk/core';
+import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-overlay';
 
 /** Reason a show / hide was scheduled — `escape` and `press` bypass the close delay. */
 export type TooltipScheduleReason = 'hover' | 'focus' | 'escape' | 'press';

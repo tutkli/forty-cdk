@@ -9,17 +9,14 @@ import {
   type Signal,
 } from '@angular/core';
 
+import { hostButtonType, hostId, reflectDisabled, unresolvedRootError } from 'forty-cdk/core';
 import {
   asMenuOpenerRegistration,
   FOR_MENU_CONTEXT,
   type ForMenuContext,
-  hostButtonType,
-  hostId,
   type MenuActivationModality,
   type MenuOpenerPositioning,
-  reflectDisabled,
-  unresolvedRootError,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 
 /**
  * Resolves the trigger's menu root: the explicit reference when the

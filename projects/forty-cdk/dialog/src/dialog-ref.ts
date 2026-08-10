@@ -1,4 +1,4 @@
-import { OverlayRef } from 'forty-cdk/core';
+import { OverlayRef } from 'forty-cdk/core-overlay';
 
 import type { ForDialogCloseReason } from './dialog-context';
 

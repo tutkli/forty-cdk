@@ -23,6 +23,15 @@ const tseslint = require('typescript-eslint');
 const angular = require('angular-eslint');
 
 /**
+ * The entry points that ship forty-cdk's internal tier rather than a primitive:
+ * `forty-cdk/core` and the overlay slice
+ * [#1723](https://github.com/tutkli/forty-cdk/issues/1723) cut it into. Neither
+ * is consumer-facing, so the rules below that key on "is this a primitive"
+ * exempt both.
+ */
+const INTERNAL_TIER_ENTRY_POINTS = new Set(['core', 'core-overlay']);
+
+/**
  * ARIA 1.2 global states and properties — supported by every role, so they
  * never need a per-role table entry.
  *
@@ -1291,7 +1300,7 @@ const fortyCdkPlugin = {
     // marker cannot reach past intervening code to license a second, unrelated
     // `detectChanges()` a few lines below it). It exists because the un-drained
     // render is sometimes the *subject* of the test:
-    // `core/floating/floating.spec.ts` asserts that a config change re-arms the
+    // `core-overlay/floating/floating.spec.ts` asserts that a config change re-arms the
     // `clip-path` baseline at the retained stale position *before* the new
     // position resolves, which is observable only without the drain. Those three
     // sites are the whole ledger today.
@@ -1502,12 +1511,12 @@ const fortyCdkPlugin = {
         // Resolves `{ primitive, dir }` for a primitive *root* file, or null.
         // The primitive name is the entry-point folder (the segment before
         // /src/) for the per-entry-point layout, or the folder name for the
-        // legacy layout. The `core` entry (former `_internal`) is never a
+        // legacy layout. Neither internal-tier entry point is ever a
         // primitive with a defaults provider.
         function primitiveRootOf(normalized, dir) {
           const entry = normalized.match(/\/projects\/forty-cdk\/([^/]+)\/src\/([^/]+)\.ts$/);
           if (entry && entry[1] === entry[2]) {
-            return entry[1] === 'core' ? null : { primitive: entry[1], dir };
+            return INTERNAL_TIER_ENTRY_POINTS.has(entry[1]) ? null : { primitive: entry[1], dir };
           }
           const legacy = normalized.match(/\/projects\/forty-cdk\/src\/lib\/([^/]+)\/([^/]+)\.ts$/);
           if (legacy && legacy[1] === legacy[2]) {
@@ -1651,7 +1660,7 @@ const fortyCdkPlugin = {
           const legacy = normalized.match(
             /\/projects\/forty-cdk\/src\/lib\/[^/]+\/([^/]+)-defaults\.ts$/,
           );
-          if (entry && entry[1] !== 'core') {
+          if (entry && !INTERNAL_TIER_ENTRY_POINTS.has(entry[1])) {
             name = entry[2];
           } else if (legacy) {
             name = legacy[1];
@@ -1902,10 +1911,12 @@ const fortyCdkPlugin = {
         }
         // `_internal` and `test-utils` are not part of the public surface
         // contract; in the per-entry-point layout the former `_internal` is the
-        // `core` entry (its barrel deliberately re-exports internal helpers with
-        // no semver guarantee), so it is exempt too.
+        // internal tier (`core` plus `core-overlay`, whose barrels deliberately
+        // re-export internal helpers with no semver guarantee — `core-overlay`
+        // publishes `injectMenuContext` because `forty-cdk/menu`'s pieces reach
+        // it across an entry-point boundary), so both are exempt too.
         if (
-          (perEntry && perEntry[1] === 'core') ||
+          (perEntry && INTERNAL_TIER_ENTRY_POINTS.has(perEntry[1])) ||
           filename.includes('/_internal/') ||
           filename.includes('/test-utils/')
         ) {
@@ -1986,7 +1997,7 @@ const fortyCdkPlugin = {
     // The residual gap is deliberate and worth stating rather than assuming
     // closed: resolution does **not** follow a call into another file, so a
     // method on an injected collaborator stays opaque — the #1572 cycle itself
-    // lived in `core/menu-overlay/menu-opener-registry.ts`, one file away from
+    // lived in `core-overlay/menu-overlay/menu-opener-registry.ts`, one file away from
     // the trigger's effect, and would still slip through. Same-file, one level
     // is the version that stays a lint rule instead of becoming a type-aware
     // whole-program pass, and it catches the far more common in-file shape.

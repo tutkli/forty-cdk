@@ -11,21 +11,23 @@ import {
 } from '@angular/core';
 
 import {
-  AnchoredOverlayPositioningBase,
-  forceCloseWhenDisabled,
-  createHoverIntent,
-  type HoverIntentScheduler,
   adoptHostId,
   emitVetoableNativeEvent,
   IdGenerator,
   injectPrefersReducedMotion,
+  type VetoableNativeEvent,
+} from 'forty-cdk/core';
+import {
+  AnchoredOverlayPositioningBase,
+  forceCloseWhenDisabled,
+  createHoverIntent,
+  type HoverIntentScheduler,
   attachPointerGrace,
   buildSubmenuGracePolygon,
   type Point,
   resolveGraceSide,
   ScrollDismissDispatcher,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import {
   FOR_TOOLTIP_CONTEXT,
   type ForTooltipContext,

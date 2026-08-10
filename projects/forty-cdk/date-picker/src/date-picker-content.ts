@@ -1,13 +1,11 @@
 import { Directive, ElementRef, inject } from '@angular/core';
 
+import { registerHandle, hostAriaLabel, hostLabelledBy } from 'forty-cdk/core';
 import {
-  registerHandle,
-  hostAriaLabel,
-  hostLabelledBy,
   injectModalShell,
   injectOverlayShell,
   warnIfMountedWhileClosed,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 import { injectDatePickerContext } from './date-picker-context';
 
 /**

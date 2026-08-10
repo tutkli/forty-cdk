@@ -4,12 +4,14 @@ import {
   registerHandle,
   hostAriaLabel,
   hostLabelledBy,
+  isHoverCapablePointer,
+} from 'forty-cdk/core';
+import {
   injectOverlayShell,
   injectMenuContext,
-  isHoverCapablePointer,
   menuLayerNesting,
   warnIfMountedWhileClosed,
-} from 'forty-cdk/core';
+} from 'forty-cdk/core-overlay';
 
 /**
  * The menu surface. Carries `role="menu"`, is portaled to `document.body`,

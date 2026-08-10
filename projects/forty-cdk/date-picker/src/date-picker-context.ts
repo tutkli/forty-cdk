@@ -1,13 +1,8 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
-import {
-  type FloatingAlign,
-  type FloatingSide,
-  orphanContextError,
-  unresolvedRootError,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
+import { orphanContextError, unresolvedRootError, type VetoableNativeEvent } from 'forty-cdk/core';
+import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
 
 /**
  * Coordination contract owned by `[forDatePicker]` (the root). The trigger,

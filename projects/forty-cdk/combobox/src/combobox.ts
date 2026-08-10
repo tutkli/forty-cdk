@@ -12,20 +12,13 @@ import {
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
-  AnchoredFormValueControlBase,
-  type AnchoredPositioningSeedDefaults,
-  anchorSlot,
-  CloseReasonState,
   Collection,
   createPointerSuppression,
   defaultItemToFormValue,
-  elementSlot,
   emitVetoableEvent,
   emitVetoableNativeEvent,
   formatFortyMessage,
-  InitialFocusState,
   injectHiddenInput,
-  injectIdentifiedSlot,
   injectTextDirection,
   isInArray,
   isUnset,
@@ -39,6 +32,15 @@ import {
   type VetoableNativeEvent,
   type WritingDirection,
 } from 'forty-cdk/core';
+import {
+  AnchoredFormValueControlBase,
+  type AnchoredPositioningSeedDefaults,
+  anchorSlot,
+  CloseReasonState,
+  elementSlot,
+  InitialFocusState,
+  injectIdentifiedSlot,
+} from 'forty-cdk/core-overlay';
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
   FOR_COMBOBOX_CONTEXT,

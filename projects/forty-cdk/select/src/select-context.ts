@@ -3,13 +3,15 @@ import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 import {
   assertRootContext,
   type CollectionHandle,
-  type FloatingAlign,
-  type FloatingSide,
-  type ListboxOverlayContext,
   orphanContextError,
   unresolvedRootError,
   type WritingDirection,
 } from 'forty-cdk/core';
+import {
+  type FloatingAlign,
+  type FloatingSide,
+  type ListboxOverlayContext,
+} from 'forty-cdk/core-overlay';
 
 /**
  * Why a select requested close. Mirrors the menu primitive vocabulary so

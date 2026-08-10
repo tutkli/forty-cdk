@@ -68,7 +68,7 @@ const MAX_POSITIONING_HOPS = 8;
 
 /**
  * Have the portaled overlays in `scope` resolved their first position yet?
- * Both floating positioners (`core/floating/floating.ts` and
+ * Both floating positioners (`core-overlay/floating/floating.ts` and
  * `item-aligned.ts`) reveal a resolved surface the same way: they write a
  * non-empty inline `translate` and drop the anti-flash
  * `clip-path: inset(50%)` baseline. Polling for those two marks is therefore

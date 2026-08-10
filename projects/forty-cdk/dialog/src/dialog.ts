@@ -1,6 +1,6 @@
 import { booleanAttribute, Directive, inject, input } from '@angular/core';
 
-import { injectModalShell, ModalSurfaceBase } from 'forty-cdk/core';
+import { injectModalShell, ModalSurfaceBase } from 'forty-cdk/core-overlay';
 import {
   FOR_DIALOG_CONTEXT,
   type ForDialogCloseReason,
