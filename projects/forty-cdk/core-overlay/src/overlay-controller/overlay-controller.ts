@@ -7,7 +7,7 @@ import {
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import { CloseReasonState } from './close-reason-state';
-import { type IdentifiedElementSlot, injectIdentifiedSlot, injectSlotId } from './element-registry';
+import { IdentifiedElementSlot, injectSlotId } from './element-registry';
 import { InitialFocusState } from './initial-focus-state';
 
 /**
@@ -26,20 +26,27 @@ export interface OverlayEmitTargets {
 }
 
 /**
- * The trigger side of the surface, supplied by the composing controller because
- * the two shapes in the library are not the same object: a listbox overlay has
- * one trigger element (an {@link IdentifiedElementSlot}), a menu overlay has a
- * registry of openers resolving one active element and its id. Both answer the
- * same four questions, which is all the shared machine asks of them.
+ * One of the two element sides a surface has — the trigger focus returns to, and
+ * the content that mounts. Both are supplied by the composing controller,
+ * because neither is the same object twice in the library: a listbox overlay's
+ * trigger is a single {@link IdentifiedElementSlot}, a menu overlay's is a
+ * registry of openers resolving one active element and its id, and
+ * `[forMenubar]`'s multiplexed context resolves both sides off whichever bar
+ * trigger is — or was last — active. All of them answer the same four
+ * questions, which is all the shared machine asks of them.
  */
-export interface OverlayTriggerSlot {
-  /** The trigger's aria-wiring id — never the empty string. */
+export interface OverlaySlot {
+  /**
+   * The element's aria-wiring id. Non-empty for a slot minting its own; the
+   * menubar's multiplexed sources resolve `''` until a trigger has been active,
+   * which `[forMenuContent]` emits as no attribute rather than as `id=""`.
+   */
   readonly id: Signal<string>;
-  /** The trigger element focus returns to on close, or `null` while none is registered. */
+  /** The registered element, or `null` while none is registered. */
   readonly element: Signal<HTMLElement | null>;
-  /** Register the trigger element. */
+  /** Register the element. */
   register(el: HTMLElement): void;
-  /** Deregister the trigger element. */
+  /** Deregister the element. */
   unregister(el: HTMLElement): void;
 }
 
@@ -96,10 +103,29 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
   /** Id-generator prefix base, e.g. `'for-select'` (suffixed with `-trigger` / `-content`). */
   readonly idPrefix: string;
   /**
-   * Builds the trigger slot off the seeded `<idPrefix>-trigger` id. Runs during
-   * construction, so it may `inject()`.
+   * Builds the trigger side, from a factory minting the seeded
+   * `<idPrefix>-trigger` id. Call the factory exactly once for a trigger that
+   * owns an id, and **not at all** for one whose id lives elsewhere — the
+   * combobox's lives on its input, the menubar's on each bar trigger — because
+   * the `IdGenerator` counter is per application, so an id nothing ever emits
+   * still shifts every id minted after it.
+   *
+   * Runs during construction, ahead of {@link createContent}, so the
+   * trigger-then-content minting order is fixed here rather than per caller —
+   * hydration's id adoption depends on both renders repeating it. It may
+   * `inject()`, and so may the factory.
    */
-  readonly createTrigger: (id: WritableSignal<string>) => OverlayTriggerSlot;
+  readonly createTrigger: (mintId: () => WritableSignal<string>) => OverlaySlot;
+  /**
+   * Builds the content side, same contract as {@link createTrigger} and called
+   * immediately after it. Optional: omitted, the controller registers its own
+   * {@link IdentifiedElementSlot} over the minted `<idPrefix>-content` id, which
+   * is what every surface owning its content id wants. Supply it when the id
+   * comes from somewhere else, or when registration does more than adopt a
+   * static id — `[forMenubar]` resolves the id off the active trigger and
+   * records whether the surface is shared across the bar's triggers.
+   */
+  readonly createContent?: (mintId: () => WritableSignal<string>) => OverlaySlot;
   /** Default initial-focus target before any open. */
   readonly defaultInitialFocus: Focus;
   /** The control's effective disabled — gates `open` and `toggle`. */
@@ -139,12 +165,15 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
 
 /**
  * The open / close / dismiss machine every trigger-anchored overlay surface
- * runs, shared by `MenuOverlay` (the four menu roots) and
- * `ListboxOverlayController` (`[forSelect]` / `[forTimePicker]`). It owns the
- * trigger / content slot pair and their ids, the initial-focus and close-reason
- * state, the `disabled`-gated open / close / toggle transitions, the four
- * outside / Escape emit forwarders, the shell's implicit `requestClose`, and the
- * two auto-focus veto pass-throughs.
+ * runs, composed by `MenuOverlay` (the four menu roots), by
+ * `ListboxOverlayController` (`[forSelect]` / `[forTimePicker]`), and — since
+ * [#1768](https://github.com/tutkli/forty-cdk/issues/1768) — by the two roots
+ * that ran a copy of it without any overlay controller: `[forCombobox]` and
+ * `[forMenubar]`'s multiplexed `MenubarMenuContext`. It owns the initial-focus
+ * and close-reason state, the `disabled`-gated open / close / toggle
+ * transitions, the four outside / Escape emit forwarders, the shell's implicit
+ * `requestClose`, and the two auto-focus veto pass-throughs — plus the order in
+ * which the two supplied element sides mint their ids.
  *
  * It deliberately does not own the **collection**: the menu side's item list is
  * `MenuItemList`, which `[forMenubar]` composes on its own without any overlay
@@ -157,7 +186,8 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
  *
  * Construct it from a directive's field initializer, or from a controller
  * constructed there, so the slot factories' `inject()` calls resolve through the
- * directive's injector.
+ * directive's injector. A caller whose factories mint no id needs no injection
+ * context at all, which is what keeps `MenubarMenuContext` a plain class.
  *
  * @typeParam Focus Initial-focus union owned by the composing controller.
  * @typeParam CloseReason Close-reason union owned by the composing controller.
@@ -165,8 +195,8 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
 export class OverlayController<Focus, CloseReason> {
   readonly #deps: OverlayControllerDeps<Focus, CloseReason>;
 
-  readonly #triggerSlot: OverlayTriggerSlot;
-  readonly #contentSlot: IdentifiedElementSlot;
+  readonly #triggerSlot: OverlaySlot;
+  readonly #contentSlot: OverlaySlot;
 
   readonly #initialFocusState: InitialFocusState<Focus>;
   readonly #closeReasonState = new CloseReasonState<CloseReason>();
@@ -195,11 +225,14 @@ export class OverlayController<Focus, CloseReason> {
 
   constructor(deps: OverlayControllerDeps<Focus, CloseReason>) {
     this.#deps = deps;
-    this.#triggerSlot = deps.createTrigger(injectSlotId(deps.idPrefix, 'trigger'));
-    this.#contentSlot = injectIdentifiedSlot(deps.idPrefix, 'content');
+    const mintContentId = () => injectSlotId(deps.idPrefix, 'content');
+    this.#triggerSlot = deps.createTrigger(() => injectSlotId(deps.idPrefix, 'trigger'));
+    this.#contentSlot = deps.createContent
+      ? deps.createContent(mintContentId)
+      : new IdentifiedElementSlot(mintContentId());
     this.#initialFocusState = new InitialFocusState<Focus>(deps.defaultInitialFocus);
     this.triggerId = this.#triggerSlot.id;
-    this.contentId = this.#contentSlot.id.asReadonly();
+    this.contentId = this.#contentSlot.id;
     this.trigger = this.#triggerSlot.element;
     this.content = this.#contentSlot.element;
     this.initialFocus = this.#initialFocusState.target;

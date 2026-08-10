@@ -15,8 +15,6 @@ import {
   Collection,
   createPointerSuppression,
   defaultItemToFormValue,
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
   formatFortyMessage,
   injectHiddenInput,
   injectTextDirection,
@@ -36,10 +34,9 @@ import {
   AnchoredFormValueControlBase,
   type AnchoredPositioningSeedDefaults,
   anchorSlot,
-  CloseReasonState,
   elementSlot,
-  InitialFocusState,
   injectIdentifiedSlot,
+  OverlayController,
 } from 'forty-cdk/core-overlay';
 import { createActiveIdSignal, runAutoHighlightBridge } from './combobox-auto-highlight';
 import {
@@ -337,9 +334,36 @@ export class ForCombobox<T = string>
   readonly autoFocusOnClose = output<VetoableEvent>();
 
   readonly #inputSlot = injectIdentifiedSlot<HTMLInputElement>('for-combobox', 'input');
-  readonly #contentSlot = injectIdentifiedSlot('for-combobox', 'content');
-  readonly #listSlot = injectIdentifiedSlot('for-combobox', 'list');
   readonly #triggerSlot = elementSlot();
+
+  /**
+   * The open / close / dismiss machine, shared with the menu and listbox
+   * overlays. The combobox supplies both element sides: its trigger owns no
+   * aria-wiring id — the `role="combobox"` id lives on the input — so that slot
+   * borrows the input's and mints nothing, while the content side is the
+   * ordinary identified slot, minted here so `for-combobox-content` keeps
+   * following the input's id and preceding the list's.
+   */
+  readonly #overlay = new OverlayController<ForComboboxInitialFocus, ForComboboxCloseReason>({
+    idPrefix: 'for-combobox',
+    createTrigger: () => ({
+      id: this.#inputSlot.id,
+      element: this.#triggerSlot.element,
+      register: (el: HTMLElement) => this.#triggerSlot.register(el),
+      unregister: (el: HTMLElement) => this.#triggerSlot.unregister(el),
+    }),
+    defaultInitialFocus: 'first',
+    disabled: this.effectiveDisabled,
+    dismissible: this.dismissible,
+    isOpen: () => this.open(),
+    setOpen: (open) => this.open.set(open),
+    emit: this,
+    escapeReason: 'escape',
+    programmaticReason: 'programmatic',
+    onClose: () => this.#resetAfterClose(),
+  });
+
+  readonly #listSlot = injectIdentifiedSlot('for-combobox', 'list');
   readonly #anchorSlot = anchorSlot(
     formatFortyMessage({
       code: 'FORCDK-COMBOBOX-007',
@@ -349,12 +373,12 @@ export class ForCombobox<T = string>
   );
 
   readonly inputId = this.#inputSlot.id;
-  readonly contentId = this.#contentSlot.id;
+  readonly contentId = this.#overlay.contentId;
   readonly listId = this.#listSlot.id;
 
   readonly input = this.#inputSlot.element;
 
-  readonly trigger = this.#triggerSlot.element;
+  readonly trigger = this.#overlay.trigger;
 
   /**
    * Element floating-ui anchors the listbox against. Resolution order:
@@ -364,9 +388,9 @@ export class ForCombobox<T = string>
    * `aria-controls`, `aria-activedescendant`, keyboard interaction, and its
    * dismissal exemption regardless of where the listbox paints.
    */
-  readonly anchor = this.#anchorSlot.resolve(this.#triggerSlot.element, this.#inputSlot.element);
+  readonly anchor = this.#anchorSlot.resolve(this.trigger, this.input);
 
-  readonly content = this.#contentSlot.element;
+  readonly content = this.#overlay.content;
 
   readonly list = this.#listSlot.element;
   /** True once a `[forComboboxList]` has registered (picker anatomy). */
@@ -383,11 +407,9 @@ export class ForCombobox<T = string>
   readonly actions = this.#actions.items;
   readonly hasEnabledActions = computed(() => this.#actions.items().some((a) => !a.disabled()));
 
-  readonly #initialFocusState = new InitialFocusState<ForComboboxInitialFocus>('first');
-  private readonly initialFocus = this.#initialFocusState.target;
+  private readonly initialFocus = this.#overlay.initialFocus;
 
-  readonly #closeReasonState = new CloseReasonState<ForComboboxCloseReason>();
-  private readonly lastCloseReason = this.#closeReasonState.reason;
+  private readonly lastCloseReason = this.#overlay.lastCloseReason;
 
   /**
    * The activedescendant pointer. Built by {@link createActiveIdSignal} as a
@@ -402,7 +424,7 @@ export class ForCombobox<T = string>
     open: this.open,
     autoHighlight: this.autoHighlight,
     virtualized: () => this.totalCount() !== undefined,
-    initialFocus: this.#initialFocusState.target,
+    initialFocus: this.#overlay.initialFocus,
     items: this.#items.items,
     value: this.value,
     equals: this.compareWith,
@@ -551,7 +573,7 @@ export class ForCombobox<T = string>
         open: this.open,
         autoHighlight: this.autoHighlight,
         virtualized: () => this.totalCount() !== undefined,
-        initialFocus: this.#initialFocusState.target,
+        initialFocus: this.#overlay.initialFocus,
         getActiveId: () => this.#activeId(),
         getLastPositionedId: () => this.#lastPositionedId,
         setLastPositionedId: (id) => (this.#lastPositionedId = id),
@@ -576,17 +598,17 @@ export class ForCombobox<T = string>
   }
 
   private registerTrigger(el: HTMLElement): void {
-    this.#triggerSlot.register(el);
+    this.#overlay.registerTrigger(el);
   }
   private unregisterTrigger(el: HTMLElement): void {
-    this.#triggerSlot.unregister(el);
+    this.#overlay.unregisterTrigger(el);
   }
 
   private registerContent(el: HTMLElement): void {
-    this.#contentSlot.register(el);
+    this.#overlay.registerContent(el);
   }
   private unregisterContent(el: HTMLElement): void {
-    this.#contentSlot.unregister(el);
+    this.#overlay.unregisterContent(el);
   }
 
   private registerList(el: HTMLElement): void {
@@ -888,35 +910,47 @@ export class ForCombobox<T = string>
   }
 
   private setInitialFocus(target: ForComboboxInitialFocus): void {
-    this.#initialFocusState.setTarget(target);
+    this.#overlay.setInitialFocus(target);
   }
 
   toggle(): void {
-    if (this.effectiveDisabled()) {
-      return;
-    }
-    if (this.open()) {
-      this.closeMenu('programmatic');
-    } else {
-      this.openMenu(this.trigger() !== null ? 'selected' : 'first');
-    }
+    this.#overlay.toggle(this.trigger() !== null ? 'selected' : 'first');
   }
 
+  /**
+   * Opens the listbox, seeding where the auto-highlight lands. Idempotent: an
+   * open on a listbox that is already open re-arms nothing, so an ArrowDown that
+   * finds the surface mounted leaves the current activedescendant where the
+   * user navigated it.
+   */
   openMenu(initialFocus: ForComboboxInitialFocus = 'first'): void {
-    if (this.effectiveDisabled() || this.open()) {
+    if (this.open()) {
       return;
     }
-    this.#initialFocusState.setTarget(initialFocus);
-    this.#closeReasonState.reset();
-    this.open.set(true);
+    this.#overlay.open(initialFocus);
   }
 
+  /**
+   * Closes the listbox, recording `reason` as the {@link lastCloseReason} the
+   * content reads. Idempotent, unlike the shared machine's own close: this is a
+   * consumer-facing method, so a `closeMenu` on an already-closed listbox must
+   * not overwrite the previous reason (a `'tab'` close has to survive so the
+   * content skips its return-focus) nor re-run the close side effects.
+   */
   closeMenu(reason: ForComboboxCloseReason): void {
     if (!this.open()) {
       return;
     }
-    this.#closeReasonState.set(reason);
-    this.open.set(false);
+    this.#overlay.close(reason);
+  }
+
+  /**
+   * Close side effects, run after the open state flips: the activedescendant is
+   * dropped, the virtualized navigator's pending move discarded, and — in the
+   * picker anatomy, where the in-panel input is a transient filter rather than
+   * the value display — the query reset.
+   */
+  #resetAfterClose(): void {
     this.#activeId.set(null);
     this.#navigator?.resetPending();
     if (this.trigger() !== null) {
@@ -927,20 +961,16 @@ export class ForCombobox<T = string>
 
   /** Fire `(autoFocusOnOpen)` and report whether the consumer vetoed the focus move. */
   private emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.autoFocusOnOpen);
+    return this.#overlay.emitAutoFocusOnOpen();
   }
 
   /** Fire `(autoFocusOnClose)` and report whether the consumer vetoed the return-focus. */
   private emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.autoFocusOnClose);
+    return this.#overlay.emitAutoFocusOnClose();
   }
 
   private emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.escapeKeyDown, event);
-    if (!vetoed && this.dismissible()) {
-      event.stopPropagation();
-      this.closeMenu('escape');
-    }
+    this.#overlay.emitEscapeKeyDown(event);
   }
 
   /**
@@ -950,29 +980,37 @@ export class ForCombobox<T = string>
    * matching output with the veto the shell built.
    */
   private emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.pointerDownOutside.emit(veto);
+    this.#overlay.emitPointerDownOutside(veto);
   }
   private emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.focusOutside.emit(veto);
+    this.#overlay.emitFocusOutside(veto);
   }
   private emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.interactOutside.emit(veto);
+    this.#overlay.emitInteractOutside(veto);
   }
 
   /**
    * Implicit close requested by the shell after an un-vetoed outside
-   * interaction. Marks the control touched and closes with the channel's
-   * reason.
+   * interaction. The shared machine's own open guard keeps a stale event from
+   * clobbering the previous close reason.
+   *
+   * The touch mark sits deliberately **ahead** of that guard rather than on the
+   * machine's `onDismiss` hook, which is where `[forSelect]` / `[forTimePicker]`
+   * put theirs: an outside interaction is this control's blur, so it marks the
+   * combobox touched exactly like {@link onFocusOut} does — whether or not the
+   * listbox was still open when the shell's event arrived. Wiring the hook
+   * instead would additionally mark touched on Escape, which leaves focus in the
+   * input and therefore blurs nothing.
    */
   private requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
     this.markTouched();
-    this.closeMenu(reason);
+    this.#overlay.requestClose(reason);
   }
 
   protected onFocusOut(event: FocusEvent): void {
     const next = event.relatedTarget as HTMLElement | null;
     const inputEl = this.#inputSlot.element();
-    const content = this.#contentSlot.element();
+    const content = this.content();
     if (next) {
       if (inputEl && inputEl.contains(next)) {
         return;

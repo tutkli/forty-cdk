@@ -171,8 +171,8 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     let openers!: MenuOpenerRegistry;
     this.#controller = new OverlayController<'first' | 'last', ForMenuCloseReason>({
       idPrefix,
-      createTrigger: (id) => {
-        openers = new MenuOpenerRegistry(id);
+      createTrigger: (mintId) => {
+        openers = new MenuOpenerRegistry(mintId());
         return openers;
       },
       defaultInitialFocus: 'first',

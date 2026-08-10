@@ -1,24 +1,27 @@
 /**
  * Meta-guard for the overlay-controller fold
- * ([#1764](https://github.com/tutkli/forty-cdk/issues/1764)): the open / close /
+ * ([#1764](https://github.com/tutkli/forty-cdk/issues/1764),
+ * [#1768](https://github.com/tutkli/forty-cdk/issues/1768)): the open / close /
  * dismiss machine every trigger-anchored overlay surface runs is declared
- * **once**, in `core-overlay/overlay-controller/overlay-controller.ts`, and the
- * two callers that used to own a copy of it — `MenuOverlay` behind the four menu
- * roots, `ListboxOverlayController` behind `[forSelect]` / `[forTimePicker]` —
- * compose it instead.
+ * **once**, in `core-overlay/overlay-controller/overlay-controller.ts`, and every
+ * module that used to own a copy of it composes that one instead — `MenuOverlay`
+ * behind the four menu roots, `ListboxOverlayController` behind `[forSelect]` /
+ * `[forTimePicker]`, `[forCombobox]`'s root, and `[forMenubar]`'s multiplexed
+ * `MenubarMenuContext`.
  *
  * **The derived property is "this module composes both `InitialFocusState` and
  * `CloseReasonState`"**, which is what a surface owning the machine looks like:
  * the initial-focus target a trigger arms before flipping open, plus the close
- * reason the content reads to decide its return-focus. It is not exact — two
- * modules outside this issue's scope match it and are declared below with the
- * condition that keeps each of them honest — but it is exact in the direction
- * that matters: re-inlining the machine into either facade turns this red.
+ * reason the content reads to decide its return-focus. #1764 left the last two
+ * matches as declared exclusions with a checked condition; #1768 folded both, so
+ * the property is now exact in both directions and the exclusion list is gone —
+ * re-inlining the machine anywhere turns this red.
  *
  * The behavioural proof lives elsewhere and is unchanged by the fold:
- * `menu-overlay.spec.ts` and `listbox-overlay-controller.spec.ts` still drive
- * the two facades' full surfaces, and `overlay-controller.spec.ts` drives the
- * shared machine's own semantics.
+ * `menu-overlay.spec.ts`, `listbox-overlay-controller.spec.ts`,
+ * `combobox.spec.ts` and `menubar.spec.ts` still drive the four composers' full
+ * surfaces, and `overlay-controller.spec.ts` drives the shared machine's own
+ * semantics.
  */
 const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
   query: '?raw',
@@ -43,37 +46,22 @@ function stripComments(source: string): string {
 }
 
 const SHARED_MACHINE = 'core-overlay/src/overlay-controller/overlay-controller';
-const MENU_FACADE = 'core-overlay/src/menu-overlay/menu-overlay';
-const LISTBOX_FACADE = 'core-overlay/src/listbox-overlay/listbox-overlay-controller';
 const ENABLED_SCAN = 'core/src/collection/enabled-handle-navigation';
 
 /**
- * Modules that own an overlay open / close machine without composing the shared
- * controller. Each states the condition that keeps it out of scope, and the
- * condition is checked rather than trusted — a module whose reason stops holding
- * fails here instead of quietly becoming a third copy nobody folded.
+ * Every module that composes the shared machine. Each ran its own copy of the
+ * open / close / dismiss pipeline before the fold, so each is checked for the
+ * state and the veto plumbing having actually left rather than been moved.
  */
-const DECLARED_EXCLUSIONS: {
-  readonly id: string;
-  readonly why: string;
-  readonly stillHolds: (source: string) => boolean;
-}[] = [
-  {
-    id: 'combobox/src/combobox',
-    why: 'the editable anatomy never moves DOM focus into its surface, so it composes no overlay controller at all (row 6 of the overlay decision table)',
-    stillHolds: (source) =>
-      !source.includes('ListboxOverlayController') && !source.includes('MenuOverlay'),
-  },
-  {
-    id: 'menubar/src/menubar-menu-context',
-    why: 'it multiplexes one menu context across the bar triggers instead of owning a MenuOverlay',
-    stillHolds: (source) =>
-      !source.includes('createMenuOverlay') && source.includes('MenuItemList'),
-  },
+const COMPOSERS = [
+  'core-overlay/src/menu-overlay/menu-overlay',
+  'core-overlay/src/listbox-overlay/listbox-overlay-controller',
+  'combobox/src/combobox',
+  'menubar/src/menubar-menu-context',
 ];
 
 describe('overlay controller fold', () => {
-  it('declares the open / close machine in exactly one module plus the declared exclusions', () => {
+  it('declares the open / close machine in exactly one module', () => {
     const owners = librarySources()
       .filter(([, source]) => {
         const code = stripComments(source);
@@ -82,35 +70,23 @@ describe('overlay controller fold', () => {
       .map(([id]) => id)
       .sort();
 
-    expect(owners).toEqual(
-      [SHARED_MACHINE, ...DECLARED_EXCLUSIONS.map((exclusion) => exclusion.id)].sort(),
-    );
+    expect(owners).toEqual([SHARED_MACHINE]);
   });
 
-  it('keeps every declared exclusion honest', () => {
+  it('leaves every composer holding neither half of the machine state', () => {
     const sources = new Map(librarySources());
-    const stale = DECLARED_EXCLUSIONS.filter((exclusion) => {
-      const source = sources.get(exclusion.id);
-      return source === undefined || !exclusion.stillHolds(stripComments(source));
-    }).map((exclusion) => `${exclusion.id}: ${exclusion.why}`);
-
-    expect(stale).toEqual([]);
-  });
-
-  it('leaves both folded facades composing the shared controller', () => {
-    const sources = new Map(librarySources());
-    for (const facade of [MENU_FACADE, LISTBOX_FACADE]) {
-      const code = stripComments(sources.get(facade) ?? '');
+    for (const composer of COMPOSERS) {
+      const code = stripComments(sources.get(composer) ?? '');
       expect(code).toContain('new OverlayController');
       expect(code).not.toContain('new InitialFocusState');
       expect(code).not.toContain('new CloseReasonState');
     }
   });
 
-  it('leaves the dismiss / auto-focus veto plumbing out of both facades', () => {
+  it('leaves the dismiss / auto-focus veto plumbing out of every composer', () => {
     const sources = new Map(librarySources());
-    for (const facade of [MENU_FACADE, LISTBOX_FACADE]) {
-      const code = stripComments(sources.get(facade) ?? '');
+    for (const composer of COMPOSERS) {
+      const code = stripComments(sources.get(composer) ?? '');
       expect(code).not.toContain('emitVetoableEvent(');
       expect(code).not.toContain('emitVetoableNativeEvent(');
     }

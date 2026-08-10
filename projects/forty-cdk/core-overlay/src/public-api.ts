@@ -121,8 +121,8 @@ export {
   type OverlayEmitTargets,
   type OverlayOpenOptions,
   type OverlayOpenOutcome,
+  type OverlaySlot,
   type OverlayTransitionOptions,
-  type OverlayTriggerSlot,
 } from './overlay-controller/overlay-controller';
 export {
   injectOverlayShell,

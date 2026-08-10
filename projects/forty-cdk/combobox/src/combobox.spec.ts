@@ -832,6 +832,48 @@ describe('ForCombobox', () => {
       readonly touchedChanges: boolean[] = [];
     }
 
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forCombobox [(open)]="open" (touch)="touches.set(touches() + 1)">
+          <input forComboboxInput />
+          @if (open()) {
+            <div forComboboxContent>
+              <div forComboboxOption value="apple" label="Apple">Apple</div>
+            </div>
+          }
+        </div>
+      `,
+    })
+    class OutsideDismissTouchHost {
+      readonly open = signal(false);
+      readonly touches = signal(0);
+    }
+
+    it('emits touch when an outside pointer-down dismisses the listbox', async () => {
+      const r = renderHost(OutsideDismissTouchHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      const outside = document.createElement('button');
+      document.body.appendChild(outside);
+      try {
+        const event = new PointerEvent('pointerdown', { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'target', { value: outside, configurable: true });
+        Object.defineProperty(event, 'composedPath', {
+          value: () => [outside],
+          configurable: true,
+        });
+        document.dispatchEvent(event);
+        await flush(r.fixture);
+
+        expect(r.instance.open()).toBe(false);
+        expect(r.instance.touches()).toBe(1);
+      } finally {
+        outside.remove();
+      }
+    });
+
     it('emits touch when focus leaves the combobox entirely', async () => {
       const { el, fixture, flush } = renderHost(TouchOutputHost);
       const input = el.querySelector('[forComboboxInput]')!;

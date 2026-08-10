@@ -2,16 +2,12 @@ import { computed, type OutputEmitterRef, type Signal, signal } from '@angular/c
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
   type ListNavigationAction,
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
   ANCHORED_POSITIONING_DEFAULTS,
-  CloseReasonState,
-  InitialFocusState,
   createMenuItemList,
   type MenuActivationModality,
   type FloatingAlign,
@@ -21,6 +17,7 @@ import {
   type FloatingSide,
   type ForMenuItemHandle,
   type MenuSiblingNavigator,
+  OverlayController,
 } from 'forty-cdk/core-overlay';
 import type { ForMenubarTriggerHandle } from './menubar-context';
 
@@ -86,9 +83,11 @@ export interface MenubarMenuHost extends MenuSiblingNavigator {
  * placement are all derived from the host's `activeTrigger`, so the same
  * context shape transparently covers whichever trigger's menu is mounted.
  *
- * Item navigation, the initial-focus protocol and the close-reason record all reuse the same shared
- * helpers `MenuOverlay` composes, so this class covers only the `activeTrigger`-derived
- * multiplexing.
+ * Item navigation and the open / close / dismiss machine are the same shared code `MenuOverlay`
+ * composes — `MenuItemList` and {@link OverlayController} — so this class covers only the
+ * `activeTrigger`-derived multiplexing on top of them. Both of the controller's element sides are
+ * supplied here rather than minted: every id the bar exposes lives on one of its triggers, so the
+ * shared machine mints none and this class needs no injection context.
  *
  * Ids and the accessible name are the exception: they derive from `lastTrigger`, because the
  * surface outlives the trigger's active window. `activeTrigger()` is already `null` while the
@@ -111,8 +110,7 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly #contentEl = signal<HTMLElement | null>(null);
   readonly #contentStaticId = signal<string | null>(null);
   readonly #contentOwner = signal<ForMenubarTriggerHandle | null>(null);
-  readonly #initialFocusState = new InitialFocusState();
-  readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
+  readonly #controller: OverlayController<'first' | 'last', ForMenuCloseReason>;
   #suppressOpenFocus = false;
 
   readonly open = computed(() => this.#host.value() !== null);
@@ -159,18 +157,16 @@ export class MenubarMenuContext implements ForMenuContext {
       ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned,
   );
   readonly loop: Signal<boolean>;
-  readonly initialFocus = this.#initialFocusState.target;
-  readonly lastCloseReason = this.#closeReasonState.reason;
-  readonly triggerId = computed(() => this.#host.lastTrigger()?.triggerId() ?? '');
-  readonly contentId = computed(
-    () => this.#host.lastTrigger()?.contentId() ?? this.sharedContentId() ?? '',
-  );
+  readonly initialFocus: Signal<'first' | 'last'>;
+  readonly lastCloseReason: Signal<ForMenuCloseReason | null>;
+  readonly triggerId: Signal<string>;
+  readonly contentId: Signal<string>;
   readonly ariaLabel = computed(() => this.#host.lastTrigger()?.ariaLabel() ?? null);
   readonly anchor = computed<ReferenceElement | null>(
     () => this.#host.activeTrigger()?.host ?? null,
   );
   readonly trigger: Signal<HTMLElement | null>;
-  readonly content = this.#contentEl.asReadonly();
+  readonly content: Signal<HTMLElement | null>;
 
   /**
    * Consumer-set static `id` of a `[forMenuContent]` surface that belongs to no
@@ -219,12 +215,49 @@ export class MenubarMenuContext implements ForMenuContext {
     this.dismissible = host.dismissible;
     this.dir = host.dir;
     this.loop = host.loop;
-    this.trigger = host.lastTriggerHost;
     this.menubar = host;
+    this.#controller = new OverlayController<'first' | 'last', ForMenuCloseReason>({
+      idPrefix: 'for-menubar',
+      createTrigger: () => ({
+        id: computed(() => host.lastTrigger()?.triggerId() ?? ''),
+        element: host.lastTriggerHost,
+        register: () => {},
+        unregister: () => {},
+      }),
+      createContent: () => ({
+        id: computed(() => host.lastTrigger()?.contentId() ?? this.sharedContentId() ?? ''),
+        element: this.#contentEl.asReadonly(),
+        register: (el) => this.#adoptContent(el),
+        unregister: (el) => this.#releaseContent(el),
+      }),
+      defaultInitialFocus: 'first',
+      disabled: host.disabled,
+      dismissible: host.dismissible,
+      isOpen: () => host.value() !== null,
+      /**
+       * Only the close direction is expressible here: opening needs the trigger
+       * value this context does not have, so the bar writes `value` itself right
+       * after {@link MenubarMenuContext.prepareOpen} arms the shared state.
+       */
+      setOpen: (open) => {
+        if (!open) {
+          host.closeOpen();
+        }
+      },
+      emit: host,
+      escapeReason: 'escape',
+      programmaticReason: 'programmatic',
+    });
+    this.initialFocus = this.#controller.initialFocus;
+    this.lastCloseReason = this.#controller.lastCloseReason;
+    this.triggerId = this.#controller.triggerId;
+    this.contentId = this.#controller.contentId;
+    this.trigger = this.#controller.trigger;
+    this.content = this.#controller.content;
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
-    this.#initialFocusState.setTarget(target);
+    this.#controller.setInitialFocus(target);
   }
 
   /**
@@ -232,6 +265,10 @@ export class MenubarMenuContext implements ForMenuContext {
    * initial-focus target and clears the prior close reason. A `'pointer'`
    * `modality` keeps the upcoming programmatic initial focus from reflecting
    * `data-highlighted` on the focused item.
+   *
+   * It arms the shared machine's open without flipping any state: the bar owns
+   * the flip, because the open state is derived from a `value` only the bar knows
+   * (see the controller's `setOpen`).
    *
    * `suppressOpenFocus` arms a one-shot veto of the incoming surface's
    * `(autoFocusOnOpen)` focus move — the hover-switch path, where the bar has
@@ -244,24 +281,40 @@ export class MenubarMenuContext implements ForMenuContext {
     modality: MenuActivationModality = 'keyboard',
     { suppressOpenFocus = false }: { readonly suppressOpenFocus?: boolean } = {},
   ): void {
-    this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
-    this.#closeReasonState.reset();
+    this.#controller.open(initialFocus, { highlight: modality === 'keyboard' });
     this.#suppressOpenFocus = suppressOpenFocus;
   }
 
-  registerTrigger(): void {
-    // Triggers register with the menubar itself, not with this menu context.
+  registerTrigger(el: HTMLElement): void {
+    this.#controller.registerTrigger(el);
   }
-  unregisterTrigger(): void {}
+  unregisterTrigger(el: HTMLElement): void {
+    this.#controller.unregisterTrigger(el);
+  }
 
   registerContent(el: HTMLElement): void {
+    this.#controller.registerContent(el);
+  }
+  unregisterContent(el: HTMLElement): void {
+    this.#controller.unregisterContent(el);
+  }
+
+  /**
+   * The content side the shared machine registers through. Records the surface's
+   * consumer-set static `id` and the trigger that owned it at registration, both
+   * of which {@link sharedContentId} reads to tell a trigger-agnostic surface
+   * from a per-trigger one, and hands the id to the active trigger to adopt.
+   */
+  #adoptContent(el: HTMLElement): void {
     const active = this.#host.activeTrigger();
     active?.adoptContentId(el);
     this.#contentStaticId.set(el.getAttribute('id') || null);
     this.#contentOwner.set(active);
     this.#contentEl.set(el);
   }
-  unregisterContent(el: HTMLElement): void {
+
+  /** Drops the registered surface, identity-guarded so a replaced one unwinds cleanly. */
+  #releaseContent(el: HTMLElement): void {
     if (this.#contentEl() === el) {
       this.#contentEl.set(null);
       this.#contentStaticId.set(null);
@@ -288,52 +341,45 @@ export class MenubarMenuContext implements ForMenuContext {
   focusInitialEnabledItem(target: 'first' | 'last'): boolean {
     return this.#itemList.focusInitialEnabledItem(
       target,
-      this.#initialFocusState.consumeHighlight(),
+      this.#controller.consumeInitialHighlight(),
     );
   }
 
+  /**
+   * Closes the open menu, recording `'programmatic'` — the reason the shared
+   * machine's own `toggle` records on the same path. Without a trigger value the
+   * bar context can only close; triggers drive the open path through the bar's
+   * `openTrigger`.
+   */
   toggle(): void {
-    // Without a specific trigger value, toggle from the bar context can only
-    // close. Triggers themselves drive the open path via the bar's openTrigger.
-    if (this.#host.value() !== null) {
-      this.#host.closeOpen();
+    if (this.open()) {
+      this.#controller.close('programmatic');
     }
   }
 
-  openMenu(): void {
-    // Open requires a trigger value — see the bar's openTrigger.
-  }
+  /** No-op: opening requires a trigger value — see the bar's `openTrigger`. */
+  openMenu(): void {}
 
   closeMenu(reason: ForMenuCloseReason): void {
-    this.#closeReasonState.set(reason);
-    this.#host.closeOpen();
+    this.#controller.close(reason);
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.#host.escapeKeyDown, event);
-    if (!vetoed && this.#host.dismissible()) {
-      event.stopPropagation();
-      this.#closeReasonState.set('escape');
-      this.#host.closeOpen();
-    }
+    this.#controller.emitEscapeKeyDown(event);
   }
 
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.#host.pointerDownOutside.emit(veto);
+    this.#controller.emitPointerDownOutside(veto);
   }
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.#host.focusOutside.emit(veto);
+    this.#controller.emitFocusOutside(veto);
   }
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.#host.interactOutside.emit(veto);
+    this.#controller.emitInteractOutside(veto);
   }
 
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    if (this.#host.value() === null) {
-      return;
-    }
-    this.#closeReasonState.set(reason);
-    this.#host.closeOpen();
+    this.#controller.requestClose(reason);
   }
 
   emitAutoFocusOnOpen(): boolean {
@@ -341,7 +387,7 @@ export class MenubarMenuContext implements ForMenuContext {
       this.#suppressOpenFocus = false;
       return true;
     }
-    return emitVetoableEvent(this.#host.autoFocusOnOpen);
+    return this.#controller.emitAutoFocusOnOpen();
   }
 
   /**
@@ -367,6 +413,6 @@ export class MenubarMenuContext implements ForMenuContext {
     if (this.open()) {
       return true;
     }
-    return emitVetoableEvent(this.#host.autoFocusOnClose);
+    return this.#controller.emitAutoFocusOnClose();
   }
 }
