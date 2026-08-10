@@ -43,11 +43,11 @@ Two packages are regular dependencies, installed automatically and never declare
 
 **The package name itself exports nothing.** `import { … } from 'forty-cdk'` resolves to no symbol, and your editor will not auto-import anything under the bare package name — by design, so that every symbol has exactly one import path. There are three specifiers you do import from:
 
-| Specifier                          | What it exports                                                                                                                                                                                                                                       |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `forty-cdk/<primitive>`            | The primitive's directives, components, context tokens and defaults provider — `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on for every entry in the tables below.                                         |
-| [`forty-cdk/shared`](shared)       | The cross-primitive contract types a primitive's public API references — `WritingDirection`, `VetoableEvent`, `DateAdapter`, `FloatingSide`, … — declared once and published once. Six of them ship from their own primitive instead; see its README. |
-| `forty-cdk/internationalized-date` | The `@internationalized/date` adapters, kept apart so that optional peer stays genuinely optional.                                                                                                                                                    |
+| Specifier                          | What it exports                                                                                                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `forty-cdk/<primitive>`            | The primitive's directives, components, context tokens and defaults provider — `ForDialog` from `forty-cdk/dialog`, `ForAccordion` from `forty-cdk/accordion`, and so on for every entry in the tables below.                                           |
+| [`forty-cdk/shared`](shared)       | The cross-primitive contract types a primitive's public API references — `WritingDirection`, `VetoableEvent`, `DateAdapter`, `FloatingSide`, … — declared once and published once. Eight ship from their own primitive instead; that README names them. |
+| `forty-cdk/internationalized-date` | The `@internationalized/date` adapters, kept apart so that optional peer stays genuinely optional.                                                                                                                                                      |
 
 `forty-cdk/core` and `forty-cdk/core-overlay` resolve too, but neither is **public**: together they hold the engines and DI singletons the library refactors freely, and they exist so every primitive resolves that shared implementation to one compiled module. They are two rather than one for a bundling reason you get for free: a published module is a bundler's chunk-splitting unit, so keeping the positioning engine (`@floating-ui/dom` and the overlay shells) in its own module means a lazy route that renders no overlay does not load it. Measured on a seven-lazy-route app, that is **41.7 kB raw / 12.1 kB transfer** a non-overlay route no longer pays. If a symbol you need is not exported by the three specifiers above, it is internal by design — [open an issue](https://github.com/tutkli/forty-cdk/issues) rather than importing from either.
 
@@ -156,7 +156,7 @@ The tables below group the primitives by purpose. The link on each name opens th
 | [Separator](separator)             | A static, optionally semantic divider between groups of content, horizontal or vertical.                                                                                |
 | [Aspect Ratio](aspect-ratio)       | A container that keeps its content at a fixed width-to-height ratio.                                                                                                    |
 | [Avatar](avatar)                   | A user image with a graceful fallback across its loading lifecycle.                                                                                                     |
-| [Visually Hidden](visually-hidden) | Hides content visually while keeping it in the accessibility tree — screen-reader-only labels and announcements.                                                        |
+| [Visually Hidden](visually-hidden) | Hides content visually while keeping it in the accessibility tree — screen-reader-only labels, plus the injectable `LiveAnnouncer`.                                     |
 
 ### Feedback
 
@@ -171,7 +171,7 @@ Headless — no DOM or ARIA of their own; an `inject*` / provider API that other
 
 | Utility                                      | What it is                                                                                                                                             |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [Breakpoints](breakpoints)                   | A signal-first, zoneless, SSR-safe viewport breakpoint observer (`injectBreakpoints`).                                                                 |
+| [Breakpoints](breakpoints)                   | A signal-first, zoneless, SSR-safe viewport breakpoint observer (`injectBreakpoints`), plus the `prefers-reduced-motion` detector.                     |
 | [Drag & Drop](drag-drop)                     | Headless, accessible drag-and-drop for sortable lists and cross-list transfers, keyboard and pointer driven.                                           |
 | [Virtualization](virtualization)             | A headless windowing core (`injectVirtualizer`) plus a `[forVirtualViewport]` layer that renders only the visible slice of huge lists.                 |
 | [Table Virtualization](table-virtualization) | `[forTableVirtualized]`, the adapter that windows a `[forTable]` grid — its own entry point because it composes both the table and the windowing core. |

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 import ts from 'typescript';
 
@@ -25,6 +25,16 @@ const CORE_BARRELS = ['core', 'core-overlay'].map((entry) =>
   join(repoRoot, 'projects', 'forty-cdk', entry, 'src', 'public-api.ts'),
 );
 const CORE_SPECIFIERS = new Set(['forty-cdk/core', 'forty-cdk/core-overlay']);
+const CORE_SOURCE_DIRS = ['core', 'core-overlay'].map((entry) =>
+  join(repoRoot, 'projects', 'forty-cdk', entry, 'src'),
+);
+
+/**
+ * The sentence an internal-tier declaration carries to tell a reader it is
+ * refactorable without notice. Blessing a symbol makes that sentence false, and
+ * the JSDoc is what reaches the consumer's editor — so the two cannot disagree.
+ */
+const INTERNAL_TIER_DISCLAIMER = 'Internal core tier';
 const IGNORED_FILES = new Set([
   'forty-cdk.d.ts',
   'forty-cdk-core.d.ts',
@@ -70,6 +80,25 @@ function coreBarrelExportNames() {
     }
   }
   return names;
+}
+
+/** Every non-spec `.ts` file of the internal tier, as `[path, text]`. */
+function coreSourceFiles() {
+  const files = [];
+  function walk(dir) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(path);
+      } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts')) {
+        files.push([path, readFileSync(path, 'utf8')]);
+      }
+    }
+  }
+  for (const dir of CORE_SOURCE_DIRS) {
+    walk(dir);
+  }
+  return files;
 }
 
 /**
@@ -261,6 +290,44 @@ if (staleBlessed.length) {
   process.exit(1);
 }
 
+/**
+ * Blessed symbols whose own declaration still calls itself internal tier.
+ *
+ * Promoting a symbol is two edits — the roster and the JSDoc — and only the
+ * first one is load-bearing for the build, so the second is the half that gets
+ * forgotten ([#1745](https://github.com/tutkli/forty-cdk/issues/1745) found two
+ * helpers documented for an audience that could not reach them, and the reverse
+ * mistake ships a semver promise the doc denies). The disclaimer travels into
+ * the emitted `.d.ts` and from there into the consumer's editor, so it is part
+ * of the contract rather than an implementation note.
+ */
+const misdocumented = [];
+for (const [path, text] of coreSourceFiles()) {
+  if (!text.includes(INTERNAL_TIER_DISCLAIMER)) continue;
+  const sf = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
+  for (const stmt of sf.statements) {
+    const name = declarationName(stmt);
+    if (name === null || !BLESSED_CORE_SYMBOLS.has(name)) continue;
+    const leading = (ts.getLeadingCommentRanges(text, stmt.pos) ?? [])
+      .map((range) => text.slice(range.pos, range.end))
+      .join('\n');
+    if (leading.includes(INTERNAL_TIER_DISCLAIMER)) {
+      misdocumented.push(`${name} (${relative(repoRoot, path).split(sep).join('/')})`);
+    }
+  }
+}
+
+if (misdocumented.length) {
+  console.error(
+    `[check-entrypoint-public-types] FAIL — ${misdocumented.length} blessed symbol(s) still document themselves as internal tier:`,
+  );
+  for (const entry of misdocumented.sort()) console.error(`  ${entry}`);
+  console.error(
+    `\nA blessed symbol carries the library's semver guarantee, and its JSDoc is what the consumer reads in their editor. Drop the "${INTERNAL_TIER_DISCLAIMER}" paragraph and confirm the rest reads as consumer-facing documentation — or remove the symbol from scripts/lib/core-blessed-tier.mjs.`,
+  );
+  process.exit(1);
+}
+
 const failures = [];
 const published = new Map();
 const starReexports = [];
@@ -400,5 +467,5 @@ console.log(
     .map(([entry, symbols]) => `${entry}: ${symbols.length}`)
     .join(
       ', ',
-    )}); no internal-tier symbol in a public signature or barrel re-export, and no duplicate re-export path; every locally-declared type in a public signature is re-exported by its barrel, bar the ${allowed} deferred in scripts/lib/unnameable-public-types.mjs.`,
+    )}), none of them still documented as internal tier; no internal-tier symbol in a public signature or barrel re-export, and no duplicate re-export path; every locally-declared type in a public signature is re-exported by its barrel, bar the ${allowed} deferred in scripts/lib/unnameable-public-types.mjs.`,
 );

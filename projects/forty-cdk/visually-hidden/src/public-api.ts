@@ -1,1 +1,1 @@
-export { ForVisuallyHidden } from 'forty-cdk/core';
+export { ForVisuallyHidden, LiveAnnouncer } from 'forty-cdk/core';
