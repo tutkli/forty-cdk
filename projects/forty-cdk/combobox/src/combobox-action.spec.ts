@@ -8,6 +8,7 @@ import { ForComboboxContent } from './combobox-content';
 import { ForComboboxInput } from './combobox-input';
 import { ForComboboxList } from './combobox-list';
 import { ForComboboxOption } from './combobox-option';
+import { ForComboboxTrigger } from './combobox-trigger';
 
 const FRUITS = ['apple', 'banana', 'cherry'] as const;
 
@@ -151,6 +152,39 @@ class NoListActionHost {
   readonly value = signal<readonly string[]>([]);
   readonly open = signal(true);
   readonly actionDisabled = signal(false);
+}
+
+@Component({
+  imports: [
+    ForCombobox,
+    ForComboboxTrigger,
+    ForComboboxContent,
+    ForComboboxList,
+    ForComboboxOption,
+    ForComboboxAction,
+  ],
+  template: `
+    <div forCombobox [(query)]="query" [(value)]="value" [(open)]="open">
+      <button forComboboxTrigger data-testid="trigger">Pick</button>
+      @if (open()) {
+        <div forComboboxContent>
+          <button forComboboxAction data-testid="action1">One</button>
+          <button forComboboxAction data-testid="action2">Two</button>
+          <div forComboboxList>
+            @for (fruit of FRUITS; track fruit) {
+              <div forComboboxOption [value]="fruit">{{ fruit }}</div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  `,
+})
+class NoInputTwoActionHost {
+  protected readonly FRUITS = FRUITS;
+  readonly query = signal('');
+  readonly value = signal<readonly string[]>([]);
+  readonly open = signal(true);
 }
 
 function getAction(): HTMLButtonElement {
@@ -306,6 +340,86 @@ describe('ForComboboxAction', () => {
 
       expect(tab.defaultPrevented).toBe(true);
       expect(r.instance.open()).toBe(true);
+    });
+  });
+
+  describe('input ↔ actions focus ring (model A)', () => {
+    it('steps forward from the input through every enabled action, then wraps back', async () => {
+      const r = renderHost(TwoActionHost);
+      await flush(r.fixture);
+
+      pressKey(getInput(), 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action1'));
+
+      pressKey(getActionByTestId('action1'), 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action2'));
+
+      pressKey(getActionByTestId('action2'), 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('steps backward from the input to the last action, then down to the input again', async () => {
+      const r = renderHost(TwoActionHost);
+      await flush(r.fixture);
+
+      pressKey(getInput(), 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action2'));
+
+      pressKey(getActionByTestId('action2'), 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action1'));
+
+      pressKey(getActionByTestId('action1'), 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('skips a disabled action in both directions', async () => {
+      const r = renderHost(TwoActionHost);
+      r.instance.disabled1.set(true);
+      await flush(r.fixture);
+
+      pressKey(getInput(), 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action2'));
+
+      pressKey(getActionByTestId('action2'), 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('steps to the nearest enabled neighbor from an action disabled while it held focus', async () => {
+      const r = renderHost(TwoActionHost);
+      await flush(r.fixture);
+      const second = getActionByTestId('action2');
+      second.focus();
+      r.instance.disabled2.set(true);
+      await flush(r.fixture);
+
+      pressKey(second, 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action1'));
+
+      pressKey(second, 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getInput());
+    });
+
+    it('cycles among the actions alone when no [forComboboxInput] is registered', async () => {
+      const r = renderHost(NoInputTwoActionHost);
+      await flush(r.fixture);
+
+      pressKey(getActionByTestId('action2'), 'Tab');
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action1'));
+
+      pressKey(getActionByTestId('action1'), 'Tab', { shiftKey: true });
+      await flush(r.fixture);
+      expect(document.activeElement).toBe(getActionByTestId('action2'));
     });
   });
 

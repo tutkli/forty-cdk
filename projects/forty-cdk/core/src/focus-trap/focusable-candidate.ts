@@ -1,6 +1,35 @@
 import { composedParentElement } from '../composed-tree/composed-tree';
 
 /**
+ * The ten local names {@link FOCUSABLE_SELECTOR} anchors a clause on, each
+ * mapped to the qualifier that clause carries — `[href]` for the two link
+ * elements, `[controls]` for the two media ones, `:not([disabled])` for the
+ * form controls, and nothing for the two that are focusable on their own.
+ * Keys are lowercase and compared against `localName` rather than `tagName`,
+ * so the two agree on a non-HTML-namespaced element: an SVG `<a href>` is
+ * matched by the selector's `a[href]` clause and reports `tagName` `'a'`,
+ * which an uppercase set would drop.
+ */
+const FOCUSABLE_LOCAL_NAME_QUALIFIERS: Readonly<Record<string, string>> = {
+  a: '[href]',
+  area: '[href]',
+  button: ':not([disabled])',
+  input: ':not([disabled]):not([type="hidden"])',
+  select: ':not([disabled])',
+  textarea: ':not([disabled])',
+  audio: '[controls]',
+  video: '[controls]',
+  iframe: '',
+  summary: '',
+};
+
+/**
+ * The two clauses {@link FOCUSABLE_SELECTOR} anchors on an attribute rather
+ * than on a local name, so any element can match them.
+ */
+const FOCUSABLE_ATTRIBUTE_CLAUSES = ['[tabindex]:not([tabindex="-1"])', '[contenteditable="true"]'];
+
+/**
  * Shared CSS selector for focusable elements. Single source of truth for the
  * library — primitives that need their own focus-finding logic (e.g. the
  * dialog directive's non-modal initial focus, the programmatic dialog
@@ -14,20 +43,16 @@ import { composedParentElement } from '../composed-tree/composed-tree';
  * the sequential Tab cycle at runtime by `isTabbableCandidate`. `iframe` and
  * `summary` are included because both are natively focusable and can
  * legitimately be an initial-focus target inside a trapped surface.
+ *
+ * Derived from {@link FOCUSABLE_LOCAL_NAME_QUALIFIERS} plus
+ * {@link FOCUSABLE_ATTRIBUTE_CLAUSES} so the pre-filter below cannot fall out
+ * of step with it — the correspondence the two used to keep by hand is now
+ * structural. `focusable-candidate.spec.ts` pins the derived clause set
+ * against the literal it replaced.
  */
 export const FOCUSABLE_SELECTOR = [
-  'a[href]',
-  'area[href]',
-  'button:not([disabled])',
-  'input:not([disabled]):not([type="hidden"])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-  '[contenteditable="true"]',
-  'audio[controls]',
-  'video[controls]',
-  'iframe',
-  'summary',
+  ...Object.entries(FOCUSABLE_LOCAL_NAME_QUALIFIERS).map(([name, qualifier]) => name + qualifier),
+  ...FOCUSABLE_ATTRIBUTE_CLAUSES,
 ].join(',');
 
 /**
@@ -123,25 +148,7 @@ export function findTabbableEdges(container: HTMLElement): TabbableEdges {
   return { first, last: first };
 }
 
-/**
- * The ten local names {@link FOCUSABLE_SELECTOR} anchors a clause on. Lowercase
- * and compared against `localName` rather than `tagName`, so the two agree on a
- * non-HTML-namespaced element: an SVG `<a href>` is matched by the selector's
- * `a[href]` clause and reports `tagName` `'a'`, which an uppercase set would
- * drop.
- */
-const FOCUSABLE_LOCAL_NAMES = new Set([
-  'a',
-  'area',
-  'button',
-  'input',
-  'select',
-  'textarea',
-  'audio',
-  'video',
-  'iframe',
-  'summary',
-]);
+const FOCUSABLE_LOCAL_NAMES = new Set(Object.keys(FOCUSABLE_LOCAL_NAME_QUALIFIERS));
 
 /**
  * Whether `el` could possibly match {@link FOCUSABLE_SELECTOR} — a deliberate superset, so `false`
@@ -149,9 +156,10 @@ const FOCUSABLE_LOCAL_NAMES = new Set([
  *
  * Every clause of that selector is anchored on one of {@link FOCUSABLE_LOCAL_NAMES}, on
  * `[tabindex]:not([tabindex="-1"])`, or on `[contenteditable="true"]`, which lets a structural
- * element answer without entering the selector engine. That correspondence is not expressible in a
- * type: a clause added to the selector without a matching anchor here silently narrows the
- * focusable set, and `focusable-candidate.spec.ts` fails when the two drift.
+ * element answer without entering the selector engine. The name-anchored half is the same
+ * declaration the selector is built from, so a name can no longer be added to one and not the
+ * other; the two attribute clauses are matched here in their deliberately relaxed form (any
+ * `contenteditable` value, not only `"true"`), which is what keeps this a superset.
  */
 function mayMatchFocusableSelector(el: Element): boolean {
   if (FOCUSABLE_LOCAL_NAMES.has(el.localName)) {

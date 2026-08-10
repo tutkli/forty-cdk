@@ -182,8 +182,24 @@ describe('focusable-candidate filter', () => {
       summary: '<details><summary>more</summary></details>',
     };
 
-    it('has a fixture for every clause of FOCUSABLE_SELECTOR', () => {
-      expect(Object.keys(CLAUSE_FIXTURES).sort()).toEqual(FOCUSABLE_SELECTOR.split(',').sort());
+    it('derives exactly the clauses the hand-written literal spelled out', () => {
+      expect(FOCUSABLE_SELECTOR.split(',').sort()).toEqual(Object.keys(CLAUSE_FIXTURES).sort());
+    });
+
+    it('keeps every name-anchored qualifier with its own name', () => {
+      root.innerHTML = `
+        <a>no href</a>
+        <map><area /></map>
+        <button disabled>off</button>
+        <input disabled />
+        <input type="hidden" />
+        <select disabled></select>
+        <textarea disabled></textarea>
+        <audio></audio>
+        <video></video>
+      `;
+
+      expect(queryFocusableCandidates(root)).toEqual([]);
     });
 
     for (const [clause, html] of Object.entries(CLAUSE_FIXTURES)) {
