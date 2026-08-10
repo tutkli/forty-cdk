@@ -64,7 +64,13 @@
 export { accessibleTextContent } from './accessible-text/accessible-text';
 export { afterNextRenderCancellable } from './after-next-render-cancellable/after-next-render-cancellable';
 export { Collection, type CollectionHandle } from './collection/collection';
-export { firstEnabledHost, nextEnabledHandle } from './collection/enabled-handle-navigation';
+export {
+  firstEnabledHandle,
+  firstEnabledHost,
+  lastEnabledHandle,
+  lastEnabledHost,
+  nextEnabledHandle,
+} from './collection/enabled-handle-navigation';
 export {
   LabelCache,
   type LabelCacheDeps,

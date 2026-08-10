@@ -7,14 +7,10 @@ import {
   type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
+import type { OverlayTransitionOptions } from '../overlay-controller/overlay-controller';
 import type { ForMenuCloseReason } from './menu-context';
 import type { MenuItemHandle } from './menu-item-list';
-import {
-  createMenuOverlay,
-  type MenuOverlay,
-  type MenuOverlayHooks,
-  type MenuOverlayTransitionOptions,
-} from './menu-overlay';
+import { createMenuOverlay, type MenuOverlay, type MenuOverlayHooks } from './menu-overlay';
 
 interface TestItem extends MenuItemHandle {
   readonly id: string;
@@ -64,8 +60,8 @@ interface BuiltOverlay {
     autoFocusOnClose: VetoableEvent[];
   };
   lifecycle: {
-    opens: { initialFocus: 'first' | 'last'; options: MenuOverlayTransitionOptions }[];
-    closes: { reason: ForMenuCloseReason; options: MenuOverlayTransitionOptions }[];
+    opens: { initialFocus: 'first' | 'last'; options: OverlayTransitionOptions }[];
+    closes: { reason: ForMenuCloseReason; options: OverlayTransitionOptions }[];
   };
 }
 
@@ -113,10 +109,10 @@ function build(idPrefix = 'test'): BuiltOverlay {
       interactOutside: host.interactOutside,
       autoFocusOnOpen: host.autoFocusOnOpen,
       autoFocusOnClose: host.autoFocusOnClose,
-      onOpen: (initialFocus: 'first' | 'last', options: MenuOverlayTransitionOptions) => {
+      onOpen: (initialFocus: 'first' | 'last', options: OverlayTransitionOptions) => {
         lifecycle.opens.push({ initialFocus, options });
       },
-      onClose: (reason: ForMenuCloseReason, options: MenuOverlayTransitionOptions) => {
+      onClose: (reason: ForMenuCloseReason, options: OverlayTransitionOptions) => {
         lifecycle.closes.push({ reason, options });
       },
     };

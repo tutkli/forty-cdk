@@ -1,6 +1,11 @@
 import { linkedSignal, untracked, type WritableSignal } from '@angular/core';
 
-import { isUnset, runVirtualizedNavigatorBridge } from 'forty-cdk/core';
+import {
+  firstEnabledHandle,
+  isUnset,
+  lastEnabledHandle,
+  runVirtualizedNavigatorBridge,
+} from 'forty-cdk/core';
 import type { ForComboboxInitialFocus, ForComboboxOptionHandle } from './combobox-context';
 import type { ComboboxVirtualizedNavigator } from './combobox-virtualized-navigator';
 
@@ -130,31 +135,8 @@ export function resolveAutoHighlightSeed<T>(input: AutoHighlightSeedInput<T>): s
       return selected.id();
     }
   }
-  const target = initialFocus === 'last' ? findLastEnabled(items) : findFirstEnabled(items);
+  const target = initialFocus === 'last' ? lastEnabledHandle(items) : firstEnabledHandle(items);
   return target?.id() ?? null;
-}
-
-function findFirstEnabled<T>(
-  items: readonly ForComboboxOptionHandle<T>[],
-): ForComboboxOptionHandle<T> | null {
-  for (const item of items) {
-    if (!item.disabled()) {
-      return item;
-    }
-  }
-  return null;
-}
-
-function findLastEnabled<T>(
-  items: readonly ForComboboxOptionHandle<T>[],
-): ForComboboxOptionHandle<T> | null {
-  for (let i = items.length - 1; i >= 0; i--) {
-    const item = items[i];
-    if (item && !item.disabled()) {
-      return item;
-    }
-  }
-  return null;
 }
 
 const NOT_READY = Symbol('forty-cdk/combobox:not-ready');

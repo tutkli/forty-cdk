@@ -2,7 +2,10 @@ import { signal } from '@angular/core';
 
 import {
   type DisableableHandle,
+  firstEnabledHandle,
   firstEnabledHost,
+  lastEnabledHandle,
+  lastEnabledHost,
   nextEnabledHandle,
 } from './enabled-handle-navigation';
 
@@ -109,5 +112,71 @@ describe('firstEnabledHost', () => {
       { value: 'c' },
     ]);
     expect(firstEnabledHost(items)).toBe(items[2]!.host);
+  });
+});
+
+describe('firstEnabledHandle', () => {
+  it('returns null on an empty list and when every handle is disabled', () => {
+    expect(firstEnabledHandle([])).toBeNull();
+    const items = makeItems([
+      { value: 'a', disabled: true },
+      { value: 'b', disabled: true },
+    ]);
+    expect(firstEnabledHandle(items)).toBeNull();
+  });
+
+  it('returns the handle itself, skipping leading disabled ones', () => {
+    const items = makeItems([{ value: 'a', disabled: true }, { value: 'b' }, { value: 'c' }]);
+    expect(firstEnabledHandle(items)).toBe(items[1]);
+  });
+
+  it('reads `disabled` per call, so a handle re-enabled later wins', () => {
+    const disabled = signal(true);
+    const items: TestHandle[] = [
+      { host: document.createElement('button'), disabled, value: 'a' },
+      ...makeItems([{ value: 'b' }]),
+    ];
+    expect(firstEnabledHandle(items)).toBe(items[1]);
+
+    disabled.set(false);
+    expect(firstEnabledHandle(items)).toBe(items[0]);
+  });
+});
+
+describe('lastEnabledHandle', () => {
+  it('returns null on an empty list and when every handle is disabled', () => {
+    expect(lastEnabledHandle([])).toBeNull();
+    const items = makeItems([
+      { value: 'a', disabled: true },
+      { value: 'b', disabled: true },
+    ]);
+    expect(lastEnabledHandle(items)).toBeNull();
+  });
+
+  it('returns the last handle, skipping trailing disabled ones', () => {
+    const items = makeItems([{ value: 'a' }, { value: 'b' }, { value: 'c', disabled: true }]);
+    expect(lastEnabledHandle(items)).toBe(items[1]);
+  });
+
+  it('scans from the end, so it disagrees with its forward twin on a mixed list', () => {
+    const items = makeItems([{ value: 'a' }, { value: 'b' }]);
+    expect(firstEnabledHandle(items)).toBe(items[0]);
+    expect(lastEnabledHandle(items)).toBe(items[1]);
+  });
+});
+
+describe('lastEnabledHost', () => {
+  it('returns null on an empty list and when every handle is disabled', () => {
+    expect(lastEnabledHost([])).toBeNull();
+    const items = makeItems([
+      { value: 'a', disabled: true },
+      { value: 'b', disabled: true },
+    ]);
+    expect(lastEnabledHost(items)).toBeNull();
+  });
+
+  it('returns the host of the last non-disabled handle', () => {
+    const items = makeItems([{ value: 'a' }, { value: 'b' }, { value: 'c', disabled: true }]);
+    expect(lastEnabledHost(items)).toBe(items[1]!.host);
   });
 });

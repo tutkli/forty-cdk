@@ -5,7 +5,8 @@ import type { CollectionHandle } from './collection';
 
 /**
  * Collection handle that also exposes a `disabled` signal. Required input
- * shape for {@link firstEnabledHost} and {@link nextEnabledHandle}.
+ * shape for {@link firstEnabledHandle}, {@link lastEnabledHandle} and
+ * {@link nextEnabledHandle}.
  */
 export interface DisableableHandle extends CollectionHandle {
   /**
@@ -15,6 +16,39 @@ export interface DisableableHandle extends CollectionHandle {
    */
   readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
+}
+
+/**
+ * Returns the first non-disabled handle in `items`, or `null` if every handle
+ * is disabled (or the list is empty). Iteration follows the order of the input
+ * array — pass `Collection.items()` to get DOM document order.
+ *
+ * Callers that only need the element take {@link firstEnabledHost}; this one is
+ * for the callers that act on the handle itself (the menu item list arms the
+ * item's one-shot highlight suppression before focusing it).
+ */
+export function firstEnabledHandle<H extends DisableableHandle>(items: readonly H[]): H | null {
+  for (const item of items) {
+    if (!item.disabled()) {
+      return item;
+    }
+  }
+  return null;
+}
+
+/**
+ * Returns the last non-disabled handle in `items`, or `null` if every handle is
+ * disabled (or the list is empty). The reverse twin of
+ * {@link firstEnabledHandle}, scanning from the end of the input array.
+ */
+export function lastEnabledHandle<H extends DisableableHandle>(items: readonly H[]): H | null {
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i];
+    if (item && !item.disabled()) {
+      return item;
+    }
+  }
+  return null;
 }
 
 /**
@@ -29,12 +63,19 @@ export interface DisableableHandle extends CollectionHandle {
 export function firstEnabledHost<H extends DisableableHandle>(
   items: readonly H[],
 ): HTMLElement | null {
-  for (const item of items) {
-    if (!item.disabled()) {
-      return item.host;
-    }
-  }
-  return null;
+  return firstEnabledHandle(items)?.host ?? null;
+}
+
+/**
+ * Returns the host element of the last non-disabled handle in `items`, or
+ * `null` if every handle is disabled (or the list is empty). The reverse twin
+ * of {@link firstEnabledHost}, for the overlays whose End / `'last'` initial
+ * focus lands on the bottom of the collection.
+ */
+export function lastEnabledHost<H extends DisableableHandle>(
+  items: readonly H[],
+): HTMLElement | null {
+  return lastEnabledHandle(items)?.host ?? null;
 }
 
 /** Options for {@link nextEnabledHandle}. */
