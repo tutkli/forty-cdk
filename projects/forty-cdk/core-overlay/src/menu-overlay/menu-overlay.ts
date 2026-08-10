@@ -1,20 +1,12 @@
-import type { ModelSignal, OutputEmitterRef, Signal } from '@angular/core';
+import type { ModelSignal, Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
+import { type ListNavigationAction, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
-  type ListNavigationAction,
-  type VetoableEvent,
-  type VetoableNativeEvent,
-} from 'forty-cdk/core';
-import { CloseReasonState } from '../overlay-controller/close-reason-state';
-import {
-  type IdentifiedElementSlot,
-  injectIdentifiedSlot,
-  injectSlotId,
-} from '../overlay-controller/element-registry';
-import { InitialFocusState } from '../overlay-controller/initial-focus-state';
+  OverlayController,
+  type OverlayEmitTargets,
+  type OverlayTransitionOptions,
+} from '../overlay-controller/overlay-controller';
 import {
   MenuOpenerRegistry,
   type MenuOpenerOptions,
@@ -33,38 +25,16 @@ import { createMenuItemList, type MenuItemHandle, type MenuItemList } from './me
 export type MenuActivationModality = 'pointer' | 'keyboard';
 
 /**
- * Per-transition options for {@link MenuOverlay.openMenu} /
- * {@link MenuOverlay.closeMenu}, forwarded verbatim to the `onOpen` / `onClose`
- * lifecycle hooks so a host directive can react to *how* the transition was
- * driven without re-deriving it from outside the pipeline.
- */
-export interface MenuOverlayTransitionOptions {
-  /**
-   * When `true`, the transition is pointer-driven (hover) and the surface's
-   * imperative focus move must be suppressed — an open must not pull focus into
-   * the menu, and a close must not return focus to the trigger. Defaults to
-   * `false`, so keyboard / click / programmatic transitions move focus as usual.
-   */
-  readonly suppressFocusMoves?: boolean;
-}
-
-/**
  * Wiring the directive forwards into the helper. Inputs / outputs / models
  * stay declared on the directive (Angular needs them as fields for template
  * binding); the helper reads them through these references so the close
  * decisions, navigation, and veto plumbing live in one place.
  */
-export interface MenuOverlayHooks {
+export interface MenuOverlayHooks extends OverlayEmitTargets {
   readonly open: ModelSignal<boolean>;
   readonly disabled: Signal<boolean>;
   readonly dismissible: Signal<boolean>;
   readonly loop: Signal<boolean>;
-  readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
-  readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
-  readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;
-  readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
-  readonly autoFocusOnOpen: OutputEmitterRef<VetoableEvent>;
-  readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
 
   /**
    * Optional side effect run after `openMenu` resolves the open, receiving the
@@ -78,7 +48,7 @@ export interface MenuOverlayHooks {
    * write, focus moved instead), so a pending hover-close is still cancelled by
    * an open key pressed on a mounted submenu.
    */
-  readonly onOpen?: (initialFocus: 'first' | 'last', options: MenuOverlayTransitionOptions) => void;
+  readonly onOpen?: (initialFocus: 'first' | 'last', options: OverlayTransitionOptions) => void;
 
   /**
    * Optional side effect run after `closeMenu` flips `open` to `false`,
@@ -88,7 +58,7 @@ export interface MenuOverlayHooks {
    * the menu chain for every reason except `'escape'` / `'hover'` /
    * `'programmatic'`. Top-level roots pass neither hook.
    */
-  readonly onClose?: (reason: ForMenuCloseReason, options: MenuOverlayTransitionOptions) => void;
+  readonly onClose?: (reason: ForMenuCloseReason, options: OverlayTransitionOptions) => void;
 }
 
 /**
@@ -99,16 +69,18 @@ export interface MenuOverlayHooks {
  *
  * The helper owns:
  *
- * - id generation for trigger and content,
  * - the item list (`MenuItemList`: the item `Collection`, typeahead and the navigate / focus
  *   moves), shared with `[forMenubar]`'s multiplexed menu context,
- * - the trigger / content / initial-focus signals,
- * - `toggle` / `openMenu` / `closeMenu`, honouring `disabled`,
- * - the consumer-owned Escape close and the `requestClose` the shell invokes after an un-vetoed
- *   outside interaction,
- * - the `autoFocusOnOpen` / `autoFocusOnClose` veto pass-throughs,
  * - the opener registry: every trigger that can open this menu, which one is driving the current
- *   open, and the per-opener id / anchor / labelling policy resolved against it.
+ *   open, and the per-opener id / anchor / labelling policy resolved against it,
+ * - the menu vocabulary over the shared {@link OverlayController} — `'first' | 'last'` initial
+ *   focus, `ForMenuCloseReason`, the `'pointer' | 'keyboard'` activation modality, and
+ *   `openMenu`'s already-open re-focus branch.
+ *
+ * Everything below that vocabulary — the trigger / content slots and their ids, the
+ * initial-focus and close-reason state, the `disabled`-gated open / close / toggle transitions,
+ * the outside / Escape forwarders, `requestClose`, and the auto-focus vetoes — is the shared
+ * controller's, declared once and composed here.
  *
  * It deliberately does not own:
  *
@@ -124,10 +96,9 @@ export interface MenuOverlayHooks {
  */
 export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   readonly #itemList: MenuItemList<H>;
-  readonly #hooks: MenuOverlayHooks;
 
   readonly #openers: MenuOpenerRegistry;
-  readonly #contentSlot: IdentifiedElementSlot;
+  readonly #controller: OverlayController<'first' | 'last', ForMenuCloseReason>;
 
   /**
    * Id of the opener driving the current open — the active opener's own id when
@@ -140,12 +111,8 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   /** Unique id for the content element. Stable across the menu's lifetime. */
   readonly contentId: Signal<string>;
 
-  readonly #initialFocusState = new InitialFocusState();
-
   /** Where focus should land when the menu mounts. Set by triggers before flipping `open`. */
-  readonly initialFocus = this.#initialFocusState.target;
-
-  readonly #closeReasonState = new CloseReasonState<ForMenuCloseReason>();
+  readonly initialFocus: Signal<'first' | 'last'>;
 
   /**
    * Reason of the most recent close, or `null` while the menu is open / has
@@ -153,7 +120,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * reads this to skip its return-focus on `'tab'` so Tab can advance focus
    * out of the menu instead of snapping back to the trigger.
    */
-  readonly lastCloseReason = this.#closeReasonState.reason;
+  readonly lastCloseReason: Signal<ForMenuCloseReason | null>;
 
   /**
    * The focusable element the menu should return focus to on close — the opener
@@ -200,14 +167,32 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   readonly openerPositioning: Signal<MenuOpenerPositioning | null>;
 
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
-    this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
-    this.#openers = new MenuOpenerRegistry(injectSlotId(idPrefix, 'trigger'));
-    this.#contentSlot = injectIdentifiedSlot(idPrefix, 'content');
-    this.triggerId = this.#openers.id;
-    this.contentId = this.#contentSlot.id.asReadonly();
-    this.trigger = this.#openers.element;
-    this.content = this.#contentSlot.element;
+    let openers!: MenuOpenerRegistry;
+    this.#controller = new OverlayController<'first' | 'last', ForMenuCloseReason>({
+      idPrefix,
+      createTrigger: (id) => {
+        openers = new MenuOpenerRegistry(id);
+        return openers;
+      },
+      defaultInitialFocus: 'first',
+      disabled: hooks.disabled,
+      dismissible: hooks.dismissible,
+      isOpen: () => hooks.open(),
+      setOpen: (open) => hooks.open.set(open),
+      emit: hooks,
+      escapeReason: 'escape',
+      programmaticReason: 'programmatic',
+      onOpen: hooks.onOpen,
+      onClose: hooks.onClose,
+    });
+    this.#openers = openers;
+    this.triggerId = this.#controller.triggerId;
+    this.contentId = this.#controller.contentId;
+    this.initialFocus = this.#controller.initialFocus;
+    this.lastCloseReason = this.#controller.lastCloseReason;
+    this.trigger = this.#controller.trigger;
+    this.content = this.#controller.content;
     this.openerAnchor = this.#openers.anchor;
     this.openerVirtualAnchor = this.#openers.virtualAnchor;
     this.openerExemptions = this.#openers.dismissibleExemptions;
@@ -216,15 +201,15 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   }
 
   setInitialFocus(target: 'first' | 'last'): void {
-    this.#initialFocusState.setTarget(target);
+    this.#controller.setInitialFocus(target);
   }
 
   registerTrigger(el: HTMLElement): void {
-    this.#openers.register(el);
+    this.#controller.registerTrigger(el);
   }
 
   unregisterTrigger(el: HTMLElement): void {
-    this.#openers.unregister(el);
+    this.#controller.unregisterTrigger(el);
   }
 
   registerOpener(element: HTMLElement, options?: MenuOpenerOptions): void {
@@ -248,11 +233,11 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   }
 
   registerContent(el: HTMLElement): void {
-    this.#contentSlot.register(el);
+    this.#controller.registerContent(el);
   }
 
   unregisterContent(el: HTMLElement): void {
-    this.#contentSlot.unregister(el);
+    this.#controller.unregisterContent(el);
   }
 
   registerItem(handle: H): void {
@@ -295,7 +280,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * {@link focusInitialEnabledItem} — and `ForMenuContext` does not declare it.
    */
   focusFirstEnabledItem(): boolean {
-    return this.#itemList.focusFirstEnabledItem(this.#initialFocusState.consumeHighlight());
+    return this.#itemList.focusFirstEnabledItem(this.#controller.consumeInitialHighlight());
   }
 
   /**
@@ -306,7 +291,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * imperative escape hatch rather than a `ForMenuContext` member.
    */
   focusLastEnabledItem(): boolean {
-    return this.#itemList.focusLastEnabledItem(this.#initialFocusState.consumeHighlight());
+    return this.#itemList.focusLastEnabledItem(this.#controller.consumeInitialHighlight());
   }
 
   /**
@@ -320,7 +305,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   focusInitialEnabledItem(target: 'first' | 'last'): boolean {
     return this.#itemList.focusInitialEnabledItem(
       target,
-      this.#initialFocusState.consumeHighlight(),
+      this.#controller.consumeInitialHighlight(),
     );
   }
 
@@ -333,14 +318,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
     initialFocus: 'first' | 'last' = 'first',
     modality: MenuActivationModality = 'keyboard',
   ): void {
-    if (this.#hooks.disabled()) {
-      return;
-    }
-    if (this.#hooks.open()) {
-      this.closeMenu('programmatic');
-    } else {
-      this.openMenu(initialFocus, modality);
-    }
+    this.#controller.toggle(initialFocus, { highlight: modality === 'keyboard' });
   }
 
   /**
@@ -363,23 +341,20 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * consumers who opted out of auto-focus-on-open. It *is* skipped for a
    * `{ suppressFocusMoves: true }` transition, whose whole contract is that no
    * imperative focus move may happen (`[forMenuSub]`'s hover-open).
+   *
+   * This branch is the menu's own: it stays out of the shared controller, which
+   * reports the already-open case as an outcome rather than acting on it.
    */
   openMenu(
     initialFocus: 'first' | 'last' = 'first',
     modality: MenuActivationModality = 'keyboard',
-    options: MenuOverlayTransitionOptions = {},
+    options: OverlayTransitionOptions = {},
   ): void {
-    if (this.#hooks.disabled()) {
-      return;
-    }
-    const alreadyOpen = this.#hooks.open();
-    this.#initialFocusState.prepareOpen(initialFocus, modality === 'keyboard');
-    this.#closeReasonState.reset();
-    if (!alreadyOpen) {
-      this.#hooks.open.set(true);
-    }
-    this.#hooks.onOpen?.(initialFocus, options);
-    if (alreadyOpen && !options.suppressFocusMoves) {
+    const outcome = this.#controller.open(initialFocus, {
+      highlight: modality === 'keyboard',
+      transition: options,
+    });
+    if (outcome === 'already-open' && !options.suppressFocusMoves) {
       this.focusInitialEnabledItem(initialFocus);
     }
   }
@@ -390,62 +365,36 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * `[forMenuSub]`'s hover-close passes `{ suppressFocusMoves: true }` so the
    * unmount does not yank focus back to the sub-trigger.
    */
-  closeMenu(reason: ForMenuCloseReason, options: MenuOverlayTransitionOptions = {}): void {
-    this.#closeReasonState.set(reason);
-    this.#hooks.open.set(false);
-    this.#hooks.onClose?.(reason, options);
+  closeMenu(reason: ForMenuCloseReason, options: OverlayTransitionOptions = {}): void {
+    this.#controller.close(reason, options);
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.#hooks.escapeKeyDown, event);
-    if (!vetoed && this.#hooks.dismissible()) {
-      // Load-bearing, not redundant: the bubble-phase Escape handler stops the
-      // same keydown from reaching an *ancestor* overlay's keydown listener,
-      // which is how nested overlays close one layer per Escape (see the
-      // listener-phase note in `core/dismissible-layer/dismissible-layer.ts`).
-      event.stopPropagation();
-      this.closeMenu('escape');
-    }
+    this.#controller.emitEscapeKeyDown(event);
   }
 
-  /**
-   * Outside-interaction emit forwarders. The shared `#pendingOutsideVeto`
-   * reuse between the specific outside channels and the composite
-   * `interactOutside` lives in `injectOverlayShell`; these only fire the
-   * matching output with the veto the shell built.
-   */
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.#hooks.pointerDownOutside.emit(veto);
-  }
-  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.#hooks.focusOutside.emit(veto);
-  }
-  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.#hooks.interactOutside.emit(veto);
+    this.#controller.emitPointerDownOutside(veto);
   }
 
-  /**
-   * Implicit close requested by `injectOverlayShell` after an un-vetoed
-   * outside interaction. The shell owns the shared `#pendingOutsideVeto`
-   * reuse between the specific outside channels and the composite
-   * `interactOutside`; this helper only owns the close. The `open()` guard
-   * keeps a stale event from re-closing an already-closed menu and clobbering
-   * its `lastCloseReason` (e.g. a `'tab'` close must survive so the content
-   * skips its return-focus).
-   */
+  emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
+    this.#controller.emitFocusOutside(veto);
+  }
+
+  emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
+    this.#controller.emitInteractOutside(veto);
+  }
+
   requestClose(reason: 'pointerDownOutside' | 'focusOutside'): void {
-    if (!this.#hooks.open()) {
-      return;
-    }
-    this.closeMenu(reason);
+    this.#controller.requestClose(reason);
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.#hooks.autoFocusOnOpen);
+    return this.#controller.emitAutoFocusOnOpen();
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.#hooks.autoFocusOnClose);
+    return this.#controller.emitAutoFocusOnClose();
   }
 }
 

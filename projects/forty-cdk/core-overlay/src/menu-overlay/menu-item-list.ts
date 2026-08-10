@@ -3,7 +3,9 @@ import { type Signal } from '@angular/core';
 import {
   Collection,
   type CollectionHandle,
+  firstEnabledHandle,
   injectTypeahead,
+  lastEnabledHandle,
   type ListNavigationAction,
   nextEnabledHandle,
   type Typeahead,
@@ -160,7 +162,7 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
    * anchor) under a pointer-driven open.
    */
   focusFirstEnabledItem(highlight = true): boolean {
-    const target = this.#items.items().find((i) => !i.disabled());
+    const target = firstEnabledHandle(this.#items.items());
     if (!target) {
       return false;
     }
@@ -177,15 +179,12 @@ export class MenuItemList<H extends MenuItemHandle = MenuItemHandle> {
    * still scrolls its own overflow to the last item.
    */
   focusLastEnabledItem(highlight = true): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        this.#focusItem(item, highlight);
-        return true;
-      }
+    const target = lastEnabledHandle(this.#items.items());
+    if (!target) {
+      return false;
     }
-    return false;
+    this.#focusItem(target, highlight);
+    return true;
   }
 
   /**

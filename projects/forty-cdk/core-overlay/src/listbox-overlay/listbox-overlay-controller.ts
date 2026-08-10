@@ -1,24 +1,23 @@
-import { type OutputEmitterRef, type Signal, type WritableSignal } from '@angular/core';
+import { type Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import {
   Collection,
-  emitVetoableEvent,
-  emitVetoableNativeEvent,
   firstEnabledHost,
+  lastEnabledHost,
   type ListNavigationAction,
   nextEnabledHandle,
-  type VetoableEvent,
   type VetoableNativeEvent,
 } from 'forty-cdk/core';
 import {
   anchorSlot,
   type AnchorSlot,
-  type IdentifiedElementSlot,
-  injectIdentifiedSlot,
+  IdentifiedElementSlot,
 } from '../overlay-controller/element-registry';
-import { CloseReasonState } from '../overlay-controller/close-reason-state';
-import { InitialFocusState } from '../overlay-controller/initial-focus-state';
+import {
+  OverlayController,
+  type OverlayEmitTargets,
+} from '../overlay-controller/overlay-controller';
 
 /**
  * Minimal option-handle shape the controller's focus algorithm needs: a host
@@ -29,21 +28,6 @@ import { InitialFocusState } from '../overlay-controller/initial-focus-state';
 export interface ListboxOverlayOptionHandle {
   readonly host: HTMLElement;
   readonly disabled: Signal<boolean>;
-}
-
-/**
- * The dismiss / auto-focus outputs the controller forwards to. Each primitive
- * owns the `output()` instances (they must be declared as class-field
- * initializers for the Angular compiler to detect them); the controller only
- * emits through them, so the shared dismiss pipeline lives in one place.
- */
-export interface ListboxOverlayEmitTargets {
-  readonly escapeKeyDown: OutputEmitterRef<VetoableNativeEvent<KeyboardEvent>>;
-  readonly pointerDownOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent>>;
-  readonly focusOutside: OutputEmitterRef<VetoableNativeEvent<FocusEvent>>;
-  readonly interactOutside: OutputEmitterRef<VetoableNativeEvent<PointerEvent | FocusEvent>>;
-  readonly autoFocusOnOpen: OutputEmitterRef<VetoableEvent>;
-  readonly autoFocusOnClose: OutputEmitterRef<VetoableEvent>;
 }
 
 /**
@@ -80,7 +64,7 @@ export interface ListboxOverlayControllerDeps<
   /** Read the control's current open state. */
   readonly isOpen: () => boolean;
   /** Dismiss / auto-focus outputs to forward to. */
-  readonly emit: ListboxOverlayEmitTargets;
+  readonly emit: OverlayEmitTargets;
   /** Whether keyboard navigation wraps at the ends of the option list. */
   readonly loop: Signal<boolean>;
   /** Whether Escape / outside interactions dismiss the overlay. */
@@ -173,19 +157,20 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
 
 /**
  * The overlay-listbox state machine shared by `ForSelect` and `ForTimePicker`
- * (the WAI-ARIA select-only combobox and the slot-listbox time picker). Owns
- * the option collection, the trigger / anchor / content element registries and
- * their ids, the DOM-focus navigation algorithm, the initial-focus /
- * close-reason state, the open / close machine, and the dismiss / auto-focus
- * emit forwarders.
+ * (the WAI-ARIA select-only combobox and the slot-listbox time picker). It owns
+ * the option collection, the anchor slot, the DOM-focus navigation algorithm and
+ * the trigger focus move; everything the menu overlays run identically — the
+ * trigger / content slots and their ids, the initial-focus and close-reason
+ * state, the open / close machine, the dismiss / auto-focus forwarders — is the
+ * shared {@link OverlayController}'s, composed here rather than re-declared.
  *
  * Value-specific behaviour (selection equality, `activate`, `focusSelectedOption`,
  * typeahead, the virtualized activedescendant path, `commitOnTab`'s value set)
  * stays in the root and is threaded through {@link ListboxOverlayControllerDeps}
  * callbacks where it must run as a side effect of a shared transition.
  *
- * Internal core tier — exported from `forty-cdk/core` for the library's own
- * entry points, with no semver guarantee.
+ * Internal core tier — exported from `forty-cdk/core-overlay` for the library's
+ * own entry points, with no semver guarantee.
  *
  * Construct it from a directive's field initializer, so the slot factories'
  * `inject()` calls resolve through the directive's injector.
@@ -202,19 +187,22 @@ export class ListboxOverlayController<
   readonly #deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>;
   readonly #items = new Collection<H>();
 
-  readonly #triggerSlot: IdentifiedElementSlot;
-  readonly #contentSlot: IdentifiedElementSlot;
   readonly #anchorSlot: AnchorSlot;
+  readonly #controller: OverlayController<Focus, CloseReason>;
 
-  readonly triggerId: WritableSignal<string>;
-  readonly contentId: WritableSignal<string>;
+  /** The trigger's stable id, adopted from a consumer-set static id when present. */
+  readonly triggerId: Signal<string>;
 
-  readonly #initialFocusState: InitialFocusState<Focus>;
+  /** The content surface's stable id, adopted from a consumer-set static id when present. */
+  readonly contentId: Signal<string>;
+
+  /** Where focus should land after the content mounts. Triggers set this before flipping `open`. */
   readonly initialFocus: Signal<Focus>;
 
-  readonly #closeReasonState = new CloseReasonState<CloseReason>();
-  readonly lastCloseReason = this.#closeReasonState.reason;
+  /** Reason of the most recent close, or `null` while open (or before any close). */
+  readonly lastCloseReason: Signal<CloseReason | null>;
 
+  /** The button trigger — exempt from outside-pointer checks and the focus-return target. */
   readonly trigger: Signal<HTMLElement | null>;
 
   /**
@@ -224,6 +212,7 @@ export class ListboxOverlayController<
    */
   readonly anchor: Signal<ReferenceElement | null>;
 
+  /** The mounted content element. */
   readonly content: Signal<HTMLElement | null>;
 
   /** All registered options in DOM order. */
@@ -231,28 +220,40 @@ export class ListboxOverlayController<
 
   constructor(deps: ListboxOverlayControllerDeps<H, Focus, CloseReason>) {
     this.#deps = deps;
-    this.#triggerSlot = injectIdentifiedSlot(deps.idPrefix, 'trigger');
-    this.#contentSlot = injectIdentifiedSlot(deps.idPrefix, 'content');
+    this.#controller = new OverlayController<Focus, CloseReason>({
+      idPrefix: deps.idPrefix,
+      createTrigger: (id) => new IdentifiedElementSlot(id),
+      defaultInitialFocus: deps.defaultInitialFocus,
+      disabled: deps.effectiveDisabled,
+      dismissible: deps.dismissible,
+      isOpen: deps.isOpen,
+      setOpen: deps.setOpen,
+      emit: deps.emit,
+      escapeReason: deps.escapeReason,
+      programmaticReason: deps.programmaticReason,
+      onClose: deps.onClose,
+      onDismiss: deps.markTouched,
+    });
     this.#anchorSlot = anchorSlot(deps.multipleAnchorsError);
-    this.triggerId = this.#triggerSlot.id;
-    this.contentId = this.#contentSlot.id;
-    this.trigger = this.#triggerSlot.element;
-    this.content = this.#contentSlot.element;
-    this.#initialFocusState = new InitialFocusState<Focus>(deps.defaultInitialFocus);
-    this.initialFocus = this.#initialFocusState.target;
-    this.anchor = this.#anchorSlot.resolve(this.#triggerSlot.element);
+    this.triggerId = this.#controller.triggerId;
+    this.contentId = this.#controller.contentId;
+    this.initialFocus = this.#controller.initialFocus;
+    this.lastCloseReason = this.#controller.lastCloseReason;
+    this.trigger = this.#controller.trigger;
+    this.content = this.#controller.content;
+    this.anchor = this.#anchorSlot.resolve(this.#controller.trigger);
     this.options = this.#items.items;
   }
 
   setInitialFocus(target: Focus): void {
-    this.#initialFocusState.setTarget(target);
+    this.#controller.setInitialFocus(target);
   }
 
   registerTrigger(el: HTMLElement): void {
-    this.#triggerSlot.register(el);
+    this.#controller.registerTrigger(el);
   }
   unregisterTrigger(el: HTMLElement): void {
-    this.#triggerSlot.unregister(el);
+    this.#controller.unregisterTrigger(el);
   }
 
   registerAnchor(el: HTMLElement): void {
@@ -263,10 +264,10 @@ export class ListboxOverlayController<
   }
 
   registerContent(el: HTMLElement): void {
-    this.#contentSlot.register(el);
+    this.#controller.registerContent(el);
   }
   unregisterContent(el: HTMLElement): void {
-    this.#contentSlot.unregister(el);
+    this.#controller.unregisterContent(el);
   }
 
   registerOption(handle: H): void {
@@ -301,64 +302,42 @@ export class ListboxOverlayController<
   }
 
   focusLastEnabledOption(): boolean {
-    const items = this.#items.items();
-    for (let i = items.length - 1; i >= 0; i--) {
-      const item = items[i];
-      if (item && !item.disabled()) {
-        item.host.focus();
-        return true;
-      }
+    const host = lastEnabledHost(this.#items.items());
+    if (!host) {
+      return false;
     }
-    return false;
+    host.focus();
+    return true;
   }
 
   toggle(initialFocus: Focus): void {
-    if (this.#deps.effectiveDisabled()) {
-      return;
-    }
-    if (this.#deps.isOpen()) {
-      this.closeMenu(this.#deps.programmaticReason);
-    } else {
-      this.openMenu(initialFocus);
-    }
+    this.#controller.toggle(initialFocus);
   }
 
   openMenu(initialFocus: Focus): void {
-    if (this.#deps.effectiveDisabled()) {
-      return;
-    }
-    this.#initialFocusState.setTarget(initialFocus);
-    this.#closeReasonState.reset();
-    this.#deps.setOpen(true);
+    this.#controller.open(initialFocus);
   }
 
   closeMenu(reason: CloseReason): void {
-    this.#closeReasonState.set(reason);
-    this.#deps.setOpen(false);
-    this.#deps.onClose?.(reason);
+    this.#controller.close(reason);
   }
 
   emitEscapeKeyDown(event: KeyboardEvent): void {
-    const vetoed = emitVetoableNativeEvent(this.#deps.emit.escapeKeyDown, event);
-    if (!vetoed && this.#deps.dismissible()) {
-      event.stopPropagation();
-      this.#deps.markTouched();
-      this.closeMenu(this.#deps.escapeReason);
-    }
+    this.#controller.emitEscapeKeyDown(event);
   }
 
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
-    this.#deps.emit.pointerDownOutside.emit(veto);
+    this.#controller.emitPointerDownOutside(veto);
   }
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void {
-    this.#deps.emit.focusOutside.emit(veto);
+    this.#controller.emitFocusOutside(veto);
   }
   emitInteractOutside(veto: VetoableNativeEvent<PointerEvent | FocusEvent>): void {
-    this.#deps.emit.interactOutside.emit(veto);
+    this.#controller.emitInteractOutside(veto);
   }
 
   forwardEscapeKeyDown(veto: VetoableNativeEvent<KeyboardEvent>): void {
-    this.#deps.emit.escapeKeyDown.emit(veto);
+    this.#controller.forwardEscapeKeyDown(veto);
   }
 
   /**
@@ -368,23 +347,19 @@ export class ListboxOverlayController<
    * close must survive so the content skips its return-focus).
    */
   requestClose(reason: CloseReason): void {
-    if (!this.#deps.isOpen()) {
-      return;
-    }
-    this.#deps.markTouched();
-    this.closeMenu(reason);
+    this.#controller.requestClose(reason);
   }
 
   emitAutoFocusOnOpen(): boolean {
-    return emitVetoableEvent(this.#deps.emit.autoFocusOnOpen);
+    return this.#controller.emitAutoFocusOnOpen();
   }
 
   emitAutoFocusOnClose(): boolean {
-    return emitVetoableEvent(this.#deps.emit.autoFocusOnClose);
+    return this.#controller.emitAutoFocusOnClose();
   }
 
   /** Focus the trigger, e.g. on a Tab commit before the content unmounts. */
   focusTrigger(): void {
-    this.#triggerSlot.element()?.focus();
+    this.#controller.trigger()?.focus();
   }
 }

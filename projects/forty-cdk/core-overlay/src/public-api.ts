@@ -116,6 +116,15 @@ export {
   warnIfMountedWhileClosed,
 } from './overlay-controller/mounted-while-closed';
 export {
+  OverlayController,
+  type OverlayControllerDeps,
+  type OverlayEmitTargets,
+  type OverlayOpenOptions,
+  type OverlayOpenOutcome,
+  type OverlayTransitionOptions,
+  type OverlayTriggerSlot,
+} from './overlay-controller/overlay-controller';
+export {
   injectOverlayShell,
   type OverlayShellConfig,
   type OverlayShellPositionerConfig,
