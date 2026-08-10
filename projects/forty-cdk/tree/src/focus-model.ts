@@ -194,7 +194,7 @@ export class ActiveDescendantFocusModel<T = unknown> implements FocusModel<T> {
   constructor(deps: ActiveDescendantFocusModelDeps<T>) {
     this.#deps = deps;
     this.#core = new VirtualizedNavigator(
-      { ...deps, loop: () => false, dataVersion: deps.dataVersion },
+      { ...deps, loop: () => false },
       {
         posOf: (n) => n.itemIndex(),
         idOf: (n) => n.id(),
