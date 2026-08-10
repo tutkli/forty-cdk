@@ -74,7 +74,7 @@ export interface ForTimePickerContext<D = unknown> {
   readonly value: Signal<D | null>;
   /**
    * Whether the listbox is open, as a read-only signal. Mutate it through
-   * `overlay.toggle` / `overlay.openMenu` / `overlay.closeMenu` or the root's
+   * `overlay.toggle` / `overlay.openOverlay` / `overlay.closeOverlay` or the root's
    * `[(open)]` binding.
    */
   readonly open: Signal<boolean>;

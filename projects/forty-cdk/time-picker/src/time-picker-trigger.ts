@@ -88,12 +88,12 @@ export class ForTimePickerTrigger<D = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.ctx().overlay.openMenu('selected');
+      this.ctx().overlay.openOverlay('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
-      this.ctx().overlay.openMenu(this.ctx().value() !== null ? 'selected' : 'last');
+      this.ctx().overlay.openOverlay(this.ctx().value() !== null ? 'selected' : 'last');
     }
   }
 

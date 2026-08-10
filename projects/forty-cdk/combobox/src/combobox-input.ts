@@ -251,7 +251,7 @@ export class ForComboboxInput {
           // navigate('next') won't fire here because items aren't registered
           // yet; the root's `activeId` linkedSignal seeds the activedescendant
           // once the options register.
-          this.ctx.openMenu('first');
+          this.ctx.openOverlay('first');
         } else {
           this.ctx.navigate('next');
         }
@@ -260,7 +260,7 @@ export class ForComboboxInput {
       case 'ArrowUp':
         event.preventDefault();
         if (!this.ctx.open()) {
-          this.ctx.openMenu('last');
+          this.ctx.openOverlay('last');
         } else {
           this.ctx.navigate('prev');
         }
@@ -320,7 +320,7 @@ export class ForComboboxInput {
             this.ctx.moveActionFocus(null, event.shiftKey ? 'prev' : 'next');
           } else {
             this.ctx.trigger()?.focus();
-            this.ctx.closeMenu('tab');
+            this.ctx.closeOverlay('tab');
           }
         }
         break;
@@ -329,7 +329,7 @@ export class ForComboboxInput {
 
   protected onFocus(): void {
     if (this.ctx.openOnFocus() && !this.ctx.open()) {
-      this.ctx.openMenu();
+      this.ctx.openOverlay();
     }
   }
 
@@ -338,7 +338,7 @@ export class ForComboboxInput {
     // useful when the user closed via Escape and wants to re-open without
     // typing or reaching for the keyboard.
     if (this.ctx.openOnFocus() && !this.ctx.open()) {
-      this.ctx.openMenu();
+      this.ctx.openOverlay();
     }
   }
 }

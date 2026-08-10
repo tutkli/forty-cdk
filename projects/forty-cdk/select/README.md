@@ -163,7 +163,7 @@ When the listbox mounts, focus lands per the trigger's hint:
 - **Click / Enter / Space / ArrowDown** → focuses the currently-selected option, falling back to the first enabled option when no selection exists.
 - **ArrowUp** → focuses the currently-selected option, or the last enabled option when no selection exists.
 
-Override programmatically with `forSelect.openMenu('first' | 'last' | 'selected')`.
+Override programmatically with `forSelect.overlay.openOverlay('first' | 'last' | 'selected')`.
 
 ## Anchoring to a field box
 

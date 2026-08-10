@@ -139,8 +139,8 @@ export interface ListboxOverlayContext<H extends ListboxOverlayOptionHandle, Foc
   focusLastEnabledOption(): boolean;
 
   toggle(initialFocus: Focus): void;
-  openMenu(initialFocus: Focus): void;
-  closeMenu(reason: CloseReason): void;
+  openOverlay(initialFocus: Focus): void;
+  closeOverlay(reason: CloseReason): void;
 
   /** Escape on the anchored path: emit `(escapeKeyDown)`, then close when un-vetoed and dismissible. */
   emitEscapeKeyDown(event: KeyboardEvent): void;
@@ -314,11 +314,11 @@ export class ListboxOverlayController<
     this.#controller.toggle(initialFocus);
   }
 
-  openMenu(initialFocus: Focus): void {
+  openOverlay(initialFocus: Focus): void {
     this.#controller.open(initialFocus);
   }
 
-  closeMenu(reason: CloseReason): void {
+  closeOverlay(reason: CloseReason): void {
     this.#controller.close(reason);
   }
 

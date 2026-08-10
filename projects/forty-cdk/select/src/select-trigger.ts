@@ -110,13 +110,13 @@ export class ForSelectTrigger<T = unknown> {
     }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      this.#root().overlay.openMenu('selected');
+      this.#root().overlay.openOverlay('selected');
       return;
     }
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       // ArrowUp lands on the selected option if any, else the last enabled.
-      this.#root().overlay.openMenu(this.ctx().value().length > 0 ? 'selected' : 'last');
+      this.#root().overlay.openOverlay(this.ctx().value().length > 0 ? 'selected' : 'last');
       return;
     }
     // Closed-state typeahead — single-mode shortcut to match native <select>.

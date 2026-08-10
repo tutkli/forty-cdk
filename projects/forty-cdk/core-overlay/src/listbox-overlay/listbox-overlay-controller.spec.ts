@@ -183,18 +183,18 @@ describe('ListboxOverlayController', () => {
 
   it('opens with the requested initial focus and resets last-close-reason', () => {
     const { controller, open } = createHarness();
-    controller.closeMenu('escape');
+    controller.closeOverlay('escape');
     expect(controller.lastCloseReason()).toBe('escape');
-    controller.openMenu('last');
+    controller.openOverlay('last');
     expect(open()).toBe(true);
     expect(controller.initialFocus()).toBe('last');
     expect(controller.lastCloseReason()).toBeNull();
   });
 
-  it('closeMenu flips open false, records the reason, and runs the close side effect', () => {
+  it('closeOverlay flips open false, records the reason, and runs the close side effect', () => {
     const { controller, open, closed } = createHarness();
     open.set(true);
-    controller.closeMenu('select');
+    controller.closeOverlay('select');
     expect(open()).toBe(false);
     expect(controller.lastCloseReason()).toBe('select');
     expect(closed).toEqual(['select']);
@@ -212,7 +212,7 @@ describe('ListboxOverlayController', () => {
   it('open / toggle / navigate are no-ops while effectively disabled', () => {
     const { controller, open, effectiveDisabled } = createHarness();
     effectiveDisabled.set(true);
-    controller.openMenu('first');
+    controller.openOverlay('first');
     expect(open()).toBe(false);
     controller.toggle('first');
     expect(open()).toBe(false);
@@ -303,7 +303,7 @@ describe('ListboxOverlayController', () => {
   it('requestClose is a no-op while already closed, preserving the prior close reason', () => {
     const { controller, open, touched, closed } = createHarness();
     open.set(true);
-    controller.closeMenu('tab');
+    controller.closeOverlay('tab');
     expect(open()).toBe(false);
     expect(controller.lastCloseReason()).toBe('tab');
 

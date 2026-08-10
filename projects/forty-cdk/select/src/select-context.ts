@@ -97,9 +97,9 @@ export interface ForSelectOverlayFacade {
   /** Unregisters the positioning anchor, falling back to the trigger. Reference-based. */
   unregisterAnchor(el: HTMLElement): void;
   /** Opens the listbox with the requested initial-focus target. */
-  openMenu(initialFocus: ForSelectInitialFocus): void;
+  openOverlay(initialFocus: ForSelectInitialFocus): void;
   /** Closes the listbox, recording `reason` as the last close reason. */
-  closeMenu(reason: ForSelectCloseReason): void;
+  closeOverlay(reason: ForSelectCloseReason): void;
   /** Opens the listbox when closed (with `initialFocus`), closes it when open. */
   toggle(initialFocus: ForSelectInitialFocus): void;
 }
@@ -146,7 +146,7 @@ export interface ForSelectContext<T = unknown> {
   readonly value: Signal<readonly T[]>;
   /**
    * Whether the listbox is open, as a read-only signal. Mutate it through
-   * `overlay.toggle` / `overlay.openMenu` / `overlay.closeMenu` or the root's
+   * `overlay.toggle` / `overlay.openOverlay` / `overlay.closeOverlay` or the root's
    * `[(open)]` binding.
    */
   readonly open: Signal<boolean>;
