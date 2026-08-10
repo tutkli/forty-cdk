@@ -1,11 +1,4 @@
-import {
-  computed,
-  inject,
-  Injectable,
-  type Signal,
-  signal,
-  type WritableSignal,
-} from '@angular/core';
+import { computed, inject, type Signal, signal, type WritableSignal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import { adoptHostId } from '../host-attributes/host-id';
@@ -19,8 +12,8 @@ import { IdGenerator } from '../id-generator/id-generator';
  * resolving), the unregister step clears the element only when the same node
  * deregisters.
  *
- * Construct through {@link ElementRegistry.identifiedSlot} so the id signal is
- * seeded from the shared {@link IdGenerator} at the controller's construction.
+ * Construct through {@link injectIdentifiedSlot} so the id signal is seeded from
+ * the shared {@link IdGenerator} at the controller's construction.
  *
  * @typeParam E Concrete element type registered here (e.g. `HTMLInputElement`
  *   for the combobox input). Defaults to `HTMLElement`.
@@ -144,54 +137,53 @@ export class AnchorSlot {
 }
 
 /**
- * The shared trigger / anchor / content element registry every overlay
- * controller composes — `MenuOverlay`, `ListboxOverlayController`, and
- * `ForCombobox`'s inline controller all used to hand-copy the same
- * id-adopting slot + single-anchor-guard blocks. It owns the {@link IdGenerator}
- * so slot id signals seed deterministically, and hands out the slot primitives
- * ({@link IdentifiedElementSlot}, {@link ElementSlot}, {@link AnchorSlot}) each
- * controller assembles into its own public surface.
+ * A writable `<idPrefix>-<suffix>` id signal off the shared {@link IdGenerator},
+ * for a controller that owns the element side itself — the menu overlay's opener
+ * registry keeps one seed id across many openers, so it needs the id without a
+ * slot's single-element storage.
  *
- * Internal to `forty-cdk/core`; never crosses a primitive's public API by value
- * (controllers expose the slots' signals, not the registry). Root-provided and
- * stateless — it only reads the shared {@link IdGenerator} so slot id sequences
- * stay deterministic across renders (hydration relies on it).
+ * Call it from an injection context — a directive's field initializer, or a
+ * controller constructed from one — so the generator resolves and slot id
+ * sequences stay deterministic across renders (hydration relies on it).
  */
-@Injectable({ providedIn: 'root' })
-export class ElementRegistry {
-  readonly #idGen = inject(IdGenerator);
+export function injectSlotId(idPrefix: string, suffix: string): WritableSignal<string> {
+  return signal(inject(IdGenerator).next(`${idPrefix}-${suffix}`));
+}
 
-  /**
-   * A slot whose element registration adopts a consumer-set static `id`. Seeds
-   * the id signal with `<idPrefix>-<suffix>` off the shared generator.
-   *
-   * @typeParam E Concrete element type the slot registers. Defaults to
-   *   `HTMLElement`.
-   */
-  identifiedSlot<E extends HTMLElement = HTMLElement>(
-    idPrefix: string,
-    suffix: string,
-  ): IdentifiedElementSlot<E> {
-    return new IdentifiedElementSlot<E>(this.id(idPrefix, suffix));
-  }
+/**
+ * A slot whose element registration adopts a consumer-set static `id`. Seeds the
+ * id signal with `<idPrefix>-<suffix>` off the shared {@link IdGenerator}, so it
+ * carries the same injection-context requirement as {@link injectSlotId}.
+ *
+ * @typeParam E Concrete element type the slot registers. Defaults to
+ *   `HTMLElement`.
+ */
+export function injectIdentifiedSlot<E extends HTMLElement = HTMLElement>(
+  idPrefix: string,
+  suffix: string,
+): IdentifiedElementSlot<E> {
+  return new IdentifiedElementSlot<E>(injectSlotId(idPrefix, suffix));
+}
 
-  /**
-   * A writable `<idPrefix>-<suffix>` id signal off the shared generator, for a
-   * controller that owns the element side itself — the menu overlay's opener
-   * registry keeps one seed id across many openers, so it needs the id without
-   * a slot's single-element storage.
-   */
-  id(idPrefix: string, suffix: string): WritableSignal<string> {
-    return signal(this.#idGen.next(`${idPrefix}-${suffix}`));
-  }
+/**
+ * A slot for an element that carries no aria-wiring id of its own. Depends on
+ * nothing, so it needs no injection context.
+ *
+ * @typeParam E Concrete element type the slot registers. Defaults to
+ *   `HTMLElement`.
+ */
+export function elementSlot<E extends HTMLElement = HTMLElement>(): ElementSlot<E> {
+  return new ElementSlot<E>();
+}
 
-  /** A slot for an element that carries no aria-wiring id of its own. */
-  elementSlot<E extends HTMLElement = HTMLElement>(): ElementSlot<E> {
-    return new ElementSlot<E>();
-  }
-
-  /** The floating-ui anchor slot with the single-anchor guard + fallback chain. */
-  anchorSlot(multipleError: string): AnchorSlot {
-    return new AnchorSlot(multipleError);
-  }
+/**
+ * The floating-ui anchor slot with the single-anchor guard + fallback chain.
+ * Depends on nothing, so it needs no injection context.
+ *
+ * @param multipleError Message thrown when a second, different anchor registers
+ *   under the same overlay. Pass `formatFortyMessage(…)` so it carries the
+ *   `FORCDK-*` code of the primitive that owns the anchor.
+ */
+export function anchorSlot(multipleError: string): AnchorSlot {
+  return new AnchorSlot(multipleError);
 }

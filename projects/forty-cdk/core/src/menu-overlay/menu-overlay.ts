@@ -1,11 +1,12 @@
-import { inject, type ModelSignal, type OutputEmitterRef, type Signal } from '@angular/core';
+import type { ModelSignal, OutputEmitterRef, Signal } from '@angular/core';
 import type { ReferenceElement } from '@floating-ui/dom';
 
 import type { ListNavigationAction } from '../keyboard-navigation/keyboard-navigation';
 import { CloseReasonState } from '../overlay-controller/close-reason-state';
 import {
-  ElementRegistry,
   type IdentifiedElementSlot,
+  injectIdentifiedSlot,
+  injectSlotId,
 } from '../overlay-controller/element-registry';
 import { InitialFocusState } from '../overlay-controller/initial-focus-state';
 import {
@@ -122,7 +123,6 @@ export interface MenuOverlayHooks {
  * calls resolve through the directive's injector.
  */
 export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
-  readonly #registry = inject(ElementRegistry);
   readonly #itemList: MenuItemList<H>;
   readonly #hooks: MenuOverlayHooks;
 
@@ -202,8 +202,8 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
   constructor(idPrefix: string, hooks: MenuOverlayHooks) {
     this.#hooks = hooks;
     this.#itemList = createMenuItemList<H>(() => hooks.loop());
-    this.#openers = new MenuOpenerRegistry(this.#registry.id(idPrefix, 'trigger'));
-    this.#contentSlot = this.#registry.identifiedSlot(idPrefix, 'content');
+    this.#openers = new MenuOpenerRegistry(injectSlotId(idPrefix, 'trigger'));
+    this.#contentSlot = injectIdentifiedSlot(idPrefix, 'content');
     this.triggerId = this.#openers.id;
     this.contentId = this.#contentSlot.id.asReadonly();
     this.trigger = this.#openers.element;

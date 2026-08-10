@@ -18,7 +18,6 @@ import {
   AnchoredFormValueControlBase,
   formatFortyMessage,
   injectHiddenInput,
-  IdGenerator,
   isRangeSelectShortcut,
   LabelCache,
   type LabelCacheEntry,
@@ -96,7 +95,6 @@ export class ForSelect<T = string>
   extends AnchoredFormValueControlBase
   implements FormValueControl<readonly T[]>, ForSelectContext<T>
 {
-  readonly #idGen = inject(IdGenerator);
   readonly #typeahead = injectTypeahead();
   readonly #closedTypeahead = injectTypeahead();
   protected readonly positioningDefaults = inject(FOR_SELECT_DEFAULTS);
@@ -355,7 +353,7 @@ export class ForSelect<T = string>
     ForSelectOptionHandle<T>,
     ForSelectInitialFocus,
     ForSelectCloseReason
-  >(this.#idGen, {
+  >({
     idPrefix: 'for-select',
     multipleAnchorsError: formatFortyMessage({
       code: 'FORCDK-SELECT-005',
