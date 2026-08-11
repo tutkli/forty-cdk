@@ -15,15 +15,15 @@ import type { FloatingAlign, FloatingConfig, FloatingSide } from './floating';
  * `provideForSelectDefaults`, …) so a scope override flows through — those are
  * the placement values a design system tunes, and they legitimately vary per
  * root. Everything below is identical for every anchored overlay in the
- * library.
+ * library, which is why `arrowPadding` is not among them: only the three roots
+ * shipping an arrow piece declare it, each seeded from its own defaults
+ * provider ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)).
  */
 export const ANCHORED_POSITIONING_DEFAULTS = {
   /** Default gap (px) along the cross axis (parallel to `side`). */
   alignOffset: 0,
   /** `flip` / `shift` keep the surface inside the viewport by default. */
   avoidCollisions: true,
-  /** Default padding (px) for the `arrow` middleware. */
-  arrowPadding: 0,
   /** Default stickiness behaviour for `shift`. */
   sticky: 'partial' as 'partial' | 'always' | false,
   /** `data-detached=""` is not reflected by default. */

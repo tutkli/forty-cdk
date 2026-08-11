@@ -1,4 +1,10 @@
-import { Component, type Provider, provideZonelessChangeDetection, type Type } from '@angular/core';
+import {
+  Component,
+  type Provider,
+  provideZonelessChangeDetection,
+  type Signal,
+  type Type,
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 
@@ -29,7 +35,7 @@ import {
 
 /**
  * Meta-guard **and** sweep for the positioning-input family: every
- * trigger-anchored overlay root inherits the ten floating-ui positioning inputs
+ * trigger-anchored overlay root inherits the nine floating-ui positioning inputs
  * from one of the two twin bases, and resolves them the same way.
  *
  * The family is derived from library source rather than declared, for the reason
@@ -51,10 +57,15 @@ import {
  * Unlike its six siblings the contract is adopted **here**, once per registry
  * entry, rather than from each primitive's own spec. The reason is in the
  * contract's own JSDoc and it is the SSR suite's: the claim is that thirteen
- * unrelated classes answer the same ten questions the same way, so the subject
+ * unrelated classes answer the same nine questions the same way, so the subject
  * is the set — the roots mount together in one host and the per-root variation
  * is the four numbers each entry carries. A new anchored root owes a registry
  * entry, never a hand-written `it`.
+ *
+ * The tenth input the block used to carry, `arrowPadding`, is the same claim over
+ * a subset: it is declared by the three roots that ship an arrow piece and by no
+ * other, which {@link ARROW_ROOTS} states and the meta-guard derives from source
+ * in both directions ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)).
  *
  * Reading the effective computeds off the directive is deliberate and is the one
  * place `### Test isolation` rule 6 does not apply: they are the *public* read
@@ -206,6 +217,51 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
     'abstract base [forDatePicker] / [forDateRangePicker] extend — not itself mountable',
 };
 
+/** The read surface the three arrow-capable roots publish beyond the shared nine. */
+interface ArrowPaddingReadout {
+  readonly arrowPadding: Signal<number>;
+}
+
+interface ArrowRootEntry {
+  /** The root's selector, quoted in every failure the arrow cases report. */
+  root: string;
+  /** Directive class the shared host is queried by. */
+  directive: Type<ArrowPaddingReadout>;
+  /** This root's own defaults provider, taking the arrow padding. */
+  provide: (overrides: { arrowPadding: number }) => Provider[];
+}
+
+/**
+ * The roots that declare `arrowPadding` themselves, because they are the ones
+ * with an arrow to pad: floating-ui installs the `arrow` middleware only when an
+ * arrow element is supplied, so the input reaches nothing on a root with no arrow
+ * piece — which is what the other ten inherited from the base until
+ * [#1776](https://github.com/tutkli/forty-cdk/issues/1776).
+ *
+ * Membership is **derived in both directions** by the meta-guard below, from the
+ * two source properties that make a root arrow-capable at all: it declares the
+ * input, and it declares the `registerArrow` its `[for<Primitive>Arrow]` piece
+ * calls. So a fourth root growing an arrow, or one of these three declaring an
+ * `arrowPadding` its anatomy cannot use, fails here rather than shipping.
+ */
+const ARROW_ROOTS: readonly ArrowRootEntry[] = [
+  { root: '[forPopover]', directive: ForPopover, provide: provideForPopoverDefaults },
+  { root: '[forTooltip]', directive: ForTooltip, provide: provideForTooltipDefaults },
+  { root: '[forHoverCard]', directive: ForHoverCard, provide: provideForHoverCardDefaults },
+];
+
+/** Every root's library fallback for `arrowPadding`, seeded from its own defaults file. */
+const ARROW_PADDING_FALLBACK = 0;
+
+/** The scope override the second arrow case seeds — differs from the fallback. */
+const ARROW_PADDING_SCOPE_PROBE = 6;
+
+/** The value the third arrow case binds per instance — differs from the scope probe. */
+const ARROW_PADDING_BOUND_PROBE = 12;
+
+const DECLARES_ARROW_PADDING = /^ {2}readonly arrowPadding = input\(/m;
+const DECLARES_ARROW_REGISTRY = /\bregisterArrow\(/;
+
 /**
  * Every file building a `kind: 'floating'` positioner block, asserted as a set
  * so the ledger cannot rot in either direction: a new hand-built block fails
@@ -234,17 +290,16 @@ const FLOATING_POSITIONER_SITES: readonly string[] = [
  * neighbouring signal is the drift that leaves an input silently inert — which
  * is what the roots' own `side` / `align` were before #1726.
  *
- * **`arrowPadding` is the tenth and is required only of a block that also
- * forwards an `arrow`**, because floating-ui installs the `arrow` middleware
- * only when an arrow element is supplied and pads nothing without it. Exactly
- * three roots ship an arrow piece — Popover, Tooltip, HoverCard — which are the
- * three reaching the positioner through the shared `toFloatingPositioner`, the
- * one site that forwards `arrow`. The other ten roots inherited the
- * `arrowPadding` *input* from the base along with the rest of the block (#1726),
- * with no arrow of their own to pad: five forward it to a middleware that never
- * runs and `[forDatePicker]` / `[forDateRangePicker]` do not forward it at all.
- * Demanding it of all six sites would be demanding a value with no consumer;
- * where a block does forward it, it is still checked for its source.
+ * **`arrowPadding` is required of a block that forwards an `arrow` and forbidden
+ * of one that does not**, in both directions rather than as a carve-out: the
+ * `arrow` middleware is installed only when an arrow element is supplied, so
+ * padding forwarded without one is a value nothing reads and padding withheld
+ * from one is a bound input that stops arriving. Exactly one site forwards
+ * `arrow` — the shared `toFloatingPositioner`, reached by the three roots with an
+ * arrow piece — so the five hand-built blocks must forward neither. They each did
+ * forward the padding until
+ * [#1776](https://github.com/tutkli/forty-cdk/issues/1776), because the base
+ * handed every root the input along with the rest of the block (#1726).
  */
 const FORWARDED_POSITIONING_INPUTS = [
   'side',
@@ -363,7 +418,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 class AnchoredRootsHost {}
 
 /**
- * The same thirteen roots with all ten positioning inputs bound per instance.
+ * The same thirteen roots with all nine positioning inputs bound per instance.
  * Every binding reads {@link ANCHORED_POSITIONING_BOUND_PROBE} rather than a
  * literal copied into the template, so the values the contract asserts and the
  * values the template binds cannot drift apart.
@@ -395,7 +450,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -408,7 +462,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -421,7 +474,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -434,7 +486,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -447,7 +498,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -460,7 +510,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -473,7 +522,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -486,7 +534,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -499,7 +546,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -512,7 +558,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -525,7 +570,6 @@ class AnchoredRootsHost {}
       [alignOffset]="p.alignOffset"
       [avoidCollisions]="p.avoidCollisions"
       [collisionPadding]="p.collisionPadding"
-      [arrowPadding]="p.arrowPadding"
       [sticky]="p.sticky"
       [hideWhenDetached]="p.hideWhenDetached"
       [clipUntilPositioned]="p.clipUntilPositioned"
@@ -538,7 +582,6 @@ class AnchoredRootsHost {}
         [alignOffset]="p.alignOffset"
         [avoidCollisions]="p.avoidCollisions"
         [collisionPadding]="p.collisionPadding"
-        [arrowPadding]="p.arrowPadding"
         [sticky]="p.sticky"
         [hideWhenDetached]="p.hideWhenDetached"
         [clipUntilPositioned]="p.clipUntilPositioned"
@@ -554,7 +597,6 @@ class AnchoredRootsHost {}
         [alignOffset]="p.alignOffset"
         [avoidCollisions]="p.avoidCollisions"
         [collisionPadding]="p.collisionPadding"
-        [arrowPadding]="p.arrowPadding"
         [sticky]="p.sticky"
         [hideWhenDetached]="p.hideWhenDetached"
         [clipUntilPositioned]="p.clipUntilPositioned"
@@ -568,17 +610,31 @@ class BoundAnchoredRootsHost {
   protected readonly p = ANCHORED_POSITIONING_BOUND_PROBE;
 }
 
-function mountAll(
-  host: Type<unknown>,
-  providers: Provider[] = [],
-): (entry: AnchoredRootEntry) => AnchoredPositioningReadout {
+/**
+ * The three arrow-capable roots with `arrowPadding` bound per instance, from
+ * {@link ARROW_PADDING_BOUND_PROBE} rather than a literal copied into the
+ * template so the value asserted and the value bound cannot drift apart.
+ */
+@Component({
+  imports: [ForPopover, ForTooltip, ForHoverCard],
+  template: `
+    <div forPopover [arrowPadding]="p"></div>
+    <div forTooltip [arrowPadding]="p"></div>
+    <div forHoverCard [arrowPadding]="p"></div>
+  `,
+})
+class BoundArrowRootsHost {
+  protected readonly p = ARROW_PADDING_BOUND_PROBE;
+}
+
+function mountAll(host: Type<unknown>, providers: Provider[] = []): <T>(directive: Type<T>) => T {
   TestBed.configureTestingModule({
     providers: [provideZonelessChangeDetection(), ...providers],
   });
   const fixture = TestBed.createComponent(host);
   fixture.detectChanges();
-  return (entry) =>
-    fixture.debugElement.query(By.directive(entry.directive)).injector.get(entry.directive);
+  return <T>(directive: Type<T>): T =>
+    fixture.debugElement.query(By.directive(directive)).injector.get(directive);
 }
 
 describe('anchored positioning contract adoption (meta-guard)', () => {
@@ -637,30 +693,89 @@ describe('anchored positioning contract adoption (meta-guard)', () => {
       block.match(new RegExp(`\\b${key}:\\s*([^,\\n]+),`))?.[1]?.trim() ?? null;
 
     const wrong = blocks.flatMap(({ path, block }) => {
-      const required = [
-        ...FORWARDED_POSITIONING_INPUTS,
-        ...(forwarded(block, 'arrow') === null ? [] : (['arrowPadding'] as const)),
+      const padsAnArrow = forwarded(block, 'arrow') !== null;
+      const required = padsAnArrow
+        ? [...FORWARDED_POSITIONING_INPUTS, 'arrowPadding' as const]
+        : [...FORWARDED_POSITIONING_INPUTS];
+      const stray =
+        !padsAnArrow && forwarded(block, 'arrowPadding') !== null
+          ? [`${path}: forwards arrowPadding with no arrow to pad`]
+          : [];
+      return [
+        ...stray,
+        ...required.flatMap((key) => {
+          const expression = forwarded(block, key);
+          if (expression === null) {
+            return [`${path}: forwards no ${key}`];
+          }
+          const member = /\.(\w+)$/.exec(expression)?.[1];
+          return member === key ? [] : [`${path}: forwards ${expression} as ${key}`];
+        }),
       ];
-      return required.flatMap((key) => {
-        const expression = forwarded(block, key);
-        if (expression === null) {
-          return [`${path}: forwards no ${key}`];
-        }
-        const member = /\.(\w+)$/.exec(expression)?.[1];
-        return member === key ? [] : [`${path}: forwards ${expression} as ${key}`];
-      });
     });
 
     expect(sorted(wrong)).toEqual([]);
   });
+
+  it('declares arrowPadding on exactly the roots that register an arrow', () => {
+    const byPath = new Map(LIBRARY_SOURCES);
+    const rootsWhere = (pattern: RegExp): string[] =>
+      REGISTRY.filter((entry) => pattern.test(byPath.get(entry.source) ?? '')).map(
+        (entry) => entry.root,
+      );
+
+    expect(sorted(rootsWhere(DECLARES_ARROW_PADDING))).toEqual(
+      sorted(ARROW_ROOTS.map((entry) => entry.root)),
+    );
+    expect(sorted(rootsWhere(DECLARES_ARROW_REGISTRY))).toEqual(
+      sorted(ARROW_ROOTS.map((entry) => entry.root)),
+    );
+  });
+});
+
+/**
+ * `arrowPadding` resolves the way the nine shared inputs do — library fallback,
+ * then this root's own scope defaults, then a per-instance binding — over the
+ * three roots that declare it. Stated here rather than in each primitive's own
+ * spec for the reason the swept contract below is: the claim is that the three
+ * answer it identically, so the subject is the set.
+ */
+describe('arrow padding, declared per arrow-capable root', () => {
+  for (const entry of ARROW_ROOTS) {
+    it(`${entry.root} falls back to the library arrow padding`, () => {
+      const root = mountAll(AnchoredRootsHost)(entry.directive);
+
+      expect(root.arrowPadding()).toBe(ARROW_PADDING_FALLBACK);
+    });
+
+    it(`${entry.root} seeds it from its own defaults provider`, () => {
+      const root = mountAll(
+        AnchoredRootsHost,
+        entry.provide({ arrowPadding: ARROW_PADDING_SCOPE_PROBE }),
+      )(entry.directive);
+
+      expect(root.arrowPadding()).toBe(ARROW_PADDING_SCOPE_PROBE);
+    });
+
+    it(`${entry.root} lets a per-instance binding win over the scope`, () => {
+      const root = mountAll(
+        BoundArrowRootsHost,
+        entry.provide({ arrowPadding: ARROW_PADDING_SCOPE_PROBE }),
+      )(entry.directive);
+
+      expect(root.arrowPadding()).toBe(ARROW_PADDING_BOUND_PROBE);
+    });
+  }
 });
 
 for (const entry of REGISTRY) {
   assertAnchoredPositioningContract(
     {
-      mount: () => mountAll(AnchoredRootsHost)(entry),
-      mountScoped: (overrides) => mountAll(AnchoredRootsHost, entry.provide(overrides))(entry),
-      mountBound: (overrides) => mountAll(BoundAnchoredRootsHost, entry.provide(overrides))(entry),
+      mount: () => mountAll(AnchoredRootsHost)(entry.directive),
+      mountScoped: (overrides) =>
+        mountAll(AnchoredRootsHost, entry.provide(overrides))(entry.directive),
+      mountBound: (overrides) =>
+        mountAll(BoundAnchoredRootsHost, entry.provide(overrides))(entry.directive),
     },
     { label: entry.root, seeds: entry.seeds },
   );

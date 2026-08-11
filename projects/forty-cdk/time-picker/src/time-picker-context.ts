@@ -92,7 +92,6 @@ export interface ForTimePickerContext<D = unknown> {
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;

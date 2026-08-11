@@ -2,7 +2,7 @@ import type { Signal } from '@angular/core';
 
 /**
  * Shared contract for the **positioning-input family**: the trigger-anchored
- * overlay roots that inherit the ten floating-ui positioning inputs and the
+ * overlay roots that inherit the nine floating-ui positioning inputs and the
  * five effective computeds over them from one of the two twin bases
  * (`AnchoredOverlayPositioningBase`, or `AnchoredFormValueControlBase` for the
  * five roots that must also extend `FormUiControlBase`).
@@ -27,7 +27,7 @@ import type { Signal } from '@angular/core';
  *
  * The contract owns exactly the shape of that read surface:
  *
- *   - **The six non-seed values are the shared constant, everywhere.** They
+ *   - **The five non-seed values are the shared constant, everywhere.** They
  *     come from one `ANCHORED_POSITIONING_DEFAULTS` source, so a root that
  *     resolves one of them differently has re-declared the block.
  *   - **The four placement seeds resolve to this root's own library
@@ -37,18 +37,25 @@ import type { Signal } from '@angular/core';
  *     larger surface).
  *   - **Each of the four seeds reaches the root from its own scope defaults
  *     provider**, which is the capability #1726 delivered.
- *   - **A per-instance binding wins over the scope default, for all ten
+ *   - **A per-instance binding wins over the scope default, for all nine
  *     inputs** — which is also where the inherited block is proven to bind at
  *     all: alias (`side` / `align` / `sideOffset` / `alignOffset` /
  *     `collisionPadding`), transform (`numberAttribute` / `booleanAttribute`),
  *     and inheritance through two levels of base all have to survive the
  *     compile for the case to pass.
  *
+ * `arrowPadding` is not one of the nine and never was one of the family's
+ * questions: floating-ui installs the `arrow` middleware only when an arrow
+ * element is supplied, so the input belongs to the three roots that ship an
+ * arrow piece and is declared there
+ * ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)). The adopter roster
+ * derives that set from source and covers those three on its own.
+ *
  * **Adoption is a registry entry rather than a call from each primitive's own
  * spec, and that is deliberate.** The other seven contracts in this folder are
  * called from the adopting primitive's suite because each states something
  * about that primitive alone. This one states that *thirteen unrelated classes
- * answer the same ten questions the same way*, so its subject is the set: the
+ * answer the same nine questions the same way*, so its subject is the set: the
  * thirteen roots mount together in one host, one `TestBed` per case, and the
  * per-root variation is four numbers. Splitting it into thirteen self-contained
  * adoptions would mean thirteen copies of the same two fixtures and would
@@ -60,7 +67,7 @@ import type { Signal } from '@angular/core';
  * *does* with the resolved placement — `data-side` / `data-align` / the
  * `--for-floating-*` properties are asserted over the positioner itself in
  * `core-overlay/src/floating/floating.spec.ts`, and the wiring in between (each
- * content directive forwarding the ten effective computeds into
+ * content directive forwarding the nine effective computeds into
  * `injectOverlayShell`) is a source claim the adopter roster makes over every
  * `kind: 'floating'` block in the library. Re-running the positioner's own
  * behaviour once per adopter would assert one module thirteen times.
@@ -79,9 +86,9 @@ export type AnchoredSticky = 'partial' | 'always' | false;
 
 /**
  * The read surface every anchored root publishes. Deliberately structural: the
- * point of the contract is that thirteen unrelated classes answer the same ten
+ * point of the contract is that thirteen unrelated classes answer the same nine
  * questions the same way, so an adopter passing its directive instance here is
- * how the ten-ness itself is pinned — a root that stopped inheriting one of the
+ * how the nine-ness itself is pinned — a root that stopped inheriting one of the
  * computeds fails to type-check at its registry entry rather than at an
  * assertion.
  */
@@ -92,7 +99,6 @@ export interface AnchoredPositioningReadout {
   readonly alignOffset: Signal<number>;
   readonly avoidCollisions: Signal<boolean>;
   readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<AnchoredSticky>;
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;
@@ -100,7 +106,7 @@ export interface AnchoredPositioningReadout {
 
 /**
  * The four placement values a root seeds from its own defaults provider. The
- * other six come from the shared constant and are identical for every anchored
+ * other five come from the shared constant and are identical for every anchored
  * overlay in the library.
  */
 export interface AnchoredPositioningSeeds {
@@ -111,7 +117,7 @@ export interface AnchoredPositioningSeeds {
 }
 
 /**
- * The six values every anchored root resolves from
+ * The five values every anchored root resolves from
  * `ANCHORED_POSITIONING_DEFAULTS`. Spelled here rather than imported so the
  * contract states what it expects instead of comparing the library to itself —
  * an accidental edit of the constant would otherwise pass this rung and change
@@ -120,7 +126,6 @@ export interface AnchoredPositioningSeeds {
 export const ANCHORED_POSITIONING_NON_SEED_DEFAULTS = {
   alignOffset: 0,
   avoidCollisions: true,
-  arrowPadding: 0,
   sticky: 'partial' as AnchoredSticky,
   hideWhenDetached: false,
   clipUntilPositioned: true,
@@ -144,7 +149,7 @@ export const ANCHORED_POSITIONING_SCOPE_PROBE: AnchoredPositioningSeeds = {
  * The values the fourth case binds per instance, on the host that also installs
  * {@link ANCHORED_POSITIONING_SCOPE_PROBE}. Every placement value differs from
  * the scope probe and every non-seed value from the shared constant, so each of
- * the ten assertions discriminates.
+ * the nine assertions discriminates.
  *
  * The adopter's bound host binds *from this object* rather than from literals
  * copied into its template, so the two cannot drift apart.
@@ -156,7 +161,6 @@ export const ANCHORED_POSITIONING_BOUND_PROBE = {
   alignOffset: 6,
   avoidCollisions: false,
   collisionPadding: 24,
-  arrowPadding: 10,
   sticky: 'always' as AnchoredSticky,
   hideWhenDetached: true,
   clipUntilPositioned: false,
@@ -173,7 +177,7 @@ export interface AnchoredPositioningContractSetup {
     overrides: AnchoredPositioningSeeds,
   ) => AnchoredPositioningReadout | Promise<AnchoredPositioningReadout>;
   /**
-   * Mount it under the same provider, with all ten positioning inputs bound
+   * Mount it under the same provider, with all nine positioning inputs bound
    * per instance from {@link ANCHORED_POSITIONING_BOUND_PROBE}.
    */
   mountBound: (
@@ -203,7 +207,6 @@ const readNonSeeds = (
 ): Record<keyof typeof ANCHORED_POSITIONING_NON_SEED_DEFAULTS, unknown> => ({
   alignOffset: readout.alignOffset(),
   avoidCollisions: readout.avoidCollisions(),
-  arrowPadding: readout.arrowPadding(),
   sticky: readout.sticky(),
   hideWhenDetached: readout.hideWhenDetached(),
   clipUntilPositioned: readout.clipUntilPositioned(),
@@ -223,7 +226,7 @@ export function assertAnchoredPositioningContract(
   const { label, seeds } = options;
 
   describe(`anchored positioning contract (${label})`, () => {
-    it('resolves the six non-seed inputs from the one shared source', async () => {
+    it('resolves the five non-seed inputs from the one shared source', async () => {
       const readout = await setup.mount();
 
       expect(readNonSeeds(readout)).toEqual({ ...ANCHORED_POSITIONING_NON_SEED_DEFAULTS });

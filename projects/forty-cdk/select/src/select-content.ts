@@ -171,7 +171,6 @@ export class ForSelectContent {
             alignOffset: ctx.alignOffset,
             avoidCollisions: ctx.avoidCollisions,
             collisionPadding: ctx.collisionPadding,
-            arrowPadding: ctx.arrowPadding,
             sticky: ctx.sticky,
             hideWhenDetached: ctx.hideWhenDetached,
             clipUntilPositioned: ctx.clipUntilPositioned,

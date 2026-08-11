@@ -32,7 +32,7 @@ function positioningBlock(source: string): string {
  * [#1391](https://github.com/tutkli/forty-cdk/issues/1391),
  * [#1726](https://github.com/tutkli/forty-cdk/issues/1726)).
  *
- * All thirteen trigger-anchored roots inherit their ten positioning inputs and
+ * All thirteen trigger-anchored roots inherit their nine positioning inputs and
  * five effective computeds instead of declaring them — eight through
  * `AnchoredOverlayPositioningBase` (four of those via `MenuOverlayHost`), and
  * the five that are also form values through `AnchoredFormValueControlBase`,

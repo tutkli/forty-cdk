@@ -5,6 +5,7 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   output,
   signal,
 } from '@angular/core';
@@ -79,6 +80,18 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    * flips to true), never on consumer writes through `[(open)]`.
    */
   readonly open = model<boolean>(false);
+
+  /**
+   * Padding (px) keeping `[forHoverCardArrow]` that far from the edges of the
+   * content. Only consulted when an arrow is registered, since floating-ui
+   * installs the `arrow` middleware only then — which is why the input is
+   * declared here rather than on the shared positioning base. The default is
+   * read from `provideForHoverCardDefaults` for the surrounding scope, since
+   * arrow geometry is a design-system-wide decision rather than a per-card one.
+   */
+  readonly arrowPadding = input(this.positioningDefaults.arrowPadding, {
+    transform: numberAttribute,
+  });
 
   /** Per-card override for open delay (ms). Falls back to coordinator (700ms). */
   readonly openDelay = input<number | undefined>(undefined);

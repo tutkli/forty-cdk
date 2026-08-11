@@ -96,6 +96,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | `sideOffset`       | `input<number \| undefined>`        | Gap (px) between trigger and content along the main axis. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                                 |
 | `alignOffset`      | `input<number>`                     | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                           |
 | `collisionPadding` | `input<number \| undefined>`        | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForTooltipDefaults` (`8`).<br>**Default:** —                                     |
+| `arrowPadding`     | `input<number>`                     | Padding (px) keeping `[forTooltipArrow]` clear of the content edges. Falls back to `provideForTooltipDefaults` (`0`).<br>**Default:** —                                      |
 | `openDelay`        | `input<number \| undefined>`        | ms before showing after hover/focus enters. Falls back to `provideForTooltipDefaults` (`700`).<br>**Default:** —                                                             |
 | `closeDelay`       | `input<number \| undefined>`        | ms before hiding after hover/focus leaves. Escape ignores this. Falls back to `provideForTooltipDefaults` (`300`).<br>**Default:** —                                         |
 | `disabled`         | `input<boolean>`                    | When `true`, all interaction is ignored.<br>**Default:** —                                                                                                                   |
@@ -142,6 +143,7 @@ No inputs of its own — coordinates via the `ForTooltip` context.
 | `align`             | `'center'`       | Alignment along `side` for tooltips that don't set `align` themselves.                     |
 | `sideOffset`        | `8`              | Main-axis gap (px) for tooltips that don't set `sideOffset` themselves.                    |
 | `collisionPadding`  | `8`              | Collision-middleware padding (px) for tooltips that don't set it themselves.               |
+| `arrowPadding`      | `0`              | Arrow padding (px) for tooltips that don't set it themselves.                              |
 | `showOnOverflow`    | `false`          | Show only when the trigger's text is truncated, for tooltips that don't set it themselves. |
 | `hoverableContent`  | `true`           | Allow hovering into the content, for tooltips that don't set it themselves.                |
 

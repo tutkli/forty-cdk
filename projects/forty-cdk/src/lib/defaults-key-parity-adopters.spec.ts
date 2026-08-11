@@ -111,6 +111,15 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
     ],
   },
   {
+    name: 'arrow-capable anchored overlays',
+    keys: ['arrowPadding'],
+    members: [
+      'hover-card/src/hover-card-defaults.ts',
+      'popover/src/popover-defaults.ts',
+      'tooltip/src/tooltip-defaults.ts',
+    ],
+  },
+  {
     name: 'hover-scheduled overlays',
     keys: ['openDelay', 'closeDelay', 'skipDelayDuration'],
     members: ['hover-card/src/hover-card-defaults.ts', 'tooltip/src/tooltip-defaults.ts'],

@@ -48,6 +48,13 @@ export interface ForTooltipDefaults extends AnchoredPositioningSeedDefaults {
    */
   collisionPadding: number;
   /**
+   * Padding (px) keeping the `[forTooltipArrow]` element that far from the
+   * edges of the content, for tooltips that don't override `arrowPadding`
+   * locally. Only consulted when an arrow is registered — floating-ui installs
+   * the `arrow` middleware only then. Library fallback `0`.
+   */
+  arrowPadding: number;
+  /**
    * Whether tooltips show only when the trigger's own text is truncated
    * (`scrollWidth > clientWidth`), for tooltips that don't override
    * `showOnOverflow` locally. Library fallback `false`.
@@ -76,6 +83,7 @@ export const FOR_TOOLTIP_FALLBACK_DEFAULTS: ForTooltipDefaults = {
   align: 'center',
   sideOffset: 8,
   collisionPadding: 8,
+  arrowPadding: 0,
   showOnOverflow: false,
   hoverableContent: true,
 };

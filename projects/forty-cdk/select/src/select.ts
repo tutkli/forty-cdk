@@ -190,7 +190,7 @@ export class ForSelect<T = string>
    * mounts lazily via `@if (open())` well after `modal` settles). Every
    * anchored-positioning input — `position`, `side`, `align`, `sideOffset`,
    * `alignOffset`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`, `avoidCollisions`,
-   * `collisionPadding`, `arrowPadding` — is a no-op in this mode. Default
+   * `collisionPadding` — is a no-op in this mode. Default
    * `false` (non-breaking). The swipe / snap-point sheet is deliberately not
    * this mode — compose a `ForListbox` inside a `ForDrawer` for that.
    */

@@ -121,7 +121,6 @@ export class ForMenuContent {
         avoidCollisions: this.ctx.avoidCollisions,
         fallbackAxisSideDirection: this.ctx.fallbackAxisSideDirection,
         collisionPadding: this.ctx.collisionPadding,
-        arrowPadding: this.ctx.arrowPadding,
         sticky: this.ctx.sticky,
         hideWhenDetached: this.ctx.hideWhenDetached,
         clipUntilPositioned: this.ctx.clipUntilPositioned,

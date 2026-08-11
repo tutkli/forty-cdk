@@ -46,6 +46,13 @@ export interface ForHoverCardDefaults extends AnchoredPositioningSeedDefaults {
    * Library fallback `8`.
    */
   collisionPadding: number;
+  /**
+   * Padding (px) keeping the `[forHoverCardArrow]` element that far from the
+   * edges of the content, for cards that don't override `arrowPadding`
+   * locally. Only consulted when an arrow is registered — floating-ui installs
+   * the `arrow` middleware only then. Library fallback `0`.
+   */
+  arrowPadding: number;
 }
 
 /**
@@ -61,6 +68,7 @@ export const FOR_HOVER_CARD_FALLBACK_DEFAULTS: ForHoverCardDefaults = {
   align: 'center',
   sideOffset: 8,
   collisionPadding: 8,
+  arrowPadding: 0,
 };
 
 const { token, provideDefaults } = createDefaults<ForHoverCardDefaults>(

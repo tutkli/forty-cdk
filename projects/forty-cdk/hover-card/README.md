@@ -81,6 +81,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | `sideOffset`       | `input<number \| undefined>`                      | Gap (px) between trigger and card along the main axis. Falls back to `provideForHoverCardDefaults` (`8`).<br>**Default:** —                                                                                          |
 | `alignOffset`      | `input<number>`                                   | Gap (px) along the cross axis.<br>**Default:** `0`                                                                                                                                                                   |
 | `collisionPadding` | `input<number \| undefined>`                      | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForHoverCardDefaults` (`8`).<br>**Default:** —                                                                           |
+| `arrowPadding`     | `input<number>`                                   | Padding (px) keeping `[forHoverCardArrow]` clear of the content edges. Falls back to `provideForHoverCardDefaults` (`0`).<br>**Default:** —                                                                          |
 | `openDelay`        | `input<number \| undefined>`                      | Per-card override for open delay. Falls back to `provideForHoverCardDefaults` (700ms).<br>**Default:** —                                                                                                             |
 | `closeDelay`       | `input<number \| undefined>`                      | Per-card override for close delay. Falls back to `provideForHoverCardDefaults` (300ms).<br>**Default:** —                                                                                                            |
 | `disabled`         | `input<boolean>`                                  | When true, hover / focus interaction is ignored AND any open card is force-closed (with `(openChange)` firing so a `[(open)]` binding stays in sync).<br>**Default:** —                                              |
@@ -124,6 +125,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | `align`             | `'center'`       | Alignment along `side` for cards that don't set `align` themselves.       |
 | `sideOffset`        | `8`              | Main-axis gap (px) for cards that don't set `sideOffset` themselves.      |
 | `collisionPadding`  | `8`              | Collision-middleware padding (px) for cards that don't set it themselves. |
+| `arrowPadding`      | `0`              | Arrow padding (px) for cards that don't set it themselves.                |
 
 Per-instance inputs always win over the scope defaults.
 

@@ -161,7 +161,6 @@ export class ForMenubarTrigger extends AnchoredOverlayPositioningBase {
       avoidCollisions: this.avoidCollisions,
       fallbackAxisSideDirection: this.fallbackAxisSideDirection,
       collisionPadding: this.collisionPadding,
-      arrowPadding: this.arrowPadding,
       sticky: this.sticky,
       hideWhenDetached: this.hideWhenDetached,
       clipUntilPositioned: this.clipUntilPositioned,

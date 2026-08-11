@@ -35,6 +35,13 @@ export interface ForPopoverDefaults extends AnchoredPositioningSeedDefaults {
    * Library fallback `8`.
    */
   collisionPadding: number;
+  /**
+   * Padding (px) keeping the `[forPopoverArrow]` element that far from the
+   * edges of the content, for popovers that don't override `arrowPadding`
+   * locally. Only consulted when an arrow is registered — floating-ui installs
+   * the `arrow` middleware only then. Library fallback `0`.
+   */
+  arrowPadding: number;
 }
 
 /**
@@ -47,6 +54,7 @@ export const FOR_POPOVER_FALLBACK_DEFAULTS: ForPopoverDefaults = {
   align: 'center',
   sideOffset: 8,
   collisionPadding: 8,
+  arrowPadding: 0,
 };
 
 const { token, provideDefaults } = createDefaults<ForPopoverDefaults>(

@@ -225,7 +225,7 @@ The button-opened menu now clears the button by 4px while a right-click still op
 
 - The override carries the four **placement** values — `side`, `align`, `sideOffset`, `alignOffset` — and every key is optional. An omitted key resolves the root's own input, so an opener that overrides nothing (or binds `null`) positions exactly as the root does.
 - It applies only while that opener is the active one, and switches with the opener — nothing leaks from the previously active one.
-- The rest of the positioning surface (`avoidCollisions`, `fallbackAxisSideDirection`, `collisionPadding`, `arrowPadding`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`) stays root-only: it is collision / viewport policy for the surface, not a property of the opener that fired.
+- The rest of the positioning surface (`avoidCollisions`, `fallbackAxisSideDirection`, `collisionPadding`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`) stays root-only: it is collision / viewport policy for the surface, not a property of the opener that fired.
 - Both trigger directives carry the input, and it resolves the same way under their own preset root (`[forDropdownMenu]` / `[forContextMenu]`), where it is simply a per-trigger spelling of the root's inputs. Bind an object literal or a signal-returned object; a new identity re-positions the mounted surface.
 
 A shared menu whose openers all want the same placement needs none of this — set the root's inputs.
@@ -246,7 +246,6 @@ Selector `[forMenu]`, `exportAs: 'forMenu'`.
 | `avoidCollisions`           | `boolean`                           | `true`           |                                                            |
 | `fallbackAxisSideDirection` | `FloatingFallbackAxisSideDirection` | `'none'`         | From `provideForMenuDefaults`                              |
 | `collisionPadding`          | `number`                            | `8`              | From `provideForMenuDefaults`                              |
-| `arrowPadding`              | `number`                            | `0`              |                                                            |
 | `sticky`                    | `'partial' \| 'always' \| false`    | `'partial'`      |                                                            |
 | `hideWhenDetached`          | `boolean`                           | `false`          |                                                            |
 | `clipUntilPositioned`       | `boolean`                           | `true`           |                                                            |

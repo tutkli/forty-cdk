@@ -126,7 +126,6 @@ export interface ForMenuContext {
    */
   readonly fallbackAxisSideDirection: Signal<FloatingFallbackAxisSideDirection>;
   readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;
