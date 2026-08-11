@@ -116,6 +116,58 @@ function hasResolvedPosition(scope: ParentNode): boolean {
  *
  * Like {@link flush}, this returns a `Promise<void>` you **must** `await`;
  * bare calls are rejected by the `forty-cdk/no-floating-flush` lint rule.
+ *
+ * ## The residue — what this waiter is still for
+ *
+ * The helper survived the audit that set out to delete it
+ * ([#1739](https://github.com/tutkli/forty-cdk/issues/1739)), so what it may be
+ * used for is bounded here rather than left to precedent. That audit's premise
+ * — that a spec reaching for this waiter is asserting geometry in a DOM with no
+ * layout — holds for one claim shape out of five, and which one is decided by a
+ * measured property of jsdom rather than by judgement: it runs no layout, so
+ * `getBoundingClientRect()` is the zero rect **and**
+ * `documentElement.clientWidth` / `clientHeight` are `0`, which leaves
+ * floating-ui's clipping rect degenerate too.
+ *
+ * Four shapes are honest here and stay:
+ *
+ * - **Routing.** `data-side` / `data-align` / `data-placement` assert that the
+ *   side or align a consumer wrote — through an input, a
+ *   `provideFor<Primitive>Defaults` scope, a per-opener override, the RTL
+ *   resolver — reached floating-ui, and that floating-ui's answer reached the
+ *   DOM. With the clipping rect degenerate every candidate placement overflows
+ *   by the same amount, so `flip`'s `bestFit` fallback returns the placement it
+ *   was asked for: what a spec observes here is the request, never a collision
+ *   outcome. That is what makes it a routing assertion — and why the same claim
+ *   in Playwright is *weaker per case*, since a real browser's flip may
+ *   legitimately rewrite the answer and each case would first have to encode a
+ *   layout precondition that keeps it from firing.
+ * - **Publication and clearing.** Which properties a positioner writes and
+ *   which it removes on close: the retained `translate` and
+ *   `--for-floating-content-transform-origin` that keep an `animate.leave`
+ *   anchored to its trigger, the transient sizing vars that go, the `clip-path`
+ *   anti-flash baseline, `data-position`, and the cross-axis budget
+ *   `item-aligned` deliberately never publishes. Presence and absence are not
+ *   numbers.
+ * - **Callback timing.** `onFirstPosition` firing once per *open cycle* rather
+ *   than per run, and a run superseded — or torn down — before its position
+ *   resolves writing nothing. The discriminator is two synchronous renders with
+ *   no `await` between them, which has no Playwright equivalent.
+ * - **Absence.** A drain on a surface that never opens is not a redundant
+ *   waiter: it is what makes "nothing positioned" falsifiable, because the poll
+ *   spends its whole {@link MAX_POSITIONING_HOPS} budget handing the positioner
+ *   every hop it would get on a real open. Do not downgrade one of these to
+ *   {@link flush} on the grounds that nothing resolves — that *is* the claim.
+ *
+ * The fifth shape does **not** belong here, and is the one the audit was right
+ * about: a **value** read off a rect or off the clipping boundary
+ * (`--for-floating-anchor-*`, `--for-floating-available-*`, the numbers inside
+ * `translate`), and any **collision** outcome (a flip, a shift). Those resolve
+ * to `0px`, or to the requested placement, whatever the middleware computed, so
+ * an assertion on them passes just as happily against a constant. They are
+ * asserted against real layout in `combobox.e2e.ts`, `context-menu.e2e.ts`,
+ * `select.e2e.ts`, `popover.e2e.ts` and `menu-sub.e2e.ts`, and the boundary is
+ * stated in `.claude/rules/testing.md`.
  */
 export async function flushPositioning<T>(
   fixture: ComponentFixture<T>,

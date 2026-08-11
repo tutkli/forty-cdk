@@ -678,24 +678,34 @@ describe('injectFloating', () => {
   });
 
   describe('CSS variables', () => {
-    it('writes --for-floating-anchor-width / --for-floating-anchor-height from the reference rect', async () => {
+    // Both properties below resolve to `0px` in jsdom whatever the middleware
+    // computed, so the two cases here claim publication only — which names this
+    // positioner writes, and that it writes them no earlier than the first
+    // resolved position. The values go to `combobox.e2e.ts` /
+    // `context-menu.e2e.ts` (anchor box) and `popover.e2e.ts` (size budget);
+    // `flushPositioning`'s JSDoc states the split. #1739.
+    it('publishes the anchor-box property names once a position resolves, and not before', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
       const bubble = fixture.componentInstance.bubble();
       const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
 
+      // Reference set, still closed: the full drain hands the positioner every
+      // hop it would get on a real open, and it must still write nothing.
       bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      await flushPositioning(fixture);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-height')).toBe('');
+
       bubble.open.set(true);
       await flushPositioning(fixture);
 
-      // jsdom returns 0 from getBoundingClientRect — the var must still be set
-      // with an explicit "Npx" value so consumers can rely on it being present.
-      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-width')).toMatch(/^-?\d+px$/);
-      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-height')).toMatch(/^-?\d+px$/);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-width')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-anchor-height')).not.toBe('');
     });
 
-    it('writes --for-floating-available-width / --for-floating-available-height from the size middleware', async () => {
+    it('publishes both axes of the size budget, unlike the item-aligned positioner', async () => {
       TestBed.configureTestingModule({ providers: [provideZonelessChangeDetection()] });
       const fixture = TestBed.createComponent(BubbleHost);
       await flushPositioning(fixture);
@@ -703,11 +713,18 @@ describe('injectFloating', () => {
       const bubbleEl = document.querySelector<HTMLElement>('floating-bubble')!;
 
       bubble.reference.set(fixture.componentInstance.anchor().nativeElement);
+      await flushPositioning(fixture);
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).toBe('');
+
       bubble.open.set(true);
       await flushPositioning(fixture);
 
-      expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).toMatch(/^\d+px$/);
-      expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).toMatch(/^\d+px$/);
+      // The cross-axis budget is the half `item-aligned` deliberately never
+      // writes — its own spec asserts that absence, so this is the other side
+      // of that guard rather than a symmetry check.
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-width')).not.toBe('');
+      expect(bubbleEl.style.getPropertyValue('--for-floating-available-height')).not.toBe('');
     });
 
     it('writes --for-floating-content-transform-origin matching the resolved side/align', async () => {

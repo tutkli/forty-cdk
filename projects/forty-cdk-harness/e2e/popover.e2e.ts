@@ -114,4 +114,49 @@ test.describe('Popover', () => {
     expect(gap).toBeGreaterThanOrEqual(0);
     expect(gap).toBeLessThanOrEqual(16);
   });
+
+  // #1739 — the anchored positioner's `size` middleware was the one positioner
+  // output with no real-layout assertion anywhere: in jsdom both
+  // `--for-floating-available-*` properties resolve to `0px` whatever it
+  // computed. `select.e2e.ts` covers the item-aligned positioner's height
+  // budget, which is viewport-wide arithmetic rather than this anchor-relative
+  // one, and publishes no width budget at all.
+  test('publishes the size middleware budget in --for-floating-available-width / -height', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'popover', { tall: '1' });
+    const trigger = el(page, 'trigger');
+    await trigger.evaluate((node) => node.scrollIntoView({ block: 'center' }));
+
+    await trigger.click();
+    const content = el(page, 'popover');
+    await expect(content).toBeVisible();
+
+    const read = (property: string): Promise<number> =>
+      content.evaluate(
+        (node, name) =>
+          Number.parseFloat((node as HTMLElement).style.getPropertyValue(name) || '0'),
+        property,
+      );
+
+    await expect.poll(() => read('--for-floating-available-height')).toBeGreaterThan(0);
+
+    const viewport = await page.evaluate(() => ({ w: window.innerWidth, h: window.innerHeight }));
+    const t = (await trigger.boundingBox())!;
+    const side = await content.getAttribute('data-side');
+    const availableHeight = await read('--for-floating-available-height');
+    const availableWidth = await read('--for-floating-available-width');
+
+    // Anchor-relative, not viewport-wide: with the trigger scrolled to the
+    // middle of the viewport the height budget is the gap between the resolved
+    // side and the viewport edge, less the 8px sideOffset and the 8px
+    // collisionPadding the popover defaults ship. A value equal to the viewport
+    // height — the shape a constant would take — is far outside the slack.
+    const edgeGap = side === 'top' ? t.y : viewport.h - (t.y + t.height);
+    expect(availableHeight).toBeLessThanOrEqual(edgeGap);
+    expect(edgeGap - availableHeight).toBeLessThanOrEqual(30);
+
+    expect(availableWidth).toBeGreaterThan(0);
+    expect(availableWidth).toBeLessThanOrEqual(viewport.w);
+  });
 });
