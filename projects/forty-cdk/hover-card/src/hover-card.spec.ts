@@ -824,6 +824,81 @@ describe('ForHoverCard', () => {
     });
   });
 
+  describe('cadence defaults from provideForHoverCardDefaults', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('uses openDelay as the open fallback when the input is unset', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults({ openDelay: 500 })],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open">
+            <a forHoverCardTrigger href="/x">Trigger</a>
+            @if (card.open()) {
+              <div forHoverCardContent>Content</div>
+            }
+          </span>
+        `,
+      })
+      class FallbackHost {
+        readonly open = signal(false);
+      }
+
+      const { instance, query, flush } = renderHost(FallbackHost);
+      await flush();
+
+      const trigger = query<HTMLAnchorElement>('a')!;
+      trigger.dispatchEvent(pointerEvent('pointerenter'));
+      await flush();
+
+      vi.advanceTimersByTime(499);
+      await flush();
+      expect(instance.open()).toBe(false);
+      vi.advanceTimersByTime(1);
+      await flush();
+      expect(instance.open()).toBe(true);
+    });
+
+    it('uses closeDelay as the close fallback when the input is unset', async () => {
+      @Component({
+        imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
+        providers: [provideForHoverCardDefaults({ closeDelay: 500 })],
+        template: `
+          <span forHoverCard #card="forHoverCard" [(open)]="open">
+            <a forHoverCardTrigger href="/x">Trigger</a>
+            @if (card.open()) {
+              <div forHoverCardContent>Content</div>
+            }
+          </span>
+        `,
+      })
+      class FallbackHost {
+        readonly open = signal(true);
+      }
+
+      const { instance, query, flush } = renderHost(FallbackHost);
+      await flush();
+
+      const trigger = query<HTMLAnchorElement>('a')!;
+      trigger.dispatchEvent(pointerEvent('pointerleave'));
+      await flush();
+      pointerMoveAway();
+      await flush();
+
+      vi.advanceTimersByTime(499);
+      await flush();
+      expect(instance.open()).toBe(true);
+      vi.advanceTimersByTime(1);
+      await flush();
+      expect(instance.open()).toBe(false);
+    });
+  });
+
   describe('scroll dismiss', () => {
     beforeEach(() => {
       vi.useFakeTimers();
