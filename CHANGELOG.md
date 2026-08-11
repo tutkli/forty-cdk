@@ -5,10 +5,78 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.23.0] - 2026-08-11
+
+A release about what the library costs you at runtime and how much of it you have to look up. Every
+trigger-anchored overlay now inherits one positioning block, so `side` and `align` are scope
+defaults on all thirteen of them instead of three. The overlay machinery leaves the shared internal
+chunk for `forty-cdk/core-overlay`, which takes 41 kB off every route that anchors nothing; the
+published bundles drop their copy of the JSDoc; and a `Tab` inside a focus trap stops filtering the
+whole subtree to read two elements out of it. `LiveAnnouncer` and `injectPrefersReducedMotion`
+become importable. Four breaking changes, each of them a rename or a type: the declarative def layer
+takes the `Table` segment, a menu radio group rests at `null` instead of `''`, `openMenu` becomes
+`openOverlay` on the three primitives that contain no menu, and the positioning inputs read as
+computeds.
+
+### Added
+
+- **Anchored overlays** — `side` and `align` are scope defaults on every trigger-anchored root
+  ([#1726](https://github.com/tutkli/forty-cdk/issues/1726)). The ten shared floating-ui positioning
+  inputs were hand-rolled per root, so ten of the thirteen could not scope-default their placement
+  at all. Nine defaults interfaces gain the pair — `provideForSelectDefaults({ side: 'top', align: 'end' })`
+  and its Combobox, Menu, Dropdown menu, Context menu, Menubar, Date picker, Date range picker and
+  Time picker equivalents now resolve. A seed whose library fallback is derived is nullable, and
+  `null` is how you spell _derive it_: `ForComboboxDefaults.align` keeps the writing-direction
+  default (`'start'` LTR / `'end'` RTL) until you pin it, and `ForMenuDefaults.side` leaves
+  `[forMenu]` at `'bottom'` and `[forMenuSub]` on the writing direction. Both date pickers gain the
+  `arrowPadding` input the other anchored roots already had. `[menuPositioning]` still wins over
+  `[side]` / `[align]` / `[sideOffset]` / `[alignOffset]` on the menu roots, and
+  `fallbackAxisSideDirection` stays declared per menu root — no other anchored overlay exposes it.
+- **Accessibility helpers** — `LiveAnnouncer` and `injectPrefersReducedMotion` are importable
+  ([#1745](https://github.com/tutkli/forty-cdk/issues/1745)). Both shipped inside the internal
+  `forty-cdk/core` tier, which a consumer has no supported way to reach; each is now published from
+  the entry point that is its semantic home. `LiveAnnouncer` — polite / assertive announcements,
+  their coalescing and region lifetime, the modal exemption, and a no-op server path — comes from
+  `forty-cdk/visually-hidden`, beside the `ForVisuallyHidden` whose styles its two regions already
+  use. `injectPrefersReducedMotion` — a reactive, SSR-safe `Signal<boolean>` frozen `false` on the
+  server — comes from `forty-cdk/breakpoints`, beside `injectBreakpoints`. `injectMediaQuery` stays
+  internal on purpose: the generic invites a second breakpoint registry beside the one that already
+  ships, and publishing later is easy where unpublishing is not. Both are re-exports; no behaviour
+  changes.
 
 ### Changed
 
+- **Anchored overlays (breaking, types)** — the five positioning members are `Signal` computeds on
+  the roots that used to declare them ([#1726](https://github.com/tutkli/forty-cdk/issues/1726)).
+  Now that `side`, `align`, `sideOffset`, `alignOffset` and `collisionPadding` are inherited from a
+  shared block that folds the input together with its scope default, they are `Signal<T>` rather
+  than `InputSignal<T>` on the ten roots that hand-rolled them. Nothing moves on screen: a
+  per-root drift guard pins every effective placement to the value 0.22.0 produced.
+  **Migration:** template bindings and reads are unchanged — `[side]="'top'"` and `forSelect.side()`
+  both keep working. Only code that names the type is affected, such as a queried root whose `side`
+  you annotated as `InputSignal<FloatingSide>`.
+- **Menu (breaking)** — `[forMenuRadioGroup]`'s `[(value)]` is `string | null` and rests at `null`
+  ([#1725](https://github.com/tutkli/forty-cdk/issues/1725)). It was `model<string>('')`, so a
+  `[forMenuRadioItem] value=""` — ordinary markup for the _None_ / _Any_ option of a sort-order or
+  filter menu — matched the empty resting value and announced `aria-checked="true"` /
+  `data-state="checked"` with nothing selected. `null` is now the nothing-selected sentinel,
+  matching the four family members the convention already named (Tabs, Radio group, Menubar,
+  Navigation menu), and `''` goes back to being a value like any other — the guard is an explicit
+  `===`, so a genuine `''` keeps flowing. `ForMenuRadioGroupContext.value` widens with it;
+  `isSelected` and `select` are unchanged. **Migration:** bind a `signal<string | null>(…)`; no
+  deprecated alias ships.
+- **Select / Time picker / Combobox (breaking, renames)** — the overlay transition is `openOverlay` /
+  `closeOverlay`, not `openMenu` / `closeMenu`
+  ([#1769](https://github.com/tutkli/forty-cdk/issues/1769)). The old pair named a menu on three
+  primitives that contain none, on two public surfaces: `ForSelectOverlayFacade` (reached as
+  `forSelect.overlay`) with its Time picker twin, and `ForComboboxContext`, which publishes the pair
+  directly. `toggle` is unchanged and this is a rename and nothing else. The names are not `open` /
+  `close` because Combobox publishes its `open` model on that same context, and taking `open` on the
+  two primitives that can spell it would leave two names for one transition. **Migration:**
+  `forSelect.overlay.openMenu(…)` → `forSelect.overlay.openOverlay(…)`, and the same on the Time
+  picker facade and on `ForComboboxContext`. `ForMenuContext.openMenu` / `closeMenu` — Menu,
+  Dropdown menu, Context menu, Menu sub, and the Menubar's menus — keep their names, which are
+  correct there.
 - **Table (breaking, renames)** — the declarative def layer carries the `Table` segment like every
   other piece in the entry point ([#1728](https://github.com/tutkli/forty-cdk/issues/1728)).
   `forty-cdk/table` shipped two vocabularies one word apart: `ng-template[forHeaderCell]` beside
@@ -36,6 +104,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ForTableCellDefContext` — and so do the four alias inputs that exist only to type `let-row`:
   `[forDataCellRow]` → `[forTableCellDefRow]`, `[forDataCellUnless]` → `[forTableCellDefUnless]`,
   `[forRowCellRow]` → `[forTableRowCellDefRow]`, `[forRowCellWhen]` → `[forTableRowCellDefWhen]`.
+
+### Fixed
+
+- **Menubar** — a programmatic `toggle()` on a bar menu no longer leaves a stale close reason behind
+  ([#1768](https://github.com/tutkli/forty-cdk/issues/1768)). `MenubarMenuContext.toggle()` closed
+  without recording one, so a `'tab'` reason surviving from an earlier close made `[forMenuContent]`
+  skip its return focus. It records `'programmatic'` now, the way `MenuOverlay.toggle` always has.
+  Reachable only by injecting `FOR_MENU_CONTEXT` inside a menubar and calling `toggle()` yourself —
+  the bar's own triggers never took that path.
+
+### Performance
+
+- **Bundle** — the overlay and floating machinery leaves the shared internal chunk
+  ([#1723](https://github.com/tutkli/forty-cdk/issues/1723)). `forty-cdk/core` ships as a single
+  FESM and a FESM is the bundler's chunk-splitting unit, so a lazy route rendering nothing but a
+  `[forSwitch]` still carried the positioning engine, `@floating-ui/dom` included. That family now
+  lives in its own `forty-cdk/core-overlay` entry point, which only the overlay primitives import.
+  Measured on a seven-lazy-route production build: the chunk every route shares drops from
+  63.75 kB / 19.60 kB transfer to 22.49 kB / 7.47 kB, so a route that anchors nothing pays
+  **41.26 kB / 12.13 kB less (−62%)**, while a route that does anchor pays 1.16 kB more transfer for
+  the extra chunk boundary. Nothing you import changes: every `forty-cdk/<primitive>`,
+  `forty-cdk/shared` and `forty-cdk/internationalized-date` specifier exports exactly what it did,
+  and the blessed symbols that moved are still published from `forty-cdk/shared`.
+- **Focus trap** — `Tab` at a trap's edges resolves two elements instead of filtering the whole
+  subtree ([#1731](https://github.com/tutkli/forty-cdk/issues/1731)). The handler used to run the
+  focusability filter over every candidate in order to read the first and last of them, and each
+  candidate climbs the composed ancestor chain calling `getComputedStyle` at every level. It now
+  scans in from both ends and stops at the first that qualifies: on a 50-row surface of tabbable
+  controls, 2 `getComputedStyle` calls per keypress instead of 102. In a browser, on a dialog
+  holding a 1000-row form — 10k elements, 3000 of them in the Tab order — a wrapping press goes from
+  a median 17.1 ms to 4.7 ms. A surface whose candidates are rejected cheaply is unchanged, as
+  expected: a `[forTable]` in `grid` mode, where the roving `tabindex="-1"` settles it before any
+  style read, stays at ~4.3 ms.
+- **Published bundles** — the FESM bundles ship without the library's own JSDoc
+  ([#1733](https://github.com/tutkli/forty-cdk/issues/1733)). The documentation you read in your
+  editor comes from the emitted `.d.ts`, which are byte-identical to 0.22.0's; the copy inside the
+  JavaScript was weight in every install and every bundle a tree-shaker walks. `fesm2022/*.mjs`
+  drops 61.9% (2.80 MB → 1.74 MB, with `forty-cdk-core.mjs` alone going 533 kB → 263 kB) and the
+  built package 10.10 MB → 8.98 MB. `@__PURE__`-style annotations, legal notices and the
+  `sourceMappingURL` pointers are kept, and every comment is replaced by the newlines it spanned, so
+  each line keeps its number and the `.mjs.map` stay valid.
 
 ## [0.22.0] - 2026-08-09
 
@@ -2013,7 +2122,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/tutkli/forty-cdk/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/tutkli/forty-cdk/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/tutkli/forty-cdk/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/tutkli/forty-cdk/compare/v0.20.0...v0.21.0
