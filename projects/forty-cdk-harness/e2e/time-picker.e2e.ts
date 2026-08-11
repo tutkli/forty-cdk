@@ -60,6 +60,31 @@ test.describe('TimePicker', () => {
     await expectFocused(firstSlot);
   });
 
+  test('a real mouse hover takes data-highlighted without taking focus or the value', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'time-picker');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    const firstSlot = page.locator('[forTimePickerOption]').first();
+    await firstSlot.focus();
+    await expect(firstSlot).toHaveAttribute('data-highlighted', '');
+
+    const fifthSlot = page.locator('[forTimePickerOption]').nth(4);
+    await fifthSlot.hover();
+    await expect(fifthSlot).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+    await expectFocused(firstSlot);
+
+    await page.keyboard.press('ArrowDown');
+    await expect(page.locator('[forTimePickerOption]').nth(1)).toHaveAttribute(
+      'data-highlighted',
+      '',
+    );
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+  });
+
   test('Home moves focus to the first slot', async ({ page }) => {
     await gotoFixture(page, 'time-picker');
     await el(page, 'trigger').click();

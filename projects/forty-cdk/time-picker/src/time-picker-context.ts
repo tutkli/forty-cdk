@@ -1,6 +1,7 @@
 import { computed, inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type CollectionHandle,
   orphanContextError,
   unresolvedRootError,
@@ -120,11 +121,73 @@ export interface ForTimePickerContext<D = unknown> {
   markTouched(): void;
 }
 
+/**
+ * The time picker's pointer channel: the calls `[forTimePickerOption]` makes so
+ * the slot under the cursor takes the highlight, and so the keyboard takes it
+ * back when a slot is focused.
+ *
+ * Deliberately **not** part of {@link ForTimePickerContext} and never exported
+ * from `public-api.ts` — a consumer styles the pointed-at slot off
+ * `data-highlighted`, never by reporting a hover into the root.
+ */
+export interface TimePickerPieceContext {
+  /**
+   * Host element of the slot the pointer is over, `null` when the pointer is
+   * over none. Self-heals on read: a host that has left the registered set or
+   * become disabled is discounted, so the focused slot reclaims the highlight.
+   */
+  readonly pointerHighlightedOption: Signal<HTMLElement | null>;
+  /**
+   * Reported by `[forTimePickerOption]` on `pointermove` so the highlight
+   * follows the pointer. Never moves DOM focus and never selects; a move
+   * arriving inside the pointer-suppression window a programmatic scroll opened
+   * is ignored, or a scroll sliding a different slot under a stationary cursor
+   * would hand the highlight to whatever the user merely scrolled past.
+   *
+   * @param host The hovered slot's host element.
+   */
+  highlightFromPointer(host: HTMLElement): void;
+  /**
+   * Called by a slot when it takes DOM focus: drops any pointer highlight, so
+   * the keyboard channel owns the highlight again from the move that focused the
+   * slot.
+   */
+  notifyOptionFocus(): void;
+}
+
+/**
+ * The time picker's internal coordination surface: everything
+ * {@link ForTimePickerContext} publishes plus the {@link TimePickerPieceContext}
+ * calls.
+ *
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_TIME_PICKER_CONTEXT} at, so a consumer who injects that token gets
+ * the read surface while `[forTimePickerOption]` gets the pointer channel.
+ * `ForTimePicker` declares those members TS-`private`, which keeps them out of
+ * the emitted `.d.ts` while `useExisting` still satisfies this contract at
+ * runtime.
+ */
+export interface TimePickerContext<D = unknown>
+  extends ForTimePickerContext<D>, TimePickerPieceContext {}
+
+/**
+ * DI token for the time picker's coordination surface, provided by
+ * `[forTimePicker]`.
+ *
+ * Publicly typed as the read surface {@link ForTimePickerContext}, which is the
+ * whole of what the token promises a consumer. The pieces read the same token at
+ * an internal type that adds the pointer-highlight channel, so a wrapper
+ * re-providing it must alias it to the root:
+ * `{ provide: FOR_TIME_PICKER_CONTEXT, useExisting: MyTimePicker }`, where
+ * `MyTimePicker` extends `ForTimePicker`. A value that merely satisfies the
+ * declared type resolves too, and is rejected in dev mode by the first piece to
+ * reach the channel.
+ */
 export const FOR_TIME_PICKER_CONTEXT = new InjectionToken<ForTimePickerContext>(
   'FOR_TIME_PICKER_CONTEXT',
 );
 
-export function injectTimePickerContext<D = unknown>(piece: string): ForTimePickerContext<D> {
+export function injectTimePickerContext<D = unknown>(piece: string): TimePickerContext<D> {
   const ctx = inject(FOR_TIME_PICKER_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -134,7 +197,15 @@ export function injectTimePickerContext<D = unknown>(piece: string): ForTimePick
       token: 'FOR_TIME_PICKER_CONTEXT',
     });
   }
-  return ctx as unknown as ForTimePickerContext<D>;
+  const widened = ctx as unknown as TimePickerContext<D>;
+  assertRootContext({
+    entryPoint: 'time-picker',
+    token: 'FOR_TIME_PICKER_CONTEXT',
+    root: '[forTimePicker]',
+    piece,
+    probe: () => widened.highlightFromPointer,
+  });
+  return widened;
 }
 
 export function injectTimePickerTriggerContext<D = unknown>(

@@ -79,6 +79,33 @@ test.describe('Select', () => {
     await expect(el(page, 'content').locator('*:focus')).toHaveCount(0);
   });
 
+  test('a real mouse hover takes data-highlighted without taking focus or the value', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'select');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'opt-date').hover();
+    await expect(el(page, 'opt-date')).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+    await expect(el(page, 'opt-apple')).toBeFocused();
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'opt-cherry')).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+  });
+
+  test('a real mouse hover on a disabled option is ignored', async ({ page }) => {
+    await gotoFixture(page, 'select');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'opt-banana').hover();
+    await expect(el(page, 'opt-banana')).not.toHaveAttribute('data-highlighted', '');
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+  });
+
   // Modal (TouchUI) presentation mode (#365): `?modal=1` routes
   // [forSelectContent] through `_internal/modal-shell` (focus trap + inert
   // siblings + body-scroll-lock) instead of the anchored popover. Opens are

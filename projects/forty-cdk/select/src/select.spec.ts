@@ -3170,6 +3170,300 @@ describe('ForSelectIndicator', () => {
       }));
   });
 
+  describe('pointer highlight (issue #1784)', () => {
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open" [(value)]="value">
+          <button forSelectTrigger>T</button>
+          @if (open()) {
+            <div forSelectContent>
+              @for (option of options(); track option.value) {
+                <button
+                  forSelectOption
+                  [value]="option.value"
+                  [disabled]="option.disabled"
+                  [attr.data-test-id]="option.value"
+                >
+                  {{ option.label }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class MutableSelectHost {
+      readonly open = signal(true);
+      readonly value = signal<readonly string[]>([]);
+      readonly options = signal([
+        { value: 'apple', label: 'Apple', disabled: false },
+        { value: 'banana', label: 'Banana', disabled: false },
+        { value: 'cherry', label: 'Cherry', disabled: false },
+      ]);
+    }
+
+    @Component({
+      imports: BASE_IMPORTS,
+      template: `
+        <div forSelect [(open)]="open" [totalCount]="6" [visibleRange]="range">
+          <button forSelectTrigger>T</button>
+          @if (open()) {
+            <div forSelectContent data-test-id="v-content">
+              @for (label of labels; track label; let i = $index) {
+                <button
+                  forSelectOption
+                  [value]="label"
+                  [posInSet]="i"
+                  [attr.data-test-id]="'v-' + i"
+                >
+                  {{ label }}
+                </button>
+              }
+            </div>
+          }
+        </div>
+      `,
+    })
+    class VirtualPointerHost {
+      readonly open = signal(true);
+      readonly range: readonly [number, number] = [0, 6];
+      readonly labels = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot'];
+    }
+
+    const hover = (option: HTMLElement) =>
+      option.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+
+    const highlighted = (): string[] =>
+      Array.from(document.querySelectorAll<HTMLElement>('[role="option"][data-highlighted]')).map(
+        (option) => option.getAttribute('data-test-id') ?? '',
+      );
+    const advanceClock = (ms: number): void => {
+      const frozen = Date.now() + ms;
+      vi.spyOn(Date, 'now').mockImplementation(() => frozen);
+    };
+
+    it('hands data-highlighted to the hovered option, and to no other', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').focus();
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['apple']);
+
+      hover(getOption('date'));
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['date']);
+    });
+
+    it('moves neither DOM focus nor the selection', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').focus();
+
+      hover(getOption('date'));
+      await flush(r.fixture);
+
+      expect(activeTestId()).toBe('apple');
+      expect(r.instance.value()).toEqual([]);
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('selects nothing, not even under selectionFollowsFocus', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.selectionFollowsFocus.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').focus();
+      await flush(r.fixture);
+
+      hover(getOption('date'));
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual([]);
+      expect(highlighted()).toEqual(['date']);
+    });
+
+    it('leaves the range anchor alone, so Shift+Space still spans from the click', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.multiple.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+
+      getOption('apple').click();
+      await flush(r.fixture);
+      hover(getOption('date'));
+      await flush(r.fixture);
+
+      const banana = getOption('banana');
+      banana.focus();
+      pressKey(banana, ' ', { shiftKey: true });
+      await flush(r.fixture);
+
+      expect(r.instance.value()).toEqual(['apple', 'banana']);
+    });
+
+    it('hands the highlight back to the keyboard on the next arrow move', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const apple = getOption('apple');
+      apple.focus();
+      hover(getOption('date'));
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['date']);
+
+      pressKey(apple, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(activeTestId()).toBe('banana');
+      expect(highlighted()).toEqual(['banana']);
+    });
+
+    it('ignores a hover synthesized by the keyboard scroll under a stationary cursor', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const apple = getOption('apple');
+      apple.focus();
+
+      pressKey(apple, 'ArrowDown');
+      hover(getOption('date'));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['banana']);
+    });
+
+    it('ignores a hover synthesized by a typeahead match', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const apple = getOption('apple');
+      apple.focus();
+
+      pressKey(apple, 'c');
+      hover(getOption('date'));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['cherry']);
+    });
+
+    it('ignores a hover synthesized by the open-time scroll to the selected option', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.value.set(['date']);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      hover(getOption('apple'));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['date']);
+    });
+
+    it('takes the highlight once the suppression window has elapsed', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.value.set(['date']);
+      r.instance.open.set(true);
+      await flushPositioning(r.fixture);
+
+      advanceClock(1000);
+      hover(getOption('apple'));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['apple']);
+    });
+
+    it('ignores a hover on a disabled option', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.cherryDisabled.set(true);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').focus();
+      await flush(r.fixture);
+
+      hover(getOption('cherry'));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['apple']);
+    });
+
+    it('drops the pointer highlight when the hovered option becomes disabled', async () => {
+      const r = renderHost(MutableSelectHost);
+      await flush(r.fixture);
+      const apple = document.querySelector<HTMLElement>('[data-test-id="apple"]')!;
+      apple.focus();
+      hover(document.querySelector<HTMLElement>('[data-test-id="banana"]')!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['banana']);
+
+      r.instance.options.update((options) =>
+        options.map((option) =>
+          option.value === 'banana' ? { ...option, disabled: true } : option,
+        ),
+      );
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['apple']);
+    });
+
+    it('drops the pointer highlight when the hovered option unmounts', async () => {
+      const r = renderHost(MutableSelectHost);
+      await flush(r.fixture);
+      const apple = document.querySelector<HTMLElement>('[data-test-id="apple"]')!;
+      apple.focus();
+      hover(document.querySelector<HTMLElement>('[data-test-id="banana"]')!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['banana']);
+
+      r.instance.options.update((options) => options.filter((option) => option.value !== 'banana'));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['apple']);
+    });
+
+    it('moves aria-activedescendant on hover in the virtualized path', async () => {
+      const r = renderHost(VirtualPointerHost);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="v-content"]')!;
+      const target = document.querySelector<HTMLElement>('[data-test-id="v-4"]')!;
+
+      advanceClock(1000);
+      hover(target);
+      await flush(r.fixture);
+
+      expect(content.getAttribute('aria-activedescendant')).toBe(target.getAttribute('id'));
+      expect(highlighted()).toEqual(['v-4']);
+      expect(document.activeElement).toBe(content);
+    });
+
+    it('ignores a hover synthesized by the virtualized typeahead scroll', async () => {
+      const r = renderHost(VirtualPointerHost);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="v-content"]')!;
+
+      advanceClock(1000);
+      pressKey(content, 'd');
+      hover(document.querySelector<HTMLElement>('[data-test-id="v-5"]')!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['v-3']);
+    });
+
+    it('ignores a hover synthesized by the virtualized arrow scroll', async () => {
+      const r = renderHost(VirtualPointerHost);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="v-content"]')!;
+
+      advanceClock(1000);
+      pressKey(content, 'ArrowDown');
+      hover(document.querySelector<HTMLElement>('[data-test-id="v-5"]')!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['v-1']);
+    });
+  });
+
   describe('virtualized option windowing (Shape C)', () => {
     @Component({
       imports: BASE_IMPORTS,

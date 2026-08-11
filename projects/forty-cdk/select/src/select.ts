@@ -15,6 +15,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   accessibleTextContent,
+  createPointerSuppression,
   formatFortyMessage,
   injectHiddenInput,
   isRangeSelectShortcut,
@@ -383,7 +384,7 @@ export class ForSelect<T = string>
       }
     },
     onNavigateFocus: (target) => {
-      target.host.scrollIntoView?.({ block: 'nearest' });
+      this.#scrollActiveIntoView(target.host);
       if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
         this.#rangeEngine.selectSingle(target.value());
       }
@@ -426,18 +427,34 @@ export class ForSelect<T = string>
     this.#virtualized() ? this.#activeId() : null,
   );
 
+  readonly #pointerSuppression = createPointerSuppression();
+
+  readonly #pointerHost = signal<HTMLElement | null>(null);
+
+  private readonly pointerHighlightedOption = computed<HTMLElement | null>(() => {
+    const host = this.#pointerHost();
+    if (host === null) {
+      return null;
+    }
+    const handle = this.#controller.options().find((option) => option.host === host);
+    return handle && !handle.disabled() ? host : null;
+  });
+
   #navigator: SelectVirtualizedNavigator<T> | null = null;
   #requireNavigator(): SelectVirtualizedNavigator<T> {
-    return (this.#navigator ??= createSelectVirtualizedNavigator<T>({
-      items: this.#controller.options,
-      totalCount: this.totalCount,
-      visibleRange: this.visibleRange,
-      loop: this.loop,
-      getActiveId: () => this.#activeId(),
-      setActiveId: (id) => this.#activeId.set(id),
-      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-      dataVersion: this.dataVersion,
-    }));
+    return (this.#navigator ??= createSelectVirtualizedNavigator<T>(
+      {
+        items: this.#controller.options,
+        totalCount: this.totalCount,
+        visibleRange: this.visibleRange,
+        loop: this.loop,
+        getActiveId: () => this.#activeId(),
+        setActiveId: (id) => this.#activeId.set(id),
+        emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+        dataVersion: this.dataVersion,
+      },
+      (host) => this.#scrollActiveIntoView(host),
+    ));
   }
 
   /**
@@ -624,7 +641,10 @@ export class ForSelect<T = string>
       getText: (o) => accessibleTextContent(o.host),
       isDisabled: (o) => o.disabled(),
     });
-    match?.host.focus();
+    if (match) {
+      this.#pointerSuppression.suppress();
+      match.host.focus();
+    }
   }
 
   private handleClosedTypeahead(event: KeyboardEvent): boolean {
@@ -677,7 +697,36 @@ export class ForSelect<T = string>
     if (this.totalCount() !== undefined) {
       return;
     }
-    this.selectedOptionEl()?.scrollIntoView?.({ block: 'nearest' });
+    const selected = this.selectedOptionEl();
+    if (selected) {
+      this.#scrollActiveIntoView(selected);
+    }
+  }
+
+  private highlightFromPointer(host: HTMLElement, id: string): void {
+    if (this.#pointerSuppression.isSuppressed()) {
+      return;
+    }
+    if (this.#virtualized()) {
+      this.#activeId.set(id);
+      return;
+    }
+    this.#pointerHost.set(host);
+  }
+
+  private notifyOptionFocus(): void {
+    this.#pointerHost.set(null);
+  }
+
+  /**
+   * Scroll an option into view with the pointer-suppression window open, so the
+   * synthetic `pointermove` the scroll fires when a different option slides under
+   * a stationary cursor cannot hand the highlight to it.
+   */
+  #scrollActiveIntoView(host: HTMLElement): void {
+    this.#pointerSuppression.suppress();
+    this.#pointerHost.set(null);
+    host.scrollIntoView?.({ block: 'nearest' });
   }
 
   private commitOnTab(value: T): void {
@@ -850,7 +899,7 @@ export class ForSelect<T = string>
     if (match) {
       this.#assertSelectionFollowsFocusSupported();
       this.#activeId.set(match.id());
-      match.host.scrollIntoView?.({ block: 'nearest' });
+      this.#scrollActiveIntoView(match.host);
     }
   }
 }

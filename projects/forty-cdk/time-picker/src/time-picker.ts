@@ -7,11 +7,13 @@ import {
   model,
   numberAttribute,
   output,
+  signal,
 } from '@angular/core';
 import type { FormValueControl } from '@angular/forms/signals';
 
 import {
   assertTimeCapable,
+  createPointerSuppression,
   formatFortyMessage,
   injectDateAdapter,
   type TimeCapableDateAdapter,
@@ -209,6 +211,10 @@ export class ForTimePicker<D>
    */
   readonly autoFocusOnClose = output<VetoableEvent>();
 
+  readonly #pointerSuppression = createPointerSuppression();
+
+  readonly #pointerHost = signal<HTMLElement | null>(null);
+
   /**
    * Shared overlay-listbox state machine: option collection, trigger / anchor /
    * content registries + ids, DOM-focus navigation, the open / close machine,
@@ -244,6 +250,7 @@ export class ForTimePicker<D>
     escapeReason: 'escape',
     programmaticReason: 'programmatic',
     markTouched: () => this.markTouched(),
+    onNavigateFocus: () => this.#pointerSuppression.suppress(),
   });
 
   /**
@@ -256,6 +263,15 @@ export class ForTimePicker<D>
    * registered, otherwise floating-ui falls back to the trigger.
    */
   readonly overlay: ForTimePickerOverlayContext = this.#controller;
+
+  private readonly pointerHighlightedOption = computed<HTMLElement | null>(() => {
+    const host = this.#pointerHost();
+    if (host === null) {
+      return null;
+    }
+    const handle = this.#controller.options().find((option) => option.host === host);
+    return handle && !handle.disabled() ? host : null;
+  });
 
   readonly #sentinel = computed(() => timeSentinel(this.adapter));
 
@@ -382,10 +398,22 @@ export class ForTimePicker<D>
       return this.#sameTimeOfDay(v, current);
     });
     if (opt) {
+      this.#pointerSuppression.suppress();
       opt.host.focus();
       return true;
     }
     return false;
+  }
+
+  private highlightFromPointer(host: HTMLElement): void {
+    if (this.#pointerSuppression.isSuppressed()) {
+      return;
+    }
+    this.#pointerHost.set(host);
+  }
+
+  private notifyOptionFocus(): void {
+    this.#pointerHost.set(null);
   }
 
   commitOnTab(value: D): void {

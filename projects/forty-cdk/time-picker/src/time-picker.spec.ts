@@ -758,6 +758,141 @@ describe('ForTimePicker', () => {
     });
   });
 
+  describe('pointer highlight (issue #1784)', () => {
+    const hover = (slot: HTMLElement) =>
+      slot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+
+    const highlighted = (): HTMLElement[] =>
+      Array.from(getSlots()).filter((slot) => slot.hasAttribute('data-highlighted'));
+    const advanceClock = (ms: number): void => {
+      const frozen = Date.now() + ms;
+      vi.spyOn(Date, 'now').mockImplementation(() => frozen);
+    };
+
+    async function openHourly() {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      return r;
+    }
+
+    it('hands data-highlighted to the hovered slot, and to no other', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      slots[0]!.focus();
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[0]]);
+
+      hover(slots[3]!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[3]]);
+    });
+
+    it('moves neither DOM focus nor the value', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      slots[0]!.focus();
+      await flush(r.fixture);
+
+      hover(slots[3]!);
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(slots[0]);
+      expect(r.instance.value()).toBeNull();
+      expect(r.instance.open()).toBe(true);
+    });
+
+    it('hands the highlight back to the keyboard on the next arrow move', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      slots[0]!.focus();
+      hover(slots[3]!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[3]]);
+
+      pressKey(slots[0]!, 'ArrowDown');
+      await flush(r.fixture);
+
+      expect(document.activeElement).toBe(slots[1]);
+      expect(highlighted()).toEqual([slots[1]]);
+    });
+
+    it('ignores a hover synthesized by the scroll a keyboard move performs', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      slots[0]!.focus();
+      hover(slots[3]!);
+      await flush(r.fixture);
+
+      pressKey(slots[0]!, 'ArrowDown');
+      hover(slots[5]!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[1]]);
+    });
+
+    it('ignores a hover synthesized by the open-time scroll to the selected slot', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.value.set(new Date(2000, 0, 1, 9, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const slots = Array.from(getSlots());
+
+      hover(slots[3]!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[9]]);
+    });
+
+    it('takes the highlight once the suppression window has elapsed', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.value.set(new Date(2000, 0, 1, 9, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const slots = Array.from(getSlots());
+
+      advanceClock(1000);
+      hover(slots[3]!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[3]]);
+    });
+
+    it('ignores a hover on a disabled slot', async () => {
+      const r = renderHost(TimePickerHost);
+      r.instance.step.set(60);
+      r.instance.minTime.set(new Date(2000, 0, 1, 9, 0, 0));
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      const slots = Array.from(getSlots());
+      slots[9]!.focus();
+      await flush(r.fixture);
+
+      hover(slots[0]!);
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[9]]);
+    });
+
+    it('drops the pointer highlight when the hovered slot becomes disabled', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      slots[9]!.focus();
+      hover(slots[3]!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[3]]);
+
+      r.instance.minTime.set(new Date(2000, 0, 1, 9, 0, 0));
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[9]]);
+    });
+  });
+
   describe('value display', () => {
     it('shows the placeholder when no value is selected', async () => {
       const r = renderHost(TimePickerHost);

@@ -25,12 +25,15 @@ export type SelectVirtualizedNavigator<T> = VirtualizedNavigator<
  * Wire the shared `forty-cdk/core` navigation engine to the select option
  * handle: the handle carries its absolute `posInSet` and its raw `value`, and an
  * option whose `[value]` binding is not written yet is skipped this fold and
- * folded in on the binding's re-run.
+ * folded in on the binding's re-run. Scroll-into-view is routed through
+ * `scrollActiveIntoView` so the root's pointer-suppression window opens first — a
+ * synthetic `pointermove` from the scroll must not hijack the highlight.
  *
  * Internal — not re-exported from `select/index.ts` or `public-api.ts`.
  */
 export function createSelectVirtualizedNavigator<T>(
   deps: VirtualizedNavigatorDeps<ForSelectOptionHandle<T>>,
+  scrollActiveIntoView: (host: HTMLElement) => void,
 ): SelectVirtualizedNavigator<T> {
   return new VirtualizedNavigator(deps, {
     posOf: (o) => o.posInSet(),
@@ -42,5 +45,6 @@ export function createSelectVirtualizedNavigator<T>(
       const value = o.value();
       return isUnset(value) ? null : { id, value, disabled: o.disabled() };
     },
+    scrollIntoView: (host) => scrollActiveIntoView(host),
   });
 }
