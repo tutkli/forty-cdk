@@ -34,7 +34,7 @@ pnpm exec ng test forty-cdk --filter "opens on Enter"
 
 To consume the built library locally, use the path alias `forty-cdk` → `./dist/forty-cdk` defined in the root `tsconfig.json`.
 
-The Vitest builder / setup-file invariants and the nightly scheduler-hostile shuffle profile are documented in `.claude/rules/testing.md`; the full ESLint enforcement detail (banned imports/syntax/selectors, typescript-eslint hardening, Prettier) is in `.claude/rules/conventions.md`.
+The Vitest builder / setup-file invariants, the nightly scheduler-hostile shuffle profile, and the posture on the three numbers CI does and does not gate — the FESM size budget (`pnpm check:fesm-size`, tenth `postbuild` gate), the coverage figure (`pnpm test:coverage`, deliberately un-thresholded) and performance evidence (never a job) — are documented in `.claude/rules/testing.md`; the full ESLint enforcement detail (banned imports/syntax/selectors, typescript-eslint hardening, Prettier) is in `.claude/rules/conventions.md`.
 
 ## Architecture
 
