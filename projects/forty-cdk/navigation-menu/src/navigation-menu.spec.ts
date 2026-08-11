@@ -360,7 +360,7 @@ describe('ForNavigationMenu', () => {
       vi.useRealTimers();
     });
 
-    it('opens after delayDuration on pointerenter', async () => {
+    it('opens after openDelay on pointerenter', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       await flush();
       const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
@@ -548,7 +548,7 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBe('solutions');
     });
 
-    it('requires the full delayDuration again once the skip-delay window expires', async () => {
+    it('requires the full openDelay again once the skip-delay window expires', async () => {
       const { fixture, queryAll, flush } = renderHost(NavMenuHost);
       await flush();
       const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');

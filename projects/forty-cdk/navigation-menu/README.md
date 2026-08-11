@@ -185,7 +185,7 @@ Dismissal is symmetric in both placements. Escape, outside pointerdown **and** t
 | `loop`              | `input<boolean>`                    | Whether arrow nav wraps.<br>**Default:** `true`                                                                                                                  |
 | `disabled`          | `input<boolean>`                    | Disables the whole menu.<br>**Default:** —                                                                                                                       |
 | `ariaLabel`         | `input<string \| null>`             | Reactive `aria-label` for the `<nav>`.<br>**Default:** `null` (and empty string) emits no attribute; prefer native `aria-labelledby` when a visible label exists |
-| `delayDuration`     | `input<number>`                     | ms before hover/focus opens.<br>**Default:** `200`                                                                                                               |
+| `openDelay`         | `input<number>`                     | ms before hover/focus opens.<br>**Default:** `200`                                                                                                               |
 | `closeDelay`        | `input<number>`                     | ms before pointer-leave closes.<br>**Default:** `150`                                                                                                            |
 | `skipDelayDuration` | `input<number>`                     | ms after a peer closes during which the next open is instant.<br>**Default:** `300`                                                                              |
 
