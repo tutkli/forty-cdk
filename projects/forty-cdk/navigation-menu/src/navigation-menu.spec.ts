@@ -8,6 +8,7 @@ import {
 } from '../../src/test-utils/contract';
 import { ForNavigationMenu } from './navigation-menu';
 import { ForNavigationMenuContent } from './navigation-menu-content';
+import { provideForNavigationMenuDefaults } from './navigation-menu-defaults';
 import { ForNavigationMenuItem } from './navigation-menu-item';
 import { ForNavigationMenuLink } from './navigation-menu-link';
 import { ForNavigationMenuList } from './navigation-menu-list';
@@ -605,6 +606,297 @@ describe('ForNavigationMenu', () => {
       expect(fixture.componentInstance.open()).toBeNull();
 
       vi.advanceTimersByTime(1);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+    });
+  });
+
+  describe('provideForNavigationMenuDefaults', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      providers: [provideForNavigationMenuDefaults({ openDelay: 500 })],
+      template: `
+        <nav forNavigationMenu [(value)]="open">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+              @if (open() === 'products') {
+                <div forNavigationMenuContent>products panel</div>
+              }
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class ScopedOpenDelayHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      providers: [provideForNavigationMenuDefaults({ openDelay: 500 })],
+      template: `
+        <nav forNavigationMenu [(value)]="open" [openDelay]="0">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+              @if (open() === 'products') {
+                <div forNavigationMenuContent>products panel</div>
+              }
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class BoundOpenDelayHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      providers: [provideForNavigationMenuDefaults({ closeDelay: 500 })],
+      template: `
+        <nav forNavigationMenu [(value)]="open">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+              @if (open() === 'products') {
+                <div forNavigationMenuContent>products panel</div>
+              }
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class ScopedCloseDelayHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      providers: [provideForNavigationMenuDefaults({ closeDelay: 500 })],
+      template: `
+        <nav forNavigationMenu [(value)]="open" [closeDelay]="0">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+              @if (open() === 'products') {
+                <div forNavigationMenuContent>products panel</div>
+              }
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class BoundCloseDelayHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      providers: [provideForNavigationMenuDefaults({ skipDelayDuration: 1000 })],
+      template: `
+        <nav forNavigationMenu [(value)]="open">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+              @if (open() === 'products') {
+                <div forNavigationMenuContent>products panel</div>
+              }
+            </li>
+            <li forNavigationMenuItem value="solutions">
+              <button forNavigationMenuTrigger>Solutions</button>
+              @if (open() === 'solutions') {
+                <div forNavigationMenuContent>solutions panel</div>
+              }
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class ScopedSkipDelayHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    @Component({
+      imports: [
+        ForNavigationMenu,
+        ForNavigationMenuList,
+        ForNavigationMenuItem,
+        ForNavigationMenuTrigger,
+        ForNavigationMenuContent,
+      ],
+      providers: [provideForNavigationMenuDefaults({ skipDelayDuration: 1000 })],
+      template: `
+        <nav forNavigationMenu [(value)]="open" [skipDelayDuration]="0">
+          <ul forNavigationMenuList>
+            <li forNavigationMenuItem value="products">
+              <button forNavigationMenuTrigger>Products</button>
+              @if (open() === 'products') {
+                <div forNavigationMenuContent>products panel</div>
+              }
+            </li>
+            <li forNavigationMenuItem value="solutions">
+              <button forNavigationMenuTrigger>Solutions</button>
+              @if (open() === 'solutions') {
+                <div forNavigationMenuContent>solutions panel</div>
+              }
+            </li>
+          </ul>
+        </nav>
+      `,
+    })
+    class BoundSkipDelayHost {
+      readonly open = signal<string | null>(null);
+    }
+
+    it('seeds openDelay from the scope when the input is unset', async () => {
+      const { fixture, queryAll, flush } = renderHost(ScopedOpenDelayHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.dispatchEvent(pointer('pointerenter'));
+      await flush();
+
+      vi.advanceTimersByTime(499);
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+      vi.advanceTimersByTime(1);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('lets a bound [openDelay] beat the scope value', async () => {
+      const { fixture, queryAll, flush } = renderHost(BoundOpenDelayHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.dispatchEvent(pointer('pointerenter'));
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('seeds closeDelay from the scope when the input is unset', async () => {
+      const { fixture, queryAll, flush } = renderHost(ScopedCloseDelayHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      trigger.dispatchEvent(pointer('pointerleave'));
+      await flush();
+
+      vi.advanceTimersByTime(499);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+      vi.advanceTimersByTime(1);
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+    });
+
+    it('lets a bound [closeDelay] beat the scope value', async () => {
+      const { fixture, queryAll, flush } = renderHost(BoundCloseDelayHost);
+      await flush();
+      const trigger = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]')[0]!;
+
+      trigger.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+
+      trigger.dispatchEvent(pointer('pointerleave'));
+      await flush();
+
+      expect(fixture.componentInstance.open()).toBeNull();
+    });
+
+    it('seeds skipDelayDuration from the scope when the input is unset', async () => {
+      const { fixture, queryAll, flush } = renderHost(ScopedSkipDelayHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      await flush();
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      vi.advanceTimersByTime(999);
+      await flush();
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('solutions');
+
+      triggers[1]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+      vi.advanceTimersByTime(1000);
+      await flush();
+
+      triggers[0]!.dispatchEvent(pointer('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+      vi.advanceTimersByTime(200);
+      await flush();
+      expect(fixture.componentInstance.open()).toBe('products');
+    });
+
+    it('lets a bound [skipDelayDuration] beat the scope value', async () => {
+      const { fixture, queryAll, flush } = renderHost(BoundSkipDelayHost);
+      await flush();
+      const triggers = queryAll<HTMLButtonElement>('[forNavigationMenuTrigger]');
+
+      triggers[0]!.click();
+      await flush();
+      triggers[0]!.click();
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+
+      vi.advanceTimersByTime(0);
+      await flush();
+      triggers[1]!.dispatchEvent(pointer('pointerenter'));
+      await flush();
+      expect(fixture.componentInstance.open()).toBeNull();
+      vi.advanceTimersByTime(200);
       await flush();
       expect(fixture.componentInstance.open()).toBe('solutions');
     });
