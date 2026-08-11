@@ -1096,51 +1096,7 @@ describe('ForHoverCard', () => {
       expect(content.dataset['align']).toBe('end');
     });
 
-    it('resolves sideOffset and collisionPadding from the scope when the inputs are unset', async () => {
-      @Component({
-        imports: [ForHoverCard, ForHoverCardTrigger],
-        providers: [provideForHoverCardDefaults({ sideOffset: 12, collisionPadding: 16 })],
-        template: `
-          <span forHoverCard>
-            <a forHoverCardTrigger href="/x">T</a>
-          </span>
-        `,
-      })
-      class Host {}
-
-      const r = renderHost(Host);
-      await r.flush();
-
-      const card = r.fixture.debugElement
-        .query(By.directive(ForHoverCard))
-        .injector.get(ForHoverCard);
-      expect(card.sideOffset()).toBe(12);
-      expect(card.collisionPadding()).toBe(16);
-    });
-
-    it('lets instance-level sideOffset / collisionPadding win over the scope defaults', async () => {
-      @Component({
-        imports: [ForHoverCard, ForHoverCardTrigger],
-        providers: [provideForHoverCardDefaults({ sideOffset: 12, collisionPadding: 16 })],
-        template: `
-          <span forHoverCard [sideOffset]="20" [collisionPadding]="24">
-            <a forHoverCardTrigger href="/x">T</a>
-          </span>
-        `,
-      })
-      class Host {}
-
-      const r = renderHost(Host);
-      await r.flush();
-
-      const card = r.fixture.debugElement
-        .query(By.directive(ForHoverCard))
-        .injector.get(ForHoverCard);
-      expect(card.sideOffset()).toBe(20);
-      expect(card.collisionPadding()).toBe(24);
-    });
-
-    it('keeps the library fallbacks (top / center / 8 / 8) when nothing is configured', async () => {
+    it('paints the library fallback placement on the surface', async () => {
       @Component({
         imports: [ForHoverCard, ForHoverCardTrigger, ForHoverCardContent],
         template: `
@@ -1160,16 +1116,9 @@ describe('ForHoverCard', () => {
       r.instance.open.set(true);
       await flushPositioning(r.fixture);
 
-      const card = r.fixture.debugElement
-        .query(By.directive(ForHoverCard))
-        .injector.get(ForHoverCard);
-      expect(card.side()).toBe('top');
-      expect(card.align()).toBe('center');
-      expect(card.sideOffset()).toBe(8);
-      expect(card.collisionPadding()).toBe(8);
-
       const content = document.querySelector<HTMLElement>('[forHoverCardContent]')!;
       expect(content.dataset['side']).toBe('top');
+      expect(content.dataset['placement']).toBe('top');
     });
   });
 

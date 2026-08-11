@@ -3,7 +3,8 @@
  * 5+ primitives — form-control flags, roving tabindex, dismissible
  * layer, the anchored-overlay trigger ARIA trio, the `data-state`
  * styling vocabulary, consumer-set static attribute adoption, the
- * single-value selection / open-item model shape.
+ * single-value selection / open-item model shape, the anchored-overlay
+ * positioning-input family, per-family defaults-key parity.
  *
  * Each contract owns the assertions that are identical across every
  * primitive in its family. Migration is incremental: when a primitive's
@@ -55,6 +56,26 @@ export {
   type SingleValueModelContractSetup,
   type SingleValueModelContractOptions,
 } from './single-value-model-contract';
+
+export {
+  assertAnchoredPositioningContract,
+  ANCHORED_POSITIONING_BOUND_PROBE,
+  ANCHORED_POSITIONING_NON_SEED_DEFAULTS,
+  ANCHORED_POSITIONING_SCOPE_PROBE,
+  type AnchoredAlign,
+  type AnchoredSide,
+  type AnchoredSticky,
+  type AnchoredPositioningReadout,
+  type AnchoredPositioningSeeds,
+  type AnchoredPositioningContractSetup,
+  type AnchoredPositioningContractOptions,
+} from './anchored-positioning-contract';
+
+export {
+  assertDefaultsKeyParity,
+  type DefaultsKeyFamily,
+  type DefaultsKeyParityContractSetup,
+} from './defaults-key-parity-contract';
 
 export {
   assertStaticAdoptionContract,
