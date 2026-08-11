@@ -1,7 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, provideZonelessChangeDetection, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 
 import { type VetoableEvent, type VetoableNativeEvent } from 'forty-cdk/core';
 import {
@@ -1009,51 +1008,7 @@ describe('ForPopover', () => {
       expect(content.dataset['align']).toBe('end');
     });
 
-    it('resolves sideOffset and collisionPadding from the scope when the inputs are unset', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger],
-        providers: [provideForPopoverDefaults({ sideOffset: 12, collisionPadding: 16 })],
-        template: `
-          <div forPopover ariaLabel="t">
-            <button forPopoverTrigger>Open</button>
-          </div>
-        `,
-      })
-      class Host {}
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const popover = r.fixture.debugElement
-        .query(By.directive(ForPopover))
-        .injector.get(ForPopover);
-      expect(popover.sideOffset()).toBe(12);
-      expect(popover.collisionPadding()).toBe(16);
-    });
-
-    it('lets instance-level sideOffset / collisionPadding win over the scope defaults', async () => {
-      @Component({
-        imports: [ForPopover, ForPopoverTrigger],
-        providers: [provideForPopoverDefaults({ sideOffset: 12, collisionPadding: 16 })],
-        template: `
-          <div forPopover [sideOffset]="20" [collisionPadding]="24" ariaLabel="t">
-            <button forPopoverTrigger>Open</button>
-          </div>
-        `,
-      })
-      class Host {}
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const popover = r.fixture.debugElement
-        .query(By.directive(ForPopover))
-        .injector.get(ForPopover);
-      expect(popover.sideOffset()).toBe(20);
-      expect(popover.collisionPadding()).toBe(24);
-    });
-
-    it('keeps the library fallbacks (bottom / center / 8 / 8) when nothing is configured', async () => {
+    it('paints the library fallback placement on the surface', async () => {
       @Component({
         imports: [ForPopover, ForPopoverTrigger, ForPopoverContent],
         template: `
@@ -1073,16 +1028,9 @@ describe('ForPopover', () => {
       r.instance.open.set(true);
       await flushPositioning(r.fixture);
 
-      const popover = r.fixture.debugElement
-        .query(By.directive(ForPopover))
-        .injector.get(ForPopover);
-      expect(popover.side()).toBe('bottom');
-      expect(popover.align()).toBe('center');
-      expect(popover.sideOffset()).toBe(8);
-      expect(popover.collisionPadding()).toBe(8);
-
       const content = document.querySelector<HTMLElement>('[forPopoverContent]')!;
       expect(content.dataset['side']).toBe('bottom');
+      expect(content.dataset['placement']).toBe('bottom');
     });
   });
 

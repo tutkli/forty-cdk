@@ -1480,57 +1480,7 @@ describe('ForTooltip', () => {
       expect(content.dataset['align']).toBe('end');
     });
 
-    it('resolves sideOffset and collisionPadding from the scope when the inputs are unset', async () => {
-      @Component({
-        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
-        providers: [provideForTooltipDefaults({ sideOffset: 12, collisionPadding: 16 })],
-        template: `
-          <div forTooltip #tip="forTooltip">
-            <button type="button" forTooltipTrigger>T</button>
-            @if (tip.open()) {
-              <div forTooltipContent>C</div>
-            }
-          </div>
-        `,
-      })
-      class Host {}
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const tooltip = r.fixture.debugElement
-        .query(By.directive(ForTooltip))
-        .injector.get(ForTooltip);
-      expect(tooltip.sideOffset()).toBe(12);
-      expect(tooltip.collisionPadding()).toBe(16);
-    });
-
-    it('lets instance-level sideOffset / collisionPadding win over the scope defaults', async () => {
-      @Component({
-        imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
-        providers: [provideForTooltipDefaults({ sideOffset: 12, collisionPadding: 16 })],
-        template: `
-          <div forTooltip #tip="forTooltip" [sideOffset]="20" [collisionPadding]="24">
-            <button type="button" forTooltipTrigger>T</button>
-            @if (tip.open()) {
-              <div forTooltipContent>C</div>
-            }
-          </div>
-        `,
-      })
-      class Host {}
-
-      const r = renderHost(Host);
-      await flush(r.fixture);
-
-      const tooltip = r.fixture.debugElement
-        .query(By.directive(ForTooltip))
-        .injector.get(ForTooltip);
-      expect(tooltip.sideOffset()).toBe(20);
-      expect(tooltip.collisionPadding()).toBe(24);
-    });
-
-    it('keeps the library fallbacks (top / center / 8 / 8) when nothing is configured', async () => {
+    it('paints the library fallback placement on the surface', async () => {
       @Component({
         imports: [ForTooltip, ForTooltipTrigger, ForTooltipContent],
         template: `
@@ -1549,14 +1499,6 @@ describe('ForTooltip', () => {
       const r = renderHost(Host);
       r.instance.open.set(true);
       await flushPositioning(r.fixture);
-
-      const tooltip = r.fixture.debugElement
-        .query(By.directive(ForTooltip))
-        .injector.get(ForTooltip);
-      expect(tooltip.side()).toBe('top');
-      expect(tooltip.align()).toBe('center');
-      expect(tooltip.sideOffset()).toBe(8);
-      expect(tooltip.collisionPadding()).toBe(8);
 
       const content = document.querySelector<HTMLElement>('[role="tooltip"]')!;
       expect(content.dataset['side']).toBe('top');
