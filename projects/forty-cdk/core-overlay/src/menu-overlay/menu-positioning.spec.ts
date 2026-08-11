@@ -60,7 +60,7 @@ class MenubarTriggerPositioningHost {}
  * viewport-degradation lever, and its default lives on each menu primitive's own
  * `ForXDefaults` beside the four shared seeds.
  *
- * The ten shared inputs are guarded once for all thirteen roots in
+ * The nine shared inputs are guarded once for all thirteen roots in
  * [`floating/anchored-positioning-inputs.spec.ts`](../floating/anchored-positioning-inputs.spec.ts);
  * this suite deliberately does not restate them.
  */
@@ -185,7 +185,6 @@ describe('menubar menu context positioning fallback drift guard', () => {
 
     expect(ctx.alignOffset()).toBe(ANCHORED_POSITIONING_DEFAULTS.alignOffset);
     expect(ctx.avoidCollisions()).toBe(ANCHORED_POSITIONING_DEFAULTS.avoidCollisions);
-    expect(ctx.arrowPadding()).toBe(ANCHORED_POSITIONING_DEFAULTS.arrowPadding);
     expect(ctx.sticky()).toBe(ANCHORED_POSITIONING_DEFAULTS.sticky);
     expect(ctx.hideWhenDetached()).toBe(ANCHORED_POSITIONING_DEFAULTS.hideWhenDetached);
     expect(ctx.clipUntilPositioned()).toBe(ANCHORED_POSITIONING_DEFAULTS.clipUntilPositioned);

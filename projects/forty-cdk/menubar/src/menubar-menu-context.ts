@@ -140,9 +140,6 @@ export class MenubarMenuContext implements ForMenuContext {
   readonly collisionPadding = computed(
     () => this.#host.activeTrigger()?.collisionPadding() ?? this.#positioning.collisionPadding,
   );
-  readonly arrowPadding = computed(
-    () => this.#host.activeTrigger()?.arrowPadding() ?? ANCHORED_POSITIONING_DEFAULTS.arrowPadding,
-  );
   readonly sticky = computed(
     () => this.#host.activeTrigger()?.sticky() ?? ANCHORED_POSITIONING_DEFAULTS.sticky,
   );

@@ -5,6 +5,7 @@ import {
   inject,
   input,
   model,
+  numberAttribute,
   output,
   signal,
 } from '@angular/core';
@@ -72,6 +73,18 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
    * via `[(open)]` — observe state changes without binding back.
    */
   readonly open = model<boolean>(false);
+
+  /**
+   * Padding (px) keeping `[forPopoverArrow]` that far from the edges of the
+   * content. Only consulted when an arrow is registered, since floating-ui
+   * installs the `arrow` middleware only then — which is why the input is
+   * declared here rather than on the shared positioning base. The default is
+   * read from `provideForPopoverDefaults` for the surrounding scope, since arrow
+   * geometry is a design-system-wide decision rather than a per-popover one.
+   */
+  readonly arrowPadding = input(this.positioningDefaults.arrowPadding, {
+    transform: numberAttribute,
+  });
 
   /**
    * When true, trigger interaction is ignored and any open popover stays

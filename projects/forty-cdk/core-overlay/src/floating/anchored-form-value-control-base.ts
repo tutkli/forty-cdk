@@ -128,11 +128,6 @@ export abstract class AnchoredFormValueControlBase extends FormUiControlBase {
     () => this._collisionPaddingInput() ?? this.positioningDefaults.collisionPadding,
   );
 
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(ANCHORED_POSITIONING_DEFAULTS.arrowPadding, {
-    transform: numberAttribute,
-  });
-
   /**
    * Stickiness behaviour for `shift`. `'partial'` (default) lets the overlay
    * shift to stay visible. `'always'` keeps the requested placement even

@@ -31,7 +31,6 @@ export const FOR_COMBOBOX_HOST_DIRECTIVE_INPUTS = [
   'align',
   'alignOffset',
   'ariaLabel',
-  'arrowPadding',
   'autoHighlight',
   'autocompleteMode',
   'avoidCollisions',

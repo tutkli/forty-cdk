@@ -113,6 +113,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 | `sideOffset`         | `input<number>`                                                     | Gap (px) between trigger and content along the main axis. Falls back to `provideForPopoverDefaults`.<br>**Default:** `8`                  |
 | `alignOffset`        | `input<number>`                                                     | Gap (px) along the cross axis (parallel to `side`).<br>**Default:** `0`                                                                   |
 | `collisionPadding`   | `input<number>`                                                     | Padding (px) for the `flip` / `shift` / `size` collision middlewares. Falls back to `provideForPopoverDefaults`.<br>**Default:** `8`      |
+| `arrowPadding`       | `input<number>`                                                     | Padding (px) keeping `[forPopoverArrow]` clear of the content edges. Falls back to `provideForPopoverDefaults`.<br>**Default:** `0`       |
 | `disabled`           | `input<boolean>`                                                    | When `true`, trigger does not toggle.<br>**Default:** `false`                                                                             |
 | `dismissible`        | `input<boolean>`                                                    | When `false`, Escape / outside-pointer / outside-focus do not close.<br>**Default:** `true`                                               |
 | `returnFocus`        | `input<boolean>`                                                    | Focus returns to the trigger on close.<br>**Default:** `true`                                                                             |
@@ -191,6 +192,7 @@ The popover opens / closes alongside the input but never steals focus from it â€
 | `align`            | `'center'`       | Alignment along `side` for popovers that don't set `align` themselves.       |
 | `sideOffset`       | `8`              | Main-axis gap (px) for popovers that don't set `sideOffset` themselves.      |
 | `collisionPadding` | `8`              | Collision-middleware padding (px) for popovers that don't set it themselves. |
+| `arrowPadding`     | `0`              | Arrow padding (px) for popovers that don't set it themselves.                |
 
 Per-instance inputs always win over the scope defaults.
 

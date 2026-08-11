@@ -38,7 +38,6 @@ export interface ForMenubarTriggerHandle extends CollectionHandle {
   readonly avoidCollisions: Signal<boolean>;
   readonly fallbackAxisSideDirection: Signal<FloatingFallbackAxisSideDirection>;
   readonly collisionPadding: Signal<number>;
-  readonly arrowPadding: Signal<number>;
   readonly sticky: Signal<'partial' | 'always' | false>;
   readonly hideWhenDetached: Signal<boolean>;
   readonly clipUntilPositioned: Signal<boolean>;

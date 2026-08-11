@@ -55,20 +55,29 @@ export interface AnchoredPositioningOverride {
 
 /**
  * Abstract base for the trigger-anchored overlay roots. It single-sources the
- * ten shared floating-ui positioning inputs and the five effective computeds
+ * nine shared floating-ui positioning inputs and the five effective computeds
  * over them, so the declarations live in one place instead of being copied per
  * root.
  *
  * Each of the four placement values resolves in the same three steps — the
  * per-open {@link positioningOverride}, then the root's own input, then the
- * scope default read through {@link positioningDefaults}. The six non-placement
- * inputs (`avoidCollisions` / `arrowPadding` / `sticky` / `hideWhenDetached` /
+ * scope default read through {@link positioningDefaults}. The five non-placement
+ * inputs (`avoidCollisions` / `sticky` / `hideWhenDetached` /
  * `clipUntilPositioned`, plus `alignOffset`'s own library fallback) default from
  * the shared {@link ANCHORED_POSITIONING_DEFAULTS} constant. The fallback is
  * read lazily inside each `computed()` factory — which runs only on first
  * evaluation, after the subclass field initializer has assigned
  * `positioningDefaults` — so the base never touches the still-uninitialized
  * subclass field during construction.
+ *
+ * `arrowPadding` is deliberately **not** here, on the
+ * `fallbackAxisSideDirection` precedent: floating-ui installs the `arrow`
+ * middleware only when an arrow element is supplied, so padding it is a
+ * property of an anatomy that has an arrow rather than of every anchored
+ * overlay. Exactly three roots ship one — `[forPopover]`, `[forTooltip]`,
+ * `[forHoverCard]` — and each declares the input itself, seeded from its own
+ * defaults provider. Inheriting it here gave the other ten a public input that
+ * reached nothing ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)).
  *
  * Implemented as an `@Directive()`-decorated abstract class because Angular
  * recognises signal inputs only when `input()` calls appear directly in a
@@ -183,11 +192,6 @@ export abstract class AnchoredOverlayPositioningBase {
   readonly collisionPadding = computed<number>(
     () => this._collisionPaddingInput() ?? this.positioningDefaults.collisionPadding,
   );
-
-  /** Padding (px) for the `arrow` middleware. Default `0`. */
-  readonly arrowPadding = input(ANCHORED_POSITIONING_DEFAULTS.arrowPadding, {
-    transform: numberAttribute,
-  });
 
   /**
    * Stickiness behaviour for `shift`. `'partial'` (default) lets the overlay
