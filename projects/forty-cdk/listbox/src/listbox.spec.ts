@@ -603,6 +603,143 @@ describe('ForListbox', () => {
     });
   });
 
+  describe('pointer highlight (issue #1781)', () => {
+    const hover = (option: HTMLElement) =>
+      option.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+
+    const highlighted = (host: HTMLElement): HTMLElement[] =>
+      listboxItems(host).filter((option) => option.hasAttribute('data-highlighted'));
+
+    it('hands data-highlighted to the hovered option, and to no other', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+    });
+
+    it('moves neither DOM focus nor the tab stop', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+      await flush();
+
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+      expect(optOf(el, 'apple').getAttribute('tabindex')).toBe('0');
+      expect(optOf(el, 'banana').getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('selects nothing, not even under selectionFollowsFocus', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.follow.set(true);
+      await flush();
+
+      optOf(el, 'apple').focus();
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual([]);
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+    });
+
+    it('leaves the range anchor alone, so Shift+Space still spans from the click', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.isMulti.set(true);
+      await flush();
+
+      optOf(el, 'apple').click();
+      await flush();
+      hover(optOf(el, 'cherry'));
+      await flush();
+
+      optOf(el, 'banana').focus();
+      pressKey(optOf(el, 'banana'), ' ', { shiftKey: true });
+      await flush();
+      expect(fixture.componentInstance.picked()).toEqual(['apple', 'apricot', 'banana']);
+    });
+
+    it('hands the highlight back to the keyboard on the next arrow move', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
+      await flush();
+      expect(document.activeElement).toBe(optOf(el, 'apricot'));
+      expect(highlighted(el)).toEqual([optOf(el, 'apricot')]);
+    });
+
+    it('ignores a hover synthesized by the keyboard scroll under a stationary cursor', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+
+      pressKey(optOf(el, 'apple'), 'ArrowDown');
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apricot')]);
+    });
+
+    it('ignores a hover synthesized by a typeahead match', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+
+      pressKey(optOf(el, 'apple'), 'c');
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'cherry')]);
+    });
+
+    it('ignores a hover on a disabled option', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      fixture.componentInstance.options.set([
+        { value: 'apple', label: 'Apple', disabled: false },
+        { value: 'apricot', label: 'Apricot', disabled: true },
+        { value: 'banana', label: 'Banana', disabled: false },
+      ]);
+      await flush();
+
+      optOf(el, 'apple').focus();
+      hover(optOf(el, 'apricot'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+    });
+
+    it('drops the pointer highlight when the hovered option becomes disabled', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+
+      fixture.componentInstance.options.update((options) =>
+        options.map((option) =>
+          option.value === 'banana' ? { ...option, disabled: true } : option,
+        ),
+      );
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+    });
+
+    it('drops the pointer highlight when the hovered option unmounts', async () => {
+      const { el, fixture, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+
+      fixture.componentInstance.options.update((options) =>
+        options.filter((option) => option.value !== 'banana'),
+      );
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+    });
+  });
+
   describe('typeahead', () => {
     it('focuses the first option matching the typed prefix', async () => {
       const { el, flush } = renderHost(ListboxHost);
@@ -2282,6 +2419,41 @@ describe('ForListbox', () => {
       x.focus();
       x.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
       expect(document.activeElement).toBe(y);
+    });
+
+    describe('pointer highlight (issue #1781)', () => {
+      const hover = (option: HTMLElement) =>
+        option.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
+
+      it('hover moves aria-activedescendant and the highlight with it', async () => {
+        const { el, flush } = renderHost(VirtualHost);
+        await flush();
+        const lb = lbOf(el);
+        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 0).getAttribute('id'));
+
+        hover(voptOf(el, 3));
+        await flush();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 3).getAttribute('id'));
+        expect(voptOf(el, 3).getAttribute('data-highlighted')).toBe('');
+        expect(voptOf(el, 0).hasAttribute('data-highlighted')).toBe(false);
+        expect(document.activeElement).not.toBe(voptOf(el, 3));
+      });
+
+      it('ignores a hover synthesized by the keyboard scroll under a stationary cursor', async () => {
+        const { el, flush } = renderHost(VirtualHost);
+        await flush();
+        const lb = lbOf(el);
+        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush();
+
+        lb.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        hover(voptOf(el, 4));
+        await flush();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 1).getAttribute('id'));
+        expect(voptOf(el, 4).hasAttribute('data-highlighted')).toBe(false);
+      });
     });
   });
 

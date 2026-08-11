@@ -13,6 +13,7 @@ import {
   type ForComboboxContext,
   ForComboboxTrigger,
 } from 'forty-cdk/combobox';
+import { FOR_LISTBOX_CONTEXT, ForListboxOption } from 'forty-cdk/listbox';
 import { FOR_NAVIGATION_MENU_CONTEXT, ForNavigationMenuList } from 'forty-cdk/navigation-menu';
 import { FOR_RADIO_GROUP_CONTEXT, ForRadio } from 'forty-cdk/radio-group';
 import {
@@ -37,14 +38,17 @@ import { renderHost } from '../test-utils/render';
  * **The derived property is "this entry point splits its context"** — a source
  * module declaring `interface <X>Context extends For<X>Context`, which is what
  * puts an unchecked cast inside its `inject<Primitive>Context`. It is exact in
- * both directions today: ten modules match, Avatar and Table having joined with
- * [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted default —
- * Table's own second token is a *registration* protocol living in
+ * both directions today: eleven modules match, Avatar and Table having joined
+ * with [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted
+ * default — Table's own second token is a *registration* protocol living in
  * `forty-cdk/core`, aliased to a separate provider, and is a different surface
- * from the roving-grid model its `FOR_TABLE_CONTEXT` now hides. So an eleventh
- * split root cannot land without either calling the guard or turning this file
- * red — which the count-per-module case extends to a *second* resolver added to
- * a module that already calls it once.
+ * from the roving-grid model its `FOR_TABLE_CONTEXT` now hides — and Listbox
+ * with the pointer-highlight channel of
+ * [#1781](https://github.com/tutkli/forty-cdk/issues/1781), the inverted default
+ * applied to one new member rather than a full pass over its surface. So a
+ * twelfth split root cannot land without either calling the guard or turning
+ * this file red — which the count-per-module case extends to a *second* resolver
+ * added to a module that already calls it once.
  *
  * `useValue` is typed `any` by Angular's own `ValueProvider`, so the empty
  * object the sweep provides needs no cast to reach the piece — the compile-time
@@ -120,6 +124,14 @@ class ImpostorCarouselHost {}
   template: `<button type="button" forComboboxClear></button>`,
 })
 class ImpostorComboboxHost {}
+
+@Component({
+  imports: [ForListboxOption],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_LISTBOX_CONTEXT, useValue: {} }],
+  template: `<button type="button" forListboxOption value="a"></button>`,
+})
+class ImpostorListboxHost {}
 
 @Component({
   imports: [ForNavigationMenuList],
@@ -205,6 +217,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forCombobox]',
     piece: 'ForComboboxClear',
     host: ImpostorComboboxHost,
+  },
+  {
+    entryPoint: 'listbox',
+    source: 'listbox/src/listbox-context.ts',
+    calls: 1,
+    token: 'FOR_LISTBOX_CONTEXT',
+    root: '[forListbox]',
+    piece: 'ForListboxOption',
+    host: ImpostorListboxHost,
   },
   {
     entryPoint: 'navigation-menu',

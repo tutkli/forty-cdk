@@ -45,6 +45,7 @@ export const REGISTRATION_SURFACES = {
     'ForCarouselViewportHandle',
   ],
   combobox: ['ComboboxContext', 'ComboboxPieceContext', 'ComboboxRegistrationContext'],
+  listbox: ['ListboxContext', 'ListboxPieceContext'],
   'navigation-menu': [
     'NavigationMenuContext',
     'ForNavigationMenuContentHandle',

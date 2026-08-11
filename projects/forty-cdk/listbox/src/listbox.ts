@@ -16,6 +16,7 @@ import type { FormValueControl } from '@angular/forms/signals';
 import {
   accessibleTextContent,
   Collection,
+  createPointerSuppression,
   firstEnabledHost,
   FormUiControlBase,
   injectHiddenInput,
@@ -287,10 +288,32 @@ export class ForListbox<T = string>
 
   readonly #activeId = signal<string | null>(null);
 
+  readonly #pointerSuppression = createPointerSuppression();
+
+  readonly #pointerHost = signal<HTMLElement | null>(null);
+
+  /**
+   * The pointed-at option's host in the roving path, self-healed on read: a host
+   * that has left the registered set or become disabled is discounted, so the
+   * roving active option reclaims the highlight. The registered set is read only
+   * while a host is stored, keeping the mount's highlight channel independent of
+   * the option list.
+   */
+  readonly #pointerHighlighted = computed<HTMLElement | null>(() => {
+    const host = this.#pointerHost();
+    if (host === null) {
+      return null;
+    }
+    const handle = this.#options.items().find((option) => option.host === host);
+    return handle && !handle.disabled() ? host : null;
+  });
+
   /**
    * The active option's `id` when using the activedescendant focus model,
-   * `null` in the roving-tabindex path. The host reflects this as
-   * `aria-activedescendant`; options read it to compute `data-highlighted`.
+   * `null` in the roving-tabindex path. Moved by keyboard navigation and by
+   * hover alike, so the highlight and the option `Enter` activates never
+   * disagree. The host reflects this as `aria-activedescendant`; options read it
+   * to compute `data-highlighted`.
    */
   readonly activeDescendantId = computed<string | null>(() =>
     this.#virtualized() ? this.#activeId() : null,
@@ -334,16 +357,29 @@ export class ForListbox<T = string>
   #navigator: ListboxVirtualizedNavigator<T> | null = null;
 
   #requireNavigator(): ListboxVirtualizedNavigator<T> {
-    return (this.#navigator ??= createListboxVirtualizedNavigator<T>({
-      items: this.#options.items,
-      totalCount: this.totalCount,
-      visibleRange: this.visibleRange,
-      loop: this.loop,
-      getActiveId: () => this.#activeId(),
-      setActiveId: (id) => this.#activeId.set(id),
-      emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
-      dataVersion: this.dataVersion,
-    }));
+    return (this.#navigator ??= createListboxVirtualizedNavigator<T>(
+      {
+        items: this.#options.items,
+        totalCount: this.totalCount,
+        visibleRange: this.visibleRange,
+        loop: this.loop,
+        getActiveId: () => this.#activeId(),
+        setActiveId: (id) => this.#activeId.set(id),
+        emitScrollToIndex: (idx) => this.scrollToIndex.emit(idx),
+        dataVersion: this.dataVersion,
+      },
+      (host) => this.#scrollActiveIntoView(host),
+    ));
+  }
+
+  /**
+   * Scroll an option into view with the pointer-suppression window open, so the
+   * synthetic `pointermove` the scroll fires when a different option slides under
+   * a stationary cursor cannot hand the highlight to it.
+   */
+  #scrollActiveIntoView(host: HTMLElement): void {
+    this.#pointerSuppression.suppress();
+    host.scrollIntoView?.({ block: 'nearest' });
   }
 
   /**
@@ -442,6 +478,7 @@ export class ForListbox<T = string>
     if (target === null) {
       return;
     }
+    this.#pointerSuppression.suppress();
     target.host.focus();
     target.host.scrollIntoView?.({ block: 'nearest' });
     if (!this.multiple() && this.selectionFollowsFocus() && !this.readonly()) {
@@ -460,7 +497,10 @@ export class ForListbox<T = string>
     if (!handled) {
       return false;
     }
-    match?.host.focus();
+    if (match) {
+      this.#pointerSuppression.suppress();
+      match.host.focus();
+    }
     return true;
   }
 
@@ -473,7 +513,22 @@ export class ForListbox<T = string>
   }
 
   isOptionHighlighted(el: HTMLElement): boolean {
+    const pointed = this.#pointerHighlighted();
+    if (pointed !== null) {
+      return pointed === el;
+    }
     return this.roving.active() === el;
+  }
+
+  private highlightFromPointer(host: HTMLElement, id: string): void {
+    if (this.#pointerSuppression.isSuppressed()) {
+      return;
+    }
+    if (this.#virtualized()) {
+      this.#activeId.set(id);
+      return;
+    }
+    this.#pointerHost.set(host);
   }
 
   optionTabindex(el: HTMLElement): -1 | 0 | null {
@@ -484,6 +539,7 @@ export class ForListbox<T = string>
   }
 
   setActiveOption(el: HTMLElement): void {
+    this.#pointerHost.set(null);
     this.roving.setActive(el);
   }
 
@@ -585,7 +641,7 @@ export class ForListbox<T = string>
     if (match) {
       this.#assertSelectionFollowsFocusSupported();
       this.#activeId.set(match.id());
-      match.host.scrollIntoView?.({ block: 'nearest' });
+      this.#scrollActiveIntoView(match.host);
     }
   }
 

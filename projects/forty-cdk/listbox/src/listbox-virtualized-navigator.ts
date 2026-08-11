@@ -21,12 +21,15 @@ export type ListboxVirtualizedNavigator<T> = VirtualizedNavigator<
 /**
  * Wire the shared `forty-cdk/core` navigation engine to the listbox option
  * handle. The snapshot needs only the id + disabled flag, so no unwritten-binding
- * guard is required on `readEntry`.
+ * guard is required on `readEntry`. Scroll-into-view is routed through
+ * `scrollActiveIntoView` so the root's pointer-suppression window opens first — a
+ * synthetic `pointermove` from the scroll must not hijack the highlight.
  *
  * Internal — not re-exported from `listbox/index.ts` or `public-api.ts`.
  */
 export function createListboxVirtualizedNavigator<T>(
   deps: VirtualizedNavigatorDeps<ForListboxOptionHandle<T>>,
+  scrollActiveIntoView: (host: HTMLElement) => void,
 ): ListboxVirtualizedNavigator<T> {
   return new VirtualizedNavigator(deps, {
     posOf: (o) => o.posInSet(),
@@ -34,5 +37,6 @@ export function createListboxVirtualizedNavigator<T>(
     hostOf: (o) => o.host,
     isDisabled: (o) => o.disabled(),
     readEntry: (o) => ({ id: o.id(), disabled: o.disabled() }),
+    scrollIntoView: (host) => scrollActiveIntoView(host),
   });
 }

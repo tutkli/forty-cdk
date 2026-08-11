@@ -40,6 +40,10 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
  * must be parameterized over the same `T`. The parent's
  * `[compareWith]` decides how options are matched against the
  * committed selection.
+ *
+ * Hovering an enabled option hands it `data-highlighted`, so pointer and
+ * keyboard feed one highlight and exactly one option is ever decorated. Hover
+ * never moves DOM focus and never selects — the pointer's own click activates.
  */
 @Directive({
   selector: '[forListboxOption]',
@@ -61,6 +65,7 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
     '(focus)': 'onFocus()',
     '(keydown)': 'onKeyDown($event)',
     '(pointerdown)': 'onPointerDown($event)',
+    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForListboxOption<T = string> {
@@ -103,11 +108,13 @@ export class ForListboxOption<T = string> {
   });
 
   /**
-   * True when this option is the keyboard-focused / active candidate.
-   * In the roving-tabindex path this tracks the DOM-focused option.
-   * In the virtualized activedescendant path it tracks `aria-activedescendant`.
-   * Reflected as `data-highlighted` so consumers can style it uniformly
-   * with the other primitives.
+   * True when this option is the active candidate — the one the pointer is over,
+   * else the keyboard's. In the roving-tabindex path the keyboard channel is the
+   * DOM-focused option; in the virtualized activedescendant path it is
+   * `aria-activedescendant`, which hover moves too, so the highlight and the
+   * option `Enter` activates never disagree there. Reflected as
+   * `data-highlighted` so consumers can style it uniformly with the other
+   * primitives.
    */
   readonly highlighted = computed(() => {
     const activeId = this.#group.activeDescendantId();
@@ -179,6 +186,13 @@ export class ForListboxOption<T = string> {
       return;
     }
     this.#group.setActiveOption(this.#host.nativeElement);
+  }
+
+  protected onPointerMove(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#group.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

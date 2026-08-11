@@ -277,7 +277,7 @@ Without `[totalCount]` (the default), the roving-tabindex model is used unchange
 | Roving-tabindex (default)           | Active option     | DOM focus + `data-highlighted`               |
 | Activedescendant (`totalCount` set) | Listbox container | `aria-activedescendant` + `data-highlighted` |
 
-Both paths reflect `data-highlighted=""` on the active option, so consumer CSS for hover/focus rings works the same way in either mode.
+Both paths reflect `data-highlighted=""` on the active option, so consumer CSS for hover/focus rings works the same way in either mode. In both paths the pointer takes it over too — see [Pointer highlight](#pointer-highlight).
 
 ### Navigation flow
 
@@ -396,11 +396,11 @@ export class DemoVirtualizedListbox {
 | `value`    | `input.required<T>` | The option's value (defaults to `string`). Must be unique within the listbox per `compareWith`.<br>**Default:** — |
 | `disabled` | `input<boolean>`    | Disables this option independently of the group.<br>**Default:** —                                                |
 
-| Data attribute     | Values                   | Notes                                                     |
-| ------------------ | ------------------------ | --------------------------------------------------------- |
-| `data-state`       | `checked` \| `unchecked` |                                                           |
-| `data-highlighted` | present \| absent        | Works in both roving-tabindex and activedescendant paths. |
-| `data-disabled`    | present \| absent        |                                                           |
+| Data attribute     | Values                   | Notes                                                                                                                                                    |
+| ------------------ | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data-state`       | `checked` \| `unchecked` |                                                                                                                                                          |
+| `data-highlighted` | present \| absent        | Works in both roving-tabindex and activedescendant paths, and follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)). |
+| `data-disabled`    | present \| absent        |                                                                                                                                                          |
 
 ### `ForListboxOptionIndicator`
 
@@ -409,6 +409,18 @@ Optional slot inside an option. Mirrors `data-state` and self-hides while the op
 | Data attribute | Values                   |
 | -------------- | ------------------------ |
 | `data-state`   | `checked` \| `unchecked` |
+
+## Pointer highlight
+
+Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for — the same feel as `[forCombobox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
+
+Three properties of the pointer channel:
+
+- **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set: hovering is not activation, and a listbox is an in-flow surface that must not steal focus from whatever the user is typing in. The pointer's own click still activates, and the range anchor `Shift+Space` spans from is untouched.
+- **The keyboard takes it back on the next move.** In the roving-tabindex path the pointer highlight is a styling channel only — the tab stop and `Enter` / `Space` activation stay with the DOM-focused option, and the first arrow / typeahead move drops the pointer highlight. In the activedescendant path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
+- **A programmatic scroll cannot hijack it.** Keyboard navigation scrolls the active option into view, which can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the keyboard keeps the highlight.
+
+A hover on a disabled option is ignored, and the highlight falls back to the keyboard's option if the hovered one is disabled or unmounted while the cursor rests on it.
 
 ## Keyboard
 
@@ -448,7 +460,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 - **Use `<button>` for each option** so Space / Enter activate via native click. Other host elements break keyboard activation.
 - **Visible text on each option** is what typeahead matches against — keep it descriptive and unique-prefixed.
 - **`selectionFollowsFocus`** is an opt-in for single-select. Avoid combining it with side effects that depend on commit semantics — it changes the form value on every arrow key.
-- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`.
+- **`data-highlighted=""`** is reflected on the option that is the current active item in both the roving-tabindex and activedescendant paths — same vocabulary as the menu / select / combobox primitives, useful when you want a uniform "keyboard focus ring" across surfaces without coupling to `:focus`. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
 - **Virtualized path**: the listbox publishes `aria-activedescendant` on the container and each rendered option carries `aria-setsize` / `aria-posinset` so screen readers announce the true list size even when only a window is mounted.
 
 ## Styling

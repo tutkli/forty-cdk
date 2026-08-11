@@ -84,4 +84,22 @@ test.describe('Listbox', () => {
     await page.keyboard.press('Tab');
     await expect(el(page, 'opt-cherry')).toBeFocused();
   });
+
+  test('a real mouse hover takes data-highlighted without taking focus or the tab stop', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox');
+    await el(page, 'opt-apple').focus();
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'opt-date').hover();
+    await expect(el(page, 'opt-date')).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+    await expect(el(page, 'opt-apple')).toBeFocused();
+    await expect(el(page, 'opt-apple')).toHaveAttribute('tabindex', '0');
+
+    await page.keyboard.press('ArrowDown');
+    await expect(el(page, 'opt-cherry')).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+  });
 });

@@ -1,6 +1,7 @@
 import { inject, InjectionToken, type Signal } from '@angular/core';
 
 import {
+  assertRootContext,
   type ListNavigationAction,
   orphanContextError,
   type WritingDirection,
@@ -54,8 +55,8 @@ export interface ForListboxContext<T = unknown> {
   readonly totalCount: Signal<number | undefined>;
   /**
    * The active option's `id` when using the activedescendant focus model,
-   * `null` in the roving-tabindex path. Options read this to compute
-   * `data-highlighted`.
+   * `null` in the roving-tabindex path. Moved by keyboard navigation and by
+   * hover alike. Options read this to compute `data-highlighted`.
    */
   readonly activeDescendantId: Signal<string | null>;
 
@@ -102,7 +103,11 @@ export interface ForListboxContext<T = unknown> {
    * in DOM order. Guarantees a single `tabindex="0"` before roving takes over.
    */
   isFirstFocusableOption(el: HTMLElement): boolean;
-  /** `true` when `el` is the roving-tabindex active option (reflected as `data-highlighted`). */
+  /**
+   * `true` when `el` is the highlighted option in the roving-tabindex path
+   * (reflected as `data-highlighted`): the one the pointer is over, else the
+   * roving active option.
+   */
   isOptionHighlighted(el: HTMLElement): boolean;
   /**
    * Roving-tabindex value for `el`: `0` for the active option once roving has
@@ -110,7 +115,11 @@ export interface ForListboxContext<T = unknown> {
    * the caller can fall back to {@link isFirstFocusableOption}.
    */
   optionTabindex(el: HTMLElement): -1 | 0 | null;
-  /** Mark `el` as the roving-tabindex active option (called on option focus). */
+  /**
+   * Mark `el` as the roving-tabindex active option (called on option focus).
+   * Also drops any pointer highlight, so the keyboard channel owns the highlight
+   * again from the move that focused `el`.
+   */
   setActiveOption(el: HTMLElement): void;
 
   /**
@@ -132,9 +141,54 @@ export interface ForListboxContext<T = unknown> {
   unregisterOption(handle: ForListboxOptionHandle<T>): void;
 }
 
+/**
+ * The listbox's pointer channel: the one call `[forListboxOption]` makes so the
+ * option under the cursor takes the highlight.
+ *
+ * Deliberately **not** part of {@link ForListboxContext} and never exported from
+ * `public-api.ts` — a consumer styles the pointed-at option off
+ * `data-highlighted`, never by reporting a hover into the root.
+ */
+export interface ListboxPieceContext {
+  /**
+   * Reported by `[forListboxOption]` on `pointermove` so the highlight follows
+   * the pointer. Never moves DOM focus, never commits a selection (not even
+   * under `selectionFollowsFocus`), and never touches the range anchor; a move
+   * arriving inside the pointer-suppression window a programmatic scroll opened
+   * is ignored, so a synthetic `pointermove` from the scroll cannot hijack the
+   * keyboard's highlight.
+   *
+   * @param host The hovered option's host element — the roving path's highlight target.
+   * @param id The hovered option's id — the activedescendant path's highlight target.
+   */
+  highlightFromPointer(host: HTMLElement, id: string): void;
+}
+
+/**
+ * The listbox's internal coordination surface: everything
+ * {@link ForListboxContext} publishes plus the {@link ListboxPieceContext} call.
+ *
+ * Never exported from `public-api.ts`. It is the type the pieces read
+ * {@link FOR_LISTBOX_CONTEXT} at, so a consumer who injects that token gets the
+ * read surface while `[forListboxOption]` gets the pointer channel. `ForListbox`
+ * declares `highlightFromPointer` TS-`private`, which keeps it out of the
+ * emitted `.d.ts` while `useExisting` still satisfies this contract at runtime.
+ */
+export interface ListboxContext<T = unknown> extends ForListboxContext<T>, ListboxPieceContext {}
+
+/**
+ * DI token for the listbox's coordination surface, provided by `[forListbox]`.
+ *
+ * Publicly typed as the read surface {@link ForListboxContext}, which is the whole
+ * of what the token promises a consumer. The options read the same token at an
+ * internal type that adds the pointer-highlight channel, so a wrapper re-providing
+ * it must alias it to the root: `{ provide: FOR_LISTBOX_CONTEXT, useExisting: MyListbox }`,
+ * where `MyListbox` extends `ForListbox`. A value that merely satisfies the declared
+ * type resolves too, and is rejected in dev mode by the first piece to reach the channel.
+ */
 export const FOR_LISTBOX_CONTEXT = new InjectionToken<ForListboxContext>('FOR_LISTBOX_CONTEXT');
 
-export function injectListboxContext<T = unknown>(piece: string): ForListboxContext<T> {
+export function injectListboxContext<T = unknown>(piece: string): ListboxContext<T> {
   const ctx = inject(FOR_LISTBOX_CONTEXT, { optional: true });
   if (!ctx) {
     throw orphanContextError({
@@ -144,5 +198,13 @@ export function injectListboxContext<T = unknown>(piece: string): ForListboxCont
       token: 'FOR_LISTBOX_CONTEXT',
     });
   }
-  return ctx as unknown as ForListboxContext<T>;
+  const widened = ctx as unknown as ListboxContext<T>;
+  assertRootContext({
+    entryPoint: 'listbox',
+    token: 'FOR_LISTBOX_CONTEXT',
+    root: '[forListbox]',
+    piece,
+    probe: () => widened.highlightFromPointer,
+  });
+  return widened;
 }
