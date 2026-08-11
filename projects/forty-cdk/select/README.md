@@ -121,7 +121,7 @@ Input tables are not yet tabulated for this primitive. See the feature sections 
 | `[forSelectIndicator]` | `data-state`       | `checked` \| `unchecked`   |
 | `[forSelectSeparator]` | `data-orientation` | `horizontal` \| `vertical` |
 
-`data-highlighted` marks the keyboard-focused option (shared vocabulary with the listbox / menu / combobox primitives). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../docs/styling-floating-content.md).
+`data-highlighted` marks the active option — the one the pointer is over, else the keyboard's (shared vocabulary with the listbox / menu / combobox primitives; see [Pointer highlight](#pointer-highlight)). In popper mode `[forSelectContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active); in `item-aligned` mode it carries `data-position="item-aligned"` instead — see [Styling floating content](../../../docs/styling-floating-content.md).
 
 ## Scoped defaults
 
@@ -164,6 +164,18 @@ When the listbox mounts, focus lands per the trigger's hint:
 - **ArrowUp** → focuses the currently-selected option, or the last enabled option when no selection exists.
 
 Override programmatically with `forSelect.overlay.openOverlay('first' | 'last' | 'selected')`.
+
+## Pointer highlight
+
+Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for — the same feel as `[forCombobox]`, `[forListbox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
+
+Three properties of the pointer channel:
+
+- **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set — that input commits on every _navigation_ focus move, and hovering is not one. The pointer's own click still activates, and the multi-select range anchor `Shift+Space` spans from is untouched.
+- **The keyboard takes it back on the next move.** In the default path the highlight falls back to the DOM-focused option, so the first arrow / typeahead move drops the pointer highlight; in the virtualized path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
+- **A programmatic scroll cannot hijack it.** Opening the listbox scrolls the selected option into view, and keyboard navigation scrolls the active one — either can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the selected option keeps the highlight a mouse-opened listbox gives it (see [Initial focus on open](#initial-focus-on-open)).
+
+A hover on a disabled option is ignored, and the highlight falls back to the focused option if the hovered one is disabled or unmounted while the cursor rests on it.
 
 ## Anchoring to a field box
 
@@ -412,6 +424,8 @@ For selects with thousands of options, bind `[totalCount]` to enable the **virtu
 | Non-virtualized (default)        | real DOM focus on each `[forSelectOption]`         | DOM `:focus` + `data-highlighted`                       |
 | Virtualized (`[totalCount]` set) | DOM focus on `[forSelectContent]` (`tabindex="0"`) | `aria-activedescendant` on content + `data-highlighted` |
 
+In both paths the pointer takes `data-highlighted` over too — see [Pointer highlight](#pointer-highlight).
+
 ### Inputs and output
 
 | Binding                | Type                        | Description                                                                                                                                                                                                                      |
@@ -511,7 +525,7 @@ Implements the [WAI-ARIA select-only combobox pattern](https://www.w3.org/WAI/AR
 - `[forSelectSeparator]` never registers with the listbox's option collection — it's skipped during navigation and typeahead automatically. It carries `role="separator"` and emits `aria-orientation` only for `orientation="vertical"`, because `horizontal` is the ARIA default; `data-orientation` is always stamped for styling. Set `decorative` when the surrounding options already convey the split — it switches the line to `role="none"` and drops `aria-orientation`, matching the [shared separator emission policy](../separator/README.md#accessibility).
 - `[forSelectGroup]` is purely advisory grouping — options inside still register flatly with the root, so navigation flows through groups without interruption.
 - The trigger is exempt from the dismissible layer's outside-pointer checks, so a click on the trigger while the listbox is open routes through `(click)` (toggle) instead of double-firing as an outside dismissal.
-- **`data-highlighted=""`** is reflected on the focused `[forSelectOption]` so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives.
+- **`data-highlighted=""`** is reflected on the active `[forSelectOption]` — the hovered one, else the focused one — so consumers can paint a uniform focus ring shared with the listbox / menu / combobox primitives. It follows the pointer as well as the keyboard (see [Pointer highlight](#pointer-highlight)), so it is the one hook to style rather than pairing it with `:hover`.
 - **Open highlights the selected option, regardless of how the listbox was opened — an intentional divergence from the menu family.** Initial focus on open lands on the currently-selected option (see [Initial focus on open](#initial-focus-on-open)), and `data-highlighted` follows that focus, so a mouse-opened Select renders the selected option highlighted. This is deliberate: the highlight **marks the current value**, it does not fake a "preselection" that isn't there. It contrasts with the `[forMenu*]` items, whose `data-highlighted` is intent-driven — a pointer open focuses the first item **without** highlighting it — because a menu has no "current value" to mark. `[forListbox]` shows neither effect: it's an embedded roving surface with no open-driven programmatic focus, so its highlight only ever derives from the roving active option.
 
 ## Styling

@@ -63,5 +63,6 @@ export const REGISTRATION_SURFACES = {
     'TableDefRegistry',
   ],
   tabs: ['TabsContext', 'ForTabsContentHandle', 'ForTabsTriggerHandle'],
+  'time-picker': ['TimePickerContext', 'TimePickerPieceContext'],
   toast: ['ToastContext', 'ForToastActionHandle', 'ForToastTextHandle'],
 };

@@ -25,6 +25,7 @@ import {
 import type { WritingDirection } from 'forty-cdk/shared';
 import { FOR_TABLE_CONTEXT, ForTableSelectAll } from 'forty-cdk/table';
 import { FOR_TABS_CONTEXT, ForTabsList } from 'forty-cdk/tabs';
+import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-picker';
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
 
 import { renderHost } from '../test-utils/render';
@@ -38,15 +39,17 @@ import { renderHost } from '../test-utils/render';
  * **The derived property is "this entry point splits its context"** — a source
  * module declaring `interface <X>Context extends For<X>Context`, which is what
  * puts an unchecked cast inside its `inject<Primitive>Context`. It is exact in
- * both directions today: eleven modules match, Avatar and Table having joined
+ * both directions today: twelve modules match, Avatar and Table having joined
  * with [#1722](https://github.com/tutkli/forty-cdk/issues/1722)'s inverted
  * default — Table's own second token is a *registration* protocol living in
  * `forty-cdk/core`, aliased to a separate provider, and is a different surface
  * from the roving-grid model its `FOR_TABLE_CONTEXT` now hides — and Listbox
  * with the pointer-highlight channel of
- * [#1781](https://github.com/tutkli/forty-cdk/issues/1781), the inverted default
- * applied to one new member rather than a full pass over its surface. So a
- * twelfth split root cannot land without either calling the guard or turning
+ * [#1781](https://github.com/tutkli/forty-cdk/issues/1781), joined by TimePicker
+ * when [#1784](https://github.com/tutkli/forty-cdk/issues/1784) gave the same
+ * channel to `[forTimePickerOption]`: the inverted default applied to one new
+ * member rather than a full pass over the surface behind it. So a
+ * thirteenth split root cannot land without either calling the guard or turning
  * this file red — which the count-per-module case extends to a *second* resolver
  * added to a module that already calls it once.
  *
@@ -174,6 +177,14 @@ class ImpostorTableHost {}
 class ImpostorTabsHost {}
 
 @Component({
+  imports: [ForTimePickerValue],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [{ provide: FOR_TIME_PICKER_CONTEXT, useValue: {} }],
+  template: `<span forTimePickerValue></span>`,
+})
+class ImpostorTimePickerHost {}
+
+@Component({
   imports: [ForToastTitle],
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [{ provide: FOR_TOAST_CONTEXT, useValue: {} }],
@@ -271,6 +282,15 @@ const GUARDED: readonly GuardedRoot[] = [
     root: '[forTabs]',
     piece: 'ForTabsList',
     host: ImpostorTabsHost,
+  },
+  {
+    entryPoint: 'time-picker',
+    source: 'time-picker/src/time-picker-context.ts',
+    calls: 1,
+    token: 'FOR_TIME_PICKER_CONTEXT',
+    root: '[forTimePicker]',
+    piece: 'ForTimePickerValue',
+    host: ImpostorTimePickerHost,
   },
   {
     entryPoint: 'toast',

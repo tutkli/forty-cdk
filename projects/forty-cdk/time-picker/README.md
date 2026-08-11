@@ -116,7 +116,17 @@ Inherits all `FormUiControl` inputs (`disabled`, `readonly`, `required`, `invali
 | `[forTimePickerOption]`  | `data-disabled`    | present \| absent          |
 | `[forTimePickerOption]`  | `data-highlighted` | present \| absent          |
 
-`data-highlighted` marks the keyboard-focused slot (shared vocabulary with the listbox / menu / select primitives). `[forTimePickerContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active) — see [Styling floating content](../../../docs/styling-floating-content.md).
+`data-highlighted` marks the active slot — the one the pointer is over, else the keyboard-focused one (shared vocabulary with the listbox / menu / select primitives; see [Pointer highlight](#pointer-highlight)). `[forTimePickerContent]` also carries the positioner markers `data-side` / `data-align` / `data-placement` (and `data-detached` while `hideWhenDetached` is active) — see [Styling floating content](../../../docs/styling-floating-content.md).
+
+## Pointer highlight
+
+Moving the pointer over an enabled slot hands it `data-highlighted`, so exactly one slot is ever decorated no matter which device the user reached for — the same feel as `[forSelect]`, `[forListbox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
+
+- **Hover never selects and never moves DOM focus.** The pointer's own click still activates the slot.
+- **The keyboard takes it back on the next move**: the highlight falls back to the DOM-focused slot, so the first arrow / Home / End move drops the pointer highlight.
+- **A programmatic scroll cannot hijack it.** Focusing a slot scrolls it into view, which can slide a different slot under a stationary cursor and make the browser fire a synthetic `pointermove` for it; moves arriving in a short window after such a scroll are ignored.
+
+A hover on a disabled slot is ignored, and the highlight falls back to the focused slot if the hovered one is disabled or unmounted while the cursor rests on it.
 
 ## Scoped defaults
 
@@ -219,6 +229,7 @@ Implements the [WAI-ARIA Listbox pattern](https://www.w3.org/WAI/ARIA/apg/patter
 - **`role="combobox"`** on the trigger (`[forTimePickerTrigger]`) with `aria-haspopup="listbox"` and `aria-expanded` reflecting `open`.
 - **`role="listbox"`** on the portaled content (`[forTimePickerContent]`); each slot is `role="option"` with `aria-selected` and `aria-disabled`.
 - When used inside `[forDatePickerContent]` alongside a `[forCalendar]`, the time picker delegates its value to `[forDatePicker]` via `FOR_TIME_VALUE_SOURCE` — the combined date-time value is surfaced on the date picker's form-control ARIA.
+- **`data-highlighted=""`** is reflected on the active slot — the hovered one, else the focused one (see [Pointer highlight](#pointer-highlight)) — so it is the one hook to style rather than pairing it with `:hover`.
 - **Inside a `[forField]` the labelled element is the trigger**, not the `[forTimePicker]` wrapper: the field's `controlId` and its `aria-labelledby` / `aria-describedby` / `aria-errormessage` land on `[forTimePickerTrigger]`, so `[forLabel]`'s `for` points at the element that takes focus, clicking a non-`<label>` `[forLabel]` opens the listbox, and Signal Forms' focus-on-error reaches the trigger.
 
 ## Wrapping in a design system

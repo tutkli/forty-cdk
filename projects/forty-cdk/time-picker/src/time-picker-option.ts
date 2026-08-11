@@ -18,6 +18,10 @@ import { injectTimePickerContext } from './time-picker-context';
  *
  * @typeParam D The adapter's date-time type (inferred from `[value]`).
  *
+ * Hovering an enabled slot hands it `data-highlighted`, so pointer and keyboard
+ * feed one highlight and exactly one slot is ever decorated. Hover never moves
+ * DOM focus and never selects — the pointer's own click activates.
+ *
  * Keyboard while focused:
  * - **Enter / Space** — activate (select the slot).
  * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
@@ -41,6 +45,7 @@ import { injectTimePickerContext } from './time-picker-context';
     '(keydown)': 'onKeyDown($event)',
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
+    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForTimePickerOption<D = unknown> {
@@ -63,9 +68,18 @@ export class ForTimePickerOption<D = unknown> {
   );
   readonly effectiveDisabled = computed(() => this.disabled() || this.#ctx.effectiveDisabled());
 
-  readonly #highlighted = signal(false);
-  /** True while this option has DOM focus. Reflected as `data-highlighted`. */
-  readonly highlighted = this.#highlighted.asReadonly();
+  readonly #focused = signal(false);
+  /**
+   * True when this slot is the active candidate — the one the pointer is over,
+   * else the DOM-focused one. Reflected as `data-highlighted`.
+   */
+  readonly highlighted = computed(() => {
+    const pointed = this.#ctx.pointerHighlightedOption();
+    if (pointed !== null) {
+      return pointed === this.#host.nativeElement;
+    }
+    return this.#focused();
+  });
 
   constructor() {
     const handle = {
@@ -88,12 +102,20 @@ export class ForTimePickerOption<D = unknown> {
   }
 
   protected onFocus(): void {
-    this.#highlighted.set(true);
+    this.#focused.set(true);
+    this.#ctx.notifyOptionFocus();
     this.#host.nativeElement.scrollIntoView?.({ block: 'nearest' });
   }
 
   protected onBlur(): void {
-    this.#highlighted.set(false);
+    this.#focused.set(false);
+  }
+
+  protected onPointerMove(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#ctx.highlightFromPointer(this.#host.nativeElement);
   }
 
   protected onKeyDown(event: KeyboardEvent): void {

@@ -352,6 +352,34 @@ export interface SelectPieceContext<T = unknown> {
    * content surface. No-op in the default path.
    */
   notifyOptionClick(optionId: string): void;
+
+  /**
+   * Host element of the option the pointer is over in the default DOM-focus
+   * path, `null` when the pointer is over none. Self-heals on read: a host that
+   * has left the registered set or become disabled is discounted, so the focused
+   * option reclaims the highlight. Always `null` in the virtualized path, where
+   * hover moves {@link SelectPieceContext.activeDescendantId} itself.
+   */
+  readonly pointerHighlightedOption: Signal<HTMLElement | null>;
+  /**
+   * Reported by `[forSelectOption]` on `pointermove` so the highlight follows
+   * the pointer. Never moves DOM focus, so it never commits a selection — not
+   * even under `selectionFollowsFocus`, whose commit hangs off the navigation
+   * focus move — and never touches the range anchor. A move arriving inside the
+   * pointer-suppression window a programmatic scroll opened is ignored, or a
+   * scroll sliding a different option under a stationary cursor would hand the
+   * highlight to whatever the user merely scrolled past.
+   *
+   * @param host The hovered option's host — the DOM-focus path's highlight target.
+   * @param id The hovered option's id — the virtualized path's highlight target.
+   */
+  highlightFromPointer(host: HTMLElement, id: string): void;
+  /**
+   * Called by an option when it takes DOM focus: drops any pointer highlight, so
+   * the keyboard channel owns the highlight again from the move that focused the
+   * option.
+   */
+  notifyOptionFocus(): void;
 }
 
 /**

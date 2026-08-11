@@ -47,6 +47,10 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
  * listbox closes; in multi mode the value toggles in/out and the listbox
  * stays open.
  *
+ * Hovering an enabled option hands it `data-highlighted`, so pointer and
+ * keyboard feed one highlight and exactly one option is ever decorated. Hover
+ * never moves DOM focus and never selects — the pointer's own click activates.
+ *
  * Keyboard while focused:
  * - **Enter / Space** — activate (via native button click).
  * - **ArrowDown / ArrowUp / Home / End** — move focus inside the listbox.
@@ -80,6 +84,7 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
     '(focus)': 'onFocus()',
     '(blur)': 'onBlur()',
     '(pointerdown)': 'onPointerDown($event)',
+    '(pointermove)': 'onPointerMove()',
   },
 })
 export class ForSelectOption<T = string> {
@@ -134,14 +139,20 @@ export class ForSelectOption<T = string> {
 
   readonly #focused = signal(false);
   /**
-   * True when this option is the active candidate — DOM-focused in the
-   * default path, or `aria-activedescendant` in the virtualized path.
-   * Reflected as `data-highlighted`.
+   * True when this option is the active candidate — the one the pointer is over,
+   * else the keyboard's. In the default path the keyboard channel is the
+   * DOM-focused option; in the virtualized path it is `aria-activedescendant`,
+   * which hover moves too, so the highlight and the option `Enter` activates
+   * never disagree there. Reflected as `data-highlighted`.
    */
   readonly highlighted = computed(() => {
     const activeId = this.#ctx.activeDescendantId();
     if (activeId !== null) {
       return activeId === this.id();
+    }
+    const pointed = this.#ctx.pointerHighlightedOption();
+    if (pointed !== null) {
+      return pointed === this.#host.nativeElement;
     }
     return this.#focused();
   });
@@ -184,10 +195,18 @@ export class ForSelectOption<T = string> {
 
   protected onFocus(): void {
     this.#focused.set(true);
+    this.#ctx.notifyOptionFocus();
   }
 
   protected onBlur(): void {
     this.#focused.set(false);
+  }
+
+  protected onPointerMove(): void {
+    if (this.effectiveDisabled()) {
+      return;
+    }
+    this.#ctx.highlightFromPointer(this.#host.nativeElement, this.id());
   }
 
   protected onKeyDown(event: KeyboardEvent): void {
