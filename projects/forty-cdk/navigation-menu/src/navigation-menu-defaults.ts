@@ -10,7 +10,7 @@ import { createDefaults } from 'forty-cdk/core';
  */
 export interface ForNavigationMenuDefaults {
   /** ms before a hover opens an item. */
-  delayDuration: number;
+  openDelay: number;
   /** ms before an item closes after hover leaves. */
   closeDelay: number;
   /**
@@ -26,7 +26,7 @@ export interface ForNavigationMenuDefaults {
  * contract spec; not re-exported from the primitive's public entry.
  */
 export const FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS: ForNavigationMenuDefaults = {
-  delayDuration: 200,
+  openDelay: 200,
   closeDelay: 150,
   skipDelayDuration: 300,
 };

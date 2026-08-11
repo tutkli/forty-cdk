@@ -7,10 +7,12 @@
  * so a fortieth cannot go uncovered. What no gate stated is that the *keys*
  * mean the same thing across a family, so a family could drift one key at a
  * time with every gate green — a tunable added to one member and not its
- * siblings, or added under a second spelling. The library already carries an
- * instance of the second shape: the three hover-scheduled overlays name the
- * same three delays, and one of them spells its open delay `delayDuration`
- * where the other two spell it `openDelay`.
+ * siblings, or added under a second spelling. The library carried an instance
+ * of the second shape when this contract landed: the three hover-scheduled
+ * overlays name the same three delays, and NavigationMenu spelled its open
+ * delay `delayDuration` where Tooltip and HoverCard spell it `openDelay` — a
+ * declared exclusion, conditional on the drift still existing, which the
+ * [#1777](https://github.com/tutkli/forty-cdk/issues/1777) rename falsified.
  *
  * Unlike its siblings this is not a mount-based contract — there is nothing to
  * render. It is a source-derived comparison over the interface each

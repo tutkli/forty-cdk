@@ -307,7 +307,7 @@ const CASES: readonly DefaultsCase<object>[] = [
     token: FOR_NAVIGATION_MENU_DEFAULTS,
     fallback: FOR_NAVIGATION_MENU_FALLBACK_DEFAULTS,
     provide: provideForNavigationMenuDefaults,
-    override: { delayDuration: 500 },
+    override: { openDelay: 500 },
   }),
   defaultsCase({
     name: 'provideForListboxDefaults',

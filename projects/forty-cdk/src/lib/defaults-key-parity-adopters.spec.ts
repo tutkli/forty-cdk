@@ -122,7 +122,11 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
   {
     name: 'hover-scheduled overlays',
     keys: ['openDelay', 'closeDelay', 'skipDelayDuration'],
-    members: ['hover-card/src/hover-card-defaults.ts', 'tooltip/src/tooltip-defaults.ts'],
+    members: [
+      'hover-card/src/hover-card-defaults.ts',
+      'navigation-menu/src/navigation-menu-defaults.ts',
+      'tooltip/src/tooltip-defaults.ts',
+    ],
   },
   {
     name: 'free-floating modal surfaces',
@@ -184,28 +188,6 @@ const FAMILIES: readonly DefaultsKeyFamily[] = [
   },
 ];
 
-/**
- * Primitives the *concept* of a family covers that are not members, with the
- * reason and the condition the guard falsifies.
- *
- * `[forNavigationMenu]` is the third hover-scheduled overlay: it schedules the
- * same open / close / skip delays through the same hover-intent machinery, and
- * spells the open one `delayDuration` where Tooltip and HoverCard spell it
- * `openDelay`. That is precisely the drift this contract exists to catch, one
- * release too late to catch for free — renaming a published defaults key is a
- * consumer break, so it is tracked rather than taken here, and the exclusion is
- * conditional on the drift still existing: the day NavigationMenu declares
- * `openDelay`, this fails and it joins the family, where the missing-key case
- * would otherwise be the one to report it.
- */
-const EXCLUSIONS: Readonly<Record<string, { family: string; key: string; why: string }>> = {
-  'navigation-menu/src/navigation-menu-defaults.ts': {
-    family: 'hover-scheduled overlays',
-    key: 'openDelay',
-    why: 'spells its open delay `delayDuration`, so joining the family is a key rename and a consumer break',
-  },
-};
-
 const MODEL_KEYS = new Set(FAMILIES.flatMap((family) => family.keys));
 
 const INHERITS_THE_BLOCK =
@@ -256,21 +238,6 @@ describe('defaults-key parity families (meta-guard)', () => {
     const stale = anchoredFamily.members.map(entryPointOf).filter((entry) => !anchored.has(entry));
 
     expect(sorted(new Set(stale))).toEqual([]);
-  });
-
-  it('excludes no primitive whose exclusion condition stopped holding', () => {
-    const stale = Object.entries(EXCLUSIONS).flatMap(([path, exclusion]) => {
-      const keys = DECLARED_KEYS.get(path);
-      if (keys === undefined) {
-        return [`${path}: no longer declares a defaults interface`];
-      }
-      if (!FAMILIES.some((family) => family.name === exclusion.family)) {
-        return [`${path}: names no declared family (${exclusion.family})`];
-      }
-      return keys.includes(exclusion.key) ? [`${path}: now declares \`${exclusion.key}\``] : [];
-    });
-
-    expect(sorted(stale)).toEqual([]);
   });
 });
 

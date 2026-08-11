@@ -129,7 +129,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
    * ms before a hover opens an item. Default `200`. The default is read from
    * `provideForNavigationMenuDefaults` for the surrounding scope.
    */
-  readonly delayDuration = input<number>(this.#defaults.delayDuration);
+  readonly openDelay = input<number>(this.#defaults.openDelay);
 
   /**
    * ms before an item closes after hover leaves. Default `150`. The default
@@ -281,7 +281,7 @@ export class ForNavigationMenu implements ForNavigationMenuContext {
       return;
     }
     this.#pendingOpenValue = value;
-    this.#openAction.schedule(this.#skipDelayWindow.active() ? 0 : this.delayDuration());
+    this.#openAction.schedule(this.#skipDelayWindow.active() ? 0 : this.openDelay());
   }
 
   scheduleClose(reason: NavigationMenuScheduleReason, value?: string): void {
