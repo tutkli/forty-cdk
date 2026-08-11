@@ -168,11 +168,13 @@ A wrapper that also wants `inject(ForSelect)` to resolve adds
 
 ### A split context does not change the re-provide
 
-`ForSelect`, `ForCombobox` and `ForRadioGroup` split their coordination surface in two: the public
-`FOR_<PRIMITIVE>_CONTEXT` an advanced consumer injects, and an internal interface carrying the
-piece-registration protocol, which is deliberately not exported
+`ForSelect`, `ForCombobox`, `ForListbox` and `ForRadioGroup` split their coordination surface in two:
+the public `FOR_<PRIMITIVE>_CONTEXT` an advanced consumer injects, and an internal interface carrying
+the members only the primitive's own pieces call — the piece-registration protocol, or in Listbox's
+case the pointer-highlight channel — which is deliberately not exported
 ([#1399](https://github.com/tutkli/forty-cdk/issues/1399),
-[#1524](https://github.com/tutkli/forty-cdk/issues/1524)). Since
+[#1524](https://github.com/tutkli/forty-cdk/issues/1524),
+[#1781](https://github.com/tutkli/forty-cdk/issues/1781)). Since
 [#1593](https://github.com/tutkli/forty-cdk/issues/1593) both are typed views of the **same token on
 the same object**, the one-line re-provide above is the whole provider set — there is no second
 provider for a wrapper to name:
