@@ -124,8 +124,19 @@ Implements the [WAI-ARIA Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/
 
 - **Label the tablist** via `aria-label` on `ForTabsList`, or `aria-labelledby` pointing to a heading.
 - **Choose `activationMode='automatic'`** when panels render quickly; `'manual'` when activation has noticeable cost (network, heavy computation).
-- **Panel `tabindex`** follows APG: a panel with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content (a form, links, buttons) is **not** a tab stop — the directive detects this automatically and reacts to subtree changes. Use `[interactiveContent]` to override the detection in either direction.
+- **Panel `tabindex`** follows APG: a panel with **no** focusable descendants is itself a tab stop (`tabindex="0"`) so screen-reader users can focus and read it, while a panel that already contains focusable content (a form, links, buttons) is **not** a tab stop — the directive detects this automatically and reacts to subtree changes. Use `[interactiveContent]` to override the detection in either direction. Two kinds of change are outside what it can observe — see [Known limitations](#known-limitations).
 - **`aria-controls` and `aria-labelledby`** are wired automatically when triggers and contents share the same `value`. `aria-controls` is emitted only on the selected trigger — mirroring the overlay triggers' open-only gating — so the reference never dangles at an unmounted panel under the `@if (selected())` mount pattern.
+
+## Known limitations
+
+**The panel's focusable-content detection does not re-measure across a shadow boundary, nor on a CSS-only visibility flip.** The measurement runs on the panel's first render and again on mutations of its own subtree, filtered to the attributes that change whether an element is focusable (`disabled`, `hidden`, `inert`, `tabindex`, `type`, `contenteditable`). Two changes are therefore invisible to it and leave the previous answer standing:
+
+- **Focusable content appearing (or disappearing) inside a shadow root** — a web component in the panel that renders its controls on a later tick, or swaps them. The shadow root's own subtree is not observable, so a panel that gains its first focusable control that way keeps its redundant `tabindex="0"`, and one that loses its last keeps none, leaving the panel unreachable by keyboard for a screen-reader user reading it. Nothing in the DOM looks wrong.
+- **A visibility flip driven purely by a stylesheet** — the measurement excludes CSS-hidden elements, but `class` and `style` are not watched, so toggling a class that hides or reveals the panel's only control does not re-measure.
+
+**Workaround.** Bind `[interactiveContent]` — an explicit `true` / `false` wins over the detection in either direction, so the stale measurement stops driving the `tabindex`. It is the right channel whenever you know the answer for a panel, which is the usual case for a panel whose content is a web component. Remounting the panel with `@if` also re-measures, since a fresh directive instance measures again.
+
+The library-wide shadow-DOM statement, covering the two limits that affect overlays rather than panels, is [Shadow DOM](../shared/README.md#shadow-dom) in `forty-cdk/shared`.
 
 ## Styling
 
