@@ -90,12 +90,18 @@ all visual styling stays yours off the same `data-*` / role hooks the raw primit
 drag **column reordering** via the `reorderable` flag — see
 [Column reordering](#column-reordering-reorderable--columnreorder).
 
-> **Bundle note.** `<for-table-body>` statically imports `forty-cdk/drag-drop` (~14 KB gzipped) so a
-> `reorderable` column can auto-wire drag reordering, so every `<for-table-body>` consumer bundles it —
-> even one with no reorderable column. Per-entry-point tree-shaking is otherwise intact (a table that
-> never imports `ForTableBody` bundles neither it nor drag-drop). If a simple table is bundle-sensitive
-> and needs no declarative ergonomics, author it from the raw `[forTableHeaderCell]` / `[forTableCell]`
-> primitives instead — that path never touches drag-drop.
+> **Bundle note.** `<for-table-body>` statically imports `forty-cdk/drag-drop` so a `reorderable`
+> column can auto-wire drag reordering, so every `<for-table-body>` consumer bundles it — even one with
+> no reorderable column. **Measured** ([#1730](https://github.com/tutkli/forty-cdk/issues/1730),
+> production `ng build` of an app whose lazy route holds one two-column table): the drag-drop bytes the
+> optimizer retains in that route are **18.0 kB raw / 5.1 kB gzip**, and the same route with every
+> column `reorderable` is 0.05 kB larger — the directives are reachable from `ForTableBody`'s component
+> definition, so nothing is dropped either way. Put that next to the rest of the layer's cost before
+> reading it as expensive: against the raw path the whole declarative layer is +54.2 kB raw / +13.7 kB
+> transfer on that route, of which drag-drop is a third. Per-entry-point tree-shaking is otherwise
+> intact (a table that never imports `ForTableBody` bundles neither it nor drag-drop). If a simple table
+> is bundle-sensitive and needs no declarative ergonomics, author it from the raw
+> `[forTableHeaderCell]` / `[forTableCell]` primitives instead — that path never touches drag-drop.
 
 ### Styling the stamped cells
 
@@ -272,7 +278,8 @@ protected readonly order = signal<readonly string[]>(['name', 'role']);
 - **`forTableColumnDragPlaceholder`** is optional and declared **once per body**; it is stamped as every
   reorderable column's pointer-drag placeholder. Omit it to keep drag-drop's default placeholder.
 - This is the declarative twin of the raw `[forTableColumnReorder]` / `[forDraggable]` composition; it
-  bundles `forty-cdk/drag-drop` (~14 KB gz) into every `<for-table-body>` — see the bundle note above.
+  bundles `forty-cdk/drag-drop` into every `<for-table-body>` — 18.0 kB raw / 5.1 kB gzip retained
+  whether or not a column is `reorderable`, see the bundle note above.
 
 ## Virtualized rows
 

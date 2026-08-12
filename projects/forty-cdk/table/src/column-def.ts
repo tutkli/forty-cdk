@@ -225,7 +225,8 @@ export class ForTableColumnDef {
    * stamped header row and `[forDraggable]` (with `[dragData]` set to this column's
    * `name`) to this header cell, and re-emits committed reorders through the body's
    * `columnReorder` output. Non-reorderable columns stay static (not draggable).
-   * Any `reorderable` column makes the body bundle `forty-cdk/drag-drop`.
+   * The body bundles `forty-cdk/drag-drop` whether or not a column is `reorderable`
+   * (a measured 18.0 kB raw / 5.1 kB gzip — see the table README's bundle note).
    */
   readonly reorderable = input(false, { transform: booleanAttribute });
 
