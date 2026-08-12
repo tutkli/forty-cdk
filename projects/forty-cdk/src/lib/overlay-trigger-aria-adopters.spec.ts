@@ -1,4 +1,5 @@
 import type { OverlayTriggerAriaContractOptions } from '../test-utils/contract';
+import { LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every trigger that stamps `aria-haspopup` is covered by an adopter
@@ -35,12 +36,6 @@ import type { OverlayTriggerAriaContractOptions } from '../test-utils/contract';
  * returns an empty record and a changed binding name reports zero emitters,
  * either of which would make the coverage assertions pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 type HasPopupToken = OverlayTriggerAriaContractOptions['haspopup'];
 
 interface OverlayTriggerAriaAdopter {
@@ -138,19 +133,6 @@ const ADOPTERS: readonly OverlayTriggerAriaAdopter[] = [
   },
 ];
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
-const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), source as string] as const);
-
 /**
  * Source file → the `aria-haspopup` value it binds, as written.
  *
@@ -162,7 +144,7 @@ const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SO
  */
 function popupTokenBySource(): Map<string, string> {
   const tokens = new Map<string, string>();
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     const match = source.match(/'\[attr\.aria-haspopup\]':\s*(?:'([^']*)'|"([^"]*)")/);
     if (match === null) {
       continue;
@@ -186,7 +168,7 @@ function contractCalls(): Map<string, number> {
 
 const declaredSelectors = (): Set<string> => {
   const selectors = new Set<string>();
-  for (const [, source] of LIBRARY_SOURCES) {
+  for (const [, source] of LIBRARY_CODE) {
     for (const match of source.matchAll(/selector:\s*'([^']+)'/g)) {
       selectors.add(match[1]!);
     }
@@ -203,7 +185,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 describe('overlay trigger ARIA contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('finds every trigger that emits a popup token', () => {

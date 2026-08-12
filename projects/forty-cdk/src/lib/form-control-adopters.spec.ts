@@ -1,3 +1,10 @@
+import {
+  entryPointOf,
+  LIBRARY_SOURCES,
+  SPEC_SOURCES,
+  stripComments,
+} from '../test-utils/source-scan';
+
 /**
  * Meta-guard: every concrete `FormValueControl` / `FormCheckboxControl`
  * implementor in the library adopts the shared form-control contract.
@@ -27,27 +34,12 @@
  * rather than the declaring file because `input/src/textarea.ts` has no spec
  * of its own — `ForTextarea`'s call sits beside `ForInput`'s in `input.spec.ts`.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 const IMPLEMENTS_FORM_CONTROL =
   /(?:^|\n)export\s+(abstract\s+)?class\s+(\w+)(?:<[^>]*>)?([\s\S]*?)\{/g;
 
-const entryPointOf = (key: string): string =>
-  key.replace(/^\/projects\/forty-cdk\//, '').split('/')[0]!;
-
-const withoutComments = (source: string): string =>
-  source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(?:^|[^:])\/\/[^\n]*/g, '');
-
 function concreteImplementors(): Map<string, string[]> {
   const byEntryPoint = new Map<string, string[]>();
-  for (const [key, source] of Object.entries(SOURCES)) {
-    if (key.endsWith('.spec.ts')) {
-      continue;
-    }
+  for (const [key, source] of LIBRARY_SOURCES) {
     IMPLEMENTS_FORM_CONTROL.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = IMPLEMENTS_FORM_CONTROL.exec(source)) !== null) {
@@ -67,11 +59,8 @@ function concreteImplementors(): Map<string, string[]> {
 
 function contractCallsPerEntryPoint(): Map<string, number> {
   const calls = new Map<string, number>();
-  for (const [key, source] of Object.entries(SOURCES)) {
-    if (!key.endsWith('.spec.ts')) {
-      continue;
-    }
-    const found = withoutComments(source).match(/\bassertFormControlContract\(/g)?.length ?? 0;
+  for (const [key, source] of SPEC_SOURCES) {
+    const found = stripComments(source).match(/\bassertFormControlContract\(/g)?.length ?? 0;
     if (found > 0) {
       const entryPoint = entryPointOf(key);
       calls.set(entryPoint, (calls.get(entryPoint) ?? 0) + found);
@@ -84,7 +73,7 @@ describe('form-control contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
     // A mis-typed glob would return an empty record and make every
     // assertion below vacuously true.
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_SOURCES.size).toBeGreaterThan(100);
   });
 
   it('finds every entry point that declares a form-value control', () => {

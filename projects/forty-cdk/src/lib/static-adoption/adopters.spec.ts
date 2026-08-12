@@ -1,4 +1,5 @@
 import type { StaticAdoptionChannel, StaticAdoptionSeam } from '../../test-utils/contract';
+import { LIBRARY_SOURCES } from '../../test-utils/source-scan';
 import { STATIC_ADOPTION_ADOPTERS } from './fixtures/registry';
 
 /**
@@ -31,12 +32,6 @@ import { STATIC_ADOPTION_ADOPTERS } from './fixtures/registry';
  * sites, either of which would make the coverage assertion pass for the wrong
  * reason.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 const SEAMS: readonly StaticAdoptionSeam[] = [
   'hostId',
   'resolveHostId',
@@ -60,8 +55,6 @@ const SEAM_CHANNEL: Readonly<Record<StaticAdoptionSeam, StaticAdoptionChannel>> 
   hostDescribedBy: 'aria-describedby',
 };
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
 /**
  * `<source file>#<seam>` for every call site in library source.
  *
@@ -71,16 +64,13 @@ const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, 
  */
 function callSites(): Set<string> {
   const sites = new Set<string>();
-  for (const [key, source] of Object.entries(SOURCES)) {
-    if (key.endsWith('.spec.ts')) {
-      continue;
-    }
+  for (const [path, source] of LIBRARY_SOURCES) {
     for (const seam of SEAMS) {
       if (source.includes(`export function ${seam}(`)) {
         continue;
       }
       if (new RegExp(`[^A-Za-z]${seam}\\(`).test(source)) {
-        sites.add(`${pathOf(key)}#${seam}`);
+        sites.add(`${path}#${seam}`);
       }
     }
   }
@@ -93,7 +83,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 describe('static attribute adoption contract coverage (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_SOURCES.size).toBeGreaterThan(100);
   });
 
   it('finds every call site of the six adoption seams', () => {

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+import { entryPointOf, LIBRARY_CODE } from '../test-utils/source-scan';
 
 /**
  * Library-wide guard on the `FORCDK-<AREA>-<NNN>` error-code scheme.
@@ -79,36 +75,25 @@ function areaOf(code: string): string {
 }
 
 /**
- * Drops block comments and whole-line `//` comments.
+ * Library source with its comments already stripped by the shared scanner.
  *
  * A JSDoc example is prose, not a declaration — `fortyError`'s own doc block
  * shows a real call, and counting it would report the helper as a second
  * claimant of the code it illustrates. This is the same anchor discipline the
  * marker rules learned the hard way: key on the construct, never on text that
- * merely quotes it. Only whole-line `//` is stripped, so a `//` inside a string
- * on a code line cannot swallow the rest of that line.
+ * merely quotes it.
  */
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');
-}
-
-const libraryFiles = Object.entries(SOURCES)
-  .map(
-    ([path, text]) =>
-      [path.replace(/^\/projects\/forty-cdk\//, ''), stripComments(text as string)] as const,
-  )
-  .filter(([path]) => !path.endsWith('.spec.ts'))
-  .sort(([a], [b]) => a.localeCompare(b));
+const libraryFiles = [...LIBRARY_CODE].sort(([a], [b]) => a.localeCompare(b));
 
 /** Every entry point the glob reaches — the set a reporting scope must name. */
-const entryPoints = new Set(libraryFiles.map(([source]) => source.slice(0, source.indexOf('/'))));
+const entryPoints = new Set(libraryFiles.map(([source]) => entryPointOf(source)));
 
 const sites: CodeSite[] = [];
 for (const [source, text] of libraryFiles) {
   for (const match of text.matchAll(/\bcode:\s*'([^']*)'/g)) {
     sites.push({
       source,
-      entryPoint: source.slice(0, source.indexOf('/')),
+      entryPoint: entryPointOf(source),
       code: match[1]!,
       area: areaOf(match[1]!),
     });
