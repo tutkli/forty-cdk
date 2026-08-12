@@ -558,12 +558,9 @@ export class ForCombobox<T = string>
       this.#labelCache.prime();
     });
 
-    // The activedescendant *decision* is a pure derivation in `#activeId`; this
-    // effect runs only its imperative tail (virtualized pending-nav resolution +
-    // passive seed, non-virtualized scroll-into-view). It is the library's one
-    // pull sharing an effect with writes: the position map's sources are the ones
-    // the bridge already tracks, so priming it widens nothing. Full rationale
-    // lives with `runAutoHighlightBridge` in `combobox-auto-highlight.ts`.
+    // The activedescendant decision is a pure derivation in `#activeId`; this
+    // effect runs only its imperative tail, documented on
+    // `runAutoHighlightBridge` in `combobox-auto-highlight.ts`.
     // @sanctioned-pull(navigator-position-map): the rendered window is transient,
     // so a window nothing reads during is lost to the lazy fold.
     effect(() => {

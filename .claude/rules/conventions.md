@@ -11,6 +11,42 @@ Detailed companion to the root `CLAUDE.md`. These auto-load when you edit librar
 
 ESLint (`eslint.config.js`, flat config) mechanically enforces the non-negotiables in the root `CLAUDE.md`: banned imports (`@angular/{cdk,material,aria}`, `zone.js`), banned syntax (`NgModule`, `@Input` / `@Output` / `@HostBinding` / `@HostListener` decorators, `Service` / `Component` / `Directive` class suffixes), the `for-` selector prefix on directives and components, SSR-unsafe `document` / `window` globals in library code, plus typescript-eslint hardening (`consistent-type-imports` with inline `import type` style, `no-explicit-any`, `no-unused-vars`). Run `pnpm lint` before committing — CI runs it on every PR — and `pnpm exec eslint . --fix` for auto-fixable rules. Prettier is configured (`.prettierrc`, `printWidth: 100`, single quotes); run it with `pnpm exec prettier --write <path>` when needed.
 
+## Source comments — what one says, and where the rationale lives ([#1737](https://github.com/tutkli/forty-cdk/issues/1737))
+
+**A source comment states what the code does and what invariant it maintains.** It does not state which alternative was rejected, why the obvious approach fails, or what a measurement showed — that is a **decision record**, and its home is the issue that produced it, or this file when the decision is a library-wide rule rather than one call site's. The rejected shape is a paragraph in the path of every reader who is not adjudicating the decision, and it is a third copy of a claim that has to be kept true: a refactor invalidating it and not updating it leaves a comment that actively misleads, which is the failure mode this file names whenever a roster is hand-maintained rather than derived.
+
+A pointer is the cheap half of the move. When a call site is only intelligible through a decision, name the symbol whose JSDoc holds it (`{@link}` it, or write the file) rather than restating the argument — one sentence saying _where_, never a paragraph saying _why again_.
+
+Four shapes are **not** archaeology and stay where they are:
+
+- **Public JSDoc on inputs, outputs, methods and signals.** Mandatory, per the root `CLAUDE.md` — it is the consumer's IntelliSense and the generated docs, and it is also the bulk of the volume (see the measurement below). No cleanup touches it.
+- **A private field's own description.** What `#snapPositions` caches, what invalidates it, what a `#armed` flag gates — that is what the code does and what it maintains, on state a reader cannot infer from a type. `drawer/src/drawer-drag.ts` is the reference shape.
+- **A `@sanctioned-effect` / `@sanctioned-pull` / `@sanctioned-sync-render` marker's one-line `<why>`.** The deliberate exception: the marker _is_ the ledger a reviewer greps, and its phrase is what the lint anchors on. Never delete one to shorten a block.
+- **A barrel or module header declaring a contract a gate enforces.** `core/src/public-api.ts` states the internal tier's boundary and the direction of the `core-overlay` edge; both are checked by `postbuild`. That is a specification, not a rationale.
+
+**Move it, never delete it.** Archaeology in a file you are already touching goes to the issue that owns the decision — as a comment on it, so the record stays where a reader who _has_ the question will search — and the source keeps the pointer. There is no `docs/decisions/`: `docs/` is consumer-facing and publishes to the docs site, so an internal decision record there addresses the wrong audience, and a third destination is a third place to keep true. The issue is already the record this file links to a hundred times over.
+
+**Execute this incrementally.** A sweep over the whole library is unreviewable and lands as one unbisectable commit; attach the cleanup to whichever file a PR already opens, and leave the rest alone.
+
+### The density figure, and why the flat one is not a target
+
+`pnpm measure:comment-density` reports it, and the script (`scripts/measure-comment-density.mjs`) is a measurement rather than a gate — it is not in `postbuild`, for the same reason coverage has no threshold: a ceiling set over a number nobody has read the composition of rewards deleting whatever is cheapest, which here is the internal JSDoc on the hardest code in the library.
+
+**The first measurement (2026-08-12, `main` at `aa00d852`) is 687 files and 83 443 non-blank lines**, of which 31 974 are comment — the 38.3% #1737 opened on. The partition is what makes the number actionable, and it inverts the issue's premise:
+
+| Bucket             |  Lines | Share of non-blank | Status                             |
+| ------------------ | -----: | -----------------: | ---------------------------------- |
+| public JSDoc       | 25 747 |              30.9% | mandatory, untouchable             |
+| internal JSDoc     |  4 657 |               5.6% | governed by the policy above       |
+| plain comments     |  1 521 |               1.8% | governed by the policy above       |
+| sanctioned markers |     49 |               0.1% | 23 markers — the exception, immune |
+
+**The 20% target #1737 proposed is arithmetically unreachable and is withdrawn.** Public JSDoc alone is 30.9% of non-blank lines, so deleting every governed line in the library — including the private-field descriptions and the marker ledger — lands at a **33.4%** floor. The issue's premise that "the volume is elsewhere: block comments that argue" is the same error measured from the other side: the arguing blocks are real (the `combobox.ts` bridge comment it quotes was one) but they live inside 7.4% of non-blank lines, not inside the 38.3%.
+
+**The first wave is this policy and the instrument, plus the one site #1737 quotes.** `combobox.ts`'s auto-highlight bridge comment restated both its helper's JSDoc and the shared-pull bullet in the next section, so the source keeps the pointer and loses the argument — three lines, which is the honest size of a wave attached to a file a PR was opening anyway.
+
+**No percentage replaces it.** The governed bucket is judged by content, not by volume: a file that grows a private field with a non-obvious invariant should grow its comment count, and a ceiling would report that as a regression. So a wave records the figure and what it moved; the flat density stops being read as a health number at all, since it is dominated by the one bucket no wave may touch. The `--top <n>` list names the files with the widest governed blocks, which is where a wave looks first — read it as candidates, not as a work order (`eslint-rules-fixtures/*` sits high on it, and its comments are the _subject_ of the lint-rule tests).
+
 ## Never propagate state inside `effect()`
 
 **Never propagate state inside `effect()`.** Writing to a signal from inside an `effect` to derive another piece of state is an anti-pattern in modern Angular: it creates implicit cycles, double change-detection passes, and ordering bugs that are hard to debug. `effect()` is for **side effects** that escape the reactive graph (DOM imperative calls, subscriptions to non-signal sources, logging, focus moves that can't be expressed as host bindings). Reach for the right primitive instead:
