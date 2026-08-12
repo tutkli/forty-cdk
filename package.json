@@ -17,6 +17,7 @@
     "check:alias-input-surface": "node scripts/check-alias-input-surface.mjs",
     "check:matrices": "node scripts/check-convention-matrices.mjs",
     "check:fesm-size": "node scripts/check-fesm-size-budget.mjs",
+    "measure:comment-density": "node scripts/measure-comment-density.mjs",
     "strip:fesm-comments": "node scripts/strip-fesm-comments.mjs",
     "watch": "ng build forty-cdk --watch --configuration development",
     "gen:example-sources": "node scripts/gen-example-sources.mjs",
