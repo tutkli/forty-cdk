@@ -27,7 +27,7 @@
  * rather than the declaring file because `input/src/textarea.ts` has no spec
  * of its own — `ForTextarea`'s call sits beside `ForInput`'s in `input.spec.ts`.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -36,7 +36,8 @@ const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
 const IMPLEMENTS_FORM_CONTROL =
   /(?:^|\n)export\s+(abstract\s+)?class\s+(\w+)(?:<[^>]*>)?([\s\S]*?)\{/g;
 
-const entryPointOf = (key: string): string => key.replace(/^\.\.\/\.\.\//, '').split('/')[0]!;
+const entryPointOf = (key: string): string =>
+  key.replace(/^\/projects\/forty-cdk\//, '').split('/')[0]!;
 
 const withoutComments = (source: string): string =>
   source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(?:^|[^:])\/\/[^\n]*/g, '');

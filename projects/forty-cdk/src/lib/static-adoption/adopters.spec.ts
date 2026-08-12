@@ -31,7 +31,7 @@ import { STATIC_ADOPTION_ADOPTERS } from './fixtures/registry';
  * sites, either of which would make the coverage assertion pass for the wrong
  * reason.
  */
-const SOURCES = import.meta.glob('../../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -60,7 +60,7 @@ const SEAM_CHANNEL: Readonly<Record<StaticAdoptionSeam, StaticAdoptionChannel>> 
   hostDescribedBy: 'aria-describedby',
 };
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 /**
  * `<source file>#<seam>` for every call site in library source.

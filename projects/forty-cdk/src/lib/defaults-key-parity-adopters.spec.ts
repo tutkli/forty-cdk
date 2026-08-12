@@ -30,13 +30,13 @@ import { assertDefaultsKeyParity, type DefaultsKeyFamily } from '../test-utils/c
  *     which is why the closure case takes the union of every declared key rather
  *     than one family's own.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
 });
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
   .filter(([key]) => !key.endsWith('.spec.ts'))

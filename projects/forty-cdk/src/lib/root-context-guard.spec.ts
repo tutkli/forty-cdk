@@ -70,7 +70,7 @@ import { renderHost } from '../test-utils/render';
  * link is dead precisely where it is read. `For`-prefixed context interfaces are
  * the public ones, which is what makes the check a one-line pattern.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -346,7 +346,7 @@ class ExplicitComboboxTriggerHost {
   readonly impostor = signal({} as ForComboboxContext);
 }
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 const stripComments = (text: string): string =>
   text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
