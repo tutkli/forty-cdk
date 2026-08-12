@@ -57,9 +57,14 @@ export class ForTabsContent {
    * panel's `tabindex`. Leave unset (default `null`) to let the directive
    * decide: a panel with no focusable descendants gets `tabindex="0"` so it
    * is reachable by Tab, a panel with focusable descendants gets none. Set
-   * `true` when the panel always holds its own focusable content (skip the
-   * extra tab stop without paying for detection); set `false` to force the
-   * panel to be a tab stop regardless of its content.
+   * `true` when the panel always holds its own focusable content, `false` to
+   * force the panel to be a tab stop regardless of its content.
+   *
+   * The override decides the attribute only; the detection itself runs either
+   * way. That makes it the way out of an answer the observer cannot re-measure
+   * — focusable content inside a shadow root, or a visibility flip driven
+   * purely by a stylesheet — both of which the README's _Known limitations_
+   * covers.
    */
   readonly interactiveContent = input<boolean | null, unknown>(null, {
     transform: (value: unknown) => (value == null ? null : booleanAttribute(value)),
