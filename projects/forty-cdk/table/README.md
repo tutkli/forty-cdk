@@ -87,6 +87,12 @@ placeholders, whole-row navigation lists, measured row heights, and per-datum ro
 top of it. It is additive: the raw primitives above keep working unchanged, and a table that never
 imports `ForTableBody` never bundles it.
 
+Importing it does pull `forty-cdk/drag-drop` in with it, because the body stamps the drag pieces a
+`reorderable` column needs and a directive can only be applied from the template that declares it.
+Those bytes are retained whether or not any column is `reorderable` — **18.0 kB raw / 5.1 kB gzip**
+on a production build ([#1730](https://github.com/tutkli/forty-cdk/issues/1730)), a third of what the
+declarative layer costs over hand-written cells.
+
 → **[Table: declarative columns](../../../docs/table-declarative-columns.md)**
 
 ## Sticky header + CSS custom property
@@ -476,6 +482,12 @@ Without a `[forTableColumnLabel]` marker present, `[fitIncludesHeader]` degrades
 the **drag-drop** primitive to make table headers and data rows reorderable, each wrapping
 `[forDropList]` via `hostDirectives` so the whole drag-drop surface stays available. **The table
 never mutates the consumer's data** — reorder handlers apply `moveItemInArray` to a local signal.
+
+Marking a `[forTableColumnDef]` `reorderable` is the declarative twin of that composition and adds no
+bundle cost of its own: `<for-table-body>` carries `forty-cdk/drag-drop` for every consumer already —
+see [Declarative columns](#declarative-columns-fortablecolumndef--for-table-body) for the measured
+figure. On the raw path you opt into drag-drop explicitly by
+importing these two directives, so a raw table that skips them pays nothing.
 
 → **[Table: column & row reordering](../../../docs/table-reordering.md)**
 

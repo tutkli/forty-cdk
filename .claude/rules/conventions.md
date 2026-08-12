@@ -927,12 +927,21 @@ The per-file adopter rosters behind both rows are generated at the end of this f
   `[forTableColumnReorder]` on the header row and `[forDraggable]` on each reorderable header cell and
   re-emits `columnReorder`; because a directive can only be applied from the template of the component
   that lists it in `imports`, `ForTableBody` **statically imports `forty-cdk/drag-drop`** — so every
-  `<for-table-body>` consumer bundles it (~14 KB gz) even with no reorderable column. This is a
-  deliberate, documented coupling (the spike decision on #1350): the earlier `@defer` idea cannot
-  code-split a sibling directive out of a published ng-packagr FESM, so isolation is unachievable
-  together with the unified-def API. The raw `[forTableCell]` / `[forTableHeaderCell]` primitives stay
-  the drag-drop-free path. Per-entry-point tree-shaking is otherwise intact (a table that never imports
-  `ForTableBody` pulls neither it nor drag-drop).
+  `<for-table-body>` consumer bundles it even with no reorderable column. This is a deliberate,
+  documented coupling (the spike decision on #1350): the earlier `@defer` idea cannot code-split a
+  sibling directive out of a published ng-packagr FESM, so isolation is unachievable together with the
+  unified-def API. The raw `[forTableCell]` / `[forTableHeaderCell]` primitives stay the drag-drop-free
+  path. Per-entry-point tree-shaking is otherwise intact (a table that never imports `ForTableBody`
+  pulls neither it nor drag-drop). **The price is measured, not estimated
+  ([#1730](https://github.com/tutkli/forty-cdk/issues/1730)):** on a production `ng build` whose lazy
+  route holds one two-column table, the retained drag-drop bytes are **18.0 kB raw / 5.1 kB gzip**, and
+  the same route with every column `reorderable` is 0.05 kB larger — `/*@__PURE__*/` drops nothing,
+  because the directives are reachable from a component definition the app does use. Splitting a
+  reorder-capable body out of `<for-table-body>` was rejected on that number: the whole declarative
+  layer costs +54.2 kB raw / +13.7 kB transfer over the raw path on the same route, so the split would
+  buy back a third of a delta the consumer already accepted, for a second body component, its public
+  surface, its docs and a pre-1.0 break. The earlier "~14 KB gz" figure quoted here and in the docs was
+  the whole 80.1 KB FESM and overstated the real cost by ~2.7×.
 
 <!-- BEGIN GENERATED: convention-matrices -->
 
