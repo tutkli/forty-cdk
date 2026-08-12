@@ -17,7 +17,7 @@ import type { FloatingAlign, FloatingConfig, FloatingSide } from './floating';
  * root. Everything below is identical for every anchored overlay in the
  * library, which is why `arrowPadding` is not among them: only the three roots
  * shipping an arrow piece declare it, each seeded from its own defaults
- * provider ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)).
+ * provider.
  */
 export const ANCHORED_POSITIONING_DEFAULTS = {
   /** Default gap (px) along the cross axis (parallel to `side`). */

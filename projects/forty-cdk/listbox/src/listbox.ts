@@ -604,7 +604,7 @@ export class ForListbox<T = string>
    * Guards the `selectionFollowsFocus` + virtualization invariant at every
    * keyboard move of the virtualized activedescendant — arrow / Home / End /
    * Page navigation and a typeahead match alike, since both move focus without
-   * carrying selection. Seeding on `focusin` and a click are deliberately not
+   * carrying selection. Seeding on `focusin` and a click are not
    * covered: neither is a navigation the combination degrades.
    */
   #assertSelectionFollowsFocusSupported(): void {

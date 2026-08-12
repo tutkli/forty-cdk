@@ -192,7 +192,7 @@ export class ForSelect<T = string>
    * anchored-positioning input — `position`, `side`, `align`, `sideOffset`,
    * `alignOffset`, `sticky`, `hideWhenDetached`, `clipUntilPositioned`, `avoidCollisions`,
    * `collisionPadding` — is a no-op in this mode. Default
-   * `false` (non-breaking). The swipe / snap-point sheet is deliberately not
+   * `false` (non-breaking). The swipe / snap-point sheet is not
    * this mode — compose a `ForListbox` inside a `ForDrawer` for that.
    */
   readonly modal = input(false, { transform: booleanAttribute });
@@ -815,7 +815,7 @@ export class ForSelect<T = string>
    * Guards the `selectionFollowsFocus` + virtualization invariant at every
    * keyboard move of the virtualized activedescendant — arrow / Home / End /
    * Page navigation and a typeahead match alike, since both move focus without
-   * carrying selection. Seeding on open and a click are deliberately not
+   * carrying selection. Seeding on open and a click are not
    * covered: neither is a navigation the combination degrades.
    */
   #assertSelectionFollowsFocusSupported(): void {

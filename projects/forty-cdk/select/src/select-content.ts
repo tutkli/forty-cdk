@@ -16,41 +16,33 @@ import { injectSelectContext, type SelectContext } from './select-context';
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
- * natural mount cycle. While mounted, a `DismissibleLayer` activates
- * (Escape, pointer-down outside, focus outside); the trigger element is
- * exempt from outside-pointer checks so trigger clicks toggle without
- * dismissal racing.
+ * natural mount cycle. While mounted it dismisses on Escape, pointer-down
+ * outside or focus outside; the trigger element is exempt from outside-pointer
+ * checks so trigger clicks toggle without dismissal racing.
  *
  * Initial focus is sent to the selected option (`'selected'`), the first
  * enabled option (`'first'`), or the last enabled option (`'last'`)
  * according to the trigger's hint. On destroy, focus returns to the
  * trigger when `returnFocus` is true.
  *
- * The lifecycle is owned by one of the two shared shells, picked once on
- * construction from `[forSelect].modal`:
+ * The lifecycle is picked once on construction from `[forSelect].modal`:
  *
- * - **non-modal (default)** — `injectOverlayShell` anchors the listbox to the
- *   trigger and branches on `[forSelect].position`:
- *   - `'popper'` (default) — standard `injectFloating` path with full
- *     anchored placement (`side`, `align`, `sideOffset`,
- *     `alignOffset`, `flip`, `shift`, `arrow`, `hideWhenDetached`).
- *   - `'item-aligned'` — `injectItemAlignedPositioner` overlays the listbox so
- *     the selected option's center aligns with the trigger's center. The
- *     anchored-placement inputs are documented as no-ops in this mode.
- * - **modal** — `injectModalShell` traps focus, inerts the background, and
- *   locks body scroll (a centered surface the consumer positions with CSS, not
- *   trigger-anchored). The batteries-included touch presentation. Same Escape /
- *   outside-pointer dismiss, `dismissible` / `returnFocus` / `ariaLabel`, and
- *   `autoFocusOnOpen` / `autoFocusOnClose` veto hooks; every anchored-
- *   positioning input is a no-op. Modality is conveyed behaviorally, by the
- *   `inert` siblings the shell applies, and reflected as `data-modal` for
- *   styling: the surface keeps `role="listbox"`, which does not support
- *   `aria-modal`, so emitting it would be an `aria-allowed-attr` violation
- *   that announces nothing.
- *
- * Mount/unmount of the visible content is the consumer's responsibility —
- * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
- * natural mount cycle.
+ * - **non-modal (default)** — the listbox is anchored to the trigger and
+ *   branches on `[forSelect].position`:
+ *   - `'popper'` (default) — full anchored placement (`side`, `align`,
+ *     `sideOffset`, `alignOffset`, `flip`, `shift`, `arrow`,
+ *     `hideWhenDetached`).
+ *   - `'item-aligned'` — the listbox overlays the trigger so the selected
+ *     option's center aligns with the trigger's center. The anchored-placement
+ *     inputs are no-ops in this mode.
+ * - **modal** — focus is trapped, the background is inerted and body scroll is
+ *   locked; the surface is centered and positioned by the consumer's CSS rather
+ *   than anchored to the trigger, so every anchored-positioning input is a
+ *   no-op. Escape / outside-pointer dismiss, `dismissible` / `returnFocus` /
+ *   `ariaLabel` and the `autoFocusOnOpen` / `autoFocusOnClose` vetoes are
+ *   unchanged. Modality is conveyed by the `inert` siblings and reflected as
+ *   `data-modal` for styling; `role="listbox"` does not support `aria-modal`,
+ *   so it is not emitted.
  */
 @Directive({
   selector: '[forSelectContent]',

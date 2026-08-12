@@ -72,7 +72,7 @@ export interface ForSelectOptionHandle<T = unknown> extends CollectionHandle {
  * points at, the reason of the last close, and the open / close commands that
  * mutate `open()` through the root's guards.
  *
- * It is deliberately narrow. The full state machine behind it — the trigger /
+ * It is narrow. The full state machine behind it — the trigger /
  * anchor / content / option registries, the DOM-focus navigation algorithm, the
  * initial-focus state, and the dismiss / auto-focus emit forwarders — is the
  * library's own wiring and is refactored without notice, so it stays on an
@@ -126,7 +126,7 @@ export type ForSelectOverlayContext<T = unknown> = ListboxOverlayContext<
  * and drives. Advanced consumers inject the token to read the selection and the
  * open state and to move them through the root's guards (`activate` /
  * `selectAll`, plus the open / close commands on {@link ForSelectContext.overlay}).
- * The wiring the library's own pieces read off the root is deliberately not
+ * The wiring the library's own pieces read off the root is not
  * part of it.
  *
  * Generic over the option value type `T` (default `string` at the public
@@ -201,7 +201,7 @@ export interface ForSelectContext<T = unknown> {
  * typeahead handlers `[forSelectOption]` routes its keys through, and the
  * virtualized activedescendant model.
  *
- * Deliberately **not** part of {@link ForSelectContext} and never exported from
+ * **Not** part of {@link ForSelectContext} and never exported from
  * `public-api.ts`: these are the members a refactor of the anatomy moves, so
  * freezing them at 1.0 would freeze the anatomy with them.
  */

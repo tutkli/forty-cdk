@@ -145,7 +145,7 @@ export interface ForListboxContext<T = unknown> {
  * The listbox's pointer channel: the one call `[forListboxOption]` makes so the
  * option under the cursor takes the highlight.
  *
- * Deliberately **not** part of {@link ForListboxContext} and never exported from
+ * **Not** part of {@link ForListboxContext} and never exported from
  * `public-api.ts` — a consumer styles the pointed-at option off
  * `data-highlighted`, never by reporting a hover into the root.
  */

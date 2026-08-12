@@ -31,7 +31,7 @@ import { FOR_NUMBER_INPUT_DEFAULTS } from './number-input-defaults';
  *
  * Because the displayed (formatted) text can differ from the submitted value,
  * the directive mounts a hidden `<input>` carrying the raw number for native
- * form submission when `name` is set — deliberately unlike `ForInput`, whose
+ * form submission when `name` is set — unlike `ForInput`, whose
  * visible element is itself the submittable field. The visible spinbutton's own
  * `name` attribute is suppressed (`[attr.name]="null"`), so a consumer-set
  * static `name` feeds only the hidden input and never double-submits its

@@ -51,16 +51,15 @@ import { FOR_MENU_DEFAULTS } from './menu-defaults';
  *
  * `[forDropdownMenuTrigger]` resolves this root through DI like any menu piece.
  * `[forContextMenuTrigger]` resolves `FOR_CONTEXT_MENU_CONTEXT`, which this root
- * deliberately does not provide (`forty-cdk/menu` must not depend on
- * `forty-cdk/context-menu`), so bind it explicitly —
- * `[forContextMenuTrigger]="row"` with `#row="forMenu"`.
+ * does not provide, so bind it explicitly — `[forContextMenuTrigger]="row"` with
+ * `#row="forMenu"`.
  *
  * Accessible name: the labelling policy follows the active opener too. A button
  * opener is a discrete labelling control, so the surface falls back to
  * `aria-labelledby="<openerId>"` for it; a right-click region is not — pointing
  * the menu's name at a whole row would announce the entire row — so nothing is
- * emitted for that one. `[ariaLabel]` wins over both, and a shared menu with any
- * region opener still wants it.
+ * emitted for that one. `[ariaLabel]` wins over both, and a shared menu with a
+ * region opener needs it.
  *
  * Positioning is seeded from `provideForMenuDefaults` — `sideOffset` defaults to
  * `0`, flush against the anchor, which is what a pointer-anchored open wants —

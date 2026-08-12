@@ -77,7 +77,7 @@ export interface ForCarouselContext {
  * share, the DOM-order index lookups, the viewport id the rotation control
  * points `aria-controls` at, and the localizable positional labels.
  *
- * Deliberately **not** part of {@link ForCarouselContext} and never exported
+ * **Not** part of {@link ForCarouselContext} and never exported
  * from `public-api.ts` — a consumer drives the carousel through `scrollTo` /
  * `scrollNext`, never through the indicators' shared tab stop.
  */

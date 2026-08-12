@@ -15,9 +15,9 @@ import { injectTimePickerContext } from './time-picker-context';
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
- * natural mount cycle. While mounted, a `DismissibleLayer` activates (Escape,
- * pointer-down outside, focus outside); the trigger element is exempt from
- * outside-pointer checks so trigger clicks toggle without dismissal racing.
+ * natural mount cycle. While mounted it dismisses on Escape, pointer-down
+ * outside or focus outside; the trigger element is exempt from outside-pointer
+ * checks so trigger clicks toggle without dismissal racing.
  *
  * Initial focus is sent to the selected slot (`'selected'`), the first
  * enabled slot (`'first'`), or the last enabled slot (`'last'`) according to
@@ -26,7 +26,7 @@ import { injectTimePickerContext } from './time-picker-context';
  *
  * In modal mode, modality is conveyed behaviorally — by the `inert` siblings
  * the shell applies — and reflected as `data-modal` for styling. `aria-modal`
- * is deliberately not emitted: `role="listbox"` does not support it, so the
+ * is not emitted: `role="listbox"` does not support it, so the
  * attribute would be an `aria-allowed-attr` violation that announces nothing.
  */
 @Directive({

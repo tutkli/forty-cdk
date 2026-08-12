@@ -81,7 +81,7 @@ export interface TableDefHandle<D> {
 
 /**
  * The def-registration protocol: how the four declarative pieces wire themselves
- * into the registry a `<for-table-body>` reads. Deliberately kept off
+ * into the registry a `<for-table-body>` reads. Kept off
  * {@link ForTableDefRegistry} — this is the surface the library refactors, and
  * nothing outside `forty-cdk/table` needs to call it.
  */
@@ -243,7 +243,7 @@ export function provideForTableDefRegistry(): Provider[] {
  * Resolves the registry `<for-table-body>`'s own `providers` install.
  *
  * The lookup is optional only so the failure can be reported in the library's own
- * vocabulary: {@link TableDefRegistry} is deliberately absent from every barrel, so
+ * vocabulary: {@link TableDefRegistry} is absent from every barrel, so
  * a bare `NG0201: No provider found for _TableDefRegistry` names a symbol the
  * consumer cannot import and suggests no repair. The only shape that reaches it is
  * a subclass declaring its own `@Component` — Angular replaces the inherited

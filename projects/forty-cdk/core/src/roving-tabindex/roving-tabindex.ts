@@ -8,7 +8,7 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * The active item is the entry point for `Tab` into the group; arrow-key
  * navigation moves it (the consumer wires this with `KeyboardNavigation`).
  *
- * The utility deliberately does not handle key events. Its job is to expose
+ * The utility does not handle key events. Its job is to expose
  * a reactive `tabindexFor(el)` for host bindings on each item, plus
  * `setActive` / `focusActive` for the consumer.
  *
@@ -31,19 +31,8 @@ import type { HostRovingItemHandle } from './host-roving-context';
  * yields a pass-through of the raw pointer for consumers that own no roving
  * collection (date-field / time-field).
  *
- * The reconciliation reads `items()` **only while something is active**:
- * with no active pointer there is nothing to reconcile (the computation
- * returns the `null` raw pointer whatever the list holds), so reading the
- * list would buy nothing and cost the whole group. Every item's `tabindex`
- * gate is a live consumer of {@link hasActive}, and a container's item list
- * is typically a `computed` fold over per-child registries that is
- * invalidated once per child while the group mounts — so an unconditional
- * read makes each registration notify every item registered so far, which
- * is quadratic in group size. Gating it keeps the mount's tab-stop channel independent of the list.
- *
  * Construct directly with `new RovingTabindex()` — there is no internal
- * state requiring an injection context or `DestroyRef` cleanup (the
- * reconciliation is a `linkedSignal`, not an `effect`).
+ * state requiring an injection context or `DestroyRef` cleanup.
  */
 export class RovingTabindex {
   readonly #rawActive = signal<HTMLElement | null>(null);

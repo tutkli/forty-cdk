@@ -119,7 +119,7 @@ export class ForHoverCard extends AnchoredOverlayPositioningBase implements ForH
    * disable their own `animate.enter` / `animate.leave` and CSS transitions
    * without re-deriving the media query. The card's JS-coordinated timing (the
    * open / close hover-intent delays) is intent debouncing, not motion, so it
-   * is deliberately unchanged under reduced motion.
+   * is unchanged under reduced motion.
    */
   readonly reducedMotion = injectPrefersReducedMotion();
 

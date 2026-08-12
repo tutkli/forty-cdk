@@ -96,7 +96,7 @@ export interface PositioningConfig {
    * i.e. after the portal move, after the `clip-path` anti-flash baseline is
    * dropped, and after the positioner has written its `data-*` / CSS vars.
    *
-   * The semantics are deliberately **per-open, not per-run**: a positioner
+   * The semantics are **per-open, not per-run**: a positioner
    * config change while the surface stays open re-runs the effect (a new
    * positioning run), but this hook does **not** fire again — it fires only on
    * the run that first resolves after `open` transitions to `true`. A run that

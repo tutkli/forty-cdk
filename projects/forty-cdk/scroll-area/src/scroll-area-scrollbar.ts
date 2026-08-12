@@ -74,7 +74,7 @@ export class ForScrollAreaScrollbar {
 
   /**
    * Maximum scroll offset of this axis (`scrollSize - clientSize`), floored at
-   * `0`. Deliberately epsilon-free — unlike `hasOverflow`, which keeps a 1px
+   * `0`. Epsilon-free — unlike `hasOverflow`, which keeps a 1px
    * threshold because it gates the track's self-removal.
    */
   readonly maxScroll = computed<number>(() => {

@@ -111,7 +111,7 @@ const EMPTY_ACTIVATE_OPTIONS: DismissibleLayerActivateOptions = { channels: [] }
  * above its own descendant, making the descendant's first focus read as `focusOutside` and collapse
  * the chain.
  *
- * **Listener phases are deliberately asymmetric.** `pointerdown` and `focusin` register on the
+ * **Listener phases are asymmetric.** `pointerdown` and `focusin` register on the
  * capture phase, so an outside interaction is detected even when overlay content stops
  * propagation. `keydown` registers on the bubble phase instead, because the per-overlay Escape
  * handlers call `stopPropagation()` after closing — which is what keeps one Escape from closing an

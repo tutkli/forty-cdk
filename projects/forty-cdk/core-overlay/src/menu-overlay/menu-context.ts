@@ -308,10 +308,9 @@ export interface ForMenuContext {
    */
   emitEscapeKeyDown(event: KeyboardEvent): void;
   /**
-   * Outside-interaction emit forwarders. `injectOverlayShell` builds and
-   * reuses one `VetoableNativeEvent` across the specific and composite
-   * channels, then hands it to these forwarders to fire the matching output
-   * and calls `requestClose` when un-vetoed.
+   * Outside-interaction emit forwarders. The specific and composite channels
+   * observe the same veto, so `preventDefault()` from either one suppresses the
+   * close that otherwise follows.
    */
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;

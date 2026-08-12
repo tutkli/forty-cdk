@@ -119,9 +119,7 @@ export class ForTableRowDef<T> {
    * **absolute** index into the full dataset. Evaluated for every datum on each
    * change-detection pass, so keep it cheap and free of side effects.
    *
-   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
-   * `input.required` so the registry can skip a def that has registered but not
-   * been bound yet, and an unbound def throws in dev mode.
+   * Mandatory — an unbound def throws in dev mode.
    */
   readonly when = input(unsetInput<(row: T, index: number) => boolean>());
 

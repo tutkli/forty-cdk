@@ -137,7 +137,7 @@ export interface UnsupportedVirtualizedSelectionFollowsFocusContext {
  * navigates by typeahead (or, in a tree, by entering a child) with the same
  * silent degradation and no report. Each root routes its moves through one
  * private `#assertSelectionFollowsFocusSupported()` for that reason. Seeding
- * the activedescendant on focus / open is not a move and is deliberately
+ * the activedescendant on focus / open is not a move and is
  * uncovered.
  *
  * Shared by Listbox, Select and Tree; the primitive name and the two hint

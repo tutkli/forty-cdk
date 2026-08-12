@@ -7,7 +7,7 @@ import { DEFAULT_TIME_FIELD_SEGMENT_LABELS, FOR_TIME_FIELD_DEFAULTS } from './ti
 /**
  * One editable spinbutton segment of a `[forTimeField]` — the hour, minute,
  * second, or AM/PM (`dayPeriod`) part. Apply on a focusable element (typically
- * a `<span>`); the shared {@link ForDateTimeSegmentBase} adds
+ * a `<span>`); the directive adds
  * `role="spinbutton"`, the `aria-valuemin` / `aria-valuemax` / `aria-valuenow` /
  * `aria-valuetext` reflection, the roving tabindex, and the full keyboard map:
  *

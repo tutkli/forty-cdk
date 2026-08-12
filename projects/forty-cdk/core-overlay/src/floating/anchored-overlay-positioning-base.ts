@@ -64,30 +64,15 @@ export interface AnchoredPositioningOverride {
  * scope default read through {@link positioningDefaults}. The five non-placement
  * inputs (`avoidCollisions` / `sticky` / `hideWhenDetached` /
  * `clipUntilPositioned`, plus `alignOffset`'s own library fallback) default from
- * the shared {@link ANCHORED_POSITIONING_DEFAULTS} constant. The fallback is
- * read lazily inside each `computed()` factory — which runs only on first
- * evaluation, after the subclass field initializer has assigned
- * `positioningDefaults` — so the base never touches the still-uninitialized
- * subclass field during construction.
+ * the shared {@link ANCHORED_POSITIONING_DEFAULTS} constant.
  *
- * `arrowPadding` is deliberately **not** here, on the
- * `fallbackAxisSideDirection` precedent: floating-ui installs the `arrow`
- * middleware only when an arrow element is supplied, so padding it is a
- * property of an anatomy that has an arrow rather than of every anchored
- * overlay. Exactly three roots ship one — `[forPopover]`, `[forTooltip]`,
- * `[forHoverCard]` — and each declares the input itself, seeded from its own
- * defaults provider. Inheriting it here gave the other ten a public input that
- * reached nothing ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)).
+ * `arrowPadding` is **not** here: floating-ui installs the `arrow` middleware
+ * only when an arrow element is supplied, so it belongs to the three roots that
+ * ship one — `[forPopover]`, `[forTooltip]`, `[forHoverCard]` — each declaring
+ * the input itself, seeded from its own defaults provider.
  *
- * Implemented as an `@Directive()`-decorated abstract class because Angular
- * recognises signal inputs only when `input()` calls appear directly in a
- * class-field initializer (NG8110); a factory returning the bundle would not be
- * detected. Inheritance is the supported mechanism for sharing initializer-API
- * declarations across directives — and because TypeScript has single
- * inheritance, the five roots that must also extend `FormUiControlBase` reach
- * the identical block through `AnchoredFormValueControlBase` instead. The two
- * declarations are pinned character-for-character by
- * `anchored-positioning-inputs.spec.ts`.
+ * Roots that must also extend `FormUiControlBase` reach the identical block
+ * through `AnchoredFormValueControlBase` instead.
  */
 @Directive()
 export abstract class AnchoredOverlayPositioningBase {

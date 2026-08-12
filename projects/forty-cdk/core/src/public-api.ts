@@ -43,7 +43,7 @@
  * nor the promise the consumer reads can erode by accident.
  *
  * Class bases that public directives merely `extends` (`FormUiControlBase`,
- * `ModalSurfaceBase`, `MenuOverlayHost`, …) are deliberately internal —
+ * `ModalSurfaceBase`, `MenuOverlayHost`, …) are internal —
  * subclassing them is not a supported contract.
  *
  * Scope: this barrel lists only what actually crosses the entry point's

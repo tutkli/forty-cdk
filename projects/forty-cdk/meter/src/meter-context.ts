@@ -11,6 +11,7 @@ import { orphanContextError } from 'forty-cdk/core';
  */
 export type ForMeterQuality = 'optimum' | 'sub-optimum' | 'even-less-good';
 
+/** Read surface `[forMeter]` publishes through {@link FOR_METER_CONTEXT}. */
 export interface ForMeterContext {
   /** Clamped to `[min, max]`. Use this for any visual / ARIA reflection. */
   readonly clampedValue: Signal<number>;

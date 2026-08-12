@@ -50,7 +50,7 @@ import { FOR_DATE_RANGE_FIELD_DEFAULTS } from './date-range-field-defaults';
  * Read-only and required states reflect as the boolean `data-readonly` / `data-required` hooks on
  * the root: `role="group"` supports neither ARIA property. The read-only announcement lives on each
  * `[forDateRangeFieldSegment]` instead, whose `role="spinbutton"` does support it; the required
- * state is deliberately not repeated per segment.
+ * state is not repeated per segment.
  *
  * The bounds are named `minDate` / `maxDate` because `min` / `max` are reserved `FormUiControl`
  * members whose types cannot express a date bound.

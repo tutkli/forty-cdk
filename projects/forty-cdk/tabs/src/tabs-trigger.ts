@@ -51,11 +51,8 @@ export class ForTabsTrigger {
   readonly #host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   /**
-   * Value this trigger selects, paired with the `[forTabsContent]` carrying the
-   * same value. Mandatory: it is seeded with the `unsetInput` sentinel rather
-   * than declared `input.required` so the root can skip a trigger that has
-   * registered but not been bound yet, and an unbound trigger throws in dev
-   * mode.
+   * Value this trigger selects, paired with the `[forTabsContent]` carrying the same value.
+   * Mandatory — an unbound trigger throws in dev mode.
    */
   readonly value = input(unsetInput<string>());
   /**

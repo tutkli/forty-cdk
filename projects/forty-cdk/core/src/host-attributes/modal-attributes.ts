@@ -20,7 +20,7 @@ export const MODAL_PEER_ATTRIBUTE = 'data-for-modal-peer';
  *
  * Stronger than {@link MODAL_PEER_ATTRIBUTE}: like a peer it is skipped by the inert pass, and in
  * addition every active modal's dismissible layer treats interactions inside it as inside, so a
- * pointer-down or focus within it never dismisses the modal. A peer such as a backdrop deliberately
+ * pointer-down or focus within it never dismisses the modal. A peer such as a backdrop
  * stays part of the dismiss-outside surface; an exempt overlay does not.
  *
  * Carried by `ForToastViewport` and by every `LiveAnnouncer` region. The viewport host-binds the

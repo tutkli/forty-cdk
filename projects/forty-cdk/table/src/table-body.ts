@@ -506,7 +506,7 @@ export class ForTableBody<T = unknown> {
    * intact. The row still activates from anywhere else — cell text, the gaps between cells, or the
    * focused row host.
    *
-   * `rowContextMenu` is deliberately unguarded, so a right-click over an inner control still offers
+   * `rowContextMenu` is unguarded, so a right-click over an inner control still offers
    * the row's context menu, matching native lists.
    */
   readonly interactiveRows = input(false, { transform: booleanAttribute });

@@ -166,28 +166,22 @@ export interface OverlayControllerDeps<Focus, CloseReason> {
 /**
  * The open / close / dismiss machine every trigger-anchored overlay surface
  * runs, composed by `MenuOverlay` (the four menu roots), by
- * `ListboxOverlayController` (`[forSelect]` / `[forTimePicker]`), and — since
- * [#1768](https://github.com/tutkli/forty-cdk/issues/1768) — by the two roots
- * that ran a copy of it without any overlay controller: `[forCombobox]` and
- * `[forMenubar]`'s multiplexed `MenubarMenuContext`. It owns the initial-focus
- * and close-reason state, the `disabled`-gated open / close / toggle
- * transitions, the four outside / Escape emit forwarders, the shell's implicit
- * `requestClose`, and the two auto-focus veto pass-throughs — plus the order in
- * which the two supplied element sides mint their ids.
+ * `ListboxOverlayController` (`[forSelect]` / `[forTimePicker]`), and by
+ * `[forCombobox]` and `[forMenubar]`. It owns the initial-focus and close-reason
+ * state, the `disabled`-gated open / close / toggle transitions, the four
+ * outside / Escape emit forwarders, the shell's implicit `requestClose`, and the
+ * two auto-focus veto pass-throughs — plus the order in which the two supplied
+ * element sides mint their ids.
  *
- * It deliberately does not own the **collection**: the menu side's item list is
- * `MenuItemList`, which `[forMenubar]` composes on its own without any overlay
- * controller, so a collection folded in here would be unreachable from there.
- * The two navigate tails differ anyway — the menu suppresses the item highlight
- * and scrolls the surface's own overflow, the listbox runs a per-primitive
- * `onNavigateFocus` and gates the move on `disabled`. What the two collections
- * do share is the enabled-handle scan, deduplicated one level down in
- * `core/collection/enabled-handle-navigation`.
+ * It does not own the item **collection**: the menu side composes `MenuItemList`
+ * separately, and the two navigate tails differ — the menu suppresses the item
+ * highlight and scrolls the surface's own overflow, the listbox runs a
+ * per-primitive `onNavigateFocus` and gates the move on `disabled`.
  *
  * Construct it from a directive's field initializer, or from a controller
  * constructed there, so the slot factories' `inject()` calls resolve through the
  * directive's injector. A caller whose factories mint no id needs no injection
- * context at all, which is what keeps `MenubarMenuContext` a plain class.
+ * context at all.
  *
  * @typeParam Focus Initial-focus union owned by the composing controller.
  * @typeParam CloseReason Close-reason union owned by the composing controller.

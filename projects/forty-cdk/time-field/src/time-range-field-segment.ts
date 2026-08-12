@@ -11,7 +11,7 @@ import {
  * One editable spinbutton segment of a `[forTimeRangeFieldStart]` /
  * `[forTimeRangeFieldEnd]` endpoint — the hour, minute, second, or AM·PM
  * (`dayPeriod`) part. Apply on a focusable element (typically a `<span>`); the
- * shared {@link ForDateTimeSegmentBase} adds `role="spinbutton"`, the
+ * directive adds `role="spinbutton"`, the
  * `aria-valuemin` / `aria-valuemax` / `aria-valuenow` / `aria-valuetext`
  * reflection, the roving tabindex (scoped to the surrounding endpoint group),
  * and the full keyboard map (digits, a/p for AM·PM, ArrowUp/Down to step,

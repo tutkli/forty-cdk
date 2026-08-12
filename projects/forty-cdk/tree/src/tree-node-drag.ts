@@ -94,9 +94,9 @@ type DragMode = 'idle' | 'keyboard' | 'pointer';
  * `(nodeDrop)` reports `ForTreeDragDropEvent<string>` while the runtime carries the node value:
  * a handler typed at the real node fails with `TS2345`, and retyping that handler to `string` to
  * satisfy the diagnostic is what makes `moveTreeNode` silently return its `roots` unchanged.
- * A `[canDrop]` that vetoes nothing (`() => true`) is enough to carry the inference. Note that
- * annotating a `@ViewChild` / `viewChild` reference recovers `T` only for reading
- * {@link ForTreeNodeDrag.dropIndicator} from TypeScript — it cannot retype a template binding.
+ * A `[canDrop]` that vetoes nothing (`() => true`) is enough to carry the inference. Annotating a
+ * `viewChild` reference recovers `T` only for reading {@link ForTreeNodeDrag.dropIndicator} from
+ * TypeScript; it cannot retype a template binding.
  */
 @Directive({
   selector: '[forTreeNodeDrag]',

@@ -34,28 +34,24 @@ import { FOR_DATE_PICKER_DEFAULTS } from './date-picker-defaults';
  *
  * The root is the form value: it implements `FormValueControl<D | null>`, so it auto-wires with
  * `[formField]` and auto-associates inside a `[forField]`. The trigger is the focusable control
- * carrying `name` / `disabled` / `invalid`. The shared overlay, trigger, anchor, dismiss and focus
- * machinery lives in {@link DatePickerBase}.
+ * carrying `name` / `disabled` / `invalid`.
  *
  * The surface defaults to a non-modal popover anchored to the trigger, dismissed on Escape or an
  * outside pointer, returning focus on close; set `modal` for the trapped, inert, scroll-locked
  * variant. Mounting is the consumer's job — wrap `[forDatePickerContent]` with `@if (open())`.
  *
  * The projected `ForCalendar` is two-way bound by the consumer and forwarded `[min]` / `[max]` /
- * `[isDateUnavailable]` from the picker's accessors. Selections are observed through a
- * `contentChild` query on the calendar's `valueChange`, leaving the calendar primitive untouched;
- * on selection the picker mirrors the value, flips `touched` and — with the default
- * `closeOnSelect` — closes the surface.
+ * `[isDateUnavailable]` from the picker's accessors. On selection the picker mirrors the value,
+ * flips `touched` and — with the default `closeOnSelect` — closes the surface.
  *
  * Setting `granularity` finer than `'day'` makes it a date-time picker: project a `[forTimeField]`
- * beside the calendar, binding both children **one-way** to `picker.value()` so their internal
- * writes cannot clobber each other, and the picker grafts the entered time onto each selection.
- * That requires a time-capable adapter.
+ * beside the calendar and bind both children **one-way** to `picker.value()`, and the picker grafts
+ * the entered time onto each selection. That requires a time-capable adapter.
  *
  * For range selection use `ForDateRangePicker`.
  *
  * The bounds are named `minDate` / `maxDate` because `min` / `max` are reserved `FormUiControl`
- * members typed for numeric validators.
+ * members.
  *
  * @typeParam D The adapter's immutable date (or, with `granularity > 'day'`, date-time) type.
  *

@@ -18,19 +18,18 @@ import { injectComboboxContext } from './combobox-context';
  *
  * - **Editable (no list)** — content itself carries `role="listbox"`,
  *   `tabindex="-1"`, `aria-multiselectable`, and the labelled role
- *   (`aria-label` / `aria-labelledby`). The input's `aria-controls` points
- *   here. This is the original combobox; nothing about it changes.
+ *   (`aria-label` / `aria-labelledby`). The input's `aria-controls` points here.
  * - **Picker (list present)** — content drops the listbox semantics and becomes
  *   a neutral popup surface; `[forComboboxList]` takes over the listbox role and
  *   owns the options, the input lives inside the panel, and the input's
- *   `aria-controls` points to the list. Keeps `data-state` and the positioner +
- *   dismissible layer unchanged.
+ *   `aria-controls` points to the list. `data-state`, positioning and dismissal
+ *   behave identically in both.
  *
  * Mount/unmount of the visible content is the consumer's responsibility —
  * wrap with `@if (open())` so `animate.enter` / `animate.leave` fire on the
- * natural mount cycle. While mounted, a `DismissibleLayer` activates for
- * pointer-down outside / focus outside; the input and (picker anatomy) the
- * trigger are exempt from outside checks.
+ * natural mount cycle. While mounted, the surface dismisses on pointer-down
+ * outside / focus outside; the input and (picker anatomy) the trigger are
+ * exempt from outside checks.
  *
  * Focus:
  * - **Editable anatomy (no trigger)** — focus normally stays in the input
@@ -47,21 +46,14 @@ import { injectComboboxContext } from './combobox-context';
  *   input is owned by the input directive; the shell's fallback channel covers
  *   presses that land on the surface or list instead.
  *
- * So the two splits are keyed independently — roles off `hasList`, focus off
- * the trigger — and the trigger check is a `computed`, consulted at each
- * decision point rather than snapshotted at construction
- * — so a trigger
- * declared after this content, projected through `<ng-content>`, or gated by a
- * `@defer` / data-driven `@if` upgrades the surface instead of leaving it with
- * no focus management at all. Initial focus stays a mount-time event (the shell
- * decides it in `afterNextRender`, by which point a trigger constructed in the
- * same pass has registered), so a trigger arriving in a later pass while the
- * surface is already open does not retroactively pull focus out of wherever the
- * user left it — it takes over the return focus, `(autoFocusOnClose)` and the
- * Escape fallback from there on.
- *
- * The lifecycle (positioner + dismissible layer, plus the picker anatomy's
- * focus bundles) is owned by the shared `injectOverlayShell` helper.
+ * The two splits are keyed independently — roles off the presence of a list,
+ * focus off the presence of a trigger — and the trigger is re-checked at each
+ * decision point, so one declared after this content, projected through
+ * `<ng-content>`, or gated by a `@defer` still upgrades the surface. Initial
+ * focus stays a mount-time decision: a trigger that arrives while the surface is
+ * already open does not pull focus out of wherever the user left it, but it does
+ * take over the return focus, `(autoFocusOnClose)` and the Escape fallback from
+ * there on.
  */
 @Directive({
   selector: '[forComboboxContent]',

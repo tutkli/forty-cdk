@@ -81,9 +81,7 @@ export class ForListboxOption<T = string> {
    * `[compareWith]` decides how options are matched against the
    * committed selection.
    *
-   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
-   * `input.required` so the parent can skip an option that has registered but
-   * not been bound yet, and an unbound option throws in dev mode.
+   * Mandatory — an unbound option throws in dev mode.
    */
   readonly value = input(unsetInput<T>());
   /**

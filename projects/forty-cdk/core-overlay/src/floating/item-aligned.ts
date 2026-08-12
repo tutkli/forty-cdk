@@ -139,7 +139,7 @@ function itemAligned(
  * rather than the anchor-relative space floating-ui's `size` middleware
  * reports. A consumer's `max-height: var(--for-floating-available-height)` therefore
  * works unchanged across `position="popper"` and `position="item-aligned"`.
- * `--for-floating-available-width` is deliberately **not** published here: item-aligned
+ * `--for-floating-available-width` is **not** published here: item-aligned
  * pins the cross axis to the trigger's left edge and computes no width budget.
  *
  * `side`, `align`, `sideOffset`, `alignOffset`, `placement`, `flip`, `shift`,

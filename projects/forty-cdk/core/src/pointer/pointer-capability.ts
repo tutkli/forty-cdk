@@ -12,7 +12,7 @@
  *
  * This is the stricter of the library's two hover vocabularies — see
  * {@link isNonTouchPointer} for the pen-inclusive twin used by the tooltip /
- * hover-card family. The two are deliberately kept apart: a pen genuinely
+ * hover-card family. The two are kept apart: a pen genuinely
  * hovers a tooltip, and genuinely should not hover-open a submenu.
  *
  * @param event The pointer event to classify — only `pointerType` is read.

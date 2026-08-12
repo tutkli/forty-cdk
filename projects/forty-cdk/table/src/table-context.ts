@@ -31,7 +31,7 @@ export type TableStickyValue = boolean | 'end';
  * mode / direction / selection mode, the row counts, and the selection /
  * expansion commands.
  *
- * It deliberately carries neither the piece-registration protocol nor the
+ * It carries neither the piece-registration protocol nor the
  * roving-grid model: how header rows, header cells, data rows, the declarative
  * body's row count, the virtualization seams and the resized column widths wire
  * themselves into the root, and where the grid's single tab stop currently
@@ -94,7 +94,7 @@ export interface ForTableContext {
  * cells and header cells resolve their `tabindex` / `data-highlighted` /
  * keydown through, and the ARIA index arithmetic derived from it.
  *
- * Deliberately **not** part of {@link ForTableContext} and never exported from
+ * **Not** part of {@link ForTableContext} and never exported from
  * `public-api.ts`. A consumer reads the selection and expansion state off the
  * token; where the grid's single tab stop currently sits is the library's own
  * navigation model, refactored without notice.

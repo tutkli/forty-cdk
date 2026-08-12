@@ -209,7 +209,7 @@ export interface AutoHighlightBridgeDeps<T> {
  * `ForCombobox.scrollActiveOptionIntoView` after the content portals, since portaling resets
  * `scrollTop`.
  *
- * The label cache is deliberately not pulled here: it tracks the selection, so every commit of
+ * The label cache is not pulled here: it tracks the selection, so every commit of
  * `value` would re-run this effect's writes and scrolls. The position map is pulled, through
  * {@link runVirtualizedNavigatorBridge}, because its sources are already tracked by this bridge's
  * own `items()` read and priming it widens nothing.

@@ -31,11 +31,8 @@ export class ForNavigationMenuItem implements ForNavigationMenuItemContext {
   readonly #ctx = injectNavigationMenuContext('ForNavigationMenuItem');
 
   /**
-   * Identifier matched against the menu's `value`, shared by this item's
-   * trigger and content. Mandatory: it is seeded with the `unsetInput` sentinel
-   * rather than declared `input.required` so the root can skip a trigger /
-   * content handle whose owning item has registered but not been bound yet, and
-   * an unbound item throws in dev mode.
+   * Identifier matched against the menu's `value`, shared by this item's trigger and content.
+   * Mandatory — an unbound item throws in dev mode.
    *
    * That seeding is what lets both pieces register **synchronously**: the
    * pairing then resolves during the first change-detection pass, including a

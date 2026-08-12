@@ -44,11 +44,8 @@ export class ForTabsContent {
   protected readonly group = injectTabsContext('ForTabsContent');
 
   /**
-   * Value of the tab this panel belongs to, paired with the `[forTabsTrigger]`
-   * carrying the same value. Mandatory: it is seeded with the `unsetInput`
-   * sentinel rather than declared `input.required` so the root can skip a panel
-   * that has registered but not been bound yet, and an unbound panel throws in
-   * dev mode.
+   * Value of the tab this panel belongs to, paired with the `[forTabsTrigger]` carrying the same
+   * value. Mandatory — an unbound panel throws in dev mode.
    */
   readonly value = input(unsetInput<string>());
 

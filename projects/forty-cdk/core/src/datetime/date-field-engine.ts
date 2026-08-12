@@ -50,7 +50,7 @@ export interface DateFieldEngineConfig<D> extends BaseFieldEngineConfig<D> {
 
 /**
  * Year used to resolve day ranges (Feb length) while the year segment is empty.
- * Deliberately a leap year so an empty-year February admits day 29: the day
+ * A leap year so an empty-year February admits day 29: the day
  * segment reports `aria-valuemax="29"`, and February 29 can be typed in the
  * natural year-last locale order (`M/d/y`, `d.M.y`) before the year settles. The
  * clamp down to 28 happens only once an actually-non-leap year is committed.

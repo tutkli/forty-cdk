@@ -56,7 +56,7 @@ import { FOR_TIME_RANGE_FIELD_DEFAULTS } from './time-range-field-defaults';
  * Read-only and required states reflect as the boolean `data-readonly` / `data-required` hooks on
  * the root: `role="group"` supports neither ARIA property. The read-only announcement lives on each
  * `[forTimeRangeFieldSegment]` instead, whose `role="spinbutton"` does support it; the required
- * state is deliberately not repeated per segment.
+ * state is not repeated per segment.
  *
  * The bounds are named `minTime` / `maxTime` because `min` / `max` are reserved `FormUiControl`
  * members whose types cannot express a time bound. Only their time-of-day component is considered.

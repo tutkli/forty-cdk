@@ -164,7 +164,7 @@ export class ForTooltip extends AnchoredOverlayPositioningBase implements ForToo
    * disable their own `animate.enter` / `animate.leave` and CSS transitions
    * without re-deriving the media query. Tooltip's JS-coordinated timing (the
    * open / close hover-intent delays) is intent debouncing, not motion, so it
-   * is deliberately unchanged under reduced motion.
+   * is unchanged under reduced motion.
    */
   readonly reducedMotion = injectPrefersReducedMotion();
 

@@ -6,6 +6,10 @@ import { type AnchoredPositioningContext, type Point } from 'forty-cdk/core-over
 /** Why an open / close was scheduled. */
 export type HoverCardScheduleReason = 'hover-trigger' | 'hover-content' | 'focus' | 'escape';
 
+/**
+ * Read surface `[forHoverCard]` publishes through {@link FOR_HOVER_CARD_CONTEXT},
+ * including the shared anchored-positioning members.
+ */
 export interface ForHoverCardContext extends AnchoredPositioningContext {
   readonly open: Signal<boolean>;
   readonly disabled: Signal<boolean>;

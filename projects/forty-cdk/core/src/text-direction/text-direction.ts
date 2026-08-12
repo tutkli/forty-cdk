@@ -33,7 +33,7 @@ function normalizeDir(value: string | null | undefined): WritingDirection {
  * batched callback rather than the quadratic cascade of N per-instance observers each retriggering
  * on every other's reflection.
  *
- * Granularity is deliberately coarse: any `dir` mutation invalidates every dir-aware primitive,
+ * Granularity is coarse: any `dir` mutation invalidates every dir-aware primitive,
  * each re-walking its own ancestor chain with a synchronous `closest('[dir]')`.
  *
  * SSR-safe: off-browser no observer is created and `revision` stays `0`.

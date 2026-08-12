@@ -15,7 +15,7 @@ import {
  * also drop it from the a11y tree). Shared by {@link ForVisuallyHidden} and the
  * `LiveAnnouncer` so the clip CSS is defined in exactly one place.
  *
- * Deliberately internal tier, and deliberately not exported from the core
+ * Internal tier, and not exported from the core
  * barrel: the published surface for this capability is {@link ForVisuallyHidden}
  * (blessed, shipped from `forty-cdk/visually-hidden`), which applies the clip
  * for the consumer. A raw style string covers no use case the directive does

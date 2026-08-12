@@ -19,7 +19,7 @@ A pointer is the cheap half of the move. When a call site is only intelligible t
 
 Four shapes are **not** archaeology and stay where they are:
 
-- **Public JSDoc on inputs, outputs, methods and signals.** Mandatory, per the root `CLAUDE.md` — it is the consumer's IntelliSense and the generated docs, and it is also the bulk of the volume (see the measurement below). No cleanup touches it.
+- **Public JSDoc on inputs, outputs, methods and signals.** Mandatory, per the root `CLAUDE.md` — it is the consumer's IntelliSense and the generated docs, and it is also the bulk of the volume (see the measurement below). It is never archaeology, so a **volume** cleanup leaves it alone. It is not exempt from its own rule, though: the contract-not-mechanism line in `CLAUDE.md` governs it, and a **quality** pass does enforce that against it.
 - **A private field's own description.** What `#snapPositions` caches, what invalidates it, what a `#armed` flag gates — that is what the code does and what it maintains, on state a reader cannot infer from a type. `drawer/src/drawer-drag.ts` is the reference shape.
 - **A `@sanctioned-effect` / `@sanctioned-pull` / `@sanctioned-sync-render` marker's one-line `<why>`.** The deliberate exception: the marker _is_ the ledger a reviewer greps, and its phrase is what the lint anchors on. Never delete one to shorten a block.
 - **A barrel or module header declaring a contract a gate enforces.** `core/src/public-api.ts` states the internal tier's boundary and the direction of the `core-overlay` edge; both are checked by `postbuild`. That is a specification, not a rationale.
@@ -36,10 +36,18 @@ Four shapes are **not** archaeology and stay where they are:
 
 | Bucket             |  Lines | Share of non-blank | Status                             |
 | ------------------ | -----: | -----------------: | ---------------------------------- |
-| public JSDoc       | 25 747 |              30.9% | mandatory, untouchable             |
+| public JSDoc       | 25 747 |              30.9% | mandatory — contract only          |
 | internal JSDoc     |  4 657 |               5.6% | governed by the policy above       |
 | plain comments     |  1 521 |               1.8% | governed by the policy above       |
 | sanctioned markers |     49 |               0.1% | 23 markers — the exception, immune |
+
+**The second measurement (2026-08-12, `main` at `54343841` plus the JSDoc audit) is 83 329 non-blank lines**, of which 31 860 are comment — 38.2%, one tenth off the figure #1737 opened on. Public JSDoc is 25 641 (30.8%), the governed bucket is 6 170 lines (7.4%) and the floor is 33.3%. The audit removed 117 lines, 112 of them public JSDoc — `54343841` measured 25 753 there, six more than the table above, which is two commits earlier.
+
+**That audit worked on JSDoc _quality_ rather than volume — the distinction the public row above now draws.** Across 87 files it removed implementation narration that had reached consumer-facing blocks: internal helper names (`injectOverlayShell`, `injectModalShell`, `DismissibleLayer`), Angular mechanics (NG8110, the lazy `computed()` read order), a `contentChild` seam, `{@link}`s to bases a consumer cannot import (`DatePickerBase`, `ForDateTimeSegmentBase`), a paragraph duplicated inside a single block, and the issue links in public JSDoc — the two barrel headers keep theirs, because a `postbuild` gate reads them as specifications. Twelve blocks were rewritten to the contract they had buried, five public `For*Context` interfaces gained the header they lacked, and no whole block was deleted.
+
+**Its second pass is worth repeating, because it is derived rather than read.** Cross-reference every symbol named in a consumer-facing JSDoc block against the set a consumer can actually import — every barrel except `core` / `core-overlay` — and what is left is mechanism by construction, not by taste. That found 98 mentions of 46 internal symbols, of which the widest was one boilerplate sentence repeated across nine public inputs: each explained that the input is seeded with the `unsetInput` sentinel "rather than declared `input.required`", naming a sentinel from the non-public entry point to say something the consumer only needs one clause of — that the input is mandatory and throws in dev mode when left unbound. The residue is legitimate: a base named in an `extends` clause, and the types already deferred in `scripts/lib/unnameable-public-types.mjs`.
+
+The audit is also what narrowed the mandate: the rule it ran under — contract, not mechanism — now sits in the root `CLAUDE.md` beside the sentence it qualifies, and the public row above reads contract-only rather than untouchable.
 
 **The 20% target #1737 proposed is arithmetically unreachable and is withdrawn.** Public JSDoc alone is 30.9% of non-blank lines, so deleting every governed line in the library — including the private-field descriptions and the marker ledger — lands at a **33.4%** floor. The issue's premise that "the volume is elsewhere: block comments that argue" is the same error measured from the other side: the arguing blocks are real (the `combobox.ts` bridge comment it quotes was one) but they live inside 7.4% of non-blank lines, not inside the 38.3%.
 

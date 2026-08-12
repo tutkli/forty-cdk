@@ -11,13 +11,11 @@ import { type FloatingAlign, type FloatingSide } from 'forty-cdk/core-overlay';
  *
  * The root is the `FormValueControl<D | null>`; the trigger is the focusable
  * element that carries `name` / `disabled` / `invalid` for `[formField]`
- * autowiring. The projected `ForCalendar` is two-way bound by the consumer and
- * its selection drives the picker through the root's `contentChild` query — not
- * through this context — so the calendar contract stays untouched.
+ * autowiring.
  *
- * Pieces only ever read `open` and route writes through `toggle()` / `close()`,
- * so the context exposes it read-only and never surfaces the date `value`
- * (the value piece renders the pre-formatted {@link formattedValue}).
+ * `open` is read-only — route writes through `toggle()` / `close()`. The date
+ * `value` is not exposed; the value piece renders the pre-formatted
+ * {@link formattedValue}.
  */
 export interface ForDatePickerContext {
   /** Whether the surface is open. */

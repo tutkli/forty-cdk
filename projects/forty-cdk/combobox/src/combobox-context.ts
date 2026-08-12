@@ -98,7 +98,7 @@ export interface ForComboboxActionHandle extends CollectionHandle {
  * reads and drives. Advanced consumers inject the token to read the selection,
  * the query and the open state, and to move them through the root's guards
  * (`activate` / `removeValue` / `clear` / `openOverlay` / `closeOverlay`). The
- * wiring the library's own pieces read off the root is deliberately not part
+ * wiring the library's own pieces read off the root is not part
  * of it.
  *
  * The value model is always an array — single mode (`multiple=false`,
@@ -207,7 +207,7 @@ export interface ForComboboxContext<T = unknown> {
  * inline-completion rendering, the navigation and activation cursors, and the
  * outside-interaction emit forwarders `injectOverlayShell` drives.
  *
- * Deliberately **not** part of {@link ForComboboxContext} and never exported
+ * **Not** part of {@link ForComboboxContext} and never exported
  * from `public-api.ts`: these are the members a refactor of the anatomy moves,
  * so freezing them at 1.0 would freeze the anatomy with them.
  */
@@ -409,10 +409,9 @@ export interface ComboboxPieceContext<T = unknown> {
    */
   emitEscapeKeyDown(event: KeyboardEvent): void;
   /**
-   * Outside-interaction emit forwarders. `injectOverlayShell` builds and
-   * reuses one `VetoableNativeEvent` across the specific and composite
-   * channels, then hands it to these forwarders to fire the matching output
-   * and calls `requestClose` when un-vetoed.
+   * Outside-interaction emit forwarders. The specific and composite channels
+   * observe the same veto, so `preventDefault()` from either one suppresses the
+   * close that otherwise follows.
    */
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void;
   emitFocusOutside(veto: VetoableNativeEvent<FocusEvent>): void;
@@ -447,7 +446,7 @@ export const FOR_COMBOBOX_CONTEXT = new InjectionToken<ForComboboxContext>('FOR_
  * themselves into the `[forCombobox]` root, plus the two cursors the pieces set
  * (the activedescendant and the next open's initial-focus target).
  *
- * Deliberately **not** part of {@link ForComboboxContext} and never exported
+ * **Not** part of {@link ForComboboxContext} and never exported
  * from `public-api.ts`. It is the code most likely to be refactored, so a
  * consumer must not be able to name — let alone call — it.
  */

@@ -158,7 +158,7 @@ const FOCUSABLE_LOCAL_NAMES = new Set(Object.keys(FOCUSABLE_LOCAL_NAME_QUALIFIER
  * `[tabindex]:not([tabindex="-1"])`, or on `[contenteditable="true"]`, which lets a structural
  * element answer without entering the selector engine. The name-anchored half is the same
  * declaration the selector is built from, so a name can no longer be added to one and not the
- * other; the two attribute clauses are matched here in their deliberately relaxed form (any
+ * other; the two attribute clauses are matched here in their relaxed form (any
  * `contenteditable` value, not only `"true"`), which is what keeps this a superset.
  */
 function mayMatchFocusableSelector(el: Element): boolean {
