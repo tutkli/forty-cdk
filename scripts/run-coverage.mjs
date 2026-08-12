@@ -11,26 +11,26 @@ import { repoRoot } from './lib/repo-path.mjs';
  * threshold is deliberately absent.
  *
  * The reason this is a script rather than a line in `package.json` is the one
- * thing it derives: **`--coverage` empties `import.meta.glob(…, { query:
- * '?raw' })`** under `@angular/build:unit-test`, so every source-derived roster
- * and meta-guard spec sees zero library sources and fails. Those specs report it
- * themselves — their liveness probes are exactly the "a mis-typed glob returns
- * an empty record" case, so the failure reads `expected 0 to be greater than
- * 100` rather than as a coverage problem — but a failing run makes Vitest skip
- * the reporters, so there is no number at all until they are excluded.
+ * thing it derives, and the derivation is expected to come back **empty**
+ * ([#1788](https://github.com/tutkli/forty-cdk/issues/1788)). `--coverage`
+ * changes what a `import.meta.glob` pattern resolves against: the builder's
+ * `angular:test-in-memory-provider` plugin replaces the spec's virtual module
+ * with `import "./<entry-point>.js"` when coverage is on, so the code lives in
+ * an intermediate chunk that resolves against the workspace root instead of the
+ * spec's own directory. A `../../` pattern then climbs out of the root and
+ * matches nothing, and the roster specs fail on their own liveness probes
+ * (`expected 0 to be greater than 100`) — a failing run makes Vitest skip the
+ * reporters, so there is no number at all until they are excluded. Every glob in
+ * the suite is written root-absolute for exactly that reason, which is what
+ * `src/lib/source-glob-shape.spec.ts` gates inside `pnpm test`.
  *
- * Hand-listing them in a script would rot on the next roster spec, and it would
- * rot _silently_ in the direction that matters: the list would keep excluding
- * specs whose glob had been fixed. So the set is derived the same way the roster
- * specs derive their own families — every spec whose source contains
- * `import.meta.glob` — and printed on every run, which makes the day the builder
- * interaction is fixed visible as an empty list rather than as nothing.
- *
- * What that costs is stated rather than hidden: those specs do not run, so the
- * number is a **floor**. Most of them assert over source text and cover no
- * library code at runtime, but a few mount real fixtures (the swept
- * anchored-positioning contract, the per-scope defaults suite), and their share
- * of the covered lines is missing from the report.
+ * So the set derived here is "every spec whose glob is relative" — the shape
+ * that cannot resolve under coverage — and it is printed on every run. A
+ * hand-written list would rot _silently_ in the direction that matters (it would
+ * keep excluding specs whose pattern had been fixed), and a list keyed on
+ * `import.meta.glob` alone would keep excluding all fifteen roster specs now
+ * that their patterns resolve. A non-empty list means a spec slipped past the
+ * shape gate, and the number below is then a **floor** rather than the number.
  *
  * Extra arguments are forwarded, so `node scripts/run-coverage.mjs --coverage-reporters html`
  * works for a browsable report.
@@ -55,35 +55,42 @@ const COVERAGE_SCOPE = [
   '**/public-api.ts',
 ];
 
-/** Every spec that reads library source through Vite's raw glob import. */
-function globSpecs() {
+/**
+ * Matches an `import.meta.glob` call and captures the pattern it is given, in
+ * any of the three quote forms — Vite requires a static literal, so there is no
+ * fourth shape a call could take.
+ */
+const GLOB_CALL = /import\.meta\.glob\(\s*(['"`])([^'"`]+)\1/g;
+
+/** Every spec reading library source through a glob that coverage cannot resolve. */
+function relativeGlobSpecs() {
   const found = [];
   (function walk(dir) {
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry);
       if (statSync(path).isDirectory()) {
         if (entry !== 'node_modules') walk(path);
-      } else if (
-        path.endsWith('.spec.ts') &&
-        readFileSync(path, 'utf8').includes('import.meta.glob')
-      ) {
-        found.push(relative(SPEC_BASE, path).split('\\').join('/'));
+      } else if (path.endsWith('.spec.ts')) {
+        const patterns = [...readFileSync(path, 'utf8').matchAll(GLOB_CALL)].map((m) => m[2]);
+        if (patterns.some((pattern) => !pattern.startsWith('/'))) {
+          found.push(relative(SPEC_BASE, path).split('\\').join('/'));
+        }
       }
     }
   })(LIB_DIR);
   return found.sort();
 }
 
-const excluded = globSpecs();
+const excluded = relativeGlobSpecs();
 
 if (excluded.length) {
   console.log(
-    `[run-coverage] excluding ${excluded.length} spec(s) that read source through import.meta.glob — \`--coverage\` empties the glob, so they cannot pass under it and a failing run reports no coverage at all. The number below is a floor:`,
+    `[run-coverage] excluding ${excluded.length} spec(s) whose import.meta.glob pattern is relative — \`--coverage\` resolves a spec's glob against the workspace root, so a relative pattern matches nothing and the spec fails on its own liveness probe. The number below is a floor; write the pattern root-absolute instead:`,
   );
   for (const spec of excluded) console.log(`  ${spec}`);
 } else {
   console.log(
-    `[run-coverage] no spec reads source through import.meta.glob — the whole suite runs, so the number below is the number.`,
+    `[run-coverage] no spec reads source through a relative import.meta.glob — the whole suite runs, so the number below is the number.`,
   );
 }
 

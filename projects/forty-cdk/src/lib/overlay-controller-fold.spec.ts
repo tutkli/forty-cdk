@@ -23,7 +23,7 @@
  * surfaces, and `overlay-controller.spec.ts` drives the shared machine's own
  * semantics.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -31,7 +31,7 @@ const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
 
 /** `<entry-point>/src/<path>.ts`, the id the assertions below name modules by. */
 function moduleId(path: string): string {
-  return path.replace(/^\.\.\/\.\.\//, '').replace(/\.ts$/, '');
+  return path.replace(/^\/projects\/forty-cdk\//, '').replace(/\.ts$/, '');
 }
 
 function librarySources(): [string, string][] {

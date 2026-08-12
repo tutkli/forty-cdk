@@ -41,7 +41,7 @@ import { DOCUMENTED_DATA_STATE_VOCABULARIES } from '../test-utils/contract';
  * matching reports zero emitters, either of which would make the adoption
  * assertion pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -68,7 +68,8 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
     '[forToast] binds the constant \'"open"\' — mount is open for a toast, so the sweep has no second state to distinguish',
 };
 
-const entryPointOf = (key: string): string => key.replace(/^\.\.\/\.\.\//, '').split('/')[0]!;
+const entryPointOf = (key: string): string =>
+  key.replace(/^\/projects\/forty-cdk\//, '').split('/')[0]!;
 
 /**
  * The `host: { … }` metadata block of a decorator, or `null` when the file

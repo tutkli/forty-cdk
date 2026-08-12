@@ -62,7 +62,7 @@
  * a construction written in a shape the extractor cannot key would vanish from
  * the roster instead of failing it.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -207,7 +207,7 @@ const KEYBOARD_NAVIGATION = 'core/src/keyboard-navigation/keyboard-navigation.ts
 /** The source declaring the spinbutton segment whose Home / End are value bounds. */
 const SEGMENT_DIRECTIVE = 'core/src/datetime/segment-directive.ts';
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 const entryPointOf = (path: string): string => path.split('/')[0]!;
 

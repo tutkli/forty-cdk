@@ -27,7 +27,7 @@
  * reading `relatedTarget` or stopped deferring would make the central assertion
  * pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -35,7 +35,7 @@ const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
 
 const MEDIATOR = 'createKeyboardDragMediator';
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 /**
  * Source with comments removed, so prose naming a symbol is not read as a use of

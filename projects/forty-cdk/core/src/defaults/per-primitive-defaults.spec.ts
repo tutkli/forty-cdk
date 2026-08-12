@@ -516,7 +516,7 @@ const CASES: readonly DefaultsCase<object>[] = [
  * primitive that never exported its fallback is exactly the primitive this spec
  * cannot import.
  */
-const DEFAULTS_SOURCES = import.meta.glob('../../../*/src/*-defaults.ts', {
+const DEFAULTS_SOURCES = import.meta.glob('/projects/forty-cdk/*/src/*-defaults.ts', {
   query: '?raw',
   import: 'default',
   eager: true,

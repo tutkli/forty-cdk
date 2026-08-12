@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -94,7 +94,8 @@ function stripComments(text: string): string {
 
 const libraryFiles = Object.entries(SOURCES)
   .map(
-    ([path, text]) => [path.replace(/^\.\.\/\.\.\//, ''), stripComments(text as string)] as const,
+    ([path, text]) =>
+      [path.replace(/^\/projects\/forty-cdk\//, ''), stripComments(text as string)] as const,
   )
   .filter(([path]) => !path.endsWith('.spec.ts'))
   .sort(([a], [b]) => a.localeCompare(b));

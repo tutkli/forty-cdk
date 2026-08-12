@@ -31,7 +31,7 @@
  *     can only observe its consequences.
  *   - Each claim's spec calls the contract at least once per claim it makes.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -96,7 +96,7 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
     'free-text one-time-code field — its value is the typed code, and no sibling resolves a selected state against it',
 };
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 const stripComments = (text: string): string =>
   text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');

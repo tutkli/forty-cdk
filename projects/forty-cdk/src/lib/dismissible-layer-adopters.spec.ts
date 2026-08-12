@@ -62,7 +62,7 @@
  * returns an empty record and a renamed shell reports zero call sites, either of
  * which would make every coverage assertion pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('../../*/src/**/*.ts', {
+const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -201,7 +201,7 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
     "[forToast] has the `dismissible` input but pushes no layer: its Escape is its own host `(keydown)` handler gated on focus being inside the toast, so the contract's `document`-dispatched Escape would never reach it",
 };
 
-const pathOf = (key: string): string => key.replace(/^(?:\.\.\/)+/, '');
+const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
 
 const entryPointOf = (path: string): string => path.split('/')[0]!;
 

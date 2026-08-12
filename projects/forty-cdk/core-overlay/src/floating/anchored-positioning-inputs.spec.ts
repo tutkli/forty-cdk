@@ -7,7 +7,7 @@ import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForMenuSub, provideForMenuDefaults } from 'forty-cdk/menu';
 
 const BASE_SOURCES = import.meta.glob(
-  './anchored-{overlay-positioning,form-value-control}-base.ts',
+  '/projects/forty-cdk/core-overlay/src/floating/anchored-{overlay-positioning,form-value-control}-base.ts',
   {
     query: '?raw',
     import: 'default',
