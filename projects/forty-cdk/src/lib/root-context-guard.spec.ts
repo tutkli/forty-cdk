@@ -29,6 +29,7 @@ import { FOR_TIME_PICKER_CONTEXT, ForTimePickerValue } from 'forty-cdk/time-pick
 import { FOR_TOAST_CONTEXT, ForToastTitle } from 'forty-cdk/toast';
 
 import { renderHost } from '../test-utils/render';
+import { LIBRARY_CODE, LIBRARY_SOURCES } from '../test-utils/source-scan';
 
 /**
  * Meta-guard + behaviour sweep for `assertRootContext`
@@ -70,12 +71,6 @@ import { renderHost } from '../test-utils/render';
  * link is dead precisely where it is read. `For`-prefixed context interfaces are
  * the public ones, which is what makes the check a one-line pattern.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 /** Where `assertRootContext` is declared — the one non-caller the scan finds. */
 const HELPER_SOURCE = 'core/src/root-context/root-context.ts';
 
@@ -346,20 +341,6 @@ class ExplicitComboboxTriggerHost {
   readonly impostor = signal({} as ForComboboxContext);
 }
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
-/** The same sources with their comments intact, for the JSDoc claims below. */
-const DOCUMENTED_SOURCES: ReadonlyMap<string, string> = new Map(
-  Object.entries(SOURCES).map(([key, source]) => [pathOf(key), source as string] as const),
-);
-
 const escaped = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
@@ -368,7 +349,7 @@ const escaped = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, 
  * separated by anything but whitespace documents something else.
  */
 function tokenDoc(entry: GuardedRoot): string | null {
-  const source = DOCUMENTED_SOURCES.get(entry.source);
+  const source = LIBRARY_SOURCES.get(entry.source);
   if (source === undefined) {
     return null;
   }
@@ -387,7 +368,7 @@ function tokenDoc(entry: GuardedRoot): string | null {
 /** Source paths declaring an internal `<X>Context extends For<X>Context`. */
 function splitContextSources(): Set<string> {
   const sources = new Set<string>();
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     if (/export interface \w+Context(?:<[^>]*>)?\s+extends\s+For\w+Context/.test(source)) {
       sources.add(path);
     }
@@ -398,7 +379,7 @@ function splitContextSources(): Set<string> {
 /** Source path → how many times it calls `assertRootContext`. */
 function guardCalls(): Map<string, number> {
   const calls = new Map<string, number>();
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     const count = (source.match(/assertRootContext\(/g) ?? []).length;
     if (count > 0) {
       calls.set(path, count);
@@ -430,13 +411,11 @@ const expectedFailure = (entry: GuardedRoot): RegExp =>
 
 describe('split-root context guard (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('names the module that still declares the helper', () => {
-    const helper = LIBRARY_SOURCES.find(([path]) => path === HELPER_SOURCE);
-
-    expect(helper?.[1]).toMatch(/export function assertRootContext\(/);
+    expect(LIBRARY_CODE.get(HELPER_SOURCE)).toMatch(/export function assertRootContext\(/);
   });
 
   it('has an entry for every module that splits its context', () => {

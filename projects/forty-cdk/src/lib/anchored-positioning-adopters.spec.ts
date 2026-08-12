@@ -32,6 +32,7 @@ import {
   type AnchoredPositioningSeeds,
   assertAnchoredPositioningContract,
 } from '../test-utils/contract';
+import { LIBRARY_CODE } from '../test-utils/source-scan';
 
 /**
  * Meta-guard **and** sweep for the positioning-input family: every
@@ -78,12 +79,6 @@ import {
  * source claim the last case here makes over every `kind: 'floating'` block in
  * the library.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 interface AnchoredRootEntry {
   /** The root's selector, quoted in every failure this guard reports. */
   root: string;
@@ -313,27 +308,18 @@ const FORWARDED_POSITIONING_INPUTS = [
   'clipUntilPositioned',
 ] as const;
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
 const INHERITS_THE_BLOCK =
   /extends\s+(?:AnchoredOverlayPositioningBase|AnchoredFormValueControlBase|MenuOverlayHost|DatePickerBase)\b/;
 
 /** Every file extending one of the two bases, directly or through an intermediate one. */
 const inheritors = (): string[] =>
-  LIBRARY_SOURCES.filter(([, source]) => INHERITS_THE_BLOCK.test(source)).map(([path]) => path);
+  [...LIBRARY_CODE].filter(([, source]) => INHERITS_THE_BLOCK.test(source)).map(([path]) => path);
 
 const familyMembers = (): string[] => inheritors().filter((path) => EXCLUSIONS[path] === undefined);
 
 const declaredSelectors = (): Set<string> => {
   const selectors = new Set<string>();
-  for (const [, source] of LIBRARY_SOURCES) {
+  for (const [, source] of LIBRARY_CODE) {
     for (const match of source.matchAll(/selector:\s*'([^']+)'/g)) {
       selectors.add(match[1]!);
     }
@@ -367,7 +353,7 @@ function enclosingObjectLiteral(source: string, from: number): string {
 /** Every `kind: 'floating'` positioner block in library source, keyed by file. */
 function floatingPositionerBlocks(): Array<{ path: string; block: string }> {
   const blocks: Array<{ path: string; block: string }> = [];
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     for (const match of source.matchAll(/kind: 'floating',/g)) {
       blocks.push({ path, block: enclosingObjectLiteral(source, match.index!) });
     }
@@ -639,7 +625,7 @@ function mountAll(host: Type<unknown>, providers: Provider[] = []): <T>(directiv
 
 describe('anchored positioning contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('finds every file inheriting the shared positioning block', () => {
@@ -669,7 +655,7 @@ describe('anchored positioning contract adoption (meta-guard)', () => {
   });
 
   it('excludes no file whose exclusion condition stopped holding', () => {
-    const byPath = new Map(LIBRARY_SOURCES);
+    const byPath = LIBRARY_CODE;
 
     const stale = Object.keys(EXCLUSIONS).flatMap((path) => {
       const source = byPath.get(path);
@@ -718,7 +704,7 @@ describe('anchored positioning contract adoption (meta-guard)', () => {
   });
 
   it('declares arrowPadding on exactly the roots that register an arrow', () => {
-    const byPath = new Map(LIBRARY_SOURCES);
+    const byPath = LIBRARY_CODE;
     const rootsWhere = (pattern: RegExp): string[] =>
       REGISTRY.filter((entry) => pattern.test(byPath.get(entry.source) ?? '')).map(
         (entry) => entry.root,

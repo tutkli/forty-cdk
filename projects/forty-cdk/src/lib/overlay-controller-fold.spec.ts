@@ -1,3 +1,5 @@
+import { LIBRARY_CODE } from '../test-utils/source-scan';
+
 /**
  * Meta-guard for the overlay-controller fold
  * ([#1764](https://github.com/tutkli/forty-cdk/issues/1764),
@@ -23,26 +25,13 @@
  * surfaces, and `overlay-controller.spec.ts` drives the shared machine's own
  * semantics.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
-/** `<entry-point>/src/<path>.ts`, the id the assertions below name modules by. */
-function moduleId(path: string): string {
-  return path.replace(/^\/projects\/forty-cdk\//, '').replace(/\.ts$/, '');
-}
-
-function librarySources(): [string, string][] {
-  return Object.entries(SOURCES)
-    .filter(([path]) => !path.endsWith('.spec.ts'))
-    .map(([path, source]) => [moduleId(path), source] as [string, string]);
-}
-
-/** Strips block and line comments so prose about a symbol never counts as a use of it. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+/**
+ * `<entry-point>/src/<path>`, the id the assertions below name modules by — the
+ * shared scanner's key without its `.ts`, which is the one thing this guard
+ * spells differently from its siblings.
+ */
+function librarySources(): Array<readonly [string, string]> {
+  return [...LIBRARY_CODE].map(([path, code]) => [path.replace(/\.ts$/, ''), code] as const);
 }
 
 const SHARED_MACHINE = 'core-overlay/src/overlay-controller/overlay-controller';
@@ -63,10 +52,10 @@ const COMPOSERS = [
 describe('overlay controller fold', () => {
   it('declares the open / close machine in exactly one module', () => {
     const owners = librarySources()
-      .filter(([, source]) => {
-        const code = stripComments(source);
-        return code.includes('new InitialFocusState') && code.includes('new CloseReasonState');
-      })
+      .filter(
+        ([, code]) =>
+          code.includes('new InitialFocusState') && code.includes('new CloseReasonState'),
+      )
       .map(([id]) => id)
       .sort();
 
@@ -76,7 +65,7 @@ describe('overlay controller fold', () => {
   it('leaves every composer holding neither half of the machine state', () => {
     const sources = new Map(librarySources());
     for (const composer of COMPOSERS) {
-      const code = stripComments(sources.get(composer) ?? '');
+      const code = sources.get(composer) ?? '';
       expect(code).toContain('new OverlayController');
       expect(code).not.toContain('new InitialFocusState');
       expect(code).not.toContain('new CloseReasonState');
@@ -86,7 +75,7 @@ describe('overlay controller fold', () => {
   it('leaves the dismiss / auto-focus veto plumbing out of every composer', () => {
     const sources = new Map(librarySources());
     for (const composer of COMPOSERS) {
-      const code = stripComments(sources.get(composer) ?? '');
+      const code = sources.get(composer) ?? '';
       expect(code).not.toContain('emitVetoableEvent(');
       expect(code).not.toContain('emitVetoableNativeEvent(');
     }
@@ -94,11 +83,10 @@ describe('overlay controller fold', () => {
 
   it('declares the reverse enabled-handle scan once', () => {
     const descendingScan = /for\s*\(\s*let\s+\w+\s*=[^;]*\.length\s*-\s*1\s*;[^)]*\)/g;
-    const offenders = librarySources().flatMap(([id, source]) => {
+    const offenders = librarySources().flatMap(([id, code]) => {
       if (id === ENABLED_SCAN) {
         return [];
       }
-      const code = stripComments(source);
       return [...code.matchAll(descendingScan)]
         .filter((match) => code.slice(match.index, match.index + 300).includes('.disabled()'))
         .map(() => id);

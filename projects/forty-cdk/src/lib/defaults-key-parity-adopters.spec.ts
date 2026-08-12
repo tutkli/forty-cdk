@@ -1,4 +1,5 @@
 import { assertDefaultsKeyParity, type DefaultsKeyFamily } from '../test-utils/contract';
+import { entryPointOf, LIBRARY_SOURCES } from '../test-utils/source-scan';
 
 /**
  * Meta-guard for defaults-key parity: the families whose members expose one
@@ -30,18 +31,6 @@ import { assertDefaultsKeyParity, type DefaultsKeyFamily } from '../test-utils/c
  *     which is why the closure case takes the union of every declared key rather
  *     than one family's own.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), source as string] as const);
-
 const DEFAULTS_INTERFACE = /export interface For[A-Za-z]+Defaults[^{]*\{([\s\S]*?)\n\}/;
 
 /**
@@ -193,8 +182,6 @@ const MODEL_KEYS = new Set(FAMILIES.flatMap((family) => family.keys));
 const INHERITS_THE_BLOCK =
   /extends\s+(?:AnchoredOverlayPositioningBase|AnchoredFormValueControlBase|MenuOverlayHost|DatePickerBase)\b/;
 
-const entryPointOf = (path: string): string => path.split('/')[0]!;
-
 /** Entry points declaring a root that inherits the shared positioning block. */
 function anchoredEntryPoints(): Set<string> {
   const entries = new Set<string>();
@@ -211,9 +198,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 describe('defaults-key parity families (meta-guard)', () => {
   it('finds a defaults interface in every defaults file the library ships', () => {
-    const shipped = LIBRARY_SOURCES.filter(([path]) => path.endsWith('-defaults.ts')).map(
-      ([path]) => path,
-    );
+    const shipped = [...LIBRARY_SOURCES.keys()].filter((path) => path.endsWith('-defaults.ts'));
 
     expect(shipped.length).toBeGreaterThan(30);
     expect(sorted(DECLARED_KEYS.keys())).toEqual(sorted(shipped));

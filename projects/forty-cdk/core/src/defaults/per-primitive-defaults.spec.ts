@@ -141,6 +141,7 @@ import {
   FOR_SLIDER_FALLBACK_DEFAULTS,
   provideForSliderDefaults,
 } from '../../../slider/src/slider-defaults';
+import { LIBRARY_SOURCES } from '../../../src/test-utils/source-scan';
 import {
   FOR_TABS_DEFAULTS,
   FOR_TABS_FALLBACK_DEFAULTS,
@@ -515,24 +516,28 @@ const CASES: readonly DefaultsCase<object>[] = [
  * `createDefaults` returns a plain `{ token, provideDefaults }` pair, and a
  * primitive that never exported its fallback is exactly the primitive this spec
  * cannot import.
+ *
+ * The narrowing is a filter over the shared scanner's map
+ * ([#1790](https://github.com/tutkli/forty-cdk/issues/1790)) rather than a glob
+ * of its own. A filter matching nothing is exactly the vacuum the assertion
+ * below catches, since the expected set would then be empty and the declared
+ * cases could not equal it.
  */
-const DEFAULTS_SOURCES = import.meta.glob('/projects/forty-cdk/*/src/*-defaults.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+const DEFAULTS_SOURCES: ReadonlyArray<readonly [string, string]> = [...LIBRARY_SOURCES].filter(
+  ([path]) => /^[^/]+\/src\/[^/]+-defaults\.ts$/.test(path),
+);
 
 /**
  * The `provideFor<Primitive>Defaults` helpers the library ships, sorted. Same
  * regex as the generated `defaults providers` matrix in
  * `scripts/lib/convention-matrices.mjs`, so the two rosters read the same 39
- * providers today; the glob above is the narrower half of the pair, keyed on
+ * providers today; the filter above is the narrower half of the pair, keyed on
  * the `<primitive>-defaults.ts` file name the conventions require and the
  * `forty-cdk/require-defaults-sibling` lint enforces.
  */
 function shippedDefaultsProviders(): string[] {
   const names: string[] = [];
-  for (const source of Object.values(DEFAULTS_SOURCES)) {
+  for (const [, source] of DEFAULTS_SOURCES) {
     const match = source.match(/^export function (provideFor[A-Za-z]+Defaults)/m);
     if (match) {
       names.push(match[1]!);

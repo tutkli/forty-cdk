@@ -1,3 +1,5 @@
+import { LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+
 /**
  * Meta-guard: every root whose `value` is a **single-value selection /
  * open-item model** declares it as `model<string | null>(null)` and adopts the
@@ -31,12 +33,6 @@
  *     can only observe its consequences.
  *   - Each claim's spec calls the contract at least once per claim it makes.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 interface SingleValueModelAdopter {
   /** The root's selector, quoted in every failure this guard reports. */
   root: string;
@@ -96,19 +92,6 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
     'free-text one-time-code field — its value is the typed code, and no sibling resolves a selected state against it',
 };
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
-const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), source as string] as const);
-
 const VALUE_MODEL = /\bvalue = model<([^>]*)>\(([^)]*)\)/;
 
 /**
@@ -119,7 +102,7 @@ const VALUE_MODEL = /\bvalue = model<([^>]*)>\(([^)]*)\)/;
  */
 function singleValueModelDeclarations(): Map<string, { type: string; initial: string }> {
   const declarations = new Map<string, { type: string; initial: string }>();
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     const match = source.match(VALUE_MODEL);
     if (match === null) {
       continue;
@@ -150,7 +133,7 @@ function contractCalls(): Map<string, number> {
 
 const declaredSelectors = (): Set<string> => {
   const selectors = new Set<string>();
-  for (const [, source] of LIBRARY_SOURCES) {
+  for (const [, source] of LIBRARY_CODE) {
     for (const match of source.matchAll(/selector:\s*'([^']+)'/g)) {
       selectors.add(match[1]!);
     }
@@ -167,7 +150,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 describe('single-value model contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('finds every root declaring a non-array string value model', () => {
@@ -216,7 +199,7 @@ describe('single-value model contract adoption (meta-guard)', () => {
 
   it('excludes no file whose exclusion condition stopped holding', () => {
     const declaring = singleValueModelDeclarations();
-    const byPath = new Map(LIBRARY_SOURCES);
+    const byPath = LIBRARY_CODE;
 
     const stale = Object.keys(EXCLUSIONS).flatMap((path) => {
       if (!declaring.has(path)) {

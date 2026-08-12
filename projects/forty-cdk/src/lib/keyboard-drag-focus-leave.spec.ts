@@ -1,3 +1,5 @@
+import { LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+
 /**
  * Meta-guard: "focus left the host" is resolved in exactly one place for every
  * `createKeyboardDragMediator` caller
@@ -27,40 +29,14 @@
  * reading `relatedTarget` or stopped deferring would make the central assertion
  * pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 const MEDIATOR = 'createKeyboardDragMediator';
-
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-/**
- * Source with comments removed, so prose naming a symbol is not read as a use of
- * it — the anchoring failure the marker rules hit in
- * [#1606](https://github.com/tutkli/forty-cdk/issues/1606).
- */
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
-const SPEC_SOURCES = new Map<string, string>(
-  Object.entries(SOURCES)
-    .filter(([key]) => key.endsWith('.spec.ts'))
-    .map(([key, source]) => [pathOf(key), source as string] as const),
-);
 
 /**
  * The file declaring the mediator, found by condition rather than by path so
  * moving `core/drag-session/` cannot silently drop it from the filter.
  */
 function mediatorSource(): readonly [string, string] {
-  const found = LIBRARY_SOURCES.find(([, source]) =>
+  const found = [...LIBRARY_CODE].find(([, source]) =>
     source.includes(`export function ${MEDIATOR}(`),
   );
   expect(found).toBeDefined();
@@ -70,17 +46,18 @@ function mediatorSource(): readonly [string, string] {
 /** Every library file that calls the mediator, i.e. every coordinator it serves. */
 function callers(): string[] {
   const [declaringPath] = mediatorSource();
-  return LIBRARY_SOURCES.filter(
-    ([path, source]) =>
-      path !== declaringPath && new RegExp(`[^A-Za-z]${MEDIATOR}\\(`).test(source),
-  )
+  return [...LIBRARY_CODE]
+    .filter(
+      ([path, source]) =>
+        path !== declaringPath && new RegExp(`[^A-Za-z]${MEDIATOR}\\(`).test(source),
+    )
     .map(([path]) => path)
     .sort();
 }
 
 describe('keyboard drag focus-leave resolution (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('finds every coordinator the mediator serves', () => {
@@ -96,10 +73,7 @@ describe('keyboard drag focus-leave resolution (meta-guard)', () => {
   });
 
   it('has no coordinator answering "did focus leave?" a second time', () => {
-    const second = callers().filter((path) => {
-      const source = LIBRARY_SOURCES.find(([candidate]) => candidate === path)![1];
-      return source.includes('relatedTarget');
-    });
+    const second = callers().filter((path) => LIBRARY_CODE.get(path)!.includes('relatedTarget'));
     expect(second).toEqual([]);
   });
 

@@ -6,14 +6,20 @@ import { ForCombobox, provideForComboboxDefaults } from 'forty-cdk/combobox';
 import { ForContextMenu } from 'forty-cdk/context-menu';
 import { ForMenuSub, provideForMenuDefaults } from 'forty-cdk/menu';
 
-const BASE_SOURCES = import.meta.glob(
-  '/projects/forty-cdk/core-overlay/src/floating/anchored-{overlay-positioning,form-value-control}-base.ts',
-  {
-    query: '?raw',
-    import: 'default',
-    eager: true,
-  },
-) as Record<string, string>;
+import { LIBRARY_SOURCES } from '../../../src/test-utils/source-scan';
+
+/**
+ * The two twin bases, filtered out of the shared scanner's map rather than
+ * globbed here ([#1790](https://github.com/tutkli/forty-cdk/issues/1790)). A
+ * filter that silently matched nothing is what the `toHaveLength(2)` below
+ * exists to catch, so the probe stays exactly as load-bearing as it was.
+ */
+const BASE_SOURCES: ReadonlyArray<readonly [string, string]> = [...LIBRARY_SOURCES].filter(
+  ([path]) =>
+    /^core-overlay\/src\/floating\/anchored-(?:overlay-positioning|form-value-control)-base\.ts$/.test(
+      path,
+    ),
+);
 
 /**
  * The positioning block a base declares: everything from the abstract seed
@@ -52,7 +58,7 @@ function positioningBlock(source: string): string {
  */
 describe('anchored positioning inputs', () => {
   it('declares the positioning block identically on both bases', () => {
-    const blocks = Object.entries(BASE_SOURCES)
+    const blocks = [...BASE_SOURCES]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([path, source]) => ({ path, block: positioningBlock(source) }));
 

@@ -32,6 +32,14 @@ import { repoRoot } from './lib/repo-path.mjs';
  * that their patterns resolve. A non-empty list means a spec slipped past the
  * shape gate, and the number below is then a **floor** rather than the number.
  *
+ * Since [#1790](https://github.com/tutkli/forty-cdk/issues/1790) the globs live
+ * in `src/test-utils/source-scan.ts` instead of in each roster, which moves the
+ * hazard somewhere excluding cannot reach: a relative pattern in a **helper**
+ * breaks every spec importing it, and there is no single spec to drop. That
+ * shape is therefore reported and the run refused, rather than excluded — the
+ * exclusion path stays for the case it was written for, a new spec declaring a
+ * glob of its own.
+ *
  * Extra arguments are forwarded, so `node scripts/run-coverage.mjs --coverage-reporters html`
  * works for a browsable report.
  */
@@ -62,26 +70,39 @@ const COVERAGE_SCOPE = [
  */
 const GLOB_CALL = /import\.meta\.glob\(\s*(['"`])([^'"`]+)\1/g;
 
-/** Every spec reading library source through a glob that coverage cannot resolve. */
-function relativeGlobSpecs() {
-  const found = [];
+/**
+ * Every file reading library source through a glob that coverage cannot
+ * resolve, split by whether excluding it is even an option: a spec can be
+ * dropped from the run, a helper every spec imports cannot.
+ */
+function relativeGlobFiles() {
+  const specs = [];
+  const helpers = [];
   (function walk(dir) {
     for (const entry of readdirSync(dir)) {
       const path = join(dir, entry);
       if (statSync(path).isDirectory()) {
         if (entry !== 'node_modules') walk(path);
-      } else if (path.endsWith('.spec.ts')) {
+      } else if (path.endsWith('.ts')) {
         const patterns = [...readFileSync(path, 'utf8').matchAll(GLOB_CALL)].map((m) => m[2]);
-        if (patterns.some((pattern) => !pattern.startsWith('/'))) {
-          found.push(relative(SPEC_BASE, path).split('\\').join('/'));
-        }
+        if (!patterns.some((pattern) => !pattern.startsWith('/'))) continue;
+        const target = path.endsWith('.spec.ts') ? specs : helpers;
+        target.push(relative(SPEC_BASE, path).split('\\').join('/'));
       }
     }
   })(LIB_DIR);
-  return found.sort();
+  return { specs: specs.sort(), helpers: helpers.sort() };
 }
 
-const excluded = relativeGlobSpecs();
+const { specs: excluded, helpers: unexcludable } = relativeGlobFiles();
+
+if (unexcludable.length) {
+  console.error(
+    `[run-coverage] ${unexcludable.length} non-spec file(s) read library source through a relative import.meta.glob. \`--coverage\` resolves the pattern against the workspace root, so it matches nothing and every spec importing the file fails on its own liveness probe — and unlike a spec, a helper cannot be excluded out of the run. Write the pattern root-absolute:`,
+  );
+  for (const helper of unexcludable) console.error(`  ${helper}`);
+  process.exit(1);
+}
 
 if (excluded.length) {
   console.log(

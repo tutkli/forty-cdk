@@ -1,3 +1,5 @@
+import { entryPointOf, LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+
 /**
  * Meta-guard: every piece that pushes a `DismissibleLayer` is covered by an
  * adopter of the shared dismissible-layer contract, and every adopter names a
@@ -62,12 +64,6 @@
  * returns an empty record and a renamed shell reports zero call sites, either of
  * which would make every coverage assertion pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 /** The two core shells that inject a `DismissibleLayer`. */
 const SHELLS = ['injectOverlayShell', 'injectModalShell'] as const;
 
@@ -201,25 +197,6 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
     "[forToast] has the `dismissible` input but pushes no layer: its Escape is its own host `(keydown)` handler gated on focus being inside the toast, so the contract's `document`-dispatched Escape would never reach it",
 };
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const entryPointOf = (path: string): string => path.split('/')[0]!;
-
-/**
- * Source with comments removed, so prose naming a symbol is not read as a use of
- * it. Both scans below run over this rather than the raw text.
- */
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
-const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), source as string] as const);
-
 /**
  * `<source file>#<shell>` for every layer-pushing call site.
  *
@@ -229,7 +206,7 @@ const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SO
  */
 function layerCallSites(): Set<string> {
   const sites = new Set<string>();
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     for (const shell of SHELLS) {
       if (source.includes(`export function ${shell}(`)) {
         continue;
@@ -245,7 +222,7 @@ function layerCallSites(): Set<string> {
 /** Entry point → the source files declaring a `dismissible` input. */
 function dismissibleInputDeclarations(): Map<string, string[]> {
   const byEntryPoint = new Map<string, string[]>();
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     if (!/(?:^|\n)\s*(?:readonly\s+)?dismissible\s*=\s*input\(/.test(source)) {
       continue;
     }
@@ -269,7 +246,7 @@ function contractCalls(): Map<string, number> {
 
 const declaredSelectors = (): Set<string> => {
   const selectors = new Set<string>();
-  for (const [, source] of LIBRARY_SOURCES) {
+  for (const [, source] of LIBRARY_CODE) {
     for (const match of source.matchAll(/selector:\s*'([^']+)'/g)) {
       selectors.add(match[1]!);
     }
@@ -286,7 +263,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 describe('dismissible-layer contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('finds every call site of the two layer-pushing shells', () => {
@@ -344,7 +321,7 @@ describe('dismissible-layer contract adoption (meta-guard)', () => {
       if (layerEntryPoints.has(entryPoint)) {
         reasons.push('now pushes a dismissible layer');
       }
-      const ownsHostEscape = LIBRARY_SOURCES.some(
+      const ownsHostEscape = [...LIBRARY_CODE].some(
         ([path, source]) =>
           entryPointOf(path) === entryPoint &&
           source.includes("'(keydown)'") &&

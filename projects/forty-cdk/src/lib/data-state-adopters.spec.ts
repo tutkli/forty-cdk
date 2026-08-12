@@ -1,4 +1,5 @@
 import { DOCUMENTED_DATA_STATE_VOCABULARIES } from '../test-utils/contract';
+import { entryPointOf, LIBRARY_SOURCES, SPEC_SOURCES } from '../test-utils/source-scan';
 
 /**
  * Meta-guard: every entry point whose pieces bind `'[attr.data-state]'` to a
@@ -41,12 +42,6 @@ import { DOCUMENTED_DATA_STATE_VOCABULARIES } from '../test-utils/contract';
  * matching reports zero emitters, either of which would make the adoption
  * assertion pass for the wrong reason.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 /**
  * Entry points whose literal `data-state` emission is deliberately not the
  * contract's business, with the reason. An exclusion is a named condition
@@ -67,9 +62,6 @@ const EXCLUSIONS: Readonly<Record<string, string>> = {
   toast:
     '[forToast] binds the constant \'"open"\' — mount is open for a toast, so the sweep has no second state to distinguish',
 };
-
-const entryPointOf = (key: string): string =>
-  key.replace(/^\/projects\/forty-cdk\//, '').split('/')[0]!;
 
 /**
  * The `host: { … }` metadata block of a decorator, or `null` when the file
@@ -111,10 +103,7 @@ function dataStateBinding(text: string): string | null {
 /** Entry point → the sorted literal value sets its pieces emit. */
 function literalVocabulariesByEntryPoint(): Map<string, Set<string>> {
   const byEntryPoint = new Map<string, Set<string>>();
-  for (const [key, source] of Object.entries(SOURCES)) {
-    if (key.endsWith('.spec.ts')) {
-      continue;
-    }
+  for (const [key, source] of LIBRARY_SOURCES) {
     const expression = dataStateBinding(source);
     if (expression === null) {
       continue;
@@ -133,8 +122,8 @@ function literalVocabulariesByEntryPoint(): Map<string, Set<string>> {
 
 function entryPointsAdoptingTheContract(): Set<string> {
   const adopting = new Set<string>();
-  for (const [key, source] of Object.entries(SOURCES)) {
-    if (key.endsWith('.spec.ts') && source.includes('assertDataStateContract(')) {
+  for (const [key, source] of SPEC_SOURCES) {
+    if (source.includes('assertDataStateContract(')) {
       adopting.add(entryPointOf(key));
     }
   }
@@ -147,7 +136,7 @@ const documented = new Set(
 
 describe('data-state contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_SOURCES.size).toBeGreaterThan(100);
   });
 
   it('finds every entry point that emits a literal data-state vocabulary', () => {

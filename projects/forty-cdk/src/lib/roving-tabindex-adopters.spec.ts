@@ -1,3 +1,5 @@
+import { entryPointOf, LIBRARY_CODE, SPEC_SOURCES } from '../test-utils/source-scan';
+
 /**
  * Meta-guard: every group that owns a roving-tabindex keyboard model is covered
  * by an adopter of the shared roving-tabindex contract, and every claim names a
@@ -62,12 +64,6 @@
  * a construction written in a shape the extractor cannot key would vanish from
  * the roster instead of failing it.
  */
-const SOURCES = import.meta.glob('/projects/forty-cdk/*/src/**/*.ts', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
-
 /**
  * The keyboard model an excluded tracker owns instead of the contract's. Each
  * value is falsified by its own conditions in the last case — never by a note
@@ -207,27 +203,7 @@ const KEYBOARD_NAVIGATION = 'core/src/keyboard-navigation/keyboard-navigation.ts
 /** The source declaring the spinbutton segment whose Home / End are value bounds. */
 const SEGMENT_DIRECTIVE = 'core/src/datetime/segment-directive.ts';
 
-const pathOf = (key: string): string => key.replace(/^\/projects\/forty-cdk\//, '');
-
-const entryPointOf = (path: string): string => path.split('/')[0]!;
-
-/**
- * Source with comments removed, so prose naming a symbol is not read as a use of
- * it. Every scan below runs over this rather than the raw text.
- */
-const stripComments = (text: string): string =>
-  text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-const LIBRARY_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => !key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), stripComments(source as string)] as const);
-
-const SPEC_SOURCES: ReadonlyArray<readonly [string, string]> = Object.entries(SOURCES)
-  .filter(([key]) => key.endsWith('.spec.ts'))
-  .map(([key, source]) => [pathOf(key), source as string] as const);
-
-const sourceOf = (path: string): string =>
-  LIBRARY_SOURCES.find(([candidate]) => candidate === path)?.[1] ?? '';
+const sourceOf = (path: string): string => LIBRARY_CODE.get(path) ?? '';
 
 interface TrackerSite {
   /** `<source file>::<member>`. */
@@ -246,7 +222,7 @@ interface TrackerSite {
  */
 function trackerSites(): TrackerSite[] {
   const sites: TrackerSite[] = [];
-  for (const [path, source] of LIBRARY_SOURCES) {
+  for (const [path, source] of LIBRARY_CODE) {
     const pattern = /(?:readonly\s+)?(#?[A-Za-z_$][\w$]*)\s*=\s*new RovingTabindex\((\)?)/g;
     for (const match of source.matchAll(pattern)) {
       sites.push({ id: `${path}::${match[1]!}`, hasItemsProducer: match[2] !== ')' });
@@ -257,8 +233,8 @@ function trackerSites(): TrackerSite[] {
 
 /** How many times library source constructs the tracker, in any shape. */
 function totalConstructions(): number {
-  return LIBRARY_SOURCES.reduce(
-    (total, [, source]) => total + (source.match(/new RovingTabindex\(/g) ?? []).length,
+  return [...LIBRARY_CODE.values()].reduce(
+    (total, source) => total + (source.match(/new RovingTabindex\(/g) ?? []).length,
     0,
   );
 }
@@ -277,7 +253,7 @@ function contractCalls(): Map<string, number> {
 
 const declaredSelectors = (): Set<string> => {
   const selectors = new Set<string>();
-  for (const [, source] of LIBRARY_SOURCES) {
+  for (const [, source] of LIBRARY_CODE) {
     for (const match of source.matchAll(/selector:\s*'([^']+)'/g)) {
       selectors.add(match[1]!);
     }
@@ -295,7 +271,7 @@ const sorted = (values: Iterable<string>): string[] => [...values].sort();
 
 describe('roving-tabindex contract adoption (meta-guard)', () => {
   it('finds the library sources through the glob', () => {
-    expect(Object.keys(SOURCES).length).toBeGreaterThan(100);
+    expect(LIBRARY_CODE.size).toBeGreaterThan(100);
   });
 
   it('finds every construction of the roving tracker', () => {
