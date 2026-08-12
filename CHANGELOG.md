@@ -5,6 +5,75 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.0] - 2026-08-12
+
+A release about two inputs that were in the wrong place and one attribute that was only half wired.
+`arrowPadding` now belongs to the three roots that ship an arrow piece — where it is finally a scope
+default — instead of riding a shared block onto ten roots that never read it. Navigation menu spells
+its open delay `openDelay`, like the other two hover-scheduled overlays. And `data-highlighted`
+follows the pointer on Listbox, Select and Time picker, so styling the documented attribute no longer
+needs a `:hover` rule beside it decorating a second row. Two breaking changes, both an input moving
+or being renamed; nothing rendered changes because of either.
+
+### Added
+
+- **Popover / Tooltip / Hover card** — `arrowPadding` is a scope default
+  ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)). It used to be a fixed member of the
+  shared positioning block — a library fallback of `0` no provider could reach — so arrow geometry
+  was the one positioning value a design system had to bind per instance. It is now a key on
+  `ForPopoverDefaults`, `ForTooltipDefaults` and `ForHoverCardDefaults`:
+  `provideForTooltipDefaults({ arrowPadding: 6 })` resolves for every tooltip in scope, and an
+  `[arrowPadding]` binding on the root still wins. These three are the only roots that ship an arrow
+  piece, and a guard derived from source fails the build if a fourth grows one without declaring the
+  input — or if one of these three declares padding its anatomy cannot use.
+
+### Changed
+
+- **Anchored overlays (breaking)** — `arrowPadding` is declared by the three roots with an arrow
+  piece and gone from the ten without one
+  ([#1776](https://github.com/tutkli/forty-cdk/issues/1776)). floating-ui installs its `arrow`
+  middleware only when an arrow element is registered, so on `[forSelect]`, `[forCombobox]`,
+  `[forTimePicker]`, `[forDatePicker]`, `[forDateRangePicker]`, `[forMenu]`, `[forMenuSub]`,
+  `[forDropdownMenu]`, `[forContextMenu]` and `[forMenubarTrigger]` the input reached nothing: four
+  content directives forwarded it to a middleware that never ran, `[forDatePickerContent]` did not
+  forward it at all, and five `FOR_*_HOST_DIRECTIVE_INPUTS` tuples re-exposed it to wrapper
+  components. It also leaves the `ForMenuContext`, `ForSelectContext`, `ForComboboxContext`,
+  `ForTimePickerContext` and `MenubarTriggerHandle` surfaces. Nothing rendered changes — the padding
+  those roots carried was never read. The shared block is nine inputs now, and stays
+  character-for-character identical on both positioning bases. **Migration:** drop the binding, or
+  move it to the arrow-capable root you meant; no deprecated alias ships.
+- **Navigation menu (breaking, rename)** — the open delay is `openDelay`, not `delayDuration`
+  ([#1777](https://github.com/tutkli/forty-cdk/issues/1777)). It was the third hover-scheduled
+  overlay and the only one spelling the concept differently, so a design system pinning hover cadence
+  at the app root wrote `openDelay` twice and `delayDuration` once for one thing. Both the defaults
+  key on `ForNavigationMenuDefaults` and the `[forNavigationMenu]` input take the shared name;
+  `skipDelayDuration` is a different value and keeps its own. **Migration:** rename the key you pass
+  to `provideForNavigationMenuDefaults` and the input you bind — mechanical, no behaviour change, no
+  deprecated alias.
+
+### Fixed
+
+- **Listbox / Select / Time picker** — `data-highlighted` follows the pointer
+  ([#1781](https://github.com/tutkli/forty-cdk/issues/1781),
+  [#1784](https://github.com/tutkli/forty-cdk/issues/1784)). Only the keyboard moved it, so styling
+  the documented attribute meant pairing it with a `:hover` rule — and then two options were
+  decorated at once, the one under the cursor and the one the keyboard left behind. Hover now feeds
+  the same single highlight, and what _follows_ means is per focus model. On a roving-tabindex
+  listbox it moves the highlight only: DOM focus, the tab stop, the `Shift+Space` range anchor and
+  `Enter` / `Space` activation all stay with the focused option, because an in-flow listbox must not
+  pull focus out of whatever you put beside it. On the activedescendant paths — a virtualized
+  listbox, Select, Time picker — it moves `aria-activedescendant` itself, so the highlight never
+  disagrees with what `Enter` activates. The first arrow or typeahead move hands it back, and an
+  option that becomes disabled or unmounts under a resting cursor returns it to the keyboard's
+  option. Every scroll these primitives perform — `navigate`, the typeahead matches, the virtualized
+  navigator's own scroll-into-view, the focus move onto the selected option when the surface opens —
+  opens a suppression window, so a synthetic `pointermove` fired because the scroll slid a different
+  option under a stationary cursor cannot hijack the keyboard's highlight. `[forComboboxOption]` and
+  the menu family already behaved this way; `[forCalendarCell]` stays deliberately keyboard-only,
+  its hover feeding `data-range-preview` instead. One side effect worth knowing: injecting
+  `FOR_LISTBOX_CONTEXT` or `FOR_TIME_PICKER_CONTEXT` outside its own root now reports the prefixed
+  dev-mode error the other split roots report.
+
 ## [0.23.0] - 2026-08-11
 
 A release about what the library costs you at runtime and how much of it you have to look up. Every
@@ -2122,7 +2191,8 @@ primitives.
 - **Display** — avatar, progress, meter, tree.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
-[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/tutkli/forty-cdk/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/tutkli/forty-cdk/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/tutkli/forty-cdk/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/tutkli/forty-cdk/compare/v0.21.0...v0.21.1
