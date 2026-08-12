@@ -31,33 +31,22 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * the menu next to whatever they're working on. The native context menu is
  * suppressed via `event.preventDefault()`.
  *
- * Modality is detected by whether a `pointerdown` preceded the `contextmenu`
- * event: a genuine right-click / long-press always has one, while the
- * `contextmenu` some browsers synthesize for `Shift+F10` / the `ContextMenu`
- * key does not. A pointer activation anchors at the cursor and skips
- * `data-highlighted` on the initially focused item; a keyboard activation
- * anchors at the focused element's rect and highlights it. The synthesized
- * `contextmenu` that trails an already-handled keydown is swallowed so it
- * cannot demote the rect anchor to a 0x0 point at the keyboard coordinates.
+ * A pointer activation skips `data-highlighted` on the initially focused item;
+ * a keyboard activation highlights it.
  *
- * On touch the directive also runs its own long-press timer: a `touch`
- * `pointerdown` held for ~500ms — without lifting or moving past a small
- * tolerance — opens the menu at the touch point, anchored like a right-click.
- * This is required because iOS Safari never synthesizes the `contextmenu`
- * event a long-press produces elsewhere; where the browser does synthesize it
- * (Android, desktop touch emulation) the two paths are mutually exclusive, so
- * the menu opens exactly once. Since the timer relies on the press not being
- * pre-empted, suppress the native iOS callout / text-selection on the trigger
- * with CSS (`-webkit-touch-callout: none; user-select: none;`) — otherwise the
- * OS gesture fires `pointercancel` and cancels the press.
+ * On touch the directive runs its own long-press timer: a `touch` `pointerdown`
+ * held for ~500ms — without lifting or moving past a small tolerance — opens
+ * the menu at the touch point, anchored like a right-click. Where the browser
+ * synthesizes `contextmenu` for a long-press the two paths are mutually
+ * exclusive, so the menu opens exactly once. Suppress the native iOS callout
+ * and text selection on the trigger with CSS
+ * (`-webkit-touch-callout: none; user-select: none;`) — otherwise the OS
+ * gesture fires `pointercancel` and cancels the press.
  *
- * Apply on any element. A default `tabindex="-1"` is host-bound so the
- * trigger can receive programmatic focus and return-focus works out of the
- * box on close — no consumer setup required. The default is overridable:
- * set your own `tabindex` (e.g. `tabindex="0"` to put the trigger in the
- * Tab order) and it wins. The keyboard activators (`Shift+F10`, the
- * `ContextMenu` key) need the trigger — or something inside it — focusable,
- * which the default guarantees.
+ * Apply on any element. A default `tabindex="-1"` is host-bound so the trigger
+ * can receive programmatic focus and return-focus works on close; set your own
+ * `tabindex` (e.g. `tabindex="0"` to put it in the Tab order) and it wins. The
+ * keyboard activators need the trigger — or something inside it — focusable.
  *
  * The root is normally resolved via DI from the enclosing `[forContextMenu]`.
  * When the trigger is declared inside an `ng-template` stamped into the root
@@ -66,18 +55,14 @@ const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
  * `routerLink`-style: `[forContextMenuTrigger]="root"` with
  * `#root="forContextMenu"`.
  *
- * The host keeps its generated `[id]`, adopting a consumer-set static one, even though no ARIA
- * wiring consumes it: this trigger is a whole right-click region rather than a discrete labelling
- * control, so `[forMenuContent]` never points `aria-labelledby` at it and the menu is named with
- * `ariaLabel` instead. The id remains as a stable consumer and test hook.
+ * The host carries a generated `id`, adopting a consumer-set static one. No
+ * ARIA wiring consumes it — the menu is named with `ariaLabel`, not
+ * `aria-labelledby` — so it serves as a stable consumer and test hook.
  *
- * Disabling merges the trigger's own `disabled` input OR the root's
- * `disabled`. When disabled, only `data-disabled` is reflected as a styling /
- * state hook. The trigger is a generic region with no interactive ARIA role,
- * so it emits neither the native `disabled` attribute (which applies only to
- * form controls) nor `aria-disabled` (which is meaningful only on an
- * interactive role); the disabled behaviour is enforced by the in-handler
- * guards, which let the native browser menu show through instead.
+ * Disabling merges the trigger's own `disabled` input with the root's. When
+ * disabled, only `data-disabled` is reflected: the trigger is a generic region
+ * with no interactive ARIA role, so it emits neither the native `disabled`
+ * attribute nor `aria-disabled`, and the native browser menu shows through.
  */
 @Directive({
   selector: '[forContextMenuTrigger]',

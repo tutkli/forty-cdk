@@ -71,9 +71,7 @@ export class ForTreeItem<T = string> implements ForTreeItemContext<T> {
   /**
    * Stable identifier for this node, mirrored into `[(value)]` / `[(expanded)]`.
    *
-   * Mandatory: it is seeded with the `unsetInput` sentinel rather than declared
-   * `input.required` so the container can skip an item that has registered but
-   * not been bound yet, and an unbound item throws in dev mode.
+   * Mandatory — an unbound item throws in dev mode.
    *
    * That seeding is what lets the item register **synchronously**, so its
    * `aria-posinset` / `aria-setsize` resolve from the container in the creation

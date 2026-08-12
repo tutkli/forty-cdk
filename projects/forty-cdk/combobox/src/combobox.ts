@@ -991,7 +991,7 @@ export class ForCombobox<T = string>
    * interaction. The shared machine's own open guard keeps a stale event from
    * clobbering the previous close reason.
    *
-   * The touch mark sits deliberately **ahead** of that guard rather than on the
+   * The touch mark sits **ahead** of that guard rather than on the
    * machine's `onDismiss` hook, which is where `[forSelect]` / `[forTimePicker]`
    * put theirs: an outside interaction is this control's blur, so it marks the
    * combobox touched exactly like {@link onFocusOut} does — whether or not the

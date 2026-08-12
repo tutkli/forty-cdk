@@ -79,46 +79,36 @@ export function translateRowReorderIndices(
  * emits the previous / new index; the consumer applies the move to their own row array
  * (e.g. `moveItemInArray`). **It never reorders rows itself** (BYO-data).
  *
- * In `mode="grid"` / `mode="treegrid"` the data cells already form the table's composite
- * roving grid, so the draggable rows **yield their tab stop to it**: a grid that is both
- * keyboard-navigable and row-reorderable keeps the **single tab stop** the WAI-ARIA Data
- * Grid pattern calls for (`Tab` enters the grid once). The row draggable is a container,
- * not a grid cell, so keyboard reordering is initiated from a focused **cell**: press
- * `Ctrl`/`Cmd`+`Space` on any cell to lift the enclosing row, then `ArrowUp` / `ArrowDown`
- * (`Home` / `End`, `PageUp` / `PageDown`) move the target, `Space` / `Enter` drop, and
- * `Escape` / `Tab` cancel. Idle Arrow keys stay grid navigation, and `Space` still selects
- * the row when a selection mode is set. In the static `mode="table"` the rowgroup keeps its
- * own draggable-owned tab stop and the plain `Space` / `Enter` lift on a focused row.
- * The rowgroup hands its drop-list roving to the grid via `FOR_DROP_LIST_ROVING_DELEGATE`.
+ * In `mode="grid"` / `mode="treegrid"` the draggable rows **yield their tab stop** to the
+ * table's composite roving grid, keeping the **single tab stop** the WAI-ARIA Data Grid
+ * pattern calls for. Keyboard reordering is therefore initiated from a focused **cell**:
+ * press `Ctrl`/`Cmd`+`Space` on any cell to lift the enclosing row, then `ArrowUp` /
+ * `ArrowDown` (`Home` / `End`, `PageUp` / `PageDown`) move the target, `Space` / `Enter`
+ * drop, and `Escape` / `Tab` cancel. Idle Arrow keys stay grid navigation, and `Space` still
+ * selects the row when a selection mode is set. In the static `mode="table"` the rowgroup
+ * keeps its own draggable-owned tab stop and the plain `Space` / `Enter` lift on a focused
+ * row.
  *
- * Under `[forTableVirtualized]`, `rowReorder` emits **absolute** dataset indices
- * (derived from each rendered row's `virtualIndex`) so `moveItemInArray` over the full
- * array moves the right row. Pointer drag works within the rendered window and reaches
- * rows beyond it via auto-scroll (the lifted row is kept mounted for the drag); keyboard
- * reorder steps the target across the entire dataset (scrolling unmounted rows into view).
- * Holding **Shift** during a pointer drag engages **windowed scrub** — the scroll viewport
- * maps onto the whole dataset (top edge → row 0, bottom edge → the last row) so a single
- * gesture drops the lifted row at an arbitrary far row without auto-scroll having to reach
- * it. Without Shift, pointer resolution is unchanged.
- * A non-virtualized table emits rendered-order indices unchanged.
+ * Under `[forTableVirtualized]`, `rowReorder` emits **absolute** dataset indices so
+ * `moveItemInArray` over the full array moves the right row; a non-virtualized table emits
+ * rendered-order indices. Pointer drag works within the rendered window and reaches rows
+ * beyond it via auto-scroll; keyboard reorder steps the target across the entire dataset,
+ * scrolling unmounted rows into view. Holding **Shift** during a pointer drag engages
+ * **windowed scrub** — the scroll viewport maps onto the whole dataset (top edge → row 0,
+ * bottom edge → the last row) so a single gesture can drop the lifted row at an arbitrary
+ * far row.
  *
- * A keyboard jump recycles the rendered window, which re-positions the retained lifted row and
- * blurs it on the way through. That is not a cancel: focus returns to the lifted row once the
- * window settles, and a `focusout` reporting no destination cancels only if focus is still outside
- * the rowgroup afterwards. The restore uses `preventScroll`, because the retained row keeps
- * rendering at its original offset — a scrolling `focus()` would take the viewport straight back
- * off the destination and undo the jump.
+ * Focus leaving the rowgroup cancels a keyboard lift. A window recycle that briefly blurs
+ * the retained lifted row does not: focus returns to it once the window settles.
  *
- * **One gesture at a time.** Under virtualization the pin is written when a pointer drag *arms*
- * rather than when the press lands, and released on commit or cancel, so an ordinary click pins
- * nothing. Pointer and keyboard reorder are mutually exclusive: a live keyboard lift stands the
- * pointer channel down, and a lift key pressed during a pointer drag is ignored. Whichever gesture
- * starts first owns the pin until it commits or aborts.
+ * **One gesture at a time.** Pointer and keyboard reorder are mutually exclusive: a live
+ * keyboard lift stands the pointer channel down, and a lift key pressed during a pointer
+ * drag is ignored.
  *
- * A pointer press is refused outright — nothing tracked, no pin — when the rowgroup is `disabled`,
- * when a **mouse** press uses a non-primary button (touch and pen presses keep whatever `button`
- * their engine reports), or when the pressed row carries no registered `[forDraggable]` or its
- * draggable is `[dragDisabled]`.
+ * A pointer press is refused outright when the rowgroup is `disabled`, when a **mouse** press
+ * uses a non-primary button (touch and pen presses keep whatever `button` their engine
+ * reports), or when the pressed row carries no registered `[forDraggable]` or its draggable
+ * is `[dragDisabled]`.
  *
  * @example
  * ```html

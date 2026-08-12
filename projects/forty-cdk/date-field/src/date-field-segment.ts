@@ -7,10 +7,10 @@ import { DEFAULT_DATE_FIELD_SEGMENT_LABELS, FOR_DATE_FIELD_DEFAULTS } from './da
 /**
  * One editable spinbutton segment of a `[forDateField]` — the day, month, or
  * year part (and, at `granularity > 'day'`, hour / minute / second / the AM·PM
- * `dayPeriod`). Apply on a focusable element (typically a `<span>`); the shared
- * {@link ForDateTimeSegmentBase} adds `role="spinbutton"`, the `aria-valuemin` /
- * `aria-valuemax` / `aria-valuenow` / `aria-valuetext` reflection, the roving
- * tabindex, and the full keyboard map:
+ * `dayPeriod`). Apply on a focusable element (typically a `<span>`); the
+ * directive adds `role="spinbutton"`, the `aria-valuemin` / `aria-valuemax` /
+ * `aria-valuenow` / `aria-valuetext` reflection, the roving tabindex, and the
+ * full keyboard map:
  *
  * - **digits** fill a numeric segment and auto-advance to the next when full;
  * - **a / p** set the period on the AM/PM (`dayPeriod`) segment;

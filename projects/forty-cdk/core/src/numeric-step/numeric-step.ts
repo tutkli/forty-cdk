@@ -100,7 +100,7 @@ export interface StepOnGridOptions {
  * - **Off the grid** → the nearest grid point strictly in `direction`
  *   (`0.55` with `step: 1` gives `1` up / `0` down), so an arbitrary consumer
  *   value is corrected onto the grid instead of carrying its offset forever.
- *   `by` is deliberately ignored here — a page-sized jump from an off-grid
+ *   `by` is ignored here — a page-sized jump from an off-grid
  *   value still only lands on the adjacent grid point, exactly as
  *   `HTMLInputElement.stepUp(n)` behaves.
  * - **On the grid** → `value ± by` (`1` with `step: 1` gives `2`, never `1`),

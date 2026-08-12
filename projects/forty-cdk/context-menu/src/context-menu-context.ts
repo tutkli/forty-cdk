@@ -31,7 +31,7 @@ export interface ForContextMenuContext {
 
   /**
    * Id mirrored to the trigger's host `[id]`, adopting a consumer-set static
-   * `id` when present. It is deliberately **not** used as the menu's
+   * `id` when present. It is **not** used as the menu's
    * `aria-labelledby` target — the trigger is the whole right-click region, so
    * naming the menu after it would announce the region's entire text; name the
    * menu with `ariaLabel` instead. The id stays exposed as a stable hook for

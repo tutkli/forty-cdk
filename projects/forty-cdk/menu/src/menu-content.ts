@@ -21,16 +21,13 @@ import {
  *
  * The directive does not manage DOM presence — wrap with
  * `@if (open())` so `animate.enter` / `animate.leave` fire on the natural
- * mount cycle. While mounted, a `DismissibleLayer` activates (Escape,
- * pointer-down outside, focus outside) and initial focus is sent to the
- * first or last menu item per the trigger's hint.
+ * mount cycle. While mounted, it dismisses on Escape, pointer-down outside or
+ * focus outside, and initial focus is sent to the first or last menu item per
+ * the trigger's hint.
  *
  * The trigger element is exempt from the layer's outside-pointer checks,
  * so clicking the trigger again routes through its own toggle handler
  * without spuriously closing.
- *
- * The lifecycle (positioner + dismissible layer + initial focus + return
- * focus) is owned by the shared `injectOverlayShell` helper.
  *
  * Accessible name: a consumer-set **static** `aria-labelledby` on the surface
  * always wins and is preserved. Otherwise an explicit `ariaLabel` on the root

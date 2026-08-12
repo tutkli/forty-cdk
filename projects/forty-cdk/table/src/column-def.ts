@@ -187,11 +187,8 @@ export class ForTableColumnDragPlaceholder {
 @Directive({ selector: '[forTableColumnDef]' })
 export class ForTableColumnDef {
   /**
-   * Column identifier — reflected as `data-column` on the stamped cells and used
-   * to key the resize width var. Mandatory: it is seeded with the `unsetInput`
-   * sentinel rather than declared `input.required` so the registry can skip a def
-   * that has registered but not been bound yet, and an unbound def throws in dev
-   * mode.
+   * Column identifier — reflected as `data-column` on the stamped cells and used to key the resize
+   * width var. Mandatory — an unbound def throws in dev mode.
    */
   readonly name = input(unsetInput<string>(), { alias: 'forTableColumnDef' });
 

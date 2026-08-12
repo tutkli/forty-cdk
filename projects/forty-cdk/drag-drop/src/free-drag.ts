@@ -47,7 +47,7 @@ interface LiftSnapshot {
  * `createPointerDragSession` transport and accepts `[forDragHandle]` children.
  *
  * Its outputs are the `moveStart` / `moveMove` / `moveEnd` trio carrying `{ x, y }` positions —
- * deliberately a different vocabulary from `[forDraggable]`'s `dragStart` / `dragEnd`, which carry
+ * A different vocabulary from `[forDraggable]`'s `dragStart` / `dragEnd`, which carry
  * reorder payloads (`{ source, index }` / `{ dropped }`). Free drag repositions; it never reorders.
  *
  * Pointer-only: there is no WAI-ARIA APG pattern for "freely reposition an element", so this is

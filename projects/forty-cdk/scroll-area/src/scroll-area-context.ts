@@ -14,6 +14,7 @@ export type ForScrollbarOrientation = 'horizontal' | 'vertical';
  */
 export type ForScrollAreaTrackPress = 'none' | 'page' | 'jump';
 
+/** Read surface `[forScrollArea]` publishes through {@link FOR_SCROLL_AREA_CONTEXT}. */
 export interface ForScrollAreaContext {
   readonly type: Signal<ForScrollAreaType>;
   readonly scrollHideDelay: Signal<number>;

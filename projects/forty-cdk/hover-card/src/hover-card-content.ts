@@ -9,7 +9,7 @@ import { injectHoverCardContext } from './hover-card-context';
 
 /**
  * The hover-card surface. Portaled to `document.body` and positioned by
- * floating-ui (via the shared `injectOverlayShell` helper). Pointer-enter
+ * floating-ui. Pointer-enter
  * on the content cancels the pending close, so the user can move the
  * cursor from the trigger into the card to interact with its content
  * (links, buttons, copy targets).
@@ -17,9 +17,9 @@ import { injectHoverCardContext } from './hover-card-context';
  * Mount / unmount via `@if (card.open())` on the consumer side so
  * `animate.enter` / `animate.leave` work natively.
  *
- * Escape is routed through the shared document-level `DismissibleLayer`
- * (Escape-only — outside dismissal stays implicit via pointer-leave
- * timing), so it dismisses the card no matter where focus lives when the
+ * Escape is handled at the document level (outside dismissal stays
+ * implicit, via pointer-leave timing), so it dismisses the card no matter
+ * where focus lives when the
  * card was hover-opened. Initial-focus and return-focus bundles are
  * omitted because the surface is informational and never steals focus.
  *

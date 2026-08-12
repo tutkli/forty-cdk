@@ -74,6 +74,7 @@ export interface ForNavigationMenuViewportHandle {
  */
 export type ForNavigationMenuMotion = 'from-start' | 'from-end' | 'to-start' | 'to-end';
 
+/** Read surface `[forNavigationMenu]` publishes through {@link FOR_NAVIGATION_MENU_CONTEXT}. */
 export interface ForNavigationMenuContext {
   /**
    * The open item's value, or `null` for none, as a read-only signal. Mutate it

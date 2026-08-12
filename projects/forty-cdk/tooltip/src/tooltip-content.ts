@@ -9,8 +9,7 @@ import { injectTooltipContext } from './tooltip-context';
 
 /**
  * The tooltip bubble. Carries `role="tooltip"`, is portaled to
- * `document.body`, and is positioned by `@floating-ui/dom` (via the shared
- * `injectOverlayShell` helper) while mounted.
+ * `document.body`, and is positioned by `@floating-ui/dom` while mounted.
  *
  * Default `pointer-events: none` is applied via host styles so the bubble
  * layers above content without intercepting hover. When the root opts in with
@@ -23,9 +22,9 @@ import { injectTooltipContext } from './tooltip-context';
  * bubble mounts and unmounts with the open state and `animate.enter` /
  * `animate.leave` work natively.
  *
- * Escape is routed through the shared document-level `DismissibleLayer`
- * (Escape-only — outside dismissal stays implicit via hover / focus / scroll
- * timing), so it dismisses the tooltip no matter where focus lives when the
+ * Escape is handled at the document level (outside dismissal stays implicit,
+ * via hover / focus / scroll timing), so it dismisses the tooltip no matter
+ * where focus lives when the
  * tooltip was hover-opened (WCAG 2.1 SC 1.4.13), and a tooltip layered over a
  * dialog is dismissed by the first Escape while the dialog stays open. No
  * initial focus move and no return focus on destroy — the surface is

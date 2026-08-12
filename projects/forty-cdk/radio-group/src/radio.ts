@@ -66,7 +66,7 @@ export class ForRadio {
 
   /**
    * Parent group's read surface — public so siblings like `ForRadioIndicator`
-   * can read it. Deliberately typed as the public {@link ForRadioGroupContext}:
+   * can read it. Typed as the public {@link ForRadioGroupContext}:
    * the registration protocol behind it stays internal.
    */
   readonly group: ForRadioGroupContext = this.#ctx;

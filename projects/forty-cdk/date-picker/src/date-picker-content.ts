@@ -10,22 +10,20 @@ import { injectDatePickerContext } from './date-picker-context';
 
 /**
  * The date-picker surface. Carries `role="dialog"`, is portaled to
- * `document.body`, and wraps the projected `ForCalendar`. It defers all of its
- * lifecycle to one of the two shared shells, picked once on construction from
+ * `document.body`, and wraps the projected `ForCalendar`. Its lifecycle follows
  * `[forDatePicker].modal`:
  *
- * - **non-modal (default)** — `injectOverlayShell` anchors the surface to the
- *   trigger via `@floating-ui/dom`, activates a `DismissibleLayer` (Escape,
- *   pointer-down outside, focus outside), moves focus to the calendar's roving
- *   cell on open, and returns focus to the trigger on close.
- * - **modal** — `injectModalShell` traps focus, inerts the background, and
- *   locks body scroll (a centered dialog the consumer positions with CSS, not
- *   trigger-anchored). Same Escape / outside-pointer dismiss and return-focus.
+ * - **non-modal (default)** — the surface is anchored to the trigger via
+ *   `@floating-ui/dom`, dismisses on Escape, pointer-down outside or focus
+ *   outside, moves focus to the calendar's roving cell on open, and returns
+ *   focus to the trigger on close.
+ * - **modal** — focus is trapped, the background is inerted and body scroll is
+ *   locked; the dialog is centered and positioned by the consumer's CSS rather
+ *   than anchored to the trigger. Same Escape / outside-pointer dismiss and
+ *   return-focus.
  *
- * The mode is read in the constructor rather than reactively because the two
- * shells are structurally different and switching at runtime would require a
- * remount. This is reliable: the surface mounts lazily (the consumer wraps it
- * with `@if (open())`), well after the root's `modal` input has settled.
+ * The mode is read once, when the surface is constructed: changing `modal`
+ * while the surface is mounted has no effect until it remounts.
  *
  * Mount/unmount of the surface is the consumer's responsibility — wrap with
  * `@if (open())` so `animate.enter` / `animate.leave` fire on the natural

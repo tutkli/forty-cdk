@@ -284,10 +284,9 @@ export class ForPopover extends AnchoredOverlayPositioningBase implements ForPop
   }
 
   /**
-   * Outside-interaction emit forwarders. The shared `#pendingOutsideVeto`
-   * reuse between the specific outside channels and the composite
-   * `interactOutside` lives in `injectOverlayShell`; these only fire the
-   * matching output with the veto the shell built.
+   * Outside-interaction emit forwarders. The specific and composite channels
+   * observe the same veto, so `preventDefault()` from either one suppresses the
+   * close that otherwise follows.
    */
   emitPointerDownOutside(veto: VetoableNativeEvent<PointerEvent>): void {
     this.pointerDownOutside.emit(veto);

@@ -366,7 +366,7 @@ export class VirtualizedNavigator<H, E extends VirtualizedNavigatorEntry> {
    * `totalCount` is unset / zero, when nothing is rendered, or when every
    * rendered handle is disabled.
    *
-   * Deliberately *passive*: it only ever moves activedescendant, never the
+   * *Passive*: it only ever moves activedescendant, never the
    * consumer's scroll position, so it emits no `(scrollToIndex)`. The Combobox
    * auto-highlight bridge — its one caller — re-seeds every time the
    * activedescendant is cleared, and scrolling the active option out of the

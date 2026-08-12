@@ -749,7 +749,7 @@ function targetsHeaderRow(
  * carrying its own `@Directive` metadata replaces the array wholesale, so
  * re-providing `FOR_TABLE_CONTEXT` alone leaves the registration wiring absent
  * and every piece — down to the root's own constructor — fails to resolve it.
- * The internal providers are deliberately unnameable outside the library, which is why the
+ * The internal providers are unnameable outside the library, which is why the
  * wrapper cannot list them by hand.
  *
  * ```ts

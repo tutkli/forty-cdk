@@ -15,7 +15,7 @@ import { mirrorUnfocusedValue } from './unfocused-value-mirror';
  * concrete directive reflects `[attr.name]` on its host, so the browser
  * serializes the field natively. No hidden input is injected — one would
  * double-submit alongside the real control. This mirrors the OTP-input design
- * and deliberately diverges from `ForNumberInput`, whose displayed (formatted)
+ * and diverges from `ForNumberInput`, whose displayed (formatted)
  * text differs from its submitted value.
  *
  * Implemented as an `@Directive()`-decorated abstract class so Angular detects

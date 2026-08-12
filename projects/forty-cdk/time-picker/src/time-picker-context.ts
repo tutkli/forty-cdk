@@ -126,7 +126,7 @@ export interface ForTimePickerContext<D = unknown> {
  * the slot under the cursor takes the highlight, and so the keyboard takes it
  * back when a slot is focused.
  *
- * Deliberately **not** part of {@link ForTimePickerContext} and never exported
+ * **Not** part of {@link ForTimePickerContext} and never exported
  * from `public-api.ts` — a consumer styles the pointed-at slot off
  * `data-highlighted`, never by reporting a hover into the root.
  */

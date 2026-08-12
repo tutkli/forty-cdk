@@ -312,7 +312,7 @@ export class ForDropList implements ForDropListContext {
    * mark is what keeps {@link isItemDragging} and {@link isDragging} — and therefore the
    * `data-dragging` hook on both the item and the list host — true for the whole gesture.
    *
-   * It is deliberately **not** folded into the list's own lift state: `moveLifted` / `drop` /
+   * It is **not** folded into the list's own lift state: `moveLifted` / `drop` /
    * `cancel` still act on nothing, because the coordinator owns the target index, the
    * announcements and the teardown. Pass `null` on drop, cancel, or destroy.
    */

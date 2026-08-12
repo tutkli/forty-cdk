@@ -11,6 +11,7 @@ import { assertRootContext, orphanContextError } from 'forty-cdk/core';
  */
 export type ForAvatarStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
+/** Read surface `[forAvatar]` publishes through {@link FOR_AVATAR_CONTEXT}. */
 export interface ForAvatarContext {
   /** Current status of the avatar's image. */
   readonly status: Signal<ForAvatarStatus>;
@@ -26,7 +27,7 @@ export interface ForAvatarContext {
  * The avatar's piece-coordination surface: the one call `[forAvatarImage]`
  * makes so the root can transition its state machine.
  *
- * Deliberately **not** part of {@link ForAvatarContext} and never exported from
+ * **Not** part of {@link ForAvatarContext} and never exported from
  * `public-api.ts` — a consumer drives the status by binding `[src]`, never by
  * reporting a transition into the root.
  */

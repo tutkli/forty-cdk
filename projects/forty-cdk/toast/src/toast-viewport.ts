@@ -65,11 +65,10 @@ import { ForToastTitle } from './toast-title';
  * (per-toast wins); `[animateEnter]` mirrors it for class-applied entrances.
  *
  * Stack shift: those two hooks cover the row that mounts or unmounts, never its
- * siblings — nothing about them changed, so CSS has no property to transition
- * and they snap to their new spot in a single frame. Set `[stackShift]` to glide
- * them instead (FLIP, driven from `translate` so your own `transform` — the
- * swipe recipe, an enter / leave keyframe — still composes). Unset, the reflow
- * stays synchronous.
+ * siblings — by default the siblings snap to their new spot in a single frame.
+ * Set `[stackShift]` to glide them instead. The glide is driven from `translate`,
+ * so your own `transform` — the swipe recipe, an enter / leave keyframe — still
+ * composes.
  *
  * Hotkey: pressing the configured `hotkey` (default `F6`) anywhere in the
  * document focuses the first toast. Override per-viewport with `[hotkey]`

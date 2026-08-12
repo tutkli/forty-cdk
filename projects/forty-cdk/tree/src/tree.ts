@@ -428,9 +428,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
    * membership. With cascade a parent returns `'true'` when all its descendants
    * are checked, `'false'` when none are, and `'mixed'` otherwise.
    *
-   * An item whose `[value]` binding is not written yet reports `'false'`: the
-   * cascade branch hands the value to the consumer's `descendantsOf`, which must
-   * never see the `unsetInput` sentinel.
+   * An item whose `[value]` binding is not written yet reports `'false'`, and
+   * your `descendantsOf` is never called for it.
    */
   checkState(value: T): 'true' | 'false' | 'mixed' {
     if (isUnset(value)) {
@@ -440,8 +439,8 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
   }
 
   /**
-   * Open or close a node. Ignores an item whose `[value]` binding is not written
-   * yet, so the `unsetInput` sentinel never enters the `expanded` model.
+   * Open or close a node. An item whose `[value]` binding is not written yet is
+   * ignored, so it never enters the `expanded` model.
    */
   setExpanded(value: T, open: boolean): void {
     if (isUnset(value)) {
@@ -460,9 +459,7 @@ export class ForTree<T = string> implements ForTreeContext<T>, ForTreeContainerC
 
   /**
    * Single mode replaces the selection; multi and checkbox modes toggle the
-   * value. The single write funnel into `value`, so it is where an item whose
-   * `[value]` binding is not written yet is dropped instead of committing the
-   * `unsetInput` sentinel.
+   * value. An item whose `[value]` binding is not written yet is dropped.
    */
   select(value: T): void {
     if (isUnset(value)) {

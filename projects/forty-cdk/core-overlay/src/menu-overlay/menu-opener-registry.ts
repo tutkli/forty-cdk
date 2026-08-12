@@ -249,7 +249,7 @@ export class MenuOpenerRegistry {
    * Registers `element`, adopting a consumer-set static `id` into the seed when
    * the opener owns no id of its own.
    *
-   * Deliberately reads no signal: openers register from inside their trigger's
+   * Reads no signal: openers register from inside their trigger's
    * `effect`, so touching `#entries` here would make that effect depend on the
    * very signal it writes and spin forever.
    */

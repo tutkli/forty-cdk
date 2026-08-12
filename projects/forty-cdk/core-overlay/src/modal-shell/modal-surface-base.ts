@@ -28,7 +28,7 @@ import { type ModalShellConfig } from './modal-shell';
  * the four defaults-backed inputs each subclass seeds from its own
  * `FOR_<PRIMITIVE>_DEFAULTS`) stays on the subclass.
  *
- * The base deliberately does **not** call {@link injectModalShell} itself —
+ * The base does **not** call {@link injectModalShell} itself —
  * each subclass calls `injectModalShell(this.modalShellConfig())` from its own
  * constructor. A base-owned call would register its `afterNextRender` during
  * `super()`, before a subclass (Drawer) could register its own pre-shell
@@ -43,7 +43,7 @@ import { type ModalShellConfig } from './modal-shell';
  *
  * Internal core tier — exported from `forty-cdk/core` for the library's own
  * entry points, with no semver guarantee. Subclassing a library base is not a
- * supported contract, so it is deliberately absent from `CORE_PUBLISHERS` and
+ * supported contract, so it is absent from `CORE_PUBLISHERS` and
  * from every primitive's own barrel; the public-types gate ignores
  * `extends`-only heritage, which is why the base may appear in the shipped
  * `.d.ts` as the parent of `[forDialog]` / `[forDrawer]` without being blessed.

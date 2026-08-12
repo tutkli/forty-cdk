@@ -45,7 +45,7 @@ export interface ForDropListContext {
    * lift a composing coordinator owns and drives itself (`ForDropList.setCoordinatorLift`).
    * Drives `[forDraggable]`'s `data-dragging`.
    *
-   * Deliberately broader than {@link isLifted}, which answers only for the list's own lift —
+   * Broader than {@link isLifted}, which answers only for the list's own lift —
    * the state {@link moveLifted} / {@link drop} / {@link cancel} act on.
    */
   isItemDragging(el: HTMLElement): boolean;

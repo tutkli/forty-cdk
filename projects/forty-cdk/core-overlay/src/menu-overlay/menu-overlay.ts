@@ -82,7 +82,7 @@ export interface MenuOverlayHooks extends OverlayEmitTargets {
  * the outside / Escape forwarders, `requestClose`, and the auto-focus vetoes — is the shared
  * controller's, declared once and composed here.
  *
- * It deliberately does not own:
+ * It does not own:
  *
  * - the resolved `anchor` signal, which each root derives differently — from the trigger element,
  *   from a virtual anchor, or from the active opener,
@@ -335,7 +335,7 @@ export class MenuOverlay<H extends MenuItemHandle = MenuItemHandle> {
    * whose menu is already mounted is never a dead key. The menu is never
    * toggled closed — the open keys have no close semantics in the APG patterns
    * — and a menu with no enabled item moves nothing rather than pulling focus
-   * onto an item-less surface. The re-focus is deliberately not gated on the
+   * onto an item-less surface. The re-focus is not gated on the
    * `(autoFocusOnOpen)` veto: that veto covers the mount's automatic focus
    * move, and honouring it here would silently restore the dead key for
    * consumers who opted out of auto-focus-on-open. It *is* skipped for a
