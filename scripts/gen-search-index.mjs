@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, readdirSync, writeFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { sectionsOf } from './lib/doc-site.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
-import { slugify, isFenceLine, Slugger } from './lib/readme-slug.mjs';
 
 const LIB = join(repoRoot, 'projects', 'forty-cdk');
 const OUT = join(
@@ -14,23 +14,6 @@ const OUT = join(
   'doc',
   'search-index.generated.ts',
 );
-
-function sectionsOf(md) {
-  const lines = md.split('\n');
-  const slugger = new Slugger();
-  const sections = [];
-  let inFence = false;
-  for (const line of lines) {
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-    }
-    if (!inFence && /^## /.test(line)) {
-      const title = line.slice(3).trim();
-      sections.push({ title, anchor: slugger.unique(slugify(title)) });
-    }
-  }
-  return sections;
-}
 
 const index = {};
 let totalSections = 0;

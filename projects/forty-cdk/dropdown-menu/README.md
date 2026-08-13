@@ -156,7 +156,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 Every output above is vetoable — each handler receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event). Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because DropdownMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [Conventions › Auto-focus hook shape](../../../.claude/rules/conventions.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because DropdownMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). Dialog and Drawer take callback-shape inputs for the same pair instead: either can be closed by a direct `open.set(false)` that bypasses the `(dismiss)` output entirely, so their close hook has to be a stored function reference that still runs during teardown.
 
 ### Data attributes
 

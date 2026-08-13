@@ -369,8 +369,9 @@ A custom integration that cannot use either companion must supply the same three
 mechanisms itself: map window-relative to absolute indices with the reusable
 `translateWindowReorder` helper (`forty-cdk/core`), keep the lifted row mounted
 for the duration of the drag, and step the keyboard target over the true total
-count. See [`docs/drag-in-virtualized-list-spike.md`](../../../docs/drag-in-virtualized-list-spike.md)
-for the full analysis.
+count. Miss any one of the three and the failure is silent — an index that
+addresses the wrong row, a lifted row recycled mid-drag, or a keyboard move that
+stops at the window edge.
 
 ## Data attributes
 

@@ -1,7 +1,22 @@
 import type { Routes } from '@angular/router';
 
+import { GUIDES } from './doc/guides.generated';
+
+const guideRoutes: Routes = [
+  {
+    path: 'guides',
+    loadComponent: () => import('./guides/guides.page').then((m) => m.GuidesPage),
+  },
+  ...GUIDES.map((guide) => ({
+    path: `guides/${guide.slug}`,
+    data: { slug: guide.slug },
+    loadComponent: () => import('./guides/guide.page').then((m) => m.GuidePage),
+  })),
+];
+
 export const routes: Routes = [
   { path: '', redirectTo: 'accordion', pathMatch: 'full' },
+  ...guideRoutes,
   {
     path: 'accordion',
     loadComponent: () => import('./demos/accordion/accordion.page').then((m) => m.AccordionPage),

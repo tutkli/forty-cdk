@@ -140,7 +140,7 @@ Both triggers carry `[menuPositioning]`, a partial `{ side, align, sideOffset, a
 
 Same vetoable dismiss API as DropdownMenu. Call `preventDefault()` on the emitted veto to suppress the directive's default action; the original DOM event, when present, is on `.event`.
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because ContextMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [Conventions › Auto-focus hook shape](../../../.claude/rules/conventions.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because ContextMenu always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). Dialog and Drawer take callback-shape inputs for the same pair instead: either can be closed by a direct `open.set(false)` that bypasses the `(dismiss)` output entirely, so their close hook has to be a stored function reference that still runs during teardown.
 
 ### Data attributes
 

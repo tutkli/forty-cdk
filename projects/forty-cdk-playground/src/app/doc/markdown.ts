@@ -32,12 +32,38 @@ export interface DocSectionData {
   readonly blocks: readonly DocBlock[];
 }
 
-export interface ParsedReadme {
+export interface ParsedDoc {
   readonly intro: string;
   readonly sections: readonly DocSectionData[];
 }
 
+export interface DocLinkTarget {
+  readonly href: string;
+  readonly route: string | null;
+}
+
+export type DocLinkResolver = (href: string, sourcePath: string) => DocLinkTarget | null;
+
+export interface DocRenderContext {
+  readonly sourcePath: string;
+  readonly resolveLink: DocLinkResolver;
+}
+
 const headingSlugger = new Slugger();
+
+let activeContext: DocRenderContext | null = null;
+
+function renderLink(href: string, title: string | null, inner: string): string {
+  const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+  const target = activeContext?.resolveLink(href, activeContext.sourcePath) ?? null;
+  if (target === null) {
+    return `<a href="${escapeHtml(href)}"${titleAttr}>${inner}</a>`;
+  }
+  if (target.route === null) {
+    return `<a href="${escapeHtml(target.href)}"${titleAttr} target="_blank" rel="noreferrer noopener">${inner}</a>`;
+  }
+  return `<a href="${escapeHtml(target.href)}"${titleAttr} data-doc-route="${escapeHtml(target.route)}">${inner}</a>`;
+}
 
 const marked = new Marked({ gfm: true });
 marked.use({
@@ -51,6 +77,9 @@ marked.use({
       return highlighted
         ? `${highlighted}\n`
         : `<pre><code>${escapeHtml(token.text)}</code></pre>\n`;
+    },
+    link(token: Tokens.Link) {
+      return renderLink(token.href, token.title ?? null, renderInline(token.text));
     },
   },
 });
@@ -173,7 +202,16 @@ function stripLeadingHeading(lines: string[]): string[] {
   return result;
 }
 
-export function parseReadme(md: string): ParsedReadme {
+export function parseDoc(md: string, context?: DocRenderContext): ParsedDoc {
+  activeContext = context ?? null;
+  try {
+    return parseDocSections(md);
+  } finally {
+    activeContext = null;
+  }
+}
+
+function parseDocSections(md: string): ParsedDoc {
   const lines = md.split('\n');
   const slugger = new Slugger();
   const introLines: string[] = [];

@@ -14,7 +14,12 @@ is not authored twice. This template is therefore two things at once:
 
 > Scope note: this governs per-primitive pages only. Cross-cutting guides (`docs/styling.md`,
 > `docs/your-first-overlay.md`, …) keep their own free-form structure and are rendered as plain
-> articles.
+> articles at `/guides/<name>`, listed at `/guides`
+> ([#1801](https://github.com/tutkli/forty-cdk/issues/1801)). Which files in `docs/` are published,
+> which theme group each belongs to, and the written reason for every exclusion all live in
+> `PUBLISHED_GUIDES` / `EXCLUDED_GUIDES` in [scripts/lib/doc-site.mjs](../scripts/lib/doc-site.mjs);
+> a `.md` file in `docs/` that is in neither list fails `pnpm gen:guides`. This document is the one
+> excluded file — it addresses contributors rather than consumers.
 
 ## Archetypes
 
@@ -131,6 +136,16 @@ How each canonical section surfaces on the site (informs the page-shell componen
 | Accessibility     | Rendered markdown                                                                                                      |
 | Styling           | Rendered markdown                                                                                                      |
 | All `##` headings | Feed the "On this page" TOC (right rail)                                                                               |
+
+Every relative link a README or a guide carries is repository-relative — correct on GitHub, a 404 on
+the web — so the renderer resolves each one against the document's own path before it reaches the
+DOM ([#1800](https://github.com/tutkli/forty-cdk/issues/1800)): a sibling entry point's README
+becomes that primitive's route, a `docs/*.md` guide becomes its `/guides/<name>` route (both keeping
+their fragment and navigating through the router without a page load), and anything the site does not
+publish — library source, an entry point with no page yet — becomes a GitHub blob URL opened in a new
+tab. The mapping is derived from the same registries that drive the routes, never hand-written, and
+`pnpm check:doc-links` fails the build on a relative link that resolves to nothing, to a file that
+does not exist, to an excluded guide, or to `.claude/` agent instrumentation.
 
 The page chrome itself dogfoods the library: Navigation Menu / Drawer (mobile) for the top nav,
 Tree / Scroll Area for the sidebar, Combobox for ⌘K search, Switch for the theme toggle,

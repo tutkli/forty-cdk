@@ -128,9 +128,11 @@ onReorder(d: TableRowReorderDescriptor): void {
 This is the **supported** way to drag-reorder a virtualized list. A bare
 `[forDropList]` wrapping `*forVirtualFor` is **not** — it emits window-relative
 indices, lets auto-scroll recycle the lifted row, and confines keyboard stepping
-to the rendered window. See
-[`docs/drag-in-virtualized-list-spike.md`](drag-in-virtualized-list-spike.md)
-for the full analysis and the mechanisms `[forTableRowReorder]` supplies.
+to the rendered window. Those are exactly the three mechanisms
+`[forTableRowReorder]` supplies on top of it: absolute-index translation, a
+lifted row pinned against recycling, and keyboard stepping over the true total
+count. A custom integration that uses neither companion owes all three, and
+missing one fails silently rather than loudly.
 
 ## Live-sort placeholder
 
