@@ -33,7 +33,6 @@ export const PUBLISHED_GUIDES = [
   { file: 'table-declarative-columns.md', group: 'table' },
   { file: 'table-reordering.md', group: 'table' },
   { file: 'table-virtualized-rows.md', group: 'table' },
-  { file: 'drag-in-virtualized-list-spike.md', group: 'table' },
 ];
 
 export const EXCLUDED_GUIDES = [

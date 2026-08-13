@@ -75,4 +75,3 @@ It re-exposes `[forDropList]`'s `dir`, `disabled`, `autoScroll`, `animateReorder
 
 - **[`forty-cdk/virtualization`](../virtualization/README.md)** — the viewport this adapter pins and scrolls.
 - **[`forty-cdk/drag-drop`](../drag-drop/README.md)** — the drop list it wraps.
-- **[Drag in a virtualized list](../../../docs/drag-in-virtualized-list-spike.md)** — the design spike behind the absolute-index translation.
