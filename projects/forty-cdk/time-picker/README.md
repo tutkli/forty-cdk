@@ -124,6 +124,7 @@ Moving the pointer over an enabled slot hands it `data-highlighted`, so exactly 
 
 - **Hover never selects and never moves DOM focus.** The pointer's own click still activates the slot.
 - **The keyboard takes it back on the next move**: the highlight falls back to the DOM-focused slot, so the first arrow / Home / End move drops the pointer highlight.
+- **Moving the pointer off `[forTimePickerContent]` releases it**, so the highlight goes back to the DOM-focused slot and an open listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent slots is not a leave: the highlight moves straight from one to the other without blinking off.
 - **A programmatic scroll cannot hijack it.** Focusing a slot scrolls it into view, which can slide a different slot under a stationary cursor and make the browser fire a synthetic `pointermove` for it; moves arriving in a short window after such a scroll are ignored.
 
 A hover on a disabled slot is ignored, and the highlight falls back to the focused slot if the hovered one is disabled or unmounted while the cursor rests on it.

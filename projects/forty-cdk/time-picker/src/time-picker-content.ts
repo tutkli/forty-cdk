@@ -42,6 +42,7 @@ import { injectTimePickerContext } from './time-picker-context';
     '[attr.data-state]': 'ctx.open() ? "open" : "closed"',
     '[attr.data-orientation]': 'ctx.orientation()',
     '[attr.data-modal]': 'ctx.modal() ? "" : null',
+    '(pointerleave)': 'onPointerLeave()',
   },
 })
 export class ForTimePickerContent {
@@ -149,5 +150,9 @@ export class ForTimePickerContent {
         skip: () => ctx.overlay.lastCloseReason() === 'tab',
       },
     });
+  }
+
+  protected onPointerLeave(): void {
+    this.ctx.releasePointerHighlight();
   }
 }

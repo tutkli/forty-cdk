@@ -764,6 +764,12 @@ describe('ForTimePicker', () => {
 
     const highlighted = (): HTMLElement[] =>
       Array.from(getSlots()).filter((slot) => slot.hasAttribute('data-highlighted'));
+
+    const leaveContent = () =>
+      document
+        .querySelector<HTMLElement>('[role="listbox"]')!
+        .dispatchEvent(new PointerEvent('pointerleave'));
+
     const advanceClock = (ms: number): void => {
       const frozen = Date.now() + ms;
       vi.spyOn(Date, 'now').mockImplementation(() => frozen);
@@ -817,6 +823,37 @@ describe('ForTimePicker', () => {
 
       expect(document.activeElement).toBe(slots[1]);
       expect(highlighted()).toEqual([slots[1]]);
+    });
+
+    it('hands the highlight back to the focused slot when the pointer leaves the content', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      slots[0]!.focus();
+      hover(slots[3]!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[3]]);
+
+      leaveContent();
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual([slots[0]]);
+      expect(document.activeElement).toBe(slots[0]);
+    });
+
+    it('keeps exactly one slot highlighted while the pointer crosses to an adjacent one', async () => {
+      const r = await openHourly();
+      const slots = Array.from(getSlots());
+      hover(slots[3]!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[3]]);
+
+      slots[3]!.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[3]]);
+
+      hover(slots[4]!);
+      await flush(r.fixture);
+      expect(highlighted()).toEqual([slots[4]]);
     });
 
     it('ignores a hover synthesized by the scroll a keyboard move performs', async () => {

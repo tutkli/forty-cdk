@@ -85,6 +85,26 @@ test.describe('TimePicker', () => {
     await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
   });
 
+  test('moving a real mouse off the listbox hands data-highlighted back to the keyboard', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'time-picker');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'content')).toBeVisible();
+
+    const firstSlot = page.locator('[forTimePickerOption]').first();
+    await firstSlot.focus();
+    const fifthSlot = page.locator('[forTimePickerOption]').nth(4);
+    await fifthSlot.hover();
+    await expect(fifthSlot).toHaveAttribute('data-highlighted', '');
+
+    await page.mouse.move(2, 2);
+    await expect(el(page, 'content')).toBeVisible();
+    await expect(fifthSlot).not.toHaveAttribute('data-highlighted', '');
+    await expect(firstSlot).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+  });
+
   test('Home moves focus to the first slot', async ({ page }) => {
     await gotoFixture(page, 'time-picker');
     await el(page, 'trigger').click();

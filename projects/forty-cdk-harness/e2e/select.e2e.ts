@@ -96,6 +96,23 @@ test.describe('Select', () => {
     await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
   });
 
+  test('moving a real mouse off the listbox hands data-highlighted back to the keyboard', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'select');
+    await el(page, 'trigger').click();
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'opt-date').hover();
+    await expect(el(page, 'opt-date')).toHaveAttribute('data-highlighted', '');
+
+    await page.mouse.move(2, 2);
+    await expect(el(page, 'content')).toBeVisible();
+    await expect(el(page, 'opt-date')).not.toHaveAttribute('data-highlighted', '');
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+  });
+
   test('a real mouse hover on a disabled option is ignored', async ({ page }) => {
     await gotoFixture(page, 'select');
     await el(page, 'trigger').click();

@@ -60,6 +60,7 @@ import { injectSelectContext, type SelectContext } from './select-context';
     '[attr.data-modal]': 'ctx.modal() ? "" : null',
     '[attr.data-orientation]': 'ctx.orientation()',
     '(keydown)': 'onKeyDown($event)',
+    '(pointerleave)': 'onPointerLeave()',
   },
 })
 export class ForSelectContent {
@@ -215,5 +216,9 @@ export class ForSelectContent {
     if (this.ctx.totalCount() !== undefined) {
       this.ctx.handleVirtualizedKeydown(event);
     }
+  }
+
+  protected onPointerLeave(): void {
+    this.ctx.releasePointerHighlight();
   }
 }

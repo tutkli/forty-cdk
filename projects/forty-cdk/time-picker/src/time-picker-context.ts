@@ -153,6 +153,14 @@ export interface TimePickerPieceContext {
    * slot.
    */
   notifyOptionFocus(): void;
+  /**
+   * Called by `[forTimePickerContent]` when the pointer leaves the listbox
+   * surface: drops any pointer highlight, so the focused slot reclaims it
+   * instead of a row staying decorated with the cursor elsewhere on the page.
+   * Crossing between two adjacent slots is not a leave, so the highlight never
+   * blinks off.
+   */
+  releasePointerHighlight(): void;
 }
 
 /**
