@@ -414,10 +414,11 @@ Optional slot inside an option. Mirrors `data-state` and self-hides while the op
 
 Moving the pointer over an enabled option hands it `data-highlighted`, so exactly one option is ever decorated no matter which device the user reached for — the same feel as `[forCombobox]` and the menu family. Style that one attribute; you do not need a separate `:hover` rule (and combining both is what puts two rows in a highlighted state at once).
 
-Three properties of the pointer channel:
+Four properties of the pointer channel:
 
 - **It never selects and never moves DOM focus**, not even with `selectionFollowsFocus` set: hovering is not activation, and a listbox is an in-flow surface that must not steal focus from whatever the user is typing in. The pointer's own click still activates, and the range anchor `Shift+Space` spans from is untouched.
 - **The keyboard takes it back on the next move.** In the roving-tabindex path the pointer highlight is a styling channel only — the tab stop and `Enter` / `Space` activation stay with the DOM-focused option, and the first arrow / typeahead move drops the pointer highlight. In the activedescendant path (`totalCount` set) hover moves `aria-activedescendant` itself, so the highlight and the option `Enter` activates never disagree there.
+- **Moving the pointer off the listbox releases it.** In the roving-tabindex path the highlight goes back to the DOM-focused option, or to none when focus is elsewhere — so an always-visible listbox never keeps a row decorated with the cursor somewhere else on the page. Crossing between two adjacent options is not a leave: the highlight moves straight from one to the other without blinking off. In the activedescendant path the pointer's claim persists, because there it _is_ `aria-activedescendant` and dropping it would leave the container with no active option.
 - **A programmatic scroll cannot hijack it.** Keyboard navigation scrolls the active option into view, which can slide a different option under a stationary cursor and make the browser fire a synthetic `pointermove` for it. Moves arriving in a short window after such a scroll are ignored, so the keyboard keeps the highlight.
 
 A hover on a disabled option is ignored, and the highlight falls back to the keyboard's option if the hovered one is disabled or unmounted while the cursor rests on it.

@@ -98,6 +98,7 @@ import {
     '(keydown)': 'onHostKeyDown($event)',
     '(focusin)': 'onHostFocusIn()',
     '(focusout)': 'onFocusOut($event)',
+    '(pointerleave)': 'onPointerLeave()',
   },
   providers: [{ provide: FOR_LISTBOX_CONTEXT, useExisting: ForListbox }],
 })
@@ -674,5 +675,9 @@ export class ForListbox<T = string>
       return;
     }
     this.markTouched();
+  }
+
+  protected onPointerLeave(): void {
+    this.#pointerHost.set(null);
   }
 }

@@ -43,7 +43,9 @@ export const FOR_LISTBOX_OPTION = new InjectionToken<ForListboxOption>('FOR_LIST
  *
  * Hovering an enabled option hands it `data-highlighted`, so pointer and
  * keyboard feed one highlight and exactly one option is ever decorated. Hover
- * never moves DOM focus and never selects — the pointer's own click activates.
+ * never moves DOM focus and never selects — the pointer's own click activates —
+ * and moving the pointer off the listbox hands the highlight back to the
+ * keyboard's option.
  */
 @Directive({
   selector: '[forListboxOption]',

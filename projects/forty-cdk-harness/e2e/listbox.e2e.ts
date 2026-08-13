@@ -102,4 +102,19 @@ test.describe('Listbox', () => {
     await expect(el(page, 'opt-cherry')).toHaveAttribute('data-highlighted', '');
     await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
   });
+
+  test('moving a real mouse off the listbox hands data-highlighted back to the keyboard', async ({
+    page,
+  }) => {
+    await gotoFixture(page, 'listbox');
+    await el(page, 'opt-apple').focus();
+
+    await el(page, 'opt-date').hover();
+    await expect(el(page, 'opt-date')).toHaveAttribute('data-highlighted', '');
+
+    await el(page, 'after').hover();
+    await expect(el(page, 'opt-date')).not.toHaveAttribute('data-highlighted', '');
+    await expect(el(page, 'opt-apple')).toHaveAttribute('data-highlighted', '');
+    await expect(page.locator('[role="option"][data-highlighted]')).toHaveCount(1);
+  });
 });
