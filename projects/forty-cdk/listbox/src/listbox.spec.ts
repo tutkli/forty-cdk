@@ -607,6 +607,9 @@ describe('ForListbox', () => {
     const hover = (option: HTMLElement) =>
       option.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
 
+    const leave = (host: HTMLElement) =>
+      listboxOf(host).dispatchEvent(new PointerEvent('pointerleave'));
+
     const highlighted = (host: HTMLElement): HTMLElement[] =>
       listboxItems(host).filter((option) => option.hasAttribute('data-highlighted'));
 
@@ -737,6 +740,45 @@ describe('ForListbox', () => {
       );
       await flush();
       expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+    });
+
+    it('hands the highlight back to the focused option when the pointer leaves the listbox', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      optOf(el, 'apple').focus();
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+
+      leave(el);
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+      expect(document.activeElement).toBe(optOf(el, 'apple'));
+    });
+
+    it('leaves no option highlighted when the pointer leaves and focus is outside', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      hover(optOf(el, 'banana'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'banana')]);
+
+      leave(el);
+      await flush();
+      expect(highlighted(el)).toEqual([]);
+    });
+
+    it('keeps exactly one option highlighted while the pointer crosses to an adjacent one', async () => {
+      const { el, flush } = renderHost(ListboxHost);
+      hover(optOf(el, 'apple'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+
+      optOf(el, 'apple').dispatchEvent(new PointerEvent('pointerleave'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apple')]);
+
+      hover(optOf(el, 'apricot'));
+      await flush();
+      expect(highlighted(el)).toEqual([optOf(el, 'apricot')]);
     });
   });
 
@@ -2453,6 +2495,23 @@ describe('ForListbox', () => {
         await flush();
         expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 1).getAttribute('id'));
         expect(voptOf(el, 4).hasAttribute('data-highlighted')).toBe(false);
+      });
+
+      it('keeps the hovered option active when the pointer leaves the listbox', async () => {
+        const { el, flush } = renderHost(VirtualHost);
+        await flush();
+        const lb = lbOf(el);
+        lb.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+        await flush();
+
+        hover(voptOf(el, 3));
+        await flush();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 3).getAttribute('id'));
+
+        lb.dispatchEvent(new PointerEvent('pointerleave'));
+        await flush();
+        expect(lb.getAttribute('aria-activedescendant')).toBe(voptOf(el, 3).getAttribute('id'));
+        expect(voptOf(el, 3).getAttribute('data-highlighted')).toBe('');
       });
     });
   });
