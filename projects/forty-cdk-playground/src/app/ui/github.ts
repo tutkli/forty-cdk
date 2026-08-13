@@ -1,2 +1,1 @@
-export const GITHUB_REPO = 'https://github.com/tutkli/forty-cdk';
-export const GITHUB_BLOB_BASE = `${GITHUB_REPO}/blob/main/`;
+export { GITHUB_BLOB_BASE, GITHUB_REPO } from '../../../../../scripts/lib/doc-links.mjs';

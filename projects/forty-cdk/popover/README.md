@@ -135,7 +135,7 @@ Angular resolves `ng-template` DI at the template's **declaration** site, not wh
 
 The dismiss outputs and the auto-focus pair are vetoable: each receives a `VetoableEvent` (or `VetoableNativeEvent<E>` when there is a native DOM event to surface). Call `preventDefault()` on the emitted veto to suppress the automatic close / focus move; the original DOM event, when present, is on `.event`.
 
-`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because Popover always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). See [Conventions › Auto-focus hook shape](../../../.claude/rules/conventions.md#auto-focus-hook-shape) for why Dialog uses callback-shape inputs instead.
+`(autoFocusOnOpen)` / `(autoFocusOnClose)` are output-shape because Popover always routes close transitions through `[(open)]` (via the implicit `openChange` emitter). Dialog and Drawer take callback-shape inputs for the same pair instead: either can be closed by a direct `open.set(false)` that bypasses the `(dismiss)` output entirely, so their close hook has to be a stored function reference that still runs during teardown.
 
 ### Open without stealing focus
 

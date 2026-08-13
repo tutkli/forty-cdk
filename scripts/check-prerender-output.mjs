@@ -1,29 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-import { repoRoot } from './lib/repo-path.mjs';
+import { readGuides, readPrimitives } from './lib/doc-site.mjs';
 import { escapeHtml } from './lib/html.mjs';
+import { repoRoot } from './lib/repo-path.mjs';
 
-const PRIMITIVES = join(
-  repoRoot,
-  'projects',
-  'forty-cdk-playground',
-  'src',
-  'app',
-  'primitives.ts',
-);
 const BROWSER = join(repoRoot, 'dist', 'forty-cdk-playground', 'browser');
-
-function readPrimitives() {
-  const source = readFileSync(PRIMITIVES, 'utf8');
-  const entries = [];
-  const re = /slug:\s*'([^']+)',\s+title:\s*'([^']+)'/g;
-  let match;
-  while ((match = re.exec(source)) !== null) {
-    entries.push({ slug: match[1], title: match[2] });
-  }
-  return entries;
-}
 
 function fail(message) {
   console.error(`[check-prerender-output] ${message}`);
@@ -41,6 +23,17 @@ if (primitives.length === 0) {
   fail('parsed 0 primitives from primitives.ts — the slug/title parser is stale');
 }
 
+const guides = readGuides();
+if (guides.length === 0) {
+  fail('the guide registry is empty — scripts/lib/doc-site.mjs no longer publishes any guide');
+}
+
+const routes = [
+  ...primitives.map(({ slug, title }) => ({ path: slug, title })),
+  { path: 'guides', title: 'Guides' },
+  ...guides.map(({ slug, title }) => ({ path: `guides/${slug}`, title })),
+];
+
 const missing = [];
 const empty = [];
 
@@ -54,15 +47,15 @@ if (!existsSync(homeFile)) {
   }
 }
 
-for (const { slug, title } of primitives) {
-  const file = join(BROWSER, slug, 'index.html');
+for (const { path, title } of routes) {
+  const file = join(BROWSER, ...path.split('/'), 'index.html');
   if (!existsSync(file)) {
-    missing.push(slug);
+    missing.push(path);
     continue;
   }
   const html = readFileSync(file, 'utf8');
   if (!html.includes('<h1') || !html.includes(escapeHtml(title))) {
-    empty.push(slug);
+    empty.push(path);
   }
 }
 
@@ -76,5 +69,6 @@ if (empty.length > 0) {
 }
 
 console.log(
-  `[check-prerender-output] ok — ${primitives.length} primitive routes + home prerendered with content`,
+  `[check-prerender-output] ok — ${primitives.length} primitive routes + ` +
+    `${guides.length} guide routes + the guide index + home prerendered with content`,
 );

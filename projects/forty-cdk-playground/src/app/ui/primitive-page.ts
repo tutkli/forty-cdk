@@ -1,6 +1,4 @@
-import { DOCUMENT } from '@angular/common';
 import {
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -8,14 +6,15 @@ import {
   inject,
   input,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DomSanitizer } from '@angular/platform-browser';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { skip } from 'rxjs';
+import { RouterLink } from '@angular/router';
 
+import { injectFragmentScroll } from '../doc/doc-fragment';
+import { DocLinks } from '../doc/doc-links';
+import { injectDocLinkResolver, primitiveSourcePath } from '../doc/doc-routes';
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
-import { type DocSectionData, parseReadme, stripText } from '../doc/markdown';
+import { type DocSectionData, parseDoc, stripText } from '../doc/markdown';
 import { primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
@@ -31,7 +30,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
 @Component({
   selector: 'primitive-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DocSection, DocToc, RouterLink, Icon],
+  imports: [DocSection, DocToc, DocLinks, RouterLink, Icon],
   template: `
     <header class="head">
       <div class="head-text">
@@ -46,7 +45,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
     </header>
 
     <div class="layout">
-      <div class="main">
+      <div class="main" docLinks>
         <ng-content select="[hero]" />
 
         @if (introHtml(); as intro) {
@@ -177,8 +176,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
 })
 export class PrimitivePage {
   readonly #sanitizer = inject(DomSanitizer);
-  readonly #document = inject(DOCUMENT);
-  readonly #route = inject(ActivatedRoute);
+  readonly #resolveLink = injectDocLinkResolver();
 
   readonly slug = input.required<string>();
   readonly readme = input.required<string>();
@@ -187,7 +185,12 @@ export class PrimitivePage {
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
 
-  readonly #parsed = computed(() => parseReadme(this.readme()));
+  readonly #parsed = computed(() =>
+    parseDoc(this.readme(), {
+      sourcePath: primitiveSourcePath(this.slug()),
+      resolveLink: this.#resolveLink,
+    }),
+  );
 
   protected readonly introHtml = computed(() => {
     const intro = stripLeadingDescription(this.#parsed().intro, this.meta().description);
@@ -240,20 +243,6 @@ export class PrimitivePage {
   });
 
   constructor() {
-    afterNextRender(() => {
-      const hash = decodeURIComponent(
-        (this.#document.defaultView?.location.hash ?? '').replace(/^#/, ''),
-      );
-      if (!hash) {
-        return;
-      }
-      this.#document.getElementById(hash)?.scrollIntoView();
-    });
-
-    this.#route.fragment.pipe(skip(1), takeUntilDestroyed()).subscribe((fragment) => {
-      if (fragment) {
-        this.#document.getElementById(fragment)?.scrollIntoView();
-      }
-    });
+    injectFragmentScroll();
   }
 }

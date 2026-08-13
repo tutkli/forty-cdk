@@ -1,4 +1,5 @@
 import type { PlaygroundGroup } from '../primitives';
+import type { ResolvedGuideGroup } from './guides';
 
 export interface ReadmeSection {
   readonly title: string;
@@ -8,7 +9,7 @@ export interface ReadmeSection {
 export type ReadmeSections = Record<string, readonly ReadmeSection[]>;
 
 export interface SearchEntry {
-  readonly kind: 'primitive' | 'section';
+  readonly kind: 'primitive' | 'guide' | 'section';
   readonly title: string;
   readonly group: string;
   readonly path: string;
@@ -18,8 +19,30 @@ export interface SearchEntry {
 export function buildSearchEntries(
   groups: readonly PlaygroundGroup[],
   sections: ReadmeSections,
+  guideGroups: readonly ResolvedGuideGroup[],
 ): SearchEntry[] {
   const entries: SearchEntry[] = [];
+  for (const group of guideGroups) {
+    const label = `Guides · ${group.label}`;
+    for (const guide of group.guides) {
+      entries.push({
+        kind: 'guide',
+        title: guide.title,
+        group: label,
+        path: `/guides/${guide.slug}`,
+        haystack: `${guide.title} ${label} ${guide.description}`.toLowerCase(),
+      });
+      for (const section of guide.sections) {
+        entries.push({
+          kind: 'section',
+          title: `${guide.title} › ${section.title}`,
+          group: label,
+          path: `/guides/${guide.slug}#${section.anchor}`,
+          haystack: `${guide.title} ${section.title}`.toLowerCase(),
+        });
+      }
+    }
+  }
   for (const group of groups) {
     for (const primitive of group.primitives) {
       entries.push({
@@ -46,7 +69,7 @@ export function buildSearchEntries(
 export function filterSearchEntries(entries: readonly SearchEntry[], query: string): SearchEntry[] {
   const q = query.trim().toLowerCase();
   if (q === '') {
-    return entries.filter((entry) => entry.kind === 'primitive');
+    return entries.filter((entry) => entry.kind !== 'section');
   }
   const terms = q.split(/\s+/);
   return entries.filter((entry) => terms.every((term) => entry.haystack.includes(term)));
