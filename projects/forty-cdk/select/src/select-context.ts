@@ -380,6 +380,16 @@ export interface SelectPieceContext<T = unknown> {
    * option.
    */
   notifyOptionFocus(): void;
+  /**
+   * Called by `[forSelectContent]` when the pointer leaves the listbox surface:
+   * drops any pointer highlight, so the focused option reclaims it instead of a
+   * row staying decorated with the cursor elsewhere on the page. Crossing
+   * between two adjacent options is not a leave, so the highlight never blinks
+   * off. No-op in the virtualized path, where the pointer's claim *is*
+   * {@link SelectPieceContext.activeDescendantId} and releasing it would leave
+   * the container with no active option.
+   */
+  releasePointerHighlight(): void;
 }
 
 /**

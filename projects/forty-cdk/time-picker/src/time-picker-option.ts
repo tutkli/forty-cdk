@@ -20,7 +20,9 @@ import { injectTimePickerContext } from './time-picker-context';
  *
  * Hovering an enabled slot hands it `data-highlighted`, so pointer and keyboard
  * feed one highlight and exactly one slot is ever decorated. Hover never moves
- * DOM focus and never selects — the pointer's own click activates.
+ * DOM focus and never selects — the pointer's own click activates — and moving
+ * the pointer off `[forTimePickerContent]` hands the highlight back to the
+ * focused slot.
  *
  * Keyboard while focused:
  * - **Enter / Space** — activate (select the slot).

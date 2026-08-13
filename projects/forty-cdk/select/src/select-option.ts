@@ -49,7 +49,9 @@ export const FOR_SELECT_OPTION = new InjectionToken<ForSelectOption>('FOR_SELECT
  *
  * Hovering an enabled option hands it `data-highlighted`, so pointer and
  * keyboard feed one highlight and exactly one option is ever decorated. Hover
- * never moves DOM focus and never selects — the pointer's own click activates.
+ * never moves DOM focus and never selects — the pointer's own click activates —
+ * and moving the pointer off `[forSelectContent]` hands the highlight back to
+ * the focused option.
  *
  * Keyboard while focused:
  * - **Enter / Space** — activate (via native button click).

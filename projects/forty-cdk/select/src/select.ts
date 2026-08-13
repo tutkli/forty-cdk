@@ -718,6 +718,10 @@ export class ForSelect<T = string>
     this.#pointerHost.set(null);
   }
 
+  private releasePointerHighlight(): void {
+    this.#pointerHost.set(null);
+  }
+
   /**
    * Scroll an option into view with the pointer-suppression window open, so the
    * synthetic `pointermove` the scroll fires when a different option slides under

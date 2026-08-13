@@ -416,6 +416,10 @@ export class ForTimePicker<D>
     this.#pointerHost.set(null);
   }
 
+  private releasePointerHighlight(): void {
+    this.#pointerHost.set(null);
+  }
+
   commitOnTab(value: D): void {
     if (this.effectiveDisabled()) {
       return;

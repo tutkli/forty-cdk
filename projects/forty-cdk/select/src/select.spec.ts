@@ -3234,6 +3234,11 @@ describe('ForSelectIndicator', () => {
     const hover = (option: HTMLElement) =>
       option.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
 
+    const leaveContent = () =>
+      document
+        .querySelector<HTMLElement>('[role="listbox"]')!
+        .dispatchEvent(new PointerEvent('pointerleave'));
+
     const highlighted = (): string[] =>
       Array.from(document.querySelectorAll<HTMLElement>('[role="option"][data-highlighted]')).map(
         (option) => option.getAttribute('data-test-id') ?? '',
@@ -3318,6 +3323,39 @@ describe('ForSelectIndicator', () => {
       await flush(r.fixture);
 
       expect(activeTestId()).toBe('banana');
+      expect(highlighted()).toEqual(['banana']);
+    });
+
+    it('hands the highlight back to the focused option when the pointer leaves the content', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      getOption('apple').focus();
+      hover(getOption('date'));
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['date']);
+
+      leaveContent();
+      await flush(r.fixture);
+
+      expect(highlighted()).toEqual(['apple']);
+      expect(activeTestId()).toBe('apple');
+    });
+
+    it('keeps exactly one option highlighted while the pointer crosses to an adjacent one', async () => {
+      const r = renderHost(SelectHost);
+      r.instance.open.set(true);
+      await flush(r.fixture);
+      hover(getOption('apple'));
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['apple']);
+
+      getOption('apple').dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+      expect(highlighted()).toEqual(['apple']);
+
+      hover(getOption('banana'));
+      await flush(r.fixture);
       expect(highlighted()).toEqual(['banana']);
     });
 
@@ -3435,6 +3473,24 @@ describe('ForSelectIndicator', () => {
       expect(content.getAttribute('aria-activedescendant')).toBe(target.getAttribute('id'));
       expect(highlighted()).toEqual(['v-4']);
       expect(document.activeElement).toBe(content);
+    });
+
+    it('keeps the hovered option active when the pointer leaves the content in the virtualized path', async () => {
+      const r = renderHost(VirtualPointerHost);
+      await flush(r.fixture);
+      const content = document.querySelector<HTMLElement>('[data-test-id="v-content"]')!;
+      const target = document.querySelector<HTMLElement>('[data-test-id="v-4"]')!;
+
+      advanceClock(1000);
+      hover(target);
+      await flush(r.fixture);
+      expect(content.getAttribute('aria-activedescendant')).toBe(target.getAttribute('id'));
+
+      content.dispatchEvent(new PointerEvent('pointerleave'));
+      await flush(r.fixture);
+
+      expect(content.getAttribute('aria-activedescendant')).toBe(target.getAttribute('id'));
+      expect(highlighted()).toEqual(['v-4']);
     });
 
     it('ignores a hover synthesized by the virtualized typeahead scroll', async () => {
