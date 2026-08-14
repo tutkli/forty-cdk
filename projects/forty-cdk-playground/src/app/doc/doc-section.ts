@@ -5,17 +5,18 @@ import { RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
 import { ApiTable } from './api-table';
 import { CompactTable } from './compact-table';
-import type { DocSectionData, DocTableData } from './markdown';
+import { type DocSectionData, type DocTableData, stripText } from './markdown';
 
-const API_COLUMNS = ['Property', 'Type', 'Description'];
+function columnLabel(column: string | undefined): string {
+  return stripText(column ?? '').toLowerCase();
+}
 
 function isApiTable(table: DocTableData): boolean {
-  return (
-    table.columns.length === API_COLUMNS.length &&
-    table.columns.every(
-      (column, index) => column.replace(/<[^>]+>/g, '').trim() === API_COLUMNS[index],
-    )
-  );
+  const { columns } = table;
+  if (columnLabel(columns[1]) !== 'type') {
+    return false;
+  }
+  return columns.length === 3 || (columns.length === 4 && columnLabel(columns[2]) === 'default');
 }
 
 type PreparedBlock =
