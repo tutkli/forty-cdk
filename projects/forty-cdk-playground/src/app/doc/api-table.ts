@@ -10,7 +10,11 @@ interface ApiRow {
   readonly typeKind: string;
   readonly typeFull: string;
   readonly hasDetail: boolean;
+  readonly detailLabel: string;
+  readonly defaultValue: SafeHtml;
+  readonly hasDefaultValue: boolean;
   readonly description: SafeHtml;
+  readonly hasDescription: boolean;
 }
 
 @Component({
@@ -24,7 +28,10 @@ interface ApiRow {
           <tr>
             <th class="api-col-prop">{{ columns()[0] }}</th>
             <th class="api-col-type">{{ columns()[1] }}</th>
-            <th class="api-col-desc">{{ columns()[2] }}</th>
+            @if (hasDefault()) {
+              <th class="api-col-default">{{ columns()[2] }}</th>
+            }
+            <th class="api-col-desc">{{ descriptionColumn() }}</th>
           </tr>
         </thead>
         <tbody>
@@ -36,15 +43,26 @@ interface ApiRow {
                   hostClass="api-type"
                   [ariaLabel]="'Type of ' + row.propText"
                   [detail]="row.hasDetail"
-                  [triggerLabel]="'Show full type and description for ' + row.propText"
+                  [triggerLabel]="row.detailLabel"
                 >
                   <code popoverTriggerContent class="api-type-kind">{{ row.typeKind }}</code>
                   <ng-container ngProjectAs="[popoverPanel]">
                     <code class="api-pop-type">{{ row.typeFull }}</code>
-                    <div class="api-pop-desc" [innerHTML]="row.description"></div>
+                    @if (row.hasDefaultValue) {
+                      <div class="api-pop-default">
+                        <span class="api-pop-label">{{ columns()[2] }}</span>
+                        <div class="api-pop-value" [innerHTML]="row.defaultValue"></div>
+                      </div>
+                    }
+                    @if (row.hasDescription) {
+                      <div class="api-pop-desc" [innerHTML]="row.description"></div>
+                    }
                   </ng-container>
                 </doc-table-popover>
               </td>
+              @if (hasDefault()) {
+                <td class="api-col-default" [innerHTML]="row.defaultValue"></td>
+              }
               <td class="api-col-desc" [innerHTML]="row.description"></td>
             </tr>
           }
@@ -60,11 +78,18 @@ export class ApiTable {
 
   protected readonly columns = computed(() => this.table().columns);
 
-  protected readonly rows = computed<readonly ApiRow[]>(() =>
-    this.table().rows.map((cells) => {
-      const property = cells[0] ?? { html: '', text: '' };
-      const type = cells[1] ?? { html: '', text: '' };
-      const description = cells[2] ?? { html: '', text: '' };
+  protected readonly hasDefault = computed(() => this.columns().length === 4);
+
+  protected readonly descriptionColumn = computed(() => this.columns().at(-1) ?? '');
+
+  protected readonly rows = computed<readonly ApiRow[]>(() => {
+    const withDefault = this.hasDefault();
+    const empty = { html: '', text: '' };
+    return this.table().rows.map((cells) => {
+      const property = cells[0] ?? empty;
+      const type = cells[1] ?? empty;
+      const defaultValue = withDefault ? (cells[2] ?? empty) : empty;
+      const description = (withDefault ? cells[3] : cells[2]) ?? empty;
       const typeFull = type.text.trim();
       const typeKind = typeFull.split('<')[0]!.trim() || typeFull;
       return {
@@ -73,8 +98,12 @@ export class ApiTable {
         typeKind,
         typeFull,
         hasDetail: typeFull !== '' && typeKind !== typeFull,
+        detailLabel: `Show full type${withDefault ? ', default' : ''} and description for ${property.text}`,
+        defaultValue: this.#sanitizer.bypassSecurityTrustHtml(defaultValue.html),
+        hasDefaultValue: defaultValue.text.trim() !== '',
         description: this.#sanitizer.bypassSecurityTrustHtml(description.html),
+        hasDescription: description.text.trim() !== '',
       };
-    }),
-  );
+    });
+  });
 }

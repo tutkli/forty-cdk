@@ -79,9 +79,25 @@ trait. The `Required for` column lists the archetypes that must include each opt
   single binding) inline where a full live demo would be overkill.
 
 - **`## API`** — One `### ForX` subsection per piece, each with an **Inputs / Outputs / Models**
-  table. Tables use the columns **API · Type · Default · Description** (merge "Inputs" and
-  "Outputs" tables under the piece; mark outputs in the Description or a Kind column). A
-  **`### Data attributes`** subsection (columns **Piece · Attribute · Values**) lives at the end of
+  table (merge "Inputs" and "Outputs" tables under the piece; mark outputs in the Description or a
+  Kind column). Canonical columns for new content: **Property · Type · Default · Description**,
+  dropping `Default` when no member has one.
+
+  The renderer decides which tables get the rich API treatment — type chip plus detail popover —
+  from the header shape, and it keys off the **middle** columns only
+  ([#1803](https://github.com/tutkli/forty-cdk/issues/1803)). A table qualifies when it has:
+  - three columns whose second is `Type`, or
+  - four columns whose second is `Type` and third is `Default`.
+
+  The first column is free (`Property`, `API`, `Input`, `Binding`, `Member`, `Option` and `Default`
+  all occur today) and so is the last, which is the description under any name (`Description`,
+  `Notes`, `Meaning`). Matching is case-insensitive and ignores inline markup. Every other shape
+  renders as a compact table, which is the right treatment for the reference tables that carry no
+  type at all — **Key · Action**, **Piece · Attribute · Values**, **Data attribute · Values**,
+  **Output · When**. A table that documents typed members and wants the rich rendering has to say
+  `Type` in its second column; there is no other opt-in.
+
+  A **`### Data attributes`** subsection (columns **Piece · Attribute · Values**) lives at the end of
   API for every `composable-ui` / `overlay` / `form-control`. The site renders all API tables with
   the **ForTable** primitive (sortable) — so keep them as clean GitHub-flavoured markdown tables,
   no merged cells, no HTML.

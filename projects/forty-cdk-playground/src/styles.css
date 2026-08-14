@@ -811,7 +811,7 @@ a.pg-nav-link.active {
   white-space: nowrap;
 }
 
-/* API reference table (Property | Type | Description) */
+/* API reference table (a 2nd `Type` column, with an optional 3rd `Default`) */
 .api-type {
   display: flex;
   align-items: center;
@@ -887,6 +887,27 @@ a.pg-nav-link.active {
   margin-top: 0;
 }
 
+.api-pop-default {
+  display: none;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--pg-border);
+}
+
+.api-pop-label {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pg-text-muted);
+}
+
+.api-pop-value {
+  font-size: 0.85rem;
+}
+
 .api-pop-arrow {
   width: 11px;
   height: 11px;
@@ -939,9 +960,10 @@ a.pg-nav-link.active {
 }
 
 /* Mobile: collapse each row to "Property … (i)". The Type kind chip and the
-   Description column both fold into the info popover. */
+   Default / Description columns all fold into the info popover. */
 @media (max-width: 640px) {
-  .api-table .api-col-desc {
+  .api-table .api-col-desc,
+  .api-table .api-col-default {
     display: none;
   }
 
@@ -964,7 +986,8 @@ a.pg-nav-link.active {
     justify-content: flex-end;
   }
 
-  .api-pop-desc {
+  .api-pop-desc,
+  .api-pop-default {
     display: block;
   }
 }
