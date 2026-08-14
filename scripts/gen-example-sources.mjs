@@ -1,4 +1,12 @@
-import { readdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  rmdirSync,
+  writeFileSync,
+  statSync,
+} from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { createHighlighter } from 'shiki';
 
@@ -17,6 +25,11 @@ function walk(dir, out) {
   }
   return out;
 }
+
+const demoDirs = readdirSync(DEMOS, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
+  .sort();
 
 const files = walk(DEMOS, []).sort();
 const byPrimitive = new Map();
@@ -69,6 +82,29 @@ for (const [primitive, primitiveFiles] of [...byPrimitive].sort()) {
 
 highlighter.dispose();
 
+const skipped = demoDirs.filter((dir) => !byPrimitive.has(dir));
+
+for (const dir of skipped) {
+  const full = join(DEMOS, dir);
+  const stale = join(full, 'sources.generated.ts');
+  const removals = [];
+
+  if (existsSync(stale)) {
+    rmSync(stale);
+    removals.push('removed its stale manifest');
+  }
+  if (readdirSync(full).length === 0) {
+    rmdirSync(full);
+    removals.push('removed the empty directory');
+  }
+
+  const suffix = removals.length > 0 ? ` — ${removals.join(', ')}` : '';
+  console.warn(`[gen-example-sources] skipped demos/${dir}: no *.example.ts files${suffix}`);
+}
+
 console.log(
-  `[gen-example-sources] wrote ${byPrimitive.size} manifests covering ${total} example sources`,
+  `[gen-example-sources] wrote ${byPrimitive.size} manifests covering ${total} example sources` +
+    (skipped.length > 0
+      ? `, skipped ${skipped.length} ${skipped.length === 1 ? 'directory' : 'directories'} with no examples`
+      : ''),
 );
