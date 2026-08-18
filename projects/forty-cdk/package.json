@@ -1,6 +1,6 @@
 {
   "name": "forty-cdk",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "description": "Headless / styleless UI primitives for Angular with WAI-ARIA accessibility built in.",
   "keywords": [
     "angular",
