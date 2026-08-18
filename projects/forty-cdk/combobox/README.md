@@ -259,7 +259,7 @@ An action:
 
 Use `[forComboboxAction]` for a pinned side-effect. For an entry that _does_
 select (an "Add new" row that adds an item and commits it to `value`), use a
-plain `[forComboboxOption]` — see [Static options alongside the `@for`](#static-options-alongside-the-for).
+plain `[forComboboxOption]` — see the static options under [Examples](#examples).
 
 ### Focus & keyboard (model A)
 
