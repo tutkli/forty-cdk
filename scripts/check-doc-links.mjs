@@ -1,7 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { buildDocRoutes, GITHUB_BLOB_BASE, resolveDocLink } from './lib/doc-links.mjs';
+import {
+  buildDocRoutes,
+  GITHUB_BLOB_BASE,
+  isAbsoluteHref,
+  resolveDocLink,
+} from './lib/doc-links.mjs';
 import {
   DOCS_DIR,
   EXCLUDED_GUIDES,
@@ -13,7 +18,6 @@ import { isFenceLine } from './lib/readme-slug.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const LINK_RE = /\[(?:[^[\]]|\[[^\]]*\])*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
-const ABSOLUTE_HREF = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
 function linksOf(md) {
   const links = [];
@@ -56,7 +60,7 @@ let relativeLinks = 0;
 
 for (const [sourcePath, md] of documents) {
   for (const { href, line } of linksOf(md)) {
-    if (href.startsWith('#') || ABSOLUTE_HREF.test(href)) {
+    if (href.startsWith('#') || isAbsoluteHref(href)) {
       continue;
     }
     relativeLinks += 1;

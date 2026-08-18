@@ -1,5 +1,9 @@
 const ABSOLUTE_HREF = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
 
+export function isAbsoluteHref(href) {
+  return ABSOLUTE_HREF.test(href);
+}
+
 export const GITHUB_REPO = 'https://github.com/tutkli/forty-cdk';
 
 export const GITHUB_BLOB_BASE = `${GITHUB_REPO}/blob/main/`;

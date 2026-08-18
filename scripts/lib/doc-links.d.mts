@@ -1,3 +1,5 @@
+export declare function isAbsoluteHref(href: string): boolean;
+
 export declare const GITHUB_REPO: string;
 
 export declare const GITHUB_BLOB_BASE: string;

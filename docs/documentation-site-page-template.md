@@ -163,6 +163,17 @@ tab. The mapping is derived from the same registries that drive the routes, neve
 `pnpm check:doc-links` fails the build on a relative link that resolves to nothing, to a file that
 does not exist, to an excluded guide, or to `.claude/` agent instrumentation.
 
+That gate reads the links a document _writes_; `pnpm check:doc-output` reads the ones the site
+_serves_ ([#1802](https://github.com/tutkli/forty-cdk/issues/1802)). Over the prerendered HTML it
+fails on an anchor that still points at repository source, on one outside the site's base href, on an
+internal href that is not a route, and on any fragment with no matching `id` on its target page —
+plus, per document, on a `##` section the page never emitted and on a section that rendered no
+content block. Anchors inside a live example are excluded: a demo's markup is data, not
+documentation. One rule follows from the Examples row above and is worth stating on its own: **a
+fragment link to a heading nested under `## Examples` resolves on GitHub and cannot resolve on the
+site**, because the site replaces that section's body with its live demos. Link to `#examples`
+instead — it is valid in both places.
+
 The page chrome itself dogfoods the library: Navigation Menu / Drawer (mobile) for the top nav,
 Tree / Scroll Area for the sidebar, Combobox for ⌘K search, Switch for the theme toggle,
 Breadcrumbs for location.

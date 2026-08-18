@@ -1,7 +1,12 @@
 import { Marked, type Tokens } from 'marked';
 
 import { escapeHtml } from '../../../../../scripts/lib/html.mjs';
-import { isFenceLine, slugify, Slugger } from '../../../../../scripts/lib/readme-slug.mjs';
+import {
+  isFenceLine,
+  isTableDelimiter,
+  slugify,
+  Slugger,
+} from '../../../../../scripts/lib/readme-slug.mjs';
 import { highlightCodeBlock } from './highlighter';
 
 export { slugify };
@@ -105,13 +110,6 @@ export function stripText(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .trim();
-}
-
-function isTableDelimiter(line: string | undefined): boolean {
-  if (line === undefined) {
-    return false;
-  }
-  return /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(line) && line.includes('-');
 }
 
 function splitCells(row: string): string[] {

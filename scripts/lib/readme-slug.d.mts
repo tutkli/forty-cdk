@@ -6,3 +6,5 @@ export declare class Slugger {
 }
 
 export declare function isFenceLine(line: string): boolean;
+
+export declare function isTableDelimiter(line: string | undefined): boolean;

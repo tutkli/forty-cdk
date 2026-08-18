@@ -489,7 +489,7 @@ real rows:
   navigation steps over them while the roving grid stays rectangular (one cell per column, unlike a
   full-span variant).
 - A column that omits `[forTablePlaceholderCellDef]` falls back to the body-level
-  [`[forTablePlaceholderCellDefault]`](#shared-skeleton-forplaceholdercelldefault), then to an empty cell —
+  [`[forTablePlaceholderCellDefault]`](#shared-skeleton-fortableplaceholdercelldefault), then to an empty cell —
   so you mark only the columns whose skeleton shape differs from the shared one (a circle for an avatar
   column, a bar for text).
 - It composes with `[forTableVirtualized]` for free: placeholder rows are ordinary data — they count in
