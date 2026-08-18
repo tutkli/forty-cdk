@@ -5,6 +5,42 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.24.1] - 2026-08-18
+
+A bugfix release about letting go. The pointer's claim on `data-highlighted` outlived the pointer in
+three primitives: taking the cursor off a `[forListbox]` in flow, or off an open Select or Time
+picker surface, left a row decorated while the cursor sat somewhere else on the page — and on Select
+and Time picker the focused option, the one `Enter` activates, lost the attribute to that ghost. All
+three now release the claim when the pointer leaves the collection, and none of them blinks on the
+way between two adjacent options. The activedescendant path is deliberately untouched: on Combobox
+and on every virtualized surface the pointer's claim _is_ the active option, so releasing it would
+leave the container with none. Nothing to migrate.
+
+### Fixed
+
+- **Listbox.** The pointer releases its `data-highlighted` claim when it leaves the collection
+  ([#1796](https://github.com/tutkli/forty-cdk/issues/1796)). The claim was only ever cleared by
+  `setActiveOption` — the keyboard — so moving the cursor out of a `[forListbox]` in flow left one
+  option decorated for the rest of the page's life, and the focused option did not reclaim the
+  attribute until the next arrow key or the next hover. `[forListbox]` now listens for
+  `pointerleave` on the root, which is also what keeps the highlight from blinking: `pointerleave`
+  does not fire on an ancestor the pointer is still inside, so crossing from one option to its
+  neighbour never reaches it, where a per-option handler would toggle off and on at every boundary.
+  The virtualized path keeps its claim by design — there it is the `aria-activedescendant` itself,
+  and dropping it would leave the container with no active option.
+- **Select / Time picker.** The same release, with the popup open
+  ([#1798](https://github.com/tutkli/forty-cdk/issues/1798)). Neither entry point listened for
+  `pointerleave` anywhere: on Select the claim was dropped only by an option taking focus and by the
+  scroll that brings the active option into view, on Time picker only by the first of those. Since a
+  pointer claim outranks focus when `data-highlighted` resolves, the focused row — again the one
+  `Enter` activates — lost the attribute to a ghost left behind on the way out of the surface.
+  `[forSelectContent]` and `[forTimePickerContent]` now release it on `pointerleave`, through a
+  `releasePointerHighlight()` added to both piece contexts. The listener sits on the content rather
+  than on the root: the content is portalled out of the root's subtree, so a `pointerleave` on
+  `[forSelect]` would never see the pointer leave the surface holding the options. Combobox is
+  deliberately left out — it has no separate pointer channel, its `pointermove` moves the
+  `aria-activedescendant`.
+
 ## [0.24.0] - 2026-08-12
 
 A release about two inputs that were in the wrong place and one attribute that was only half wired.
@@ -2192,6 +2228,7 @@ primitives.
 - `forty-cdk/internationalized-date` secondary entry point exposing the `@internationalized/date` adapters for the date and time primitives.
 
 [Unreleased]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...HEAD
+[0.24.1]: https://github.com/tutkli/forty-cdk/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/tutkli/forty-cdk/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/tutkli/forty-cdk/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/tutkli/forty-cdk/compare/v0.21.1...v0.22.0
