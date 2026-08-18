@@ -1,0 +1,6715 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`document structure > docs/selected-indicator-pattern.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "the-problem",
+    "subsections": [],
+    "tables": [],
+    "title": "The problem",
+  },
+  {
+    "slug": "the-pattern-forcemount--opacity",
+    "subsections": [],
+    "tables": [],
+    "title": "The pattern: \`[forceMount]\` + \`opacity\`",
+  },
+  {
+    "slug": "why-opacity-not-visibility-hidden-or-display-none",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Approach",
+          "Reserves layout slot",
+          "Screen-reader safe",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Why \`opacity\` (not \`visibility: hidden\` or \`display: none\`)",
+  },
+  {
+    "slug": "exit-animation",
+    "subsections": [],
+    "tables": [],
+    "title": "Exit animation",
+  },
+  {
+    "slug": "full-snippet--menu-checkbox-item",
+    "subsections": [],
+    "tables": [],
+    "title": "Full snippet — Menu checkbox item",
+  },
+]
+`;
+
+exports[`document structure > docs/selection-value-type-contract.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "the-value-is-always-a-readonly-array",
+    "subsections": [],
+    "tables": [],
+    "title": "The value is always a \`readonly\` array",
+  },
+  {
+    "slug": "single-mode-is-the-same-array-with-01-elements",
+    "subsections": [],
+    "tables": [],
+    "title": "Single mode is the same array with 0–1 elements",
+  },
+  {
+    "slug": "single-select-consumers-read-a-derived-accessor-never-value0",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Primitive",
+          "Accessor",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Single-select consumers read a derived accessor, never \`value()[0]\`",
+  },
+  {
+    "slug": "a-single-select-form-field-is-modeled-as-the-same-array",
+    "subsections": [],
+    "tables": [],
+    "title": "A single-select form field is modeled as the same array",
+  },
+  {
+    "slug": "what-is-out-of-this-contract",
+    "subsections": [],
+    "tables": [],
+    "title": "What is out of this contract",
+  },
+]
+`;
+
+exports[`document structure > docs/styling.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "the-three-styling-hooks",
+    "subsections": [
+      "1-your-own-class--not-the-directive-selector",
+      "2-data--attributes--for-state",
+      "3-css-custom-properties--for-measured-values",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Values",
+          "Meaning",
+          "Examples",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Attribute",
+          "Values",
+          "Primitive(s)",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "The three styling hooks",
+  },
+  {
+    "slug": "overlays-portal-to-documentbody--use-global-css",
+    "subsections": [],
+    "tables": [],
+    "title": "Overlays portal to \`document.body\` → use global CSS",
+  },
+  {
+    "slug": "programmatic-overlays--class--classlist-on-the-config",
+    "subsections": [],
+    "tables": [],
+    "title": "Programmatic overlays → \`class\` / \`classList\` on the config",
+  },
+  {
+    "slug": "motion--internationalization",
+    "subsections": [],
+    "tables": [],
+    "title": "Motion & internationalization",
+  },
+  {
+    "slug": "per-primitive-styling-reference",
+    "subsections": [
+      "expand--collapse--tabs",
+      "form-controls",
+      "text--value-inputs",
+      "range--value-display",
+      "trigger-anchored-overlays-portal--floating-ui",
+      "modal-overlays",
+      "inline-selection-list--programmatic-toast",
+      "layout--display",
+    ],
+    "tables": [],
+    "title": "Per-primitive styling reference",
+  },
+  {
+    "slug": "related-guides",
+    "subsections": [],
+    "tables": [],
+    "title": "Related guides",
+  },
+]
+`;
+
+exports[`document structure > docs/styling-floating-content.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "rule-1--animateenter-and-animateleave-both-work",
+    "subsections": [],
+    "tables": [],
+    "title": "Rule 1 — \`animate.enter\` and \`animate.leave\` both work",
+  },
+  {
+    "slug": "rule-2--transform-scale-and-opacity-are-free-the-positioner-owns-translate",
+    "subsections": [],
+    "tables": [],
+    "title": "Rule 2 — \`transform\`, \`scale\`, and \`opacity\` are free; the positioner owns \`translate\`",
+  },
+  {
+    "slug": "rule-3--do-not-set-position-top-left-or-z-index-on-the-content",
+    "subsections": [],
+    "tables": [],
+    "title": "Rule 3 — do not set \`position\`, \`top\`, \`left\`, or \`z-index\` on the content",
+  },
+  {
+    "slug": "rule-4----for-floating-arrow-offset-is-inverted-library-writes-the-opposite-side",
+    "subsections": [],
+    "tables": [],
+    "title": "Rule 4 — \`--for-floating-arrow-offset\` is inverted (library writes the opposite side)",
+  },
+  {
+    "slug": "css-custom-properties",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Custom property",
+          "Direction",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Custom property",
+          "Direction",
+          "Meaning",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "CSS custom properties",
+  },
+  {
+    "slug": "copy-paste-snippets",
+    "subsections": [
+      "enter-animation",
+      "arrow-recipe",
+    ],
+    "tables": [],
+    "title": "Copy-paste snippets",
+  },
+]
+`;
+
+exports[`document structure > docs/table-declarative-columns.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "column-reordering-reorderable--columnreorder",
+    "subsections": [],
+    "tables": [],
+    "title": "Column reordering (\`reorderable\` + \`columnReorder\`)",
+  },
+  {
+    "slug": "virtualized-rows",
+    "subsections": [
+      "measured-variable-row-heights",
+    ],
+    "tables": [],
+    "title": "Virtualized rows",
+  },
+  {
+    "slug": "row-variants",
+    "subsections": [],
+    "tables": [],
+    "title": "Row variants",
+  },
+  {
+    "slug": "interleaved-placeholder-rows",
+    "subsections": [
+      "shared-skeleton-fortableplaceholdercelldefault",
+    ],
+    "tables": [],
+    "title": "Interleaved placeholder rows",
+  },
+  {
+    "slug": "whole-row-navigation-lists",
+    "subsections": [
+      "styling-a-row-from-its-datum-rowclass--rowattrs",
+    ],
+    "tables": [],
+    "title": "Whole-row navigation lists",
+  },
+  {
+    "slug": "typing-a-discriminated-union-row",
+    "subsections": [],
+    "tables": [],
+    "title": "Typing a discriminated-union row",
+  },
+  {
+    "slug": "wrapping-the-declarative-body",
+    "subsections": [
+      "preset-column-component",
+      "scaffold-wrapper-table",
+    ],
+    "tables": [],
+    "title": "Wrapping the declarative body",
+  },
+]
+`;
+
+exports[`document structure > docs/table-reordering.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "column-reordering",
+    "subsections": [],
+    "tables": [],
+    "title": "Column reordering",
+  },
+  {
+    "slug": "row-reordering",
+    "subsections": [],
+    "tables": [],
+    "title": "Row reordering",
+  },
+  {
+    "slug": "reordering-under-virtualization",
+    "subsections": [],
+    "tables": [],
+    "title": "Reordering under virtualization",
+  },
+  {
+    "slug": "live-sort-placeholder",
+    "subsections": [],
+    "tables": [],
+    "title": "Live-sort placeholder",
+  },
+  {
+    "slug": "boundary--axis-lock-passthrough",
+    "subsections": [],
+    "tables": [],
+    "title": "Boundary & axis lock passthrough",
+  },
+  {
+    "slug": "automatic-aria-reindexing",
+    "subsections": [],
+    "tables": [],
+    "title": "Automatic ARIA reindexing",
+  },
+  {
+    "slug": "caveats",
+    "subsections": [],
+    "tables": [],
+    "title": "Caveats",
+  },
+  {
+    "slug": "inputs",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Directive",
+          "Input",
+          "Type",
+          "Default",
+          "Description",
+        ],
+        "rows": 15,
+      },
+    ],
+    "title": "Inputs",
+  },
+  {
+    "slug": "outputs",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Directive",
+          "Output",
+          "Payload",
+          "Description",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Outputs",
+  },
+]
+`;
+
+exports[`document structure > docs/table-virtualized-rows.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "scroll-container-table-root-vs-ancestor",
+    "subsections": [
+      "wrapping-re-exposing--renaming-scrollelement",
+    ],
+    "tables": [],
+    "title": "Scroll container (table root vs. ancestor)",
+  },
+  {
+    "slug": "fortablevirtualized-inputs",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Type",
+          "Default",
+          "Description",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "\`[forTableVirtualized]\` inputs",
+  },
+  {
+    "slug": "fortablevirtualized-api-vfortablevirtualized",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Member",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "\`[forTableVirtualized]\` API (\`#v="forTableVirtualized"\`)",
+  },
+  {
+    "slug": "tree-shaking",
+    "subsections": [],
+    "tables": [],
+    "title": "Tree-shaking",
+  },
+]
+`;
+
+exports[`document structure > docs/wrapping-form-primitives.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "pattern-1--hostdirectives-with-the-exported-name-tuples",
+    "subsections": [
+      "always-spread-into-an-inline-object-literal",
+      "composite-primitives-keep-working",
+      "exposing-only-part-of-the-surface",
+    ],
+    "tables": [],
+    "title": "Pattern 1 — \`hostDirectives\` with the exported name tuples",
+  },
+  {
+    "slug": "pattern-2--subclassing",
+    "subsections": [
+      "decorator-providers-are-not-inherited",
+      "a-split-context-does-not-change-the-re-provide",
+      "indicator-parent-parts-also-self-provide-a-token",
+      "projected-time-sources-self-provide-a-bridge-token",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Subclassed part",
+          "Indicator that resolves it",
+          "Token to re-provide",
+        ],
+        "rows": 7,
+      },
+      {
+        "columns": [
+          "Subclassed primitive",
+          "Bridge that resolves it",
+          "Token to re-provide",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Pattern 2 — subclassing",
+  },
+  {
+    "slug": "choosing-a-pattern",
+    "subsections": [],
+    "tables": [],
+    "title": "Choosing a pattern",
+  },
+  {
+    "slug": "exported-tuples",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Primitive",
+          "Inputs tuple",
+          "Outputs tuple",
+        ],
+        "rows": 19,
+      },
+    ],
+    "title": "Exported tuples",
+  },
+  {
+    "slug": "binding-a-single-valued-field-to-a-selection-primitive",
+    "subsections": [],
+    "tables": [],
+    "title": "Binding a single-valued field to a selection primitive",
+  },
+]
+`;
+
+exports[`document structure > docs/wrapping-non-form-roots.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "subclassing-is-the-default-pattern-here",
+    "subsections": [],
+    "tables": [],
+    "title": "Subclassing is the default pattern here",
+  },
+  {
+    "slug": "re-provide-the-context-token--this-is-the-one-that-breaks",
+    "subsections": [
+      "fortable-needs-its-provider-helper-not-a-hand-written-provider",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Root",
+          "Token to re-provide",
+        ],
+        "rows": 28,
+      },
+    ],
+    "title": "Re-provide the context token — this is the one that breaks",
+  },
+  {
+    "slug": "what-a-wrapper-must-not-swallow",
+    "subsections": [],
+    "tables": [],
+    "title": "What a wrapper must not swallow",
+  },
+  {
+    "slug": "choosing-a-pattern",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Situation",
+          "Pattern",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Choosing a pattern",
+  },
+]
+`;
+
+exports[`document structure > docs/your-first-overlay.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "prerequisites",
+    "subsections": [],
+    "tables": [],
+    "title": "Prerequisites",
+  },
+  {
+    "slug": "step-1--empty-markup",
+    "subsections": [],
+    "tables": [],
+    "title": "Step 1 — empty markup",
+  },
+  {
+    "slug": "step-2--wiring-the-open-state",
+    "subsections": [
+      "the-exportas-shortcut-no-separate-signal-needed",
+      "the-open-alternative",
+    ],
+    "tables": [],
+    "title": "Step 2 — wiring the open state",
+  },
+  {
+    "slug": "step-3--the-portal--global-css-gotcha",
+    "subsections": [],
+    "tables": [],
+    "title": "Step 3 — the portal → global CSS gotcha",
+  },
+  {
+    "slug": "step-4--adding-an-enter-animation",
+    "subsections": [],
+    "tables": [],
+    "title": "Step 4 — adding an enter animation",
+  },
+  {
+    "slug": "two-structural-shapes",
+    "subsections": [
+      "wrapper-based-popover-dropdownmenu-contextmenu-tooltip-hovercard-select-combobox",
+      "flat-dialog",
+    ],
+    "tables": [],
+    "title": "Two structural shapes",
+  },
+  {
+    "slug": "where-to-go-next",
+    "subsections": [],
+    "tables": [],
+    "title": "Where to go next",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/accordion/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "foraccordion",
+      "foraccordionitem",
+      "foraccordiontrigger",
+      "foraccordioncontent",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/aspect-ratio/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "why-this-exists",
+    "subsections": [],
+    "tables": [],
+    "title": "Why this exists",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "foraspectratio",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/avatar/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "foravatar",
+      "foravatarimage",
+      "foravatarfallback",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/breadcrumbs/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "localizing-the-label",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forbreadcrumbs",
+      "forbreadcrumbitem",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/breakpoints/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "setup",
+    "subsections": [],
+    "tables": [],
+    "title": "Setup",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "typed-custom-names",
+    "subsections": [],
+    "tables": [],
+    "title": "Typed custom names",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "injectbreakpoints",
+      "injectprefersreducedmotion",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Method",
+          "Matches",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "ssr",
+    "subsections": [],
+    "tables": [],
+    "title": "SSR",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/button/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "basic-usage",
+      "disabled",
+      "preserve-consumer-type",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forbutton",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/calendar/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "date-adapter",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Provider",
+          "Date type D",
+          "Dependency",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Date adapter",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forcalendar",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 14,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 9,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "range-selection",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Attribute",
+          "Present when",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Range selection",
+  },
+  {
+    "slug": "month--year-navigation",
+    "subsections": [
+      "navigation-methods",
+      "read-accessors-and-predicates",
+      "usage--native-select-dropdowns",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Method",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "API",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "API",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "API",
+          "Description",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Month / year navigation",
+  },
+  {
+    "slug": "view-switching",
+    "subsections": [
+      "pieces",
+      "view-model--forcalendar",
+      "usage",
+      "keyboard-month--year-grids",
+      "prev--next-behavior-per-view",
+      "data-attributes-view-switching",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Class",
+          "Selector",
+          "Role",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "API",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "View",
+          "Prev / Next pages by",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 11,
+      },
+    ],
+    "title": "View switching",
+  },
+  {
+    "slug": "scope-defaults",
+    "subsections": [],
+    "tables": [],
+    "title": "Scope defaults",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "ssr",
+    "subsections": [],
+    "tables": [],
+    "title": "SSR",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/carousel/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "basic-carousel",
+      "indicators-map-11-to-slides",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "autoplay",
+    "subsections": [],
+    "tables": [],
+    "title": "Autoplay",
+  },
+  {
+    "slug": "drag--swipe",
+    "subsections": [
+      "css-contract",
+      "rtl",
+      "reduced-motion",
+      "cross-axis--touch",
+    ],
+    "tables": [],
+    "title": "Drag / swipe",
+  },
+  {
+    "slug": "localizing-the-default-labels",
+    "subsections": [],
+    "tables": [],
+    "title": "Localizing the default labels",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forcarousel",
+      "contain-scroll",
+      "forcarouseldrag-inputs",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 15,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+      "autoplay-styling-hooks",
+      "boundary-styling-hooks",
+      "drag-styling-hooks",
+      "reduced-motion-1",
+      "rtl-support",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Host",
+          "Value",
+          "Notes",
+        ],
+        "rows": 8,
+      },
+      {
+        "columns": [
+          "Attribute",
+          "When present",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Attribute",
+          "When present",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Attribute",
+          "Host",
+          "When present",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/checkbox/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "when-to-choose",
+    "subsections": [],
+    "tables": [],
+    "title": "When to choose",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "tri-state-select-all",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forcheckbox",
+      "forcheckboxindicator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/combobox/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "filtering-is-the-consumers-job",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 15,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "mountvisibility-convention",
+    "subsections": [],
+    "tables": [],
+    "title": "Mount/visibility convention",
+  },
+  {
+    "slug": "anchoring-to-a-field-box",
+    "subsections": [],
+    "tables": [],
+    "title": "Anchoring to a field box",
+  },
+  {
+    "slug": "picker-anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Picker anatomy",
+  },
+  {
+    "slug": "action-items",
+    "subsections": [
+      "focus--keyboard-model-a",
+      "api",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Member",
+          "Type",
+          "Notes",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Action items",
+  },
+  {
+    "slug": "self-hiding-pieces",
+    "subsections": [],
+    "tables": [],
+    "title": "Self-hiding pieces",
+  },
+  {
+    "slug": "two-models-separately-tracked",
+    "subsections": [
+      "commitonselect-single-vs-multi",
+    ],
+    "tables": [],
+    "title": "Two models, separately tracked",
+  },
+  {
+    "slug": "multi-mode",
+    "subsections": [
+      "chip-keyboard",
+      "multi-mode-backspace-heuristic",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Key on chip",
+          "Action (LTR)",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Multi mode",
+  },
+  {
+    "slug": "open--close-behavior",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Behavior",
+          "Default",
+          "Override",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Open / close behavior",
+  },
+  {
+    "slug": "autocomplete-modes",
+    "subsections": [],
+    "tables": [],
+    "title": "Autocomplete modes",
+  },
+  {
+    "slug": "dismiss-events",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Output",
+          "When",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Dismiss events",
+  },
+  {
+    "slug": "focus--the-autofocusonopen--autofocusonclose-hooks",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Output",
+          "When",
+          "preventDefault() effect",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Focus & the \`autoFocusOnOpen\` / \`autoFocusOnClose\` hooks",
+  },
+  {
+    "slug": "object-values",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Default",
+          "Purpose",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Object values",
+  },
+  {
+    "slug": "virtualization",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Input / Output",
+          "Purpose",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Virtualization",
+  },
+  {
+    "slug": "writing-direction",
+    "subsections": [],
+    "tables": [],
+    "title": "Writing direction",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 12,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Custom property",
+          "Type / range",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/context-menu/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "menuforcontextmenu-vs-open",
+      "triggers-stamped-from-outside-declared-templates",
+      "sharing-one-menu-with-a-second-opener",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forcontextmenu",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 18,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/date-field/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "date-adapter",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Provider",
+          "Date type D",
+          "Dependency",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Date adapter",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fordatefield",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 9,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "date-time-field",
+    "subsections": [],
+    "tables": [],
+    "title": "Date-time field",
+  },
+  {
+    "slug": "scope-defaults",
+    "subsections": [],
+    "tables": [],
+    "title": "Scope defaults",
+  },
+  {
+    "slug": "range-selection--fordaterangefield",
+    "subsections": [
+      "fordaterangefield-api",
+      "ordering",
+      "range-keyboard-and-accessibility",
+      "range-scope-defaults",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 9,
+      },
+    ],
+    "title": "Range selection — \`ForDateRangeField\`",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/date-picker/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "date-adapter",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Provider",
+          "Date type D",
+          "Dependency",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Date adapter",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fordatepicker",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 16,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 8,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "triggers-stamped-from-outside-declared-templates",
+    "subsections": [],
+    "tables": [],
+    "title": "Triggers stamped from outside-declared templates",
+  },
+  {
+    "slug": "anchoring-to-a-field-box",
+    "subsections": [],
+    "tables": [],
+    "title": "Anchoring to a field box",
+  },
+  {
+    "slug": "modal-vs-non-modal",
+    "subsections": [],
+    "tables": [],
+    "title": "Modal vs non-modal",
+  },
+  {
+    "slug": "date-time-picker",
+    "subsections": [],
+    "tables": [],
+    "title": "Date-time picker",
+  },
+  {
+    "slug": "range-selection--fordaterangepicker",
+    "subsections": [],
+    "tables": [],
+    "title": "Range selection — \`ForDateRangePicker\`",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/dialog/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "two-flows-one-engine",
+    "subsections": [
+      "declarative--fordialog",
+      "the-dismiss-contract--consumer-owns-unmount",
+      "trigger--surface-id-wiring",
+      "programmatic--fordialogmanageropen",
+    ],
+    "tables": [],
+    "title": "Two flows, one engine",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fordialog",
+      "per-channel-dismissal-escape-only-dialogs",
+      "inputs--focus-callbacks",
+      "open-without-stealing-focus",
+      "fordialogtrigger",
+      "fordialogbackdrop",
+      "fordialogclose",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 11,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "programmatic-api",
+    "subsections": [
+      "fordialogopenconfig",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Symbol",
+          "Description",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Field",
+          "Default",
+          "Description",
+        ],
+        "rows": 18,
+      },
+    ],
+    "title": "Programmatic API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "known-limitations",
+    "subsections": [],
+    "tables": [],
+    "title": "Known limitations",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "scoped--contained-dialog",
+    "subsections": [],
+    "tables": [],
+    "title": "Scoped / contained dialog",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/disclosure/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fordisclosure",
+      "fordisclosuretrigger",
+      "fordisclosurecontent",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/drag-drop/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Piece",
+          "Selector",
+          "Required",
+          "Role",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "State",
+          "Key",
+          "Action",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [
+      "focus-after-a-keyboard-drop",
+    ],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "pointer-dragging",
+    "subsections": [
+      "auto-scroll",
+      "optional-drag-handle",
+      "custom-preview--placeholder",
+      "live-sort-placeholder",
+      "boundary--axis-lock",
+      "reorder--settle-animations",
+    ],
+    "tables": [],
+    "title": "Pointer dragging",
+  },
+  {
+    "slug": "orientation",
+    "subsections": [],
+    "tables": [],
+    "title": "Orientation",
+  },
+  {
+    "slug": "free-drag",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Type",
+          "Default",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Output",
+          "Payload",
+          "Fires",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Free drag",
+  },
+  {
+    "slug": "virtualized-lists",
+    "subsections": [],
+    "tables": [],
+    "title": "Virtualized lists",
+  },
+  {
+    "slug": "data-attributes",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Attribute",
+          "Element",
+          "Meaning",
+        ],
+        "rows": 11,
+      },
+    ],
+    "title": "Data attributes",
+  },
+  {
+    "slug": "sortable-list",
+    "subsections": [],
+    "tables": [],
+    "title": "Sortable list",
+  },
+  {
+    "slug": "two-list-transfer-with-fordroplistgroup",
+    "subsections": [],
+    "tables": [],
+    "title": "Two-list transfer with \`forDropListGroup\`",
+  },
+  {
+    "slug": "two-list-transfer-with-explicit-connectedto",
+    "subsections": [],
+    "tables": [],
+    "title": "Two-list transfer with explicit \`[connectedTo]\`",
+  },
+  {
+    "slug": "announcement-customisation",
+    "subsections": [],
+    "tables": [],
+    "title": "Announcement customisation",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/drawer/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "two-flows-one-engine",
+    "subsections": [
+      "declarative--fordrawer",
+      "programmatic--fordrawermanageropen",
+      "per-channel-dismissal-escape-only-drawers",
+    ],
+    "tables": [],
+    "title": "Two flows, one engine",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fordrawer",
+      "fordrawerbackdrop",
+      "fordrawertrigger",
+      "fordrawerclose",
+      "fordrawerwrapper",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 28,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "snap-points",
+    "subsections": [
+      "positioning-the-snaps-css-contract",
+      "backdrop-swipe-fade-css-contract",
+    ],
+    "tables": [],
+    "title": "Snap points",
+  },
+  {
+    "slug": "swipe-to-dismiss",
+    "subsections": [],
+    "tables": [],
+    "title": "Swipe-to-dismiss",
+  },
+  {
+    "slug": "scale-background",
+    "subsections": [],
+    "tables": [],
+    "title": "Scale background",
+  },
+  {
+    "slug": "nested-drawers",
+    "subsections": [],
+    "tables": [],
+    "title": "Nested drawers",
+  },
+  {
+    "slug": "defaults-provider",
+    "subsections": [],
+    "tables": [],
+    "title": "Defaults provider",
+  },
+  {
+    "slug": "scoped--contained-drawer",
+    "subsections": [],
+    "tables": [],
+    "title": "Scoped / contained drawer",
+  },
+  {
+    "slug": "mountunmount-and-animations",
+    "subsections": [],
+    "tables": [],
+    "title": "Mount/unmount and animations",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "known-limitations",
+    "subsections": [],
+    "tables": [],
+    "title": "Known limitations",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/dropdown-menu/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "menufordropdownmenu-vs-open",
+      "triggers-stamped-from-outside-declared-templates",
+      "sharing-one-menu-with-a-second-opener",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fordropdownmenu",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 18,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/field/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "how-the-control-connects",
+    "subsections": [],
+    "tables": [],
+    "title": "How the control connects",
+  },
+  {
+    "slug": "forfielderror--automatic-signal-forms-errors",
+    "subsections": [],
+    "tables": [],
+    "title": "\`ForFieldError\` — automatic Signal Forms errors",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "label-click-activation",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forfield",
+      "forlabel",
+      "forfielddescription",
+      "forfielderror",
+      "forfieldcontrol",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/fieldset/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "how-grouping-connects",
+    "subsections": [],
+    "tables": [],
+    "title": "How grouping connects",
+  },
+  {
+    "slug": "shared-disabled",
+    "subsections": [],
+    "tables": [],
+    "title": "Shared \`disabled\`",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forfieldset",
+      "forfieldsetlegend",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/file-upload/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "multiple-files",
+      "handling-rejections",
+      "directory-folder-selection",
+      "disabled",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forfileupload",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Output",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/hover-card/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "triggers-stamped-from-outside-declared-templates",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forhovercard",
+      "forhovercardtrigger",
+      "forhovercardcontent",
+      "forhovercardarrow",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 11,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "defaults",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "rows": 8,
+      },
+    ],
+    "title": "Defaults",
+  },
+  {
+    "slug": "imperative-show-and-hide",
+    "subsections": [],
+    "tables": [],
+    "title": "Imperative show and hide",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+      "reduced-motion",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Element",
+          "Custom property",
+          "Type / range",
+          "Direction",
+          "Meaning",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/input/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "auto-resizing-textarea",
+    "subsections": [],
+    "tables": [],
+    "title": "Auto-resizing textarea",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "field-composition",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forinput",
+      "fortextarea",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 10,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 11,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 8,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/internationalized-date/README.md declares the sections and table shapes it declared before 1`] = `[]`;
+
+exports[`document structure > projects/forty-cdk/listbox/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone-single-select",
+      "multi-select",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "object-values",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Default",
+          "Purpose",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Object values",
+  },
+  {
+    "slug": "reordering",
+    "subsections": [
+      "inputs--output",
+      "keyboard",
+      "pointer",
+      "localizing-reorder-announcements",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "API",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+          "Notes",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Default",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Reordering",
+  },
+  {
+    "slug": "virtualization",
+    "subsections": [
+      "inputs-and-output",
+      "focus-model-switch",
+      "navigation-flow",
+      "example",
+      "intentional-limitations",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Input / Output",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Mode",
+          "Tab stop",
+          "Active option tracking",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Virtualization",
+  },
+  {
+    "slug": "self-hiding-pieces",
+    "subsections": [],
+    "tables": [],
+    "title": "Self-hiding pieces",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forlistbox",
+      "forlistboxoption",
+      "forlistboxoptionindicator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 14,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+          "Notes",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "pointer-highlight",
+    "subsections": [],
+    "tables": [],
+    "title": "Pointer highlight",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [
+      "single-mode-and-the-basics-for-both",
+      "multi-mode-apg-recommended-range-selection",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Shortcut",
+          "Behavior",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/menu/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "mountvisibility-convention",
+    "subsections": [],
+    "tables": [],
+    "title": "Mount/visibility convention",
+  },
+  {
+    "slug": "item-activation-contract",
+    "subsections": [],
+    "tables": [],
+    "title": "Item activation contract",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "submenu",
+    "subsections": [
+      "pointer-mouse-hover",
+      "narrow-viewport-fallback",
+    ],
+    "tables": [],
+    "title": "Submenu",
+  },
+  {
+    "slug": "shared-openers-formenu",
+    "subsections": [
+      "per-opener-positioning",
+    ],
+    "tables": [],
+    "title": "Shared openers (\`[forMenu]\`)",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "formenu",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Type",
+          "Default",
+          "Notes",
+        ],
+        "rows": 17,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 17,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Custom property",
+          "Type / range",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/menubar/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "mount-shapes",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Shape",
+          "Markup",
+          "When to reach for it",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Mount shapes",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "formenubar",
+      "formenubartrigger",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 13,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [
+      "trigger",
+      "in-menu",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 7,
+      },
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/meter/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "formeter",
+      "formeterindicator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 8,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "quality-algorithm",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Optimum sits in",
+          "value in",
+          "Quality",
+        ],
+        "rows": 8,
+      },
+    ],
+    "title": "Quality algorithm",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/navigation-menu/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "mega-menu",
+    "subsections": [
+      "panel-order-is-deterministic",
+      "rendering-the-viewport-outside-the-nav",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Attribute / variable",
+          "Where",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Mega-menu",
+  },
+  {
+    "slug": "limitations",
+    "subsections": [],
+    "tables": [],
+    "title": "Limitations",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fornavigationmenu",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 9,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 15,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/number-input/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "formatting",
+      "field-composition",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fornumberinput",
+      "stepper-buttons",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 10,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/otp-input/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "how-it-works",
+    "subsections": [],
+    "tables": [],
+    "title": "How it works",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "exported-pattern-constants",
+    "subsections": [],
+    "tables": [],
+    "title": "Exported pattern constants",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "field-composition",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forotpinput",
+      "slot-forotpinputslot",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 13,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/pagination/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forpagination",
+      "forpaginationitem",
+      "forpaginationprevious",
+      "forpaginationnext",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/pane-resizer/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "pointer-drag",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forpaneresizer",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 15,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/popover/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "popoverforpopover-vs-open",
+      "triggers-stamped-from-outside-declared-templates",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forpopover",
+      "open-without-stealing-focus",
+      "forpopovertrigger",
+      "forpopovercontent",
+      "forpopoverarrow",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 19,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "scoped-defaults",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+      "reduced-motion",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Element",
+          "Custom property",
+          "Type / range",
+          "Direction",
+          "Meaning",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/progress/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forprogress",
+      "forprogressindicator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/radio-group/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forradiogroup",
+      "forradio",
+      "forradioindicator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 8,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/scroll-area/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forscrollarea",
+      "forscrollareaviewport",
+      "forscrollareacontent",
+      "forscrollareascrollbar",
+      "forscrollareathumb",
+      "forscrollareacorner",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Member",
+          "Type",
+          "Description",
+        ],
+        "rows": 12,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/search/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "basic-usage",
+      "with-signal-forms-and-field",
+      "command-palette",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "keyboard-interaction",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behaviour",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "Keyboard interaction",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forsearch",
+      "forsearchgroup",
+      "forsearchclear",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Type",
+          "Default",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Input",
+          "Type",
+          "Default",
+          "Description",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/select/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "single-mode-default",
+      "multi-mode",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 14,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "scoped-defaults",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "slug": "mountvisibility-convention",
+    "subsections": [],
+    "tables": [],
+    "title": "Mount/visibility convention",
+  },
+  {
+    "slug": "initial-focus-on-open",
+    "subsections": [],
+    "tables": [],
+    "title": "Initial focus on open",
+  },
+  {
+    "slug": "pointer-highlight",
+    "subsections": [],
+    "tables": [],
+    "title": "Pointer highlight",
+  },
+  {
+    "slug": "anchoring-to-a-field-box",
+    "subsections": [],
+    "tables": [],
+    "title": "Anchoring to a field box",
+  },
+  {
+    "slug": "triggers-stamped-from-outside-declared-templates",
+    "subsections": [],
+    "tables": [],
+    "title": "Triggers stamped from outside-declared templates",
+  },
+  {
+    "slug": "macos-style-alignment",
+    "subsections": [],
+    "tables": [],
+    "title": "macOS-style alignment",
+  },
+  {
+    "slug": "modal-touch-presentation",
+    "subsections": [],
+    "tables": [],
+    "title": "Modal touch presentation",
+  },
+  {
+    "slug": "selection-follows-focus",
+    "subsections": [],
+    "tables": [],
+    "title": "Selection follows focus",
+  },
+  {
+    "slug": "dismiss-events",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Output",
+          "When",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Dismiss events",
+  },
+  {
+    "slug": "auto-focus-events",
+    "subsections": [],
+    "tables": [],
+    "title": "Auto-focus events",
+  },
+  {
+    "slug": "object-values",
+    "subsections": [
+      "pre-set-object-values-and-the-if-open-pattern",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Input",
+          "Default",
+          "Purpose",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "Object values",
+  },
+  {
+    "slug": "virtualization",
+    "subsections": [
+      "focus-model-switch",
+      "inputs-and-output",
+      "navigation-flow",
+      "example-with-injectvirtualizer",
+      "intentional-limitations",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Mode",
+          "Tab stop / focus",
+          "Active-option tracking",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Binding",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Virtualization",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [
+      "trigger-closed",
+      "listbox-open",
+    ],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Custom property",
+          "Type / range",
+          "position",
+          "Meaning",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/separator/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forseparator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/shared/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "why-this-exists",
+    "subsections": [],
+    "tables": [],
+    "title": "Why this exists",
+  },
+  {
+    "slug": "what-it-exports",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Family",
+          "Exports",
+        ],
+        "rows": 9,
+      },
+    ],
+    "title": "What it exports",
+  },
+  {
+    "slug": "reading-a-controls-accessible-text",
+    "subsections": [],
+    "tables": [],
+    "title": "Reading a control's accessible text",
+  },
+  {
+    "slug": "multiple-apps-on-one-page",
+    "subsections": [],
+    "tables": [],
+    "title": "Multiple apps on one page",
+  },
+  {
+    "slug": "incremental-hydration",
+    "subsections": [
+      "a-static-id-is-not-the-workaround",
+    ],
+    "tables": [],
+    "title": "Incremental hydration",
+  },
+  {
+    "slug": "shadow-dom",
+    "subsections": [
+      "focusable-order-is-composed-only-for-a-host-that-renders-no-slot",
+      "a-panels-focusable-content-measurement-does-not-re-measure-across-a-boundary",
+      "escape-is-observed-on-the-bubble-phase",
+      "closed-shadow-roots-are-out-of-scope",
+    ],
+    "tables": [],
+    "title": "Shadow DOM",
+  },
+  {
+    "slug": "notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Notes",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/slider/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "single-thumb",
+      "range-two-thumbs",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forslider",
+      "forslidertrack",
+      "forsliderrange",
+      "forsliderthumb",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 15,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/stepper/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "interactive-mode-with-linear-progression",
+      "completed-all-content",
+      "conditionally-rendered-or-reordered-panels-step",
+      "signal-forms-field-driven-completion",
+      "progress-mode-display-only",
+      "progress-bar-forstepperprogress",
+      "custom-icon-per-state-indicator-example",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forstepper",
+      "forstepperitem",
+      "forsteppercontent",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 9,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Values",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Attribute",
+          "When present",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "known-limitations",
+    "subsections": [],
+    "tables": [],
+    "title": "Known limitations",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/switch/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "when-to-choose",
+    "subsections": [],
+    "tables": [],
+    "title": "When to choose",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forswitch",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 9,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/table/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "native-table-mode",
+    "subsections": [],
+    "tables": [],
+    "title": "Native \`<table>\` mode",
+  },
+  {
+    "slug": "div-mode",
+    "subsections": [],
+    "tables": [],
+    "title": "\`<div>\` mode",
+  },
+  {
+    "slug": "declarative-columns-fortablecolumndef--for-table-body",
+    "subsections": [],
+    "tables": [],
+    "title": "Declarative columns (\`ForTableColumnDef\` + \`<for-table-body>\`)",
+  },
+  {
+    "slug": "sticky-header--css-custom-property",
+    "subsections": [],
+    "tables": [],
+    "title": "Sticky header + CSS custom property",
+  },
+  {
+    "slug": "grid-mode",
+    "subsections": [],
+    "tables": [],
+    "title": "Grid mode",
+  },
+  {
+    "slug": "treegrid-mode",
+    "subsections": [],
+    "tables": [],
+    "title": "Treegrid mode",
+  },
+  {
+    "slug": "row-selection",
+    "subsections": [
+      "selectionmode",
+      "selectionbehavior",
+      "value",
+      "comparewith",
+      "space-to-select-on-a-focused-grid-cell",
+      "fortablerowselector",
+      "fortableselectall",
+      "total-aware-aggregates-under-virtualization-selectablevalues",
+      "minimal-multiple-select-example",
+    ],
+    "tables": [],
+    "title": "Row selection",
+  },
+  {
+    "slug": "sortable-headers",
+    "subsections": [],
+    "tables": [],
+    "title": "Sortable headers",
+  },
+  {
+    "slug": "column-resizing",
+    "subsections": [
+      "size-to-content-auto-fit",
+    ],
+    "tables": [],
+    "title": "Column resizing",
+  },
+  {
+    "slug": "column--row-reordering",
+    "subsections": [],
+    "tables": [],
+    "title": "Column & row reordering",
+  },
+  {
+    "slug": "virtualized-rows",
+    "subsections": [],
+    "tables": [],
+    "title": "Virtualized rows",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortable",
+      "fortableheadercell",
+      "fortablecell",
+      "fortablerow",
+      "fortableselectall-1",
+      "fortablesortheader",
+      "fortablecolumnresizer",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 11,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 8,
+      },
+      {
+        "columns": [
+          "Token / attribute",
+          "Emitted by",
+          "Values / description",
+        ],
+        "rows": 26,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "wrapping-the-root",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping the root",
+  },
+  {
+    "slug": "wrapping-the-declarative-body",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping the declarative body",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/table-virtualization/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "measured-row-heights",
+    "subsections": [],
+    "tables": [],
+    "title": "Measured row heights",
+  },
+  {
+    "slug": "keyboard-navigation-across-the-window",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard navigation across the window",
+  },
+  {
+    "slug": "infinite-scroll",
+    "subsections": [],
+    "tables": [],
+    "title": "Infinite scroll",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortablevirtualized",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "related",
+    "subsections": [],
+    "tables": [],
+    "title": "Related",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/tabs/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "manual-activation",
+    "subsections": [],
+    "tables": [],
+    "title": "Manual activation",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortabs",
+      "fortabslist",
+      "fortabstrigger",
+      "fortabscontent",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "known-limitations",
+    "subsections": [],
+    "tables": [],
+    "title": "Known limitations",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/time-field/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "date-adapter",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Provider",
+          "Date-time type D",
+          "Dependency",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Date adapter",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "stand-alone",
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortimefield",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 9,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "scope-defaults",
+    "subsections": [],
+    "tables": [],
+    "title": "Scope defaults",
+  },
+  {
+    "slug": "range-selection--fortimerangefield",
+    "subsections": [
+      "fortimerangefield-api",
+      "ordering",
+      "overnight-ranges",
+      "range-keyboard-and-accessibility",
+      "range-scope-defaults",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 10,
+      },
+    ],
+    "title": "Range selection — \`ForTimeRangeField\`",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 7,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/time-picker/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "signal-forms",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortimepicker",
+      "data-attributes",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 14,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 13,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "pointer-highlight",
+    "subsections": [],
+    "tables": [],
+    "title": "Pointer highlight",
+  },
+  {
+    "slug": "scoped-defaults",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "slug": "anchoring-to-a-field-box",
+    "subsections": [],
+    "tables": [],
+    "title": "Anchoring to a field box",
+  },
+  {
+    "slug": "date-time-composition",
+    "subsections": [],
+    "tables": [],
+    "title": "Date-time composition",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/toast/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "mount-the-viewport-once",
+    "subsections": [],
+    "tables": [],
+    "title": "Mount the viewport once",
+  },
+  {
+    "slug": "toasts-over-a-modal-dialog--drawer",
+    "subsections": [
+      "sitting-behind-the-modal-instead",
+    ],
+    "tables": [],
+    "title": "Toasts over a modal dialog / drawer",
+  },
+  {
+    "slug": "multiple-regions",
+    "subsections": [],
+    "tables": [],
+    "title": "Multiple regions",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortoast",
+      "fortoastviewport",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "programmatic-api",
+    "subsections": [],
+    "tables": [],
+    "title": "Programmatic API",
+  },
+  {
+    "slug": "composition--styling-model",
+    "subsections": [
+      "per-toast-classes",
+      "exit--enter-animations-programmatic",
+      "gliding-the-rest-of-the-stack-stackshift",
+      "custom-rendering-with-a-template",
+    ],
+    "tables": [],
+    "title": "Composition + styling model",
+  },
+  {
+    "slug": "declarative-usage",
+    "subsections": [],
+    "tables": [],
+    "title": "Declarative usage",
+  },
+  {
+    "slug": "swipe-to-dismiss",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Attribute / variable",
+          "Values",
+          "Purpose",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Swipe-to-dismiss",
+  },
+  {
+    "slug": "auto-dismiss--pause-on-hover",
+    "subsections": [],
+    "tables": [],
+    "title": "Auto-dismiss + pause-on-hover",
+  },
+  {
+    "slug": "variants",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Variant",
+          "Role",
+          "Announced",
+          "Use for",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Variants",
+  },
+  {
+    "slug": "global-defaults",
+    "subsections": [],
+    "tables": [],
+    "title": "Global defaults",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [
+      "live-updates-and-announcements",
+    ],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Meaning",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/toggle/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "standalone-toggle",
+      "signal-forms-single-toggle",
+      "togglegroup",
+      "signal-forms-togglegroup",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortoggle",
+      "fortogglegroup",
+      "fortogglegroupitem",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 10,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 14,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/toolbar/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortoolbar",
+      "fortoolbarbutton",
+      "fortoolbarlink",
+      "fortoolbarseparator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Action",
+        ],
+        "rows": 4,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/tooltip/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [
+      "triggers-stamped-from-outside-declared-templates",
+    ],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortooltip",
+      "fortooltiptrigger",
+      "fortooltipcontent",
+      "fortooltiparrow",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 12,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "scoped-defaults",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Library fallback",
+          "Meaning",
+        ],
+        "rows": 10,
+      },
+    ],
+    "title": "Scoped defaults",
+  },
+  {
+    "slug": "imperative-show-and-hide",
+    "subsections": [],
+    "tables": [],
+    "title": "Imperative show and hide",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [
+      "css-custom-properties",
+      "reduced-motion",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Element",
+          "Custom property",
+          "Type / range",
+          "Direction",
+          "Meaning",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/tree/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "multi-select",
+    "subsections": [],
+    "tables": [],
+    "title": "Multi select",
+  },
+  {
+    "slug": "checkbox-selection",
+    "subsections": [
+      "cascade-selection",
+    ],
+    "tables": [],
+    "title": "Checkbox selection",
+  },
+  {
+    "slug": "filtering",
+    "subsections": [],
+    "tables": [],
+    "title": "Filtering",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "fortree",
+      "fortreeitem",
+      "fortreeitemtoggle",
+      "fortreeitemcheckbox",
+      "fortreeitemcheckboxindicator",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 13,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 5,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "keyboard",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behavior",
+        ],
+        "rows": 11,
+      },
+    ],
+    "title": "Keyboard",
+  },
+  {
+    "slug": "scope-defaults",
+    "subsections": [],
+    "tables": [],
+    "title": "Scope defaults",
+  },
+  {
+    "slug": "virtualization",
+    "subsections": [
+      "opt-in-api",
+      "focus-model-switch",
+      "navigation-flow",
+      "consumer-example",
+      "intentional-limitations",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "API",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "API",
+          "Type",
+          "Description",
+        ],
+        "rows": 4,
+      },
+      {
+        "columns": [
+          "Mode",
+          "Tree host tabindex",
+          "Item tabindex",
+          "Focus mechanism",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "Virtualization",
+  },
+  {
+    "slug": "drag--drop",
+    "subsections": [
+      "pieces",
+      "inputs--outputs",
+      "a-non-string-tree-must-bind-candrop",
+      "keyboard-interaction",
+      "minimal-example",
+      "data-attributes-on-fortreenodedrag",
+      "drop-indicator",
+      "localizing-drag-announcements",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Class",
+          "Selector",
+          "Description",
+        ],
+        "rows": 2,
+      },
+      {
+        "columns": [
+          "API",
+          "Type",
+          "Description",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Key",
+          "Behavior while not lifted",
+          "Behavior while lifted",
+        ],
+        "rows": 8,
+      },
+      {
+        "columns": [
+          "Attribute",
+          "Values",
+          "When present",
+        ],
+        "rows": 3,
+      },
+      {
+        "columns": [
+          "Piece",
+          "Attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Default",
+          "Type",
+          "Description",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Drag & drop",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/virtual-reorder/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "what-it-adds-over-a-bare-fordroplist",
+    "subsections": [],
+    "tables": [],
+    "title": "What it adds over a bare \`[forDropList]\`",
+  },
+  {
+    "slug": "windowed-scrub",
+    "subsections": [],
+    "tables": [],
+    "title": "Windowed scrub",
+  },
+  {
+    "slug": "keyboard-interaction",
+    "subsections": [],
+    "tables": [
+      {
+        "columns": [
+          "Key",
+          "Behaviour",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Keyboard interaction",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forvirtualreorder",
+      "forvirtualreorderevent",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Member",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "related",
+    "subsections": [],
+    "tables": [],
+    "title": "Related",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/virtualization/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "ergonomic-layer",
+    "subsections": [],
+    "tables": [],
+    "title": "Ergonomic layer",
+  },
+  {
+    "slug": "vertical-list",
+    "subsections": [],
+    "tables": [],
+    "title": "Vertical list",
+  },
+  {
+    "slug": "dynamic-item-heights",
+    "subsections": [],
+    "tables": [],
+    "title": "Dynamic item heights",
+  },
+  {
+    "slug": "horizontal-list",
+    "subsections": [],
+    "tables": [],
+    "title": "Horizontal list",
+  },
+  {
+    "slug": "jumping-to-an-item",
+    "subsections": [],
+    "tables": [],
+    "title": "Jumping to an item",
+  },
+  {
+    "slug": "drag-reorder",
+    "subsections": [],
+    "tables": [],
+    "title": "Drag-reorder",
+  },
+  {
+    "slug": "accessibility",
+    "subsections": [],
+    "tables": [],
+    "title": "Accessibility",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "options",
+      "returned-handle",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+      {
+        "columns": [
+          "Member",
+          "Type",
+          "Description",
+        ],
+        "rows": 6,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "infinite-scroll",
+    "subsections": [
+      "shape-a--endreached-output",
+      "shape-b--injectinfinitescroll",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Option",
+          "Type",
+          "Default",
+          "Description",
+        ],
+        "rows": 5,
+      },
+    ],
+    "title": "Infinite scroll",
+  },
+  {
+    "slug": "composing-into-a-list-primitive",
+    "subsections": [],
+    "tables": [],
+    "title": "Composing into a list primitive",
+  },
+  {
+    "slug": "wrapping-in-a-design-system",
+    "subsections": [],
+    "tables": [],
+    "title": "Wrapping in a design system",
+  },
+]
+`;
+
+exports[`document structure > projects/forty-cdk/visually-hidden/README.md declares the sections and table shapes it declared before 1`] = `
+[
+  {
+    "slug": "why-this-exists",
+    "subsections": [],
+    "tables": [],
+    "title": "Why this exists",
+  },
+  {
+    "slug": "anatomy",
+    "subsections": [],
+    "tables": [],
+    "title": "Anatomy",
+  },
+  {
+    "slug": "examples",
+    "subsections": [],
+    "tables": [],
+    "title": "Examples",
+  },
+  {
+    "slug": "api",
+    "subsections": [
+      "forvisuallyhidden",
+      "liveannouncer",
+    ],
+    "tables": [
+      {
+        "columns": [
+          "Property",
+          "Type",
+          "Description",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Data attribute",
+          "Values",
+        ],
+        "rows": 1,
+      },
+      {
+        "columns": [
+          "Method",
+          "Description",
+        ],
+        "rows": 2,
+      },
+    ],
+    "title": "API",
+  },
+  {
+    "slug": "styling",
+    "subsections": [],
+    "tables": [],
+    "title": "Styling",
+  },
+  {
+    "slug": "ssr",
+    "subsections": [],
+    "tables": [],
+    "title": "SSR",
+  },
+  {
+    "slug": "behavior-notes",
+    "subsections": [],
+    "tables": [],
+    "title": "Behavior notes",
+  },
+]
+`;

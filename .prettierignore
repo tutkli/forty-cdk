@@ -1,2 +1,6 @@
 pnpm-lock.yaml
 **/*.generated.ts
+# Characterization fixtures for the docs pipeline (#1805). Three of them turn on
+# an unescaped pipe, a setext rule or a backtick run that Prettier would rewrite,
+# which is the exact markdown the specs assert the parser's behaviour against.
+projects/forty-cdk-playground/src/app/doc/testing/fixtures/*.md

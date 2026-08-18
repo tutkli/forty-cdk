@@ -247,6 +247,9 @@
     },
     {
       "path": "./projects/forty-cdk-playground/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/forty-cdk-playground/tsconfig.spec.json"
     }
   ]
 }

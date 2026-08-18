@@ -263,6 +263,15 @@
             }
           },
           "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/forty-cdk-playground/tsconfig.spec.json",
+            "runnerConfig": true,
+            "setupFiles": ["projects/forty-cdk/src/test-utils/vitest-invariants-setup.ts"],
+            "include": ["**/*.spec.ts"]
+          }
         }
       }
     }

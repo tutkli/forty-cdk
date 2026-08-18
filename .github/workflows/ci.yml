@@ -63,6 +63,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
+      # The docs pipeline's characterization suite (#1805). It rides the same
+      # job because it is ~20s against `pnpm test`'s ~80s and shares the
+      # runner's warm pnpm store; a job of its own would spend more time on
+      # checkout and install than on tests.
+      - run: pnpm test:docs
 
   # Sharded across 3 runners per browser engine. The single-job shape this
   # replaced could not pass: the suite needs ~19 min of wall clock at
