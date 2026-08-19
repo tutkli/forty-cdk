@@ -77,13 +77,31 @@ jobs:
   # leaves 2x headroom, and `retries: 0` (see playwright.config.ts) means a
   # race is reported instead of retried away.
   #
-  # One engine per job so the browser cache holds exactly what the job needs;
-  # the emulated mobile project riding the same engine joins it, since
-  # `@mobile`-tagged tests are cheap and would otherwise need a job of their
-  # own to download a second browser for.
+  # One engine per job so a WebKit-only regression is read off the shard names
+  # rather than a merged log; the emulated mobile project riding the same engine
+  # joins it, since `@mobile`-tagged tests are cheap and a job of their own
+  # would buy nothing.
   e2e:
     name: E2E (${{ matrix.browser }} ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    # The official image ships both engines and every system library they need.
+    # That is the whole point of it here: the `playwright install-deps` step it
+    # replaces ran a full apt round on each of the six shards — the browser
+    # cache holds binaries, never packages, so the cache-hit path paid for it
+    # too — and a runner that drew a degraded Ubuntu mirror hung there until the
+    # job timed out, reporting `cancelled` with every test `skipped`. Measured
+    # inside one run: one shard fetched its 21 MB in 1s at 21.8 MB/s while
+    # another crawled at ~7 kB/s past the 20 minute mark, and on another day
+    # `azure.archive.ubuntu.com` answered `Ign:` to everything and even
+    # `apt-get update` never returned from the fallback mirror.
+    #
+    # `--user 1001` is the uid the workspace is mounted with, so nothing the run
+    # writes is left owned by root. `--ipc=host` is Playwright's own
+    # recommendation for Chromium, which otherwise exhausts the container's
+    # default 64 MB `/dev/shm` and crashes mid-suite.
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+      options: --user 1001 --ipc=host
     timeout-minutes: 20
     strategy:
       # One shard's failure must not cancel the others: partial results across
@@ -105,23 +123,22 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Resolve Playwright version
-        id: pw
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          # Keyed by engine: a job that installs only Chromium must not publish
-          # its cache under a key a WebKit job would then restore and trust.
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-${{ matrix.browser }}
-      - name: Install Playwright browser
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
-      - name: Install system deps for cached browser
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps ${{ matrix.browser }}
+      # The image tag and `@playwright/test` have to move together: the
+      # container ships its builds under `/ms-playwright/<engine>-<revision>`,
+      # and a package bumped without the tag looks for a revision that is not
+      # there. Playwright's own error for that reads "please run playwright
+      # install", which is the wrong repair inside a container and would send
+      # the reader to reinstate the apt round this job exists to avoid — so the
+      # mismatch fails here instead, before `ng serve` spends two minutes
+      # building the harness, and names the tag as the thing to bump.
+      - name: Verify the image ships this Playwright's browsers
+        run: |
+          expected=$(pnpm exec playwright install --dry-run ${{ matrix.browser }} | sed -n 's/^ *Install location: *//p' | head -1)
+          if [ ! -d "$expected" ]; then
+            echo "::error::@playwright/test $(node -p "require('@playwright/test/package.json').version") expects ${{ matrix.browser }} at $expected, which this container does not ship. Bump the image tag in this workflow to match the package."
+            exit 1
+          fi
+          echo "$expected"
       - run: pnpm exec playwright test ${{ matrix.projects }} --shard=${{ matrix.shard }}/3
       - name: Upload blob report
         if: ${{ !cancelled() }}
