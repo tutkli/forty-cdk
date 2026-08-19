@@ -94,8 +94,6 @@ function indexModule(documents) {
   const entries = documents.map((document) => ({
     kind: document.kind,
     slug: document.slug,
-    path: document.path,
-    title: document.title,
     sections: document.sections.map((section) => ({ title: section.title, slug: section.slug })),
   }));
   return (
