@@ -4,6 +4,8 @@ export declare const GITHUB_REPO: string;
 
 export declare const GITHUB_BLOB_BASE: string;
 
+export declare const DOC_BASE_TOKEN: string;
+
 export interface DocLinkContext {
   readonly sourcePath: string;
   readonly routes: ReadonlyMap<string, string>;

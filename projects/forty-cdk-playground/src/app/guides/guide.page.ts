@@ -2,14 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
+import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
-import { injectDocLinkResolver } from '../doc/doc-routes';
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
-import type { DocSection as DocSectionModel } from '../doc/doc-model';
+import type { DocPageSection } from '../doc/doc-model';
 import { guideBySlug } from '../doc/guides';
-import { headingText, renderDocProse, type DocRenderContext } from '../doc/markdown';
 import { GUIDE_DOCS } from '../../generated/guide-docs.generated';
 
 @Component({
@@ -34,7 +33,7 @@ import { GUIDE_DOCS } from '../../generated/guide-docs.generated';
         }
 
         @for (section of sections(); track section.slug) {
-          <doc-section [section]="section" [context]="context()" />
+          <doc-section [section]="section" />
         }
       </div>
 
@@ -122,7 +121,7 @@ import { GUIDE_DOCS } from '../../generated/guide-docs.generated';
 })
 export class GuidePage {
   readonly #sanitizer = inject(DomSanitizer);
-  readonly #resolveLink = injectDocLinkResolver();
+  readonly #base = injectDocBase();
 
   readonly slug = input.required<string>();
 
@@ -137,15 +136,9 @@ export class GuidePage {
     return doc;
   });
 
-  protected readonly context = computed<DocRenderContext>(() => ({
-    sourcePath: this.#doc().path,
-    resolveLink: this.#resolveLink,
-  }));
-
   protected readonly introHtml = computed(() => {
-    const context = this.context();
     const intro = this.#doc()
-      .intro.map((block) => renderDocProse(block, context))
+      .intro.map((block) => this.#base(block.html))
       .join('');
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
   });
@@ -153,10 +146,10 @@ export class GuidePage {
   protected readonly sections = computed(() => this.#doc().sections);
 
   protected readonly tocItems = computed<readonly TocItem[]>(() =>
-    this.sections().map((section: DocSectionModel) => {
+    this.sections().map((section: DocPageSection) => {
       const children = section.headings
         .filter((heading) => heading.depth === 3)
-        .map((heading) => ({ title: headingText(heading.text), slug: heading.slug }));
+        .map((heading) => ({ title: heading.text, slug: heading.slug }));
       return {
         title: section.title,
         slug: section.slug,

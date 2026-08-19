@@ -1,17 +1,15 @@
 export type {
-  DocApiColumns,
-  DocApiRow,
-  DocApiTable,
-  DocBlock,
-  DocDocument,
-  DocHeading,
-  DocKind,
-  DocPlainTable,
-  DocProseBlock,
-  DocSection,
-  DocTable,
-  DocTableBlock,
-} from '../../../../../scripts/docs/doc-model.mjs';
+  DocPage,
+  DocPageApiColumns,
+  DocPageApiRow,
+  DocPageApiTable,
+  DocPageBlock,
+  DocPageCell,
+  DocPageHeading,
+  DocPagePlainTable,
+  DocPageSection,
+  DocPageTable,
+} from '../../../../../scripts/docs/doc-render.mjs';
 
 /**
  * One document as the `⌘K` palette knows it: which sections it has and what

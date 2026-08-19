@@ -5,14 +5,14 @@ import { RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
 import { ApiTable } from './api-table';
 import { CompactTable } from './compact-table';
-import type { DocSection as DocSectionModel } from './doc-model';
+import { injectDocBase } from './doc-base';
+import type { DocPageSection } from './doc-model';
 import {
   renderApiTable,
   renderPlainTable,
   type RenderedApiTable,
   type RenderedPlainTable,
 } from './doc-table';
-import { renderDocProse, type DocRenderContext } from './markdown';
 
 type RenderedBlock =
   | { readonly kind: 'prose'; readonly html: SafeHtml }
@@ -54,22 +54,21 @@ type RenderedBlock =
 })
 export class DocSection {
   readonly #sanitizer = inject(DomSanitizer);
+  readonly #base = injectDocBase();
 
-  readonly section = input.required<DocSectionModel>();
-  readonly context = input<DocRenderContext | null>(null);
+  readonly section = input.required<DocPageSection>();
 
-  protected readonly blocks = computed<readonly RenderedBlock[]>(() => {
-    const context = this.context();
-    return this.section().blocks.map((block): RenderedBlock => {
+  protected readonly blocks = computed<readonly RenderedBlock[]>(() =>
+    this.section().blocks.map((block): RenderedBlock => {
       if (block.kind === 'prose') {
         return {
           kind: 'prose',
-          html: this.#sanitizer.bypassSecurityTrustHtml(renderDocProse(block, context)),
+          html: this.#sanitizer.bypassSecurityTrustHtml(this.#base(block.html)),
         };
       }
       return block.table.role === 'api'
-        ? { kind: 'api', table: renderApiTable(block.table, this.#sanitizer, context) }
-        : { kind: 'plain', table: renderPlainTable(block.table, this.#sanitizer, context) };
-    });
-  });
+        ? { kind: 'api', table: renderApiTable(block.table, this.#sanitizer, this.#base) }
+        : { kind: 'plain', table: renderPlainTable(block.table, this.#sanitizer, this.#base) };
+    }),
+  );
 }

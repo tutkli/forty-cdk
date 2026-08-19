@@ -123,6 +123,10 @@ export interface DocLocation {
   readonly kind: DocKind;
 }
 
+export declare const FENCE_LANGUAGE_NAMES: readonly string[];
+
+export declare function resolveFenceLanguage(lang: string | undefined): string | null;
+
 export declare function compileDocument(source: string, location: DocLocation): DocDocument;
 
 export declare function anchorsOf(document: DocDocument): readonly string[];

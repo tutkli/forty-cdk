@@ -1,7 +1,7 @@
 import type { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
-import type { DocApiTable, DocPlainTable } from './doc-model';
-import { renderDocCell, type DocRenderContext } from './markdown';
+import type { DocBase } from './doc-base';
+import type { DocPageApiTable, DocPageCell, DocPagePlainTable } from './doc-model';
 
 /** One documented member, rendered once for both the table and its popover. */
 export interface RenderedApiRow {
@@ -48,27 +48,29 @@ export interface RenderedPlainCell {
  * Every cell is addressed by the column the compiler resolved it under, so a
  * row that lost or gained a cell cannot shift a description into a column
  * nothing paints — the shape was settled at build time
- * ([#1806](https://github.com/tutkli/forty-cdk/issues/1806)).
+ * ([#1806](https://github.com/tutkli/forty-cdk/issues/1806)), and so was the
+ * markup, which reaches here needing a base href and a trust decision and
+ * nothing else ([#1807](https://github.com/tutkli/forty-cdk/issues/1807)).
  */
 export function renderApiTable(
-  table: DocApiTable,
+  table: DocPageApiTable,
   sanitizer: DomSanitizer,
-  context: DocRenderContext | null,
+  base: DocBase,
 ): RenderedApiTable {
-  const cell = (markdown: string): { html: SafeHtml; text: string } => {
-    const rendered = renderDocCell(markdown, context ?? undefined);
-    return { html: sanitizer.bypassSecurityTrustHtml(rendered.html), text: rendered.text };
-  };
+  const cell = (value: DocPageCell | null): { html: SafeHtml; text: string } => ({
+    html: sanitizer.bypassSecurityTrustHtml(base(value?.html ?? '')),
+    text: value?.text ?? '',
+  });
   const hasDefault = table.columns.default !== null;
   return {
-    property: stripMarkup(table.columns.property),
-    type: stripMarkup(table.columns.type),
-    default: table.columns.default === null ? null : stripMarkup(table.columns.default),
-    description: stripMarkup(table.columns.description),
+    property: table.columns.property,
+    type: table.columns.type,
+    default: table.columns.default,
+    description: table.columns.description,
     rows: table.rows.map((row) => {
       const property = cell(row.property);
       const type = cell(row.type);
-      const defaultValue = cell(row.default ?? '');
+      const defaultValue = cell(row.default);
       const description = cell(row.description);
       const typeFull = type.text.trim();
       const typeKind = typeFull.split('<')[0]!.trim() || typeFull;
@@ -90,29 +92,25 @@ export function renderApiTable(
 
 /** Render any other table, keeping its header row and equal-width data rows. */
 export function renderPlainTable(
-  table: DocPlainTable,
+  table: DocPagePlainTable,
   sanitizer: DomSanitizer,
-  context: DocRenderContext | null,
+  base: DocBase,
 ): RenderedPlainTable {
   const headers = table.columns.map((column) =>
-    sanitizer.bypassSecurityTrustHtml(renderDocCell(column, context ?? undefined).html),
+    sanitizer.bypassSecurityTrustHtml(base(column.html)),
   );
   return {
     columns: headers,
     rows: table.rows.map((cells) => {
-      const label = renderDocCell(cells[0] ?? '', context ?? undefined);
+      const label = cells[0];
       return {
-        label: sanitizer.bypassSecurityTrustHtml(label.html),
-        labelText: label.text,
+        label: sanitizer.bypassSecurityTrustHtml(base(label?.html ?? '')),
+        labelText: label?.text ?? '',
         details: cells.slice(1).map((value, index) => ({
           header: headers[index + 1] ?? sanitizer.bypassSecurityTrustHtml(''),
-          value: sanitizer.bypassSecurityTrustHtml(renderDocCell(value, context ?? undefined).html),
+          value: sanitizer.bypassSecurityTrustHtml(base(value.html)),
         })),
       };
     }),
   };
-}
-
-function stripMarkup(markdown: string): string {
-  return markdown.replace(/`/g, '').trim();
 }

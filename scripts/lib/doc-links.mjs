@@ -8,6 +8,18 @@ export const GITHUB_REPO = 'https://github.com/tutkli/forty-cdk';
 
 export const GITHUB_BLOB_BASE = `${GITHUB_REPO}/blob/main/`;
 
+/**
+ * The stand-in a build-time resolver writes where the site's base href belongs.
+ *
+ * A document is rendered once, before anything knows which path the site will
+ * be served from, while the base href is only settled when the app runs — under
+ * `/forty-cdk/` on Pages and under `/` on a dev server. The token keeps the two
+ * apart: the renderer writes it, and the page substitutes the base it was given.
+ * An href that reaches the browser still carrying it is a substitution that never
+ * happened, and reads as neither a route nor a relative link.
+ */
+export const DOC_BASE_TOKEN = '%DOC_BASE%';
+
 export function splitDocHref(href) {
   const hashAt = href.indexOf('#');
   if (hashAt < 0) {

@@ -17,7 +17,6 @@ import { ForToastManager } from 'forty-cdk/toast';
 
 import { EXAMPLE_SOURCES } from '../doc/example-source';
 import { slugify } from '../../../../../scripts/lib/readme-slug.mjs';
-import { renderInlineMarkdown } from '../doc/markdown';
 import { GITHUB_BLOB_BASE } from './github';
 import { Icon } from './icon';
 
@@ -237,6 +236,7 @@ export class DemoLayout {
   readonly #destroyRef = inject(DestroyRef);
 
   readonly title = input<string>('');
+  /** Inline HTML, bound as written — a demo subtitle is authored, not compiled. */
   readonly subtitle = input<string>('');
   readonly sourcePath = input.required<string>();
   readonly hero = input(false, { transform: booleanAttribute });
@@ -262,9 +262,7 @@ export class DemoLayout {
 
   protected readonly subtitleHtml = computed<SafeHtml | null>(() => {
     const subtitle = this.subtitle();
-    return subtitle
-      ? this.#sanitizer.bypassSecurityTrustHtml(renderInlineMarkdown(subtitle))
-      : null;
+    return subtitle ? this.#sanitizer.bypassSecurityTrustHtml(subtitle) : null;
   });
 
   protected readonly copyLabel = computed(() =>
