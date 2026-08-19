@@ -9,7 +9,7 @@ import { TreeDndExample } from './examples/dnd.example';
 import { TreeFilterExample } from './examples/filter.example';
 import { TreeVirtualizedExample } from './examples/virtualized.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/tree/README.md';
+import { DOC } from '../../../generated/docs/primitives/tree.generated';
 
 @Component({
   selector: 'app-tree-page',
@@ -25,7 +25,7 @@ import readmeContent from '../../../../../forty-cdk/tree/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="tree" [readme]="readme">
+    <primitive-page slug="tree" [doc]="doc">
       <playground-demo hero sourcePath="tree/examples/default.example.ts">
         <app-tree-default-example />
       </playground-demo>
@@ -65,5 +65,5 @@ import readmeContent from '../../../../../forty-cdk/tree/README.md';
   `,
 })
 export class TreePage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

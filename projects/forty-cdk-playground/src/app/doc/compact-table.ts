@@ -1,19 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import { DomSanitizer, type SafeHtml } from '@angular/platform-browser';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { DocTablePopover } from './doc-table-popover';
-import type { DocTableData } from './markdown';
+import type { RenderedPlainTable } from './doc-table';
 
-interface DetailCell {
-  readonly header: SafeHtml;
-  readonly value: SafeHtml;
-}
-
-interface CompactRow {
-  readonly label: SafeHtml;
-  readonly labelText: string;
-  readonly details: readonly DetailCell[];
-}
+export type { RenderedPlainTable } from './doc-table';
 
 @Component({
   selector: 'compact-table',
@@ -24,14 +14,14 @@ interface CompactRow {
       <table class="pg-doc-table compact-table">
         <thead>
           <tr>
-            @for (column of columns(); track $index) {
+            @for (column of table().columns; track $index) {
               <th [class]="$index === 0 ? 'ct-label' : 'ct-detail'" [innerHTML]="column"></th>
             }
             <th class="ct-info-col" aria-hidden="true"></th>
           </tr>
         </thead>
         <tbody>
-          @for (row of rows(); track $index) {
+          @for (row of table().rows; track $index) {
             <tr>
               <td class="ct-label" [innerHTML]="row.label"></td>
               @for (detail of row.details; track $index) {
@@ -63,29 +53,7 @@ interface CompactRow {
   `,
 })
 export class CompactTable {
-  readonly #sanitizer = inject(DomSanitizer);
-
-  readonly table = input.required<DocTableData>();
-
-  protected readonly columns = computed(() =>
-    this.table().columns.map((column) => this.#sanitizer.bypassSecurityTrustHtml(column)),
-  );
+  readonly table = input.required<RenderedPlainTable>();
 
   protected readonly showHeaders = computed(() => this.table().columns.length > 2);
-
-  protected readonly rows = computed<readonly CompactRow[]>(() => {
-    const headers = this.table().columns;
-    return this.table().rows.map((cells) => {
-      const label = cells[0] ?? { html: '', text: '' };
-      const details = cells.slice(1).map((cell, index) => ({
-        header: this.#sanitizer.bypassSecurityTrustHtml(headers[index + 1] ?? ''),
-        value: this.#sanitizer.bypassSecurityTrustHtml(cell.html),
-      }));
-      return {
-        label: this.#sanitizer.bypassSecurityTrustHtml(label.html),
-        labelText: label.text,
-        details,
-      };
-    });
-  });
 }

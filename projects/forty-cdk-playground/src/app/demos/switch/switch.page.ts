@@ -8,7 +8,7 @@ import { SwitchDisabledExample } from './examples/disabled.example';
 import { SwitchFormFieldExample } from './examples/form-field.example';
 import { SwitchReadOnlyExample } from './examples/read-only.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/switch/README.md';
+import { DOC } from '../../../generated/docs/primitives/switch.generated';
 
 @Component({
   selector: 'app-switch-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="switch" [readme]="readme">
+    <primitive-page slug="switch" [doc]="doc">
       <playground-demo hero sourcePath="switch/examples/default.example.ts">
         <app-switch-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/switch/README.md';
   `,
 })
 export class SwitchPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

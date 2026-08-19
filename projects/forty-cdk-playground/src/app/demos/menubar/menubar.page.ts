@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { MenubarDefaultExample } from './examples/default.example';
 import { MenubarVerticalRtlExample } from './examples/vertical-rtl.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/menubar/README.md';
+import { DOC } from '../../../generated/docs/primitives/menubar.generated';
 
 @Component({
   selector: 'app-menubar-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/menubar/README.md';
   imports: [PrimitivePage, DemoLayout, MenubarDefaultExample, MenubarVerticalRtlExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="menubar" [readme]="readme">
+    <primitive-page slug="menubar" [doc]="doc">
       <playground-demo hero sourcePath="menubar/examples/default.example.ts">
         <app-menubar-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/menubar/README.md';
   `,
 })
 export class MenubarPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

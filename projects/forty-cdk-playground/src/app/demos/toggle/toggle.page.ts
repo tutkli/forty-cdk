@@ -8,7 +8,7 @@ import { ToggleDisabledExample } from './examples/disabled.example';
 import { ToggleFormFieldExample } from './examples/form-field.example';
 import { ToggleGroupExample } from './examples/group.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/toggle/README.md';
+import { DOC } from '../../../generated/docs/primitives/toggle.generated';
 
 @Component({
   selector: 'app-toggle-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/toggle/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="toggle" [readme]="readme">
+    <primitive-page slug="toggle" [doc]="doc">
       <playground-demo hero sourcePath="toggle/examples/default.example.ts">
         <app-toggle-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/toggle/README.md';
   `,
 })
 export class TogglePage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

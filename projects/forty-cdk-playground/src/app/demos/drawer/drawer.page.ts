@@ -10,7 +10,7 @@ import { DrawerRegionScopedExample } from './examples/region-scoped.example';
 import { DrawerScaleBackgroundExample } from './examples/scale-background.example';
 import { DrawerSnapPointsExample } from './examples/snap-points.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/drawer/README.md';
+import { DOC } from '../../../generated/docs/primitives/drawer.generated';
 
 @Component({
   selector: 'app-drawer-page',
@@ -27,7 +27,7 @@ import readmeContent from '../../../../../forty-cdk/drawer/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="drawer" [readme]="readme">
+    <primitive-page slug="drawer" [doc]="doc">
       <playground-demo hero sourcePath="drawer/examples/default.example.ts">
         <app-drawer-default-example />
       </playground-demo>
@@ -75,5 +75,5 @@ import readmeContent from '../../../../../forty-cdk/drawer/README.md';
   `,
 })
 export class DrawerPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

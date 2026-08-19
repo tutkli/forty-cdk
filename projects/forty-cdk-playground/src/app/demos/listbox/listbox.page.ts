@@ -10,7 +10,7 @@ import { ListboxMultiSelectExample } from './examples/multi-select.example';
 import { ListboxReorderExample } from './examples/reorder.example';
 import { ListboxVirtualizedExample } from './examples/virtualized.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/listbox/README.md';
+import { DOC } from '../../../generated/docs/primitives/listbox.generated';
 
 @Component({
   selector: 'app-listbox-page',
@@ -27,7 +27,7 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="listbox" [readme]="readme">
+    <primitive-page slug="listbox" [doc]="doc">
       <playground-demo hero sourcePath="listbox/examples/default.example.ts">
         <app-listbox-default-example />
       </playground-demo>
@@ -75,5 +75,5 @@ import readmeContent from '../../../../../forty-cdk/listbox/README.md';
   `,
 })
 export class ListboxPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

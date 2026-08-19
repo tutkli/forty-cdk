@@ -4,8 +4,8 @@ import { join, relative, sep } from 'node:path';
 import { JSDOM } from 'jsdom';
 
 import { isAbsoluteHref, splitDocHref } from './lib/doc-links.mjs';
-import { DOCS_DIR, LIBRARY_DIR, readGuides, readPrimitives, sectionsOf } from './lib/doc-site.mjs';
-import { isFenceLine, isTableDelimiter, slugify } from './lib/readme-slug.mjs';
+import { compileDocument } from './docs/doc-model.mjs';
+import { DOCS_DIR, LIBRARY_DIR, readGuides, readPrimitives } from './lib/doc-site.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 /**
@@ -108,44 +108,27 @@ function indexFiles(dir, found = []) {
 }
 
 /**
- * Counts the tables a document declares outside {@link EXAMPLES_SECTION} and
- * collects the anchors of the headings it nests inside it, so a fragment that
- * resolves only on GitHub is reported with its cause rather than as a mystery.
+ * The tables a document declares outside {@link EXAMPLES_SECTION} and the
+ * anchors of the headings it nests inside it, so a fragment that resolves only
+ * on GitHub is reported with its cause rather than as a mystery.
+ *
+ * Read off the compiled model rather than scanned for a second time
+ * ([#1806](https://github.com/tutkli/forty-cdk/issues/1806)): a gate that
+ * reimplements the pipeline it gates can only tell you the two agree with each
+ * other.
  */
-function readDocumentShape(md) {
-  const lines = md.split('\n');
-  let inFence = false;
-  let inExamples = false;
+function readDocumentShape(document) {
   let tables = 0;
   const exampleAnchors = new Set();
 
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    if (isFenceLine(line)) {
-      inFence = !inFence;
-      continue;
-    }
-    if (inFence) {
-      continue;
-    }
-    if (/^## /.test(line)) {
-      inExamples = slugify(line.slice(3).trim()) === EXAMPLES_SECTION;
-      continue;
-    }
-    if (inExamples) {
-      const heading = /^#{3,6}\s+(.+)$/.exec(line);
-      if (heading) {
-        exampleAnchors.add(slugify(heading[1].trim()));
+  for (const section of document.sections) {
+    if (section.slug === EXAMPLES_SECTION) {
+      for (const heading of section.headings) {
+        exampleAnchors.add(heading.slug);
       }
       continue;
     }
-    if (line.includes('|') && line.trim() !== '' && isTableDelimiter(lines[i + 1])) {
-      tables += 1;
-      while (i < lines.length && lines[i].includes('|') && lines[i].trim() !== '') {
-        i += 1;
-      }
-      i -= 1;
-    }
+    tables += section.blocks.filter((block) => block.kind === 'table').length;
   }
 
   return { tables, exampleAnchors };
@@ -164,11 +147,25 @@ const documents = new Map();
 for (const { slug } of primitives) {
   const file = join(LIBRARY_DIR, slug, 'README.md');
   if (existsSync(file)) {
-    documents.set(slug, readFileSync(file, 'utf8'));
+    documents.set(
+      slug,
+      compileDocument(readFileSync(file, 'utf8'), {
+        path: `projects/forty-cdk/${slug}/README.md`,
+        slug,
+        kind: 'primitive',
+      }),
+    );
   }
 }
 for (const guide of guides) {
-  documents.set(`guides/${guide.slug}`, readFileSync(join(DOCS_DIR, guide.file), 'utf8'));
+  documents.set(
+    `guides/${guide.slug}`,
+    compileDocument(readFileSync(join(DOCS_DIR, guide.file), 'utf8'), {
+      path: `docs/${guide.file}`,
+      slug: guide.slug,
+      kind: 'guide',
+    }),
+  );
 }
 
 const knownRoutes = new Set([
@@ -258,9 +255,9 @@ function checkFragment(at, href, target, anchor) {
     return null;
   }
 
-  const md = documents.get(target);
+  const document = documents.get(target);
   const cause =
-    md !== undefined && readDocumentShape(md).exampleAnchors.has(anchor)
+    document !== undefined && readDocumentShape(document).exampleAnchors.has(anchor)
       ? '; the heading is nested under "## Examples", whose body the site replaces with its live demos'
       : '';
   const where = at === `/${target}` ? 'this page' : target === '' ? 'the home page' : `/${target}`;
@@ -353,14 +350,14 @@ for (const [route, page] of pages) {
     continue;
   }
 
-  const md = documents.get(route);
-  if (md === undefined) {
+  const document = documents.get(route);
+  if (document === undefined) {
     failures.push(`${at} — no document behind this page, so nothing gates what it renders`);
     continue;
   }
 
-  for (const section of sectionsOf(md)) {
-    if (!page.sections.has(section.anchor)) {
+  for (const section of document.sections) {
+    if (!page.sections.has(section.slug)) {
       failures.push(
         `${at} — the document declares "## ${section.title}" and the page emits no section for it`,
       );
@@ -373,7 +370,7 @@ for (const [route, page] of pages) {
     }
   }
 
-  const shape = readDocumentShape(md);
+  const shape = readDocumentShape(document);
   declaredTables += shape.tables;
   if (page.tables < shape.tables) {
     failures.push(

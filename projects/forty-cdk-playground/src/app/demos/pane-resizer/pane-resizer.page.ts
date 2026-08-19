@@ -7,7 +7,7 @@ import { PaneResizerCollapsibleExample } from './examples/collapsible.example';
 import { PaneResizerDisabledExample } from './examples/disabled.example';
 import { PaneResizerResizeExample } from './examples/resize.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/pane-resizer/README.md';
+import { DOC } from '../../../generated/docs/primitives/pane-resizer.generated';
 
 @Component({
   selector: 'app-pane-resizer-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/pane-resizer/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="pane-resizer" [readme]="readme">
+    <primitive-page slug="pane-resizer" [doc]="doc">
       <playground-demo hero sourcePath="pane-resizer/examples/resize.example.ts">
         <app-pane-resizer-resize-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/pane-resizer/README.md';
   `,
 })
 export class PaneResizerPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

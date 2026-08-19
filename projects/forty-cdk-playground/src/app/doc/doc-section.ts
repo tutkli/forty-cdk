@@ -5,23 +5,19 @@ import { RouterLink } from '@angular/router';
 import { Icon } from '../ui/icon';
 import { ApiTable } from './api-table';
 import { CompactTable } from './compact-table';
-import { type DocSectionData, type DocTableData, stripText } from './markdown';
+import type { DocSection as DocSectionModel } from './doc-model';
+import {
+  renderApiTable,
+  renderPlainTable,
+  type RenderedApiTable,
+  type RenderedPlainTable,
+} from './doc-table';
+import { renderDocProse, type DocRenderContext } from './markdown';
 
-function columnLabel(column: string | undefined): string {
-  return stripText(column ?? '').toLowerCase();
-}
-
-function isApiTable(table: DocTableData): boolean {
-  const { columns } = table;
-  if (columnLabel(columns[1]) !== 'type') {
-    return false;
-  }
-  return columns.length === 3 || (columns.length === 4 && columnLabel(columns[2]) === 'default');
-}
-
-type PreparedBlock =
-  | { readonly kind: 'html'; readonly html: SafeHtml }
-  | { readonly kind: 'table'; readonly table: DocTableData; readonly isApi: boolean };
+type RenderedBlock =
+  | { readonly kind: 'prose'; readonly html: SafeHtml }
+  | { readonly kind: 'api'; readonly table: RenderedApiTable }
+  | { readonly kind: 'plain'; readonly table: RenderedPlainTable };
 
 @Component({
   selector: 'doc-section',
@@ -41,12 +37,16 @@ type PreparedBlock =
         </a>
       </h2>
       @for (block of blocks(); track $index) {
-        @if (block.kind === 'html') {
-          <div class="pg-doc-prose" [innerHTML]="block.html"></div>
-        } @else if (block.isApi) {
-          <api-table [table]="block.table" />
-        } @else {
-          <compact-table [table]="block.table" />
+        @switch (block.kind) {
+          @case ('prose') {
+            <div class="pg-doc-prose" [innerHTML]="block.html"></div>
+          }
+          @case ('api') {
+            <api-table [table]="block.table" />
+          }
+          @case ('plain') {
+            <compact-table [table]="block.table" />
+          }
         }
       }
     </section>
@@ -55,13 +55,21 @@ type PreparedBlock =
 export class DocSection {
   readonly #sanitizer = inject(DomSanitizer);
 
-  readonly section = input.required<DocSectionData>();
+  readonly section = input.required<DocSectionModel>();
+  readonly context = input<DocRenderContext | null>(null);
 
-  protected readonly blocks = computed<readonly PreparedBlock[]>(() =>
-    this.section().blocks.map((block) =>
-      block.kind === 'html'
-        ? { kind: 'html', html: this.#sanitizer.bypassSecurityTrustHtml(block.html) }
-        : { kind: 'table', table: block.table, isApi: isApiTable(block.table) },
-    ),
-  );
+  protected readonly blocks = computed<readonly RenderedBlock[]>(() => {
+    const context = this.context();
+    return this.section().blocks.map((block): RenderedBlock => {
+      if (block.kind === 'prose') {
+        return {
+          kind: 'prose',
+          html: this.#sanitizer.bypassSecurityTrustHtml(renderDocProse(block, context)),
+        };
+      }
+      return block.table.role === 'api'
+        ? { kind: 'api', table: renderApiTable(block.table, this.#sanitizer, context) }
+        : { kind: 'plain', table: renderPlainTable(block.table, this.#sanitizer, context) };
+    });
+  });
 }

@@ -7,7 +7,7 @@ import { ToastActionExample } from './examples/action.example';
 import { ToastDefaultExample } from './examples/default.example';
 import { ToastSwipeExample } from './examples/swipe-to-dismiss.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/toast/README.md';
+import { DOC } from '../../../generated/docs/primitives/toast.generated';
 
 @Component({
   selector: 'app-toast-page',
@@ -15,7 +15,7 @@ import readmeContent from '../../../../../forty-cdk/toast/README.md';
   imports: [PrimitivePage, DemoLayout, ToastDefaultExample, ToastActionExample, ToastSwipeExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="toast" [readme]="readme">
+    <primitive-page slug="toast" [doc]="doc">
       <playground-demo hero sourcePath="toast/examples/default.example.ts">
         <app-toast-default-example />
       </playground-demo>
@@ -39,5 +39,5 @@ import readmeContent from '../../../../../forty-cdk/toast/README.md';
   `,
 })
 export class ToastPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

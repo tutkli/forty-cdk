@@ -8,7 +8,7 @@ import { FileUploadDirectoryExample } from './examples/directory.example';
 import { FileUploadDisabledExample } from './examples/disabled.example';
 import { FileUploadMultipleExample } from './examples/multiple.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/file-upload/README.md';
+import { DOC } from '../../../generated/docs/primitives/file-upload.generated';
 
 @Component({
   selector: 'app-file-upload-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/file-upload/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="file-upload" [readme]="readme">
+    <primitive-page slug="file-upload" [doc]="doc">
       <playground-demo hero sourcePath="file-upload/examples/default.example.ts">
         <app-file-upload-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/file-upload/README.md';
   `,
 })
 export class FileUploadPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

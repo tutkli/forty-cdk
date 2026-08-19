@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { AvatarDefaultExample } from './examples/default.example';
 import { AvatarFallbackExample } from './examples/fallback.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/avatar/README.md';
+import { DOC } from '../../../generated/docs/primitives/avatar.generated';
 
 @Component({
   selector: 'app-avatar-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/avatar/README.md';
   imports: [PrimitivePage, DemoLayout, AvatarDefaultExample, AvatarFallbackExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="avatar" [readme]="readme">
+    <primitive-page slug="avatar" [doc]="doc">
       <playground-demo hero sourcePath="avatar/examples/default.example.ts">
         <app-avatar-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/avatar/README.md';
   `,
 })
 export class AvatarPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

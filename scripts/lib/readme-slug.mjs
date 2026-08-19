@@ -23,7 +23,3 @@ export class Slugger {
 export function isFenceLine(line) {
   return /^\s*(```|~~~)/.test(line);
 }
-
-export function isTableDelimiter(line) {
-  return line !== undefined && /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(line) && line.includes('-');
-}

@@ -7,7 +7,7 @@ import { StepperDefaultExample } from './examples/default.example';
 import { StepperFormExample } from './examples/form.example';
 import { StepperProgressExample } from './examples/progress.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/stepper/README.md';
+import { DOC } from '../../../generated/docs/primitives/stepper.generated';
 
 @Component({
   selector: 'app-stepper-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/stepper/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="stepper" [readme]="readme">
+    <primitive-page slug="stepper" [doc]="doc">
       <playground-demo
         hero
         subtitle="The WAI-ARIA Tabs pattern: roving tabindex over the triggers, <kbd>←</kbd> / <kbd>→</kbd> / <kbd>Home</kbd> / <kbd>End</kbd> to move focus, and a content panel per step. Indicators reflect each step's <code>data-state</code>. Pressing Next on the last step advances into the terminal completed state, revealing the <code>forStepperCompletedContent</code> panel."
@@ -49,5 +49,5 @@ import readmeContent from '../../../../../forty-cdk/stepper/README.md';
   `,
 })
 export class StepperPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

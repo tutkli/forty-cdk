@@ -5,7 +5,7 @@ import { DemoLayout } from '../../ui/demo-layout';
 import { PrimitivePage } from '../../ui/primitive-page';
 import { SeparatorDefaultExample } from './examples/default.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/separator/README.md';
+import { DOC } from '../../../generated/docs/primitives/separator.generated';
 
 @Component({
   selector: 'app-separator-page',
@@ -13,7 +13,7 @@ import readmeContent from '../../../../../forty-cdk/separator/README.md';
   imports: [PrimitivePage, DemoLayout, SeparatorDefaultExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="separator" [readme]="readme">
+    <primitive-page slug="separator" [doc]="doc">
       <playground-demo hero sourcePath="separator/examples/default.example.ts">
         <app-separator-default-example />
       </playground-demo>
@@ -21,5 +21,5 @@ import readmeContent from '../../../../../forty-cdk/separator/README.md';
   `,
 })
 export class SeparatorPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

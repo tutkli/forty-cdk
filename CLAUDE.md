@@ -18,7 +18,7 @@ The repo uses **pnpm** (pinned via `packageManager` in `package.json`, activated
 pnpm build                 # ng build forty-cdk (production, ng-packagr → dist/forty-cdk)
 pnpm watch                 # ng build forty-cdk --watch --configuration development
 pnpm test                  # ng test forty-cdk → @angular/build:unit-test (Vitest + jsdom)
-pnpm test:docs             # gen:playground-data + ng test forty-cdk-playground → the docs pipeline's characterization suite
+pnpm test:docs             # gen:playground-data + ng test forty-cdk-playground → the docs content compiler + its suite
 pnpm exec ng test forty-cdk --watch  # watch mode for tests
 pnpm lint                  # eslint . (flat config, codifies CLAUDE.md non-negotiables)
 pnpm test:e2e              # playwright test (Chromium + WebKit; spins ng serve forty-cdk-harness)

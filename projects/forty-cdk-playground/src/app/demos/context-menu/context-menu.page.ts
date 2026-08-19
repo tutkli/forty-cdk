@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { ContextMenuDefaultExample } from './examples/default.example';
 import { ContextMenuRichContentExample } from './examples/rich-content.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/context-menu/README.md';
+import { DOC } from '../../../generated/docs/primitives/context-menu.generated';
 
 @Component({
   selector: 'app-context-menu-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/context-menu/README.md';
   imports: [PrimitivePage, DemoLayout, ContextMenuDefaultExample, ContextMenuRichContentExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="context-menu" [readme]="readme">
+    <primitive-page slug="context-menu" [doc]="doc">
       <playground-demo hero sourcePath="context-menu/examples/default.example.ts">
         <app-context-menu-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/context-menu/README.md';
   `,
 })
 export class ContextMenuPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

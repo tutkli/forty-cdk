@@ -7,7 +7,7 @@ import { RadioGroupDefaultExample } from './examples/default.example';
 import { RadioGroupFormFieldExample } from './examples/form-field.example';
 import { RadioGroupHorizontalExample } from './examples/horizontal.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
+import { DOC } from '../../../generated/docs/primitives/radio-group.generated';
 
 @Component({
   selector: 'app-radio-group-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="radio-group" [readme]="readme">
+    <primitive-page slug="radio-group" [doc]="doc">
       <playground-demo hero sourcePath="radio-group/examples/default.example.ts">
         <app-radio-group-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/radio-group/README.md';
   `,
 })
 export class RadioGroupPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

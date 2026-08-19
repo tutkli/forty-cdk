@@ -10,7 +10,7 @@ import { SelectMultipleExample } from './examples/multiple.example';
 import { SelectObjectValuesExample } from './examples/object-values.example';
 import { SelectVirtualizedExample } from './examples/virtualized.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/select/README.md';
+import { DOC } from '../../../generated/docs/primitives/select.generated';
 
 @Component({
   selector: 'app-select-page',
@@ -27,7 +27,7 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="select" [readme]="readme">
+    <primitive-page slug="select" [doc]="doc">
       <playground-demo hero sourcePath="select/examples/default.example.ts">
         <app-select-default-example />
       </playground-demo>
@@ -75,5 +75,5 @@ import readmeContent from '../../../../../forty-cdk/select/README.md';
   `,
 })
 export class SelectPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

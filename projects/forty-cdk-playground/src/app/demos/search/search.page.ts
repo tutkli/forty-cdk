@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { SearchDefaultExample } from './examples/default.example';
 import { SearchFieldExample } from './examples/field.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/search/README.md';
+import { DOC } from '../../../generated/docs/primitives/search.generated';
 
 @Component({
   selector: 'app-search-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/search/README.md';
   imports: [PrimitivePage, DemoLayout, SearchDefaultExample, SearchFieldExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="search" [readme]="readme">
+    <primitive-page slug="search" [doc]="doc">
       <playground-demo hero sourcePath="search/examples/default.example.ts">
         <app-search-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/search/README.md';
   `,
 })
 export class SearchPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

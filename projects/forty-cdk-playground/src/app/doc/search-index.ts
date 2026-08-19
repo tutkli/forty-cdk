@@ -1,12 +1,6 @@
 import type { PlaygroundGroup } from '../primitives';
+import type { DocIndexEntry, DocIndexSection } from './doc-model';
 import type { ResolvedGuideGroup } from './guides';
-
-export interface ReadmeSection {
-  readonly title: string;
-  readonly anchor: string;
-}
-
-export type ReadmeSections = Record<string, readonly ReadmeSection[]>;
 
 export interface SearchEntry {
   readonly kind: 'primitive' | 'guide' | 'section';
@@ -16,11 +10,23 @@ export interface SearchEntry {
   readonly haystack: string;
 }
 
+/**
+ * The palette's entries, with every section read from the compiled document
+ * model ([#1806](https://github.com/tutkli/forty-cdk/issues/1806)).
+ *
+ * Sections used to come from `gen-search-index.mjs`, which split documents into
+ * sections a second time, independently of the parser the pages rendered with.
+ * Two traversals of one corpus drift, and when they drift the palette links at
+ * anchors the page does not carry — so there is now one.
+ */
 export function buildSearchEntries(
   groups: readonly PlaygroundGroup[],
-  sections: ReadmeSections,
+  index: readonly DocIndexEntry[],
   guideGroups: readonly ResolvedGuideGroup[],
 ): SearchEntry[] {
+  const sectionsFor = (kind: DocIndexEntry['kind'], slug: string): readonly DocIndexSection[] =>
+    index.find((entry) => entry.kind === kind && entry.slug === slug)?.sections ?? [];
+
   const entries: SearchEntry[] = [];
   for (const group of guideGroups) {
     const label = `Guides · ${group.label}`;
@@ -32,12 +38,12 @@ export function buildSearchEntries(
         path: `/guides/${guide.slug}`,
         haystack: `${guide.title} ${label} ${guide.description}`.toLowerCase(),
       });
-      for (const section of guide.sections) {
+      for (const section of sectionsFor('guide', guide.slug)) {
         entries.push({
           kind: 'section',
           title: `${guide.title} › ${section.title}`,
           group: label,
-          path: `/guides/${guide.slug}#${section.anchor}`,
+          path: `/guides/${guide.slug}#${section.slug}`,
           haystack: `${guide.title} ${section.title}`.toLowerCase(),
         });
       }
@@ -52,12 +58,12 @@ export function buildSearchEntries(
         path: `/${primitive.slug}`,
         haystack: `${primitive.title} ${group.label} ${primitive.description}`.toLowerCase(),
       });
-      for (const section of sections[primitive.slug] ?? []) {
+      for (const section of sectionsFor('primitive', primitive.slug)) {
         entries.push({
           kind: 'section',
           title: `${primitive.title} › ${section.title}`,
           group: group.label,
-          path: `/${primitive.slug}#${section.anchor}`,
+          path: `/${primitive.slug}#${section.slug}`,
           haystack: `${primitive.title} ${section.title}`.toLowerCase(),
         });
       }

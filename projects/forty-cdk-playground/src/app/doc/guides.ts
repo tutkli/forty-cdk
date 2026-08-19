@@ -1,17 +1,12 @@
 import { GUIDE_GROUPS, GUIDES } from './guides.generated';
 
-export interface GuideSection {
-  readonly title: string;
-  readonly anchor: string;
-}
-
 export interface GuideMeta {
   readonly slug: string;
   readonly title: string;
   readonly description: string;
   readonly group: string;
+  /** Repository-relative path of the markdown the guide is compiled from. */
   readonly sourcePath: string;
-  readonly sections: readonly GuideSection[];
 }
 
 export interface GuideGroup {

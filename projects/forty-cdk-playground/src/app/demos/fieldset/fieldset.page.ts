@@ -7,7 +7,7 @@ import { FieldsetDefaultExample } from './examples/default.example';
 import { FieldsetDisabledExample } from './examples/disabled.example';
 import { FieldsetRoleGroupExample } from './examples/role-group.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
+import { DOC } from '../../../generated/docs/primitives/fieldset.generated';
 
 @Component({
   selector: 'app-fieldset-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="fieldset" [readme]="readme">
+    <primitive-page slug="fieldset" [doc]="doc">
       <playground-demo hero sourcePath="fieldset/examples/default.example.ts">
         <app-fieldset-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/fieldset/README.md';
   `,
 })
 export class FieldsetPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

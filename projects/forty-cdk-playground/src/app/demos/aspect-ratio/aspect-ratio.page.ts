@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { AspectRatioDefaultExample } from './examples/default.example';
 import { AspectRatioSquareExample } from './examples/square.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
+import { DOC } from '../../../generated/docs/primitives/aspect-ratio.generated';
 
 @Component({
   selector: 'app-aspect-ratio-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
   imports: [PrimitivePage, DemoLayout, AspectRatioDefaultExample, AspectRatioSquareExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="aspect-ratio" [readme]="readme">
+    <primitive-page slug="aspect-ratio" [doc]="doc">
       <playground-demo hero sourcePath="aspect-ratio/examples/default.example.ts">
         <app-aspect-ratio-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/aspect-ratio/README.md';
   `,
 })
 export class AspectRatioPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

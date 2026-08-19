@@ -8,7 +8,7 @@ import { CarouselDefaultExample } from './examples/default.example';
 import { CarouselDragExample } from './examples/drag.example';
 import { CarouselMultipleSlidesExample } from './examples/multiple-slides.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/carousel/README.md';
+import { DOC } from '../../../generated/docs/primitives/carousel.generated';
 
 @Component({
   selector: 'app-carousel-page',
@@ -23,7 +23,7 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="carousel" [readme]="readme">
+    <primitive-page slug="carousel" [doc]="doc">
       <playground-demo hero sourcePath="carousel/examples/default.example.ts">
         <app-carousel-default-example />
       </playground-demo>
@@ -55,5 +55,5 @@ import readmeContent from '../../../../../forty-cdk/carousel/README.md';
   `,
 })
 export class CarouselPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

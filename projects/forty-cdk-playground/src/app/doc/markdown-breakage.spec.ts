@@ -1,31 +1,36 @@
 import { Marked } from 'marked';
 
-import { parseDoc, stripText, type DocBlock, type DocTableData, type ParsedDoc } from './markdown';
+import { cellsOf, type DocDocument } from '../../../../../scripts/docs/doc-model.mjs';
+import { compile, problemsOf } from './testing/compile';
 import { headingIds } from './testing/heading-ids';
 
 /**
- * The four markdown shapes the site's hand-written parser reads differently
- * from GFM, each pinned to what it does **today**
- * ([#1805](https://github.com/tutkli/forty-cdk/issues/1805)).
+ * The four markdown shapes the site's old hand-written parser read differently
+ * from GFM, each pinned to what
+ * [#1806](https://github.com/tutkli/forty-cdk/issues/1806) turned it into.
  *
- * These are characterization cases, not a wish list: every assertion below
- * records current behaviour, including the three that are plainly wrong. That
- * is the point — [#1806](https://github.com/tutkli/forty-cdk/issues/1806)
- * replaces this parser, and a replacement that fixes one of them has to say so
- * by editing a case here rather than by changing 57 pages in silence. The
- * `wanted` column of #1805's table is what each case is expected to become:
+ * [#1805](https://github.com/tutkli/forty-cdk/issues/1805) wrote these down as
+ * characterization cases while the line splitter was still in place: three of
+ * them recorded plainly wrong behaviour, and the fourth an id emitted twice.
+ * Its table named what each should become, and this file is that table after
+ * the fact:
  *
- * | Fixture                      | Today                                              | Wanted                             |
+ * | Fixture                      | Before                                             | Now                                |
  * | ---------------------------- | -------------------------------------------------- | ---------------------------------- |
- * | `unescaped-pipe-in-type.md`  | an extra cell; the row's Description disappears     | a build error naming file and line |
- * | `table-inside-list-item.md`  | parsed as a standalone table; GFM sees none         | GFM behaviour                      |
- * | `pipe-above-setext-rule.md`  | a false-positive table that eats the line above it  | GFM behaviour (setext heading)     |
- * | `colliding-heading-slugs.md` | two elements share one `id`                         | deterministic and documented       |
+ * | `unescaped-pipe-in-type.md`  | an extra cell; the row's Description disappeared    | a compile error naming the line    |
+ * | `table-inside-list-item.md`  | parsed as a standalone table; GFM saw none          | a compile error naming the line    |
+ * | `pipe-above-setext-rule.md`  | a false-positive table that ate the line above it   | a compile error naming the line    |
+ * | `colliding-heading-slugs.md` | two elements shared one `id`                        | deterministic, suffixed, unique    |
+ *
+ * The first three are errors rather than silent GFM agreement on purpose. Each
+ * is a document whose author and whose renderer disagree, and every one of them
+ * reads correctly on GitHub and wrongly on the site or the other way round —
+ * so the honest outcome is to stop and name the line, not to pick a winner.
  *
  * The fifth fixture is the control. Four backticks around a fence, a `##`
- * inside one, an escaped pipe and raw HTML in a cell are all handled correctly
- * today, and a rewrite that breaks any of them breaks the site — so they are
- * asserted with the same weight as the divergences.
+ * inside one, an escaped pipe and raw HTML in a cell are all handled correctly,
+ * and a rewrite that breaks any of them breaks the site — so they are asserted
+ * with the same weight as the divergences.
  *
  * The fixtures are files rather than template literals because three of them
  * turn on a backslash or a backtick run, and a source-embedded copy would be
@@ -47,18 +52,24 @@ function fixture(name: string): string {
   return markdown;
 }
 
-function blocksOf(doc: ParsedDoc, sectionSlug: string): readonly DocBlock[] {
-  const section = doc.sections.find((candidate) => candidate.slug === sectionSlug);
+function compileFixture(name: string): DocDocument {
+  return compile({ path: `fixtures/${name}`, slug: 'fixture', markdown: fixture(name) });
+}
+
+function tablesOf(document: DocDocument, sectionSlug: string) {
+  const section = document.sections.find((candidate) => candidate.slug === sectionSlug);
   if (section === undefined) {
     throw new Error(`the fixture declares no section slugged "${sectionSlug}"`);
   }
-  return section.blocks;
+  return section.blocks.filter((block) => block.kind === 'table').map((block) => block.table);
 }
 
-function tablesOf(doc: ParsedDoc, sectionSlug: string): readonly DocTableData[] {
-  return blocksOf(doc, sectionSlug)
-    .filter((block) => block.kind === 'table')
-    .map((block) => block.table);
+function proseOf(document: DocDocument, sectionSlug: string): string {
+  const section = document.sections.find((candidate) => candidate.slug === sectionSlug);
+  return (section?.blocks ?? [])
+    .filter((block) => block.kind === 'prose')
+    .map((block) => block.markdown)
+    .join('\n');
 }
 
 function gfmTableCount(markdown: string): number {
@@ -68,47 +79,36 @@ function gfmTableCount(markdown: string): number {
 describe('an unescaped pipe inside a union type', () => {
   const markdown = fixture('unescaped-pipe-in-type.md');
 
-  it('splits the row into one more cell than the table has columns', () => {
-    const [table] = tablesOf(parseDoc(markdown), 'api');
+  it('fails the compile on the row, naming its line', () => {
+    const problems = problemsOf(markdown, 'unescaped-pipe-in-type.md');
 
-    expect(table!.columns.map(stripText)).toEqual(['Property', 'Type', 'Description']);
-    expect(table!.rows[0]!.map((cell) => cell.text)).toEqual([
-      'side',
-      '`Side',
-      'undefined`',
-      'Which edge the panel docks to.',
-    ]);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.line).toBe(7);
+    expect(problems[0]!.path).toBe('unescaped-pipe-in-type.md');
+    expect(problems[0]!.message).toContain('4 cell(s) against a header of 3 column(s)');
   });
 
-  it('leaves the description in a fourth cell no column renders', () => {
-    const [table] = tablesOf(parseDoc(markdown), 'api');
-    const rendered = table!.rows[0]!.slice(0, table!.columns.length);
-
-    expect(rendered.some((cell) => cell.text.includes('Which edge'))).toBe(false);
+  it('tells the author how to write the pipe they meant', () => {
+    expect(problemsOf(markdown).at(0)!.message).toContain('\\|');
   });
 
-  it('does not affect the rows around it', () => {
-    const [table] = tablesOf(parseDoc(markdown), 'api');
-
-    expect(table!.rows[1]!.map((cell) => cell.text)).toEqual([
-      'align',
-      'Align',
-      'Where the panel sits along that edge.',
-    ]);
+  it('reports only the offending row, not the one below it', () => {
+    expect(problemsOf(markdown).map((problem) => problem.line)).toEqual([7]);
   });
 });
 
 describe('a table indented inside a list item', () => {
   const markdown = fixture('table-inside-list-item.md');
 
-  it('is lifted out of the list and parsed as a standalone table', () => {
-    const tables = tablesOf(parseDoc(markdown), 'steps');
+  it('fails the compile once, on the row the table was written on', () => {
+    const problems = problemsOf(markdown, 'table-inside-list-item.md');
 
-    expect(tables).toHaveLength(1);
-    expect(tables[0]!.columns.map(stripText)).toEqual(['Key', 'Action']);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.line).toBe(7);
+    expect(problems[0]!.message).toContain('nested in a list item');
   });
 
-  it('is no table at all to the GFM lexer', () => {
+  it('is no top-level table to the GFM lexer, which is why it is refused', () => {
     expect(gfmTableCount(markdown)).toBe(0);
   });
 });
@@ -116,25 +116,12 @@ describe('a table indented inside a list item', () => {
 describe('prose carrying a pipe above a line of dashes', () => {
   const markdown = fixture('pipe-above-setext-rule.md');
 
-  it('becomes a table with a header and no rows', () => {
-    const tables = tablesOf(parseDoc(markdown), 'notes');
+  it('fails the compile on the prose line, naming it', () => {
+    const problems = problemsOf(markdown, 'pipe-above-setext-rule.md');
 
-    expect(tables).toHaveLength(1);
-    expect(tables[0]!.columns.map(stripText)).toEqual([
-      'Write open',
-      'closed to describe the state',
-    ]);
-    expect(tables[0]!.rows).toEqual([]);
-  });
-
-  it('swallows the sentence it was made from', () => {
-    const prose = blocksOf(parseDoc(markdown), 'notes')
-      .filter((block) => block.kind === 'html')
-      .map((block) => block.html)
-      .join('');
-
-    expect(prose).not.toContain('to describe the state');
-    expect(prose).toContain('The paragraph below the rule belongs to this section.');
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.line).toBe(5);
+    expect(problems[0]!.message).toContain('setext heading');
   });
 
   it('is a setext heading to the GFM lexer, which sees no table', () => {
@@ -144,43 +131,42 @@ describe('prose carrying a pipe above a line of dashes', () => {
 });
 
 describe('headings that slugify identically', () => {
-  const markdown = fixture('colliding-heading-slugs.md');
-
   it('suffixes the second of two sections at the same level', () => {
-    const doc = parseDoc(markdown);
+    const document = compileFixture('colliding-heading-slugs.md');
 
-    expect(doc.sections.map((section) => section.slug)).toEqual(['api', 'keyboard', 'keyboard-1']);
+    expect(document.sections.map((section) => section.slug)).toEqual([
+      'api',
+      'keyboard',
+      'keyboard-1',
+    ]);
   });
 
-  it('emits one id twice, because sections and subsections are slugged separately', () => {
-    const ids = headingIds(parseDoc(markdown));
-    const duplicated = ids.filter((id, index) => ids.indexOf(id) !== index);
+  it('emits no id twice, because one slugger mints them all', () => {
+    const ids = headingIds(compileFixture('colliding-heading-slugs.md'));
 
-    expect(duplicated).toEqual(['api']);
+    expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
   });
 
-  it('reports the colliding subsection under the same slug as its section', () => {
-    const doc = parseDoc(markdown);
-    const api = doc.sections.find((section) => section.slug === 'api');
+  it('suffixes a subsection that collides with its own section', () => {
+    const document = compileFixture('colliding-heading-slugs.md');
+    const api = document.sections.find((section) => section.slug === 'api');
 
-    expect(api!.subsections.map((subsection) => subsection.slug)).toEqual(['api']);
+    expect(api!.headings.map((heading) => heading.slug)).toEqual(['api-1']);
   });
 });
 
-describe('fences and escapes the splitter reads correctly', () => {
-  const markdown = fixture('nested-fences-and-escapes.md');
+describe('fences and escapes the compiler reads correctly', () => {
+  const name = 'nested-fences-and-escapes.md';
 
   it('keeps a four-backtick fence in one prose block', () => {
-    const blocks = blocksOf(parseDoc(markdown), 'fences');
+    const blocks = compileFixture(name).sections[0]!.blocks;
 
-    expect(blocks.map((block) => block.kind)).toEqual(['html']);
-    expect(blocks[0]!.kind === 'html' && blocks[0]!.html).toContain('const side');
+    expect(blocks.map((block) => block.kind)).toEqual(['prose']);
+    expect(proseOf(compileFixture(name), 'fences')).toContain('const side');
   });
 
   it('opens no section for a heading written inside a fence', () => {
-    const doc = parseDoc(markdown);
-
-    expect(doc.sections.map((section) => section.title)).toEqual([
+    expect(compileFixture(name).sections.map((section) => section.title)).toEqual([
       'Fences',
       'Headings inside a fence',
       'Escaped pipes and raw HTML',
@@ -188,26 +174,29 @@ describe('fences and escapes the splitter reads correctly', () => {
   });
 
   it('finds no table inside a fence', () => {
-    expect(tablesOf(parseDoc(markdown), 'headings-inside-a-fence')).toEqual([]);
+    expect(tablesOf(compileFixture(name), 'headings-inside-a-fence')).toEqual([]);
   });
 
-  it('unescapes a pipe written as \\| and keeps the cell whole', () => {
-    const [table] = tablesOf(parseDoc(markdown), 'escaped-pipes-and-raw-html');
+  it('keeps a pipe written as \\| inside one cell, unescaped', () => {
+    const [table] = tablesOf(compileFixture(name), 'escaped-pipes-and-raw-html');
 
-    expect(table!.rows[0]!.map((cell) => cell.text)).toEqual([
-      'side',
-      'Side | undefined',
-      'Press Tab to move on.',
+    expect(cellsOf(table!).rows[0]).toEqual([
+      '`side`',
+      '`Side | undefined`',
+      'Press <kbd>Tab</kbd> to move on.',
     ]);
   });
 
-  it('passes raw HTML in a cell through to the rendered markup', () => {
-    const [table] = tablesOf(parseDoc(markdown), 'escaped-pipes-and-raw-html');
+  it('reads the table as an API table, addressed by column', () => {
+    const [table] = tablesOf(compileFixture(name), 'escaped-pipes-and-raw-html');
 
-    expect(table!.rows[0]![2]!.html).toContain('<kbd>Tab</kbd>');
+    expect(table!.role).toBe('api');
+    expect(table!.role === 'api' && table!.rows[0]!.description).toBe(
+      'Press <kbd>Tab</kbd> to move on.',
+    );
   });
 
   it('agrees with the GFM lexer on the one table the fixture declares', () => {
-    expect(gfmTableCount(markdown)).toBe(1);
+    expect(gfmTableCount(fixture(name))).toBe(1);
   });
 });

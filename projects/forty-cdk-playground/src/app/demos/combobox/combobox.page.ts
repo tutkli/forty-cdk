@@ -11,7 +11,7 @@ import { ComboboxObjectValuesExample } from './examples/object-values.example';
 import { ComboboxPickerExample } from './examples/picker.example';
 import { ComboboxVirtualizedExample } from './examples/virtualized.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/combobox/README.md';
+import { DOC } from '../../../generated/docs/primitives/combobox.generated';
 
 @Component({
   selector: 'app-combobox-page',
@@ -29,7 +29,7 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="combobox" [readme]="readme">
+    <primitive-page slug="combobox" [doc]="doc">
       <playground-demo hero sourcePath="combobox/examples/default.example.ts">
         <app-combobox-default-example />
       </playground-demo>
@@ -85,5 +85,5 @@ import readmeContent from '../../../../../forty-cdk/combobox/README.md';
   `,
 })
 export class ComboboxPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

@@ -1,50 +1,59 @@
 import { Marked, type Token, type Tokens } from 'marked';
 
-import { parseDoc, renderInlineMarkdown, type DocTableData } from './markdown';
+import { cellsOf, type DocDocument } from '../../../../../scripts/docs/doc-model.mjs';
+import { compile } from './testing/compile';
 import { GUIDE_DOCS, PRIMITIVE_DOCS, SITE_DOCS, type DocFile } from './testing/doc-corpus';
 
 /**
  * The differential half of the docs-pipeline characterization
  * ([#1805](https://github.com/tutkli/forty-cdk/issues/1805)): every table the
- * site's hand-written splitter finds must equal the one `marked`'s own GFM
- * lexer finds, cell by cell.
+ * site publishes must equal the one `marked`'s own GFM lexer finds, cell by
+ * cell, in the same order.
  *
- * The measurement this freezes is that they already agree everywhere — 294
- * tables across the 57 entry-point READMEs, 312 once the published guides are
- * counted, zero divergences. That agreement is **accidental**: `splitBlocks`
- * scans lines for a delimiter row and never consults a GFM implementation, so
- * nothing but this case stands between a rewrite and a silently different site.
+ * The measurement this freezes is 294 tables across the 57 entry-point READMEs,
+ * 309 once the published guides are counted, and zero divergences — the number
+ * the hand-written line splitter reached by accident, and the number
+ * [#1806](https://github.com/tutkli/forty-cdk/issues/1806) had to reproduce
+ * when it replaced that splitter with a compiler over the token tree.
  *
- * Two decisions make the comparison mean what it claims:
+ * **What the comparison asks has changed with the parser under it.** It used to
+ * pit two independent implementations against each other, and cell equality was
+ * the whole of the question. There is one implementation now, so the cells come
+ * from the same `marked` tokens on both sides and could not disagree. What is
+ * still worth asserting, and is not tautological, is everything the compiler
+ * does *around* those tokens:
  *
- * - **Both sides render their cells through the same inline renderer.** The
- *   site stores a cell as rendered HTML while the lexer stores it as raw
- *   markdown, so the raw side is pushed through `renderInlineMarkdown` before
- *   comparing. What is left when the shared step is shared is exactly the
- *   question worth asking — did the two implementations *split* the document
- *   the same way — rather than a diff of two markdown renderers.
- * - **The lexer is walked recursively.** A GFM table nested in a list item or a
- *   blockquote is a table the site is expected to find too, and walking only the
- *   top level would quietly excuse the very case
- *   `markdown-breakage.spec.ts` records as divergent.
+ * - **No table is lost in the splitting.** The compiler walks only the top
+ *   level and assigns each table to the section it falls under; the side below
+ *   walks the tree recursively and knows nothing of sections. A table dropped
+ *   between the two — nested, above the first heading, or off the end of a
+ *   section — shows up as a count that no longer matches.
+ * - **Order survives.** Tables are compared as a flat document-ordered list, so
+ *   a section boundary drawn in the wrong place reorders them and fails.
+ * - **Rows are rectangular.** The model guarantees what the old parser did not:
+ *   every row is exactly as wide as its header, because a row that disagrees is
+ *   a compile error rather than a silently dropped cell.
  */
 const gfm = new Marked({ gfm: true });
 
 /**
- * Floors, not targets. Each sits at what the audit measured — 57 entry-point
- * READMEs, 10 published guides, 294 README tables — and fails a run that
- * stopped finding them, so adding an entry point or a table is not a test
+ * Floors, not targets. Each sits at what the audit measured, and fails a run
+ * that stopped finding them — so adding an entry point or a table is not a
  * failure while a glob that silently matched nothing is.
  */
 const README_FLOOR = 57;
 const GUIDE_FLOOR = 10;
 const README_TABLE_FLOOR = 294;
 
-function tableBlocks(doc: DocFile): readonly DocTableData[] {
-  return parseDoc(doc.markdown)
-    .sections.flatMap((section) => section.blocks)
+interface TableShape {
+  readonly columns: readonly string[];
+  readonly rows: readonly (readonly string[])[];
+}
+
+function siteTables(document: DocDocument): readonly TableShape[] {
+  return [...document.intro, ...document.sections.flatMap((section) => section.blocks)]
     .filter((block) => block.kind === 'table')
-    .map((block) => block.table);
+    .map((block) => cellsOf(block.table));
 }
 
 function gfmTables(markdown: string): readonly Tokens.Table[] {
@@ -62,40 +71,31 @@ function gfmTables(markdown: string): readonly Tokens.Table[] {
   return found;
 }
 
-function siteShape(table: DocTableData): { columns: string[]; rows: string[][] } {
+function gfmShape(table: Tokens.Table): TableShape {
   return {
-    columns: [...table.columns],
-    rows: table.rows.map((row) => row.map((cell) => cell.html)),
+    columns: table.header.map((cell) => cell.text),
+    rows: table.rows.map((row) => row.map((cell) => cell.text)),
   };
 }
 
-function gfmShape(table: Tokens.Table): { columns: string[]; rows: string[][] } {
-  return {
-    columns: table.header.map((cell) => renderInlineMarkdown(cell.text)),
-    rows: table.rows.map((row) => row.map((cell) => renderInlineMarkdown(cell.text))),
-  };
+function tableCount(docs: readonly DocFile[]): number {
+  return docs.reduce((total, doc) => total + siteTables(compile(doc)).length, 0);
 }
 
 describe('README tables against the GFM lexer', () => {
   it.each(PRIMITIVE_DOCS.map((doc) => [doc.slug, doc] as const))(
-    '%s parses every table the way GFM does',
+    '%s compiles every table the way GFM reads it',
     (_slug, doc) => {
-      const site = tableBlocks(doc).map(siteShape);
-      const gfmTokens = gfmTables(doc.markdown).map(gfmShape);
-
-      expect(site).toEqual(gfmTokens);
+      expect(siteTables(compile(doc))).toEqual(gfmTables(doc.markdown).map(gfmShape));
     },
   );
 });
 
 describe('guide tables against the GFM lexer', () => {
   it.each(GUIDE_DOCS.map((doc) => [doc.slug, doc] as const))(
-    '%s parses every table the way GFM does',
+    '%s compiles every table the way GFM reads it',
     (_slug, doc) => {
-      const site = tableBlocks(doc).map(siteShape);
-      const gfmTokens = gfmTables(doc.markdown).map(gfmShape);
-
-      expect(site).toEqual(gfmTokens);
+      expect(siteTables(compile(doc))).toEqual(gfmTables(doc.markdown).map(gfmShape));
     },
   );
 });
@@ -114,15 +114,31 @@ describe('the corpus the differential covers', () => {
   });
 
   it('finds at least as many README tables as the audit measured', () => {
-    const tables = PRIMITIVE_DOCS.reduce((total, doc) => total + tableBlocks(doc).length, 0);
-
-    expect(tables).toBeGreaterThanOrEqual(README_TABLE_FLOOR);
+    expect(tableCount(PRIMITIVE_DOCS)).toBeGreaterThanOrEqual(README_TABLE_FLOOR);
   });
 
   it('finds the same number of tables on both sides of the corpus', () => {
-    const site = SITE_DOCS.reduce((total, doc) => total + tableBlocks(doc).length, 0);
     const lexed = SITE_DOCS.reduce((total, doc) => total + gfmTables(doc.markdown).length, 0);
 
-    expect(site).toBe(lexed);
+    expect(tableCount(SITE_DOCS)).toBe(lexed);
   });
+});
+
+describe('the rectangularity the model guarantees', () => {
+  it.each(SITE_DOCS.map((doc) => [doc.path, doc] as const))(
+    '%s gives every table row exactly as many cells as its header',
+    (_path, doc) => {
+      const ragged = siteTables(compile(doc))
+        .flatMap((table) =>
+          table.rows.map((row, index) => ({
+            index,
+            columns: table.columns.length,
+            cells: row.length,
+          })),
+        )
+        .filter((row) => row.cells !== row.columns);
+
+      expect(ragged).toEqual([]);
+    },
+  );
 });

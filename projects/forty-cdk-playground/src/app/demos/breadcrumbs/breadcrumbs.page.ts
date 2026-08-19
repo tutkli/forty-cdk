@@ -6,7 +6,7 @@ import { PrimitivePage } from '../../ui/primitive-page';
 import { BreadcrumbsCollapsedExample } from './examples/collapsed.example';
 import { BreadcrumbsDefaultExample } from './examples/default.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/breadcrumbs/README.md';
+import { DOC } from '../../../generated/docs/primitives/breadcrumbs.generated';
 
 @Component({
   selector: 'app-breadcrumbs-page',
@@ -14,7 +14,7 @@ import readmeContent from '../../../../../forty-cdk/breadcrumbs/README.md';
   imports: [PrimitivePage, DemoLayout, BreadcrumbsDefaultExample, BreadcrumbsCollapsedExample],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="breadcrumbs" [readme]="readme">
+    <primitive-page slug="breadcrumbs" [doc]="doc">
       <playground-demo hero sourcePath="breadcrumbs/examples/default.example.ts">
         <app-breadcrumbs-default-example />
       </playground-demo>
@@ -30,5 +30,5 @@ import readmeContent from '../../../../../forty-cdk/breadcrumbs/README.md';
   `,
 })
 export class BreadcrumbsPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }

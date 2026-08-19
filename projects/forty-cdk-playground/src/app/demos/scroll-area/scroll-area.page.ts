@@ -7,7 +7,7 @@ import { ScrollAreaAlwaysExample } from './examples/always.example';
 import { ScrollAreaDefaultExample } from './examples/default.example';
 import { ScrollAreaGeometryExample } from './examples/geometry.example';
 import { SOURCES } from './sources.generated';
-import readmeContent from '../../../../../forty-cdk/scroll-area/README.md';
+import { DOC } from '../../../generated/docs/primitives/scroll-area.generated';
 
 @Component({
   selector: 'app-scroll-area-page',
@@ -21,7 +21,7 @@ import readmeContent from '../../../../../forty-cdk/scroll-area/README.md';
   ],
   providers: [{ provide: EXAMPLE_SOURCES, useValue: SOURCES }],
   template: `
-    <primitive-page slug="scroll-area" [readme]="readme">
+    <primitive-page slug="scroll-area" [doc]="doc">
       <playground-demo hero sourcePath="scroll-area/examples/default.example.ts">
         <app-scroll-area-default-example />
       </playground-demo>
@@ -45,5 +45,5 @@ import readmeContent from '../../../../../forty-cdk/scroll-area/README.md';
   `,
 })
 export class ScrollAreaPage {
-  protected readonly readme = readmeContent;
+  protected readonly doc = DOC;
 }
