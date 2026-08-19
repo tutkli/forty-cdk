@@ -220,10 +220,7 @@
           "options": {
             "browser": "projects/forty-cdk-playground/src/main.ts",
             "tsConfig": "projects/forty-cdk-playground/tsconfig.app.json",
-            "styles": ["projects/forty-cdk-playground/src/styles.css"],
-            "loader": {
-              ".md": "text"
-            }
+            "styles": ["projects/forty-cdk-playground/src/styles.css"]
           },
           "configurations": {
             "production": {

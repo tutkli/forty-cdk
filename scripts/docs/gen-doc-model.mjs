@@ -9,9 +9,11 @@ import {
 } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { buildDocRoutes } from '../lib/doc-links.mjs';
 import { LIBRARY_DIR, readGuides, readPrimitives } from '../lib/doc-site.mjs';
 import { repoRoot } from '../lib/repo-path.mjs';
 import { compileDocument, DocCompileError } from './doc-model.mjs';
+import { headingText, renderDocument } from './doc-render.mjs';
 
 const OUT_DIR = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'generated');
 const DOCS_DIR = join(OUT_DIR, 'docs');
@@ -83,18 +85,26 @@ function serialize(value) {
   return JSON.stringify(value, null, 2);
 }
 
-function documentModule(document) {
+function pageModule(page) {
   return (
-    `import type { DocDocument } from '${MODEL_TYPES}';\n\n` +
-    `export const DOC: DocDocument = ${serialize(document)};\n`
+    `import type { DocPage } from '${MODEL_TYPES}';\n\n` +
+    `export const DOC: DocPage = ${serialize(page)};\n`
   );
 }
 
+/**
+ * Section titles reach the palette resolved, the same way the page renders them:
+ * `## Shared \`disabled\`` is one heading, and a reader searching for it should
+ * not have to type the backticks the page does not show.
+ */
 function indexModule(documents) {
   const entries = documents.map((document) => ({
     kind: document.kind,
     slug: document.slug,
-    sections: document.sections.map((section) => ({ title: section.title, slug: section.slug })),
+    sections: document.sections.map((section) => ({
+      title: headingText(section.title),
+      slug: section.slug,
+    })),
   }));
   return (
     `import type { DocIndexEntry } from '../app/doc/doc-model';\n\n` +
@@ -117,8 +127,8 @@ function guideModule(guides) {
     .map((guide) => `  ${JSON.stringify(guide.slug)}: ${identifierOf(guide.slug)},`)
     .join('\n');
   return (
-    `import type { DocDocument } from '../app/doc/doc-model';\n${imports}\n\n` +
-    `export const GUIDE_DOCS: Readonly<Record<string, DocDocument>> = {\n${entries}\n};\n`
+    `import type { DocPage } from '../app/doc/doc-model';\n${imports}\n\n` +
+    `export const GUIDE_DOCS: Readonly<Record<string, DocPage>> = {\n${entries}\n};\n`
   );
 }
 
@@ -139,6 +149,19 @@ function write(files) {
 const { documents, unpublished } = compileAll();
 const guides = documents.filter((document) => document.kind === 'guide');
 
+/**
+ * Where a relative link in the markdown lands, resolved here rather than in the
+ * browser ([#1807](https://github.com/tutkli/forty-cdk/issues/1807)).
+ *
+ * The same map `pnpm check:doc-links` gates the sources against: an entry point
+ * that has a README but ships no page is absent from it on purpose, so a link to
+ * one resolves to its source on GitHub rather than to a route that would 404.
+ */
+const routes = buildDocRoutes({
+  primitiveSlugs: readPrimitives().map((primitive) => primitive.slug),
+  guideSlugs: guides.map((guide) => guide.slug),
+});
+
 write([
   ...documents.map((document) => [
     join(
@@ -146,7 +169,7 @@ write([
       document.kind === 'guide' ? 'guides' : 'primitives',
       `${document.slug}.generated.ts`,
     ),
-    documentModule(document),
+    pageModule(renderDocument(document, { routes })),
   ]),
   [join(OUT_DIR, 'doc-index.generated.ts'), indexModule(documents)],
   [join(OUT_DIR, 'guide-docs.generated.ts'), guideModule(guides)],

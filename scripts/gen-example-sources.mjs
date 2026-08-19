@@ -8,8 +8,8 @@ import {
   statSync,
 } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { createHighlighter } from 'shiki';
 
+import { highlightCode } from './docs/doc-highlight.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
 
 const DEMOS = join(repoRoot, 'projects', 'forty-cdk-playground', 'src', 'app', 'demos');
@@ -43,23 +43,13 @@ for (const file of files) {
   byPrimitive.get(primitive).push(file);
 }
 
-const highlighter = await createHighlighter({
-  themes: ['github-light', 'github-dark'],
-  langs: ['angular-ts'],
-});
-
 let total = 0;
 
 for (const [primitive, primitiveFiles] of [...byPrimitive].sort()) {
   const entries = primitiveFiles.map((file) => {
     const code = readFileSync(file, 'utf8');
     const key = relative(repoRoot, file).split(sep).join('/');
-    const highlighted = highlighter.codeToHtml(code, {
-      lang: 'angular-ts',
-      themes: { light: 'github-light', dark: 'github-dark' },
-      defaultColor: false,
-    });
-    return { key, code, highlighted };
+    return { key, code, highlighted: highlightCode(code, 'angular-ts') };
   });
 
   const body = entries
@@ -79,8 +69,6 @@ for (const [primitive, primitiveFiles] of [...byPrimitive].sort()) {
   writeFileSync(join(DEMOS, primitive, 'sources.generated.ts'), out, 'utf8');
   total += entries.length;
 }
-
-highlighter.dispose();
 
 const skipped = demoDirs.filter((dir) => !byPrimitive.has(dir));
 

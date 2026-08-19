@@ -1,5 +1,5 @@
 import { cellsOf } from '../../../../../scripts/docs/doc-model.mjs';
-import { headingText } from './markdown';
+import { headingText } from '../../../../../scripts/docs/doc-render.mjs';
 import { compile } from './testing/compile';
 import { SITE_DOCS } from './testing/doc-corpus';
 

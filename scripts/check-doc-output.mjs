@@ -3,7 +3,7 @@ import { join, relative, sep } from 'node:path';
 
 import { JSDOM } from 'jsdom';
 
-import { isAbsoluteHref, splitDocHref } from './lib/doc-links.mjs';
+import { DOC_BASE_TOKEN, isAbsoluteHref, splitDocHref } from './lib/doc-links.mjs';
 import { compileDocument } from './docs/doc-model.mjs';
 import { DOCS_DIR, LIBRARY_DIR, readGuides, readPrimitives } from './lib/doc-site.mjs';
 import { repoRoot } from './lib/repo-path.mjs';
@@ -285,6 +285,14 @@ for (const [route, page] of pages) {
       failures.push(
         `${at} — "${href}" publishes agent instrumentation under .claude/, which never ships; ` +
           'inline the prose the reader needs instead',
+      );
+      continue;
+    }
+
+    if (href.includes(DOC_BASE_TOKEN)) {
+      failures.push(
+        `${at} — "${href}" still carries the ${DOC_BASE_TOKEN} stand-in the renderer writes where ` +
+          "the site's base href belongs, so the page bound the markup without substituting it",
       );
       continue;
     }

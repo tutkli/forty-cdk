@@ -9,13 +9,13 @@ import {
 import { DomSanitizer } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
+import { stripText } from '../../../../../scripts/lib/html.mjs';
+import { injectDocBase } from '../doc/doc-base';
 import { injectFragmentScroll } from '../doc/doc-fragment';
 import { DocLinks } from '../doc/doc-links';
-import type { DocDocument, DocSection as DocSectionModel } from '../doc/doc-model';
-import { injectDocLinkResolver } from '../doc/doc-routes';
+import type { DocPage, DocPageSection } from '../doc/doc-model';
 import { DocSection } from '../doc/doc-section';
 import { DocToc, type TocItem } from '../doc/doc-toc';
-import { headingText, renderDocProse, stripText, type DocRenderContext } from '../doc/markdown';
 import { primitiveBySlug } from '../primitives';
 import { DemoLayout } from './demo-layout';
 import { Icon } from './icon';
@@ -54,7 +54,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
         }
 
         @for (section of sectionsBefore(); track section.slug) {
-          <doc-section [section]="section" [context]="context()" />
+          <doc-section [section]="section" />
         }
 
         <section class="pg-doc-section" [id]="examplesMeta().slug">
@@ -75,7 +75,7 @@ function stripLeadingDescription(introHtml: string, description: string): string
         </section>
 
         @for (section of sectionsAfter(); track section.slug) {
-          <doc-section [section]="section" [context]="context()" />
+          <doc-section [section]="section" />
         }
       </div>
 
@@ -177,24 +177,18 @@ function stripLeadingDescription(introHtml: string, description: string): string
 })
 export class PrimitivePage {
   readonly #sanitizer = inject(DomSanitizer);
-  readonly #resolveLink = injectDocLinkResolver();
+  readonly #base = injectDocBase();
 
   readonly slug = input.required<string>();
-  readonly doc = input.required<DocDocument>();
+  readonly doc = input.required<DocPage>();
 
   protected readonly demos = contentChildren(DemoLayout);
 
   protected readonly meta = computed(() => primitiveBySlug(this.slug()));
 
-  protected readonly context = computed<DocRenderContext>(() => ({
-    sourcePath: this.doc().path,
-    resolveLink: this.#resolveLink,
-  }));
-
   protected readonly introHtml = computed(() => {
-    const context = this.context();
     const rendered = this.doc()
-      .intro.map((block) => renderDocProse(block, context))
+      .intro.map((block) => this.#base(block.html))
       .join('');
     const intro = stripLeadingDescription(rendered, this.meta().description);
     return intro.trim() ? this.#sanitizer.bypassSecurityTrustHtml(intro) : null;
@@ -225,10 +219,10 @@ export class PrimitivePage {
   });
 
   protected readonly tocItems = computed<readonly TocItem[]>(() => {
-    const toToc = (section: DocSectionModel): TocItem => {
+    const toToc = (section: DocPageSection): TocItem => {
       const children = section.headings
         .filter((heading) => heading.depth === 3)
-        .map((heading) => ({ title: headingText(heading.text), slug: heading.slug }));
+        .map((heading) => ({ title: heading.text, slug: heading.slug }));
       return {
         title: section.title,
         slug: section.slug,

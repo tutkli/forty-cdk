@@ -313,6 +313,56 @@ function checkHeadingSlugs(headings, report) {
   }
 }
 
+/**
+ * The fence languages the site publishes, each mapped to the grammar that
+ * highlights it.
+ *
+ * A fence outside this map fails the compile rather than publishing plain: a
+ * page where one sample is highlighted and the next is not reads as a rendering
+ * bug, and the corpus reached that state twice without anyone noticing
+ * ([#1807](https://github.com/tutkli/forty-cdk/issues/1807)). Absence of a
+ * language is not an unknown language — a bare fence is plain text on purpose,
+ * and is highlighted as such so it keeps the same frame as its neighbours.
+ */
+const FENCE_LANGUAGES = new Map([
+  ['', 'text'],
+  ['text', 'text'],
+  ['txt', 'text'],
+  ['plaintext', 'text'],
+  ['ts', 'angular-ts'],
+  ['typescript', 'angular-ts'],
+  ['angular-ts', 'angular-ts'],
+  ['html', 'html'],
+  ['css', 'css'],
+  ['bash', 'bash'],
+  ['sh', 'bash'],
+  ['shell', 'bash'],
+  ['md', 'markdown'],
+  ['markdown', 'markdown'],
+]);
+
+/** The info strings a fence may carry, a bare fence aside. */
+export const FENCE_LANGUAGE_NAMES = [...FENCE_LANGUAGES.keys()].filter((name) => name !== '');
+
+/** The grammar a fence's info string selects, or `null` if the site has none. */
+export function resolveFenceLanguage(lang) {
+  return FENCE_LANGUAGES.get((lang ?? '').trim().toLowerCase()) ?? null;
+}
+
+function checkFenceLanguages(entries, report) {
+  for (const { token, line } of entries) {
+    if (token.type !== 'code' || resolveFenceLanguage(token.lang) !== null) {
+      continue;
+    }
+    report(
+      line,
+      `this fence is marked ${JSON.stringify((token.lang ?? '').trim())}, which the site has no grammar ` +
+        'for — it would publish unhighlighted beside fences that are highlighted. Write it as one ' +
+        `of ${FENCE_LANGUAGE_NAMES.join(', ')}, or load the grammar in scripts/docs/doc-highlight.mjs`,
+    );
+  }
+}
+
 function blocksOf(run) {
   const blocks = [];
   let prose = [];
@@ -359,7 +409,8 @@ function blocksOf(run) {
  * @throws {DocCompileError} when the document is ambiguous rather than merely
  * unusual — a row whose cell count disagrees with its header, a table GFM would
  * not recognise, a table or heading nested where the site cannot render it, a
- * heading that slugifies to nothing, or a missing title.
+ * heading that slugifies to nothing, a fence in a language the site cannot
+ * highlight, or a missing title.
  */
 export function compileDocument(source, { path, slug, kind }) {
   const markdown = normalize(source);
@@ -404,6 +455,7 @@ export function compileDocument(source, { path, slug, kind }) {
   }
 
   checkHeadingSlugs(headings, report);
+  checkFenceLanguages(entries, report);
   checkNestedHeadings(top, entries, report);
   checkTableRows(entries, report);
   checkTablePlacement(markdown, top, entries, report);

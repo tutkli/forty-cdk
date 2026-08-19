@@ -81,6 +81,41 @@ describe('documents the compiler refuses', () => {
     expect(problems[0]!.message).toContain('carries no anchor');
   });
 
+  it('refuses a fence in a language the site has no grammar for, naming its line', () => {
+    const problems = problemsOf(md('# Title', '', '## S', '', '```json', '{}', '```'));
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.line).toBe(5);
+    expect(problems[0]!.message).toContain('marked "json"');
+    expect(problems[0]!.message).toContain('publish unhighlighted');
+  });
+
+  it('names the languages a fence may be written as, so the fix is in the message', () => {
+    const problems = problemsOf(md('# Title', '', '## S', '', '```jsx', 'x', '```'));
+
+    expect(problems[0]!.message).toContain('ts, typescript');
+    expect(problems[0]!.message).toContain('html');
+  });
+
+  it('accepts a bare fence, which is plain text rather than an unknown language', () => {
+    const document = compile({
+      path: 'docs/sample.md',
+      slug: 'sample',
+      markdown: md('# Title', '', '## S', '', '```', 'just words', '```'),
+    });
+
+    expect(document.sections[0]!.blocks[0]!.kind).toBe('prose');
+  });
+
+  it('sees a fence nested in a list item, which renders and would need a grammar', () => {
+    const problems = problemsOf(
+      md('# Title', '', '## S', '', '1. Step:', '', '   ```json', '   {}', '   ```'),
+    );
+
+    expect(problems).toHaveLength(1);
+    expect(problems[0]!.message).toContain('marked "json"');
+  });
+
   it('reports every problem in one pass rather than stopping at the first', () => {
     const problems = problemsOf(
       md(

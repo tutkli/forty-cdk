@@ -174,6 +174,16 @@ fragment link to a heading nested under `## Examples` resolves on GitHub and can
 site**, because the site replaces that section's body with its live demos. Link to `#examples`
 instead — it is valid in both places.
 
+**Every fenced code block is highlighted at build time**, from the same two themes the example
+sources use, so nothing about a page's markup is decided in the browser
+([#1807](https://github.com/tutkli/forty-cdk/issues/1807)). A fence's info string therefore has to be
+one the site loads a grammar for — `ts` / `typescript`, `html`, `css`, `bash` / `sh` / `shell`,
+`md` / `markdown`, or `text` / `txt` / `plaintext` — and a bare fence is plain text, framed like its
+neighbours rather than left unstyled. Anything else fails the compile naming its line, because the
+alternative is a page where one sample is highlighted and the next is not, which is the state the
+corpus had drifted into twice. If a new language is genuinely needed, load its grammar in
+`scripts/docs/doc-highlight.mjs` rather than writing the fence unlabelled.
+
 The page chrome itself dogfoods the library: Navigation Menu / Drawer (mobile) for the top nav,
 Tree / Scroll Area for the sidebar, Combobox for ⌘K search, Switch for the theme toggle,
 Breadcrumbs for location.
